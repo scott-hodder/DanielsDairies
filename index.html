@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel's Dairies - Login</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'League Spartan', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #dfdbca;
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #405878 0%, #4c6c96 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background-color: #fffff5;
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .login-title {
+            font-size: 32px;
+            color: #405878;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .login-subtitle {
+            color: #4c6c96;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: #364f66;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #dfdbca;
+            border-radius: 12px;
+            font-size: 16px;
+            background-color: white;
+            color: #364f66;
+            outline: none;
+            font-family: 'League Spartan', sans-serif;
+        }
+
+        .form-input:focus {
+            border-color: #4c6c96;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #405878 0%, #4c6c96 100%);
+            color: #fffff5;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-family: 'League Spartan', sans-serif;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background-color: #ff4444;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .success-message {
+            background-color: #4c6c96;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .login-note {
+            text-align: center;
+            margin-top: 24px;
+            color: #4c6c96;
+            font-size: 14px;
+        }
+
+        .login-link {
+            color: #405878;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-link:hover {
+            text-decoration: underline;
+        }
+
+        .info-text {
+            font-size: 14px;
+            color: #4c6c96;
+            line-height: 1.45;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .login-card {
+                padding: 32px 24px;
+            }
+
+            .login-title {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="/FM-LOGO-TEMP.png" alt="Daniel's Dairies Logo" style="height: 120px;">
+                <h1 class="login-title">Daniel's Dairies</h1>
+                <p class="login-subtitle">Your journey to understanding yourself</p>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <div id="errorMessage" class="error-message hidden"></div>
+            <div id="successMessage" class="success-message hidden"></div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+                    <div style="text-align:right; margin-top:8px;">
+                        <button type="button" id="forgotPasswordLink" class="login-link" style="font-size:13px; background:none; border:none; padding:0;">Forgot password?</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="loginButton">
+                    <span id="loginButtonText">Sign In</span>
+                    <span id="loginSpinner" class="spinner hidden"></span>
+                </button>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signupForm" class="hidden">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="signupEmail" class="form-input" placeholder="your@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="signupPassword" class="form-input" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" id="signupPasswordConfirm" class="form-input" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-primary" id="signupButton">
+                    <span id="signupButtonText">Create Account</span>
+                    <span id="signupSpinner" class="spinner hidden"></span>
+                </button>
+            </form>
+
+            <!-- Forgot Password Form -->
+            <form id="forgotPasswordForm" class="hidden">
+                <p class="info-text">Enter the email linked to your account and we'll send a password reset link.</p>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="forgotPasswordEmail" class="form-input" placeholder="your@email.com" required>
+                </div>
+
+                <button type="submit" class="btn-primary" id="forgotPasswordButton">
+                    <span id="forgotPasswordButtonText">Send Reset Link</span>
+                    <span id="forgotPasswordSpinner" class="spinner hidden"></span>
+                </button>
+
+                <button type="button" class="login-link" id="forgotBackToLogin" style="display:block; margin:16px auto 0; text-align:center; background:none; border:none;">
+                    ← Back to sign in
+                </button>
+            </form>
+
+            <!-- Reset Password Form (after email link) -->
+            <form id="resetPasswordForm" class="hidden">
+                <p class="info-text">You're almost there! Create a new password for your account.</p>
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" id="resetNewPassword" class="form-input" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm New Password</label>
+                    <input type="password" id="resetConfirmPassword" class="form-input" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-primary" id="resetPasswordButton">
+                    <span id="resetPasswordButtonText">Update Password</span>
+                    <span id="resetPasswordSpinner" class="spinner hidden"></span>
+                </button>
+
+                <button type="button" class="login-link" id="resetBackToLogin" style="display:block; margin:16px auto 0; text-align:center; background:none; border:none;">
+                    ← Back to sign in
+                </button>
+            </form>
+
+            <!-- Toggle between login and signup -->
+            <p class="login-note">
+                <span id="toggleText">Don't have an account?</span>
+                <a class="login-link" id="toggleLink">Sign up</a>
+            </p>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

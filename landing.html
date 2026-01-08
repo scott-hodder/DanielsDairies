@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - Daniel's Dairies</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/landing.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="/landing.html" class="header-logo">
+                    <img src="/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
+                    <div>
+                        <h1 class="header-title">Daniel's Dairies</h1>
+                        <p class="header-subtitle" id="headerSubtitle">Your journey together</p>
+                    </div>
+                </a>
+            </div>
+            <div class="header-right">
+                <button class="btn-header" id="dashboardHomeButton">
+                    Dashboard
+                </button>
+                <button class="btn-header" id="profileButton">
+                    Profile
+                </button>
+                <button class="btn-header" id="logoutButton">Logout</button>
+                <button class="btn-header settings" id="adminButton" style="display: none;">
+                    Admin Centre
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            Loading...
+        </div>
+
+        <!-- Welcome Section -->
+        <div id="welcomeSection" class="welcome-section hidden">
+            <span class="welcome-icon">🌱</span>
+            <h1 class="welcome-greeting" id="welcomeGreeting">Welcome back</h1>
+            <p class="welcome-message">Today is a good day to check in. Every small step forward matters.</p>
+        </div>
+
+        <!-- Child Selection -->
+        <div id="childSelection" class="child-selection hidden">
+            <h2 class="section-title">Who's using Daniel's Dairies today?</h2>
+            <div class="children-list" id="childrenList"></div>
+        </div>
+
+        <!-- Next Step Section -->
+        <div id="nextStepSection" class="next-step-section">
+            <h2 class="next-step-title" id="nextStepTitle">Loading...</h2>
+            <p class="next-step-subtitle" id="nextStepSubtitle">Continue your journey</p>
+            
+            <div class="module-card-large" id="currentModuleCard">
+                <h3 class="module-title-large" id="moduleTitle">
+                    <span id="moduleEmoji">📖</span>
+                    <span id="moduleTitleText">Loading...</span>
+                </h3>
+                <p class="module-description" id="moduleDescription">Loading module information...</p>
+                
+                <div class="module-why" id="moduleWhy">
+                    <strong>💡 Why this module?</strong> <span id="moduleReason">Loading...</span>
+                </div>
+
+                <div class="module-guidance">
+                    <div class="guidance-item">
+                        <span>⏱️</span>
+                        <span>5–10 min per activity</span>
+                    </div>
+                    <div class="guidance-item">
+                        <span>👪</span>
+                        <span>Best done together</span>
+                    </div>
+                </div>
+                
+                <div class="progress-info" id="progressInfo">
+                    <p class="progress-text" id="progressText">Loading progress...</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <button class="btn-continue" id="continueButton">Continue Module</button>
+                <button class="btn-browse" id="browseButton">Browse All Modules</button>
+
+                <div class="reassurance-message">
+                    <p class="reassurance-text">💜 You don't need to do everything at once. Even one small activity is enough.</p>
+                </div>
+            </div>
+
+            <!-- Journey Progress -->
+            <div class="journey-progress">
+                <h3 class="journey-title">
+                    <span>✨</span>
+                    <span>Your Journey This Week</span>
+                </h3>
+                <div class="journey-stats">
+                    <div class="journey-stat">
+                        <span class="journey-stat-value" id="skillsPracticed">0</span>
+                        <span class="journey-stat-label">Skills explored</span>
+                    </div>
+                    <div class="journey-stat">
+                        <span class="journey-stat-value" id="toolsLearned">0</span>
+                        <span class="journey-stat-label">Tools introduced</span>
+                    </div>
+                    <div class="journey-stat">
+                        <span class="journey-stat-value" id="activitiesCompleted">0</span>
+                        <span class="journey-stat-label">Activities completed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="btn-quick-action" id="viewDashboardBtn" style="width: 100%;">
+                    📊 View Full Dashboard
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { checkAuth, signOut } from './src/auth.js'
+        import { getChildren, getModules, getChildModules, getParentProfile } from './src/database.js'
+
+        let currentUser = null
+        let children = []
+        let selectedChild = null
+        let modules = []
+        let childModules = []
+
+        // Calming welcome messages
+        const welcomeMessages = [
+            "Today is a good day to check in. Every small step forward matters.",
+            "You're doing important work. Take a moment to breathe.",
+            "Progress isn't always visible, but it's always happening.",
+            "Small moments of connection create lasting change.",
+            "Every conversation is a step toward understanding.",
+            "You don't have to be perfect. You just have to be present.",
+            "Growth happens in the quiet moments too.",
+            "Your effort matters more than you know.",
+            "One step at a time is still moving forward.",
+            "Today's small win is tomorrow's foundation.",
+            "Patience with yourself creates space for growth.",
+            "You're building something meaningful, one day at a time.",
+            "Every moment of care counts.",
+            "Trust the process. You're exactly where you need to be.",
+            "Small steps lead to big transformations."
+        ]
+
+        // Module reasoning - why each module matters
+        const moduleReasons = {
+            'MODULE1': 'This helps children recognize their strengths and understand how their brain works — a great foundation before exploring emotions like worry or anger.',
+            'MODULE2': 'Building calm strategies early helps children feel safe when big emotions arrive. This creates tools they can use anywhere.',
+            'MODULE3': 'Understanding friendship helps children navigate social situations with confidence and know who their true supporters are.',
+            'MODULE4': 'Learning to recognize and manage anger prevents overwhelm and builds emotional regulation skills for life.',
+            'MODULE5': 'School anxiety is common. This module normalizes worry and teaches practical strategies to feel more in control.',
+            'MODULE6': 'Self-worth is the foundation for resilience. This helps children see their value beyond achievements or comparisons.',
+            'MODULE7': 'Processing loss and change is essential for emotional health. This provides a safe space to explore difficult feelings.',
+            'MODULE8': 'Social skills build connection and belonging. This helps children read situations and build meaningful friendships.'
+        }
+
+        // DOM Elements
+        const loadingState = document.getElementById('loadingState')
+        const welcomeSection = document.getElementById('welcomeSection')
+        const childSelection = document.getElementById('childSelection')
+        const nextStepSection = document.getElementById('nextStepSection')
+        const childrenList = document.getElementById('childrenList')
+        const logoutButton = document.getElementById('logoutButton')
+        const adminButton = document.getElementById('adminButton')
+        const dashboardHomeButton = document.getElementById('dashboardHomeButton')
+        const profileButton = document.getElementById('profileButton')
+        const welcomeGreeting = document.getElementById('welcomeGreeting')
+        const nextStepTitle = document.getElementById('nextStepTitle')
+        const continueButton = document.getElementById('continueButton')
+        const browseButton = document.getElementById('browseButton')
+        const viewDashboardBtn = document.getElementById('viewDashboardBtn')
+
+        // Initialize
+        async function init() {
+            try {
+                // Check authentication
+                const session = await checkAuth()
+                if (!session) {
+                    window.location.href = '/'
+                    return
+                }
+
+                currentUser = session.user
+                
+                // Get user's email for greeting (use first part of email as name)
+                if (currentUser && currentUser.email) {
+                    const emailName = currentUser.email.split('@')[0]
+                    const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1)
+                    welcomeGreeting.textContent = `Welcome back, ${displayName}`
+                }
+
+                await setupAdminAccess(currentUser.id)
+
+                // Load children (pass user ID)
+                children = await getChildren(currentUser.id)
+                
+                // Load modules
+                modules = await getModules()
+
+                // Show welcome and child selection
+                loadingState.classList.add('hidden')
+                welcomeSection.classList.remove('hidden')
+                childSelection.classList.remove('hidden')
+
+                // Display random welcome message
+                const randomMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)]
+                document.querySelector('.welcome-message').textContent = randomMessage
+
+                // Render children
+                renderChildren()
+
+            } catch (error) {
+                console.error('Initialization error:', error)
+                alert('Failed to load. Please try again.')
+                window.location.href = '/'
+            }
+        }
+
+        // Render children selection
+        function renderChildren() {
+            childrenList.innerHTML = ''
+
+            children.forEach(child => {
+                const button = document.createElement('button')
+                button.className = 'child-button'
+                button.innerHTML = `
+                    <span class="child-avatar">${child.avatar || '👤'}</span>
+                    <span>${child.name}</span>
+                `
+                button.addEventListener('click', () => selectChild(child))
+                childrenList.appendChild(button)
+            })
+        }
+
+        // Select child and show next step
+        async function selectChild(child) {
+            selectedChild = child
+            
+            // Hide selection, show loading
+            childSelection.classList.add('hidden')
+            loadingState.classList.remove('hidden')
+
+            try {
+                // Load child's modules
+                childModules = await getChildModules(child.id)
+                
+                // Find next module to work on
+                const nextModule = findNextModule()
+                
+                // Update UI
+                loadingState.classList.add('hidden')
+                nextStepSection.classList.add('active')
+                
+                if (nextModule) {
+                    displayNextModule(nextModule)
+                } else {
+                    displayNoModules()
+                }
+
+                // Update journey stats
+                updateJourneyStats()
+
+            } catch (error) {
+                console.error('Error loading child data:', error)
+                alert('Failed to load child data. Please try again.')
+                window.location.reload()
+            }
+        }
+
+        // Find the next module to work on
+        function findNextModule() {
+            // First, find in-progress modules
+            const inProgress = childModules
+                .filter(cm => !cm.is_completed && cm.stars_earned > 0)
+                .map(cm => {
+                    const module = modules.find(m => m.id === cm.module_id)
+                    return { ...module, childModule: cm }
+                })
+                .filter(m => m && m.is_active)
+
+            if (inProgress.length > 0) {
+                return inProgress[0]
+            }
+
+            // If no in-progress, find first available module
+            const available = modules
+                .filter(m => m.is_active)
+                .map(m => {
+                    const cm = childModules.find(cm => cm.module_id === m.id)
+                    return { ...m, childModule: cm }
+                })
+                .filter(m => !m.childModule || !m.childModule.is_completed)
+
+            return available[0] || null
+        }
+
+        // Display next module
+        function displayNextModule(module) {
+            nextStepTitle.textContent = `${selectedChild.name}'s next step`
+            
+            const moduleEmojis = {
+                'MODULE1': '🧠',
+                'MODULE2': '🌊',
+                'MODULE3': '🤝',
+                'MODULE4': '🌋',
+                'MODULE5': '🏫',
+                'MODULE6': '💪',
+                'MODULE7': '💙',
+                'MODULE8': '🐕'
+            }
+
+            const workbookId = module.workbook_id || module.id || 'MODULE1'
+            document.getElementById('moduleEmoji').textContent = moduleEmojis[workbookId] || '📖'
+            document.getElementById('moduleTitleText').textContent = module.title || 'Module'
+            document.getElementById('moduleDescription').textContent = module.description || 'An interactive workbook to help build emotional skills and understanding.'
+
+            // Add module reasoning
+            const reasonText = moduleReasons[workbookId] || 'This module builds important emotional skills and understanding.'
+            document.getElementById('moduleReason').textContent = reasonText
+
+            // Progress info
+            const progressInfo = document.getElementById('progressInfo')
+            const progressBar = document.getElementById('progressBar')
+            const progressText = document.getElementById('progressText')
+
+            if (module.childModule && module.childModule.stars_earned > 0) {
+                const totalActivities = module.total_stars || 100
+                const activitiesCompleted = Math.round((module.childModule.stars_earned / totalActivities) * 8) // Estimate 8 activities
+                const percentage = Math.round((module.childModule.stars_earned / totalActivities) * 100)
+                progressBar.style.width = percentage + '%'
+                progressText.textContent = `${activitiesCompleted} of 8 activities completed`
+                continueButton.textContent = '▶️ Continue Module'
+            } else {
+                progressBar.style.width = '0%'
+                progressText.textContent = 'Not started yet • 0 of 8 activities completed'
+                continueButton.textContent = '🌟 Start Module'
+            }
+
+            // Button actions
+            continueButton.onclick = () => {
+                // Map module codes to files (same as dashboard)
+                const moduleFiles = {
+                    'MODULE1': 'module1.html',
+                    'MODULE2': 'module2.html',
+                    'MODULE3': 'module3.html',
+                    'MODULE4': 'module4.html',
+                    'MODULE5': 'module5.html',
+                    'MODULE6': 'module6.html',
+                    'MODULE7': 'module7.html',
+                    'MODULE8': 'module8.html'
+                }
+                
+                const moduleFile = moduleFiles[module.code]
+                if (moduleFile) {
+                    window.location.href = `/modules/${moduleFile}?childId=${selectedChild.id}`
+                } else {
+                    // Fallback to dashboard if module file not found
+                    window.location.href = `/dashboard.html?childId=${selectedChild.id}`
+                }
+            }
+
+            browseButton.onclick = () => {
+                window.location.href = `/dashboard.html?childId=${selectedChild.id}`
+            }
+
+            viewDashboardBtn.onclick = () => {
+                window.location.href = `/dashboard.html?childId=${selectedChild.id}`
+            }
+        }
+
+        // Display when no modules available
+        function displayNoModules() {
+            nextStepTitle.textContent = `Welcome, ${selectedChild.name}!`
+            document.getElementById('moduleEmoji').textContent = '🌟'
+            document.getElementById('moduleTitleText').textContent = 'Ready to Begin'
+            document.getElementById('moduleDescription').textContent = 'Let\'s explore the available modules and start your journey to understanding emotions and building skills.'
+            
+            document.getElementById('progressInfo').style.display = 'none'
+            continueButton.textContent = '📚 Browse Modules'
+            continueButton.onclick = () => {
+                window.location.href = `/dashboard.html?childId=${selectedChild.id}`
+            }
+            browseButton.style.display = 'none'
+        }
+
+        // Update journey stats
+        function updateJourneyStats() {
+            const completedCount = childModules.filter(cm => cm.is_completed).length
+            const totalStars = childModules.reduce((sum, cm) => sum + (cm.stars_earned || 0), 0)
+            
+            document.getElementById('activitiesCompleted').textContent = completedCount
+            document.getElementById('skillsPracticed').textContent = Math.min(totalStars, 99)
+            document.getElementById('toolsLearned').textContent = completedCount
+        }
+
+        async function setupAdminAccess(userId) {
+            if (!adminButton) return
+            try {
+                const profile = await getParentProfile(userId)
+                if (profile?.is_admin) {
+                    adminButton.style.display = 'block'
+                } else {
+                    adminButton.style.display = 'none'
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error)
+            }
+        }
+
+        // Header button handlers
+        if (dashboardHomeButton) {
+            dashboardHomeButton.addEventListener('click', () => {
+                window.location.href = '/dashboard.html'
+            })
+        }
+
+        if (profileButton) {
+            profileButton.addEventListener('click', () => {
+                window.location.href = '/dashboard.html'
+            })
+        }
+
+        if (adminButton) {
+            adminButton.addEventListener('click', () => {
+                window.location.href = '/admin.html'
+            })
+        }
+
+        if (logoutButton) {
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    await signOut()
+                    window.location.href = '/'
+                } catch (error) {
+                    console.error('Logout error:', error)
+                    alert('Failed to logout. Please try again.')
+                }
+            })
+        }
+
+        // Initialize app
+        init()
+    </script>
+</body>
+</html>

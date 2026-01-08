@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Module...</title>
+  
+  <!-- Preload common fonts used by modules -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Module stylesheets -->
+  <link rel="stylesheet" href="/assets/module-theme.css">
+  <link rel="stylesheet" href="/assets/module-header.css">
+  <link rel="stylesheet" href="/assets/module-base.css">
+  
+  <style>
+    .loader-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Nunito', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f5f3ed 0%, #e8e4d9 100%);
+    }
+    
+    .loader-box {
+      text-align: center;
+    }
+    
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e8e4d9;
+      border-top-color: #405878;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loader-text {
+      color: #405878;
+    }
+    
+    .error-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      font-family: 'Nunito', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f5f3ed 0%, #e8e4d9 100%);
+    }
+    
+    .error-box {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      max-width: 450px;
+      text-align: center;
+    }
+    
+    .error-box h2 {
+      color: #264653;
+      margin-bottom: 12px;
+    }
+    
+    .error-box p {
+      color: #666;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    
+    .error-box button {
+      padding: 12px 24px;
+      background: #405878;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 0 8px;
+    }
+    
+    .error-box button:hover {
+      background: #2d3e50;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader" class="loader-container">
+    <div class="loader-box">
+      <div class="spinner"></div>
+      <p class="loader-text">Loading module...</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from './src/supabaseClient.js';
+    
+    // =========================================
+    // 1. SETUP GLOBAL FUNCTIONS FIRST
+    // =========================================
+    
+    // Get URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const moduleCode = params.get('code');
+    const childId = params.get('childId');
+    const moduleId = params.get('moduleId');
+    const parentUserId = params.get('parentUserId');
+    
+    // Set globals
+    window.supabase = supabase;
+    window.childId = childId;
+    window.moduleId = moduleId;
+    window.parentUserId = parentUserId;
+    
+    // Internal state
+    const _state = { 
+      childId: childId, 
+      currentChild: null 
+    };
+    
+    // Database helpers
+    async function _getChild(id) {
+      const { data, error } = await supabase
+        .from('children')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    
+    async function _updateStars(id, stars) {
+      const { data, error } = await supabase
+        .from('children')
+        .update({ stars })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    
+    // =========================================
+    // 2. DEFINE ALL MODULE FUNCTIONS GLOBALLY
+    // =========================================
+    
+    window.initializeModule = async function(workbookId) {
+      if (!_state.childId) {
+        console.warn('No childId provided');
+        return null;
+      }
+      try {
+        _state.currentChild = await _getChild(_state.childId);
+        const subtitle = document.getElementById('headerSubtitle');
+        if (subtitle && _state.currentChild?.name) {
+          subtitle.textContent = _state.currentChild.name + "'s Journey";
+        }
+        return _state.currentChild;
+      } catch (e) {
+        console.error('initializeModule error:', e);
+        return null;
+      }
+    };
+    
+    window.loadStarsFromDB = async function() {
+      if (!_state.childId) return 0;
+      try {
+        _state.currentChild = await _getChild(_state.childId);
+        return _state.currentChild?.stars || 0;
+      } catch (e) {
+        console.error('loadStarsFromDB error:', e);
+        return 0;
+      }
+    };
+    
+    window.saveStarsToDB = async function(totalStars) {
+      if (!_state.childId) return;
+      try {
+        await _updateStars(_state.childId, totalStars);
+      } catch (e) {
+        console.error('saveStarsToDB error:', e);
+      }
+    };
+    
+    window.awardSingleStar = async function() {
+      if (!_state.childId) return 0;
+      try {
+        const child = await _getChild(_state.childId);
+        const newStars = (child.stars || 0) + 1;
+        const updated = await _updateStars(_state.childId, newStars);
+        _state.currentChild = updated;
+        return updated.stars;
+      } catch (e) {
+        console.error('awardSingleStar error:', e);
+        throw e;
+      }
+    };
+    
+    window.getChildName = function() {
+      return _state.currentChild?.name || '';
+    };
+    
+    window.getChildId = function() {
+      return _state.childId;
+    };
+    
+    window.resolveChildDisplayName = function(opts = {}) {
+      const fallback = opts?.fallback || 'Friend';
+      if (opts?.preferredName?.trim()) return opts.preferredName.trim();
+      if (_state.currentChild?.name?.trim()) return _state.currentChild.name.trim();
+      try {
+        const stored = localStorage.getItem('moduleChildName');
+        if (stored?.trim()) return stored.trim();
+      } catch(e) {}
+      return fallback;
+    };
+    
+    window.completeModuleDB = async function(modCode) {
+      if (!_state.childId) throw new Error('No child ID');
+      const { data: mod, error: modErr } = await supabase
+        .from('modules')
+        .select('id')
+        .eq('code', modCode)
+        .single();
+      if (modErr || !mod) throw new Error('Module not found');
+      
+      const { error } = await supabase
+        .from('child_module_progress')
+        .upsert({
+          child_id: _state.childId,
+          module_id: mod.id,
+          completed: true,
+          completed_at: new Date().toISOString()
+        }, { onConflict: 'child_id,module_id' });
+      
+      if (error) throw error;
+      return true;
+    };
+    
+    window.initModuleHeader = function(config) {
+      const { onNext, onPrev, onPrint, onShowStars, initialPage = { current: 1, total: 1 } } = config || {};
+      let page = initialPage.current || 1;
+      let total = initialPage.total || 1;
+      let stars = 0;
+      
+      const root = document.getElementById('moduleHeaderRoot');
+      if (!root) {
+        console.warn('moduleHeaderRoot not found');
+        return { updatePage(){}, updateStars(){} };
+      }
+      
+      function render() {
+        root.innerHTML = `
+          <header class="module-header">
+            <div class="module-header__inner">
+              <div class="module-header__nav">
+                <button class="module-header__btn" id="mh-prev" ${page <= 1 ? 'disabled' : ''}>← Back</button>
+                <span class="module-header__page">Page ${page} of ${total}</span>
+                <button class="module-header__btn" id="mh-next" ${page >= total ? 'disabled' : ''}>Next →</button>
+              </div>
+              <div class="module-header__actions">
+                <button class="module-header__star" id="mh-star-btn">
+                  <span class="star-icon">⭐</span>
+                  <span id="mh-stars">${stars}</span>
+                </button>
+                <button class="module-header__btn module-header__home" id="mh-home">🏠 Home</button>
+                <button class="module-header__btn module-header__print" id="mh-print">🖨️</button>
+              </div>
+            </div>
+          </header>
+          <div class="module-header-spacer"></div>
+        `;
+        
+        document.getElementById('mh-prev')?.addEventListener('click', () => onPrev?.());
+        document.getElementById('mh-next')?.addEventListener('click', () => onNext?.());
+        document.getElementById('mh-print')?.addEventListener('click', () => onPrint ? onPrint() : window.print());
+        document.getElementById('mh-star-btn')?.addEventListener('click', () => onShowStars?.());
+        document.getElementById('mh-home')?.addEventListener('click', () => {
+          window.location.href = _state.childId 
+            ? '/dashboard.html?childId=' + _state.childId 
+            : '/dashboard.html';
+        });
+      }
+      
+      render();
+      
+      return {
+        updatePage(c, t, opts = {}) { 
+          page = c; 
+          total = t; 
+          render(); 
+        },
+        updateStars(s) { 
+          stars = s; 
+          const el = document.getElementById('mh-stars'); 
+          if (el) el.textContent = s; 
+        }
+      };
+    };
+    
+    console.log('✅ Module helper functions ready');
+    
+    // =========================================
+    // 3. LOAD AND INJECT MODULE CONTENT
+    // =========================================
+    
+    function showError(title, message) {
+      document.body.innerHTML = `
+        <div class="error-container">
+          <div class="error-box">
+            <h2>⚠️ ${title}</h2>
+            <p>${message}</p>
+            <button onclick="history.back()">Go Back</button>
+            <button onclick="location.reload()">Retry</button>
+          </div>
+        </div>
+      `;
+    }
+    
+    async function loadModule() {
+      if (!moduleCode) {
+        showError('No Module Specified', 'Please provide a module code in the URL.');
+        return;
+      }
+      
+      try {
+        // Fetch module from database
+        const { data: module, error } = await supabase
+          .from('modules')
+          .select('html_content, title, code')
+          .eq('code', moduleCode)
+          .single();
+        
+        if (error) throw new Error(error.message);
+        if (!module?.html_content) throw new Error('Module content not found');
+        
+        // Update page title
+        document.title = module.title || 'Module';
+        
+        // Process the HTML content
+        let html = module.html_content;
+        
+        // Parse the HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Extract and apply styles
+        doc.querySelectorAll('style').forEach(style => {
+          const newStyle = document.createElement('style');
+          newStyle.textContent = style.textContent;
+          document.head.appendChild(newStyle);
+        });
+        
+        // Extract additional CSS links
+        doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+          const href = link.getAttribute('href');
+          if (href && !document.querySelector(`link[href="${href}"]`)) {
+            document.head.appendChild(link.cloneNode(true));
+          }
+        });
+        
+        // Copy body classes/attributes
+        Array.from(doc.body.attributes).forEach(attr => {
+          document.body.setAttribute(attr.name, attr.value);
+        });
+        
+        // Get all scripts before removing them
+        const scripts = [];
+        doc.querySelectorAll('script').forEach(script => {
+          // Skip external scripts that will fail (our old imports)
+          const src = script.getAttribute('src');
+          if (src && (src.includes('module-response-tracker') || src.includes('supabaseClient'))) {
+            console.log('Skipping external script:', src);
+            return;
+          }
+          
+          if (script.textContent.trim()) {
+            // Remove import statements from inline scripts
+            let code = script.textContent;
+            
+            // Remove all import statements
+            code = code.replace(/^\s*import\s+.*?from\s+['"][^'"]*['"];?\s*$/gm, '');
+            code = code.replace(/^\s*import\s+['"][^'"]*['"];?\s*$/gm, '');
+            
+            scripts.push({
+              type: script.getAttribute('type') || 'text/javascript',
+              code: code
+            });
+          }
+          script.remove();
+        });
+        
+        // Hide loader and inject body content
+        document.getElementById('loader').style.display = 'none';
+        
+        // Insert the body HTML
+        const contentDiv = document.createElement('div');
+        contentDiv.innerHTML = doc.body.innerHTML;
+        
+        while (contentDiv.firstChild) {
+          document.body.appendChild(contentDiv.firstChild);
+        }
+        
+        // Execute scripts after DOM is ready
+        for (const script of scripts) {
+          try {
+            // Execute as regular script (functions are already global)
+            const scriptEl = document.createElement('script');
+            scriptEl.textContent = script.code;
+            document.body.appendChild(scriptEl);
+          } catch (e) {
+            console.error('Script execution error:', e);
+          }
+        }
+        
+        console.log('✅ Module loaded successfully');
+        
+      } catch (err) {
+        console.error('Module load error:', err);
+        showError('Failed to Load Module', err.message);
+      }
+    }
+    
+    // Start loading
+    loadModule();
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "foundational-minds-modules",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Interactive learning modules with Supabase integration",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "migrate-modules": "node migrate-modules-to-db.js",
+    "sync-modules": "node sync-modules-from-db.js",
+    "upload-ai-config": "node upload-ai-config.js"
+  },
+  "dependencies": {
+    "@stripe/stripe-js": "^8.6.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "bcryptjs": "^3.0.3"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.3",
+    "vite": "^5.0.0"
+  }
+}

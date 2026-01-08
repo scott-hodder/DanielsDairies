@@ -1,0 +1,239 @@
+<!-- Daniel's Diaries - Module 3 (Content-Only) -->
+<article class="dd-module" data-module data-module-code="MODULE03" data-runtime="1">
+
+  <!-- Optional: module header metadata for your quick-jump menu -->
+  <header class="dd-module-header">
+    <h1 class="dd-title">Daniel's Diaries: The Sensory Superpower Lab</h1>
+    <p class="dd-subtitle">Module 3</p>
+    <p class="dd-meta">
+      <span class="dd-chip">Ages 8–13</span>
+      <span class="dd-chip">Sensory Integration</span>
+    </p>
+  </header>
+
+  <!-- PAGE 0: Cover -->
+  <section class="dd-page" data-page data-page-title="Cover" data-page-icon="🌟">
+    <div class="dd-hero">
+      <div class="dd-emoji">🌟</div>
+      <h2 class="dd-h2">The Sensory Superpower Lab</h2>
+      <p class="dd-quote">“My senses help me experience the world… but sometimes, it’s a LOT.”</p>
+    </div>
+
+    <div class="dd-card">
+      <label class="dd-label" for="userName">This Sensory Scientist Journey belongs to:</label>
+      <input
+        id="userName"
+        class="dd-input dd-input--xl"
+        type="text"
+        placeholder="Your Name"
+        data-bind="userName"
+      />
+    </div>
+  </section>
+
+  <!-- PAGE 1: Welcome -->
+  <section class="dd-page" data-page data-page-title="Welcome" data-page-icon="🌈">
+    <h2 class="dd-h2">Welcome to Your Sensory Superpower Lab!</h2>
+
+    <div class="dd-card dd-callout dd-callout--success">
+      <h3 class="dd-h3">Your senses are superpowers</h3>
+      <p>
+        Your brain processes millions of sensory messages every day. Some brains experience sensory input
+        differently — that’s not a problem, it can be a superpower.
+      </p>
+      <p>
+        This module helps you understand how YOUR brain processes sensory information and gives you tools
+        to feel your best.
+      </p>
+    </div>
+
+    <div class="dd-grid">
+      <div class="dd-card">
+        <h3 class="dd-h3">What you’ll learn</h3>
+        <ul class="dd-list">
+          <li>How your senses work (all of them!)</li>
+          <li>What makes your brain feel calm or “zappy”</li>
+          <li>Tools to help you regulate</li>
+          <li>How to create your comfort space</li>
+          <li>Ways to communicate your sensory needs</li>
+        </ul>
+      </div>
+
+      <div class="dd-card">
+        <h3 class="dd-h3">What you’ll do</h3>
+        <ul class="dd-list">
+          <li>Read Daniel’s sensory story</li>
+          <li>Become a sensory detective</li>
+          <li>Design your Comfort Cave</li>
+          <li>Learn about hidden senses</li>
+          <li>Build your Sensory First Aid Kit</li>
+          <li>Create your Comfort Code</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="dd-banner">
+      <p class="dd-banner-title">Your senses are YOURS — let’s celebrate them!</p>
+      <p>There’s no “right” way to experience the world.</p>
+    </div>
+  </section>
+
+  <!-- PAGE 2: Story + reflection -->
+  <section class="dd-page" data-page data-page-title="Story" data-page-icon="📖">
+    <h2 class="dd-h2">Daniel’s Sensory Adventure</h2>
+
+    <div class="dd-card dd-callout dd-callout--info">
+      <p>Let’s read about Daniel’s experience at the school cafeteria…</p>
+    </div>
+
+    <div class="dd-card">
+      <div class="dd-story">
+        <p>Daniel stood at the cafeteria door and took a deep breath. <em>Big mistake.</em></p>
+        <p>The smell hit him first — a weird mix of pizza, cleaning spray, and something he couldn’t identify.</p>
+        <p>Then came the noise: chairs scraping, trays clattering, kids laughing and shouting.</p>
+        <p>Daniel’s heart started beating faster. Everything felt too bright, too loud, too much.</p>
+        <p>Then he remembered his toolkit: headphones and a fidget. Slowly… the room became manageable.</p>
+        <p><strong>He’d made it through.</strong></p>
+      </div>
+    </div>
+
+    <div class="dd-card">
+      <h3 class="dd-h3">Reflection Questions</h3>
+
+      <label class="dd-label" for="story_overload">What made Daniel feel overloaded?</label>
+      <textarea
+        id="story_overload"
+        class="dd-textarea"
+        rows="2"
+        placeholder="The loud noises, bright lights, smells..."
+        data-bind="story_overload"
+      ></textarea>
+
+      <label class="dd-label" for="story_relate">Have you ever felt like Daniel? When?</label>
+      <textarea
+        id="story_relate"
+        class="dd-textarea"
+        rows="3"
+        placeholder="Describe a time you felt sensory overload..."
+        data-bind="story_relate"
+      ></textarea>
+
+      <label class="dd-label" for="story_tools">What helped Daniel recover?</label>
+      <textarea
+        id="story_tools"
+        class="dd-textarea"
+        rows="2"
+        placeholder="His headphones, fidget cube..."
+        data-bind="story_tools"
+      ></textarea>
+    </div>
+
+    <div class="dd-card dd-check">
+      <label class="dd-check-label">
+        <input type="checkbox" data-activity="story_complete" />
+        <span>✓ I’ve read Daniel’s Sensory Adventure</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- PAGE 3: Sensory Detective (converted to a declarative component) -->
+  <section class="dd-page" data-page data-page-title="Sensory Detective" data-page-icon="🔍">
+    <h2 class="dd-h2">Activity: Sensory Detective Mission</h2>
+
+    <div class="dd-card dd-callout dd-callout--warning">
+      <p><strong>Discover which sensory inputs make YOUR brain feel calm or zappy.</strong></p>
+    </div>
+
+    <!-- This block is intentionally declarative: your runtime renders the options -->
+    <div
+      class="dd-card"
+      data-component="sensory-rating"
+      data-bind="sensory_detective"
+      data-scale="like,dislike,depends,calm,zippy"
+    >
+      <h3 class="dd-h3">Rate these inputs</h3>
+
+      <div class="dd-rating-group" data-rating-group data-title="Visual" data-items="Bright lights|Screen time|Busy patterns|Dark rooms|Nature/outdoors|Flashing lights"></div>
+      <div class="dd-rating-group" data-rating-group data-title="Auditory" data-items="Whispering|Loud music|Alarms/sirens|Nature sounds|Crowds talking|Silence"></div>
+      <div class="dd-rating-group" data-rating-group data-title="Smell" data-items="Popcorn|Perfume/cologne|Flowers|Cleaning products|Food cooking|Fresh air"></div>
+      <div class="dd-rating-group" data-rating-group data-title="Taste" data-items="Crunchy foods|Spicy foods|Sweet treats|Sour flavors|Smooth textures|Mixed textures"></div>
+      <div class="dd-rating-group" data-rating-group data-title="Touch" data-items="Clothing tags|Hugs|Sand/water|Soft blankets|Sticky things|Temperature changes"></div>
+      <div class="dd-rating-group" data-rating-group data-title="Movement" data-items="Swinging|Spinning|Jumping|Sitting still|Walking|Dancing"></div>
+
+      <p class="dd-help">Your app should render buttons and save selections into <code>sensory_detective</code>.</p>
+    </div>
+
+    <div class="dd-card">
+      <h3 class="dd-h3">What I discovered</h3>
+      <textarea
+        class="dd-textarea"
+        rows="4"
+        placeholder="What patterns did you notice? What surprised you?"
+        data-bind="detective_discovery"
+      ></textarea>
+    </div>
+
+    <div class="dd-card dd-check">
+      <label class="dd-check-label">
+        <input type="checkbox" data-activity="detective_complete" />
+        <span>✓ I’ve completed my Sensory Detective Mission</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- PAGE 4: Comfort Cave -->
+  <section class="dd-page" data-page data-page-title="Comfort Cave" data-page-icon="🏰">
+    <h2 class="dd-h2">Activity: Build My Comfort Cave</h2>
+
+    <div class="dd-card dd-callout dd-callout--success">
+      <p><strong>Design a cozy space that feels just right for YOUR brain.</strong></p>
+    </div>
+
+    <div class="dd-card">
+      <h3 class="dd-h3">My Comfort Cave Design</h3>
+      <textarea
+        class="dd-textarea"
+        rows="8"
+        placeholder="Describe your comfort cave… What’s in it?"
+        data-bind="comfort_cave_design"
+      ></textarea>
+    </div>
+
+    <div class="dd-grid">
+      <div class="dd-card">
+        <h3 class="dd-h3">Sounds I like</h3>
+        <textarea class="dd-textarea" rows="2" data-bind="cave_sounds"></textarea>
+      </div>
+      <div class="dd-card">
+        <h3 class="dd-h3">Things I like to touch</h3>
+        <textarea class="dd-textarea" rows="2" data-bind="cave_touch"></textarea>
+      </div>
+      <div class="dd-card">
+        <h3 class="dd-h3">Lighting I prefer</h3>
+        <textarea class="dd-textarea" rows="2" data-bind="cave_lighting"></textarea>
+      </div>
+      <div class="dd-card">
+        <h3 class="dd-h3">Colors that feel good</h3>
+        <textarea class="dd-textarea" rows="2" data-bind="cave_colors"></textarea>
+      </div>
+    </div>
+
+    <div class="dd-card dd-check">
+      <label class="dd-check-label">
+        <input type="checkbox" data-activity="comfort_cave_complete" />
+        <span>✓ I’ve designed my Comfort Cave</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- Optional: actions your runtime can wire -->
+  <footer class="dd-module-footer">
+    <button type="button" class="dd-btn" data-action="award-star" data-amount="1">
+      Earn a Star ⭐
+    </button>
+    <button type="button" class="dd-btn dd-btn--primary" data-action="complete-module">
+      Finish Module ✅
+    </button>
+  </footer>
+
+</article>

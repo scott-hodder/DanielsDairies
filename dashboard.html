@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel's Dairies - Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="/styles/dashboard.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="/dashboard.html" class="header-logo">
+                    <img src="/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
+                    <div>
+                        <h1 class="header-title">Daniel's Dairies</h1>
+                        <p class="header-subtitle" id="headerSubtitle">Welcome back!</p>
+                    </div>
+                </a>
+            </div>
+            <div class="header-right">
+                <button class="btn-header" id="dashboardHomeButton">
+                    Dashboard
+                </button>
+                <button class="btn-header" id="profileButton">
+                    Profile
+                </button>
+                <button class="btn-header" id="logoutButton">Logout</button>
+                <button class="btn-header settings" id="adminButton" style="display: none; margin-left: 12px;">
+                    Admin Centre
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            Loading...
+        </div>
+
+        <!-- Children List View -->
+        <div id="childrenView" class="hidden">
+            <!-- Welcome Header -->
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="font-size: 32px; color: #405878; font-weight: 700; margin-bottom: 8px;">Welcome to Your Family Dashboard</h1>
+                <p style="color: #4c6c96; font-size: 16px;">Select a child to view their progress and continue their learning journey</p>
+                
+                <!-- Login Streak Display -->
+                <div id="streakDisplay" class="streak-display" style="display: none;">
+                    <div class="streak-card">
+                        <div class="streak-icon">🔥</div>
+                        <div class="streak-info">
+                            <div class="streak-number" id="currentStreak">0</div>
+                            <div class="streak-label">day streak!</div>
+                        </div>
+                        <div class="streak-details">
+                            <div class="streak-stat">
+                                <span class="streak-value" id="longestStreak">0</span>
+                                <span class="streak-stat-label">longest</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="streak-message" id="streakMessage">Keep it going!</div>
+                </div>
+            </div>
+
+            <!-- Children Cards -->
+            <div style="margin-bottom: 48px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                    <h2 style="font-size: 20px; color: #405878; font-weight: 700; margin: 0;">Your Children</h2>
+                    <button id="addChildQuickBtn" class="add-child-quick-btn" type="button" title="Add new child">
+                        <span>➕ Add Child</span>
+                    </button>
+                </div>
+                <div class="children-grid" id="childrenGrid"></div>
+            </div>
+
+            <!-- Active Modules Section -->
+            <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                    <span style="font-size: 28px;">✅</span>
+                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin: 0;">Your Active Workbooks</h2>
+                </div>
+                <p style="color: #4c6c96; font-size: 15px; margin-bottom: 24px;">These workbooks are unlocked and ready for your children to explore</p>
+                <div class="modules-grid" id="parentUnlockedModulesGrid"></div>
+            </div>
+
+            <!-- Unlock More Modules CTA Section -->
+            <div class="unlock-more-section">
+                <div class="unlock-more-content">
+                    <div class="unlock-more-badge">✨ New Workbooks Available</div>
+                    <h2 class="unlock-more-title">Unlock More Learning Adventures</h2>
+                    <p class="unlock-more-description">Give your child access to our complete library of expert-designed workbooks. Each module builds confidence, emotional intelligence, and resilience through engaging stories and activities.</p>
+                    <div class="unlock-more-benefits">
+                        <div class="unlock-benefit">
+                            <span class="unlock-benefit-icon">🎯</span>
+                            <div>
+                                <strong>Expert-Designed Content</strong>
+                                <p>Created by child development specialists</p>
+                            </div>
+                        </div>
+                        <div class="unlock-benefit">
+                            <span class="unlock-benefit-icon">📈</span>
+                            <div>
+                                <strong>Track Progress</strong>
+                                <p>See your child's growth in real-time</p>
+                            </div>
+                        </div>
+                        <div class="unlock-benefit">
+                            <span class="unlock-benefit-icon">👨‍👩‍👧</span>
+                            <div>
+                                <strong>Parent Support Included</strong>
+                                <p>Coaching scripts and guidance for every module</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="moreModulesButton" class="unlock-more-cta">
+                        <span>🚀 Explore All Workbooks</span>
+                    </button>
+                    <p class="unlock-more-note">💎 One-time purchase • Lifetime access • No subscriptions</p>
+                </div>
+            </div>
+            
+            <!-- Hidden grid for locked modules (needed by JavaScript) -->
+            <div class="modules-grid" id="parentLockedModulesGrid" style="display: none;"></div>
+        </div>
+
+        <!-- Child Detail View -->
+        <div id="childDetailView" class="hidden">
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <div class="nav-tabs-content">
+                    <button class="nav-tab active" id="tabDashboard">
+                        🎯 Dashboard
+                    </button>
+                    <button class="nav-tab hidden" id="tabModules">
+                        📖 My Modules
+                    </button>
+                    <button class="nav-tab" id="tabLeaderboard">
+                        🏆 Leaderboard
+                    </button>
+                    <button class="nav-tab" id="tabSpendStars">
+                        🎁 Spend Stars
+                    </button>
+                    <button class="nav-tab" id="tabParentInsights">
+                        👨‍👩‍👧 Parent Insights
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboardTabContent">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-content">
+                            <div>
+                                <p class="stat-label">Total Stars</p>
+                                <h3 class="stat-value" id="totalStars">0</h3>
+                            </div>
+                            <span style="font-size: 32px;">⭐</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-content">
+                            <div>
+                                <p class="stat-label">Completed</p>
+                                <h3 class="stat-value"><span id="completedModules">0</span>/<span id="totalModules">0</span></h3>
+                            </div>
+                            <span style="font-size: 32px;">✓</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-content">
+                            <div>
+                                <p class="stat-label">Day Streak</p>
+                                <h3 class="stat-value" id="dayStreak">0</h3>
+                            </div>
+                            <span style="font-size: 32px;">🔥</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-content">
+                            <div>
+                                <p class="stat-label">Rank</p>
+                                <h3 class="stat-value" id="childRank">#-</h3>
+                            </div>
+                            <span style="font-size: 32px;">🏆</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-section">
+                    <h2 class="section-title">Progress</h2>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="progressBar" style="width: 0%;">
+                            <span class="progress-text" id="progressPercent">0%</span>
+                        </div>
+                    </div>
+                    <p class="progress-label"><span id="progressText">0 of 0</span> modules completed</p>
+                </div>
+
+                <!-- Modules List on Dashboard -->
+                <div class="progress-section" style="margin-top: 24px;">
+                    <h2 class="section-title" id="modulesTitle">Modules</h2>
+                    <p class="progress-label" style="margin-bottom: 16px;">Choose a workbook to start or continue.</p>
+                    <div class="module-category-tabs" id="modulesCategoryTabs"></div>
+                    <div class="modules-grid" id="modulesGrid"></div>
+                </div>
+            </div>
+
+            <!-- Modules Tab -->
+            <div id="modulesTabContent" class="hidden">
+                <div class="progress-section">
+                    <h2 class="section-title">Modules</h2>
+                    <p class="progress-label">Modules are shown on the main Dashboard tab for this child.</p>
+                </div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboardTabContent" class="hidden">
+                <div class="leaderboard-header">
+                    <h2 class="leaderboard-title">Leaderboard</h2>
+                    <p class="leaderboard-subtitle">See how you compare with other learners</p>
+                </div>
+
+                <div class="leaderboard-list" id="leaderboardList"></div>
+
+                <div class="leaderboard-footer">
+                    <span style="font-size: 24px;">👥</span>
+                    <p class="leaderboard-footer-text">Keep learning to climb the leaderboard!</p>
+                </div>
+            </div>
+
+            <!-- Spend Stars Tab -->
+            <div id="spendStarsTabContent" class="hidden">
+                <!-- Spendable Stars Display -->
+                <div style="background: linear-gradient(135deg, #4c6c96 0%, #405878 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; color: white; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 8px;">⭐</div>
+                    <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 4px;" id="spendableStarsDisplay">0</h2>
+                    <p style="opacity: 0.9; font-size: 14px;">Spendable Stars</p>
+                    <p style="opacity: 0.7; font-size: 12px; margin-top: 8px;">Total Stars Earned: <span id="totalStarsDisplay">0</span></p>
+                </div>
+
+                <!-- Rewards Section -->
+                <div style="margin-bottom: 32px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                        <h3 style="font-size: 20px; color: #405878; font-weight: 700; margin: 0;">Available Rewards</h3>
+                        <button id="addCustomRewardBtn" class="btn-header" style="background: #4c6c96; color: white; padding: 8px 16px; font-size: 14px;">
+                            ➕ Add Custom Reward
+                        </button>
+                    </div>
+                    
+                    <!-- Category Filter -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;" id="rewardCategoryTabs">
+                        <button class="reward-category-tab active" data-category="all">All</button>
+                        <button class="reward-category-tab" data-category="screen_time">📱 Screen Time</button>
+                        <button class="reward-category-tab" data-category="activities">🎪 Activities</button>
+                        <button class="reward-category-tab" data-category="treats">🍦 Treats</button>
+                        <button class="reward-category-tab" data-category="privileges">✨ Privileges</button>
+                        <button class="reward-category-tab" data-category="other">🎁 Other</button>
+                    </div>
+
+                    <!-- Rewards Grid -->
+                    <div class="rewards-grid" id="rewardsGrid"></div>
+                </div>
+
+                <!-- Purchase History -->
+                <div>
+                    <h3 style="font-size: 20px; color: #405878; font-weight: 700; margin-bottom: 16px;">Purchase History</h3>
+                    <div id="purchaseHistory"></div>
+                </div>
+            </div>
+
+            <!-- Parent Insights Tab -->
+            <div id="parentInsightsTabContent" class="hidden">
+                <div class="progress-section" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 24px; border: 2px solid #dee2e6;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <span style="font-size: 28px;">👨‍👩‍👧</span>
+                        <h2 class="section-title" style="margin: 0; color: #495057;">Parent Insights</h2>
+                    </div>
+                    <p style="color: #6c757d; margin-bottom: 20px; font-size: 14px;">Meaningful progress updates to help you support your child's journey</p>
+
+                    <div class="parent-insights-subtabs">
+                        <button class="parent-insights-subtab active" id="insightsOverviewTab">Insights Overview</button>
+                        <button class="parent-insights-subtab" id="weeklyCheckinTab">Weekly Check-In & Plan</button>
+                    </div>
+
+                    <div id="insightsOverviewPanel" class="insights-panel">
+                        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #495057; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span>📊</span> This Week's Activity
+                            </h3>
+                            <div id="weeklyActivity" style="color: #6c757d; font-size: 14px; line-height: 1.6;">
+                                <p style="margin: 8px 0;">Loading insights...</p>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                            <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                <h3 style="font-size: 16px; font-weight: 600; color: #495057; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                    <span>🎯</span> Skills Practiced
+                                </h3>
+                                <div id="skillsPracticed" style="color: #6c757d; font-size: 14px; line-height: 1.6;">
+                                    <p style="margin: 4px 0;">Loading...</p>
+                                </div>
+                            </div>
+                            
+                            <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                <h3 style="font-size: 16px; font-weight: 600; color: #495057; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                    <span>💭</span> Emotions Explored
+                                </h3>
+                                <div id="emotionsExplored" style="color: #6c757d; font-size: 14px; line-height: 1.6;">
+                                    <p style="margin: 4px 0;">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 12px; padding: 20px; border-left: 4px solid #2196f3;">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #1565c0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span>💡</span> Suggested Real-World Reinforcement
+                            </h3>
+                            <div id="reinforcementSuggestions" style="color: #1976d2; font-size: 14px; line-height: 1.6;">
+                                <p style="margin: 4px 0;">Loading suggestions...</p>
+                            </div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius: 12px; padding: 20px; margin-top: 16px; border-left: 4px solid #ff9800;">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #e65100; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span>🌟</span> Recent Achievements
+                            </h3>
+                            <div id="recentAchievements" style="color: #ef6c00; font-size: 14px; line-height: 1.6;">
+                                <p style="margin: 4px 0;">Loading achievements...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="weeklyCheckinPanel" class="insights-panel hidden">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+                            <div style="background: linear-gradient(to bottom, #ffffff, #f9fafb); border-radius: 16px; padding: 28px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom: 16px;">
+                                    <span style="font-size: 26px;">🗓️</span>
+                                    <div>
+                                        <h3 style="margin:0; font-size: 18px; color: #111827; font-weight: 700;">Weekly Check-In</h3>
+                                        <p style="margin:4px 0 0; color:#6b7280; font-size:12px;">Quick check-in for this week (30 seconds)</p>
+                                    </div>
+                                </div>
+                                <form id="weeklyCheckinForm">
+                                    <div class="form-group" style="margin-bottom:12px;">
+                                        <label class="form-label" style="margin-bottom:6px; display:block;">How big were the big feelings this week?</label>
+                                        <div style="display:flex; gap:6px;">
+                                            <button type="button" class="checkin-scale" data-value="1">1<br><small>Mostly calm</small></button>
+                                            <button type="button" class="checkin-scale" data-value="2">2</button>
+                                            <button type="button" class="checkin-scale" data-value="3">3<br><small>A few hard moments</small></button>
+                                            <button type="button" class="checkin-scale" data-value="4">4</button>
+                                            <button type="button" class="checkin-scale" data-value="5">5<br><small>Really tough week</small></button>
+                                        </div>
+                                        <input type="hidden" id="checkinIntensity" required>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:12px;">
+                                        <label class="form-label">What was the hardest moment to manage?</label>
+                                        <select class="form-input" id="checkinChallenge" required>
+                                            <option value="">Select one</option>
+                                            <option>Morning routine</option>
+                                            <option>School refusal / drop-off</option>
+                                            <option>Homework / focus</option>
+                                            <option>Bedtime</option>
+                                            <option>Sibling conflict</option>
+                                            <option>Social worries</option>
+                                            <option>Anger outbursts</option>
+                                            <option>Sensory overwhelm</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:12px;">
+                                        <label class="form-label">Which feelings showed up most?</label>
+                                        <div id="checkinTriggers" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:12px;">
+                                        <label class="form-label">Pick one small goal for this week</label>
+                                        <select class="form-input" id="checkinGoal">
+                                            <option value="">Choose a goal</option>
+                                            <option>Use a calm-down tool once</option>
+                                            <option>Name emotions once a day</option>
+                                            <option>Practice a coping tool 3 times</option>
+                                            <option>Handle a transition better (school/bed)</option>
+                                            <option>Try one brave step</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:12px;">
+                                        <label class="form-label">Anything you want us to know?</label>
+                                        <textarea class="form-input" id="checkinNotes" rows="2" maxlength="200" placeholder="(Optional, max 200 characters)"></textarea>
+                                    </div>
+
+                                    <button type="submit" class="btn-primary" id="checkinSubmitButton" style="width:100%; font-size: 15px; font-weight: 600; padding: 14px; position: relative; overflow: hidden;">
+                                        <span id="checkinSubmitText">✨ Save & build our plan</span>
+                                        <span id="checkinSubmitSpinner" class="spinner hidden" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);"></span>
+                                    </button>
+                                    <p id="checkinMessage" style="margin-top:12px; font-size: 13px; display:none; padding: 10px; border-radius: 8px; font-weight: 500;"></p>
+                                </form>
+                            </div>
+
+                            <div style="background: linear-gradient(to bottom, #ffffff, #f9fafb); border-radius: 16px; padding: 28px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; transition: all 0.3s ease;">
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                                    <span style="font-size:26px;">📝</span>
+                                    <h3 style="margin:0; font-size:18px; color:#111827; font-weight: 700;">This Week's Plan</h3>
+                                </div>
+                                <div id="weeklyPlanSummary" style="font-size:14px; color:#4b5563; line-height:1.7; padding: 14px; background: #f3f4f6; border-radius: 10px; margin-bottom: 18px;">
+                                    <p style="margin:4px 0; color:#9ca3af;">Complete a quick check-in to generate a tailored plan.</p>
+                                </div>
+                                <div style="margin-top:18px;">
+                                    <h4 style="margin:0 0 8px; font-size:13px; color:#6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Focus Skills</h4>
+                                    <div id="planSkills" class="plan-chip-row"></div>
+                                </div>
+                                <div style="margin-top:18px;">
+                                    <h4 style="margin:0 0 8px; font-size:13px; color:#6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Key Feelings / Triggers</h4>
+                                    <div id="planEmotions" class="plan-chip-row"></div>
+                                </div>
+                                <div style="margin-top:18px;">
+                                    <h4 style="margin:0 0 8px; font-size:13px; color:#6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Tools to Try</h4>
+                                    <div id="planTools" class="plan-chip-row"></div>
+                                </div>
+                                <div style="margin-top:18px;">
+                                    <h4 style="margin:0 0 8px; font-size:13px; color:#6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Parent Script Spotlight</h4>
+                                    <div id="planScript" style="background:#f3f4f6; border-radius:12px; padding:16px; font-size:14px; color:#374151; border-left: 3px solid #4c6c96;">
+                                        <p style="margin:0; color:#9ca3af;">We'll surface a script once a plan is created.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Child Modal -->
+    <div id="addChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title">Add New Child</h2>
+            <div id="modalError" class="error-message hidden"></div>
+            <form id="addChildForm">
+                <div class="form-group">
+                    <label class="form-label">Child's Name</label>
+                    <input type="text" id="childName" class="form-input" placeholder="Enter name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" id="childDob" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile Picture</label>
+                    <p class="progress-label" style="margin-bottom: 12px; font-size: 12px;">Choose an emoji to represent this child</p>
+                    <div class="avatar-picker" id="addChildAvatarPicker"></div>
+                    <input type="hidden" id="addChildAvatar">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelAddChild">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Child</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Purchase Module Modal -->
+    <div id="purchaseModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title" id="purchaseModalTitle">Purchase Module</h2>
+            <div id="purchaseModalBody" class="progress-label" style="margin-bottom: 16px;"></div>
+            <p class="progress-label" id="purchaseModalCost" style="margin-bottom: 16px; font-weight: 600;"></p>
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" id="cancelPurchaseButton">Cancel</button>
+                <button type="button" class="btn-primary" id="confirmPurchaseButton">Purchase</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- More Modules Sales Modal -->
+    <div id="moreModulesModal" class="modal-overlay hidden more-modules-overlay">
+        <div class="sales-modal">
+            <button type="button" class="sales-modal-close" id="closeMoreModulesButton" aria-label="Close">
+                ✕
+            </button>
+            <div>
+                <div class="sales-badge">✨ New Workbooks Available</div>
+                <h2>Give your child the tools to thrive</h2>
+                <p style="font-size: 16px; line-height: 1.6;">Interactive workbooks designed by child development experts. Each module builds emotional intelligence, confidence, and resilience through engaging stories and activities.</p>
+            </div>
+            <div class="sales-carousel-wrapper">
+                <button type="button" class="carousel-nav prev" id="moreModulesPrevButton" aria-label="Previous Module">‹</button>
+                <div class="sales-carousel" id="moreModulesCarousel"></div>
+                <button type="button" class="carousel-nav next" id="moreModulesNextButton" aria-label="Next Module">›</button>
+            </div>
+            <div class="carousel-indicators" id="moreModulesCarouselIndicators"></div>
+            <div class="more-modules-actions">
+                <button type="button" class="sales-cta sales-cta-outline" id="showAllModulesButton">📚 Browse All Workbooks</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Modules Showcase Page -->
+    <div id="allModulesModal" class="modal-overlay hidden all-modules-overlay">
+        <div class="all-modules-page">
+            <div class="all-modules-header">
+                <div>
+                    <div class="sales-badge">📚 Complete Library</div>
+                    <h2>Find the perfect workbook for your child</h2>
+                    <p>Browse our complete collection of expert-designed workbooks. Filter by age, topic, or series to find exactly what your child needs.</p>
+                </div>
+                <button type="button" class="sales-modal-close" id="closeAllModulesButton" aria-label="Close full library">✕</button>
+            </div>
+            <div class="all-modules-filters">
+                <label class="filter-group">
+                    <span>Filter by category</span>
+                    <select id="allModulesCategoryFilter"></select>
+                </label>
+                <label class="filter-group">
+                    <span>Filter by series</span>
+                    <select id="allModulesSeriesFilter"></select>
+                </label>
+            </div>
+            <div id="allModulesGrid" class="all-modules-grid"></div>
+        </div>
+    </div>
+
+    <!-- Edit Child Modal -->
+    <div id="editChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title" id="editChildModalTitle">Edit Child Profile</h2>
+            <div id="editModalError" class="error-message hidden"></div>
+            <form id="editChildForm">
+                <div class="form-group">
+                    <label class="form-label">Child's Name</label>
+                    <input type="text" id="editChildName" class="form-input" placeholder="Enter name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile Picture</label>
+                    <p class="progress-label" style="margin-bottom: 12px; font-size: 12px;">Choose an emoji to represent this child</p>
+                    <div class="avatar-picker" id="avatarPicker"></div>
+                    <input type="hidden" id="editChildAvatar">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn-secondary" id="forgetPasswordBtn" style="width: 100%;">🔑 Forget Password</button>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelEditChildButton">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+                <div style="text-align: center; margin-top: 16px;">
+                    <button type="button" id="removeChildBtn" class="btn-remove-child">🗑️ Remove Child</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Child Password Modal -->
+    <div id="childPasswordModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title" id="childPasswordModalTitle">Enter Password</h2>
+            <div id="passwordModalError" class="error-message hidden"></div>
+            <form id="childPasswordForm">
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="childPassword" class="form-input" placeholder="Enter child's password" required autocomplete="off">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelPasswordButton">Cancel</button>
+                    <button type="submit" class="btn-primary">Continue</button>
+                </div>
+            </form>
+            <p class="progress-label" style="margin-top: 16px; text-align: center; font-size: 12px;">
+                First time? You'll be asked to set a password.
+            </p>
+        </div>
+    </div>
+
+    <!-- Remove Child Confirmation Modal -->
+    <div id="removeChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title" style="color: #ff4444;">⚠️ Remove Child?</h2>
+            <p class="progress-label" style="margin-bottom: 16px; text-align: center;">Are you sure you want to remove <strong id="removeChildName"></strong>?</p>
+            <p class="progress-label" style="margin-bottom: 16px; text-align: center; color: #ff4444; font-weight: 600;">This will permanently delete all their progress and data. This action cannot be undone.</p>
+            <div id="removeChildError" class="error-message hidden"></div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" id="cancelRemoveChildButton">Cancel</button>
+                <button type="button" id="confirmRemoveChildButton" style="flex: 1; padding: 14px; background-color: #ff4444; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'League Spartan', sans-serif;">Remove Child</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Password Verification Modal (for forget password) -->
+    <div id="parentPasswordModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title">Parent Verification Required</h2>
+            <p class="progress-label" style="margin-bottom: 16px;">Enter your parent password to reset the child's password.</p>
+            <div id="parentPasswordError" class="error-message hidden"></div>
+            <form id="parentPasswordForm">
+                <div class="form-group">
+                    <label class="form-label">Parent Password</label>
+                    <input type="password" id="parentPassword" class="form-input" placeholder="Enter your parent password" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New Child Password</label>
+                    <input type="password" id="editChildPassword" class="form-input" placeholder="Enter new password for child" autocomplete="off">
+                    <p class="progress-label" style="margin-top: 8px; font-size: 12px;">Min 6 characters. Leave blank to clear password (child will set new one on next login).</p>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelParentPasswordButton">Cancel</button>
+                    <button type="submit" class="btn-primary">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Custom Reward Modal -->
+    <div id="customRewardModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title">Create Custom Reward</h2>
+            <div id="customRewardError" class="error-message hidden"></div>
+            <form id="customRewardForm">
+                <div class="form-group">
+                    <label class="form-label">Reward Title</label>
+                    <input type="text" id="rewardTitle" class="form-input" placeholder="e.g., Go Hiking" required maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="rewardDescription" class="form-input" placeholder="Describe the reward..." rows="3" maxlength="200"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Star Cost</label>
+                    <input type="number" id="rewardCost" class="form-input" placeholder="e.g., 25" required min="1" max="1000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon (Emoji)</label>
+                    <input type="text" id="rewardIcon" class="form-input" placeholder="🎁" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select id="rewardCategory" class="form-input">
+                        <option value="activities">Activities</option>
+                        <option value="screen_time">Screen Time</option>
+                        <option value="treats">Treats</option>
+                        <option value="privileges">Privileges</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelCustomRewardButton">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Reward</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Purchase Reward Confirmation Modal -->
+    <div id="purchaseRewardModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title">Confirm Purchase</h2>
+            <div style="text-align: center; margin: 24px 0;">
+                <div id="purchaseRewardIcon" style="font-size: 64px; margin-bottom: 16px;">🎁</div>
+                <h3 id="purchaseRewardTitle" style="font-size: 20px; color: #405878; font-weight: 700; margin-bottom: 8px;">Reward Title</h3>
+                <p id="purchaseRewardDescription" style="color: #4c6c96; margin-bottom: 16px;">Reward description</p>
+                <div style="background: #dfdbca; border-radius: 12px; padding: 16px; display: inline-block;">
+                    <p style="font-size: 14px; color: #4c6c96; margin-bottom: 4px;">Cost</p>
+                    <p style="font-size: 28px; font-weight: 700; color: #405878;">
+                        ⭐ <span id="purchaseRewardCost">0</span>
+                    </p>
+                </div>
+                <p style="margin-top: 16px; font-size: 14px; color: #4c6c96;">
+                    You have <strong id="purchaseCurrentStars">0</strong> spendable stars
+                </p>
+            </div>
+            <div id="purchaseRewardError" class="error-message hidden"></div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" id="cancelPurchaseRewardButton">Cancel</button>
+                <button type="button" class="btn-primary" id="confirmPurchaseRewardButton">Purchase</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/dashboard.js"></script>
+</body>
+</html>

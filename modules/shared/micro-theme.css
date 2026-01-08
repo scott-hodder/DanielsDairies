@@ -1,0 +1,268 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Outfit:wght@500;600;700&display=swap");
+
+/* ----------------------------
+   TOKENS + BASE
+---------------------------- */
+:root {
+  --font-display: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --bg: #fffaf2;
+  --surface: #ffffff;
+  --text: #1f2937;
+  --muted: #516172;
+
+  --primary: #405878;   /* Luna-ish navy */
+  --primary-2: #4c6c96; /* Luna-ish blue */
+  --accent: #dfdbca;    /* Luna-ish sand */
+
+  --radius-xl: 26px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 12px;
+
+  --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.10);
+  --shadow-card: 0 12px 26px rgba(15, 23, 42, 0.08);
+
+  --border: rgba(15, 23, 42, 0.10);
+
+  --header-h: 72px;
+}
+
+body.module {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+body.module::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255,255,255,0.70), transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(255,255,255,0.45), transparent 45%),
+    radial-gradient(circle at 50% 110%, rgba(0,0,0,0.05), transparent 42%);
+}
+
+/* Daniel palette override */
+body.module[data-series="daniel"] {
+  --bg: #fff7ed;
+  --primary: #264653;
+  --primary-2: #2a9d8f;
+  --accent: #f4a261;
+}
+
+/* Luna palette override */
+body.module[data-series="luna"] {
+  --bg: #fffff5;
+  --primary: #405878;
+  --primary-2: #4c6c96;
+  --accent: #dfdbca;
+}
+
+/* Improve default typography so even “unstyled” looks ok */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  margin: 0 0 10px;
+}
+h1 { font-size: clamp(1.8rem, 2.8vw, 2.6rem); }
+h2 { font-size: clamp(1.35rem, 2.0vw, 1.9rem); }
+p { margin: 0 0 12px; color: var(--muted); }
+ul { margin: 0 0 12px; padding-left: 18px; color: var(--muted); }
+li { margin: 6px 0; }
+
+/* ----------------------------
+   LAYOUT
+---------------------------- */
+.app-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: rgba(255, 250, 242, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  align-items: center;
+  z-index: 999;
+}
+
+.app-header__inner {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-shell {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding-top: calc(var(--header-h) + 22px);
+  padding-bottom: 70px;
+}
+
+.hero {
+  border-radius: var(--radius-xl);
+  padding: 26px 26px;
+  box-shadow: var(--shadow-soft);
+  background: linear-gradient(135deg, rgba(64,88,120,0.88), rgba(223,219,202,0.88));
+  color: #111827;
+  border: 1px solid rgba(255,255,255,0.45);
+}
+
+body.module[data-series="daniel"] .hero {
+  background: linear-gradient(135deg, rgba(42,157,143,0.84), rgba(244,162,97,0.84));
+}
+
+.hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 2.6vw, 2.4rem);
+  margin: 0 0 6px;
+  color: #111827;
+}
+
+.hero__subtitle {
+  margin: 0;
+  color: rgba(17,24,39,0.80);
+  font-weight: 600;
+}
+
+/* ----------------------------
+   CARDS / SECTIONS
+---------------------------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 22px 22px;
+}
+
+.section {
+  margin-top: 18px;
+}
+
+.section__title {
+  font-family: var(--font-display);
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+/* ----------------------------
+   BUTTONS / PILLS
+---------------------------- */
+.btn {
+  appearance: none;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.10);
+}
+
+.btn-primary {
+  background: var(--primary);
+  border-color: rgba(0,0,0,0.10);
+  color: #fff;
+}
+
+.btn-accent {
+  background: var(--accent);
+  border-color: rgba(0,0,0,0.10);
+  color: #111827;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+  font-weight: 900;
+}
+
+/* ----------------------------
+   GRID + TILES (your “Feeling Pack” cards)
+---------------------------- */
+.grid {
+  display: grid;
+  gap: 18px;
+}
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 820px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+.tile {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+  padding: 18px 18px;
+  background: #fff;
+  text-align: center;
+}
+
+.tile__title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.35rem;
+  margin: 8px 0 6px;
+}
+
+.tile__meta {
+  color: rgba(17,24,39,0.72);
+  font-weight: 600;
+}
+
+.tile--happy { background: #fff1c7; }
+.tile--sad   { background: #d9f0ff; }
+.tile--angry { background: #ffd5d5; }
+.tile--worry { background: #e6d7ff; }
+
+/* ----------------------------
+   FORMS (so AI modules don’t look cheap)
+---------------------------- */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1.5px solid rgba(15, 23, 42, 0.14);
+  background: #fff;
+  padding: 12px 14px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  outline: none;
+  transition: box-shadow .12s ease, border-color .12s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: color-mix(in srgb, var(--primary) 65%, white);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+}
