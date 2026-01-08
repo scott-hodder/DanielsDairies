@@ -110,7 +110,7 @@
                                 <select class="form-select" id="editCategory" style="flex: 1;">
                                     <option value="">Select category...</option>
                                 </select>
-                                <button class="btn-add-category" onclick="addNewCategory()">+ Add Category</button>
+                                <button type="button" class="btn-add-category" onclick="openAddCategoryModal()">+ Add Category</button>
                             </div>
                         </div>
 
@@ -502,19 +502,6 @@
                             ✨ Generate Module with AI
                         </button>
                         <span id="aiGenerationStatus" style="font-size: 13px; color: #6b7c8f;"></span>
-                    </div>
-
-                    <div class="file-upload-card">
-                        <div class="file-upload-header">
-                            <div>
-                                <p class="file-upload-title">Have an existing module?</p>
-                                <p class="file-upload-subtitle">Upload the original HTML and we’ll auto-convert it to the new format.</p>
-                            </div>
-                            <button type="button" class="btn" id="triggerModuleUpload" style="background:#405878; color:#fff;">⤴️ Upload & Migrate</button>
-                        </div>
-                        <input type="file" id="legacyModuleFile" accept=".html" style="display:none">
-                        <p class="file-upload-hint">Supports .html exports from the old system.</p>
-                        <div class="migration-status" id="migrationStatus" style="display:none;"></div>
                     </div>
                     
                     <p style="font-size: 12px; color: #6b7c8f; margin-top: 8px;">
@@ -2249,11 +2236,46 @@ if (data.status === "running") {
                                 <label class="form-label" style="margin-bottom:0; font-size:12px;">Star Cost</label>
                                 <input type="number" min="1" class="reward-input" id="reward-cost-${reward.id}" value="${reward.star_cost || 0}">
                             </div>
-                            <div class="reward-actions">
-                                <button class="btn-outline primary" onclick="saveRewardCost('${reward.id}')">Save</button>
-                            </div>
+                            <div class="modal-actions">
+                <button type="button" class="btn" onclick="closeAddModuleModal()" style="background:#cfd8dc; color:#1a1f36;">Cancel</button>
+                <button type="submit" class="btn-save">Save Module</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <!-- Add Category Modal -->
+    <div class="modal" id="addCategoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Category</h2>
+                <button class="modal-close" onclick="closeAddCategoryModal()">×</button>
+            </div>
+
+            <form id="addCategoryForm" onsubmit="handleAddCategorySubmit(event); return false;">
+                <div class="form-group">
+                    <label class="form-label" for="addCategoryName">Category Name</label>
+                    <input type="text" id="addCategoryName" class="form-input" placeholder="e.g. Resilience" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="addCategoryColorPicker">Category Color</label>
+                    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                        <input type="color" id="addCategoryColorPicker" value="#4c6c96" style="width:64px; height:48px; border:none; background:none;">
+                        <div style="flex:1;">
+                            <label class="form-label" for="addCategoryColorHex" style="font-size:13px; display:block;">Hex Value</label>
+                            <input type="text" id="addCategoryColorHex" class="form-input" value="#4c6c96" placeholder="#4c6c96">
                         </div>
                     </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeAddCategoryModal()" style="background:#cfd8dc; color:#1a1f36;">Cancel</button>
+                    <button type="submit" class="btn-save">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
                 `;
             }).join('');
         }
@@ -2998,20 +3020,102 @@ if (data.status === "running") {
             });
         }
 
-        // Add new category
-        window.addNewCategory = function() {
-            const newCategory = prompt('Enter new category name:');
-            if (!newCategory) return;
+        function normalizeHexColor(value) {
+            if (!value) return null;
+            let color = value.trim();
+            if (!color.startsWith('#')) {
+                color = `#${color}`;
+            }
+            if (/^#([0-9a-fA-F]{6})$/.test(color)) {
+                return color.toLowerCase();
+            }
+            return null;
+        }
 
-            const categoryLower = newCategory.toLowerCase().trim();
+        window.openAddCategoryModal = function() {
+            console.log('[Admin] openAddCategoryModal called');
+            const modal = document.getElementById('addCategoryModal');
+            const form = document.getElementById('addCategoryForm');
+            console.log('[Admin] Modal element:', modal);
+            if (modal) {
+                if (form) form.reset();
+                document.getElementById('addCategoryColorPicker').value = '#4c6c96';
+                document.getElementById('addCategoryColorHex').value = '#4c6c96';
+                modal.classList.add('active');
+                console.log('[Admin] Modal should now be visible');
+            } else {
+                console.error('[Admin] Modal element not found');
+            }
+        }
+
+        window.closeAddCategoryModal = function() {
+            const modal = document.getElementById('addCategoryModal');
+            modal?.classList.remove('active');
+        }
+
+        function syncCategoryColorInputs(source) {
+            const colorPicker = document.getElementById('addCategoryColorPicker');
+            const colorHex = document.getElementById('addCategoryColorHex');
+            if (source === 'picker') {
+                colorHex.value = colorPicker.value;
+            } else {
+                const normalized = normalizeHexColor(colorHex.value);
+                if (normalized) {
+                    colorHex.value = normalized;
+                    colorPicker.value = normalized;
+                }
+            }
+        }
+
+        document.getElementById('addCategoryColorPicker')?.addEventListener('input', () => syncCategoryColorInputs('picker'));
+        document.getElementById('addCategoryColorHex')?.addEventListener('blur', () => syncCategoryColorInputs('hex'));
+
+        window.handleAddCategorySubmit = async function(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('addCategoryName');
+            const colorInput = document.getElementById('addCategoryColorHex');
+            const categoryName = nameInput.value.trim();
+            const categoryLower = categoryName.toLowerCase();
+            if (!categoryName) {
+                alert('Please enter a category name.');
+                return;
+            }
             if (availableCategories.includes(categoryLower)) {
                 alert('Category already exists!');
                 return;
             }
+            const normalizedColor = normalizeHexColor(colorInput.value);
+            if (!normalizedColor) {
+                alert('Please enter a valid 6-digit hex color (e.g. #4c6c96).');
+                return;
+            }
 
+            const { error } = await supabase
+                .from('category_colors')
+                .upsert({ category: categoryLower, color: normalizedColor }, { onConflict: 'category' });
+
+            if (error) {
+                console.error('[Admin] Failed to save category color:', error);
+                alert('Failed to add category. Please try again.');
+                return;
+            }
+
+            categoryColors[categoryLower] = normalizedColor;
             availableCategories.push(categoryLower);
             populateEditCategoryDropdown();
             document.getElementById('editCategory').value = categoryLower;
+            updateCategoryColorDisplay();
+
+            // Update add-module dropdown options too
+            const newModuleCategory = document.getElementById('newModuleCategory');
+            if (newModuleCategory) {
+                const option = document.createElement('option');
+                option.value = categoryLower;
+                option.textContent = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+                newModuleCategory.appendChild(option);
+            }
+
+            closeAddCategoryModal();
         }
 
         // Save module changes

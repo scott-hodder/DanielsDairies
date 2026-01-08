@@ -2290,7 +2290,6 @@ async function updateDashboardStats() {
   document.getElementById('totalStars').textContent = selectedChild.stars || 0
   document.getElementById('completedModules').textContent = completedCount
   document.getElementById('totalModules').textContent = totalCount
-  document.getElementById('dayStreak').textContent = 0 // TODO: Implement streak tracking
   
   // Get rank from leaderboard
   try {
@@ -2597,38 +2596,11 @@ async function checkAdminStatus() {
 async function loadStreakDisplay() {
   try {
     const streakData = await getLoginStreak(currentUser.id)
-    const streakDisplay = document.getElementById('streakDisplay')
-    const currentStreakEl = document.getElementById('currentStreak')
-    const longestStreakEl = document.getElementById('longestStreak')
-    const streakMessageEl = document.getElementById('streakMessage')
-    const streakCard = streakDisplay?.querySelector('.streak-card')
+    console.log('[Dashboard] Streak data:', streakData)
+    const dayStreakEl = document.getElementById('dayStreak')
     
-    if (streakDisplay && currentStreakEl && longestStreakEl && streakMessageEl) {
-      // Update streak numbers
-      currentStreakEl.textContent = streakData.current_streak
-      longestStreakEl.textContent = streakData.longest_streak
-      
-      // Show streak display if user has a streak
-      if (streakData.current_streak > 0) {
-        streakDisplay.style.display = 'block'
-        
-        // Update milestone styling
-        if (streakCard) {
-          streakCard.className = 'streak-card'
-          if (streakData.current_streak >= 100) {
-            streakCard.classList.add('milestone-100')
-          } else if (streakData.current_streak >= 30) {
-            streakCard.classList.add('milestone-30')
-          } else if (streakData.current_streak >= 7) {
-            streakCard.classList.add('milestone-7')
-          }
-        }
-        
-        // Update motivational message
-        streakMessageEl.textContent = getStreakMessage(streakData.current_streak)
-      } else {
-        streakDisplay.style.display = 'none'
-      }
+    if (dayStreakEl) {
+      dayStreakEl.textContent = streakData.current_streak ?? 0
     }
   } catch (error) {
     console.error('Error loading streak display:', error)

@@ -50,24 +50,6 @@
             <div style="text-align: center; margin-bottom: 40px;">
                 <h1 style="font-size: 32px; color: #405878; font-weight: 700; margin-bottom: 8px;">Welcome to Your Family Dashboard</h1>
                 <p style="color: #4c6c96; font-size: 16px;">Select a child to view their progress and continue their learning journey</p>
-                
-                <!-- Login Streak Display -->
-                <div id="streakDisplay" class="streak-display" style="display: none;">
-                    <div class="streak-card">
-                        <div class="streak-icon">🔥</div>
-                        <div class="streak-info">
-                            <div class="streak-number" id="currentStreak">0</div>
-                            <div class="streak-label">day streak!</div>
-                        </div>
-                        <div class="streak-details">
-                            <div class="streak-stat">
-                                <span class="streak-value" id="longestStreak">0</span>
-                                <span class="streak-stat-label">longest</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="streak-message" id="streakMessage">Keep it going!</div>
-                </div>
             </div>
 
             <!-- Children Cards -->
@@ -180,8 +162,8 @@
                     <div class="stat-card">
                         <div class="stat-card-content">
                             <div>
-                                <p class="stat-label">Day Streak</p>
-                                <h3 class="stat-value" id="dayStreak">0</h3>
+                                <p class="stat-label streak-label">Day Streak</p>
+                                <h3 class="stat-value" id="dayStreak"></h3>
                             </div>
                             <span style="font-size: 32px;">🔥</span>
                         </div>

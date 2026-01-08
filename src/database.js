@@ -211,7 +211,7 @@ export async function getModules() {
   const { data, error } = await supabase
     .from('modules')
     .select('*')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
   
   if (error) {
     throw error
