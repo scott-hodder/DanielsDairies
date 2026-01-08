@@ -35,7 +35,11 @@ async function init() {
       return
     }
 
-    if (session && session.user?.app_metadata?.provider === 'email') {
+    // Check for password recovery session (only if coming from reset email)
+    const urlParams = new URLSearchParams(window.location.search)
+    const isResetFlow = urlParams.has('access_token') && urlParams.has('refresh_token')
+    
+    if (session && isResetFlow && session.user?.app_metadata?.provider === 'email') {
       isRecoverySession = true
       showResetPasswordForm()
       return

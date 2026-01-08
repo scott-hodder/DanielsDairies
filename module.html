@@ -14,12 +14,137 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Module stylesheets -->
+  <!-- Module stylesheets - try multiple paths -->
+  <link rel="stylesheet" href="/modules/shared/module-header.css">
   <link rel="stylesheet" href="/assets/module-theme.css">
-  <link rel="stylesheet" href="/assets/module-header.css">
   <link rel="stylesheet" href="/assets/module-base.css">
   
+  <!-- Inline module-header styles as backup -->
   <style>
+    .module-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 60;
+      padding: 14px 20px;
+      backdrop-filter: blur(10px);
+      background: var(--module-header-bg, rgba(255, 251, 235, 0.95));
+      border-bottom: 1px solid var(--module-header-border, rgba(45, 64, 89, 0.1));
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .module-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .module-header__nav,
+    .module-header__actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .module-header__btn {
+      border: none;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      cursor: pointer;
+      background: var(--module-header-accent, #1e3a5f);
+      color: #fffbee;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
+    }
+
+    .module-header__btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(30, 58, 95, 0.25);
+    }
+
+    .module-header__btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .module-header__page {
+      font-weight: 700;
+      color: var(--module-header-text, #1e3a5f);
+      background: rgba(255, 255, 255, 0.85);
+      padding: 8px 18px;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1px var(--module-header-border, rgba(45, 64, 89, 0.1));
+    }
+
+    .module-header__actions {
+      justify-content: flex-end;
+    }
+
+    .module-header__star {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-weight: 700;
+      font-size: 16px;
+      background: linear-gradient(135deg, var(--module-header-accent, #1e3a5f), var(--theme-secondary, #5dade2));
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(30, 58, 95, 0.25);
+    }
+
+    .module-header__star .star-icon {
+      font-size: 20px;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+
+    .module-header__home {
+      background: #5dade2;
+    }
+
+    .module-header__print {
+      background: #1e3a5f;
+      color: #fffbee;
+    }
+
+    .module-header-spacer {
+      height: 75px;
+    }
+
+    @media (max-width: 768px) {
+      .module-header__inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .module-header__nav,
+      .module-header__actions {
+        justify-content: center;
+      }
+
+      .module-header__btn,
+      .module-header__star {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @keyframes shimmer {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+    
+    /* Loader styles */
     .loader-container {
       display: flex;
       align-items: center;
@@ -109,29 +234,271 @@
     import { supabase } from './src/supabaseClient.js';
     
     // =========================================
-    // 1. SETUP GLOBAL FUNCTIONS FIRST
+    // 1. URL PARAMETERS & GLOBALS
     // =========================================
     
-    // Get URL parameters
     const params = new URLSearchParams(window.location.search);
     const moduleCode = params.get('code');
     const childId = params.get('childId');
     const moduleId = params.get('moduleId');
     const parentUserId = params.get('parentUserId');
     
-    // Set globals
     window.supabase = supabase;
     window.childId = childId;
     window.moduleId = moduleId;
     window.parentUserId = parentUserId;
     
-    // Internal state
     const _state = { 
       childId: childId, 
       currentChild: null 
     };
     
-    // Database helpers
+    // =========================================
+    // 2. RESPONSE TRACKING SYSTEM
+    // =========================================
+    
+    const ResponseTracker = {
+      // Cache key for this module session
+      getCacheKey() {
+        return `module_responses_${moduleCode}_${childId}`;
+      },
+      
+      // Get all cached responses
+      getCache() {
+        try {
+          const cached = localStorage.getItem(this.getCacheKey());
+          return cached ? JSON.parse(cached) : {};
+        } catch (e) {
+          return {};
+        }
+      },
+      
+      // Save to cache
+      saveToCache(responses) {
+        try {
+          localStorage.setItem(this.getCacheKey(), JSON.stringify(responses));
+        } catch (e) {
+          console.warn('Failed to cache responses:', e);
+        }
+      },
+      
+      // Track a single response
+      async trackResponse(data) {
+        const {
+          questionId,        // Unique ID for the question (e.g., "page3_checkbox1")
+          questionText,      // The question text
+          responseType,      // 'checkbox', 'text', 'radio', 'select', 'rating', 'drawing'
+          responseValue,     // The actual response value
+          pageNumber,        // Current page number
+          isCorrect = null   // For quizzes
+        } = data;
+        
+        // Update cache immediately for fast UX
+        const cache = this.getCache();
+        cache[questionId] = {
+          ...data,
+          timestamp: Date.now()
+        };
+        this.saveToCache(cache);
+        
+        // Save to database (async, don't block)
+        this.saveToDatabase(data).catch(err => {
+          console.warn('Failed to save response to DB:', err);
+        });
+        
+        return cache[questionId];
+      },
+      
+      // Save to Supabase
+      async saveToDatabase(data) {
+        if (!childId || !moduleId) {
+          console.warn('Missing childId or moduleId, skipping DB save');
+          return;
+        }
+        
+        const { error } = await supabase
+          .from('module_responses')
+          .upsert({
+            child_id: childId,
+            module_id: moduleId,
+            question_id: data.questionId,
+            question_text: data.questionText,
+            response_type: data.responseType,
+            response_value: String(data.responseValue),
+            page_number: data.pageNumber,
+            is_correct: data.isCorrect,
+            parent_user_id: parentUserId,
+            responded_at: new Date().toISOString()
+          }, {
+            onConflict: 'child_id,module_id,question_id'
+          });
+        
+        if (error) throw error;
+      },
+      
+      // Get a specific response
+      getResponse(questionId) {
+        const cache = this.getCache();
+        return cache[questionId]?.responseValue;
+      },
+      
+      // Restore all form inputs on current page
+      restorePageResponses() {
+        const cache = this.getCache();
+        
+        // Restore checkboxes
+        document.querySelectorAll('input[type="checkbox"][data-track]').forEach(el => {
+          const id = el.dataset.track || el.id || el.name;
+          if (cache[id]) {
+            el.checked = cache[id].responseValue === true || cache[id].responseValue === 'true';
+          }
+        });
+        
+        // Restore text inputs and textareas
+        document.querySelectorAll('input[type="text"][data-track], textarea[data-track]').forEach(el => {
+          const id = el.dataset.track || el.id || el.name;
+          if (cache[id]) {
+            el.value = cache[id].responseValue || '';
+          }
+        });
+        
+        // Restore radio buttons
+        document.querySelectorAll('input[type="radio"][data-track]').forEach(el => {
+          const id = el.dataset.track || el.name;
+          if (cache[id] && cache[id].responseValue === el.value) {
+            el.checked = true;
+          }
+        });
+        
+        // Restore selects
+        document.querySelectorAll('select[data-track]').forEach(el => {
+          const id = el.dataset.track || el.id || el.name;
+          if (cache[id]) {
+            el.value = cache[id].responseValue || '';
+          }
+        });
+        
+        console.log('✅ Restored page responses from cache');
+      },
+      
+      // Auto-track all inputs on the page
+      setupAutoTracking(pageNumber) {
+        // Track checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+          const id = el.dataset.track || el.id || el.name || `checkbox_${Math.random().toString(36).substr(2, 9)}`;
+          el.dataset.track = id;
+          
+          el.addEventListener('change', () => {
+            this.trackResponse({
+              questionId: id,
+              questionText: el.dataset.question || el.nextElementSibling?.textContent || id,
+              responseType: 'checkbox',
+              responseValue: el.checked,
+              pageNumber
+            });
+          });
+        });
+        
+        // Track text inputs and textareas
+        document.querySelectorAll('input[type="text"], textarea').forEach(el => {
+          const id = el.dataset.track || el.id || el.name || el.placeholder || `text_${Math.random().toString(36).substr(2, 9)}`;
+          el.dataset.track = id;
+          
+          el.addEventListener('change', () => {
+            this.trackResponse({
+              questionId: id,
+              questionText: el.dataset.question || el.placeholder || id,
+              responseType: 'text',
+              responseValue: el.value,
+              pageNumber
+            });
+          });
+        });
+        
+        // Track radio buttons
+        document.querySelectorAll('input[type="radio"]').forEach(el => {
+          const id = el.dataset.track || el.name;
+          el.dataset.track = id;
+          
+          el.addEventListener('change', () => {
+            this.trackResponse({
+              questionId: id,
+              questionText: el.dataset.question || id,
+              responseType: 'radio',
+              responseValue: el.value,
+              pageNumber,
+              isCorrect: el.dataset.correct === 'true' ? true : (el.dataset.correct === 'false' ? false : null)
+            });
+          });
+        });
+        
+        // Track selects
+        document.querySelectorAll('select').forEach(el => {
+          const id = el.dataset.track || el.id || el.name || `select_${Math.random().toString(36).substr(2, 9)}`;
+          el.dataset.track = id;
+          
+          el.addEventListener('change', () => {
+            this.trackResponse({
+              questionId: id,
+              questionText: el.dataset.question || id,
+              responseType: 'select',
+              responseValue: el.value,
+              pageNumber
+            });
+          });
+        });
+        
+        console.log('✅ Auto-tracking enabled for page', pageNumber);
+      },
+      
+      // Load responses from database (on initial load)
+      async loadFromDatabase() {
+        if (!childId || !moduleId) return;
+        
+        try {
+          const { data, error } = await supabase
+            .from('module_responses')
+            .select('*')
+            .eq('child_id', childId)
+            .eq('module_id', moduleId);
+          
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            const cache = this.getCache();
+            data.forEach(row => {
+              // Only update cache if DB has newer data
+              if (!cache[row.question_id] || new Date(row.responded_at) > new Date(cache[row.question_id].timestamp || 0)) {
+                cache[row.question_id] = {
+                  questionId: row.question_id,
+                  questionText: row.question_text,
+                  responseType: row.response_type,
+                  responseValue: row.response_value === 'true' ? true : (row.response_value === 'false' ? false : row.response_value),
+                  pageNumber: row.page_number,
+                  isCorrect: row.is_correct,
+                  timestamp: new Date(row.responded_at).getTime()
+                };
+              }
+            });
+            this.saveToCache(cache);
+            console.log('✅ Loaded', data.length, 'responses from database');
+          }
+        } catch (e) {
+          console.warn('Failed to load responses from DB:', e);
+        }
+      }
+    };
+    
+    // Make tracker globally available
+    window.ResponseTracker = ResponseTracker;
+    window.trackResponse = (data) => ResponseTracker.trackResponse(data);
+    window.getResponse = (id) => ResponseTracker.getResponse(id);
+    window.restoreResponses = () => ResponseTracker.restorePageResponses();
+    
+    // =========================================
+    // 3. DATABASE HELPERS
+    // =========================================
+    
     async function _getChild(id) {
       const { data, error } = await supabase
         .from('children')
@@ -154,7 +521,7 @@
     }
     
     // =========================================
-    // 2. DEFINE ALL MODULE FUNCTIONS GLOBALLY
+    // 4. MODULE FUNCTIONS (GLOBAL)
     // =========================================
     
     window.initializeModule = async function(workbookId) {
@@ -164,6 +531,10 @@
       }
       try {
         _state.currentChild = await _getChild(_state.childId);
+        
+        // Load saved responses from database
+        await ResponseTracker.loadFromDatabase();
+        
         const subtitle = document.getElementById('headerSubtitle');
         if (subtitle && _state.currentChild?.name) {
           subtitle.textContent = _state.currentChild.name + "'s Journey";
@@ -314,7 +685,7 @@
     console.log('✅ Module helper functions ready');
     
     // =========================================
-    // 3. LOAD AND INJECT MODULE CONTENT
+    // 5. LOAD AND INJECT MODULE CONTENT
     // =========================================
     
     function showError(title, message) {
@@ -347,10 +718,8 @@
         if (error) throw new Error(error.message);
         if (!module?.html_content) throw new Error('Module content not found');
         
-        // Update page title
         document.title = module.title || 'Module';
         
-        // Process the HTML content
         let html = module.html_content;
         
         // Parse the HTML
@@ -377,31 +746,29 @@
           document.body.setAttribute(attr.name, attr.value);
         });
         
-        // Get all scripts before removing them
-        const scripts = [];
+        // Collect scripts
+        const scriptCodes = [];
         doc.querySelectorAll('script').forEach(script => {
-          // Skip external scripts that will fail (our old imports)
           const src = script.getAttribute('src');
-          if (src && (src.includes('module-response-tracker') || src.includes('supabaseClient'))) {
-            console.log('Skipping external script:', src);
-            return;
+          
+          // Skip external scripts that would fail
+          if (src) {
+            if (src.includes('module-response-tracker') || 
+                src.includes('supabaseClient') ||
+                src.includes('module-db') ||
+                src.includes('module-header')) {
+              console.log('Skipping external script:', src);
+              return;
+            }
           }
           
           if (script.textContent.trim()) {
-            // Remove import statements from inline scripts
-            let code = script.textContent;
-            
-            // Remove all import statements
-            code = code.replace(/^\s*import\s+.*?from\s+['"][^'"]*['"];?\s*$/gm, '');
-            code = code.replace(/^\s*import\s+['"][^'"]*['"];?\s*$/gm, '');
-            
-            scripts.push({
-              type: script.getAttribute('type') || 'text/javascript',
-              code: code
-            });
+            scriptCodes.push(script.textContent);
           }
-          script.remove();
         });
+        
+        // Remove scripts from parsed doc
+        doc.querySelectorAll('script').forEach(s => s.remove());
         
         // Hide loader and inject body content
         document.getElementById('loader').style.display = 'none';
@@ -414,16 +781,41 @@
           document.body.appendChild(contentDiv.firstChild);
         }
         
-        // Execute scripts after DOM is ready
-        for (const script of scripts) {
-          try {
-            // Execute as regular script (functions are already global)
-            const scriptEl = document.createElement('script');
-            scriptEl.textContent = script.code;
-            document.body.appendChild(scriptEl);
-          } catch (e) {
-            console.error('Script execution error:', e);
-          }
+        console.log('✅ Module HTML injected');
+        
+        // Execute scripts
+        if (scriptCodes.length > 0) {
+          let combinedCode = scriptCodes.join('\n\n');
+          
+          // Remove all import statements
+          combinedCode = combinedCode.replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]*['"];?\s*$/gm, '');
+          combinedCode = combinedCode.replace(/^\s*import\s+['"][^'"]*['"];?\s*$/gm, '');
+          
+          // Wrap and execute
+          const wrappedCode = `
+(async function() {
+  const originalAddEventListener = document.addEventListener.bind(document);
+  document.addEventListener = function(type, listener, options) {
+    if (type === 'DOMContentLoaded') {
+      setTimeout(() => listener(), 0);
+    } else {
+      originalAddEventListener(type, listener, options);
+    }
+  };
+  
+  try {
+    ${combinedCode}
+  } catch (e) {
+    console.error('Module script error:', e);
+  }
+  
+  document.addEventListener = originalAddEventListener;
+})();
+`;
+          
+          const scriptEl = document.createElement('script');
+          scriptEl.textContent = wrappedCode;
+          document.body.appendChild(scriptEl);
         }
         
         console.log('✅ Module loaded successfully');
@@ -434,7 +826,6 @@
       }
     }
     
-    // Start loading
     loadModule();
   </script>
 </body>
