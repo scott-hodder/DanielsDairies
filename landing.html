@@ -112,7 +112,7 @@
         </div>
 
         <!-- Next Step Section -->
-        <div id="nextStepSection" class="next-step-section hidden">
+        <div id="nextStepSection" class="next-step-section hidden" style="display: none;">
             <h2 class="next-step-title" id="nextStepTitle">Loading...</h2>
             <p class="next-step-subtitle" id="nextStepSubtitle">Continue your journey</p>
             
@@ -186,7 +186,8 @@
 
     <script type="module">
         import { checkAuth, signOut } from './src/auth.js'
-        import { getChildren, getModules, getChildModules, getParentProfile, createChild, setChildPassword } from './src/database.js'
+        import { getChildren, getModules, getChildModules, getParentProfile, createChild, setChildPassword, updateChildModuleStatus } from './src/database.js'
+        import { supabase } from './src/supabaseClient.js'
 
         let currentUser = null
         let children = []
@@ -360,29 +361,48 @@
 
         // Find the next module to work on
         function findNextModule() {
-            // First, find in-progress modules
-            const inProgress = childModules
-                .filter(cm => !cm.is_completed && cm.stars_earned > 0)
+            // Get only the child's active modules
+            const activeChildModules = childModules.filter(cm => cm.is_active)
+            
+            if (activeChildModules.length === 0) {
+                return null
+            }
+
+            // Map to include full module data
+            const activeModulesWithData = activeChildModules
                 .map(cm => {
                     const module = modules.find(m => m.id === cm.module_id)
-                    return { ...module, childModule: cm }
+                    return module ? { ...module, childModule: cm } : null
                 })
-                .filter(m => m && m.is_active)
+                .filter(m => m !== null)
+
+            // First priority: Find the oldest completed module that is active
+            const completedModules = activeModulesWithData
+                .filter(m => m.childModule && m.childModule.is_completed)
+                .sort((a, b) => {
+                    // Sort by created_at ascending (oldest first)
+                    const dateA = new Date(a.created_at || 0)
+                    const dateB = new Date(b.created_at || 0)
+                    return dateA - dateB
+                })
+
+            if (completedModules.length > 0) {
+                return completedModules[0]
+            }
+
+            // Second priority: Find in-progress modules
+            const inProgress = activeModulesWithData
+                .filter(cm => !cm.childModule.is_completed && cm.childModule.stars_earned > 0)
 
             if (inProgress.length > 0) {
                 return inProgress[0]
             }
 
-            // If no in-progress, find first available module
-            const available = modules
-                .filter(m => m.is_active)
-                .map(m => {
-                    const cm = childModules.find(cm => cm.module_id === m.id)
-                    return { ...m, childModule: cm }
-                })
-                .filter(m => !m.childModule || !m.childModule.is_completed)
+            // Third priority: Find first not-started module
+            const notStarted = activeModulesWithData
+                .filter(m => !m.childModule || !m.childModule.stars_earned)
 
-            return available[0] || null
+            return notStarted[0] || null
         }
 
         // Display next module
@@ -428,24 +448,20 @@
             }
 
             // Button actions
-            continueButton.onclick = () => {
-                // Map module codes to files (same as dashboard)
-                const moduleFiles = {
-                    'MODULE1': 'module1.html',
-                    'MODULE2': 'module2.html',
-                    'MODULE3': 'module3.html',
-                    'MODULE4': 'module4.html',
-                    'MODULE5': 'module5.html',
-                    'MODULE6': 'module6.html',
-                    'MODULE7': 'module7.html',
-                    'MODULE8': 'module8.html'
-                }
-                
-                const moduleFile = moduleFiles[module.code]
-                if (moduleFile) {
-                    window.location.href = `/modules/${moduleFile}?childId=${selectedChild.id}`
-                } else {
-                    // Fallback to dashboard if module file not found
+            continueButton.onclick = async () => {
+                try {
+                    // Update module status to in_progress
+                    await updateChildModuleStatus(selectedChild.id, module.id, 'in_progress')
+                    
+                    // Get current user for the URL
+                    const { data: { user } } = await supabase.auth.getUser()
+                    
+                    // Load module through the module player (same as dashboard)
+                    const moduleUrl = `/module.html?code=${module.code}&childId=${selectedChild.id}&moduleId=${module.id}&parentUserId=${user.id}`
+                    window.location.href = moduleUrl
+                } catch (error) {
+                    console.error('Error starting module:', error)
+                    // Fallback to dashboard if there's an error
                     window.location.href = `/dashboard.html?childId=${selectedChild.id}`
                 }
             }
