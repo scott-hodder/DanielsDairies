@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AI Module Generator v4.0
  * ==========================
  * 
@@ -100,6 +100,14 @@ interface ModuleMetadata {
   theme: string;
   characterName: string;
   characterEmoji: string;
+  characterType?: string;
+}
+
+// Series data from the database
+interface SeriesInfo {
+  label: string;
+  character_type: string;
+  emoji: string;
 }
 
 interface LessonContent {
@@ -672,36 +680,62 @@ CRITICAL: Always respond with ONLY valid JSON. No explanations, no markdown, jus
 
 async function generateMetadata(
   apiKey: string,
-  contentBrief: string
+  contentBrief: string,
+  seriesInfo?: SeriesInfo | null
 ): Promise<ModuleMetadata> {
+  // Build full character name like "Daniel the Dog" if series info available
+  const fullCharacterName = seriesInfo 
+    ? `${seriesInfo.label} the ${seriesInfo.character_type.charAt(0).toUpperCase() + seriesInfo.character_type.slice(1)}`
+    : null;
+
+  // If we have series info, include it in the prompt to guide the AI
+  const seriesContext = seriesInfo 
+    ? `\n\nIMPORTANT - SERIES CHARACTER INFO:
+This module belongs to the "${seriesInfo.label}" series.
+The mascot is "${fullCharacterName}" - a friendly ${seriesInfo.character_type}.
+The mascot emoji MUST be: ${seriesInfo.emoji}
+The character name MUST be "${fullCharacterName}".
+Always refer to the mascot as "${fullCharacterName}" throughout the module.
+DO NOT use any other animal or emoji - only use ${seriesInfo.emoji} for the mascot.`
+    : "";
+
   const prompt = `Based on this content brief, create module metadata.
 
 CONTENT BRIEF:
-${contentBrief}
+${contentBrief}${seriesContext}
 
 Respond with ONLY this JSON structure:
 {
   "title": "Main module title (catchy, child-friendly)",
   "subtitle": "Brief tagline (10 words max)",
-  "series": "Series name if mentioned, otherwise 'custom'",
+  "series": "${seriesInfo?.label || 'custom'}",
   "targetAge": "Age range like '5-8' or '8-12'",
   "theme": "Core psychological theme (e.g., 'anxiety management', 'emotional regulation')",
-  "characterName": "Friendly mascot name (animal preferred)",
-  "characterEmoji": "Single emoji representing the mascot"
+  "characterName": "${fullCharacterName || 'Friendly mascot name (animal preferred)'}",
+  "characterEmoji": "${seriesInfo?.emoji || 'Single emoji representing the mascot'}"
 }`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<ModuleMetadata>(response);
   
+  // If we have series info, ALWAYS enforce the character type and emoji (override AI response)
+  if (seriesInfo && parsed) {
+    parsed.characterEmoji = seriesInfo.emoji;
+    parsed.characterName = fullCharacterName || seriesInfo.label;
+    parsed.characterType = seriesInfo.character_type;
+    parsed.series = seriesInfo.label;
+  }
+  
   if (!parsed || !parsed.title) {
     return {
       title: "My Feelings Adventure",
       subtitle: "Learning about emotions together",
-      series: "custom",
+      series: seriesInfo?.label || "custom",
       targetAge: "5-10",
       theme: "emotional awareness",
-      characterName: "Buddy",
-      characterEmoji: "ðŸ•"
+      characterName: fullCharacterName || "Buddy",
+      characterEmoji: seriesInfo?.emoji || "🐕",
+      characterType: seriesInfo?.character_type
     };
   }
   
@@ -822,7 +856,7 @@ Create exactly ${count} unique lessons. Make each lesson focus on a different as
   const lessons = parsed?.lessons || [];
   while (lessons.length < count) {
     lessons.push({
-      heading: `Lesson ${lessons.length + 1} ðŸ“š`,
+      heading: `Lesson ${lessons.length + 1} 📚`,
       paragraphs: [
         "Learning about our feelings helps us understand ourselves better.",
         "Everyone has feelings, and that's perfectly normal.",
@@ -873,7 +907,7 @@ Create exactly ${count} different checklists, each focusing on different skills 
   const checklists = parsed?.checklists || [];
   while (checklists.length < count) {
     checklists.push({
-      heading: "âœ… My Action Checklist",
+      heading: "✅ My Action Checklist",
       instructions: "Check off each item as you practice it!",
       items: [
         "Take a deep breath when I feel big emotions",
@@ -915,7 +949,7 @@ Create exactly ${count} different reflection prompts.`;
   const reflections = parsed?.reflections || [];
   while (reflections.length < count) {
     reflections.push({
-      heading: "ðŸ“ My Thoughts",
+      heading: "📝 My Thoughts",
       prompt: "Think about a time when you had big feelings. What happened and how did you handle it?",
       placeholder: "Write your thoughts here..."
     });
@@ -956,7 +990,7 @@ Create exactly ${count} different quiz questions.`;
   const quizzes = parsed?.quizzes || [];
   while (quizzes.length < count) {
     quizzes.push({
-      heading: "ðŸŽ¯ Quick Quiz!",
+      heading: "🎯 Quick Quiz!",
       question: "What should you do when you feel really big emotions?",
       answers: [
         { text: "Take deep breaths and find a calm activity", isCorrect: true, feedback: "Excellent! Taking deep breaths helps our body calm down." },
@@ -997,7 +1031,7 @@ Create exactly ${count} different drawing activities.`;
   const drawings = parsed?.drawings || [];
   while (drawings.length < count) {
     drawings.push({
-      heading: "ðŸŽ¨ Draw Your Feelings",
+      heading: "🎨 Draw Your Feelings",
       instructions: "In the space below, draw a picture that shows how you're feeling today.",
       promptQuestion: "What does your drawing show about your feelings?"
     });
@@ -1025,7 +1059,7 @@ Respond with ONLY this JSON:
   const parsed = safeJsonParse<BreathingContent>(response);
   
   return parsed || {
-    heading: "ðŸŒ¬ï¸ Calm Breathing",
+    heading: "🌬️ Calm Breathing",
     instructions: "Let's do some calm breathing together. This helps our body relax when feelings get too big.",
     inhaleText: "Breathe in calm...",
     holdText: "Hold gently...",
@@ -1067,7 +1101,7 @@ Create exactly ${count} different scenarios.`;
   const scenarios = parsed?.scenarios || [];
   while (scenarios.length < count) {
     scenarios.push({
-      heading: "ðŸ¤” What Would You Do?",
+      heading: "🤔 What Would You Do?",
       scenario: "Imagine you're at school and a friend says something that hurts your feelings. You feel sad and a little angry.",
       question: "What would be a good thing to do?",
       options: [
@@ -1108,7 +1142,7 @@ Respond with ONLY this JSON:
   const thermometers = parsed?.thermometers || [];
   while (thermometers.length < count) {
     thermometers.push({
-      heading: "ðŸŒ¡ï¸ My Feelings Thermometer",
+      heading: "🌡️ My Feelings Thermometer",
       instructions: "Move the slider to show how big your feelings are right now.",
       lowLabel: "Calm and peaceful",
       highLabel: "Very big feelings!",
@@ -1134,11 +1168,11 @@ Respond with ONLY this JSON:
       "heading": "Activity title with body emoji",
       "instructions": "Instructions for exploring body sensations (1-2 sentences)",
       "bodyParts": [
-        { "name": "Head", "emoji": "ðŸ§ ", "description": "What happens here when you feel this emotion" },
-        { "name": "Chest", "emoji": "ðŸ’—", "description": "What happens here" },
-        { "name": "Tummy", "emoji": "ðŸ¦‹", "description": "What happens here" },
-        { "name": "Hands", "emoji": "âœ‹", "description": "What happens here" },
-        { "name": "Legs", "emoji": "ðŸ¦µ", "description": "What happens here" }
+        { "name": "Head", "emoji": "🧠 ", "description": "What happens here when you feel this emotion" },
+        { "name": "Chest", "emoji": "💗", "description": "What happens here" },
+        { "name": "Tummy", "emoji": "🦋", "description": "What happens here" },
+        { "name": "Hands", "emoji": "✋", "description": "What happens here" },
+        { "name": "Legs", "emoji": "🦵", "description": "What happens here" }
       ]
     }
   ]
@@ -1150,14 +1184,14 @@ Respond with ONLY this JSON:
   const bodyMaps = parsed?.bodyMaps || [];
   while (bodyMaps.length < count) {
     bodyMaps.push({
-      heading: "ðŸ«€ Where Do Feelings Live in My Body?",
+      heading: "🫀 Where Do Feelings Live in My Body?",
       instructions: "Tap on different parts of the body to see how feelings show up there!",
       bodyParts: [
-        { name: "Head", emoji: "ðŸ§ ", description: "Racing thoughts or foggy thinking" },
-        { name: "Chest", emoji: "ðŸ’—", description: "Heart beating fast or tight feeling" },
-        { name: "Tummy", emoji: "ðŸ¦‹", description: "Butterflies or upset stomach" },
-        { name: "Hands", emoji: "âœ‹", description: "Shaky or sweaty palms" },
-        { name: "Legs", emoji: "ðŸ¦µ", description: "Wobbly or wanting to run" }
+        { name: "Head", emoji: "🧠 ", description: "Racing thoughts or foggy thinking" },
+        { name: "Chest", emoji: "💗", description: "Heart beating fast or tight feeling" },
+        { name: "Tummy", emoji: "🦋", description: "Butterflies or upset stomach" },
+        { name: "Hands", emoji: "✋", description: "Shaky or sweaty palms" },
+        { name: "Legs", emoji: "🦵", description: "Wobbly or wanting to run" }
       ]
     });
   }
@@ -1180,12 +1214,12 @@ Respond with ONLY this JSON:
       "heading": "Activity title with emoji",
       "instructions": "Instructions for selecting feelings (1-2 sentences)",
       "feelings": [
-        { "name": "Happy", "emoji": "ðŸ˜Š", "color": "#FFE8A3" },
-        { "name": "Sad", "emoji": "ðŸ˜¢", "color": "#a8d8ea" },
-        { "name": "Angry", "emoji": "ðŸ˜ ", "color": "#fecaca" },
-        { "name": "Scared", "emoji": "ðŸ˜¨", "color": "#d4a5ff" },
-        { "name": "Calm", "emoji": "ðŸ˜Œ", "color": "#A8E6CF" },
-        { "name": "Excited", "emoji": "ðŸ¤©", "color": "#F4A261" }
+        { "name": "Happy", "emoji": "😊", "color": "#FFE8A3" },
+        { "name": "Sad", "emoji": "😢", "color": "#a8d8ea" },
+        { "name": "Angry", "emoji": "😀 ", "color": "#fecaca" },
+        { "name": "Scared", "emoji": "😨", "color": "#d4a5ff" },
+        { "name": "Calm", "emoji": "😌", "color": "#A8E6CF" },
+        { "name": "Excited", "emoji": "🤩", "color": "#F4A261" }
       ],
       "followUpQuestion": "Question after they select their feeling"
     }
@@ -1198,15 +1232,15 @@ Respond with ONLY this JSON:
   const selectors = parsed?.selectors || [];
   while (selectors.length < count) {
     selectors.push({
-      heading: "ðŸŽ­ How Am I Feeling Right Now?",
+      heading: "🎭 How Am I Feeling Right Now?",
       instructions: "Tap on the feeling that matches how you feel right now. You can pick more than one!",
       feelings: [
-        { name: "Happy", emoji: "ðŸ˜Š", color: "#FFE8A3" },
-        { name: "Sad", emoji: "ðŸ˜¢", color: "#a8d8ea" },
-        { name: "Angry", emoji: "ðŸ˜ ", color: "#fecaca" },
-        { name: "Scared", emoji: "ðŸ˜¨", color: "#d4a5ff" },
-        { name: "Calm", emoji: "ðŸ˜Œ", color: "#A8E6CF" },
-        { name: "Excited", emoji: "ðŸ¤©", color: "#F4A261" }
+        { name: "Happy", emoji: "😊", color: "#FFE8A3" },
+        { name: "Sad", emoji: "😢", color: "#a8d8ea" },
+        { name: "Angry", emoji: "😀 ", color: "#fecaca" },
+        { name: "Scared", emoji: "😨", color: "#d4a5ff" },
+        { name: "Calm", emoji: "😌", color: "#A8E6CF" },
+        { name: "Excited", emoji: "🤩", color: "#F4A261" }
       ],
       followUpQuestion: "What made you feel this way today?"
     });
@@ -1231,12 +1265,12 @@ Respond with ONLY this JSON:
       "storyText": "Short story about the mascot's calm space (2-3 sentences)",
       "instructions": "Instructions for building their own calm space (1-2 sentences)",
       "items": [
-        { "id": "blanket", "name": "Soft blanket", "emoji": "ðŸ§¸" },
-        { "id": "pillow", "name": "Comfy pillow", "emoji": "ðŸ›ï¸" },
-        { "id": "music", "name": "Calm music", "emoji": "ðŸŽµ" },
-        { "id": "book", "name": "Favorite book", "emoji": "ðŸ“š" },
-        { "id": "toy", "name": "Special toy", "emoji": "ðŸ§¸" },
-        { "id": "light", "name": "Dim lights", "emoji": "ðŸ’¡" }
+        { "id": "blanket", "name": "Soft blanket", "emoji": "🧠¸" },
+        { "id": "pillow", "name": "Comfy pillow", "emoji": "🛏️" },
+        { "id": "music", "name": "Calm music", "emoji": "🎵" },
+        { "id": "book", "name": "Favorite book", "emoji": "📚" },
+        { "id": "toy", "name": "Special toy", "emoji": "🧠¸" },
+        { "id": "light", "name": "Dim lights", "emoji": "💡" }
       ],
       "locationQuestion": "Where will your calm-down space be?"
     }
@@ -1249,16 +1283,16 @@ Respond with ONLY this JSON:
   const denBuilders = parsed?.denBuilders || [];
   while (denBuilders.length < count) {
     denBuilders.push({
-      heading: "ðŸ  Build Your Calm-Down Den",
+      heading: "🏠 Build Your Calm-Down Den",
       storyText: `When ${metadata.characterName}'s feelings get too big, they go to their special calm-down space. It's cozy and safe, with all their favorite things to help them feel better.`,
       instructions: "Tap on items to add them to YOUR calm-down den!",
       items: [
-        { id: "blanket", name: "Soft blanket", emoji: "ðŸ§£" },
-        { id: "pillow", name: "Comfy pillow", emoji: "ðŸ›ï¸" },
-        { id: "music", name: "Calm music", emoji: "ðŸŽµ" },
-        { id: "book", name: "Favorite book", emoji: "ðŸ“š" },
-        { id: "toy", name: "Special toy", emoji: "ðŸ§¸" },
-        { id: "light", name: "Dim lights", emoji: "ðŸ’¡" }
+        { id: "blanket", name: "Soft blanket", emoji: "🧠£" },
+        { id: "pillow", name: "Comfy pillow", emoji: "🛏️" },
+        { id: "music", name: "Calm music", emoji: "🎵" },
+        { id: "book", name: "Favorite book", emoji: "📚" },
+        { id: "toy", name: "Special toy", emoji: "🧠¸" },
+        { id: "light", name: "Dim lights", emoji: "💡" }
       ],
       locationQuestion: "Where will your calm-down space be at home?"
     });
@@ -1297,7 +1331,7 @@ Respond with ONLY this JSON:
   const actionPlans = parsed?.actionPlans || [];
   while (actionPlans.length < count) {
     actionPlans.push({
-      heading: "ðŸ¾ My Paw-Steps Plan",
+      heading: "🐾 My Paw-Steps Plan",
       instructions: "Fill in your personal plan for when feelings get big!",
       steps: [
         { stepNumber: 1, title: "NOTICE", prompt: "What are my warning signs?", placeholder: "e.g., tight fists, fast breathing..." },
@@ -1326,9 +1360,9 @@ Respond with ONLY this JSON:
       "heading": "Activity title with warning emoji",
       "instructions": "Instructions for identifying warning signs (1-2 sentences)",
       "categories": [
-        { "category": "Body Signs", "emoji": "ðŸ«€", "examples": ["Heart beats fast", "Hands get sweaty", "Tummy feels funny"] },
-        { "category": "Thought Signs", "emoji": "ðŸ’­", "examples": ["Can't stop worrying", "Thoughts go fast", "Hard to focus"] },
-        { "category": "Action Signs", "emoji": "ðŸƒ", "examples": ["Want to run away", "Feel like yelling", "Can't sit still"] }
+        { "category": "Body Signs", "emoji": "🫀", "examples": ["Heart beats fast", "Hands get sweaty", "Tummy feels funny"] },
+        { "category": "Thought Signs", "emoji": "💭", "examples": ["Can't stop worrying", "Thoughts go fast", "Hard to focus"] },
+        { "category": "Action Signs", "emoji": "🏃", "examples": ["Want to run away", "Feel like yelling", "Can't sit still"] }
       ]
     }
   ]
@@ -1340,12 +1374,12 @@ Respond with ONLY this JSON:
   const warningSigns = parsed?.warningSigns || [];
   while (warningSigns.length < count) {
     warningSigns.push({
-      heading: "âš ï¸ My Early Warning Signs",
+      heading: "⚠ ï¸ My Early Warning Signs",
       instructions: "Check the signs that happen to YOU when feelings start getting big!",
       categories: [
-        { category: "Body Signs", emoji: "ðŸ«€", examples: ["Heart beats fast", "Hands get sweaty", "Tummy feels funny", "Face gets hot"] },
-        { category: "Thought Signs", emoji: "ðŸ’­", examples: ["Can't stop worrying", "Thoughts go fast", "Hard to focus", "Feel confused"] },
-        { category: "Action Signs", emoji: "ðŸƒ", examples: ["Want to run away", "Feel like yelling", "Can't sit still", "Want to hide"] }
+        { category: "Body Signs", emoji: "🫀", examples: ["Heart beats fast", "Hands get sweaty", "Tummy feels funny", "Face gets hot"] },
+        { category: "Thought Signs", emoji: "💭", examples: ["Can't stop worrying", "Thoughts go fast", "Hard to focus", "Feel confused"] },
+        { category: "Action Signs", emoji: "🏃", examples: ["Want to run away", "Feel like yelling", "Can't sit still", "Want to hide"] }
       ]
     });
   }
@@ -1368,10 +1402,10 @@ Respond with ONLY this JSON:
       "heading": "Activity title with matching emoji",
       "instructions": "Instructions for the matching game (1-2 sentences)",
       "pairs": [
-        { "situation": "A friend shares their toy with you", "feeling": "Happy", "emoji": "ðŸ˜Š" },
-        { "situation": "Someone takes your turn", "feeling": "Frustrated", "emoji": "ðŸ˜¤" },
-        { "situation": "You're about to try something new", "feeling": "Nervous", "emoji": "ðŸ˜°" },
-        { "situation": "Your pet cuddles with you", "feeling": "Loved", "emoji": "ðŸ¥°" }
+        { "situation": "A friend shares their toy with you", "feeling": "Happy", "emoji": "😊" },
+        { "situation": "Someone takes your turn", "feeling": "Frustrated", "emoji": "😤" },
+        { "situation": "You're about to try something new", "feeling": "Nervous", "emoji": "😰" },
+        { "situation": "Your pet cuddles with you", "feeling": "Loved", "emoji": "🥰" }
       ]
     }
   ]
@@ -1383,14 +1417,14 @@ Respond with ONLY this JSON:
   const matchingActivities = parsed?.matchingActivities || [];
   while (matchingActivities.length < count) {
     matchingActivities.push({
-      heading: "ðŸŽ¯ Match the Feeling!",
+      heading: "🎯 Match the Feeling!",
       instructions: "Read each situation and pick the feeling that matches best!",
       pairs: [
-        { situation: "A friend shares their toy with you", feeling: "Happy", emoji: "ðŸ˜Š" },
-        { situation: "Someone takes your turn in a game", feeling: "Frustrated", emoji: "ðŸ˜¤" },
-        { situation: "You're about to try something new", feeling: "Nervous", emoji: "ðŸ˜°" },
-        { situation: "Your pet cuddles with you", feeling: "Loved", emoji: "ðŸ¥°" },
-        { situation: "You can't find your favorite toy", feeling: "Worried", emoji: "ðŸ˜Ÿ" }
+        { situation: "A friend shares their toy with you", feeling: "Happy", emoji: "😊" },
+        { situation: "Someone takes your turn in a game", feeling: "Frustrated", emoji: "😤" },
+        { situation: "You're about to try something new", feeling: "Nervous", emoji: "😰" },
+        { situation: "Your pet cuddles with you", feeling: "Loved", emoji: "🥰" },
+        { situation: "You can't find your favorite toy", feeling: "Worried", emoji: "😟" }
       ]
     });
   }
@@ -1422,7 +1456,7 @@ Respond with ONLY this JSON:
   const parsed = safeJsonParse<SummaryContent>(response);
   
   return parsed || {
-    heading: "ðŸŒŸ What We Learned",
+    heading: "🌟 What We Learned",
     takeaways: [
       "All feelings are okay and normal",
       "Our body gives us signals about our feelings",
@@ -1452,7 +1486,7 @@ Respond with ONLY this JSON:
   const parsed = safeJsonParse<CompletionContent>(response);
   
   return parsed || {
-    heading: "ðŸŽ‰ You Did It!",
+    heading: "🎉 You Did It!",
     celebrationText: `Amazing work! ${metadata.characterName} is so proud of you for completing this adventure. You've learned so many important things about feelings!`,
     nextStepsText: "Keep practicing what you learned, and remember - you can always come back to review!"
   };
@@ -1768,23 +1802,25 @@ async function generateEmojiCheckIns(
 ): Promise<EmojiCheckInContent[]> {
   const prompt = `Create ${count} emoji check-in activities for children about "${metadata.theme}".
 
+IMPORTANT: Use actual emoji characters, not text names!
+
 Respond with ONLY this JSON:
 {
   "emojiCheckIns": [
     {
-      "heading": "Activity title with emoji",
+      "heading": "🎭 Activity title with emoji",
       "instructions": "Instructions for the emoji check-in (1-2 sentences)",
       "timePoints": [
-        { "label": "Morning", "emoji": "sunrise" },
-        { "label": "Afternoon", "emoji": "sun" },
-        { "label": "Evening", "emoji": "moon" }
+        { "label": "Morning", "emoji": "🌅" },
+        { "label": "Afternoon", "emoji": "☀️" },
+        { "label": "Evening", "emoji": "🌙" }
       ],
       "moodOptions": [
-        { "emoji": "happy", "label": "Great", "color": "#A8E6CF" },
-        { "emoji": "slightly_smiling", "label": "Good", "color": "#FFE8A3" },
-        { "emoji": "neutral", "label": "Okay", "color": "#e5e7eb" },
-        { "emoji": "confused", "label": "Not great", "color": "#fecaca" },
-        { "emoji": "sad", "label": "Sad", "color": "#a8d8ea" }
+        { "emoji": "😊", "label": "Great", "color": "#A8E6CF" },
+        { "emoji": "🙂", "label": "Good", "color": "#FFE8A3" },
+        { "emoji": "😐", "label": "Okay", "color": "#e5e7eb" },
+        { "emoji": "😕", "label": "Not great", "color": "#fecaca" },
+        { "emoji": "😢", "label": "Sad", "color": "#a8d8ea" }
       ],
       "patternQuestion": "Question about patterns they notice"
     }
@@ -1797,19 +1833,19 @@ Respond with ONLY this JSON:
   const checkIns = parsed?.emojiCheckIns || [];
   while (checkIns.length < count) {
     checkIns.push({
-      heading: "My Emoji Mood Tracker",
+      heading: "🎭 My Emoji Mood Tracker",
       instructions: "Pick an emoji for how you felt at each time today!",
       timePoints: [
-        { label: "Morning", emoji: "sunrise" },
-        { label: "Afternoon", emoji: "sun" },
-        { label: "Evening", emoji: "moon" }
+        { label: "Morning", emoji: "🌅" },
+        { label: "Afternoon", emoji: "☀️" },
+        { label: "Evening", emoji: "🌙" }
       ],
       moodOptions: [
-        { emoji: "happy", label: "Great", color: "#A8E6CF" },
-        { emoji: "slightly_smiling", label: "Good", color: "#FFE8A3" },
-        { emoji: "neutral", label: "Okay", color: "#e5e7eb" },
-        { emoji: "confused", label: "Not great", color: "#fecaca" },
-        { emoji: "sad", label: "Sad", color: "#a8d8ea" }
+        { emoji: "😊", label: "Great", color: "#A8E6CF" },
+        { emoji: "🙂", label: "Good", color: "#FFE8A3" },
+        { emoji: "😐", label: "Okay", color: "#e5e7eb" },
+        { emoji: "😕", label: "Not great", color: "#fecaca" },
+        { emoji: "😢", label: "Sad", color: "#a8d8ea" }
       ],
       patternQuestion: "Do you notice any patterns in your moods throughout the day?"
     });
@@ -2002,7 +2038,8 @@ async function generateAllContent(
   apiKey: string,
   contentBrief: string,
   pageStructure: PageTemplate[],
-  updateProgress: (step: string, message: string) => Promise<void>
+  updateProgress: (step: string, message: string) => Promise<void>,
+  seriesInfo?: SeriesInfo | null
 ): Promise<GeneratedContent> {
   
   // Count how many of each type we need
@@ -2036,7 +2073,7 @@ async function generateAllContent(
   };
   
   await updateProgress("metadata", "Creating module theme and character...");
-  const metadata = await generateMetadata(apiKey, contentBrief);
+  const metadata = await generateMetadata(apiKey, contentBrief, seriesInfo);
   
   await updateProgress("structure", "Planning module structure...");
   const [chapters, welcome] = await Promise.all([
@@ -2345,7 +2382,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/gh/supabase/supabase@master/examples/edge-functions/supabase/functions/_shared/module-response-tracker.js" type="module"></script>
   
   <!-- Module Stylesheets -->
   <link rel="stylesheet" href="./modules/shared/module-theme.css">
@@ -2522,13 +2558,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
       bindPageInteractions();
-      
-      // Restore form state after rendering the page
-      setTimeout(() => {
-        if (typeof window.restoreModuleFormState === 'function') {
-          window.restoreModuleFormState();
-        }
-      }, 50);
     }
     
     // Stars
@@ -2564,7 +2593,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       
       // Star celebration animation
       const star = document.createElement('div');
-      star.textContent = 'â­';
+      star.textContent = '⭐';
       star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
       document.body.appendChild(star);
       star.animate([
@@ -2644,6 +2673,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       // Drawing canvas
       const canvas = document.querySelector('.drawing-canvas');
       if (canvas) initDrawingCanvas(canvas);
+      
+      // Comic strip canvases
+      document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
+        initDrawingCanvas(canvas);
+      });
     }
     
     function initDrawingCanvas(canvas) {
@@ -2772,6 +2806,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.goHome = goHome;
     window.completeModule = completeModule;
     window.getChildName = getChildName;
+    window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
   </script>
 </body>
 </html>`;
@@ -2800,7 +2835,7 @@ function renderCoverPage(content: GeneratedContent): string {
           </div>
         </div>
         <div class="mt-8">
-          <p class="text-lg font-body" style="color: var(--secondary);">â­ Earn stars by completing activities! â­</p>
+          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
         </div>
       </div>
     </div>`;
@@ -2823,7 +2858,7 @@ function renderWelcomePage(content: GeneratedContent): string {
         <div class="rounded-xl p-6 text-center flex items-center justify-center gap-3" style="background-color: var(--soft-yellow);">
           <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
           <p class="text-xl font-semibold font-body" style="color: var(--dark);">
-            "All feelings are okayâ€”even the big ones!" ðŸ’›
+            "All feelings are okay—even the big ones!" 💛
           </p>
         </div>
       </div>
@@ -2834,7 +2869,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
   return `
     <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
       <div class="text-center">
-        <div class="text-8xl mb-6 animate-bounce-slow">ðŸ“–</div>
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
         <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter ${chapter.chapterNumber}</h1>
         <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">${escapeForTemplate(chapter.chapterTitle)}</h2>
         <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
@@ -2847,7 +2882,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
 function renderLessonPage(lesson: LessonContent, metadata: ModuleMetadata): string {
   const calloutHtml = lesson.calloutTitle && lesson.calloutText ? `
     <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">ðŸ’¡ ${escapeForTemplate(lesson.calloutTitle)}</h3>
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 ${escapeForTemplate(lesson.calloutTitle)}</h3>
       <p class="font-body" style="color: var(--dark);">${escapeForTemplate(lesson.calloutText)}</p>
     </div>` : "";
     
@@ -2902,7 +2937,7 @@ function renderChecklistPage(checklist: ChecklistContent, starIndex: number): st
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
           </div>
         </div>
       </div>
@@ -2936,7 +2971,7 @@ function renderReflectionPage(reflection: ReflectionContent, starIndex: number):
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
           </div>
         </div>
       </div>
@@ -2979,7 +3014,7 @@ function renderQuizPage(quiz: QuizContent, starIndex: number): string {
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! ⭐</label>
           </div>
         </div>
       </div>
@@ -3032,7 +3067,7 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
           </div>
         </div>
       </div>
@@ -3052,23 +3087,23 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
           <div class="text-center mb-8">
             <div class="w-48 h-48 mx-auto rounded-full flex items-center justify-center text-6xl animate-pulse" 
                  style="background: linear-gradient(135deg, var(--light-green), var(--secondary));">
-              ðŸŒ¬ï¸
+              🌬️
             </div>
           </div>
           
           <div class="grid md:grid-cols-3 gap-4 mb-8">
             <div class="rounded-2xl p-6 text-center" style="background-color: var(--light-green);">
-              <div class="text-4xl mb-2">ðŸ˜¤</div>
+              <div class="text-4xl mb-2">😤</div>
               <h3 class="font-title text-xl mb-2" style="color: var(--dark);">Breathe In</h3>
               <p class="font-body" style="color: var(--dark);">${escapeForTemplate(breathing.inhaleText)}</p>
             </div>
             <div class="rounded-2xl p-6 text-center" style="background-color: var(--soft-yellow);">
-              <div class="text-4xl mb-2">ðŸ˜Š</div>
+              <div class="text-4xl mb-2">😊</div>
               <h3 class="font-title text-xl mb-2" style="color: var(--dark);">Hold</h3>
               <p class="font-body" style="color: var(--dark);">${escapeForTemplate(breathing.holdText)}</p>
             </div>
             <div class="rounded-2xl p-6 text-center" style="background-color: var(--primary);">
-              <div class="text-4xl mb-2">ðŸ˜Œ</div>
+              <div class="text-4xl mb-2">😌</div>
               <h3 class="font-title text-xl mb-2" style="color: white;">Breathe Out</h3>
               <p class="font-body" style="color: white;">${escapeForTemplate(breathing.exhaleText)}</p>
             </div>
@@ -3083,7 +3118,7 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             />
-            <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! ⭐</label>
           </div>
         </div>
       </div>
@@ -3105,7 +3140,7 @@ function renderScenarioPage(scenario: ScenarioContent, starIndex: number): strin
           <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" disabled onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
           </div>
         </div>
       </div>
@@ -3125,7 +3160,7 @@ function renderFeelingThermometerPage(thermometer: FeelingThermometerContent, st
               <span class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(thermometer.lowLabel)}</span>
               <span class="font-body text-sm" style="color: var(--accent);">${escapeForTemplate(thermometer.highLabel)}</span>
             </div>
-            <input type="range" min="1" max="10" value="5" class="thermometer-slider w-full" onchange="saveFormData('thermometer_${starIndex}', this.value)">
+            <input type="range" min="1" max="10" value="5" class="thermometer-slider w-full" oninput="this.parentElement.querySelector('.thermometer-value').textContent = this.value; saveFormData('thermometer_${starIndex}', this.value)">
             <div class="text-center mt-4"><span class="thermometer-value text-4xl font-title" style="color: var(--primary);">5</span></div>
           </div>
           <div class="mb-6">
@@ -3134,7 +3169,7 @@ function renderFeelingThermometerPage(thermometer: FeelingThermometerContent, st
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! ⭐</label>
           </div>
         </div>
       </div>
@@ -3162,7 +3197,7 @@ function renderBodyMapPage(bodyMap: BodyMapContent, starIndex: number): string {
           <div class="grid gap-3 mb-6">${partsHtml}</div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I explored my body map! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I explored my body map! ⭐</label>
           </div>
         </div>
       </div>
@@ -3191,7 +3226,7 @@ function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: 
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
           </div>
         </div>
       </div>
@@ -3224,7 +3259,7 @@ function renderCalmDenBuilderPage(denBuilder: CalmDenBuilderContent, starIndex: 
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I built my calm-down den! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I built my calm-down den! ⭐</label>
           </div>
         </div>
       </div>
@@ -3253,7 +3288,7 @@ function renderActionPlanPage(actionPlan: ActionPlanContent, starIndex: number):
           ${stepsHtml}
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I created my action plan! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I created my action plan! ⭐</label>
           </div>
         </div>
       </div>
@@ -3297,7 +3332,7 @@ function renderWarningSignsPage(warningSigns: WarningSingsContent, starIndex: nu
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I identified my warning signs! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my warning signs! ⭐</label>
           </div>
         </div>
       </div>
@@ -3341,7 +3376,7 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! â­</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
           </div>
         </div>
       </div>
@@ -3351,7 +3386,7 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
 function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): string {
   const takeawaysHtml = summary.takeaways.map(t => `
     <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">âœ¨</span>
+      <span class="text-2xl">✨</span>
       <span class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(t)}</span>
     </div>`).join("");
 
@@ -3378,7 +3413,7 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
   return `
     <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
       <div class="text-center max-w-2xl">
-        <div class="text-8xl mb-6 animate-bounce-slow">ðŸŽ‰</div>
+        <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
         <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(completion.heading)}</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
@@ -3392,7 +3427,7 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
             class="w-full py-4 px-8 rounded-xl text-white font-bold text-xl font-title shadow-lg hover:shadow-xl transition-all cursor-pointer"
             style="background: linear-gradient(135deg, var(--secondary), #1ABC9C);"
           >
-            âœ… Complete Module & Return Home
+            ✅ Complete Module & Return Home
           </button>
           
           <button 
@@ -3400,7 +3435,7 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
             class="w-full py-3 px-6 rounded-xl font-semibold font-body cursor-pointer"
             style="background-color: white; color: var(--dark); border: 2px solid var(--secondary);"
           >
-            ðŸ“– Review This Module
+            📖 Review This Module
           </button>
         </div>
         
@@ -3434,7 +3469,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
             ${options.map((opt, i) => `
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.style.backgroundColor = 'white'); this.style.backgroundColor = 'var(--light-green)'; saveFormData('poll_${starIndex}', '${escapeForTemplate(opt)}');">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.style.backgroundColor = 'white'); this.style.backgroundColor = 'var(--light-green)'; saveFormData('poll_${starIndex}', '${escapeForTemplate(opt)}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 ${escapeForTemplate(opt)}
               </button>
             `).join("")}
@@ -3450,7 +3485,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
                  class="w-full p-4 rounded-xl border-3 font-body text-lg mb-4" 
                  style="background-color: white; border: 3px solid var(--primary); color: var(--dark);"
                  placeholder="Type your answer here..."
-                 onchange="saveFormData('fillblank_${starIndex}', this.value);">
+                 onchange="saveFormData('fillblank_${starIndex}', this.value); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
         </div>`;
       break;
       
@@ -3462,7 +3497,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
             ${[1,2,3,4,5].map(n => `
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.style.backgroundColor = 'white'); this.style.backgroundColor = 'var(--light-green)'; saveFormData('rate_${starIndex}', '${n}');">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.style.backgroundColor = 'white'); this.style.backgroundColor = 'var(--light-green)'; saveFormData('rate_${starIndex}', '${n}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 ${n}
               </button>
             `).join("")}
@@ -3483,12 +3518,12 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
           <div class="flex gap-4 justify-center">
             <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
                     style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-                    onclick="this.style.backgroundColor = 'var(--light-green)'; this.nextElementSibling.style.backgroundColor = 'white'; saveFormData('tf_${starIndex}', 'agree');">
+                    onclick="this.style.backgroundColor = 'var(--light-green)'; this.nextElementSibling.style.backgroundColor = 'white'; saveFormData('tf_${starIndex}', 'agree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
               I Agree
             </button>
             <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
                     style="border-color: var(--accent); background-color: white; color: var(--dark);"
-                    onclick="this.style.backgroundColor = '#fecaca'; this.previousElementSibling.style.backgroundColor = 'white'; saveFormData('tf_${starIndex}', 'disagree');">
+                    onclick="this.style.backgroundColor = '#fecaca'; this.previousElementSibling.style.backgroundColor = 'white'; saveFormData('tf_${starIndex}', 'disagree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
               I Disagree
             </button>
           </div>
@@ -3506,12 +3541,12 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
           
           ${interactionHtml}
           
-          <div class="mt-6 p-4 rounded-xl" style="background-color: var(--cream);">
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
             <p class="font-body" style="color: var(--dark);">${escapeForTemplate(lesson.followUpText)}</p>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
           <span class="text-3xl">${escapeForTemplate(metadata.characterEmoji)}</span>
           <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.mascotComment)}</p>
         </div>
@@ -3938,8 +3973,8 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
         <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${panel.panelNumber}</span>
         <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(panel.prompt)}</p>
       </div>
-      <div class="comic-canvas w-full h-32 rounded-lg mb-2 flex items-center justify-center" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
-        <span class="text-4xl">🎨</span>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
       </div>
       <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="${escapeForTemplate(panel.placeholder)}" onchange="saveFormData('comic_${starIndex}_${panel.panelNumber}', this.value)">
     </div>
@@ -4047,7 +4082,8 @@ function renderAffirmationBuilderPage(builder: AffirmationBuilderContent, starIn
 async function generateModule(
   supabaseClient: any,
   contentBrief: string,
-  jobId?: string
+  jobId?: string,
+  seriesInfo?: SeriesInfo | null
 ): Promise<{ html: string; pageCount: number; characterCount: number; spec: any }> {
   
   const updateProgress = async (step: string, message: string) => {
@@ -4073,7 +4109,7 @@ async function generateModule(
 
   
   await updateProgress("generating", `Creating ${pageStructure.length}-page module...`);
-  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress);
+  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo);
   
   // Generate module code
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
@@ -4105,7 +4141,8 @@ async function generateModule(
 async function runAsyncGeneration(
   supabaseClient: any,
   jobId: string,
-  contentBrief: string
+  contentBrief: string,
+  seriesInfo?: SeriesInfo | null
 ) {
   const startTime = Date.now();
   
@@ -4119,7 +4156,7 @@ async function runAsyncGeneration(
       setTimeout(() => reject(new Error("Generation timeout")), JOB_TIMEOUT_MS);
     });
     
-    const generationPromise = generateModule(supabaseClient, contentBrief, jobId);
+    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
     
     await supabaseClient
@@ -4197,9 +4234,25 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const contentBrief = body?.contentBrief;
     const asyncMode = body?.async === true;
+    const seriesId = body?.seriesId;
     
     if (!contentBrief) {
       return jsonResponse({ error: "contentBrief is required" }, 400);
+    }
+    
+    // Fetch series info if seriesId provided
+    let seriesInfo: SeriesInfo | null = null;
+    if (seriesId) {
+      const { data: series, error: seriesError } = await supabaseClient
+        .from("series")
+        .select("label, character_type, emoji")
+        .eq("id", seriesId)
+        .single();
+      
+      if (!seriesError && series) {
+        seriesInfo = series as SeriesInfo;
+        console.log(`[AI] Using series: ${seriesInfo.label} (${seriesInfo.character_type} ${seriesInfo.emoji})`);
+      }
     }
     
     // Async mode
@@ -4217,16 +4270,16 @@ serve(async (req) => {
       
       const anyGlobal = globalThis as any;
       if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
-        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief));
+        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo));
       } else {
-        runAsyncGeneration(supabaseClient, jobId, contentBrief).catch(console.error);
+        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo).catch(console.error);
       }
       
       return jsonResponse({ jobId });
     }
     
     // Sync mode
-    const result = await generateModule(supabaseClient, contentBrief);
+    const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo);
     return jsonResponse({
       html: result.html,
       pageCount: result.pageCount,

@@ -38,14 +38,14 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('generalSettings')">General Settings</button>
-            <button class="tab" onclick="switchTab('moduleCustomisation')">Module Customisation</button>
+            <button class="tab active" onclick="switchTab('moduleCustomisation')">Module Customisation</button>
             <button class="tab" onclick="switchTab('childModules')">Parent's Modules</button>
             <button class="tab" onclick="switchTab('rewards')">Rewards</button>
             <button class="tab" onclick="switchTab('parentToolkit')">Parent Toolkit</button>
+            <button class="tab" onclick="switchTab('generalSettings')">General Settings</button>
         </div>
         <!-- Tab Content: General Settings -->
-        <div id="generalSettingsTab" class="tab-content active">
+        <div id="generalSettingsTab" class="tab-content">
             <div class="rewards-panel" style="max-width: 1200px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
@@ -104,7 +104,7 @@
         </div>
         <!-- End General Settings Tab -->
 
-        <div id="moduleCustomisationTab" class="tab-content">
+        <div id="moduleCustomisationTab" class="tab-content active">
             <div class="admin-grid">
                 <!-- Modules List -->
                 <div class="modules-panel">
@@ -690,6 +690,88 @@
         }
     </style>
 
+    <!-- Early function definitions for inline onclick handlers -->
+    <script>
+        // These functions are defined early (before module script) to ensure they're available
+        // for inline onclick handlers in the HTML
+        window.showPreviewModal = function() {
+            if (!window.generatedModuleHTML) {
+                alert('Please generate a module first');
+                return;
+            }
+            
+            const modal = document.getElementById('previewModal');
+            const iframe = document.getElementById('modulePreviewFrame');
+            
+            iframe.srcdoc = window.generatedModuleHTML;
+            if (window.updateQualityIndicators) window.updateQualityIndicators();
+            modal.classList.add('active');
+            
+            setTimeout(() => {
+                if (window.checkModuleQuality) window.checkModuleQuality(iframe);
+            }, 2000);
+        }
+
+        window.closePreviewModal = function() {
+            const modal = document.getElementById('previewModal');
+            modal.classList.remove('active');
+        }
+
+        window.updateQualityIndicators = function() {
+            const pageCount = (window.generatedModuleHTML?.match(/data-page="/g) || []).length;
+            const wordCount = window.currentGenerationSpec ? '~3800' : '~3800';
+            
+            const pageCountEl = document.getElementById('pageCount');
+            const wordCountEl = document.getElementById('wordCount');
+            if (pageCountEl) pageCountEl.textContent = pageCount;
+            if (wordCountEl) wordCountEl.textContent = wordCount;
+            
+            const pageIndicator = document.getElementById('pageCountIndicator');
+            if (pageIndicator) {
+                pageIndicator.classList.remove('pass', 'warning', 'fail');
+                if (pageCount >= 18) {
+                    pageIndicator.classList.add('pass');
+                } else if (pageCount >= 15) {
+                    pageIndicator.classList.add('warning');
+                } else {
+                    pageIndicator.classList.add('fail');
+                }
+            }
+        }
+
+        window.checkModuleQuality = function(iframe) {
+            const icon = document.getElementById('jsCheckIcon');
+            const text = document.getElementById('jsCheckText');
+            const indicator = document.getElementById('jsCheckIndicator');
+            
+            if (icon) icon.textContent = '⏳';
+            if (text) text.textContent = 'Checking...';
+            if (indicator) indicator.classList.remove('pass', 'warning', 'fail');
+            
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                // Check for actual page elements (data-page attribute) instead of window.pages
+                const pageElements = iframeDoc.querySelectorAll('[data-page]');
+                const hasPages = pageElements && pageElements.length > 0;
+                const hasHeader = iframeDoc.querySelector('#moduleHeaderRoot')?.innerHTML.length > 0;
+                
+                if (hasPages && hasHeader) {
+                    if (icon) icon.textContent = '✅';
+                    if (text) text.textContent = 'Module loaded successfully';
+                    if (indicator) indicator.classList.add('pass');
+                } else {
+                    if (icon) icon.textContent = '⚠️';
+                    if (text) text.textContent = 'Module structure incomplete';
+                    if (indicator) indicator.classList.add('warning');
+                }
+            } catch (e) {
+                if (icon) icon.textContent = '❌';
+                if (text) text.textContent = 'Error checking module';
+                if (indicator) indicator.classList.add('fail');
+            }
+        }
+    </script>
+
     <script type="module">
         import { supabase } from './src/supabaseClient.js';
         import { getSettings, updateSettings } from './src/database.js';
@@ -1193,7 +1275,8 @@
         }
 
         // ========== AI MODULE GENERATION ==========
-        let generatedModuleHTML = null;
+        window.generatedModuleHTML = null;
+        let generatedModuleHTML = window.generatedModuleHTML;
         const legacyFileInput = document.getElementById('legacyModuleFile');
         const triggerModuleUploadBtn = document.getElementById('triggerModuleUpload');
         const migrationStatusEl = document.getElementById('migrationStatus');
@@ -1230,8 +1313,10 @@
                         .replace(/__WORKBOOK_ID__/g, moduleCode);
                 }
 
-                generatedModuleHTML = migratedHtml;
-                currentGenerationSpec = null;
+                window.generatedModuleHTML = migratedHtml;
+                generatedModuleHTML = window.generatedModuleHTML;
+                window.currentGenerationSpec = null;
+                currentGenerationSpec = window.currentGenerationSpec;
 
                 const resultPanel = document.getElementById('aiGeneratedResult');
                 const saveBtn = document.getElementById('saveAiGeneratedModuleBtn');
@@ -1283,7 +1368,8 @@
 let generationStartTime = null;
 let elapsedInterval = null;
 let currentJobId = null;
-let currentGenerationSpec = null;
+window.currentGenerationSpec = null;
+let currentGenerationSpec = window.currentGenerationSpec;
 
 // ========== SESSION RECOVERY ==========
 function saveGenerationSession(jobId, brief) {
@@ -1564,78 +1650,10 @@ function classifyGenerationError(error) {
         }
 
         // ========== PREVIEW MODAL ==========
-        function showPreviewModal() {
-            if (!generatedModuleHTML) {
-                alert('Please generate a module first');
-                return;
-            }
-            
-            const modal = document.getElementById('previewModal');
-            const iframe = document.getElementById('modulePreviewFrame');
-            
-            iframe.srcdoc = generatedModuleHTML;
-            updateQualityIndicators();
-            modal.classList.add('active');
-            
-            setTimeout(() => checkModuleQuality(iframe), 2000);
-        }
-
-        function closePreviewModal() {
-            const modal = document.getElementById('previewModal');
-            modal.classList.remove('active');
-        }
-
-        function updateQualityIndicators() {
-            const pageCount = (generatedModuleHTML.match(/data-page="/g) || []).length;
-            const wordCount = currentGenerationSpec ? '~3800' : '~3800';
-            
-            document.getElementById('pageCount').textContent = pageCount;
-            document.getElementById('wordCount').textContent = wordCount;
-            
-            const pageIndicator = document.getElementById('pageCountIndicator');
-            pageIndicator.classList.remove('pass', 'warning', 'fail');
-            if (pageCount >= 18) {
-                pageIndicator.classList.add('pass');
-            } else if (pageCount >= 15) {
-                pageIndicator.classList.add('warning');
-            } else {
-                pageIndicator.classList.add('fail');
-            }
-        }
-
-        function checkModuleQuality(iframe) {
-            const icon = document.getElementById('jsCheckIcon');
-            const text = document.getElementById('jsCheckText');
-            const indicator = document.getElementById('jsCheckIndicator');
-            
-            icon.textContent = '⏳';
-            text.textContent = 'Checking...';
-            indicator.classList.remove('pass', 'warning', 'fail');
-            
-            try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                const hasPages = iframe.contentWindow.pages && iframe.contentWindow.pages.length > 0;
-                const hasHeader = iframeDoc.querySelector('#moduleHeaderRoot')?.innerHTML.length > 0;
-                
-                if (hasPages && hasHeader) {
-                    icon.textContent = '✅';
-                    text.textContent = 'JavaScript working';
-                    indicator.classList.add('pass');
-                } else {
-                    icon.textContent = '⚠️';
-                    text.textContent = 'JavaScript issues detected';
-                    indicator.classList.add('warning');
-                }
-            } catch (e) {
-                icon.textContent = '❌';
-                text.textContent = 'JavaScript broken';
-                indicator.classList.add('fail');
-                console.error('Preview check error:', e);
-            }
-        }
+        // Functions moved to early non-module script for availability to inline onclick handlers
 
         function approveAndSaveFromPreview() {
-            closePreviewModal();
+            window.closePreviewModal();
             document.getElementById('saveAiGeneratedModuleBtn').click();
         }
 
@@ -1662,6 +1680,7 @@ function classifyGenerationError(error) {
     const title = document.getElementById('newModuleTitle').value.trim();
     const moduleCode = document.getElementById('newModuleCode').value.trim();
     const category = document.getElementById('newModuleCategory').value;
+    const seriesId = document.getElementById('newModuleSeries').value;
     const emotions = Array.from(document.getElementById('newModuleEmotions').selectedOptions).map(o => o.value);
     const skills = Array.from(document.getElementById('newModuleSkills').selectedOptions).map(o => o.value);
     const contentBrief = document.getElementById('newModuleContentBrief').value.trim();
@@ -1718,7 +1737,7 @@ function classifyGenerationError(error) {
         updatePipelineStep('initializing');
         addLog('Calling AI generation service...', 'info');
         
-        const jobId = await startGenerationJob(enrichedBrief);
+        const jobId = await startGenerationJob(enrichedBrief, seriesId);
         currentJobId = jobId;
         saveGenerationSession(jobId, contentBrief);
         
@@ -1733,11 +1752,14 @@ function classifyGenerationError(error) {
             throw new Error('AI did not return valid HTML');
         }
 
-        generatedModuleHTML = result.html;
-        currentGenerationSpec = result.spec;
+        window.generatedModuleHTML = result.html;
+        generatedModuleHTML = window.generatedModuleHTML;
+        window.currentGenerationSpec = result.spec;
+        currentGenerationSpec = window.currentGenerationSpec;
         
-        if (moduleCode && generatedModuleHTML.includes('__MODULE_CODE__')) {
-            generatedModuleHTML = generatedModuleHTML.replace(/__MODULE_CODE__/g, moduleCode);
+        if (moduleCode && window.generatedModuleHTML.includes('__MODULE_CODE__')) {
+            window.generatedModuleHTML = window.generatedModuleHTML.replace(/__MODULE_CODE__/g, moduleCode);
+            generatedModuleHTML = window.generatedModuleHTML;
 
         }
         
@@ -1784,7 +1806,7 @@ function sleep(ms) {
 }
 
 // Start generation job (returns job ID)
-async function startGenerationJob(contentBrief) {
+async function startGenerationJob(contentBrief, seriesId) {
 
 
   const response = await fetch(
@@ -1796,7 +1818,7 @@ async function startGenerationJob(contentBrief) {
         "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY
       },
-      body: JSON.stringify({ contentBrief, async: true })
+      body: JSON.stringify({ contentBrief, seriesId, async: true })
     }
   );
 
@@ -1920,15 +1942,19 @@ if (data.status === "running") {
             const generateBtn = document.getElementById('generateModuleBtn');
 
             try {
-                if (!generatedModuleHTML) {
+                if (!window.generatedModuleHTML) {
                     alert('Please generate a module with AI before saving.');
                     return;
                 }
 
-                saveBtn.disabled = true;
-                saveBtn.textContent = 'Saving...';
-                statusEl.textContent = '💾 Saving module...';
-                statusEl.style.color = '#7b3ff2';
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving...';
+                }
+                if (statusEl) {
+                    statusEl.textContent = '💾 Saving module...';
+                    statusEl.style.color = '#7b3ff2';
+                }
 
                 const loadingOverlay = document.getElementById('aiLoadingOverlay');
                 if (loadingOverlay) loadingOverlay.style.display = 'flex';
@@ -1967,8 +1993,10 @@ if (data.status === "running") {
                 if (insertError) throw insertError;
 
 
-                statusEl.textContent = '✅ Saved!';
-                statusEl.style.color = '#10b981';
+                if (statusEl) {
+                    statusEl.textContent = '✅ Saved!';
+                    statusEl.style.color = '#10b981';
+                }
 
                 // Show success message
                 alert(`✨ Module "${title}" created successfully!\n\nModule Code: ${moduleCode}\n\nThe module is now available in your module list.`);
@@ -1985,8 +2013,10 @@ if (data.status === "running") {
 
             } catch (error) {
                 console.error('[Admin] Save error:', error);
-                statusEl.textContent = '❌ Save failed';
-                statusEl.style.color = '#ef4444';
+                if (statusEl) {
+                    statusEl.textContent = '❌ Save failed';
+                    statusEl.style.color = '#ef4444';
+                }
                 
                 // Hide loading overlay
                 const loadingOverlay3 = document.getElementById('aiLoadingOverlay');
@@ -1995,8 +2025,10 @@ if (data.status === "running") {
                 alert('Failed to save module: ' + error.message);
                 throw error;
             } finally {
-                saveBtn.textContent = '💾 Create Module';
-                saveBtn.disabled = !generatedModuleHTML;
+                if (saveBtn) {
+                    saveBtn.textContent = '💾 Create Module';
+                    saveBtn.disabled = !window.generatedModuleHTML;
+                }
                 if (generateBtn) generateBtn.disabled = false;
                 const overlay = document.getElementById('aiLoadingOverlay');
                 if (overlay) overlay.style.display = 'none';
@@ -2024,7 +2056,7 @@ if (data.status === "running") {
         }
 
         window.copyGeneratedModuleHTML = async function() {
-            if (!generatedModuleHTML) {
+            if (!window.generatedModuleHTML) {
                 alert('Generate a module first to copy it.');
                 return;
             }
@@ -3661,7 +3693,8 @@ if (data.status === "running") {
             document.getElementById('addModuleForm').reset();
             
             // Reset AI generation state
-            generatedModuleHTML = null;
+            window.generatedModuleHTML = null;
+            generatedModuleHTML = window.generatedModuleHTML;
             document.getElementById('aiGeneratedPreview').style.display = 'none';
             document.getElementById('aiGenerationStatus').textContent = '';
             document.getElementById('filePreview').style.display = 'none';
