@@ -38,12 +38,73 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('moduleCustomisation')">Module Customisation</button>
+            <button class="tab active" onclick="switchTab('generalSettings')">General Settings</button>
+            <button class="tab" onclick="switchTab('moduleCustomisation')">Module Customisation</button>
             <button class="tab" onclick="switchTab('childModules')">Parent's Modules</button>
             <button class="tab" onclick="switchTab('rewards')">Rewards</button>
             <button class="tab" onclick="switchTab('parentToolkit')">Parent Toolkit</button>
         </div>
-        <div id="moduleCustomisationTab" class="tab-content active">
+        <!-- Tab Content: General Settings -->
+        <div id="generalSettingsTab" class="tab-content active">
+            <div class="rewards-panel" style="max-width: 1200px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 class="panel-title" style="margin-bottom: 4px;">General Settings</h2>
+                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Configure categories, series, emotions, and skills</p>
+                    </div>
+                </div>
+
+                <!-- Settings Grid - Two Columns -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    
+                    <!-- Categories Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Categories</h3>
+                        <div id="categoriesList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <input type="color" id="newCategoryColor" value="#4c6c96" style="width: 40px; height: 32px; border: none; border-radius: 4px; cursor: pointer;" onchange="document.getElementById('newCategoryColorHex').value = this.value;" oninput="document.getElementById('newCategoryColorHex').value = this.value;">
+                            <input type="text" class="form-input" id="newCategoryName" placeholder="Name" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralCategory()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                        <input type="text" class="form-input" id="newCategoryColorHex" placeholder="#4c6c96" value="#4c6c96" style="width: 100%; padding: 6px 10px; font-size: 12px; margin-top: 6px;" onchange="document.getElementById('newCategoryColor').value = this.value;">
+                    </div>
+
+                    <!-- Series Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Series</h3>
+                        <div id="seriesList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-input" id="newSeriesName" placeholder="Series name" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralSeries()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Emotions Targeted Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Emotions Targeted</h3>
+                        <div id="emotionsList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-input" id="newEmotionName" placeholder="Emotion" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralEmotion()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Skills Developed Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Skills Developed</h3>
+                        <div id="skillsList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-input" id="newSkillName" placeholder="Skill" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralSkill()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- End General Settings Tab -->
+
+        <div id="moduleCustomisationTab" class="tab-content">
             <div class="admin-grid">
                 <!-- Modules List -->
                 <div class="modules-panel">
@@ -106,12 +167,9 @@
 
                         <div class="form-group">
                             <label class="form-label">Category</label>
-                            <div style="display: flex; gap: 8px;">
-                                <select class="form-select" id="editCategory" style="flex: 1;">
-                                    <option value="">Select category...</option>
-                                </select>
-                                <button type="button" class="btn-add-category" onclick="openAddCategoryModal()">+ Add Category</button>
-                            </div>
+                            <select class="form-select" id="editCategory">
+                                <option value="">Select category...</option>
+                            </select>
                         </div>
 
                         <div class="form-group">
@@ -415,6 +473,7 @@
                         <select class="form-select" id="newModuleSeries">
                             <option value="">Select series...</option>
                         </select>
+                        <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Manage series in General Settings tab</p>
                     </div>
                 </div>
 
@@ -434,40 +493,18 @@
                     <div class="form-group">
                         <label class="form-label required-label">Emotions Targeted</label>
                         <select class="form-select" id="newModuleEmotions" multiple required style="height: 120px;">
-                            <option value="Anger">Anger</option>
-                            <option value="Anxiety">Anxiety</option>
-                            <option value="Fear">Fear</option>
-                            <option value="Sadness">Sadness</option>
-                            <option value="Frustration">Frustration</option>
-                            <option value="Overwhelm">Overwhelm</option>
-                            <option value="Worry">Worry</option>
-                            <option value="Jealousy">Jealousy</option>
-                            <option value="Shame">Shame</option>
-                            <option value="Guilt">Guilt</option>
                         </select>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                             <p style="font-size: 12px; color: #6b7c8f; margin: 0;">Hold Ctrl/Cmd to select multiple</p>
-                            <button type="button" onclick="addCustomEmotion()" style="font-size: 12px; padding: 4px 8px; background: #4c6c96; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Add Custom</button>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label required-label">Skills Developed</label>
                         <select class="form-select" id="newModuleSkills" multiple required style="height: 120px;">
-                            <option value="Emotional Identification">Emotional Identification</option>
-                            <option value="Calming Strategies">Calming Strategies</option>
-                            <option value="Problem Solving">Problem Solving</option>
-                            <option value="Confidence / Self-belief">Confidence / Self-belief</option>
-                            <option value="Social Skills">Social Skills</option>
-                            <option value="Empathy">Empathy</option>
-                            <option value="Self-regulation">Self-regulation</option>
-                            <option value="Communication">Communication</option>
-                            <option value="Resilience">Resilience</option>
-                            <option value="Mindfulness">Mindfulness</option>
                         </select>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                             <p style="font-size: 12px; color: #6b7c8f; margin: 0;">Hold Ctrl/Cmd to select multiple</p>
-                            <button type="button" onclick="addCustomSkill()" style="font-size: 12px; padding: 4px 8px; background: #4c6c96; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Add Custom</button>
                         </div>
                     </div>
                 </div>
@@ -656,7 +693,6 @@
     <script type="module">
         import { supabase } from './src/supabaseClient.js';
         import { getSettings, updateSettings } from './src/database.js';
-        import { convertModule } from './convert-module-browser.js';
 
         let allChildren = [];
         let allParents = [];
@@ -679,6 +715,38 @@
             }
             return String(moduleId);
         }
+
+        // Tab switching function - defined early to be available for HTML onclick handlers
+        window.switchTab = function(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tabName === 'generalSettings') {
+                document.getElementById('generalSettingsTab').classList.add('active');
+                loadGeneralSettings();
+            } else if (tabName === 'childModules') {
+                document.getElementById('parentModulesTab').classList.add('active');
+                // Load parents if not already loaded
+                if (allParents.length === 0) {
+                    loadAllParents();
+                }
+            } else if (tabName === 'moduleCustomisation') {
+                document.getElementById('moduleCustomisationTab').classList.add('active');
+                renderAllModulesList();
+            } else if (tabName === 'rewards') {
+                document.getElementById('rewardsTab').classList.add('active');
+                if (!rewards || rewards.length === 0) {
+                    loadRewards();
+                }
+            } else if (tabName === 'parentToolkit') {
+                document.getElementById('parentToolkitTab').classList.add('active');
+                loadToolkitSettings();
+            }
+        };
 
         const rewardsListElement = document.getElementById('rewardsList');
 
@@ -2379,32 +2447,342 @@ if (data.status === "running") {
             alert('Reward added successfully.');
         }
 
-        // Tab switching
-        window.switchTab = function(tabName) {
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+        // General Settings Management
+        let generalCategories = [];
+        let generalSeries = [];
+        let generalEmotions = [];
+        let generalSkills = [];
 
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            if (tabName === 'childModules') {
-                document.getElementById('parentModulesTab').classList.add('active');
-                // Load parents if not already loaded
-                if (allParents.length === 0) {
-                    loadAllParents();
+        async function loadGeneralSettings() {
+            try {
+                // Load categories from category_colors table
+                const { data: categoryData, error: categoryError } = await supabase
+                    .from('category_colors')
+                    .select('*')
+                    .order('category', { ascending: true });
+
+                if (!categoryError && categoryData) {
+                    generalCategories = categoryData.map(c => ({
+                        name: c.category,
+                        color: c.color
+                    }));
                 }
-            } else if (tabName === 'moduleCustomisation') {
-                document.getElementById('moduleCustomisationTab').classList.add('active');
-                renderAllModulesList();
-            } else if (tabName === 'rewards') {
-                document.getElementById('rewardsTab').classList.add('active');
-                if (!rewards || rewards.length === 0) {
-                    loadRewards();
+
+                // Load series from series table
+                const { data: seriesData, error: seriesError } = await supabase
+                    .from('series')
+                    .select('*')
+                    .order('label', { ascending: true });
+
+                if (!seriesError && seriesData) {
+                    generalSeries = seriesData;
                 }
-            } else if (tabName === 'parentToolkit') {
-                document.getElementById('parentToolkitTab').classList.add('active');
-                loadToolkitSettings();
+
+                // Load emotions from emotions table
+                const { data: emotionsData, error: emotionsError } = await supabase
+                    .from('emotions')
+                    .select('*')
+                    .order('label', { ascending: true });
+
+                if (!emotionsError && emotionsData) {
+                    generalEmotions = emotionsData;
+                }
+
+                // Load skills from skills table
+                const { data: skillsData, error: skillsError } = await supabase
+                    .from('skills')
+                    .select('*')
+                    .order('label', { ascending: true });
+
+                if (!skillsError && skillsData) {
+                    generalSkills = skillsData;
+                }
+
+                renderGeneralCategories();
+                renderGeneralSeries();
+                renderGeneralEmotions();
+                renderGeneralSkills();
+            } catch (error) {
+                console.error('Error loading general settings:', error);
+                alert('Failed to load settings. Please refresh the page.');
+            }
+        }
+
+        function renderGeneralCategories() {
+            const list = document.getElementById('categoriesList');
+            if (!list) return;
+
+            if (generalCategories.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No categories</p>';
+                return;
+            }
+
+            list.innerHTML = generalCategories.map((cat, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                        <div style="width: 20px; height: 20px; background: ${cat.color}; border-radius: 3px; border: 1px solid #ddd; flex-shrink: 0;"></div>
+                        <span style="color: #374151; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${cat.name}</span>
+                    </div>
+                    <button onclick="deleteGeneralCategory(${index})" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderGeneralSeries() {
+            const list = document.getElementById('seriesList');
+            if (!list) return;
+
+            if (generalSeries.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No series</p>';
+                return;
+            }
+
+            list.innerHTML = generalSeries.map((series) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <span style="color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${series.label}</span>
+                    <button onclick="deleteGeneralSeries('${series.id}')" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderGeneralEmotions() {
+            const list = document.getElementById('emotionsList');
+            if (!list) return;
+
+            if (generalEmotions.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No emotions</p>';
+                return;
+            }
+
+            list.innerHTML = generalEmotions.map((emotion) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <span style="color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${emotion.label}</span>
+                    <button onclick="deleteGeneralEmotion('${emotion.id}')" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderGeneralSkills() {
+            const list = document.getElementById('skillsList');
+            if (!list) return;
+
+            if (generalSkills.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No skills</p>';
+                return;
+            }
+
+            list.innerHTML = generalSkills.map((skill) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <span style="color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${skill.label}</span>
+                    <button onclick="deleteGeneralSkill('${skill.id}')" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        window.addGeneralCategory = async function() {
+            const nameInput = document.getElementById('newCategoryName');
+            const colorPicker = document.getElementById('newCategoryColor');
+            const colorHex = document.getElementById('newCategoryColorHex');
+
+            const name = nameInput.value.trim().toLowerCase();
+            const color = colorPicker.value;
+
+            if (!name) {
+                alert('Please enter a category name');
+                return;
+            }
+
+            if (generalCategories.some(c => c.name === name)) {
+                alert('Category already exists');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('category_colors')
+                    .upsert({ category: name, color }, { onConflict: 'category' });
+
+                if (error) throw error;
+
+                generalCategories.push({ name, color });
+                nameInput.value = '';
+                colorPicker.value = '#4c6c96';
+                colorHex.value = '#4c6c96';
+                renderGeneralCategories();
+                alert('Category added successfully');
+            } catch (error) {
+                console.error('Error adding category:', error);
+                alert('Failed to add category. Please try again.');
+            }
+        }
+
+        window.deleteGeneralCategory = async function(index) {
+            if (!confirm('Delete this category?')) return;
+
+            const category = generalCategories[index];
+            try {
+                const { error } = await supabase
+                    .from('category_colors')
+                    .delete()
+                    .eq('category', category.name);
+
+                if (error) throw error;
+
+                generalCategories.splice(index, 1);
+                renderGeneralCategories();
+                alert('Category deleted successfully');
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                alert('Failed to delete category. Please try again.');
+            }
+        }
+
+        window.addGeneralSeries = async function() {
+            const input = document.getElementById('newSeriesName');
+            const value = input.value.trim();
+
+            if (!value) {
+                alert('Please enter a series name');
+                return;
+            }
+
+            if (generalSeries.some(s => s.label.toLowerCase() === value.toLowerCase())) {
+                alert('Series already exists');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('series')
+                    .insert([{ label: value }]);
+
+                if (error) throw error;
+
+                input.value = '';
+                await loadGeneralSettings();
+                alert('Series added successfully');
+            } catch (error) {
+                console.error('Error adding series:', error);
+                alert('Failed to add series. Please try again.');
+            }
+        }
+
+        window.deleteGeneralSeries = async function(id) {
+            if (!confirm('Delete this series?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('series')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                await loadGeneralSettings();
+                alert('Series deleted successfully');
+            } catch (error) {
+                console.error('Error deleting series:', error);
+                alert('Failed to delete series. Please try again.');
+            }
+        }
+
+        window.addGeneralEmotion = async function() {
+            const input = document.getElementById('newEmotionName');
+            const value = input.value.trim();
+
+            if (!value) {
+                alert('Please enter an emotion');
+                return;
+            }
+
+            if (generalEmotions.some(e => e.label.toLowerCase() === value.toLowerCase())) {
+                alert('Emotion already exists');
+                return;
+            }
+
+            try {
+                const id = value.toLowerCase().replace(/\s+/g, '_');
+                const { error } = await supabase
+                    .from('emotions')
+                    .insert([{ id, label: value }]);
+
+                if (error) throw error;
+
+                input.value = '';
+                await loadGeneralSettings();
+                alert('Emotion added successfully');
+            } catch (error) {
+                console.error('Error adding emotion:', error);
+                alert('Failed to add emotion. Please try again.');
+            }
+        }
+
+        window.deleteGeneralEmotion = async function(id) {
+            if (!confirm('Delete this emotion?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('emotions')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                await loadGeneralSettings();
+                alert('Emotion deleted successfully');
+            } catch (error) {
+                console.error('Error deleting emotion:', error);
+                alert('Failed to delete emotion. Please try again.');
+            }
+        }
+
+        window.addGeneralSkill = async function() {
+            const input = document.getElementById('newSkillName');
+            const value = input.value.trim();
+
+            if (!value) {
+                alert('Please enter a skill');
+                return;
+            }
+
+            if (generalSkills.some(s => s.label.toLowerCase() === value.toLowerCase())) {
+                alert('Skill already exists');
+                return;
+            }
+
+            try {
+                const id = value.toLowerCase().replace(/\s+/g, '_');
+                const { error } = await supabase
+                    .from('skills')
+                    .insert([{ id, label: value }]);
+
+                if (error) throw error;
+
+                input.value = '';
+                await loadGeneralSettings();
+                alert('Skill added successfully');
+            } catch (error) {
+                console.error('Error adding skill:', error);
+                alert('Failed to add skill. Please try again.');
+            }
+        }
+
+        window.deleteGeneralSkill = async function(id) {
+            if (!confirm('Delete this skill?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('skills')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                await loadGeneralSettings();
+                alert('Skill deleted successfully');
+            } catch (error) {
+                console.error('Error deleting skill:', error);
+                alert('Failed to delete skill. Please try again.');
             }
         }
 
@@ -3174,7 +3552,7 @@ if (data.status === "running") {
         }
 
         // Open Add Module Modal
-        window.openAddModuleModal = function() {
+        window.openAddModuleModal = async function() {
             const modal = document.getElementById('addModuleModal');
             modal.classList.add('active');
             
@@ -3196,19 +3574,71 @@ if (data.status === "running") {
                 categorySelect.appendChild(option);
             });
             
-            // Populate series dropdown
-            const seriesSelect = document.getElementById('newModuleSeries');
-            const series = Array.from(new Set(
-                allModules.map(m => m.series).filter(Boolean)
-            )).sort();
+            // Populate series dropdown from database
+            try {
+                const { data: seriesData } = await supabase
+                    .from('series')
+                    .select('*')
+                    .order('label', { ascending: true });
+                
+                const seriesSelect = document.getElementById('newModuleSeries');
+                seriesSelect.innerHTML = '<option value="">Select series...</option>';
+                
+                if (seriesData) {
+                    seriesData.forEach(ser => {
+                        const option = document.createElement('option');
+                        option.value = ser.label;
+                        option.textContent = ser.label;
+                        seriesSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading series:', error);
+            }
             
-            seriesSelect.innerHTML = '<option value="">Select series...</option>';
-            series.forEach(ser => {
-                const option = document.createElement('option');
-                option.value = ser;
-                option.textContent = ser;
-                seriesSelect.appendChild(option);
-            });
+            // Populate emotions dropdown from database
+            try {
+                const { data: emotionsData } = await supabase
+                    .from('emotions')
+                    .select('*')
+                    .order('label', { ascending: true });
+                
+                const emotionsSelect = document.getElementById('newModuleEmotions');
+                emotionsSelect.innerHTML = '';
+                
+                if (emotionsData) {
+                    emotionsData.forEach(emotion => {
+                        const option = document.createElement('option');
+                        option.value = emotion.label;
+                        option.textContent = emotion.label;
+                        emotionsSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading emotions:', error);
+            }
+            
+            // Populate skills dropdown from database
+            try {
+                const { data: skillsData } = await supabase
+                    .from('skills')
+                    .select('*')
+                    .order('label', { ascending: true });
+                
+                const skillsSelect = document.getElementById('newModuleSkills');
+                skillsSelect.innerHTML = '';
+                
+                if (skillsData) {
+                    skillsData.forEach(skill => {
+                        const option = document.createElement('option');
+                        option.value = skill.label;
+                        option.textContent = skill.label;
+                        skillsSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading skills:', error);
+            }
         }
 
         // Generate next module code (MODULE10, MODULE11, etc.)
@@ -3615,7 +4045,8 @@ if (data.status === "running") {
 
             await Promise.all([
                 loadAllChildren(),
-                loadAllModules()
+                loadAllModules(),
+                loadGeneralSettings()
             ]);
 
             await loadRewards();

@@ -1,239 +1,2520 @@
-<!-- Daniel's Diaries - Module 3 (Content-Only) -->
-<article class="dd-module" data-module data-module-code="MODULE03" data-runtime="1">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel's Diaries: The Day My Feelings Got Too Big</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Daniel's Diaries Brand Colors - Warm & Child-Friendly */
+        :root {
+            --dd-golden: #F4A261;
+            --dd-teal: #2A9D8F;
+            --dd-coral: #E76F51;
+            --dd-deep: #264653;
+            --dd-cream: #FFF8F0;
+            --dd-light-teal: #A8E6CF;
+            --dd-soft-yellow: #FFE8A3;
+        }
 
-  <!-- Optional: module header metadata for your quick-jump menu -->
-  <header class="dd-module-header">
-    <h1 class="dd-title">Daniel's Diaries: The Sensory Superpower Lab</h1>
-    <p class="dd-subtitle">Module 3</p>
-    <p class="dd-meta">
-      <span class="dd-chip">Ages 8–13</span>
-      <span class="dd-chip">Sensory Integration</span>
-    </p>
-  </header>
+        /* Typography */
+        .font-title {
+            font-family: 'Fredoka One', cursive;
+        }
+        
+        .font-body {
+            font-family: 'Nunito', sans-serif;
+        }
 
-  <!-- PAGE 0: Cover -->
-  <section class="dd-page" data-page data-page-title="Cover" data-page-icon="🌟">
-    <div class="dd-hero">
-      <div class="dd-emoji">🌟</div>
-      <h2 class="dd-h2">The Sensory Superpower Lab</h2>
-      <p class="dd-quote">“My senses help me experience the world… but sometimes, it’s a LOT.”</p>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Animations */
+        @keyframes wag {
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+        }
+        .animate-wag { animation: wag 0.5s ease-in-out infinite; }
+
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .animate-shimmer { animation: shimmer 2s ease-in-out infinite; }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(244, 162, 97, 0.3); }
+            50% { box-shadow: 0 0 35px rgba(244, 162, 97, 0.6); }
+        }
+        .animate-glow { animation: pulse-glow 3s ease-in-out infinite; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--dd-cream);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--dd-golden);
+            border-radius: 10px;
+            border: 3px solid var(--dd-cream);
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--dd-coral);
+        }
+
+        /* Interactive elements */
+        .feeling-btn {
+            transition: all 0.3s ease;
+        }
+        .feeling-btn:hover {
+            transform: scale(1.05);
+        }
+        .feeling-btn.selected {
+            ring: 4px;
+            ring-color: var(--dd-golden);
+            transform: scale(1.1);
+        }
+
+        /* Body map highlight */
+        .body-part {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .body-part:hover {
+            filter: brightness(1.2);
+        }
+
+        /* Thermometer slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 30px;
+            border-radius: 15px;
+            background: linear-gradient(to right, #2A9D8F, #FFE8A3, #F4A261, #E76F51);
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid #264653;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Parent tool sections */
+        .parent-tool {
+            border: 3px dashed var(--dd-teal);
+            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+        }
+
+        /* Adjust page height to account for fixed header */
+        .page {
+            min-height: 100vh !important;
+            padding-top: 80px !important;
+            padding-bottom: 100px !important;
+        }
+
+        /* Hide progress paws on mobile */
+        @media (max-width: 768px) {
+            #progressPaws {
+                display: none !important;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .page { 
+                page-break-after: always;
+                min-height: 100vh;
+                display: block !important;
+            }
+            #pageContainer { padding-top: 0 !important; }
+            input[type="text"], textarea {
+                border: 2px solid #999 !important;
+                background: white !important;
+                color: black !important;
+            }
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    
+        /* Responsive Navigation Styles */
+        @media (max-width: 768px) {
+            /* Make navigation buttons smaller on mobile */
+            header > div {
+                gap: 8px !important;
+            }
+            
+            header button {
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+            }
+            
+            /* Stack navigation elements on very small screens */
+            .no-print > div {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            .no-print > div > div {
+                width: 100%;
+                justify-content: center !important;
+            }
+            
+            /* Make buttons full width on mobile */
+            .no-print button {
+                padding: 10px 16px !important;
+                font-size: 13px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Even smaller on very small screens */
+            header {
+                padding: 12px !important;
+            }
+            
+            header button {
+                padding: 6px 10px !important;
+                font-size: 11px !important;
+            }
+            
+            .no-print {
+                padding: 12px !important;
+            }
+            
+            /* Hide text in buttons, show only icons */
+            header button:not(.flex) {
+                min-width: 40px;
+            }
+        }
+        /* Hide Progress Dots on Mobile */
+        @media (max-width: 768px) {
+            .no-print.fixed.left-1\/2 {
+                display: none !important;
+            }
+        }
+
+        
+
+    </style>
+</head>
+<body style="background-color: #FFF8F0;">
+    
+    <!-- Top Navigation Bar -->
+    <div class="no-print fixed top-0 left-0 right-0 backdrop-blur shadow-lg z-50 p-3" style="background-color: rgba(255, 248, 240, 0.95);">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button onclick="prevPage()" class="text-white px-5 py-2 rounded-full font-bold hover:shadow-lg transition-all font-title text-lg" style="background-color: #F4A261;">← Back</button>
+                <span class="font-semibold font-body text-lg" style="color: #264653;">Page <span id="currentPageDisplay">1</span> of <span id="totalPageCountDisplay">20</span></span>
+                <button onclick="nextPage()" class="text-white px-5 py-2 rounded-full font-bold hover:shadow-lg transition-all font-title text-lg" style="background-color: #F4A261;">Next →</button>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-4 py-2 rounded-full text-white font-bold shadow-md cursor-pointer font-title" style="background: linear-gradient(to right, #F4A261, #E76F51);" onclick="showStarManager()">
+                    <span class="text-2xl animate-shimmer">⭐</span>
+                    <span id="starCount" class="text-xl">0</span>
+                </div>
+                <button onclick="toggleParentMode()" id="parentModeBtn" class="px-4 py-2 rounded-full font-bold hover:shadow-lg transition-all font-body text-sm" style="background-color: #2A9D8F; color: white;">👨‍👩‍👧 Parent Mode</button>
+                <button onclick="prepareForPrint()" class="text-white px-4 py-2 rounded-full font-bold hover:shadow-lg transition-all font-title" style="background-color: #2A9D8F;">🖨️ Print</button>
+                <button onclick="goHome()" class="text-white px-4 py-2 rounded-full font-bold hover:shadow-lg transition-all font-title" style="background-color: #E76F51;">🏠 Home</button>
+            </div>
+        </div>
     </div>
 
-    <div class="dd-card">
-      <label class="dd-label" for="userName">This Sensory Scientist Journey belongs to:</label>
-      <input
-        id="userName"
-        class="dd-input dd-input--xl"
-        type="text"
-        placeholder="Your Name"
-        data-bind="userName"
-      />
-    </div>
-  </section>
-
-  <!-- PAGE 1: Welcome -->
-  <section class="dd-page" data-page data-page-title="Welcome" data-page-icon="🌈">
-    <h2 class="dd-h2">Welcome to Your Sensory Superpower Lab!</h2>
-
-    <div class="dd-card dd-callout dd-callout--success">
-      <h3 class="dd-h3">Your senses are superpowers</h3>
-      <p>
-        Your brain processes millions of sensory messages every day. Some brains experience sensory input
-        differently — that’s not a problem, it can be a superpower.
-      </p>
-      <p>
-        This module helps you understand how YOUR brain processes sensory information and gives you tools
-        to feel your best.
-      </p>
+    <!-- Main Content Container -->
+    <div>
+        <div id="pageContainer">
+            <!-- Pages will be rendered here -->
+        </div>
     </div>
 
-    <div class="dd-grid">
-      <div class="dd-card">
-        <h3 class="dd-h3">What you’ll learn</h3>
-        <ul class="dd-list">
-          <li>How your senses work (all of them!)</li>
-          <li>What makes your brain feel calm or “zappy”</li>
-          <li>Tools to help you regulate</li>
-          <li>How to create your comfort space</li>
-          <li>Ways to communicate your sensory needs</li>
-        </ul>
-      </div>
-
-      <div class="dd-card">
-        <h3 class="dd-h3">What you’ll do</h3>
-        <ul class="dd-list">
-          <li>Read Daniel’s sensory story</li>
-          <li>Become a sensory detective</li>
-          <li>Design your Comfort Cave</li>
-          <li>Learn about hidden senses</li>
-          <li>Build your Sensory First Aid Kit</li>
-          <li>Create your Comfort Code</li>
-        </ul>
-      </div>
+    <!-- Progress paws -->
+    <div id="progressPaws" class="no-print fixed bottom-8 left-1/2 transform -translate-x-1/2 backdrop-blur rounded-full px-6 py-3 shadow-xl z-40" style="background-color: rgba(255, 248, 240, 0.95);">
+        <div id="dotsContainer" class="flex flex-row gap-2"></div>
     </div>
 
-    <div class="dd-banner">
-      <p class="dd-banner-title">Your senses are YOURS — let’s celebrate them!</p>
-      <p>There’s no “right” way to experience the world.</p>
-    </div>
-  </section>
-
-  <!-- PAGE 2: Story + reflection -->
-  <section class="dd-page" data-page data-page-title="Story" data-page-icon="📖">
-    <h2 class="dd-h2">Daniel’s Sensory Adventure</h2>
-
-    <div class="dd-card dd-callout dd-callout--info">
-      <p>Let’s read about Daniel’s experience at the school cafeteria…</p>
+    <!-- Quick jump menu -->
+    <div class="no-print fixed right-4 top-24 z-40">
+        <button onclick="toggleMenu()" class="text-white p-3 rounded-full shadow-2xl hover:shadow-3xl transition-all mb-2" style="background: linear-gradient(to bottom right, #F4A261, #E76F51); display: flex; align-items: center; justify-content: center;">
+            <img src="/DanielTheDogImages/DanielTheDog.png" alt="Daniel" style="width: 32px; height: auto;">
+        </button>
+        <div id="quickMenu" class="hidden backdrop-blur rounded-2xl shadow-2xl p-4 w-72 max-h-[70vh] overflow-y-auto" style="background-color: rgba(255, 248, 240, 0.98);">
+            <h3 class="font-bold mb-3 flex items-center gap-2 text-lg font-title" style="color: #264653;">🐾 Quick Jump</h3>
+            <div class="space-y-1" id="menuItems"></div>
+        </div>
     </div>
 
-    <div class="dd-card">
-      <div class="dd-story">
-        <p>Daniel stood at the cafeteria door and took a deep breath. <em>Big mistake.</em></p>
-        <p>The smell hit him first — a weird mix of pizza, cleaning spray, and something he couldn’t identify.</p>
-        <p>Then came the noise: chairs scraping, trays clattering, kids laughing and shouting.</p>
-        <p>Daniel’s heart started beating faster. Everything felt too bright, too loud, too much.</p>
-        <p>Then he remembered his toolkit: headphones and a fidget. Slowly… the room became manageable.</p>
-        <p><strong>He’d made it through.</strong></p>
-      </div>
+    <!-- Star Manager Modal -->
+    <div id="starModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="rounded-3xl shadow-2xl p-8 max-w-md w-full" style="background-color: #FFF8F0;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-title" style="color: #264653;">⭐ Paw-some Stars!</h2>
+                <button onclick="hideStarManager()" class="text-3xl font-bold" style="color: #E76F51;">×</button>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="border-4 rounded-2xl p-6" style="background: linear-gradient(to bottom right, #FFE8A3, #FFF8F0); border-color: #F4A261;">
+                    <div class="text-center mb-4">
+                        <div class="text-6xl mb-2 animate-shimmer">⭐</div>
+                        <div class="text-5xl font-title" style="color: #264653;" id="modalStarCount">0</div>
+                        <p class="font-bold font-body text-lg" style="color: #F4A261;">Total Stars</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="p-3 rounded-xl" style="background-color: white;">
+                            <div class="text-2xl font-title" style="color: #F4A261;" id="currentWorkbookStars">0</div>
+                            <p class="text-xs font-body" style="color: #2A9D8F;">This Adventure</p>
+                        </div>
+                        <div class="p-3 rounded-xl" style="background-color: white;">
+                            <div class="text-2xl font-title" style="color: #F4A261;" id="allWorkbooksStars">0</div>
+                            <p class="text-xs font-body" style="color: #2A9D8F;">All Adventures</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 font-body" style="color: #264653;">Add Bonus Stars 🌟</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="addStarsInput" class="flex-1 border-3 rounded-xl px-4 py-2 font-body text-lg" style="border-color: #F4A261; background-color: white;" placeholder="How many?" min="1">
+                            <button onclick="addBonusStars()" class="text-white px-6 py-2 rounded-xl font-bold hover:shadow-lg font-title" style="background-color: #F4A261;">+ Add</button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 font-body" style="color: #264653;">Spend Stars on Rewards 🎁</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="spendStarsInput" class="flex-1 border-3 rounded-xl px-4 py-2 font-body text-lg" style="border-color: #2A9D8F; background-color: white;" placeholder="How many?" min="1">
+                            <button onclick="spendStars()" class="text-white px-6 py-2 rounded-xl font-bold hover:shadow-lg font-title" style="background-color: #2A9D8F;">🎁 Spend</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-l-4 p-4 rounded-lg font-body" style="background-color: #A8E6CF; border-color: #2A9D8F; color: #264653;">
+                    <div class="flex items-center gap-2 mb-2">
+                        <img src="/DanielTheDogImages/DanielTheDogThumbsUp.png" alt="Daniel" style="width: 30px; height: auto;">
+                        <p class="font-semibold">Daniel says:</p>
+                    </div>
+                    <p class="text-sm">"Every time you finish an activity, you earn a star! Woof! Keep going—you're doing great!"</p>
+                </div>
+
+                <button onclick="hideStarManager()" class="w-full text-white py-3 rounded-xl font-bold hover:shadow-lg font-title text-lg" style="background-color: #F4A261;">Close</button>
+            </div>
+        </div>
     </div>
 
-    <div class="dd-card">
-      <h3 class="dd-h3">Reflection Questions</h3>
+    <!-- Audio elements for body map -->
+    <audio id="audio_head" preload="none">
+        <source src="data:audio/wav;base64," type="audio/wav">
+    </audio>
 
-      <label class="dd-label" for="story_overload">What made Daniel feel overloaded?</label>
-      <textarea
-        id="story_overload"
-        class="dd-textarea"
-        rows="2"
-        placeholder="The loud noises, bright lights, smells..."
-        data-bind="story_overload"
-      ></textarea>
+    <!-- Hidden print container -->
+    <div id="printContainer" style="display: none;"></div>
 
-      <label class="dd-label" for="story_relate">Have you ever felt like Daniel? When?</label>
-      <textarea
-        id="story_relate"
-        class="dd-textarea"
-        rows="3"
-        placeholder="Describe a time you felt sensory overload..."
-        data-bind="story_relate"
-      ></textarea>
+    <script type="module">
+        // ==== Global State ====
+        let currentPage = 0;
+        let totalStars = 0;
+        let completedActivities = {};
+        let formData = {};
+        let parentModeEnabled = false;
+        const WORKBOOK_ID = 'MODULE4';
+        let currentChild = null;
+        let childId = null;
 
-      <label class="dd-label" for="story_tools">What helped Daniel recover?</label>
-      <textarea
-        id="story_tools"
-        class="dd-textarea"
-        rows="2"
-        placeholder="His headphones, fidget cube..."
-        data-bind="story_tools"
-      ></textarea>
-    </div>
+        // ==== Star System ====
+        async function loadStarData() {
+            try {
+                totalStars = await loadStarsFromDB();
+                childId = getChildId();
+                
+                // Update child name in form data if not set
+                const childName = getChildName();
+                if (childName && !formData.userName) {
+                    formData.userName = childName;
+                    saveFormData('userName', childName);
+                }
+            } catch (error) {
+                console.error('Error loading star data:', error);
+                totalStars = 0;
+            }
+            updateStarDisplay();
+        }
 
-    <div class="dd-card dd-check">
-      <label class="dd-check-label">
-        <input type="checkbox" data-activity="story_complete" />
-        <span>✓ I’ve read Daniel’s Sensory Adventure</span>
-      </label>
-    </div>
-  </section>
+        async function saveStarData() {
+            try {
+                await saveStarsToDB(totalStars);
+            } catch (error) {
+                console.error('Error saving stars:', error);
+            }
+        }
 
-  <!-- PAGE 3: Sensory Detective (converted to a declarative component) -->
-  <section class="dd-page" data-page data-page-title="Sensory Detective" data-page-icon="🔍">
-    <h2 class="dd-h2">Activity: Sensory Detective Mission</h2>
+        function saveStarDataOld() {
+            const allStarsData = localStorage.getItem('cbtWorkbookStars');
+            let parsed = {};
+            if (allStarsData) {
+                try {
+                    parsed = JSON.parse(allStarsData);
+                } catch (e) {
+                    parsed = {};
+                }
+            }
+            parsed[WORKBOOK_ID] = totalStars;
+            localStorage.setItem('cbtWorkbookStars', JSON.stringify(parsed));
+            updateStarDisplay();
+        }
 
-    <div class="dd-card dd-callout dd-callout--warning">
-      <p><strong>Discover which sensory inputs make YOUR brain feel calm or zappy.</strong></p>
-    </div>
+        function updateStarDisplay() {
+            document.getElementById('starCount').textContent = totalStars;
+            const modalCount = document.getElementById('modalStarCount');
+            if (modalCount) modalCount.textContent = totalStars;
+            const currentWorkbook = document.getElementById('currentWorkbookStars');
+            if (currentWorkbook) currentWorkbook.textContent = totalStars;
+            
+            const allStarsData = localStorage.getItem('cbtWorkbookStars');
+            if (allStarsData) {
+                try {
+                    const parsed = JSON.parse(allStarsData);
+                    const allWorkbooksTotal = Object.values(parsed).reduce((a, b) => a + b, 0);
+                    const allWorkbooks = document.getElementById('allWorkbooksStars');
+                    if (allWorkbooks) allWorkbooks.textContent = allWorkbooksTotal;
+                } catch (e) {}
+            }
 
-    <!-- This block is intentionally declarative: your runtime renders the options -->
-    <div
-      class="dd-card"
-      data-component="sensory-rating"
-      data-bind="sensory_detective"
-      data-scale="like,dislike,depends,calm,zippy"
-    >
-      <h3 class="dd-h3">Rate these inputs</h3>
+            const progressStars = document.getElementById('progressStars');
+            if (progressStars) progressStars.textContent = totalStars;
+        }
 
-      <div class="dd-rating-group" data-rating-group data-title="Visual" data-items="Bright lights|Screen time|Busy patterns|Dark rooms|Nature/outdoors|Flashing lights"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Auditory" data-items="Whispering|Loud music|Alarms/sirens|Nature sounds|Crowds talking|Silence"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Smell" data-items="Popcorn|Perfume/cologne|Flowers|Cleaning products|Food cooking|Fresh air"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Taste" data-items="Crunchy foods|Spicy foods|Sweet treats|Sour flavors|Smooth textures|Mixed textures"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Touch" data-items="Clothing tags|Hugs|Sand/water|Soft blankets|Sticky things|Temperature changes"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Movement" data-items="Swinging|Spinning|Jumping|Sitting still|Walking|Dancing"></div>
+        async function addBonusStars() {
+            const input = document.getElementById('addStarsInput');
+            const amount = parseInt(input.value) || 0;
+            if (amount > 0) {
+                totalStars += amount;
+                await saveStarData();
+                input.value = '';
+                celebrateStar();
+            }
+        }
 
-      <p class="dd-help">Your app should render buttons and save selections into <code>sensory_detective</code>.</p>
-    </div>
+        async function spendStars() {
+            const input = document.getElementById('spendStarsInput');
+            const amount = parseInt(input.value) || 0;
+            if (amount > 0 && amount <= totalStars) {
+                totalStars -= amount;
+                await saveStarData();
+                input.value = '';
+            } else if (amount > totalStars) {
+                alert('Oops! You don\'t have enough stars yet. Keep going!');
+            }
+        }
 
-    <div class="dd-card">
-      <h3 class="dd-h3">What I discovered</h3>
-      <textarea
-        class="dd-textarea"
-        rows="4"
-        placeholder="What patterns did you notice? What surprised you?"
-        data-bind="detective_discovery"
-      ></textarea>
-    </div>
+        function showStarManager() {
+            document.getElementById('starModal').classList.remove('hidden');
+            updateStarDisplay();
+        }
 
-    <div class="dd-card dd-check">
-      <label class="dd-check-label">
-        <input type="checkbox" data-activity="detective_complete" />
-        <span>✓ I’ve completed my Sensory Detective Mission</span>
-      </label>
-    </div>
-  </section>
+        function hideStarManager() {
+            document.getElementById('starModal').classList.add('hidden');
+        }
 
-  <!-- PAGE 4: Comfort Cave -->
-  <section class="dd-page" data-page data-page-title="Comfort Cave" data-page-icon="🏰">
-    <h2 class="dd-h2">Activity: Build My Comfort Cave</h2>
+        function celebrateStar() {
+            // Create floating star animation
+            const star = document.createElement('div');
+            star.textContent = '⭐';
+            star.className = 'fixed text-6xl pointer-events-none z-50';
+            star.style.left = '50%';
+            star.style.top = '50%';
+            star.style.transform = 'translate(-50%, -50%)';
+            document.body.appendChild(star);
+            
+            star.animate([
+                { transform: 'translate(-50%, -50%) scale(0.5)', opacity: 1 },
+                { transform: 'translate(-50%, -150%) scale(2)', opacity: 0 }
+            ], {
+                duration: 1200,
+                easing: 'ease-out'
+            }).onfinish = () => star.remove();
+        }
 
-    <div class="dd-card dd-callout dd-callout--success">
-      <p><strong>Design a cozy space that feels just right for YOUR brain.</strong></p>
-    </div>
+        async function markActivityComplete(activityId) {
+            if (!completedActivities[activityId]) {
+                completedActivities[activityId] = true;
+                totalStars += 1;
+                await saveStarData();
+                saveProgress();
+                renderPage();
+                
+                const checkbox = document.querySelector(`input[data-activity="${activityId}"]`);
+                if (checkbox) {
+                    setTimeout(() => {
+                        celebrateStar();
+                    }, 100);
+                }
+            }
+        }
 
-    <div class="dd-card">
-      <h3 class="dd-h3">My Comfort Cave Design</h3>
-      <textarea
-        class="dd-textarea"
-        rows="8"
-        placeholder="Describe your comfort cave… What’s in it?"
-        data-bind="comfort_cave_design"
-      ></textarea>
-    </div>
+        function saveProgress() {
+            localStorage.setItem(`cbtWorkbookProgress_${WORKBOOK_ID}`, JSON.stringify(completedActivities));
+        }
 
-    <div class="dd-grid">
-      <div class="dd-card">
-        <h3 class="dd-h3">Sounds I like</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_sounds"></textarea>
-      </div>
-      <div class="dd-card">
-        <h3 class="dd-h3">Things I like to touch</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_touch"></textarea>
-      </div>
-      <div class="dd-card">
-        <h3 class="dd-h3">Lighting I prefer</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_lighting"></textarea>
-      </div>
-      <div class="dd-card">
-        <h3 class="dd-h3">Colors that feel good</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_colors"></textarea>
-      </div>
-    </div>
+        // ==== Form Data Persistence ====
+        function saveFormData(key, value) {
+            formData[key] = value;
+            localStorage.setItem(`cbtWorkbookData_${WORKBOOK_ID}`, JSON.stringify(formData));
+        }
 
-    <div class="dd-card dd-check">
-      <label class="dd-check-label">
-        <input type="checkbox" data-activity="comfort_cave_complete" />
-        <span>✓ I’ve designed my Comfort Cave</span>
-      </label>
-    </div>
-  </section>
+        function loadFormData() {
+            const saved = localStorage.getItem(`cbtWorkbookData_${WORKBOOK_ID}`);
+            if (saved) {
+                try {
+                    formData = JSON.parse(saved);
+                } catch (e) {
+                    formData = {};
+                }
+            }
+        }
 
-  <!-- Optional: actions your runtime can wire -->
-  <footer class="dd-module-footer">
-    <button type="button" class="dd-btn" data-action="award-star" data-amount="1">
-      Earn a Star ⭐
-    </button>
-    <button type="button" class="dd-btn dd-btn--primary" data-action="complete-module">
-      Finish Module ✅
-    </button>
-  </footer>
+        // ==== Parent Mode ====
+        function toggleParentMode() {
+            parentModeEnabled = !parentModeEnabled;
+            const btn = document.getElementById('parentModeBtn');
+            if (parentModeEnabled) {
+                btn.style.backgroundColor = '#E76F51';
+                btn.textContent = '👨‍👩‍👧 Parent Mode ON';
+            } else {
+                btn.style.backgroundColor = '#2A9D8F';
+                btn.textContent = '👨‍👩‍👧 Parent Mode';
+            }
+            renderPage();
+        }
 
-</article>
+        // ==== Navigation ====
+        function nextPage() {
+            if (currentPage < pages.length - 1) {
+                currentPage++;
+                renderPage();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                renderPage();
+            }
+        }
+
+        function jumpToPage(pageNum) {
+            currentPage = pageNum;
+            renderPage();
+            toggleMenu();
+        }
+
+        function renderPage() {
+            const container = document.getElementById('pageContainer');
+            container.innerHTML = pages[currentPage]();
+            document.getElementById('currentPageDisplay').textContent = currentPage + 1;
+            document.getElementById('totalPageCountDisplay').textContent = pages.length;
+            updateDots();
+            updateStarDisplay();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Initialize canvas if on drawing page
+            setTimeout(() => initCanvas(), 100);
+        }
+
+        function updateDots() {
+            const container = document.getElementById('dotsContainer');
+            container.innerHTML = '';
+            pages.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.innerHTML = index === currentPage ? '🐾' : '•';
+                dot.className = `cursor-pointer transition-all text-lg ${index === currentPage ? 'scale-125' : 'opacity-50'}`;
+                dot.style.color = index === currentPage ? '#F4A261' : '#2A9D8F';
+                dot.onclick = () => jumpToPage(index);
+                container.appendChild(dot);
+            });
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('quickMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function renderMenuItems() {
+            const container = document.getElementById('menuItems');
+            container.innerHTML = menuItems.map(item => `
+                <button 
+                    onclick="jumpToPage(${item.page})" 
+                    class="w-full text-left px-4 py-2 rounded-xl hover:shadow-md transition-all text-sm font-semibold font-body"
+                    style="color: #264653; background-color: ${currentPage === item.page ? '#FFE8A3' : 'transparent'};"
+                >
+                    ${item.icon} ${item.label}
+                </button>
+            `).join('');
+        }
+
+        // ==== Interactive Elements ====
+        function setFeelingLevel(level) {
+            saveFormData('feeling_level', level);
+            renderPage();
+        }
+
+        function selectBodyPart(part) {
+            const messages = {
+                'head': "When I'm worried, my head might feel fuzzy or I get headaches. That's my brain trying to protect me!",
+                'chest': "My chest gets tight when I'm scared or nervous. Sometimes my heart beats really fast like when I run!",
+                'tummy': "My tummy might feel butterflies or get rumbly when I'm worried or excited. That's okay!",
+                'hands': "Sometimes my hands get sweaty or shaky when I'm nervous. They might want to hit things when I'm angry.",
+                'legs': "My legs might feel wobbly or want to run away when I'm scared. That's my body trying to keep me safe!"
+            };
+            saveFormData('selected_body_part', part);
+            saveFormData('body_part_message', messages[part] || '');
+            renderPage();
+        }
+
+        function selectFeeling(feeling) {
+            saveFormData('selected_feeling', feeling);
+            renderPage();
+        }
+
+        function selectScenario(scenario) {
+            const explanations = {
+                'loud_noise': "WOOF! A loud noise can make Daniel's ears perk up and his body get ready to run or hide. That's called the 'fight or flight' response—it's your body's alarm system!",
+                'lost_toy': "When Daniel loses his favourite toy, he might feel sad AND worried at the same time. It's okay to have more than one feeling!",
+                'new_place': "New places can be exciting AND scary. Daniel's tail might wag slowly while his eyes look around carefully. His body is being cautious!",
+                'friend_upset': "When Daniel's friend is upset, he might feel worried too. Sometimes we feel what others feel—that's called empathy!"
+            };
+            saveFormData('selected_scenario', scenario);
+            saveFormData('scenario_explanation', explanations[scenario] || '');
+            renderPage();
+        }
+
+        function addCalmItem(item) {
+            let calmItems = formData.calm_den_items || [];
+            if (!calmItems.includes(item)) {
+                calmItems.push(item);
+                saveFormData('calm_den_items', calmItems);
+                renderPage();
+            }
+        }
+
+        function removeCalmItem(item) {
+            let calmItems = formData.calm_den_items || [];
+            calmItems = calmItems.filter(i => i !== item);
+            saveFormData('calm_den_items', calmItems);
+            renderPage();
+        }
+
+        // ==== Print Function ====
+        function prepareForPrint() {
+            const printContainer = document.getElementById('printContainer');
+            printContainer.innerHTML = '';
+            printContainer.style.display = 'block';
+            
+            pages.forEach((pageFunc) => {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page';
+                pageDiv.innerHTML = pageFunc();
+                printContainer.appendChild(pageDiv);
+            });
+            
+            setTimeout(() => {
+                window.print();
+                printContainer.style.display = 'none';
+            }, 500);
+        }
+
+        // ==== Page Generators ====
+        
+        // Cover Page
+        function generatePage0() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #FFE8A3, #FFF8F0);">
+                    <div class="text-center max-w-4xl">
+                        <div class="mb-6 animate-bounce-slow flex justify-center">
+                            <img src="/DanielTheDogImages/DanielTheDog.png" alt="Daniel the Dog" style="width: 180px; height: auto;">
+                        </div>
+                        <h1 class="text-6xl mb-4 font-title" style="color: #264653;">Daniel's Diaries</h1>
+                        <h2 class="text-3xl mb-2 font-title" style="color: #F4A261;">Module 1</h2>
+                        <h3 class="text-4xl mb-8 font-title" style="color: #E76F51;">The Day My Feelings Got Too Big</h3>
+                        <div class="text-xl mb-8 font-body" style="color: #2A9D8F;">
+                            <p class="mb-2">An Interactive Adventure for Ages 5-10</p>
+                            <p class="italic">Learn about feelings with Daniel the Dog! 🐾</p>
+                        </div>
+                        <div class="border-4 rounded-3xl p-6 inline-block" style="border-color: #F4A261; background-color: white;">
+                            <p class="font-semibold mb-2 font-body text-lg" style="color: #264653;">This adventure belongs to:</p>
+                            <div class="text-3xl font-title text-center" style="color: #F4A261;">
+                                ${formData.userName || getChildName() || 'Your Name'}
+                            </div>
+                        </div>
+                        <div class="mt-8">
+                            <p class="text-lg font-body" style="color: #2A9D8F;">🐾 Earn stars by completing activities! 🐾</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Welcome Page
+        function generatePage1() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="flex items-center gap-4 mb-6">
+                            <img src="/DanielTheDogImages/DanielTheDog.png" alt="Daniel" style="width: 60px; height: auto;">
+                            <h1 class="text-5xl font-title" style="color: #264653;">Welcome, Friend!</h1>
+                        </div>
+                        
+                        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white; border-left: 6px solid #F4A261;">
+                            <div class="flex items-start gap-6">
+                                <div class="animate-wag" style="flex-shrink: 0;">
+                                    <img src="/DanielTheDogImages/DanielTheDog.png" alt="Daniel the Dog" style="width: 80px; height: auto;">
+                                </div>
+                                <div>
+                                    <p class="text-xl mb-4 leading-relaxed font-body" style="color: #264653;">
+                                        <strong>WOOF!</strong> Hi there! I'm <span style="color: #F4A261;" class="font-title">Daniel</span>, and I'm so happy you're here!
+                                    </p>
+                                    <p class="text-lg mb-4 leading-relaxed font-body" style="color: #264653;">
+                                        Sometimes my feelings get really, really BIG. Like when my tail wags so fast it makes my whole body wiggle! Or when I feel so worried my tummy does flip-flops.
+                                    </p>
+                                    <p class="text-lg leading-relaxed font-body" style="color: #264653;">
+                                        In this adventure, we're going to learn all about feelings together. You'll meet my friends in the <strong>Feeling Pack</strong>, and I'll show you the special tricks I use when my feelings get too big!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6 mb-8" style="background: linear-gradient(to right, #A8E6CF, #FFF8F0); border: 3px solid #2A9D8F;">
+                            <h3 class="text-2xl mb-4 font-title" style="color: #264653;">🗺️ Our Adventure Map</h3>
+                            <div class="grid md:grid-cols-2 gap-4 font-body" style="color: #264653;">
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-white">
+                                    <span class="text-3xl">🐾</span>
+                                    <span class="font-semibold">Meet the Feeling Pack</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-white">
+                                    <span class="text-3xl">🫀</span>
+                                    <span class="font-semibold">Where feelings live in your body</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-white">
+                                    <span class="text-3xl">🎭</span>
+                                    <span class="font-semibold">The Big 4 Feelings</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-white">
+                                    <span class="text-3xl">🌊</span>
+                                    <span class="font-semibold">When feelings get too big</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-white">
+                                    <span class="text-3xl">🏠</span>
+                                    <span class="font-semibold">Build your Calm-Down Den</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-white">
+                                    <span class="text-3xl">🐾</span>
+                                    <span class="font-semibold">Your Paw-steps Plan</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl p-6 text-center flex items-center justify-center gap-3" style="background-color: #FFE8A3;">
+                            <img src="/DanielTheDogImages/DanielTheDogHoldingHeart.png" alt="Daniel" style="width: 50px; height: auto;">
+                            <p class="text-xl font-semibold font-body" style="color: #264653;">
+                                "All feelings are okay—even the big ones!" 💛
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 1 Divider
+        function generatePage2() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #F4A261, #E76F51);">
+                    <div class="text-center">
+                        <div class="text-9xl mb-6 animate-bounce-slow">🐾</div>
+                        <h1 class="text-6xl text-white mb-4 font-title">Chapter 1</h1>
+                        <h2 class="text-4xl text-white mb-8 font-title">Meet Daniel & the Feeling Pack</h2>
+                        <p class="text-2xl text-white/90 max-w-2xl mx-auto font-body">
+                            Let's meet the dogs who show us all our different feelings!
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 1 Content - Story
+        function generatePage3() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">📖 The Day Daniel's Tail Wagged Too Fast</h1>
+                        
+                        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+                            <div class="space-y-6 font-body text-lg leading-relaxed" style="color: #264653;">
+                                <p>
+                                    <img src="/DanielTheDogImages/DanielTheDogSitting.png" alt="Daniel" style="width: 80px; height: auto; float: left; margin-right: 16px;">
+                                    Daniel was a golden puppy who loved to play in the park. One sunny morning, he woke up feeling SO excited because his best friend was coming to visit!
+                                </p>
+                                
+                                <p>
+                                    His tail started wagging. Wag, wag, wag! Then it wagged faster. WAG WAG WAG! Soon his whole body was wiggling and he couldn't sit still!
+                                </p>
+                                
+                                <div class="p-4 rounded-2xl text-center flex items-center justify-center gap-3" style="background-color: #FFE8A3;">
+                                    <img src="/DanielTheDogImages/DanielTheDog.png" alt="Daniel" style="width: 50px; height: auto;">
+                                    <p class="text-2xl font-title" style="color: #E76F51;">WIGGLE WIGGLE WIGGLE! 💨</p>
+                                </div>
+                                
+                                <p>
+                                    "Daniel, calm down!" said his mum. But Daniel couldn't stop. His excitement was SO BIG that he accidentally knocked over his water bowl—SPLASH! Then he bumped into the cat—MEOW! Then he jumped on the couch—BOING!
+                                </p>
+                                
+                                <p>
+                                    Daniel felt confused. He wasn't trying to be naughty. His feelings were just... too big for his body!
+                                </p>
+                                
+                                <div class="p-4 rounded-2xl" style="background: linear-gradient(to right, #A8E6CF, #FFF8F0);">
+                                    <p class="italic text-center" style="color: #2A9D8F;">
+                                        "Has that ever happened to you? When your feelings felt so big you couldn't control your body?"
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${parentModeEnabled ? `
+                        <div class="parent-tool rounded-2xl p-6 mb-6">
+                            <h4 class="font-title text-xl mb-3" style="color: #2A9D8F;">👨‍👩‍👧 Parent Co-Regulation Tool</h4>
+                            <div class="font-body" style="color: #264653;">
+                                <p class="font-semibold mb-2">"Name It Gently, Don't Shame It" Script:</p>
+                                <div class="bg-white p-4 rounded-xl space-y-2 text-sm">
+                                    <p>✓ "I can see your body has lots of energy right now."</p>
+                                    <p>✓ "That's a big feeling! Let's figure out what it is together."</p>
+                                    <p>✓ "Your body is telling us something. I wonder what?"</p>
+                                    <p class="text-red-500">✗ Avoid: "Calm down!" "Stop that!" "You're being too much!"</p>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch1_story'] ? 'checked' : ''}
+                                    data-activity="ch1_story"
+                                    onchange="markActivityComplete('ch1_story')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I read Daniel's story! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 1 - Meet the Feeling Pack
+        function generatePage4() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-5xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🐾 Meet the Feeling Pack!</h1>
+                        
+                        <p class="text-lg mb-6 font-body" style="color: #264653;">
+                            Daniel has friends who each show a different feeling. Let's meet them!
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-8">
+                            <div class="rounded-2xl p-6 shadow-lg transform hover:scale-105 transition-all" style="background: linear-gradient(to bottom right, #FFE8A3, white);">
+                                <div class="text-center">
+                                    <div class="text-6xl mb-3">🐕😊</div>
+                                    <h3 class="text-2xl font-title mb-2" style="color: #F4A261;">Happy Hank</h3>
+                                    <p class="font-body" style="color: #264653;">Tail wagging, bouncy paws, bright eyes!</p>
+                                    <p class="text-sm mt-2 font-body" style="color: #2A9D8F;">When we feel good inside</p>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl p-6 shadow-lg transform hover:scale-105 transition-all" style="background: linear-gradient(to bottom right, #a8d8ea, white);">
+                                <div class="text-center">
+                                    <div class="text-6xl mb-3">🐕😢</div>
+                                    <h3 class="text-2xl font-title mb-2" style="color: #5e9ccd;">Sad Sam</h3>
+                                    <p class="font-body" style="color: #264653;">Droopy ears, slow tail, heavy paws</p>
+                                    <p class="text-sm mt-2 font-body" style="color: #2A9D8F;">When something hurts inside</p>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl p-6 shadow-lg transform hover:scale-105 transition-all" style="background: linear-gradient(to bottom right, #ffb6b6, white);">
+                                <div class="text-center">
+                                    <div class="text-6xl mb-3">🐕😠</div>
+                                    <h3 class="text-2xl font-title mb-2" style="color: #E76F51;">Angry Archie</h3>
+                                    <p class="font-body" style="color: #264653;">Growly, stiff body, fur standing up</p>
+                                    <p class="text-sm mt-2 font-body" style="color: #2A9D8F;">When something feels unfair</p>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl p-6 shadow-lg transform hover:scale-105 transition-all" style="background: linear-gradient(to bottom right, #d4a5ff, white);">
+                                <div class="text-center">
+                                    <div class="text-6xl mb-3">🐕😰</div>
+                                    <h3 class="text-2xl font-title mb-2" style="color: #9b59b6;">Worried Willow</h3>
+                                    <p class="font-body" style="color: #264653;">Tucked tail, big eyes, shaky legs</p>
+                                    <p class="text-sm mt-2 font-body" style="color: #2A9D8F;">When we're not sure what will happen</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6" style="background-color: white; border: 3px solid #F4A261;">
+                            <h3 class="text-2xl mb-4 font-title" style="color: #264653;">🎨 Draw Your Feelings as Dogs!</h3>
+                            <p class="mb-4 font-body" style="color: #264653;">In the box below, draw yourself as a dog showing how you feel today!</p>
+                            <div class="border-4 rounded-xl mb-4" style="border-color: #F4A261; background-color: #FFF8F0;">
+                                <canvas id="drawingCanvas" width="700" height="400" class="w-full cursor-crosshair" style="touch-action: none;"></canvas>
+                            </div>
+                            <div class="flex gap-2 mb-4">
+                                <button onclick="clearCanvas()" class="px-4 py-2 rounded-lg text-white font-bold font-body" style="background-color: #E76F51;">Clear</button>
+                                <button onclick="changeColor('#264653')" class="w-10 h-10 rounded-full border-2" style="background-color: #264653;"></button>
+                                <button onclick="changeColor('#F4A261')" class="w-10 h-10 rounded-full border-2" style="background-color: #F4A261;"></button>
+                                <button onclick="changeColor('#E76F51')" class="w-10 h-10 rounded-full border-2" style="background-color: #E76F51;"></button>
+                                <button onclick="changeColor('#2A9D8F')" class="w-10 h-10 rounded-full border-2" style="background-color: #2A9D8F;"></button>
+                                <button onclick="changeColor('#000000')" class="w-10 h-10 rounded-full border-2" style="background-color: #000000;"></button>
+                            </div>
+                            <div>
+                                <label class="block font-semibold mb-2 font-body" style="color: #264653;">Which Feeling Pack dog are you most like today?</label>
+                                <input 
+                                    type="text" 
+                                    class="w-full rounded-xl p-3 border-3 font-body text-lg" 
+                                    style="background-color: #FFF8F0; border-color: #F4A261; color: #264653;"
+                                    placeholder="I feel like... because..."
+                                    value="${formData.feeling_dog || ''}"
+                                    onchange="saveFormData('feeling_dog', this.value)"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl p-6 mt-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch1_draw'] ? 'checked' : ''}
+                                    data-activity="ch1_draw"
+                                    onchange="markActivityComplete('ch1_draw')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I drew my feelings dog! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 1 - Feelings Thermometer
+        function generatePage5() {
+            const feelingLevel = formData.feeling_level || 5;
+            const levelLabels = ['Super calm 😌', 'Pretty calm 🙂', 'A little wiggly 😊', 'Getting bigger! 😮', 'VERY BIG! 🤯'];
+            const labelIndex = Math.floor((feelingLevel - 1) / 2);
+            
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🌡️ Feelings Thermometer</h1>
+                        
+                        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
+                            <p class="text-lg mb-6 font-body text-center" style="color: #264653;">
+                                How big are your feelings right now? Move the slider to show!
+                            </p>
+                            
+                            <div class="mb-8">
+                                <div class="text-center mb-4">
+                                    <span class="text-6xl">${feelingLevel <= 2 ? '😌' : feelingLevel <= 4 ? '🙂' : feelingLevel <= 6 ? '😊' : feelingLevel <= 8 ? '😮' : '🤯'}</span>
+                                    <p class="text-2xl font-title mt-2" style="color: #F4A261;">${levelLabels[labelIndex]}</p>
+                                </div>
+                                
+                                <input 
+                                    type="range" 
+                                    min="1" 
+                                    max="10" 
+                                    value="${feelingLevel}"
+                                    class="w-full"
+                                    oninput="setFeelingLevel(this.value)"
+                                >
+                                
+                                <div class="flex justify-between mt-2 font-body text-sm" style="color: #264653;">
+                                    <span>1 - Calm</span>
+                                    <span>5 - Medium</span>
+                                    <span>10 - BIG!</span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <img src="/DanielTheDogImages/DanielTheDogSitting.png" alt="Daniel" style="width: 40px; height: auto;">
+                                    <h3 class="font-title text-xl" style="color: #264653;">Daniel says:</h3>
+                                </div>
+                                <p class="font-body" style="color: #264653;">
+                                    ${feelingLevel <= 3 ? 
+                                        "Your feelings are nice and calm right now. That's a great time to learn new things!" :
+                                    feelingLevel <= 6 ?
+                                        "Your feelings are in the middle zone. You might have some energy but you can still think clearly!" :
+                                    feelingLevel <= 8 ?
+                                        "Wow, your feelings are getting big! You might need some help to calm down soon." :
+                                        "Your feelings are SUPER BIG right now! It's time to use some calm-down tools. Don't worry—we'll learn those together!"}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6 mb-6" style="background-color: white; border: 3px solid #2A9D8F;">
+                            <h3 class="font-title text-xl mb-3" style="color: #264653;">📝 Check In: What made your feelings this size today?</h3>
+                            <textarea 
+                                class="w-full rounded-xl p-4 border-3 font-body text-lg" 
+                                style="background-color: #FFF8F0; border-color: #2A9D8F; color: #264653;"
+                                rows="3"
+                                placeholder="Today I feel this way because..."
+                                onchange="saveFormData('thermometer_reason', this.value)"
+                            >${formData.thermometer_reason || ''}</textarea>
+                        </div>
+
+                        ${parentModeEnabled ? `
+                        <div class="parent-tool rounded-2xl p-6 mb-6">
+                            <h4 class="font-title text-xl mb-3" style="color: #2A9D8F;">👨‍👩‍👧 Parent Tip</h4>
+                            <p class="font-body" style="color: #264653;">
+                                Use this thermometer throughout the day! Ask your child to show you where their feelings are. 
+                                This builds <strong>interoceptive awareness</strong>—the ability to notice internal body signals. 
+                                Try not to judge or fix the feeling—just acknowledge it: "I can see your feelings are pretty big right now. That's okay."
+                            </p>
+                        </div>
+                        ` : ''}
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch1_thermometer'] ? 'checked' : ''}
+                                    data-activity="ch1_thermometer"
+                                    onchange="markActivityComplete('ch1_thermometer')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I used the Feelings Thermometer! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 2 Divider
+        function generatePage6() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #2A9D8F, #264653);">
+                    <div class="text-center">
+                        <div class="text-9xl mb-6 animate-float">🫀</div>
+                        <h1 class="text-6xl text-white mb-4 font-title">Chapter 2</h1>
+                        <h2 class="text-4xl text-white mb-8 font-title">Where Feelings Live in My Body</h2>
+                        <p class="text-2xl text-white/90 max-w-2xl mx-auto font-body">
+                            Let's discover how your body tells you about your feelings!
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 2 - Body Bark Alarm
+        function generatePage7() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🚨 My Body Bark Alarm</h1>
+                        
+                        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white; border-left: 6px solid #2A9D8F;">
+                            <div class="flex items-start gap-6">
+                                <img src="/DanielTheDogImages/DanielTheDogReading.png" alt="Daniel" style="width: 80px; height: auto; flex-shrink: 0;">
+                                <div class="font-body text-lg" style="color: #264653;">
+                                    <p class="mb-4">
+                                        <strong class="font-title" style="color: #F4A261;">WOOF!</strong> Did you know that your body has a special alarm system? I call it my <strong>"Body Bark Alarm"</strong>!
+                                    </p>
+                                    <p class="mb-4">
+                                        When something happens—like a loud noise or a scary thought—your brain sends a message to your whole body. It's like when I hear the doorbell and my ears perk up, my heart beats faster, and my legs get ready to run!
+                                    </p>
+                                    <p>
+                                        This alarm system is called the <strong>nervous system</strong>, and it's there to keep us safe. But sometimes it goes off even when we don't need it to!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-8">
+                            <div class="rounded-2xl p-6 shadow-lg" style="background: linear-gradient(to bottom, #A8E6CF, white);">
+                                <h3 class="font-title text-xl mb-3 text-center" style="color: #264653;">😌 Rest & Relax Mode</h3>
+                                <p class="font-body text-center mb-4" style="color: #264653;">When we feel safe and calm</p>
+                                <ul class="font-body space-y-2" style="color: #264653;">
+                                    <li>🐕 Slow, steady breathing</li>
+                                    <li>🐕 Relaxed muscles</li>
+                                    <li>🐕 Calm tummy</li>
+                                    <li>🐕 Can think clearly</li>
+                                    <li>🐕 Happy tail wags!</li>
+                                </ul>
+                            </div>
+
+                            <div class="rounded-2xl p-6 shadow-lg" style="background: linear-gradient(to bottom, #ffb6b6, white);">
+                                <h3 class="font-title text-xl mb-3 text-center" style="color: #264653;">🚨 Fight or Flight Mode</h3>
+                                <p class="font-body text-center mb-4" style="color: #264653;">When our alarm goes off</p>
+                                <ul class="font-body space-y-2" style="color: #264653;">
+                                    <li>🐕 Fast breathing</li>
+                                    <li>🐕 Tight muscles</li>
+                                    <li>🐕 Tummy flip-flops</li>
+                                    <li>🐕 Hard to think</li>
+                                    <li>🐕 Want to run or growl!</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                            <h3 class="font-title text-xl mb-3" style="color: #264653;">🤔 Think About It!</h3>
+                            <p class="font-body mb-4" style="color: #264653;">
+                                Both modes are OKAY! The alarm mode helps us when there's real danger. But sometimes our alarm goes off when we're actually safe—like being nervous before a test or meeting new people.
+                            </p>
+                            <p class="font-body font-semibold" style="color: #E76F51;">
+                                The good news? We can learn to help our body feel safe again! 🐾
+                            </p>
+                        </div>
+
+                        ${parentModeEnabled ? `
+                        <div class="parent-tool rounded-2xl p-6 mt-6">
+                            <h4 class="font-title text-xl mb-3" style="color: #2A9D8F;">👨‍👩‍👧 Parent Script: "Noticing Without Fear"</h4>
+                            <div class="font-body" style="color: #264653;">
+                                <p class="mb-2">When your child notices body sensations, help them observe without anxiety:</p>
+                                <div class="bg-white p-4 rounded-xl space-y-2 text-sm">
+                                    <p>✓ "I notice your hands are clenched. What do you think your body is trying to tell us?"</p>
+                                    <p>✓ "Your body is working hard to keep you safe. That's pretty clever!"</p>
+                                    <p>✓ "Those butterflies in your tummy aren't dangerous—they're just your body's alarm doing its job."</p>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="rounded-xl p-6 mt-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch2_alarm'] ? 'checked' : ''}
+                                    data-activity="ch2_alarm"
+                                    onchange="markActivityComplete('ch2_alarm')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I learned about my Body Bark Alarm! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 2 - Body Map Interactive
+        function generatePage8() {
+            const selectedPart = formData.selected_body_part || '';
+            const message = formData.body_part_message || '';
+            
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-5xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🗺️ Where Do My Feelings Live?</h1>
+                        
+                        <p class="text-lg mb-6 font-body text-center" style="color: #264653;">
+                            Tap on different parts of the body to learn where feelings show up!
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-8 mb-8">
+                            <div class="rounded-3xl p-8 shadow-xl text-center" style="background-color: white;">
+                                <div class="relative inline-block">
+                                    <!-- Simple body representation using emoji and buttons -->
+                                    <div class="text-9xl mb-4">🧍</div>
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <button onclick="showBodyPartMessage('head')" class="body-part w-full py-3 rounded-xl font-body font-semibold transition-all" style="background-color: #A8E6CF;">
+                                            🧠 Head
+                                        </button>
+                                        <button onclick="showBodyPartMessage('chest')" class="body-part w-full py-3 rounded-xl font-body font-semibold transition-all" style="background-color: #A8E6CF;">
+                                            💗 Chest
+                                        </button>
+                                        <button onclick="showBodyPartMessage('tummy')" class="body-part w-full py-3 rounded-xl font-body font-semibold transition-all" style="background-color: #A8E6CF;">
+                                            🦋 Tummy
+                                        </button>
+                                        <button onclick="showBodyPartMessage('hands')" class="body-part w-full py-3 rounded-xl font-body font-semibold transition-all" style="background-color: #A8E6CF;">
+                                            🤲 Hands
+                                        </button>
+                                        <button onclick="showBodyPartMessage('legs')" class="body-part w-full py-3 rounded-xl font-body font-semibold transition-all" style="background-color: #A8E6CF;">
+                                            🦵 Legs
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-3xl p-8 shadow-xl" style="background-color: white;">
+                                <!-- Default message -->
+                                <div id="body-default" class="h-full flex flex-col justify-center items-center text-center">
+                                    <div class="text-6xl mb-4">👆</div>
+                                    <p class="font-body text-xl" style="color: #aaa;">Tap a body part to learn more!</p>
+                                </div>
+                                
+                                <!-- Head message -->
+                                <div id="body-head" class="h-full flex-col justify-center" style="display: none;">
+                                    <div class="text-6xl text-center mb-4">🐕</div>
+                                    <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                        <h3 class="font-title text-xl mb-3 text-center" style="color: #264653;">Daniel says:</h3>
+                                        <p class="font-body text-lg text-center" style="color: #264653;">When I'm worried, my head might feel fuzzy or I get headaches. That's my brain trying to protect me!</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Chest message -->
+                                <div id="body-chest" class="h-full flex-col justify-center" style="display: none;">
+                                    <div class="text-6xl text-center mb-4">🐕</div>
+                                    <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                        <h3 class="font-title text-xl mb-3 text-center" style="color: #264653;">Daniel says:</h3>
+                                        <p class="font-body text-lg text-center" style="color: #264653;">My chest gets tight when I'm scared or nervous. Sometimes my heart beats really fast like when I run!</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tummy message -->
+                                <div id="body-tummy" class="h-full flex-col justify-center" style="display: none;">
+                                    <div class="text-6xl text-center mb-4">🐕</div>
+                                    <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                        <h3 class="font-title text-xl mb-3 text-center" style="color: #264653;">Daniel says:</h3>
+                                        <p class="font-body text-lg text-center" style="color: #264653;">My tummy might feel butterflies or get rumbly when I'm worried or excited. That's okay!</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hands message -->
+                                <div id="body-hands" class="h-full flex-col justify-center" style="display: none;">
+                                    <div class="text-6xl text-center mb-4">🐕</div>
+                                    <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                        <h3 class="font-title text-xl mb-3 text-center" style="color: #264653;">Daniel says:</h3>
+                                        <p class="font-body text-lg text-center" style="color: #264653;">Sometimes my hands get sweaty or shaky when I'm nervous. They might want to hit things when I'm angry.</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Legs message -->
+                                <div id="body-legs" class="h-full flex-col justify-center" style="display: none;">
+                                    <div class="text-6xl text-center mb-4">🐕</div>
+                                    <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                        <h3 class="font-title text-xl mb-3 text-center" style="color: #264653;">Daniel says:</h3>
+                                        <p class="font-body text-lg text-center" style="color: #264653;">My legs might feel wobbly or want to run away when I'm scared. That's my body trying to keep me safe!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6" style="background-color: white; border: 3px solid #2A9D8F;">
+                            <h3 class="font-title text-xl mb-3" style="color: #264653;">📝 My Body Map</h3>
+                            <p class="font-body mb-4" style="color: #264653;">Where do YOU feel feelings most in your body? Write or draw below!</p>
+                            <textarea 
+                                class="w-full rounded-xl p-4 border-3 font-body" 
+                                style="background-color: #FFF8F0; border-color: #2A9D8F; color: #264653;"
+                                rows="3"
+                                placeholder="When I feel worried, I notice it in my... When I feel happy, my body feels..."
+                                onchange="saveFormData('my_body_map', this.value)"
+                            >${formData.my_body_map || ''}</textarea>
+                        </div>
+
+                        <div class="rounded-xl p-6 mt-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch2_bodymap'] ? 'checked' : ''}
+                                    data-activity="ch2_bodymap"
+                                    onchange="markActivityComplete('ch2_bodymap')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I explored my body map! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 3 Divider
+        function generatePage9() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #9b59b6, #e74c3c, #f39c12, #2ecc71);">
+                    <div class="text-center">
+                        <div class="text-9xl mb-6">🎭</div>
+                        <h1 class="text-6xl text-white mb-4 font-title">Chapter 3</h1>
+                        <h2 class="text-4xl text-white mb-8 font-title">My Big 4 Feelings</h2>
+                        <p class="text-2xl text-white/90 max-w-2xl mx-auto font-body">
+                            Happy, Sad, Angry, Worried — let's explore them all!
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 3 - Big 4 Feelings Story
+        function generatePage10() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">📖 Daniel Gets Mixed-Up Feelings</h1>
+                        
+                        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+                            <div class="space-y-6 font-body text-lg leading-relaxed" style="color: #264653;">
+                                <p>
+                                    One day, Daniel's friend Bella invited him to her birthday party. Daniel felt SO happy—his tail wagged and wagged!
+                                </p>
+                                
+                                <div class="flex justify-center gap-4 my-4">
+                                    <span class="text-5xl">🎂</span>
+                                    <span class="text-5xl">🐕😊</span>
+                                    <span class="text-5xl">🎈</span>
+                                </div>
+                                
+                                <p>
+                                    But then Daniel remembered there would be LOTS of dogs at the party. Some he didn't know. His tummy started doing flip-flops. Was he happy or worried? Maybe... both?
+                                </p>
+                                
+                                <div class="p-4 rounded-2xl" style="background-color: #d4a5ff;">
+                                    <p class="text-center font-title" style="color: #264653;">"Can I feel two things at once?" wondered Daniel. 🤔</p>
+                                </div>
+                                
+                                <p>
+                                    At the party, a bigger dog accidentally stepped on Daniel's paw. "OW!" Daniel felt angry—that hurt! But then the big dog said sorry and licked Daniel's ear. Now Daniel felt happy again... but also a little sad his paw was sore.
+                                </p>
+                                
+                                <div class="p-4 rounded-2xl" style="background: linear-gradient(to right, #A8E6CF, #FFF8F0);">
+                                    <p class="text-center font-semibold" style="color: #2A9D8F;">
+                                        🐕 Daniel learned something important: It's okay to feel MORE THAN ONE feeling at the same time! Feelings can be mixed up like colours mixing together.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="rounded-xl p-4 text-center shadow-lg" style="background-color: #FFE8A3;">
+                                <div class="text-4xl mb-2">😊</div>
+                                <p class="font-title" style="color: #264653;">HAPPY</p>
+                            </div>
+                            <div class="rounded-xl p-4 text-center shadow-lg" style="background-color: #a8d8ea;">
+                                <div class="text-4xl mb-2">😢</div>
+                                <p class="font-title" style="color: #264653;">SAD</p>
+                            </div>
+                            <div class="rounded-xl p-4 text-center shadow-lg" style="background-color: #ffb6b6;">
+                                <div class="text-4xl mb-2">😠</div>
+                                <p class="font-title" style="color: #264653;">ANGRY</p>
+                            </div>
+                            <div class="rounded-xl p-4 text-center shadow-lg" style="background-color: #d4a5ff;">
+                                <div class="text-4xl mb-2">😰</div>
+                                <p class="font-title" style="color: #264653;">WORRIED</p>
+                            </div>
+                        </div>
+
+                        ${parentModeEnabled ? `
+                        <div class="parent-tool rounded-2xl p-6 mb-6">
+                            <h4 class="font-title text-xl mb-3" style="color: #2A9D8F;">👨‍👩‍👧 Emotion Coaching (Aussie-Friendly)</h4>
+                            <div class="font-body" style="color: #264653;">
+                                <p class="mb-3">Use the RULER approach when your child has big feelings:</p>
+                                <div class="bg-white p-4 rounded-xl space-y-2">
+                                    <p><strong>R</strong>ecognise: "I can see something's going on for you, mate."</p>
+                                    <p><strong>U</strong>nderstand: "Tell me what happened. I'm listening."</p>
+                                    <p><strong>L</strong>abel: "Sounds like you might be feeling disappointed AND angry?"</p>
+                                    <p><strong>E</strong>xpress: "It's okay to feel that way. What would help right now?"</p>
+                                    <p><strong>R</strong>egulate: "Let's figure this out together."</p>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch3_story'] ? 'checked' : ''}
+                                    data-activity="ch3_story"
+                                    onchange="markActivityComplete('ch3_story')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I read about mixed-up feelings! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 3 - Feeling Match Game
+        function generatePage11() {
+            const selectedFeeling = formData.selected_feeling || '';
+            
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-5xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🎯 Guess the Feeling Woof!</h1>
+                        
+                        <p class="text-lg mb-6 font-body text-center" style="color: #264653;">
+                            Look at each situation and pick which feeling fits best!
+                        </p>
+
+                        <div class="space-y-6 mb-8">
+                            <!-- Scenario 1 -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background-color: white;">
+                                <p class="font-body text-lg mb-4" style="color: #264653;">
+                                    🎁 Daniel opens his birthday present and finds a brand new squeaky toy!
+                                </p>
+                                <div class="flex flex-wrap gap-3">
+                                    ${['😊 Happy', '😢 Sad', '😠 Angry', '😰 Worried'].map(feeling => `
+                                        <button onclick="selectQuizAnswer('quiz1', '${feeling}')" class="px-6 py-3 rounded-xl font-body font-semibold transition-all ${formData.quiz1 === feeling ? 'ring-4' : ''}" style="background-color: ${formData.quiz1 === feeling ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                            ${feeling}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                ${formData.quiz1 === '😊 Happy' ? '<p class="mt-3 font-body font-semibold" style="color: #2A9D8F;">✓ That\'s right! Woof woof!</p>' : formData.quiz1 ? '<p class="mt-3 font-body" style="color: #E76F51;">Try again! Think about how Daniel would feel getting something he loves.</p>' : ''}
+                            </div>
+
+                            <!-- Scenario 2 -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background-color: white;">
+                                <p class="font-body text-lg mb-4" style="color: #264653;">
+                                    🦴 Another dog took Daniel's favourite bone without asking.
+                                </p>
+                                <div class="flex flex-wrap gap-3">
+                                    ${['😊 Happy', '😢 Sad', '😠 Angry', '😰 Worried'].map(feeling => `
+                                        <button onclick="selectQuizAnswer('quiz2', '${feeling}')" class="px-6 py-3 rounded-xl font-body font-semibold transition-all ${formData.quiz2 === feeling ? 'ring-4' : ''}" style="background-color: ${formData.quiz2 === feeling ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                            ${feeling}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                ${formData.quiz2 === '😠 Angry' ? '<p class="mt-3 font-body font-semibold" style="color: #2A9D8F;">✓ That\'s right! It\'s okay to feel angry when something unfair happens.</p>' : formData.quiz2 ? '<p class="mt-3 font-body" style="color: #E76F51;">Try again! How would you feel if someone took your favourite thing?</p>' : ''}
+                            </div>
+
+                            <!-- Scenario 3 -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background-color: white;">
+                                <p class="font-body text-lg mb-4" style="color: #264653;">
+                                    🌧️ Daniel's friend moved away to a different neighbourhood.
+                                </p>
+                                <div class="flex flex-wrap gap-3">
+                                    ${['😊 Happy', '😢 Sad', '😠 Angry', '😰 Worried'].map(feeling => `
+                                        <button onclick="selectQuizAnswer('quiz3', '${feeling}')" class="px-6 py-3 rounded-xl font-body font-semibold transition-all ${formData.quiz3 === feeling ? 'ring-4' : ''}" style="background-color: ${formData.quiz3 === feeling ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                            ${feeling}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                ${formData.quiz3 === '😢 Sad' ? '<p class="mt-3 font-body font-semibold" style="color: #2A9D8F;">✓ That\'s right! Missing someone we love makes us feel sad.</p>' : formData.quiz3 ? '<p class="mt-3 font-body" style="color: #E76F51;">Try again! Think about how you\'d feel if your friend moved away.</p>' : ''}
+                            </div>
+
+                            <!-- Scenario 4 -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background-color: white;">
+                                <p class="font-body text-lg mb-4" style="color: #264653;">
+                                    🏥 Daniel has to go to the vet tomorrow and doesn't know what will happen.
+                                </p>
+                                <div class="flex flex-wrap gap-3">
+                                    ${['😊 Happy', '😢 Sad', '😠 Angry', '😰 Worried'].map(feeling => `
+                                        <button onclick="selectQuizAnswer('quiz4', '${feeling}')" class="px-6 py-3 rounded-xl font-body font-semibold transition-all ${formData.quiz4 === feeling ? 'ring-4' : ''}" style="background-color: ${formData.quiz4 === feeling ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                            ${feeling}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                ${formData.quiz4 === '😰 Worried' ? '<p class="mt-3 font-body font-semibold" style="color: #2A9D8F;">✓ That\'s right! Not knowing what will happen can make us feel worried.</p>' : formData.quiz4 ? '<p class="mt-3 font-body" style="color: #E76F51;">Try again! How do you feel when you don\'t know what\'s going to happen?</p>' : ''}
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch3_quiz'] ? 'checked' : ''}
+                                    data-activity="ch3_quiz"
+                                    onchange="markActivityComplete('ch3_quiz')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I played Guess the Feeling Woof! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 4 Divider
+        function generatePage12() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #E76F51, #F4A261);">
+                    <div class="text-center">
+                        <div class="text-9xl mb-6 animate-bounce-slow">🌊</div>
+                        <h1 class="text-6xl text-white mb-4 font-title">Chapter 4</h1>
+                        <h2 class="text-4xl text-white mb-8 font-title">When Feelings Get Too Big</h2>
+                        <p class="text-2xl text-white/90 max-w-2xl mx-auto font-body">
+                            Understanding sensory overload and what happens in your body
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 4 - Understanding Big Feelings
+        function generatePage13() {
+            const selectedScenario = formData.selected_scenario || '';
+            const explanation = formData.scenario_explanation || '';
+            
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🌊 When Feelings Get TOO Big</h1>
+                        
+                        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white; border-left: 6px solid #E76F51;">
+                            <div class="flex items-start gap-6">
+                                <div class="text-6xl">🐕</div>
+                                <div class="font-body text-lg" style="color: #264653;">
+                                    <p class="mb-4">
+                                        <strong class="font-title" style="color: #E76F51;">WOOF!</strong> Sometimes feelings get SO big that they feel like a huge wave crashing over us. Everything gets LOUD and BRIGHT and TOO MUCH!
+                                    </p>
+                                    <p class="mb-4">
+                                        This is called <strong>sensory overload</strong> or <strong>fight/flight mode</strong>. It's when your body's alarm gets SO loud that it's hard to think, hard to talk, and hard to stay calm.
+                                    </p>
+                                    <p>
+                                        When this happens, it's NOT your fault. Your body is just trying really hard to protect you!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6 mb-8" style="background-color: white;">
+                            <h3 class="font-title text-xl mb-4" style="color: #264653;">🎬 Choose a Scenario — Daniel Will Explain!</h3>
+                            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                                <button onclick="selectScenario('loud_noise')" class="p-4 rounded-xl text-left transition-all ${selectedScenario === 'loud_noise' ? 'ring-4' : ''}" style="background-color: ${selectedScenario === 'loud_noise' ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                    <span class="text-3xl">💥</span>
+                                    <p class="font-body font-semibold mt-2" style="color: #264653;">A loud noise</p>
+                                </button>
+                                <button onclick="selectScenario('lost_toy')" class="p-4 rounded-xl text-left transition-all ${selectedScenario === 'lost_toy' ? 'ring-4' : ''}" style="background-color: ${selectedScenario === 'lost_toy' ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                    <span class="text-3xl">🧸</span>
+                                    <p class="font-body font-semibold mt-2" style="color: #264653;">Lost my favourite toy</p>
+                                </button>
+                                <button onclick="selectScenario('new_place')" class="p-4 rounded-xl text-left transition-all ${selectedScenario === 'new_place' ? 'ring-4' : ''}" style="background-color: ${selectedScenario === 'new_place' ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                    <span class="text-3xl">🏫</span>
+                                    <p class="font-body font-semibold mt-2" style="color: #264653;">A new place</p>
+                                </button>
+                                <button onclick="selectScenario('friend_upset')" class="p-4 rounded-xl text-left transition-all ${selectedScenario === 'friend_upset' ? 'ring-4' : ''}" style="background-color: ${selectedScenario === 'friend_upset' ? '#FFE8A3' : '#A8E6CF'}; ring-color: #F4A261;">
+                                    <span class="text-3xl">😢</span>
+                                    <p class="font-body font-semibold mt-2" style="color: #264653;">My friend is upset</p>
+                                </button>
+                            </div>
+                            
+                            ${explanation ? `
+                            <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                <div class="flex items-start gap-4">
+                                    <span class="text-4xl">🐕</span>
+                                    <p class="font-body text-lg" style="color: #264653;">${explanation}</p>
+                                </div>
+                            </div>
+                            ` : `
+                            <div class="rounded-2xl p-6 text-center" style="background-color: #f0f0f0;">
+                                <p class="font-body" style="color: #aaa;">👆 Choose a scenario to hear Daniel's explanation!</p>
+                            </div>
+                            `}
+                        </div>
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch4_scenarios'] ? 'checked' : ''}
+                                    data-activity="ch4_scenarios"
+                                    onchange="markActivityComplete('ch4_scenarios')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I explored the scenarios! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 4 - Warning Signs Chart
+        function generatePage14() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-5xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">⚠️ My Big Feelings Warning Signs</h1>
+                        
+                        <p class="text-lg mb-6 font-body" style="color: #264653;">
+                            Let's build a chart to help you notice when your feelings are getting big. This is like having your own early warning system!
+                        </p>
+
+                        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
+                            <div class="space-y-6">
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #A8E6CF, white);">
+                                    <h3 class="font-title text-xl mb-3 flex items-center gap-2" style="color: #264653;">
+                                        <span class="text-3xl">🟢</span> GREEN ZONE — Calm & Ready
+                                    </h3>
+                                    <p class="font-body mb-3" style="color: #264653;">How does your body feel when you're calm?</p>
+                                    <textarea 
+                                        class="w-full rounded-xl p-3 border-3 font-body" 
+                                        style="background-color: #FFF8F0; border-color: #2A9D8F; color: #264653;"
+                                        rows="2"
+                                        placeholder="e.g., Relaxed shoulders, easy breathing, can think clearly..."
+                                        onchange="saveFormData('green_zone', this.value)"
+                                    >${formData.green_zone || ''}</textarea>
+                                </div>
+
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #FFE8A3, white);">
+                                    <h3 class="font-title text-xl mb-3 flex items-center gap-2" style="color: #264653;">
+                                        <span class="text-3xl">🟡</span> YELLOW ZONE — Getting Wiggly
+                                    </h3>
+                                    <p class="font-body mb-3" style="color: #264653;">What are your EARLY warning signs that feelings are growing?</p>
+                                    <textarea 
+                                        class="w-full rounded-xl p-3 border-3 font-body" 
+                                        style="background-color: #FFF8F0; border-color: #F4A261; color: #264653;"
+                                        rows="2"
+                                        placeholder="e.g., Faster breathing, tummy butterflies, fidgety hands..."
+                                        onchange="saveFormData('yellow_zone', this.value)"
+                                    >${formData.yellow_zone || ''}</textarea>
+                                </div>
+
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #ffb6b6, white);">
+                                    <h3 class="font-title text-xl mb-3 flex items-center gap-2" style="color: #264653;">
+                                        <span class="text-3xl">🔴</span> RED ZONE — TOO BIG!
+                                    </h3>
+                                    <p class="font-body mb-3" style="color: #264653;">What happens when your feelings get too big to handle?</p>
+                                    <textarea 
+                                        class="w-full rounded-xl p-3 border-3 font-body" 
+                                        style="background-color: #FFF8F0; border-color: #E76F51; color: #264653;"
+                                        rows="2"
+                                        placeholder="e.g., Crying, yelling, can't think, want to run away..."
+                                        onchange="saveFormData('red_zone', this.value)"
+                                    >${formData.red_zone || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6 mb-6" style="background-color: #FFE8A3;">
+                            <h3 class="font-title text-xl mb-3" style="color: #264653;">🐕 Daniel's Tip:</h3>
+                            <p class="font-body" style="color: #264653;">
+                                "The BEST time to use calm-down tools is in the YELLOW zone! If you notice your early warning signs, you can help yourself before feelings get too big. It's like putting out a small spark before it becomes a big fire!"
+                            </p>
+                        </div>
+
+                        ${parentModeEnabled ? `
+                        <div class="parent-tool rounded-2xl p-6 mb-6">
+                            <h4 class="font-title text-xl mb-3" style="color: #2A9D8F;">👨‍👩‍👧 Parent Tip</h4>
+                            <p class="font-body" style="color: #264653;">
+                                Help your child identify their unique warning signs by observing them over time. 
+                                When you notice early signs, gently name them: "I notice your hands are starting to clench. 
+                                What zone do you think you're in?" This builds interoception without judgment.
+                            </p>
+                        </div>
+                        ` : ''}
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch4_chart'] ? 'checked' : ''}
+                                    data-activity="ch4_chart"
+                                    onchange="markActivityComplete('ch4_chart')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I built my Warning Signs Chart! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 5 Divider
+        function generatePage15() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #2A9D8F, #A8E6CF);">
+                    <div class="text-center">
+                        <div class="text-9xl mb-6 animate-float">🏠</div>
+                        <h1 class="text-6xl text-white mb-4 font-title">Chapter 5</h1>
+                        <h2 class="text-4xl text-white mb-8 font-title">Daniel's Calm-Down Den</h2>
+                        <p class="text-2xl text-white/90 max-w-2xl mx-auto font-body">
+                            Build your own safe space for when feelings get big!
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 5 - Story & Calm Den Builder
+        function generatePage16() {
+            const calmItems = formData.calm_den_items || [];
+            const availableItems = [
+                { id: 'blanket', icon: '🧸', name: 'Soft blanket' },
+                { id: 'pillow', icon: '🛏️', name: 'Comfy pillow' },
+                { id: 'toy', icon: '🐕', name: 'Favourite toy' },
+                { id: 'book', icon: '📚', name: 'Picture book' },
+                { id: 'music', icon: '🎵', name: 'Calm music' },
+                { id: 'dim_light', icon: '💡', name: 'Dim lights' },
+                { id: 'fidget', icon: '🌀', name: 'Fidget toy' },
+                { id: 'headphones', icon: '🎧', name: 'Headphones' },
+                { id: 'water', icon: '💧', name: 'Water bottle' },
+                { id: 'timer', icon: '⏰', name: 'Calm timer' },
+                { id: 'tent', icon: '⛺', name: 'Cosy tent/fort' },
+                { id: 'weighted', icon: '🏋️', name: 'Weighted lap pad' }
+            ];
+            
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-5xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">📖 Daniel Builds His Safe Den</h1>
+                        
+                        <div class="rounded-3xl shadow-xl p-6 mb-6" style="background-color: white;">
+                            <div class="flex items-start gap-4 font-body text-lg" style="color: #264653;">
+                                <span class="text-5xl">🐕</span>
+                                <div>
+                                    <p class="mb-3">
+                                        When Daniel's feelings get too big, he goes to his special <strong>Calm-Down Den</strong>. It's a cosy spot under the stairs with his favourite blanket, a soft toy, and quiet music playing.
+                                    </p>
+                                    <p>
+                                        "It's not a time-out spot," Daniel explains. "It's my <em>safe space</em> where I can help my body feel calm again. No one can bother me there, and I can stay as long as I need!"
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6 mb-6" style="background-color: white; border: 3px solid #2A9D8F;">
+                            <h3 class="font-title text-xl mb-4" style="color: #264653;">🏗️ Build YOUR Calm-Down Den!</h3>
+                            <p class="font-body mb-4" style="color: #264653;">Tap items to add them to your den:</p>
+                            
+                            <div class="grid grid-cols-3 md:grid-cols-4 gap-3 mb-6">
+                                ${availableItems.map(item => `
+                                    <button 
+                                        onclick="${calmItems.includes(item.id) ? `removeCalmItem('${item.id}')` : `addCalmItem('${item.id}')`}" 
+                                        class="p-3 rounded-xl text-center transition-all ${calmItems.includes(item.id) ? 'ring-4' : ''}" 
+                                        style="background-color: ${calmItems.includes(item.id) ? '#A8E6CF' : '#f0f0f0'}; ring-color: #2A9D8F;"
+                                    >
+                                        <span class="text-3xl">${item.icon}</span>
+                                        <p class="font-body text-xs mt-1" style="color: #264653;">${item.name}</p>
+                                    </button>
+                                `).join('')}
+                            </div>
+
+                            <div class="rounded-2xl p-6" style="background-color: #FFE8A3;">
+                                <h4 class="font-title text-lg mb-3" style="color: #264653;">🏠 Your Den Contains:</h4>
+                                ${calmItems.length > 0 ? `
+                                    <div class="flex flex-wrap gap-2">
+                                        ${calmItems.map(id => {
+                                            const item = availableItems.find(i => i.id === id);
+                                            return item ? `<span class="px-3 py-1 rounded-full font-body text-sm" style="background-color: white;">${item.icon} ${item.name}</span>` : '';
+                                        }).join('')}
+                                    </div>
+                                ` : `
+                                    <p class="font-body" style="color: #888;">Tap items above to add them to your den!</p>
+                                `}
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6 mb-6" style="background-color: white;">
+                            <h3 class="font-title text-xl mb-3" style="color: #264653;">📍 Where will your Calm-Down Den be?</h3>
+                            <input 
+                                type="text" 
+                                class="w-full rounded-xl p-3 border-3 font-body text-lg" 
+                                style="background-color: #FFF8F0; border-color: #2A9D8F; color: #264653;"
+                                placeholder="e.g., Corner of my room, under my desk, behind the couch..."
+                                value="${formData.den_location || ''}"
+                                onchange="saveFormData('den_location', this.value)"
+                            >
+                        </div>
+
+                        ${parentModeEnabled ? `
+                        <div class="parent-tool rounded-2xl p-6 mb-6">
+                            <h4 class="font-title text-xl mb-3" style="color: #2A9D8F;">👨‍👩‍👧 Co-Regulation Script</h4>
+                            <div class="font-body" style="color: #264653;">
+                                <p class="font-semibold mb-2">"Borrow My Calm, Buddy"</p>
+                                <div class="bg-white p-4 rounded-xl space-y-2 text-sm">
+                                    <p>✓ "I can see you're having a really hard time. That's okay."</p>
+                                    <p>✓ "I'm right here with you. You can borrow some of my calm."</p>
+                                    <p>✓ "Let's breathe together. In... and out..."</p>
+                                    <p>✓ "Your den is ready whenever you need it. Or we can sit here together."</p>
+                                    <p>✓ "Your feelings will pass. I'll stay with you until they do."</p>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch5_den'] ? 'checked' : ''}
+                                    data-activity="ch5_den"
+                                    onchange="markActivityComplete('ch5_den')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I designed my Calm-Down Den! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 5 - Breathing & Grounding Tools
+        function generatePage17() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-5xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🧘 Calm-Down Tools</h1>
+                        
+                        <p class="text-lg mb-6 font-body text-center" style="color: #264653;">
+                            Here are some special tools to help you feel calm again!
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-8">
+                            <!-- Breathing Tool -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background: linear-gradient(to bottom, #A8E6CF, white);">
+                                <h3 class="font-title text-2xl mb-4 text-center" style="color: #264653;">🌬️ Puppy Breathing</h3>
+                                <div class="text-center mb-4">
+                                    <div id="breathCircle" class="inline-block w-32 h-32 rounded-full flex items-center justify-center text-4xl transition-all duration-1000" style="background-color: #2A9D8F;">
+                                        🐕
+                                    </div>
+                                </div>
+                                <p class="font-body text-center mb-4" style="color: #264653;">
+                                    Breathe IN like you're smelling a flower 🌸<br>
+                                    Breathe OUT like you're blowing out candles 🎂
+                                </p>
+                                <button onclick="startBreathing()" class="w-full py-3 rounded-xl font-title text-lg text-white" style="background-color: #2A9D8F;">
+                                    Start Breathing Exercise
+                                </button>
+                            </div>
+
+                            <!-- Grounding Tool -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background: linear-gradient(to bottom, #FFE8A3, white);">
+                                <h3 class="font-title text-2xl mb-4 text-center" style="color: #264653;">🐾 5-4-3-2-1 Senses</h3>
+                                <div class="space-y-3 font-body" style="color: #264653;">
+                                    <div class="flex items-center gap-3 p-2 rounded-lg" style="background-color: white;">
+                                        <span class="text-2xl">👀</span>
+                                        <span><strong>5</strong> things you can SEE</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2 rounded-lg" style="background-color: white;">
+                                        <span class="text-2xl">👂</span>
+                                        <span><strong>4</strong> things you can HEAR</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2 rounded-lg" style="background-color: white;">
+                                        <span class="text-2xl">✋</span>
+                                        <span><strong>3</strong> things you can TOUCH</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2 rounded-lg" style="background-color: white;">
+                                        <span class="text-2xl">👃</span>
+                                        <span><strong>2</strong> things you can SMELL</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2 rounded-lg" style="background-color: white;">
+                                        <span class="text-2xl">👅</span>
+                                        <span><strong>1</strong> thing you can TASTE</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Body Shake -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background: linear-gradient(to bottom, #d4a5ff, white);">
+                                <h3 class="font-title text-2xl mb-4 text-center" style="color: #264653;">🐕 Shake It Off!</h3>
+                                <div class="text-center text-6xl mb-4 animate-wag">🐕</div>
+                                <p class="font-body text-center" style="color: #264653;">
+                                    Dogs shake their bodies to release stress! Stand up and shake your hands, arms, legs, and whole body for 10 seconds. Then freeze and notice how you feel!
+                                </p>
+                            </div>
+
+                            <!-- Squeeze & Release -->
+                            <div class="rounded-2xl p-6 shadow-lg" style="background: linear-gradient(to bottom, #a8d8ea, white);">
+                                <h3 class="font-title text-2xl mb-4 text-center" style="color: #264653;">💪 Squeeze & Release</h3>
+                                <div class="text-center text-6xl mb-4">🤜</div>
+                                <p class="font-body text-center" style="color: #264653;">
+                                    Make tight fists and squeeze all your muscles for 5 seconds... then let everything go soft like a sleeping puppy. Repeat 3 times!
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch5_tools'] ? 'checked' : ''}
+                                    data-activity="ch5_tools"
+                                    onchange="markActivityComplete('ch5_tools')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I tried the calm-down tools! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 6 Divider
+        function generatePage18() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #F4A261, #FFE8A3);">
+                    <div class="text-center">
+                        <div class="text-9xl mb-6">🐾</div>
+                        <h1 class="text-6xl mb-4 font-title" style="color: #264653;">Chapter 6</h1>
+                        <h2 class="text-4xl mb-8 font-title" style="color: #264653;">My Paw-steps Plan</h2>
+                        <p class="text-2xl max-w-2xl mx-auto font-body" style="color: #264653;">
+                            Create your very own step-by-step plan for big feelings!
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Chapter 6 - Paw-steps Plan
+        function generatePage19() {
+            return `
+                <div class="page min-h-screen p-8" style="background-color: #FFF8F0;">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl mb-6 font-title" style="color: #264653;">🐾 My Paw-steps Plan</h1>
+                        
+                        <p class="text-lg mb-6 font-body" style="color: #264653;">
+                            Now let's put everything together! Fill in your personal plan for when feelings get big.
+                        </p>
+
+                        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
+                            <div class="space-y-6">
+                                <!-- Step 1 -->
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #F4A261, #FFE8A3);">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-title text-white" style="background-color: #264653;">1</div>
+                                        <div class="flex-1">
+                                            <h3 class="font-title text-xl mb-2" style="color: #264653;">🔍 NOTICE my warning signs</h3>
+                                            <p class="font-body mb-2" style="color: #264653;">My early warning signs are:</p>
+                                            <input 
+                                                type="text" 
+                                                class="w-full rounded-xl p-3 border-3 font-body" 
+                                                style="background-color: white; border-color: #264653; color: #264653;"
+                                                placeholder="e.g., tight fists, fast breathing, hot face..."
+                                                value="${formData.plan_step1 || ''}"
+                                                onchange="saveFormData('plan_step1', this.value)"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 2 -->
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #2A9D8F, #A8E6CF);">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-title text-white" style="background-color: #264653;">2</div>
+                                        <div class="flex-1">
+                                            <h3 class="font-title text-xl mb-2 text-white">🛑 STOP and say: "I'm feeling..."</h3>
+                                            <p class="font-body mb-2 text-white">When I notice my signs, I'll say:</p>
+                                            <input 
+                                                type="text" 
+                                                class="w-full rounded-xl p-3 border-3 font-body" 
+                                                style="background-color: white; border-color: #264653; color: #264653;"
+                                                placeholder='e.g., "I need a break" or "I\'m getting frustrated"'
+                                                value="${formData.plan_step2 || ''}"
+                                                onchange="saveFormData('plan_step2', this.value)"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3 -->
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #d4a5ff, white);">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-title text-white" style="background-color: #264653;">3</div>
+                                        <div class="flex-1">
+                                            <h3 class="font-title text-xl mb-2" style="color: #264653;">🧘 USE my calm-down tool</h3>
+                                            <p class="font-body mb-2" style="color: #264653;">My favourite calm-down tool is:</p>
+                                            <input 
+                                                type="text" 
+                                                class="w-full rounded-xl p-3 border-3 font-body" 
+                                                style="background-color: white; border-color: #264653; color: #264653;"
+                                                placeholder="e.g., puppy breathing, shake it off, go to my den..."
+                                                value="${formData.plan_step3 || ''}"
+                                                onchange="saveFormData('plan_step3', this.value)"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 4 -->
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #a8d8ea, white);">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-title text-white" style="background-color: #264653;">4</div>
+                                        <div class="flex-1">
+                                            <h3 class="font-title text-xl mb-2" style="color: #264653;">🤗 ASK for help if I need it</h3>
+                                            <p class="font-body mb-2" style="color: #264653;">People who can help me are:</p>
+                                            <input 
+                                                type="text" 
+                                                class="w-full rounded-xl p-3 border-3 font-body" 
+                                                style="background-color: white; border-color: #264653; color: #264653;"
+                                                placeholder="e.g., Mum, Dad, my teacher, my friend..."
+                                                value="${formData.plan_step4 || ''}"
+                                                onchange="saveFormData('plan_step4', this.value)"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 5 -->
+                                <div class="rounded-2xl p-6" style="background: linear-gradient(to right, #A8E6CF, white);">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-title text-white" style="background-color: #264653;">5</div>
+                                        <div class="flex-1">
+                                            <h3 class="font-title text-xl mb-2" style="color: #264653;">⭐ CELEBRATE when I try!</h3>
+                                            <p class="font-body mb-2" style="color: #264653;">When I use my plan, I'll reward myself by:</p>
+                                            <input 
+                                                type="text" 
+                                                class="w-full rounded-xl p-3 border-3 font-body" 
+                                                style="background-color: white; border-color: #264653; color: #264653;"
+                                                placeholder="e.g., telling myself good job, getting a sticker, sharing with someone..."
+                                                value="${formData.plan_step5 || ''}"
+                                                onchange="saveFormData('plan_step5', this.value)"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${parentModeEnabled ? `
+                        <div class="parent-tool rounded-2xl p-6 mb-6">
+                            <h4 class="font-title text-xl mb-3" style="color: #2A9D8F;">👨‍👩‍👧 How to Practice Without Pressure</h4>
+                            <div class="font-body" style="color: #264653;">
+                                <ul class="space-y-2 text-sm">
+                                    <li>✓ Practice the plan during CALM times, not during meltdowns</li>
+                                    <li>✓ Role-play scenarios: "Let's pretend your feelings are getting big..."</li>
+                                    <li>✓ Praise effort, not perfection: "You noticed your warning sign! That's huge!"</li>
+                                    <li>✓ Model using your own plan when YOU feel frustrated</li>
+                                    <li>✓ Keep the plan visible—on the fridge, in their room, etc.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="rounded-xl p-6" style="background-color: white;">
+                            <div class="flex items-start gap-3">
+                                <input 
+                                    type="checkbox" 
+                                    class="w-8 h-8 rounded cursor-pointer mt-1"
+                                    style="accent-color: #F4A261;"
+                                    ${completedActivities['ch6_plan'] ? 'checked' : ''}
+                                    data-activity="ch6_plan"
+                                    onchange="markActivityComplete('ch6_plan')"
+                                >
+                                <label class="font-title text-xl" style="color: #264653;">I created my Paw-steps Plan! ⭐</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Progress Page
+        function generatePage20() {
+            const completedCount = Object.keys(completedActivities).length;
+            return `
+                <div class="page min-h-screen p-8" style="background: linear-gradient(to bottom right, #FFE8A3, #FFF8F0);">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-5xl mb-6 font-title text-center" style="color: #264653;">⭐ Your Amazing Progress!</h1>
+                        
+                        <div class="rounded-3xl shadow-2xl p-8 mb-8" style="background-color: white; border: 4px solid #F4A261;">
+                            <div class="text-center mb-8">
+                                <div class="text-8xl mb-4 animate-shimmer">⭐</div>
+                                <div class="text-6xl font-title mb-2" style="color: #F4A261;" id="progressStars">${totalStars}</div>
+                                <p class="text-2xl font-body" style="color: #264653;">Stars Earned!</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-6 mb-8">
+                                <div class="border-4 rounded-2xl p-6 text-center" style="background: linear-gradient(to bottom right, #A8E6CF, white); border-color: #2A9D8F;">
+                                    <div class="text-5xl mb-2">📚</div>
+                                    <div class="text-4xl font-title" style="color: #264653;">${completedCount}</div>
+                                    <p class="font-body" style="color: #2A9D8F;">Activities Done!</p>
+                                </div>
+                                <div class="border-4 rounded-2xl p-6 text-center" style="background: linear-gradient(to bottom right, #FFE8A3, white); border-color: #F4A261;">
+                                    <div class="text-5xl mb-2">🐕</div>
+                                    <div class="text-4xl font-title" style="color: #264653;">AMAZING!</div>
+                                    <p class="font-body" style="color: #F4A261;">You're a Superstar!</p>
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl p-6" style="background-color: #FFF8F0;">
+                                <h3 class="font-title text-xl mb-4" style="color: #264653;">🎉 What You Learned:</h3>
+                                <ul class="space-y-3 font-body" style="color: #264653;">
+                                    <li class="flex items-center gap-3">
+                                        <span class="text-2xl">✓</span>
+                                        <span>Met Daniel and the Feeling Pack</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <span class="text-2xl">✓</span>
+                                        <span>Discovered where feelings live in your body</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <span class="text-2xl">✓</span>
+                                        <span>Learned about the Big 4 feelings</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <span class="text-2xl">✓</span>
+                                        <span>Understood what happens when feelings get too big</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <span class="text-2xl">✓</span>
+                                        <span>Built your very own Calm-Down Den</span>
+                                    </li>
+                                    <li class="flex items-center gap-3">
+                                        <span class="text-2xl">✓</span>
+                                        <span>Created your personal Paw-steps Plan</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl p-6 text-center" style="background-color: #A8E6CF;">
+                            <p class="text-xl font-body" style="color: #264653;">
+                                🐕 <strong>Daniel is SO proud of you!</strong> Remember: all feelings are okay, and you now have tools to help when they get too big! 🐾
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Certificate Page
+        function generatePage21() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #F4A261, #FFE8A3);">
+                    <div class="max-w-3xl w-full rounded-3xl shadow-2xl p-8 text-center" style="background-color: white;">
+                        <div class="text-7xl mb-4">🏆</div>
+                        <h1 class="text-4xl mb-2 font-title" style="color: #264653;">Badge of Bravery</h1>
+                        <p class="text-xl mb-6 font-body" style="color: #F4A261;">Daniel's Diaries: Module 1</p>
+                        
+                        <div class="border-4 rounded-2xl p-8 mb-6" style="border-color: #F4A261; background: linear-gradient(to bottom right, #FFF8F0, white);">
+                            <p class="text-xl mb-4 font-body" style="color: #264653;">This certifies that</p>
+                            <p class="text-4xl font-title mb-4" style="color: #F4A261;">${formData.userName || '___________________'}</p>
+                            <p class="text-xl mb-4 font-body" style="color: #264653;">has completed</p>
+                            <p class="text-2xl font-title mb-6" style="color: #264653;">"The Day My Feelings Got Too Big"</p>
+                            
+                            <div class="flex justify-center gap-8 text-5xl mb-6">
+                                <span>🐕</span>
+                                <span>⭐</span>
+                                <span>🐾</span>
+                            </div>
+                            
+                            <p class="text-lg font-body" style="color: #2A9D8F;">
+                                You learned about feelings, built a Calm-Down Den,<br>and created your own Paw-steps Plan!
+                            </p>
+                        </div>
+
+                        <div class="flex justify-center gap-12 mb-6 font-body" style="color: #264653;">
+                            <div>
+                                <div class="border-t-2 pt-2 px-8" style="border-color: #F4A261;">Date</div>
+                            </div>
+                            <div>
+                                <div class="border-t-2 pt-2 px-8" style="border-color: #F4A261;">Signature</div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl p-4 mb-6" style="background-color: #FFE8A3;">
+                            <p class="font-body" style="color: #264653;">
+                                🐕 "You're paw-sitively AMAZING!" - Daniel 🐾
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Thank You Page
+        function generatePage22() {
+            return `
+                <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, #A8E6CF, #FFF8F0);">
+                    <div class="text-center max-w-3xl">
+                        <div class="text-9xl mb-6 animate-wag">🐕</div>
+                        <h1 class="text-5xl mb-6 font-title" style="color: #264653;">Woof Woof! You Did It!</h1>
+                        <p class="text-2xl mb-8 font-body" style="color: #F4A261;">
+                            Thank you for going on this adventure with Daniel!
+                        </p>
+                        
+                        <div class="rounded-2xl p-8 mb-8" style="background-color: white; border: 3px solid #2A9D8F;">
+                            <p class="text-lg leading-relaxed font-body mb-4" style="color: #264653;">
+                                You've learned so much about feelings and how to handle them when they get big. Daniel is SO proud of you!
+                            </p>
+                            <p class="text-lg leading-relaxed font-body mb-4" style="color: #264653;">
+                                Remember: Everyone has big feelings sometimes—even grown-ups! The important thing is that you now have tools to help.
+                            </p>
+                            <p class="text-lg font-body font-semibold" style="color: #F4A261;">
+                                Keep practicing your Paw-steps Plan, and come back to visit Daniel anytime! 🐾
+                            </p>
+                        </div>
+
+                        <div class="text-4xl mb-4">⭐🐕⭐</div>
+                        <p class="text-xl font-body italic" style="color: #2A9D8F;">
+                            "All feelings are okay. You're brave for learning about them!" - Daniel 💛
+                        </p>
+
+                        <div class="text-center">
+                            <button 
+                                id="completeModuleBtn"
+                                onclick="completeModuleHandler()" 
+                                class="px-8 py-4 rounded-xl font-title text-2xl text-white shadow-lg hover:shadow-xl transition-all" 
+                                style="background: linear-gradient(to right, #2A9D8F, #1ABC9C);">
+                                ✅ Complete Module & Return to Dashboard
+                            </button>
+                        </div>
+
+                        <div class="mt-8 p-4 rounded-xl" style="background-color: #FFE8A3;">
+                            <p class="font-body text-sm" style="color: #264653;">
+                                <strong>Coming Next:</strong> Module 2 — "When Everything Feels Scary" (Fear & Anxiety)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==== Pages Array ====
+        const pages = [
+            generatePage0,   // Cover
+            generatePage1,   // Welcome
+            generatePage2,   // Chapter 1 Divider
+            generatePage3,   // Ch1 - Story
+            generatePage4,   // Ch1 - Feeling Pack
+            generatePage5,   // Ch1 - Thermometer
+            generatePage6,   // Chapter 2 Divider
+            generatePage7,   // Ch2 - Body Bark Alarm
+            generatePage8,   // Ch2 - Body Map
+            generatePage9,   // Chapter 3 Divider
+            generatePage10,  // Ch3 - Mixed Feelings Story
+            generatePage11,  // Ch3 - Feeling Match Quiz
+            generatePage12,  // Chapter 4 Divider
+            generatePage13,  // Ch4 - Big Feelings Understanding
+            generatePage14,  // Ch4 - Warning Signs Chart
+            generatePage15,  // Chapter 5 Divider
+            generatePage16,  // Ch5 - Calm Den Builder
+            generatePage17,  // Ch5 - Breathing & Grounding
+            generatePage18,  // Chapter 6 Divider
+            generatePage19,  // Ch6 - Paw-steps Plan
+            generatePage20,  // Progress
+            generatePage21,  // Certificate
+            generatePage22   // Thank You
+        ];
+
+        // Quick jump menu items
+        const menuItems = [
+            { page: 0, label: 'Cover', icon: '📘' },
+            { page: 1, label: 'Welcome', icon: '👋' },
+            { page: 2, label: 'Ch 1: Meet Daniel', icon: '🐾' },
+            { page: 6, label: 'Ch 2: Body Feelings', icon: '🫀' },
+            { page: 9, label: 'Ch 3: Big 4 Feelings', icon: '🎭' },
+            { page: 12, label: 'Ch 4: Too Big!', icon: '🌊' },
+            { page: 15, label: 'Ch 5: Calm Den', icon: '🏠' },
+            { page: 18, label: 'Ch 6: Paw-steps', icon: '🐾' },
+            { page: 20, label: 'Progress', icon: '⭐' },
+            { page: 21, label: 'Certificate', icon: '🏆' }
+        ];
+
+        // ==== Breathing Exercise ====
+        let breathingInterval = null;
+        function startBreathing() {
+            const circle = document.getElementById('breathCircle');
+            if (!circle) return;
+            
+            let phase = 'in';
+            let count = 0;
+            const maxCycles = 3;
+            
+            if (breathingInterval) clearInterval(breathingInterval);
+            
+            function animate() {
+                if (phase === 'in') {
+                    circle.style.transform = 'scale(1.5)';
+                    circle.innerHTML = '🌸<br><small>Breathe IN</small>';
+                    setTimeout(() => {
+                        phase = 'out';
+                    }, 4000);
+                } else {
+                    circle.style.transform = 'scale(1)';
+                    circle.innerHTML = '🎂<br><small>Breathe OUT</small>';
+                    count++;
+                    setTimeout(() => {
+                        if (count >= maxCycles) {
+                            clearInterval(breathingInterval);
+                            circle.innerHTML = '🐕<br><small>Great job!</small>';
+                            circle.style.transform = 'scale(1)';
+                        } else {
+                            phase = 'in';
+                        }
+                    }, 4000);
+                }
+            }
+            
+            animate();
+            breathingInterval = setInterval(animate, 8000);
+        }
+
+        // ==== Initialization ====
+        async function initializeApp() {
+            await initializeModule(WORKBOOK_ID);
+            await loadStarData();
+            loadFormData();
+            const savedProgress = localStorage.getItem(`cbtWorkbookProgress_${WORKBOOK_ID}`);
+            if (savedProgress) {
+                try {
+                    completedActivities = JSON.parse(savedProgress);
+                } catch (e) {
+                    completedActivities = {};
+                }
+            }
+            renderPage();
+            renderMenuItems();
+        }
+
+        // Call initialization when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // Go home to dashboard
+        function goHome() {
+            // Save stars before leaving
+            saveStarData().then(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const childId = urlParams.get('childId');
+                if (childId) {
+                    window.location.href = `/dashboard.html?childId=${childId}`;
+                } else {
+                    window.location.href = '/dashboard.html';
+                }
+            }).catch(() => {
+                // Even if save fails, still navigate
+                const urlParams = new URLSearchParams(window.location.search);
+                const childId = urlParams.get('childId');
+                if (childId) {
+                    window.location.href = `/dashboard.html?childId=${childId}`;
+                } else {
+                    window.location.href = '/dashboard.html';
+                }
+            });
+        }
+
+        // ==== Canvas Drawing Functions ====
+        let canvas, ctx, isDrawing = false, currentColor = '#264653';
+        
+        function initCanvas() {
+            canvas = document.getElementById('drawingCanvas');
+            if (!canvas) return;
+            
+            ctx = canvas.getContext('2d');
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = currentColor;
+            
+            // Load saved drawing if exists
+            const saved = formData.canvasDrawing;
+            if (saved) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = saved;
+            }
+            
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouch);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+        
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            const coords = getCanvasCoords(e);
+            ctx.beginPath();
+            ctx.moveTo(coords.x, coords.y);
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            const coords = getCanvasCoords(e);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+        }
+        
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                // Save drawing
+                formData.canvasDrawing = canvas.toDataURL();
+                saveFormData('canvasDrawing', formData.canvasDrawing);
+            }
+        }
+        
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+        
+        function clearCanvas() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            formData.canvasDrawing = '';
+            saveFormData('canvasDrawing', '');
+        }
+        
+        function changeColor(color) {
+            currentColor = color;
+            ctx.strokeStyle = color;
+        }
+
+        // ==== Body Part Message Display ====
+        function showBodyPartMessage(part) {
+            // Hide all messages
+            document.getElementById('body-default').style.display = 'none';
+            document.getElementById('body-head').style.display = 'none';
+            document.getElementById('body-chest').style.display = 'none';
+            document.getElementById('body-tummy').style.display = 'none';
+            document.getElementById('body-hands').style.display = 'none';
+            document.getElementById('body-legs').style.display = 'none';
+            
+            // Show selected message
+            const messageDiv = document.getElementById('body-' + part);
+            if (messageDiv) {
+                messageDiv.style.display = 'flex';
+            }
+            
+            // Update button styles
+            document.querySelectorAll('.body-part').forEach(btn => {
+                btn.style.backgroundColor = '#A8E6CF';
+            });
+            event.target.style.backgroundColor = '#FFE8A3';
+            
+            // Save selection
+            saveFormData('selected_body_part', part);
+        }
+
+        // ==== Quiz Answer Selection ====
+        function selectQuizAnswer(quizId, answer) {
+            saveFormData(quizId, answer);
+            renderPage();
+        }
+
+        // ==== Complete Module ====
+        async function completeModuleHandler() {
+            const btn = document.getElementById('completeModuleBtn');
+            if (!btn) return;
+            
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.textContent = '⏳ Completing...';
+            
+            try {
+                await completeModuleDB(WORKBOOK_ID);
+                
+                // Show success message
+                btn.textContent = '✅ Module Completed!';
+                btn.style.background = 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)';
+                
+                // Celebration animation
+                celebrateStar();
+                
+                // Redirect to dashboard after 2 seconds
+                setTimeout(() => {
+                    window.location.href = `/dashboard.html?childId=${childId}`;
+                }, 2000);
+            } catch (error) {
+                console.error('Error completing module:', error);
+                
+                // Show user-friendly error message
+                const errorMsg = error.message || 'Unknown error';
+                if (errorMsg.includes('not found in database')) {
+                    alert('⚠️ Module not set up yet!\n\nThis module needs to be added to the database first. Please contact your administrator.');
+                } else {
+                    alert('❌ Error completing module:\n\n' + errorMsg);
+                }
+                
+                btn.textContent = '✅ Complete Module & Return to Dashboard';
+                btn.disabled = false;
+                btn.style.background = 'linear-gradient(to right, #2A9D8F, #1ABC9C)';
+            }
+        }
+        
+
+        window.completeModuleHandler = completeModuleHandler;
+        window.prevPage = prevPage;
+        window.nextPage = nextPage;
+        window.toggleMenu = toggleMenu;
+        window.showStarManager = showStarManager;
+        window.hideStarManager = hideStarManager;
+        window.addBonusStars = addBonusStars;
+        window.spendStars = spendStars;
+        window.toggleParentMode = toggleParentMode;
+        window.prepareForPrint = prepareForPrint;
+        window.jumpToPage = jumpToPage;
+        window.saveFormData = saveFormData;
+        window.markActivityComplete = markActivityComplete;
+        window.goHome = goHome;
+        window.clearCanvas = clearCanvas;
+        window.changeColor = changeColor;
+        window.showBodyPartMessage = showBodyPartMessage;
+        window.selectQuizAnswer = selectQuizAnswer;
+        window.selectScenario = selectScenario;
+        window.selectFeeling = selectFeeling;
+        window.setFeelingLevel = setFeelingLevel;
+        window.addCalmItem = addCalmItem;
+        window.startBreathing = startBreathing;
+        window.stopBreathing = stopBreathing;
+        window.completeModuleHandler = completeModuleHandler;
+    </script>
+</body>
+</html>

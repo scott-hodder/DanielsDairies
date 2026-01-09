@@ -60,6 +60,13 @@ type PageType =
   | "drawing"
   | "breathing"
   | "scenario"
+  | "feeling-thermometer"
+  | "body-map"
+  | "feeling-selector"
+  | "calm-den-builder"
+  | "action-plan"
+  | "warning-signs"
+  | "matching-activity"
   | "summary"
   | "completion";
 
@@ -151,6 +158,78 @@ interface CompletionContent {
   nextStepsText: string;
 }
 
+interface FeelingThermometerContent {
+  heading: string;
+  instructions: string;
+  lowLabel: string;
+  highLabel: string;
+  followUpQuestion: string;
+}
+
+interface BodyMapContent {
+  heading: string;
+  instructions: string;
+  bodyParts: Array<{
+    name: string;
+    emoji: string;
+    description: string;
+  }>;
+}
+
+interface FeelingSelectorContent {
+  heading: string;
+  instructions: string;
+  feelings: Array<{
+    name: string;
+    emoji: string;
+    color: string;
+  }>;
+  followUpQuestion: string;
+}
+
+interface CalmDenBuilderContent {
+  heading: string;
+  storyText: string;
+  instructions: string;
+  items: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+  }>;
+  locationQuestion: string;
+}
+
+interface ActionPlanContent {
+  heading: string;
+  instructions: string;
+  steps: Array<{
+    stepNumber: number;
+    title: string;
+    prompt: string;
+    placeholder: string;
+  }>;
+}
+
+interface WarningSingsContent {
+  heading: string;
+  instructions: string;
+  categories: Array<{
+    category: string;
+    emoji: string;
+    examples: string[];
+  }>;
+}
+
+interface MatchingActivityContent {
+  heading: string;
+  instructions: string;
+  pairs: Array<{
+    situation: string;
+    feeling: string;
+    emoji: string;
+  }>;
+}
+
 interface GeneratedContent {
   metadata: ModuleMetadata;
   welcome: { heading: string; paragraphs: string[] };
@@ -162,6 +241,13 @@ interface GeneratedContent {
   drawings: DrawingContent[];
   breathing: BreathingContent;
   scenarios: ScenarioContent[];
+  feelingThermometers: FeelingThermometerContent[];
+  bodyMaps: BodyMapContent[];
+  feelingSelectors: FeelingSelectorContent[];
+  calmDenBuilders: CalmDenBuilderContent[];
+  actionPlans: ActionPlanContent[];
+  warningSigns: WarningSingsContent[];
+  matchingActivities: MatchingActivityContent[];
   summary: SummaryContent;
   completion: CompletionContent;
 }
@@ -227,49 +313,74 @@ function randomInt(min: number, max: number): number {
 function generatePageStructure(): PageTemplate[] {
   const targetPages = randomInt(MIN_PAGES, MAX_PAGES);
   
-  // Base structure - always included (18 pages minimum)
-  const baseStructure: PageTemplate[] = [
-    { type: "cover",           starReward: false },  // 0
-    { type: "welcome",         starReward: false },  // 1
-    { type: "chapter-divider", starReward: false },  // 2
-    { type: "lesson",          starReward: false },  // 3
-    { type: "lesson",          starReward: false },  // 4
-    { type: "checklist",       starReward: true  },  // 5
-    { type: "lesson",          starReward: false },  // 6
-    { type: "reflection",      starReward: true  },  // 7
-    { type: "lesson",          starReward: false },  // 8
-    { type: "chapter-divider", starReward: false },  // 9
-    { type: "lesson",          starReward: false },  // 10
-    { type: "quiz",            starReward: true  },  // 11
-    { type: "lesson",          starReward: false },  // 12
-    { type: "drawing",         starReward: true  },  // 13
-    { type: "breathing",       starReward: true  },  // 14
-    { type: "lesson",          starReward: false },  // 15
-    { type: "summary",         starReward: false },  // 16
-    { type: "completion",      starReward: false },  // 17
+  // All available interactive activity types (excluding lessons, chapters, fixed pages)
+  const interactiveTypes: PageTemplate[] = [
+    { type: "checklist",          starReward: true  },
+    { type: "reflection",         starReward: true  },
+    { type: "quiz",               starReward: true  },
+    { type: "drawing",            starReward: true  },
+    { type: "breathing",          starReward: true  },
+    { type: "scenario",           starReward: true  },
+    { type: "feeling-thermometer", starReward: true  },
+    { type: "body-map",           starReward: true  },
+    { type: "feeling-selector",   starReward: true  },
+    { type: "calm-den-builder",   starReward: true  },
+    { type: "action-plan",        starReward: true  },
+    { type: "warning-signs",      starReward: true  },
+    { type: "matching-activity",  starReward: true  },
   ];
   
-  // Extra pages to add (randomly selected)
-  const extraOptions: PageTemplate[] = [
-    { type: "lesson",          starReward: false },
-    { type: "lesson",          starReward: false },
-    { type: "checklist",       starReward: true  },
-    { type: "reflection",      starReward: true  },
-    { type: "scenario",        starReward: true  },
-    { type: "quiz",            starReward: true  },
+  // Shuffle interactive types to get random selection
+  const shuffledActivities = [...interactiveTypes].sort(() => Math.random() - 0.5);
+  
+  // Pick 6-8 activities for this module (ensures variety)
+  const numActivities = randomInt(6, 8);
+  const selectedActivities = shuffledActivities.slice(0, numActivities);
+  
+  // Build structure with randomized activity placement
+  const structure: PageTemplate[] = [
+    { type: "cover",           starReward: false },
+    { type: "welcome",         starReward: false },
   ];
   
-  const extraCount = targetPages - baseStructure.length;
-  const structure = [...baseStructure];
+  // Chapter 1: Introduction + 2 lessons + 1-2 activities
+  structure.push({ type: "chapter-divider", starReward: false });
+  structure.push({ type: "lesson", starReward: false });
+  structure.push({ type: "lesson", starReward: false });
+  if (selectedActivities.length > 0) structure.push(selectedActivities.shift()!);
+  structure.push({ type: "lesson", starReward: false });
+  if (selectedActivities.length > 0) structure.push(selectedActivities.shift()!);
   
-  if (extraCount > 0) {
-    // Insert extra pages before summary (index 16)
-    const insertPoint = structure.length - 2; // Before summary
-    const shuffled = [...extraOptions].sort(() => Math.random() - 0.5);
-    const extras = shuffled.slice(0, extraCount);
-    
-    structure.splice(insertPoint, 0, ...extras);
+  // Chapter 2: Deeper exploration + lessons + activities
+  structure.push({ type: "chapter-divider", starReward: false });
+  structure.push({ type: "lesson", starReward: false });
+  if (selectedActivities.length > 0) structure.push(selectedActivities.shift()!);
+  structure.push({ type: "lesson", starReward: false });
+  if (selectedActivities.length > 0) structure.push(selectedActivities.shift()!);
+  structure.push({ type: "lesson", starReward: false });
+  
+  // Chapter 3 (optional based on target pages): Practice + remaining activities
+  if (targetPages >= 20) {
+    structure.push({ type: "chapter-divider", starReward: false });
+    structure.push({ type: "lesson", starReward: false });
   }
+  
+  // Add remaining activities
+  while (selectedActivities.length > 0) {
+    structure.push(selectedActivities.shift()!);
+    if (selectedActivities.length > 0 && structure.length < targetPages - 3) {
+      structure.push({ type: "lesson", starReward: false });
+    }
+  }
+  
+  // Ensure we have enough lessons to reach target
+  while (structure.length < targetPages - 2) {
+    structure.push({ type: "lesson", starReward: false });
+  }
+  
+  // Always end with summary and completion
+  structure.push({ type: "summary", starReward: false });
+  structure.push({ type: "completion", starReward: false });
   
   return structure;
 }
@@ -752,11 +863,329 @@ Create exactly ${count} different scenarios.`;
   return scenarios.slice(0, count);
 }
 
+async function generateFeelingThermometers(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingThermometerContent[]> {
+  const prompt = `Create ${count} feeling thermometer activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "thermometers": [
+    {
+      "heading": "Activity title with thermometer emoji",
+      "instructions": "Instructions for using the feeling scale (1-2 sentences)",
+      "lowLabel": "Label for low end (e.g., 'Calm and peaceful')",
+      "highLabel": "Label for high end (e.g., 'Very big feelings')",
+      "followUpQuestion": "Question to ask after they rate their feeling"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ thermometers: FeelingThermometerContent[] }>(response);
+  
+  const thermometers = parsed?.thermometers || [];
+  while (thermometers.length < count) {
+    thermometers.push({
+      heading: "🌡️ My Feelings Thermometer",
+      instructions: "Move the slider to show how big your feelings are right now.",
+      lowLabel: "Calm and peaceful",
+      highLabel: "Very big feelings!",
+      followUpQuestion: "What helped you notice where your feelings are today?"
+    });
+  }
+  
+  return thermometers.slice(0, count);
+}
+
+async function generateBodyMaps(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<BodyMapContent[]> {
+  const prompt = `Create ${count} body map activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "bodyMaps": [
+    {
+      "heading": "Activity title with body emoji",
+      "instructions": "Instructions for exploring body sensations (1-2 sentences)",
+      "bodyParts": [
+        { "name": "Head", "emoji": "🧠", "description": "What happens here when you feel this emotion" },
+        { "name": "Chest", "emoji": "💗", "description": "What happens here" },
+        { "name": "Tummy", "emoji": "🦋", "description": "What happens here" },
+        { "name": "Hands", "emoji": "✋", "description": "What happens here" },
+        { "name": "Legs", "emoji": "🦵", "description": "What happens here" }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ bodyMaps: BodyMapContent[] }>(response);
+  
+  const bodyMaps = parsed?.bodyMaps || [];
+  while (bodyMaps.length < count) {
+    bodyMaps.push({
+      heading: "🫀 Where Do Feelings Live in My Body?",
+      instructions: "Tap on different parts of the body to see how feelings show up there!",
+      bodyParts: [
+        { name: "Head", emoji: "🧠", description: "Racing thoughts or foggy thinking" },
+        { name: "Chest", emoji: "💗", description: "Heart beating fast or tight feeling" },
+        { name: "Tummy", emoji: "🦋", description: "Butterflies or upset stomach" },
+        { name: "Hands", emoji: "✋", description: "Shaky or sweaty palms" },
+        { name: "Legs", emoji: "🦵", description: "Wobbly or wanting to run" }
+      ]
+    });
+  }
+  
+  return bodyMaps.slice(0, count);
+}
+
+async function generateFeelingSelectors(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingSelectorContent[]> {
+  const prompt = `Create ${count} feeling selector activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "selectors": [
+    {
+      "heading": "Activity title with emoji",
+      "instructions": "Instructions for selecting feelings (1-2 sentences)",
+      "feelings": [
+        { "name": "Happy", "emoji": "😊", "color": "#FFE8A3" },
+        { "name": "Sad", "emoji": "😢", "color": "#a8d8ea" },
+        { "name": "Angry", "emoji": "😠", "color": "#fecaca" },
+        { "name": "Scared", "emoji": "😨", "color": "#d4a5ff" },
+        { "name": "Calm", "emoji": "😌", "color": "#A8E6CF" },
+        { "name": "Excited", "emoji": "🤩", "color": "#F4A261" }
+      ],
+      "followUpQuestion": "Question after they select their feeling"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ selectors: FeelingSelectorContent[] }>(response);
+  
+  const selectors = parsed?.selectors || [];
+  while (selectors.length < count) {
+    selectors.push({
+      heading: "🎭 How Am I Feeling Right Now?",
+      instructions: "Tap on the feeling that matches how you feel right now. You can pick more than one!",
+      feelings: [
+        { name: "Happy", emoji: "😊", color: "#FFE8A3" },
+        { name: "Sad", emoji: "😢", color: "#a8d8ea" },
+        { name: "Angry", emoji: "😠", color: "#fecaca" },
+        { name: "Scared", emoji: "😨", color: "#d4a5ff" },
+        { name: "Calm", emoji: "😌", color: "#A8E6CF" },
+        { name: "Excited", emoji: "🤩", color: "#F4A261" }
+      ],
+      followUpQuestion: "What made you feel this way today?"
+    });
+  }
+  
+  return selectors.slice(0, count);
+}
+
+async function generateCalmDenBuilders(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<CalmDenBuilderContent[]> {
+  const prompt = `Create ${count} calm-down den builder activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "denBuilders": [
+    {
+      "heading": "Activity title with home emoji",
+      "storyText": "Short story about the mascot's calm space (2-3 sentences)",
+      "instructions": "Instructions for building their own calm space (1-2 sentences)",
+      "items": [
+        { "id": "blanket", "name": "Soft blanket", "emoji": "🧸" },
+        { "id": "pillow", "name": "Comfy pillow", "emoji": "🛏️" },
+        { "id": "music", "name": "Calm music", "emoji": "🎵" },
+        { "id": "book", "name": "Favorite book", "emoji": "📚" },
+        { "id": "toy", "name": "Special toy", "emoji": "🧸" },
+        { "id": "light", "name": "Dim lights", "emoji": "💡" }
+      ],
+      "locationQuestion": "Where will your calm-down space be?"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ denBuilders: CalmDenBuilderContent[] }>(response);
+  
+  const denBuilders = parsed?.denBuilders || [];
+  while (denBuilders.length < count) {
+    denBuilders.push({
+      heading: "🏠 Build Your Calm-Down Den",
+      storyText: `When ${metadata.characterName}'s feelings get too big, they go to their special calm-down space. It's cozy and safe, with all their favorite things to help them feel better.`,
+      instructions: "Tap on items to add them to YOUR calm-down den!",
+      items: [
+        { id: "blanket", name: "Soft blanket", emoji: "🧣" },
+        { id: "pillow", name: "Comfy pillow", emoji: "🛏️" },
+        { id: "music", name: "Calm music", emoji: "🎵" },
+        { id: "book", name: "Favorite book", emoji: "📚" },
+        { id: "toy", name: "Special toy", emoji: "🧸" },
+        { id: "light", name: "Dim lights", emoji: "💡" }
+      ],
+      locationQuestion: "Where will your calm-down space be at home?"
+    });
+  }
+  
+  return denBuilders.slice(0, count);
+}
+
+async function generateActionPlans(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<ActionPlanContent[]> {
+  const prompt = `Create ${count} action plan activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "actionPlans": [
+    {
+      "heading": "Activity title with paw/step emoji",
+      "instructions": "Instructions for creating their plan (1-2 sentences)",
+      "steps": [
+        { "stepNumber": 1, "title": "NOTICE", "prompt": "What are my warning signs?", "placeholder": "e.g., tight fists, fast breathing..." },
+        { "stepNumber": 2, "title": "STOP", "prompt": "What will I say to myself?", "placeholder": "e.g., I need a break..." },
+        { "stepNumber": 3, "title": "CALM", "prompt": "What tool will I use?", "placeholder": "e.g., deep breathing, counting..." },
+        { "stepNumber": 4, "title": "HELP", "prompt": "Who can help me?", "placeholder": "e.g., Mum, Dad, teacher..." }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ actionPlans: ActionPlanContent[] }>(response);
+  
+  const actionPlans = parsed?.actionPlans || [];
+  while (actionPlans.length < count) {
+    actionPlans.push({
+      heading: "🐾 My Paw-Steps Plan",
+      instructions: "Fill in your personal plan for when feelings get big!",
+      steps: [
+        { stepNumber: 1, title: "NOTICE", prompt: "What are my warning signs?", placeholder: "e.g., tight fists, fast breathing..." },
+        { stepNumber: 2, title: "STOP", prompt: "What will I say to myself?", placeholder: "e.g., I need a break..." },
+        { stepNumber: 3, title: "CALM", prompt: "What calm-down tool will I use?", placeholder: "e.g., deep breathing, counting..." },
+        { stepNumber: 4, title: "HELP", prompt: "Who can help me if I need it?", placeholder: "e.g., Mum, Dad, teacher..." }
+      ]
+    });
+  }
+  
+  return actionPlans.slice(0, count);
+}
+
+async function generateWarningSigns(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<WarningSingsContent[]> {
+  const prompt = `Create ${count} warning signs identification activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "warningSigns": [
+    {
+      "heading": "Activity title with warning emoji",
+      "instructions": "Instructions for identifying warning signs (1-2 sentences)",
+      "categories": [
+        { "category": "Body Signs", "emoji": "🫀", "examples": ["Heart beats fast", "Hands get sweaty", "Tummy feels funny"] },
+        { "category": "Thought Signs", "emoji": "💭", "examples": ["Can't stop worrying", "Thoughts go fast", "Hard to focus"] },
+        { "category": "Action Signs", "emoji": "🏃", "examples": ["Want to run away", "Feel like yelling", "Can't sit still"] }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ warningSigns: WarningSingsContent[] }>(response);
+  
+  const warningSigns = parsed?.warningSigns || [];
+  while (warningSigns.length < count) {
+    warningSigns.push({
+      heading: "⚠️ My Early Warning Signs",
+      instructions: "Check the signs that happen to YOU when feelings start getting big!",
+      categories: [
+        { category: "Body Signs", emoji: "🫀", examples: ["Heart beats fast", "Hands get sweaty", "Tummy feels funny", "Face gets hot"] },
+        { category: "Thought Signs", emoji: "💭", examples: ["Can't stop worrying", "Thoughts go fast", "Hard to focus", "Feel confused"] },
+        { category: "Action Signs", emoji: "🏃", examples: ["Want to run away", "Feel like yelling", "Can't sit still", "Want to hide"] }
+      ]
+    });
+  }
+  
+  return warningSigns.slice(0, count);
+}
+
+async function generateMatchingActivities(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<MatchingActivityContent[]> {
+  const prompt = `Create ${count} matching activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "matchingActivities": [
+    {
+      "heading": "Activity title with matching emoji",
+      "instructions": "Instructions for the matching game (1-2 sentences)",
+      "pairs": [
+        { "situation": "A friend shares their toy with you", "feeling": "Happy", "emoji": "😊" },
+        { "situation": "Someone takes your turn", "feeling": "Frustrated", "emoji": "😤" },
+        { "situation": "You're about to try something new", "feeling": "Nervous", "emoji": "😰" },
+        { "situation": "Your pet cuddles with you", "feeling": "Loved", "emoji": "🥰" }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ matchingActivities: MatchingActivityContent[] }>(response);
+  
+  const matchingActivities = parsed?.matchingActivities || [];
+  while (matchingActivities.length < count) {
+    matchingActivities.push({
+      heading: "🎯 Match the Feeling!",
+      instructions: "Read each situation and pick the feeling that matches best!",
+      pairs: [
+        { situation: "A friend shares their toy with you", feeling: "Happy", emoji: "😊" },
+        { situation: "Someone takes your turn in a game", feeling: "Frustrated", emoji: "😤" },
+        { situation: "You're about to try something new", feeling: "Nervous", emoji: "😰" },
+        { situation: "Your pet cuddles with you", feeling: "Loved", emoji: "🥰" },
+        { situation: "You can't find your favorite toy", feeling: "Worried", emoji: "😟" }
+      ]
+    });
+  }
+  
+  return matchingActivities.slice(0, count);
+}
+
 async function generateSummary(
   apiKey: string,
   metadata: ModuleMetadata,
   contentBrief: string
 ): Promise<SummaryContent> {
+  // ... (rest of the code remains the same)
   const prompt = `Create a summary page for a child's workbook about "${metadata.theme}".
 
 Respond with ONLY this JSON:
@@ -831,13 +1260,17 @@ async function generateAllContent(
     quizzes: pageStructure.filter(p => p.type === "quiz").length,
     drawings: pageStructure.filter(p => p.type === "drawing").length,
     scenarios: pageStructure.filter(p => p.type === "scenario").length,
+    feelingThermometers: pageStructure.filter(p => p.type === "feeling-thermometer").length,
+    bodyMaps: pageStructure.filter(p => p.type === "body-map").length,
+    feelingSelectors: pageStructure.filter(p => p.type === "feeling-selector").length,
+    calmDenBuilders: pageStructure.filter(p => p.type === "calm-den-builder").length,
+    actionPlans: pageStructure.filter(p => p.type === "action-plan").length,
+    warningSigns: pageStructure.filter(p => p.type === "warning-signs").length,
+    matchingActivities: pageStructure.filter(p => p.type === "matching-activity").length,
   };
-  
-
   
   await updateProgress("metadata", "Creating module theme and character...");
   const metadata = await generateMetadata(apiKey, contentBrief);
-
   
   await updateProgress("structure", "Planning module structure...");
   const [chapters, welcome] = await Promise.all([
@@ -847,7 +1280,6 @@ async function generateAllContent(
   
   await updateProgress("lessons", "Creating lesson content...");
   const lessons = await generateLessons(apiKey, metadata, contentBrief, counts.lessons);
-
   
   await updateProgress("activities", "Designing interactive activities...");
   const [checklists, reflections, quizzes, drawings, scenarios, breathing] = await Promise.all([
@@ -858,7 +1290,17 @@ async function generateAllContent(
     counts.scenarios > 0 ? generateScenarios(apiKey, metadata, contentBrief, counts.scenarios) : Promise.resolve([]),
     generateBreathing(apiKey, metadata),
   ]);
-
+  
+  await updateProgress("interactive", "Creating interactive experiences...");
+  const [feelingThermometers, bodyMaps, feelingSelectors, calmDenBuilders, actionPlans, warningSigns, matchingActivities] = await Promise.all([
+    counts.feelingThermometers > 0 ? generateFeelingThermometers(apiKey, metadata, contentBrief, counts.feelingThermometers) : Promise.resolve([]),
+    counts.bodyMaps > 0 ? generateBodyMaps(apiKey, metadata, contentBrief, counts.bodyMaps) : Promise.resolve([]),
+    counts.feelingSelectors > 0 ? generateFeelingSelectors(apiKey, metadata, contentBrief, counts.feelingSelectors) : Promise.resolve([]),
+    counts.calmDenBuilders > 0 ? generateCalmDenBuilders(apiKey, metadata, contentBrief, counts.calmDenBuilders) : Promise.resolve([]),
+    counts.actionPlans > 0 ? generateActionPlans(apiKey, metadata, contentBrief, counts.actionPlans) : Promise.resolve([]),
+    counts.warningSigns > 0 ? generateWarningSigns(apiKey, metadata, contentBrief, counts.warningSigns) : Promise.resolve([]),
+    counts.matchingActivities > 0 ? generateMatchingActivities(apiKey, metadata, contentBrief, counts.matchingActivities) : Promise.resolve([]),
+  ]);
   
   await updateProgress("summary", "Wrapping up...");
   const [summary, completion] = await Promise.all([
@@ -877,6 +1319,13 @@ async function generateAllContent(
     drawings,
     breathing,
     scenarios,
+    feelingThermometers,
+    bodyMaps,
+    feelingSelectors,
+    calmDenBuilders,
+    actionPlans,
+    warningSigns,
+    matchingActivities,
     summary,
     completion,
   };
@@ -884,7 +1333,6 @@ async function generateAllContent(
 
 // ====================
 // HTML RENDERER
-// ====================
 
 function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string): string {
   const { metadata } = content;
@@ -898,6 +1346,13 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     quiz: 0,
     drawing: 0,
     scenario: 0,
+    feelingThermometer: 0,
+    bodyMap: 0,
+    feelingSelector: 0,
+    calmDenBuilder: 0,
+    actionPlan: 0,
+    warningSigns: 0,
+    matchingActivity: 0,
     star: 0,
   };
   
@@ -950,6 +1405,41 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       case "scenario":
         pageHtml = renderScenarioPage(content.scenarios[indices.scenario] || content.scenarios[0], indices.star);
         indices.scenario++;
+        indices.star++;
+        break;
+      case "feeling-thermometer":
+        pageHtml = renderFeelingThermometerPage(content.feelingThermometers[indices.feelingThermometer] || content.feelingThermometers[0], indices.star);
+        indices.feelingThermometer++;
+        indices.star++;
+        break;
+      case "body-map":
+        pageHtml = renderBodyMapPage(content.bodyMaps[indices.bodyMap] || content.bodyMaps[0], indices.star);
+        indices.bodyMap++;
+        indices.star++;
+        break;
+      case "feeling-selector":
+        pageHtml = renderFeelingSelectorPage(content.feelingSelectors[indices.feelingSelector] || content.feelingSelectors[0], indices.star);
+        indices.feelingSelector++;
+        indices.star++;
+        break;
+      case "calm-den-builder":
+        pageHtml = renderCalmDenBuilderPage(content.calmDenBuilders[indices.calmDenBuilder] || content.calmDenBuilders[0], indices.star, metadata);
+        indices.calmDenBuilder++;
+        indices.star++;
+        break;
+      case "action-plan":
+        pageHtml = renderActionPlanPage(content.actionPlans[indices.actionPlan] || content.actionPlans[0], indices.star);
+        indices.actionPlan++;
+        indices.star++;
+        break;
+      case "warning-signs":
+        pageHtml = renderWarningSignsPage(content.warningSigns[indices.warningSigns] || content.warningSigns[0], indices.star);
+        indices.warningSigns++;
+        indices.star++;
+        break;
+      case "matching-activity":
+        pageHtml = renderMatchingActivityPage(content.matchingActivities[indices.matchingActivity] || content.matchingActivities[0], indices.star);
+        indices.matchingActivity++;
         indices.star++;
         break;
       case "summary":
@@ -1725,7 +2215,7 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
-            >
+            />
             <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! ⭐</label>
           </div>
         </div>
@@ -1736,32 +2226,200 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
 function renderScenarioPage(scenario: ScenarioContent, starIndex: number): string {
   const activityId = `scenario_${starIndex}`;
   const optionsHtml = scenario.options.map((opt) => `
-    <button 
-      class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
-      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-      data-good="${opt.isGood}"
-      data-feedback="${escapeForTemplate(opt.feedback)}"
-    >
-      ${escapeForTemplate(opt.text)}
-    </button>`).join("");
-
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="${opt.isGood}" data-feedback="${escapeForTemplate(opt.feedback)}">${escapeForTemplate(opt.text)}</button>`).join("");
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="scenario">
       <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(scenario.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);"><p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(scenario.scenario)}</p></div>
+          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(scenario.question)}</p>
+          <div class="space-y-3 mb-6">${optionsHtml}</div>
+          <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" disabled onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFeelingThermometerPage(thermometer: FeelingThermometerContent, starIndex: number): string {
+  const activityId = `thermometer_${starIndex}`;
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-thermometer">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(thermometer.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(thermometer.instructions)}</p>
+          <div class="mb-8">
+            <div class="flex justify-between mb-2">
+              <span class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(thermometer.lowLabel)}</span>
+              <span class="font-body text-sm" style="color: var(--accent);">${escapeForTemplate(thermometer.highLabel)}</span>
+            </div>
+            <input type="range" min="1" max="10" value="5" class="thermometer-slider w-full" onchange="saveFormData('thermometer_${starIndex}', this.value)">
+            <div class="text-center mt-4"><span class="thermometer-value text-4xl font-title" style="color: var(--primary);">5</span></div>
+          </div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(thermometer.followUpQuestion)}</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('thermometer_followup_${starIndex}', this.value)">\${formData['thermometer_followup_${starIndex}'] || ''}</textarea>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBodyMapPage(bodyMap: BodyMapContent, starIndex: number): string {
+  const activityId = `bodymap_${starIndex}`;
+  const partsHtml = bodyMap.bodyParts.map((part) => `
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">${escapeForTemplate(part.emoji)}</span>
+      <div>
+        <span class="font-title text-lg">${escapeForTemplate(part.name)}</span>
+        <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(part.description)}</p>
+      </div>
+    </button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="body-map">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(bodyMap.heading)}</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(scenario.scenario)}</p>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(bodyMap.instructions)}</p>
+          <div class="grid gap-3 mb-6">${partsHtml}</div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I explored my body map! ⭐</label>
           </div>
-          
-          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(scenario.question)}</p>
-          
-          <div class="space-y-3 mb-6">
-            ${optionsHtml}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: number): string {
+  const activityId = `feeling_${starIndex}`;
+  const feelingsHtml = selector.feelings.map((f) => `
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: ${f.color}; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '${f.color}' : 'white';">
+      <span class="text-4xl">${escapeForTemplate(f.emoji)}</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(f.name)}</span>
+    </button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(selector.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(selector.instructions)}</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${feelingsHtml}</div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(selector.followUpQuestion)}</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_${starIndex}', this.value)">\${formData['feeling_followup_${starIndex}'] || ''}</textarea>
           </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderCalmDenBuilderPage(denBuilder: CalmDenBuilderContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `calmden_${starIndex}`;
+  const itemsHtml = denBuilder.items.map((item) => `
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">${escapeForTemplate(item.emoji)}</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">${escapeForTemplate(item.name)}</span>
+    </button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="calm-den-builder">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(denBuilder.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="rounded-2xl p-6 mb-6 flex items-start gap-4" style="background-color: var(--soft-yellow);">
+            <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(denBuilder.storyText)}</p>
+          </div>
+          <p class="text-lg mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(denBuilder.instructions)}</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${itemsHtml}</div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(denBuilder.locationQuestion)}</label>
+            <input type="text" class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);" placeholder="e.g., My bedroom, under my blanket..." onchange="saveFormData('calmden_location_${starIndex}', this.value)" value="\${formData['calmden_location_${starIndex}'] || ''}">
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I built my calm-down den! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderActionPlanPage(actionPlan: ActionPlanContent, starIndex: number): string {
+  const activityId = `actionplan_${starIndex}`;
+  const stepsHtml = actionPlan.steps.map((step) => `
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${step.stepNumber}</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(step.title)}</h3>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">${escapeForTemplate(step.prompt)}</p>
+      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="${escapeForTemplate(step.placeholder)}" onchange="saveFormData('actionplan_step${step.stepNumber}_${starIndex}', this.value)" value="\${formData['actionplan_step${step.stepNumber}_${starIndex}'] || ''}">
+    </div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="action-plan">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(actionPlan.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(actionPlan.instructions)}</p>
+          ${stepsHtml}
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I created my action plan! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderWarningSignsPage(warningSigns: WarningSingsContent, starIndex: number): string {
+  const activityId = `warningsigns_${starIndex}`;
+  const categoriesHtml = warningSigns.categories.map((cat) => `
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">${escapeForTemplate(cat.emoji)}</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(cat.category)}</h3>
+      </div>
+      <div class="space-y-2">
+        ${cat.examples.map((ex, i) => `
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded" style="accent-color: var(--primary);">
+            <span class="font-body" style="color: var(--dark);">${escapeForTemplate(ex)}</span>
+          </label>
+        `).join("")}
+      </div>
+    </div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="warning-signs">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(warningSigns.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(warningSigns.instructions)}</p>
           
-          <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
+          ${categoriesHtml}
           
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input 
@@ -1769,11 +2427,54 @@ function renderScenarioPage(scenario: ScenarioContent, starIndex: number): strin
               class="w-8 h-8 rounded cursor-pointer"
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
-              disabled
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my warning signs! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex: number): string {
+  const activityId = `matching_${starIndex}`;
+  const pairsHtml = matching.pairs.map((pair, i) => `
+    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <p class="font-body mb-3" style="color: var(--dark);">${escapeForTemplate(pair.situation)}</p>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
+          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
+          data-correct="${pair.feeling}"
+          data-pair="${i}"
+          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
+        >
+          ${escapeForTemplate(pair.emoji)} ${escapeForTemplate(pair.feeling)}
+        </button>
+      </div>
+    </div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="matching-activity">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(matching.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(matching.instructions)}</p>
+          
+          ${pairsHtml}
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
           </div>
         </div>
       </div>

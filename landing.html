@@ -15,7 +15,7 @@
         <div class="header-content">
             <div class="header-left">
                 <a href="/landing.html" class="header-logo">
-                    <img src="/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
                     <div>
                         <h1 class="header-title">Daniel's Dairies</h1>
                         <p class="header-subtitle" id="headerSubtitle">Your journey together</p>
@@ -44,21 +44,75 @@
             Loading...
         </div>
 
+        <!-- Welcome Landing Page (for users with no children) -->
+        <div id="welcomeLandingPage" class="hidden" style="display: none;">
+            <div style="max-width: 700px; text-align: center; padding: 40px 20px;">
+                <!-- Welcome Header -->
+                <div style="margin-bottom: 40px;">
+                    <img src="/public/images/characters/DanielTheDog.png" alt="Daniel the Dog" style="height: 200px; animation: bounce 2s infinite; display: block; margin-left: auto; margin-right: auto;">
+                    <h1 style="font-size: 48px; color: #405878; font-weight: 700; margin-bottom: 16px;">Welcome to Daniel's Diaries</h1>
+                    <p style="font-size: 18px; color: #4c6c96; line-height: 1.6; margin-bottom: 24px;">
+                        Daniel's Diaries is an interactive workbook designed to help children build emotional intelligence, resilience, and coping skills through engaging stories and activities. Each workbook is expertly crafted to support your child's mental wellbeing journey.
+                    </p>
+                </div>
+
+                <!-- Features -->
+                <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px;">
+                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin-bottom: 24px;">What You'll Get</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;">
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">📚</span>
+                            <div>
+                                <strong style="color: #405878;">Interactive Workbooks</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Engaging stories and activities</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">📈</span>
+                            <div>
+                                <strong style="color: #405878;">Progress Tracking</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Monitor your child's growth</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">🎯</span>
+                            <div>
+                                <strong style="color: #405878;">Expert-Designed</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Created by specialists</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">⭐</span>
+                            <div>
+                                <strong style="color: #405878;">Reward System</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Earn stars for achievements</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <button id="welcomeGetStartedBtn" class="btn-continue" type="button" style="font-size: 18px; padding: 16px 40px; cursor: pointer; width: 100%; max-width: 400px;">
+                    Add Your Child
+                </button>
+            </div>
+        </div>
+
         <!-- Welcome Section -->
-        <div id="welcomeSection" class="welcome-section hidden">
-            <span class="welcome-icon">🌱</span>
+        <div id="welcomeSection" class="welcome-section hidden" style="display: none;">
+            <img src="/public/images/characters/DanielTheDog.png" alt="Daniel the Dog" style="height: 140px; animation: bounce 2s infinite; display: block; margin-left: auto; margin-right: auto;">
             <h1 class="welcome-greeting" id="welcomeGreeting">Welcome back</h1>
             <p class="welcome-message">Today is a good day to check in. Every small step forward matters.</p>
         </div>
 
         <!-- Child Selection -->
-        <div id="childSelection" class="child-selection hidden">
+        <div id="childSelection" class="child-selection hidden" style="display: none;">
             <h2 class="section-title">Who's using Daniel's Dairies today?</h2>
             <div class="children-list" id="childrenList"></div>
         </div>
 
         <!-- Next Step Section -->
-        <div id="nextStepSection" class="next-step-section">
+        <div id="nextStepSection" class="next-step-section hidden">
             <h2 class="next-step-title" id="nextStepTitle">Loading...</h2>
             <p class="next-step-subtitle" id="nextStepSubtitle">Continue your journey</p>
             
@@ -132,7 +186,7 @@
 
     <script type="module">
         import { checkAuth, signOut } from './src/auth.js'
-        import { getChildren, getModules, getChildModules, getParentProfile } from './src/database.js'
+        import { getChildren, getModules, getChildModules, getParentProfile, createChild, setChildPassword } from './src/database.js'
 
         let currentUser = null
         let children = []
@@ -214,10 +268,30 @@
                 // Load modules
                 modules = await getModules()
 
-                // Show welcome and child selection
-                loadingState.classList.add('hidden')
-                welcomeSection.classList.remove('hidden')
-                childSelection.classList.remove('hidden')
+                // Hide loading state
+                loadingState.style.display = 'none'
+                
+                // If no children, show welcome landing page
+                if (!children || children.length === 0) {
+                    // Show only welcome landing page
+                    document.getElementById('welcomeLandingPage').style.display = 'flex'
+                    welcomeSection.style.display = 'none'
+                    childSelection.style.display = 'none'
+                    nextStepSection.style.display = 'none'
+                    
+                    // Add event listener to Get Started button to open add child modal
+                    const welcomeGetStartedBtn = document.getElementById('welcomeGetStartedBtn')
+                    if (welcomeGetStartedBtn) {
+                        welcomeGetStartedBtn.addEventListener('click', showAddChildModal)
+                    }
+                    return
+                }
+
+                // User has children - show normal view
+                document.getElementById('welcomeLandingPage').style.display = 'none'
+                welcomeSection.style.display = 'block'
+                childSelection.style.display = 'block'
+                nextStepSection.style.display = 'none'
 
                 // Display random welcome message
                 const randomMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)]
@@ -254,8 +328,8 @@
             selectedChild = child
             
             // Hide selection, show loading
-            childSelection.classList.add('hidden')
-            loadingState.classList.remove('hidden')
+            childSelection.style.display = 'none'
+            loadingState.style.display = 'block'
 
             try {
                 // Load child's modules
@@ -265,8 +339,8 @@
                 const nextModule = findNextModule()
                 
                 // Update UI
-                loadingState.classList.add('hidden')
-                nextStepSection.classList.add('active')
+                loadingState.style.display = 'none'
+                nextStepSection.style.display = 'grid'
                 
                 if (nextModule) {
                     displayNextModule(nextModule)
@@ -455,8 +529,123 @@
             })
         }
 
+        // Add child modal functions
+        const addChildModal = document.getElementById('addChildModal')
+        const addChildForm = document.getElementById('addChildForm')
+        const cancelAddChild = document.getElementById('cancelAddChild')
+        const modalError = document.getElementById('modalError')
+        const addChildAvatarPicker = document.getElementById('addChildAvatarPicker')
+        const addChildAvatar = document.getElementById('addChildAvatar')
+
+        function showAddChildModal() {
+            addChildModal.style.display = 'flex'
+            setupAvatarPicker()
+        }
+
+        function hideAddChildModal() {
+            addChildModal.style.display = 'none'
+            addChildForm.reset()
+            modalError.style.display = 'none'
+        }
+
+        function setupAvatarPicker() {
+            const avatars = ['👦', '👧', '🧒', '👶', '🧑', '🤖', '🐱', '🐶', '🦁', '🐻', '🐼', '🦊', '🐸', '🦋', '🐢', '🦜', '🐙', '🦑']
+            addChildAvatarPicker.innerHTML = ''
+            
+            avatars.forEach(avatar => {
+                const btn = document.createElement('button')
+                btn.type = 'button'
+                btn.className = 'avatar-option'
+                btn.textContent = avatar
+                btn.style.fontSize = '32px'
+                btn.style.padding = '8px'
+                btn.style.border = '2px solid transparent'
+                btn.style.borderRadius = '8px'
+                btn.style.cursor = 'pointer'
+                btn.style.backgroundColor = 'transparent'
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault()
+                    document.querySelectorAll('.avatar-option').forEach(a => {
+                        a.style.borderColor = 'transparent'
+                    })
+                    btn.style.borderColor = '#405878'
+                    addChildAvatar.value = avatar
+                })
+                addChildAvatarPicker.appendChild(btn)
+            })
+        }
+
+        if (cancelAddChild) {
+            cancelAddChild.addEventListener('click', hideAddChildModal)
+        }
+
+        if (addChildForm) {
+            addChildForm.addEventListener('submit', async (e) => {
+                e.preventDefault()
+                
+                const childName = document.getElementById('childName').value
+                const childDob = document.getElementById('childDob').value
+                const childPassword = document.getElementById('childPassword').value
+                const avatar = addChildAvatar.value
+
+                if (!childName || !childDob || !childPassword || !avatar) {
+                    modalError.textContent = 'Please fill in all fields and select an avatar'
+                    modalError.classList.remove('hidden')
+                    return
+                }
+
+                try {
+                    // Create child with correct parameter order
+                    const newChild = await createChild(currentUser.id, childName, childDob, avatar)
+
+                    // Set the password for the child
+                    await setChildPassword(newChild.id, childPassword)
+
+                    hideAddChildModal()
+                    // Reload page to show the new child
+                    window.location.reload()
+                } catch (error) {
+                    console.error('Error creating child:', error)
+                    modalError.textContent = error.message || 'Failed to create child'
+                    modalError.classList.remove('hidden')
+                }
+            })
+        }
+
         // Initialize app
         init()
     </script>
+
+    <!-- Add Child Modal -->
+    <div id="addChildModal" class="modal-overlay hidden" style="display: none;">
+        <div class="modal">
+            <h2 class="modal-title">Add New Child</h2>
+            <div id="modalError" class="error-message hidden"></div>
+            <form id="addChildForm">
+                <div class="form-group">
+                    <label class="form-label">Child's Name</label>
+                    <input type="text" id="childName" class="form-input" placeholder="Enter name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" id="childDob" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Child's Password</label>
+                    <input type="password" id="childPassword" class="form-input" placeholder="Set a password for this child" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile Picture</label>
+                    <p class="progress-label" style="margin-bottom: 12px; font-size: 12px;">Choose an emoji to represent this child</p>
+                    <div class="avatar-picker" id="addChildAvatarPicker"></div>
+                    <input type="hidden" id="addChildAvatar">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelAddChild">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Child</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Loading Module...</title>
   
-  <!-- Preload common fonts used by modules -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
@@ -14,13 +14,13 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Module stylesheets - try multiple paths -->
+  <!-- Module stylesheets -->
   <link rel="stylesheet" href="/modules/shared/module-header.css">
-  <link rel="stylesheet" href="/assets/module-theme.css">
-  <link rel="stylesheet" href="/assets/module-base.css">
+  <link rel="stylesheet" href="/modules/shared/module-theme.css">
+  <link rel="stylesheet" href="/modules/shared/module-base.css">
   
-  <!-- Inline module-header styles as backup -->
   <style>
+    /* Module Header Styles (inline backup) */
     .module-header {
       position: fixed;
       top: 0;
@@ -33,7 +33,6 @@
       border-bottom: 1px solid var(--module-header-border, rgba(45, 64, 89, 0.1));
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
-
     .module-header__inner {
       max-width: 1200px;
       margin: 0 auto;
@@ -42,52 +41,39 @@
       align-items: center;
       gap: 16px;
     }
-
-    .module-header__nav,
-    .module-header__actions {
+    .module-header__nav, .module-header__actions {
       display: flex;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
     }
-
     .module-header__btn {
       border: none;
       padding: 10px 20px;
       border-radius: 999px;
       font-weight: 600;
-      font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Nunito', system-ui, sans-serif;
       cursor: pointer;
       background: var(--module-header-accent, #1e3a5f);
       color: #fffbee;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
     }
-
     .module-header__btn:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: 0 6px 18px rgba(30, 58, 95, 0.25);
     }
-
     .module-header__btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
-      box-shadow: none;
     }
-
     .module-header__page {
       font-weight: 700;
       color: var(--module-header-text, #1e3a5f);
       background: rgba(255, 255, 255, 0.85);
       padding: 8px 18px;
       border-radius: 999px;
-      box-shadow: inset 0 0 0 1px var(--module-header-border, rgba(45, 64, 89, 0.1));
     }
-
-    .module-header__actions {
-      justify-content: flex-end;
-    }
-
     .module-header__star {
       display: flex;
       align-items: center;
@@ -95,69 +81,29 @@
       border-radius: 999px;
       padding: 8px 18px;
       font-weight: 700;
-      font-size: 16px;
-      background: linear-gradient(135deg, var(--module-header-accent, #1e3a5f), var(--theme-secondary, #5dade2));
+      background: linear-gradient(135deg, #1e3a5f, #5dade2);
       color: white;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(30, 58, 95, 0.25);
     }
-
-    .module-header__star .star-icon {
-      font-size: 20px;
-      animation: shimmer 2s ease-in-out infinite;
-    }
-
-    .module-header__home {
-      background: #5dade2;
-    }
-
-    .module-header__print {
-      background: #1e3a5f;
-      color: #fffbee;
-    }
-
-    .module-header-spacer {
-      height: 75px;
-    }
-
+    .module-header__home { background: #5dade2; }
+    .module-header__print { background: #1e3a5f; }
+    .module-header-spacer { height: 75px; }
     @media (max-width: 768px) {
-      .module-header__inner {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .module-header__nav,
-      .module-header__actions {
-        justify-content: center;
-      }
-
-      .module-header__btn,
-      .module-header__star {
-        width: 100%;
-        justify-content: center;
-      }
-    }
-
-    @keyframes shimmer {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.1); }
+      .module-header__inner { flex-direction: column; }
+      .module-header__nav, .module-header__actions { justify-content: center; }
+      .module-header__btn, .module-header__star { width: 100%; justify-content: center; }
     }
     
-    /* Loader styles */
+    /* Loader */
     .loader-container {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
       font-family: 'Nunito', system-ui, sans-serif;
-      background: linear-gradient(135deg, #f5f3ed 0%, #e8e4d9 100%);
+      background: linear-gradient(135deg, #f5f3ed, #e8e4d9);
     }
-    
-    .loader-box {
-      text-align: center;
-    }
-    
     .spinner {
       width: 48px;
       height: 48px;
@@ -167,15 +113,10 @@
       animation: spin 0.8s linear infinite;
       margin: 0 auto 16px;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { color: #405878; text-align: center; }
     
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .loader-text {
-      color: #405878;
-    }
-    
+    /* Error */
     .error-container {
       display: flex;
       align-items: center;
@@ -183,9 +124,8 @@
       min-height: 100vh;
       padding: 20px;
       font-family: 'Nunito', system-ui, sans-serif;
-      background: linear-gradient(135deg, #f5f3ed 0%, #e8e4d9 100%);
+      background: linear-gradient(135deg, #f5f3ed, #e8e4d9);
     }
-    
     .error-box {
       background: white;
       padding: 40px;
@@ -194,37 +134,22 @@
       max-width: 450px;
       text-align: center;
     }
-    
-    .error-box h2 {
-      color: #264653;
-      margin-bottom: 12px;
-    }
-    
-    .error-box p {
-      color: #666;
-      margin-bottom: 24px;
-      line-height: 1.6;
-    }
-    
+    .error-box h2 { color: #264653; margin-bottom: 12px; }
+    .error-box p { color: #666; margin-bottom: 24px; }
     .error-box button {
       padding: 12px 24px;
       background: #405878;
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
       cursor: pointer;
       margin: 0 8px;
-    }
-    
-    .error-box button:hover {
-      background: #2d3e50;
     }
   </style>
 </head>
 <body>
   <div id="loader" class="loader-container">
-    <div class="loader-box">
+    <div>
       <div class="spinner"></div>
       <p class="loader-text">Loading module...</p>
     </div>
@@ -234,9 +159,8 @@
     import { supabase } from './src/supabaseClient.js';
     
     // =========================================
-    // 1. URL PARAMETERS & GLOBALS
+    // URL PARAMETERS
     // =========================================
-    
     const params = new URLSearchParams(window.location.search);
     const moduleCode = params.get('code');
     const childId = params.get('childId');
@@ -249,296 +173,127 @@
     window.parentUserId = parentUserId;
     
     const _state = { 
-      childId: childId, 
-      currentChild: null 
+      childId, 
+      currentChild: null,
+      moduleDbId: null
     };
     
     // =========================================
-    // 2. RESPONSE TRACKING SYSTEM
+    // RESPONSE TRACKER
     // =========================================
-    
     const ResponseTracker = {
-      // Cache key for this module session
-      getCacheKey() {
-        return `module_responses_${moduleCode}_${childId}`;
+      async getModuleDbId() {
+        if (_state.moduleDbId) return _state.moduleDbId;
+        if (!moduleCode) return null;
+        try {
+          const { data } = await supabase.from('modules').select('id').eq('code', moduleCode).single();
+          if (data) _state.moduleDbId = data.id;
+          return _state.moduleDbId;
+        } catch (e) { return null; }
       },
       
-      // Get all cached responses
+      getCacheKey() { return `module_responses_${moduleCode}_${childId}`; },
+      
       getCache() {
         try {
-          const cached = localStorage.getItem(this.getCacheKey());
-          return cached ? JSON.parse(cached) : {};
-        } catch (e) {
-          return {};
-        }
+          return JSON.parse(localStorage.getItem(this.getCacheKey()) || '{}');
+        } catch { return {}; }
       },
       
-      // Save to cache
-      saveToCache(responses) {
+      saveCache(data) {
+        try { localStorage.setItem(this.getCacheKey(), JSON.stringify(data)); } catch {}
+      },
+      
+      async track(data) {
+        const cache = this.getCache();
+        cache[data.questionId] = { ...data, timestamp: Date.now() };
+        this.saveCache(cache);
+        this.saveToDB(data).catch(e => console.warn('DB save failed:', e.message));
+        return cache[data.questionId];
+      },
+      
+      async saveToDB(data) {
+        const moduleDbId = await this.getModuleDbId();
+        if (!childId || !moduleDbId) return;
+        
+        await supabase.from('module_responses').upsert({
+          child_id: childId,
+          module_id: moduleDbId,
+          question_id: data.questionId,
+          question_text: data.questionText || '',
+          response_type: data.responseType || 'unknown',
+          response_value: JSON.stringify(data.responseValue),
+          response_options: data.responseOptions || null,
+          selected_option: typeof data.selectedOption === 'number' ? data.selectedOption : null,
+          page_number: data.pageNumber || 1,
+          question_order: data.questionOrder || 1,
+          is_correct: data.isCorrect ?? null,
+          parent_user_id: parentUserId || null
+        }, { onConflict: 'child_id,module_id,question_id' });
+      },
+      
+      get(questionId) {
+        const item = this.getCache()[questionId];
+        return item?.responseValue;
+      },
+      
+      getAll() { return this.getCache(); },
+      
+      async loadFromDB() {
+        const moduleDbId = await this.getModuleDbId();
+        if (!childId || !moduleDbId) return;
         try {
-          localStorage.setItem(this.getCacheKey(), JSON.stringify(responses));
-        } catch (e) {
-          console.warn('Failed to cache responses:', e);
-        }
-      },
-      
-      // Track a single response
-      async trackResponse(data) {
-        const {
-          questionId,        // Unique ID for the question (e.g., "page3_checkbox1")
-          questionText,      // The question text
-          responseType,      // 'checkbox', 'text', 'radio', 'select', 'rating', 'drawing'
-          responseValue,     // The actual response value
-          pageNumber,        // Current page number
-          isCorrect = null   // For quizzes
-        } = data;
-        
-        // Update cache immediately for fast UX
-        const cache = this.getCache();
-        cache[questionId] = {
-          ...data,
-          timestamp: Date.now()
-        };
-        this.saveToCache(cache);
-        
-        // Save to database (async, don't block)
-        this.saveToDatabase(data).catch(err => {
-          console.warn('Failed to save response to DB:', err);
-        });
-        
-        return cache[questionId];
-      },
-      
-      // Save to Supabase
-      async saveToDatabase(data) {
-        if (!childId || !moduleId) {
-          console.warn('Missing childId or moduleId, skipping DB save');
-          return;
-        }
-        
-        const { error } = await supabase
-          .from('module_responses')
-          .upsert({
-            child_id: childId,
-            module_id: moduleId,
-            question_id: data.questionId,
-            question_text: data.questionText,
-            response_type: data.responseType,
-            response_value: String(data.responseValue),
-            page_number: data.pageNumber,
-            is_correct: data.isCorrect,
-            parent_user_id: parentUserId,
-            responded_at: new Date().toISOString()
-          }, {
-            onConflict: 'child_id,module_id,question_id'
-          });
-        
-        if (error) throw error;
-      },
-      
-      // Get a specific response
-      getResponse(questionId) {
-        const cache = this.getCache();
-        return cache[questionId]?.responseValue;
-      },
-      
-      // Restore all form inputs on current page
-      restorePageResponses() {
-        const cache = this.getCache();
-        
-        // Restore checkboxes
-        document.querySelectorAll('input[type="checkbox"][data-track]').forEach(el => {
-          const id = el.dataset.track || el.id || el.name;
-          if (cache[id]) {
-            el.checked = cache[id].responseValue === true || cache[id].responseValue === 'true';
-          }
-        });
-        
-        // Restore text inputs and textareas
-        document.querySelectorAll('input[type="text"][data-track], textarea[data-track]').forEach(el => {
-          const id = el.dataset.track || el.id || el.name;
-          if (cache[id]) {
-            el.value = cache[id].responseValue || '';
-          }
-        });
-        
-        // Restore radio buttons
-        document.querySelectorAll('input[type="radio"][data-track]').forEach(el => {
-          const id = el.dataset.track || el.name;
-          if (cache[id] && cache[id].responseValue === el.value) {
-            el.checked = true;
-          }
-        });
-        
-        // Restore selects
-        document.querySelectorAll('select[data-track]').forEach(el => {
-          const id = el.dataset.track || el.id || el.name;
-          if (cache[id]) {
-            el.value = cache[id].responseValue || '';
-          }
-        });
-        
-        console.log('✅ Restored page responses from cache');
-      },
-      
-      // Auto-track all inputs on the page
-      setupAutoTracking(pageNumber) {
-        // Track checkboxes
-        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
-          const id = el.dataset.track || el.id || el.name || `checkbox_${Math.random().toString(36).substr(2, 9)}`;
-          el.dataset.track = id;
-          
-          el.addEventListener('change', () => {
-            this.trackResponse({
-              questionId: id,
-              questionText: el.dataset.question || el.nextElementSibling?.textContent || id,
-              responseType: 'checkbox',
-              responseValue: el.checked,
-              pageNumber
-            });
-          });
-        });
-        
-        // Track text inputs and textareas
-        document.querySelectorAll('input[type="text"], textarea').forEach(el => {
-          const id = el.dataset.track || el.id || el.name || el.placeholder || `text_${Math.random().toString(36).substr(2, 9)}`;
-          el.dataset.track = id;
-          
-          el.addEventListener('change', () => {
-            this.trackResponse({
-              questionId: id,
-              questionText: el.dataset.question || el.placeholder || id,
-              responseType: 'text',
-              responseValue: el.value,
-              pageNumber
-            });
-          });
-        });
-        
-        // Track radio buttons
-        document.querySelectorAll('input[type="radio"]').forEach(el => {
-          const id = el.dataset.track || el.name;
-          el.dataset.track = id;
-          
-          el.addEventListener('change', () => {
-            this.trackResponse({
-              questionId: id,
-              questionText: el.dataset.question || id,
-              responseType: 'radio',
-              responseValue: el.value,
-              pageNumber,
-              isCorrect: el.dataset.correct === 'true' ? true : (el.dataset.correct === 'false' ? false : null)
-            });
-          });
-        });
-        
-        // Track selects
-        document.querySelectorAll('select').forEach(el => {
-          const id = el.dataset.track || el.id || el.name || `select_${Math.random().toString(36).substr(2, 9)}`;
-          el.dataset.track = id;
-          
-          el.addEventListener('change', () => {
-            this.trackResponse({
-              questionId: id,
-              questionText: el.dataset.question || id,
-              responseType: 'select',
-              responseValue: el.value,
-              pageNumber
-            });
-          });
-        });
-        
-        console.log('✅ Auto-tracking enabled for page', pageNumber);
-      },
-      
-      // Load responses from database (on initial load)
-      async loadFromDatabase() {
-        if (!childId || !moduleId) return;
-        
-        try {
-          const { data, error } = await supabase
-            .from('module_responses')
-            .select('*')
-            .eq('child_id', childId)
-            .eq('module_id', moduleId);
-          
-          if (error) throw error;
-          
-          if (data && data.length > 0) {
+          const { data } = await supabase.from('module_responses')
+            .select('*').eq('child_id', childId).eq('module_id', moduleDbId);
+          if (data?.length) {
             const cache = this.getCache();
-            data.forEach(row => {
-              // Only update cache if DB has newer data
-              if (!cache[row.question_id] || new Date(row.responded_at) > new Date(cache[row.question_id].timestamp || 0)) {
-                cache[row.question_id] = {
-                  questionId: row.question_id,
-                  questionText: row.question_text,
-                  responseType: row.response_type,
-                  responseValue: row.response_value === 'true' ? true : (row.response_value === 'false' ? false : row.response_value),
-                  pageNumber: row.page_number,
-                  isCorrect: row.is_correct,
-                  timestamp: new Date(row.responded_at).getTime()
-                };
-              }
+            data.forEach(r => {
+              let val = r.response_value;
+              try { val = JSON.parse(r.response_value); } catch {}
+              cache[r.question_id] = {
+                questionId: r.question_id,
+                questionText: r.question_text,
+                responseType: r.response_type,
+                responseValue: val,
+                pageNumber: r.page_number,
+                isCorrect: r.is_correct,
+                timestamp: new Date(r.created_at).getTime()
+              };
             });
-            this.saveToCache(cache);
-            console.log('✅ Loaded', data.length, 'responses from database');
+            this.saveCache(cache);
+            console.log('✅ Loaded', data.length, 'responses from DB');
           }
-        } catch (e) {
-          console.warn('Failed to load responses from DB:', e);
-        }
+        } catch (e) { console.warn('DB load failed:', e); }
       }
     };
     
-    // Make tracker globally available
     window.ResponseTracker = ResponseTracker;
-    window.trackResponse = (data) => ResponseTracker.trackResponse(data);
-    window.getResponse = (id) => ResponseTracker.getResponse(id);
-    window.restoreResponses = () => ResponseTracker.restorePageResponses();
+    window.trackResponse = d => ResponseTracker.track(d);
+    window.getTrackedResponse = id => ResponseTracker.get(id);
     
     // =========================================
-    // 3. DATABASE HELPERS
+    // DATABASE HELPERS
     // =========================================
-    
     async function _getChild(id) {
-      const { data, error } = await supabase
-        .from('children')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from('children').select('*').eq('id', id).single();
       if (error) throw error;
       return data;
     }
     
     async function _updateStars(id, stars) {
-      const { data, error } = await supabase
-        .from('children')
-        .update({ stars })
-        .eq('id', id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('children').update({ stars }).eq('id', id).select().single();
       if (error) throw error;
       return data;
     }
     
     // =========================================
-    // 4. MODULE FUNCTIONS (GLOBAL)
+    // MODULE FUNCTIONS
     // =========================================
-    
     window.initializeModule = async function(workbookId) {
-      if (!_state.childId) {
-        console.warn('No childId provided');
-        return null;
-      }
+      await ResponseTracker.loadFromDB();
+      if (!_state.childId) return null;
       try {
         _state.currentChild = await _getChild(_state.childId);
-        
-        // Load saved responses from database
-        await ResponseTracker.loadFromDatabase();
-        
-        const subtitle = document.getElementById('headerSubtitle');
-        if (subtitle && _state.currentChild?.name) {
-          subtitle.textContent = _state.currentChild.name + "'s Journey";
-        }
         return _state.currentChild;
       } catch (e) {
         console.error('initializeModule error:', e);
@@ -551,87 +306,50 @@
       try {
         _state.currentChild = await _getChild(_state.childId);
         return _state.currentChild?.stars || 0;
-      } catch (e) {
-        console.error('loadStarsFromDB error:', e);
-        return 0;
-      }
+      } catch { return 0; }
     };
     
     window.saveStarsToDB = async function(totalStars) {
-      if (!_state.childId) return;
-      try {
-        await _updateStars(_state.childId, totalStars);
-      } catch (e) {
-        console.error('saveStarsToDB error:', e);
-      }
+      if (_state.childId) await _updateStars(_state.childId, totalStars);
     };
     
     window.awardSingleStar = async function() {
       if (!_state.childId) return 0;
-      try {
-        const child = await _getChild(_state.childId);
-        const newStars = (child.stars || 0) + 1;
-        const updated = await _updateStars(_state.childId, newStars);
-        _state.currentChild = updated;
-        return updated.stars;
-      } catch (e) {
-        console.error('awardSingleStar error:', e);
-        throw e;
-      }
+      const child = await _getChild(_state.childId);
+      const updated = await _updateStars(_state.childId, (child.stars || 0) + 1);
+      _state.currentChild = updated;
+      return updated.stars;
     };
     
-    window.getChildName = function() {
-      return _state.currentChild?.name || '';
-    };
-    
-    window.getChildId = function() {
-      return _state.childId;
-    };
+    window.getChildName = () => _state.currentChild?.name || '';
+    window.getChildId = () => _state.childId;
     
     window.resolveChildDisplayName = function(opts = {}) {
-      const fallback = opts?.fallback || 'Friend';
       if (opts?.preferredName?.trim()) return opts.preferredName.trim();
       if (_state.currentChild?.name?.trim()) return _state.currentChild.name.trim();
-      try {
-        const stored = localStorage.getItem('moduleChildName');
-        if (stored?.trim()) return stored.trim();
-      } catch(e) {}
-      return fallback;
+      try { const s = localStorage.getItem('moduleChildName'); if (s?.trim()) return s.trim(); } catch {}
+      return opts?.fallback || 'Friend';
     };
     
     window.completeModuleDB = async function(modCode) {
       if (!_state.childId) throw new Error('No child ID');
-      const { data: mod, error: modErr } = await supabase
-        .from('modules')
-        .select('id')
-        .eq('code', modCode)
-        .single();
-      if (modErr || !mod) throw new Error('Module not found');
-      
-      const { error } = await supabase
-        .from('child_module_progress')
-        .upsert({
-          child_id: _state.childId,
-          module_id: mod.id,
-          completed: true,
-          completed_at: new Date().toISOString()
-        }, { onConflict: 'child_id,module_id' });
-      
-      if (error) throw error;
+      const { data: mod } = await supabase.from('modules').select('id').eq('code', modCode).single();
+      if (!mod) throw new Error('Module not found');
+      await supabase.from('child_module_progress').upsert({
+        child_id: _state.childId,
+        module_id: mod.id,
+        completed: true,
+        completed_at: new Date().toISOString()
+      }, { onConflict: 'child_id,module_id' });
       return true;
     };
     
-    window.initModuleHeader = function(config) {
-      const { onNext, onPrev, onPrint, onShowStars, initialPage = { current: 1, total: 1 } } = config || {};
-      let page = initialPage.current || 1;
-      let total = initialPage.total || 1;
-      let stars = 0;
+    window.initModuleHeader = function(config = {}) {
+      const { onNext, onPrev, onPrint, initialPage = { current: 1, total: 1 } } = config;
+      let page = initialPage.current, total = initialPage.total, stars = 0;
       
       const root = document.getElementById('moduleHeaderRoot');
-      if (!root) {
-        console.warn('moduleHeaderRoot not found');
-        return { updatePage(){}, updateStars(){} };
-      }
+      if (!root) return { updatePage(){}, updateStars(){} };
       
       function render() {
         root.innerHTML = `
@@ -643,186 +361,223 @@
                 <button class="module-header__btn" id="mh-next" ${page >= total ? 'disabled' : ''}>Next →</button>
               </div>
               <div class="module-header__actions">
-                <button class="module-header__star" id="mh-star-btn">
-                  <span class="star-icon">⭐</span>
-                  <span id="mh-stars">${stars}</span>
-                </button>
+                <button class="module-header__star">⭐ <span id="mh-stars">${stars}</span></button>
                 <button class="module-header__btn module-header__home" id="mh-home">🏠 Home</button>
                 <button class="module-header__btn module-header__print" id="mh-print">🖨️</button>
               </div>
             </div>
           </header>
-          <div class="module-header-spacer"></div>
-        `;
+          <div class="module-header-spacer"></div>`;
         
         document.getElementById('mh-prev')?.addEventListener('click', () => onPrev?.());
         document.getElementById('mh-next')?.addEventListener('click', () => onNext?.());
         document.getElementById('mh-print')?.addEventListener('click', () => onPrint ? onPrint() : window.print());
-        document.getElementById('mh-star-btn')?.addEventListener('click', () => onShowStars?.());
         document.getElementById('mh-home')?.addEventListener('click', () => {
-          window.location.href = _state.childId 
-            ? '/dashboard.html?childId=' + _state.childId 
-            : '/dashboard.html';
+          window.location.href = _state.childId ? '/dashboard.html?childId=' + _state.childId : '/dashboard.html';
         });
       }
-      
       render();
-      
       return {
-        updatePage(c, t, opts = {}) { 
-          page = c; 
-          total = t; 
-          render(); 
-        },
-        updateStars(s) { 
-          stars = s; 
-          const el = document.getElementById('mh-stars'); 
-          if (el) el.textContent = s; 
-        }
+        updatePage(c, t) { page = c; total = t; render(); },
+        updateStars(s) { stars = s; const el = document.getElementById('mh-stars'); if (el) el.textContent = s; }
       };
     };
     
-    console.log('✅ Module helper functions ready');
+    // =========================================
+    // ENHANCED TRACKING FOR PAGE INTERACTIONS
+    // =========================================
+    window.enhancePageTracking = function(pageNum) {
+      // Quiz answers
+      document.querySelectorAll('.quiz-answer').forEach((btn, i) => {
+        btn.addEventListener('click', function() {
+          ResponseTracker.track({
+            questionId: `quiz_p${pageNum}_${i}`,
+            questionText: this.textContent.trim().slice(0, 100),
+            responseType: 'quiz',
+            responseValue: this.textContent.trim(),
+            pageNumber: pageNum,
+            isCorrect: this.dataset.correct === 'true'
+          });
+        });
+      });
+      
+      // Scenario options
+      document.querySelectorAll('.scenario-option').forEach((btn, i) => {
+        btn.addEventListener('click', function() {
+          ResponseTracker.track({
+            questionId: `scenario_p${pageNum}`,
+            questionText: this.textContent.trim().slice(0, 100),
+            responseType: 'scenario',
+            responseValue: this.textContent.trim(),
+            pageNumber: pageNum,
+            isCorrect: this.dataset.good === 'true'
+          });
+        });
+      });
+      
+      // Checklist items
+      document.querySelectorAll('.checklist-item').forEach((item, i) => {
+        item.addEventListener('change', function() {
+          ResponseTracker.track({
+            questionId: `checklist_p${pageNum}_${i}`,
+            questionText: (this.nextElementSibling?.textContent || '').trim().slice(0, 100),
+            responseType: 'checkbox',
+            responseValue: this.checked,
+            pageNumber: pageNum
+          });
+        });
+      });
+      
+      // Activity completions
+      document.querySelectorAll('[data-activity]').forEach(item => {
+        item.addEventListener('change', function() {
+          ResponseTracker.track({
+            questionId: `activity_${this.dataset.activity}`,
+            questionText: `Activity: ${this.dataset.activity}`,
+            responseType: 'activity',
+            responseValue: this.checked,
+            pageNumber: pageNum
+          });
+        });
+      });
+      
+      // Text inputs
+      document.querySelectorAll('.reflection-input, textarea, input[type="text"]').forEach((el, i) => {
+        el.addEventListener('change', function() {
+          const id = el.id || el.name || `text_p${pageNum}_${i}`;
+          ResponseTracker.track({
+            questionId: id,
+            questionText: (el.placeholder || id).slice(0, 100),
+            responseType: 'text',
+            responseValue: this.value,
+            pageNumber: pageNum
+          });
+        });
+      });
+    };
+    
+    // Restore responses when navigating to a page
+    window.restorePageResponses = function(pageNum) {
+      const responses = ResponseTracker.getAll();
+      
+      // Restore checkboxes
+      document.querySelectorAll('.checklist-item').forEach((item, i) => {
+        const saved = responses[`checklist_p${pageNum}_${i}`];
+        if (saved?.responseValue) item.checked = true;
+      });
+      
+      // Restore activities
+      document.querySelectorAll('[data-activity]').forEach(item => {
+        const saved = responses[`activity_${item.dataset.activity}`];
+        if (saved?.responseValue) { item.checked = true; item.disabled = true; }
+      });
+      
+      // Restore text
+      document.querySelectorAll('.reflection-input, textarea, input[type="text"]').forEach((el, i) => {
+        const id = el.id || el.name || `text_p${pageNum}_${i}`;
+        const saved = responses[id];
+        if (saved?.responseValue) el.value = saved.responseValue;
+      });
+    };
+    
+    console.log('✅ Module functions ready');
     
     // =========================================
-    // 5. LOAD AND INJECT MODULE CONTENT
+    // LOAD MODULE
     // =========================================
-    
-    function showError(title, message) {
-      document.body.innerHTML = `
-        <div class="error-container">
-          <div class="error-box">
-            <h2>⚠️ ${title}</h2>
-            <p>${message}</p>
-            <button onclick="history.back()">Go Back</button>
-            <button onclick="location.reload()">Retry</button>
-          </div>
-        </div>
-      `;
+    function showError(title, msg) {
+      document.body.innerHTML = `<div class="error-container"><div class="error-box">
+        <h2>⚠️ ${title}</h2><p>${msg}</p>
+        <button onclick="history.back()">Go Back</button>
+        <button onclick="location.reload()">Retry</button>
+      </div></div>`;
     }
     
     async function loadModule() {
-      if (!moduleCode) {
-        showError('No Module Specified', 'Please provide a module code in the URL.');
-        return;
-      }
+      if (!moduleCode) { showError('No Module', 'No module code in URL'); return; }
       
       try {
-        // Fetch module from database
-        const { data: module, error } = await supabase
+        const { data: mod, error } = await supabase
           .from('modules')
-          .select('html_content, title, code')
+          .select('html_content, title, code, id')
           .eq('code', moduleCode)
           .single();
         
         if (error) throw new Error(error.message);
-        if (!module?.html_content) throw new Error('Module content not found');
+        if (!mod?.html_content) throw new Error('Module not found');
         
-        document.title = module.title || 'Module';
+        _state.moduleDbId = mod.id;
+        document.title = mod.title || 'Module';
         
-        let html = module.html_content;
-        
-        // Parse the HTML
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const doc = parser.parseFromString(mod.html_content, 'text/html');
         
-        // Extract and apply styles
-        doc.querySelectorAll('style').forEach(style => {
-          const newStyle = document.createElement('style');
-          newStyle.textContent = style.textContent;
-          document.head.appendChild(newStyle);
+        // Copy styles
+        doc.querySelectorAll('style').forEach(s => {
+          const ns = document.createElement('style');
+          ns.textContent = s.textContent;
+          document.head.appendChild(ns);
         });
         
-        // Extract additional CSS links
-        doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
-          const href = link.getAttribute('href');
-          if (href && !document.querySelector(`link[href="${href}"]`)) {
-            document.head.appendChild(link.cloneNode(true));
+        // Copy CSS links
+        doc.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
+          if (!document.querySelector(`link[href="${l.getAttribute('href')}"]`)) {
+            document.head.appendChild(l.cloneNode(true));
           }
         });
         
-        // Copy body classes/attributes
-        Array.from(doc.body.attributes).forEach(attr => {
-          document.body.setAttribute(attr.name, attr.value);
-        });
+        // Copy body attributes
+        Array.from(doc.body.attributes).forEach(a => document.body.setAttribute(a.name, a.value));
         
-        // Collect scripts
-        const scriptCodes = [];
-        doc.querySelectorAll('script').forEach(script => {
-          const src = script.getAttribute('src');
-          
-          // Skip external scripts that would fail
-          if (src) {
-            if (src.includes('module-response-tracker') || 
-                src.includes('supabaseClient') ||
-                src.includes('module-db') ||
-                src.includes('module-header')) {
-              console.log('Skipping external script:', src);
-              return;
-            }
-          }
-          
-          if (script.textContent.trim()) {
-            scriptCodes.push(script.textContent);
-          }
+        // Extract scripts
+        const scripts = [];
+        doc.querySelectorAll('script').forEach(s => {
+          const src = s.getAttribute('src');
+          if (src && (src.includes('jsdelivr') || src.includes('module-') || src.includes('supabase'))) return;
+          if (s.textContent.trim()) scripts.push(s.textContent);
         });
-        
-        // Remove scripts from parsed doc
         doc.querySelectorAll('script').forEach(s => s.remove());
         
-        // Hide loader and inject body content
+        // Inject HTML
         document.getElementById('loader').style.display = 'none';
+        const div = document.createElement('div');
+        div.innerHTML = doc.body.innerHTML;
+        while (div.firstChild) document.body.appendChild(div.firstChild);
         
-        // Insert the body HTML
-        const contentDiv = document.createElement('div');
-        contentDiv.innerHTML = doc.body.innerHTML;
-        
-        while (contentDiv.firstChild) {
-          document.body.appendChild(contentDiv.firstChild);
+        // Execute scripts with tracking injection
+        if (scripts.length) {
+          let code = scripts.join('\n\n');
+          code = code.replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]*['"];?\s*$/gm, '');
+          code = code.replace(/^\s*import\s+['"][^'"]*['"];?\s*$/gm, '');
+          
+          // Inject tracking into renderPage
+          code = code.replace(
+            /function\s+renderPage\s*\(\s*\)\s*\{/,
+            `function renderPage() {
+              setTimeout(() => {
+                if (typeof currentPage !== 'undefined') {
+                  enhancePageTracking(currentPage);
+                  restorePageResponses(currentPage);
+                }
+              }, 50);`
+          );
+          
+          const wrapped = `(async function(){
+            const _ael = document.addEventListener.bind(document);
+            document.addEventListener = function(t,l,o){ t==='DOMContentLoaded' ? setTimeout(l,0) : _ael(t,l,o); };
+            try { ${code} } catch(e) { console.error('Script error:', e); }
+            document.addEventListener = _ael;
+          })();`;
+          
+          const el = document.createElement('script');
+          el.textContent = wrapped;
+          document.body.appendChild(el);
         }
         
-        console.log('✅ Module HTML injected');
-        
-        // Execute scripts
-        if (scriptCodes.length > 0) {
-          let combinedCode = scriptCodes.join('\n\n');
-          
-          // Remove all import statements
-          combinedCode = combinedCode.replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]*['"];?\s*$/gm, '');
-          combinedCode = combinedCode.replace(/^\s*import\s+['"][^'"]*['"];?\s*$/gm, '');
-          
-          // Wrap and execute
-          const wrappedCode = `
-(async function() {
-  const originalAddEventListener = document.addEventListener.bind(document);
-  document.addEventListener = function(type, listener, options) {
-    if (type === 'DOMContentLoaded') {
-      setTimeout(() => listener(), 0);
-    } else {
-      originalAddEventListener(type, listener, options);
-    }
-  };
-  
-  try {
-    ${combinedCode}
-  } catch (e) {
-    console.error('Module script error:', e);
-  }
-  
-  document.addEventListener = originalAddEventListener;
-})();
-`;
-          
-          const scriptEl = document.createElement('script');
-          scriptEl.textContent = wrappedCode;
-          document.body.appendChild(scriptEl);
-        }
-        
-        console.log('✅ Module loaded successfully');
-        
-      } catch (err) {
-        console.error('Module load error:', err);
-        showError('Failed to Load Module', err.message);
+        console.log('✅ Module loaded');
+      } catch (e) {
+        console.error('Load error:', e);
+        showError('Load Failed', e.message);
       }
     }
     

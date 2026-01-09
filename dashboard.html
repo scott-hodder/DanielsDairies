@@ -15,7 +15,7 @@
         <div class="header-content">
             <div class="header-left">
                 <a href="/dashboard.html" class="header-logo">
-                    <img src="/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
                     <div>
                         <h1 class="header-title">Daniel's Dairies</h1>
                         <p class="header-subtitle" id="headerSubtitle">Welcome back!</p>
@@ -63,54 +63,36 @@
                 <div class="children-grid" id="childrenGrid"></div>
             </div>
 
-            <!-- Active Modules Section -->
+            <!-- All Modules Section -->
             <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                    <span style="font-size: 28px;">✅</span>
-                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin: 0;">Your Active Workbooks</h2>
+                    <span style="font-size: 28px;">📚</span>
+                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin: 0;">All Workbooks</h2>
                 </div>
-                <p style="color: #4c6c96; font-size: 15px; margin-bottom: 24px;">These workbooks are unlocked and ready for your children to explore</p>
-                <div class="modules-grid" id="parentUnlockedModulesGrid"></div>
-            </div>
-
-            <!-- Unlock More Modules CTA Section -->
-            <div class="unlock-more-section">
-                <div class="unlock-more-content">
-                    <div class="unlock-more-badge">✨ New Workbooks Available</div>
-                    <h2 class="unlock-more-title">Unlock More Learning Adventures</h2>
-                    <p class="unlock-more-description">Give your child access to our complete library of expert-designed workbooks. Each module builds confidence, emotional intelligence, and resilience through engaging stories and activities.</p>
-                    <div class="unlock-more-benefits">
-                        <div class="unlock-benefit">
-                            <span class="unlock-benefit-icon">🎯</span>
-                            <div>
-                                <strong>Expert-Designed Content</strong>
-                                <p>Created by child development specialists</p>
-                            </div>
-                        </div>
-                        <div class="unlock-benefit">
-                            <span class="unlock-benefit-icon">📈</span>
-                            <div>
-                                <strong>Track Progress</strong>
-                                <p>See your child's growth in real-time</p>
-                            </div>
-                        </div>
-                        <div class="unlock-benefit">
-                            <span class="unlock-benefit-icon">👨‍👩‍👧</span>
-                            <div>
-                                <strong>Parent Support Included</strong>
-                                <p>Coaching scripts and guidance for every module</p>
-                            </div>
-                        </div>
+                <p style="color: #4c6c96; font-size: 15px; margin-bottom: 24px;">Explore our complete library of workbooks - active ones are ready to use, locked ones can be unlocked</p>
+                
+                <!-- Active Modules -->
+                <div id="activeModulesSection">
+                    <h3 style="font-size: 18px; color: #405878; font-weight: 600; margin-bottom: 16px;">✅ Active Workbooks</h3>
+                    <div class="modules-grid" id="parentUnlockedModulesGrid"></div>
+                </div>
+                
+                <!-- Inactive Modules -->
+                <div id="inactiveModulesSection" style="margin-top: 32px;">
+                    <h3 style="font-size: 18px; color: #888; font-weight: 600; margin-bottom: 16px;">🔒 Locked Workbooks</h3>
+                    <div class="modules-grid" id="parentLockedModulesGrid"></div>
+                    
+                    <!-- Show More/Less Button -->
+                    <div style="text-align: center; margin-top: 24px;">
+                        <button type="button" id="showMoreModulesBtn" class="btn-secondary" style="display: none;">
+                            Show More
+                        </button>
+                        <button type="button" id="showLessModulesBtn" class="btn-secondary" style="display: none;">
+                            Show Less
+                        </button>
                     </div>
-                    <button type="button" id="moreModulesButton" class="unlock-more-cta">
-                        <span>🚀 Explore All Workbooks</span>
-                    </button>
-                    <p class="unlock-more-note">💎 One-time purchase • Lifetime access • No subscriptions</p>
                 </div>
             </div>
-            
-            <!-- Hidden grid for locked modules (needed by JavaScript) -->
-            <div class="modules-grid" id="parentLockedModulesGrid" style="display: none;"></div>
         </div>
 
         <!-- Child Detail View -->

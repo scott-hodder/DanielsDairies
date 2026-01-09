@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from './auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak } from './database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin } from './database.js'
 import { redirectToPaymentLink } from './stripe.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-rewards.js'
 
@@ -1149,6 +1149,10 @@ async function loadChildren() {
 
 // Render children
 function renderChildren() {
+  const loadingState = document.getElementById('loadingState')
+  
+  if (loadingState) loadingState.classList.add('hidden')
+  
   childrenGrid.innerHTML = ''
   
   // Render each child
@@ -1316,19 +1320,31 @@ async function selectChild(child) {
 
 // Show children view
 function showChildrenView() {
+  const welcomeLandingPage = document.getElementById('welcomeLandingPage')
+  
   if (loadingState) {
     loadingState.classList.add('hidden')
   }
-  childrenView.classList.remove('hidden')
-  childDetailView.classList.add('hidden')
+  
+  // If no children, show welcome landing page instead
+  if (!children || children.length === 0) {
+    if (welcomeLandingPage) welcomeLandingPage.classList.remove('hidden')
+    childrenView.classList.add('hidden')
+    childDetailView.classList.add('hidden')
+  } else {
+    // Show normal children view
+    if (welcomeLandingPage) welcomeLandingPage.classList.add('hidden')
+    childrenView.classList.remove('hidden')
+    childDetailView.classList.add('hidden')
+    
+    // Render parent overview of modules
+    renderParentModulesOverview()
+  }
   
   // Hide dashboard button when on main view
   if (dashboardButton) {
     dashboardButton.style.display = 'none'
   }
-
-  // Render parent overview of modules
-  renderParentModulesOverview()
 }
 
 // Render parent-facing overview of unlocked vs locked modules
@@ -1355,9 +1371,7 @@ function renderParentModulesOverview() {
     }
   })
 
-
   const unlocked = modules.filter(m => parentModuleMap.get(m.id))
-
   const locked = modules.filter(m => {
     const parentHasModule = parentModuleMap.has(m.id)
     const parentActive = parentModuleMap.get(m.id)
@@ -1365,18 +1379,10 @@ function renderParentModulesOverview() {
     return !parentHasModule || !parentActive || globallyInactive
   })
 
-
-
-  lockedModulesShowcase = locked.slice()
-  moreModulesCurrentIndex = 0
-  updateMoreModulesButtonState()
-  renderMoreModulesCarousel()
-  populateAllModulesFilters()
-
   // Simple, factual cards for parent overview
   const makeStaticCard = (module, options = {}) => {
     const card = document.createElement('div')
-    card.className = 'module-card'
+    card.className = `module-card ${options.locked ? 'locked' : ''}`
 
     const ageRange = module.age_range || ''
     const shortDescription = module.short_description || ''
@@ -1433,37 +1439,75 @@ function renderParentModulesOverview() {
     return card
   }
 
+  // Render active modules (all of them)
   if (unlocked.length === 0) {
     parentUnlockedModulesGrid.innerHTML = '<p class="progress-label">No unlocked modules yet.</p>'
   } else {
-    // Show max 6 modules initially
-    const maxInitialModules = 6
-    const modulesToShow = showAllUnlockedModules ? unlocked : unlocked.slice(0, maxInitialModules)
-    
-    modulesToShow.forEach(m => parentUnlockedModulesGrid.appendChild(makeStaticCard(m, { locked: false })))
-    
-    // Add "More" button if there are more than 6 modules
-    if (unlocked.length > maxInitialModules) {
-      const moreButtonContainer = document.createElement('div')
-      moreButtonContainer.style.gridColumn = '1 / -1'
-      moreButtonContainer.style.textAlign = 'center'
-      moreButtonContainer.style.marginTop = '16px'
-      
-      const moreButton = document.createElement('button')
-      moreButton.className = 'btn-module start'
-      moreButton.textContent = showAllUnlockedModules ? 'Show Less' : `More (${unlocked.length - maxInitialModules} more)`
-      moreButton.style.padding = '12px 32px'
-      moreButton.addEventListener('click', () => {
-        showAllUnlockedModules = !showAllUnlockedModules
-        renderParentModulesOverview()
-      })
-      
-      moreButtonContainer.appendChild(moreButton)
-      parentUnlockedModulesGrid.appendChild(moreButtonContainer)
-    }
+    unlocked.forEach(m => parentUnlockedModulesGrid.appendChild(makeStaticCard(m, { locked: false })))
   }
 
-  locked.forEach(m => parentLockedModulesGrid.appendChild(makeStaticCard(m, { locked: true })))
+  // Render locked modules with show more functionality
+  if (locked.length === 0) {
+    parentLockedModulesGrid.innerHTML = '<p class="progress-label">No locked modules.</p>'
+    document.getElementById('showMoreModulesBtn').style.display = 'none'
+    document.getElementById('showLessModulesBtn').style.display = 'none'
+  } else {
+    // Show first 3 locked modules initially
+    const initialCount = 3
+    let showingCount = Math.min(initialCount, locked.length)
+    
+    // Render initial locked modules
+    for (let i = 0; i < showingCount; i++) {
+      parentLockedModulesGrid.appendChild(makeStaticCard(locked[i], { locked: true }))
+    }
+    
+    // Hide the rest
+    for (let i = showingCount; i < locked.length; i++) {
+      const card = makeStaticCard(locked[i], { locked: true })
+      card.classList.add('hidden')
+      parentLockedModulesGrid.appendChild(card)
+    }
+    
+    // Setup show more/less buttons
+    const showMoreBtn = document.getElementById('showMoreModulesBtn')
+    const showLessBtn = document.getElementById('showLessModulesBtn')
+    
+    if (locked.length > initialCount) {
+      showMoreBtn.style.display = 'inline-block'
+      showLessBtn.style.display = 'none'
+      
+      showMoreBtn.onclick = () => {
+        const hiddenCards = parentLockedModulesGrid.querySelectorAll('.module-card.hidden')
+        const toShow = Array.from(hiddenCards).slice(0, 3)
+        
+        toShow.forEach(card => card.classList.remove('hidden'))
+        
+        const remainingHidden = parentLockedModulesGrid.querySelectorAll('.module-card.hidden').length
+        if (remainingHidden === 0) {
+          showMoreBtn.style.display = 'none'
+          showLessBtn.style.display = 'inline-block'
+        }
+      }
+      
+      showLessBtn.onclick = () => {
+        const allLockedCards = parentLockedModulesGrid.querySelectorAll('.module-card.locked')
+        const visibleLockedCards = Array.from(allLockedCards).filter(card => !card.classList.contains('hidden'))
+        
+        if (visibleLockedCards.length > initialCount) {
+          const toHide = visibleLockedCards.slice(-3)
+          toHide.forEach(card => card.classList.add('hidden'))
+          
+          showMoreBtn.style.display = 'inline-block'
+          if (visibleLockedCards.length - 3 <= initialCount) {
+            showLessBtn.style.display = 'none'
+          }
+        }
+      }
+    } else {
+      showMoreBtn.style.display = 'none'
+      showLessBtn.style.display = 'none'
+    }
+  }
 }
 
 // Show child detail view
@@ -2098,6 +2142,12 @@ if (addChildQuickBtn) {
   addChildQuickBtn.addEventListener('click', showAddChildModal)
 }
 
+// Welcome page "Get Started" button
+const welcomeGetStartedBtn = document.getElementById('welcomeGetStartedBtn')
+if (welcomeGetStartedBtn) {
+  welcomeGetStartedBtn.addEventListener('click', showAddChildModal)
+}
+
 // Cancel add child
 if (cancelAddChild) {
   cancelAddChild.addEventListener('click', hideAddChildModal)
@@ -2554,38 +2604,19 @@ async function checkAdminStatus() {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     
-    // Try querying parent_profiles
-    const { data: profiles, error } = await supabase
-      .from('parent_profiles')
-      .select('id, is_admin, username')
-      .eq('id', user.id)
-    
-    
-    // Debug: try querying all to see if table is accessible
-    const { data: allProfiles, error: allError } = await supabase
-      .from('parent_profiles')
-      .select('id, username')
-      .limit(5)
-    
-    // Debug: try querying with different select
-    const { data: testQuery, error: testError } = await supabase
-      .from('parent_profiles')
-      .select('*')
-      .limit(1)
-    
-    const profile = profiles && profiles.length > 0 ? profiles[0] : null
-    
-    if (error) {
-      console.error('[Dashboard] Error checking admin status:', error)
+    if (!user) {
+      console.error('[Dashboard] No user found')
       return
     }
     
-    if (profile && profile.is_admin) {
+    // Use the database function to check admin status
+    const isAdmin = await isUserAdmin(user.id)
+    
+    if (isAdmin) {
       const adminButton = document.getElementById('adminButton')
       if (adminButton) {
         adminButton.style.display = 'block'
       }
-    } else {
     }
   } catch (error) {
     console.error('[Dashboard] Error checking admin status:', error)
