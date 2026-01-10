@@ -3689,15 +3689,23 @@ if (data.status === "running") {
         // Close Add Module Modal
         window.closeAddModuleModal = function() {
             const modal = document.getElementById('addModuleModal');
-            modal.classList.remove('active');
-            document.getElementById('addModuleForm').reset();
+            if (modal) modal.classList.remove('active');
+            
+            const form = document.getElementById('addModuleForm');
+            if (form) form.reset();
             
             // Reset AI generation state
             window.generatedModuleHTML = null;
             generatedModuleHTML = window.generatedModuleHTML;
-            document.getElementById('aiGeneratedPreview').style.display = 'none';
-            document.getElementById('aiGenerationStatus').textContent = '';
-            document.getElementById('filePreview').style.display = 'none';
+            
+            const aiPreview = document.getElementById('aiGeneratedPreview');
+            if (aiPreview) aiPreview.style.display = 'none';
+            
+            const aiStatus = document.getElementById('aiGenerationStatus');
+            if (aiStatus) aiStatus.textContent = '';
+            
+            const filePreview = document.getElementById('filePreview');
+            if (filePreview) filePreview.style.display = 'none';
         }
 
         // Add Custom Emotion

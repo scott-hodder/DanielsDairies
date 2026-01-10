@@ -2367,12 +2367,22 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   const totalStars = indices.star;
   const totalPages = pageStructure.length;
   
+  // Debug info for series
+  const debugInfo = `
+  Series Info Debug:
+  - characterName: ${metadata.characterName}
+  - characterEmoji: ${metadata.characterEmoji}
+  - characterType: ${metadata.characterType || 'not set'}
+  - series: ${metadata.series}
+  `;
+  
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(metadata.title)}</title>
+  <!-- DEBUG: ${escapeHtml(debugInfo)} -->
   
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2558,6 +2568,63 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
       bindPageInteractions();
+      restoreFormState();
+    }
+    
+    // Restore form values from localStorage
+    function restoreFormState() {
+      // Restore all text inputs
+      document.querySelectorAll('input[type="text"]').forEach(input => {
+        const onchange = input.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          input.value = formData[match[1]];
+        }
+      });
+      
+      // Restore all textareas
+      document.querySelectorAll('textarea').forEach(textarea => {
+        const onchange = textarea.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          textarea.value = formData[match[1]];
+        }
+      });
+      
+      // Restore range sliders
+      document.querySelectorAll('input[type="range"]').forEach(range => {
+        const oninput = range.getAttribute('oninput') || '';
+        const match = oninput.match(/saveFormData\\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          range.value = formData[match[1]];
+          const valueDisplay = range.parentElement.querySelector('.thermometer-value');
+          if (valueDisplay) valueDisplay.textContent = formData[match[1]];
+        }
+      });
+      
+      // Restore button selections (poll, rate-scale, true-false)
+      Object.keys(formData).forEach(key => {
+        if (key.startsWith('poll_') || key.startsWith('rate_')) {
+          const buttons = document.querySelectorAll('.interactive-option');
+          buttons.forEach(btn => {
+            if (btn.textContent.trim() === formData[key] || btn.textContent.trim() === String(formData[key])) {
+              btn.style.backgroundColor = 'var(--light-green)';
+            }
+          });
+        }
+        if (key.startsWith('tf_')) {
+          const page = document.querySelector('[data-page="interactive-lesson"]');
+          if (page) {
+            const ff = page.querySelector('.followup-feedback');
+            const mf = page.querySelector('.mascot-feedback');
+            if (ff) ff.style.display = 'block';
+            if (mf) mf.style.display = 'flex';
+            const btns = page.querySelectorAll('.interactive-option');
+            if (formData[key] === 'agree' && btns[0]) btns[0].style.backgroundColor = 'var(--light-green)';
+            if (formData[key] === 'disagree' && btns[1]) btns[1].style.backgroundColor = '#fecaca';
+          }
+        }
+      });
     }
     
     // Stars
@@ -2807,6 +2874,48 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.completeModule = completeModule;
     window.getChildName = getChildName;
     window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
+    
+    // Sorting activity functions
+    let selectedSortItem = null;
+    window.selectSortItem = function(item) {
+      // Deselect previous
+      document.querySelectorAll('.sort-item.selected').forEach(el => {
+        el.classList.remove('selected');
+        el.style.backgroundColor = 'white';
+        el.style.borderColor = 'var(--primary)';
+      });
+      // Select this one
+      item.classList.add('selected');
+      item.style.backgroundColor = 'var(--soft-yellow)';
+      item.style.borderColor = 'var(--dark)';
+      selectedSortItem = item;
+    };
+    
+    window.sortSelectedItem = function(category, categoryName, starIndex) {
+      if (!selectedSortItem) return;
+      
+      const droppedArea = category.querySelector('.dropped-items');
+      const itemText = selectedSortItem.textContent.trim();
+      const correctCategory = selectedSortItem.dataset.correctCategory;
+      const explanation = selectedSortItem.dataset.explanation;
+      const isCorrect = correctCategory === categoryName;
+      
+      // Create sorted item display
+      const sortedItem = document.createElement('div');
+      sortedItem.className = 'p-2 rounded-lg font-body text-sm mb-1';
+      sortedItem.style.backgroundColor = isCorrect ? 'white' : '#fecaca';
+      sortedItem.style.border = isCorrect ? '2px solid var(--secondary)' : '2px solid var(--accent)';
+      sortedItem.innerHTML = (isCorrect ? '✓ ' : '✗ ') + itemText;
+      sortedItem.title = explanation;
+      droppedArea.appendChild(sortedItem);
+      
+      // Remove from items list
+      selectedSortItem.remove();
+      selectedSortItem = null;
+      
+      // Save to form data
+      saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName);
+    };
   </script>
 </body>
 </html>`;
@@ -3706,15 +3815,15 @@ function renderGratitudeJarPage(jar: GratitudeJarContent, starIndex: number): st
 function renderSortingActivityPage(sorting: SortingActivityContent, starIndex: number): string {
   const activityId = `sorting_${starIndex}`;
   
-  const categoriesHtml = sorting.categories.map(cat => `
-    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3" style="background-color: ${cat.color}; border-color: var(--dark);" data-category="${escapeForTemplate(cat.name)}">
+  const categoriesHtml = sorting.categories.map((cat, ci) => `
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: ${cat.color}; border-color: var(--dark);" data-category="${escapeForTemplate(cat.name)}" data-category-index="${ci}" onclick="sortSelectedItem(this, '${escapeForTemplate(cat.name)}', ${starIndex})">
       <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">${cat.emoji} ${escapeForTemplate(cat.name)}</h3>
       <div class="dropped-items space-y-2"></div>
     </div>
   `).join("");
   
   const itemsHtml = sorting.items.map((item, i) => `
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_${i}" data-correct-category="${escapeForTemplate(item.correctCategory)}" data-explanation="${escapeForTemplate(item.explanation)}" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--soft-yellow)' : 'white';">
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_${i}" data-correct-category="${escapeForTemplate(item.correctCategory)}" data-explanation="${escapeForTemplate(item.explanation)}" onclick="selectSortItem(this)">
       ${escapeForTemplate(item.text)}
     </div>
   `).join("");
@@ -3731,9 +3840,9 @@ function renderSortingActivityPage(sorting: SortingActivityContent, starIndex: n
             ${categoriesHtml}
           </div>
           
-          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap to select):</p>
-            <div class="space-y-2">
+          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
+            <div class="sort-items-list space-y-2">
               ${itemsHtml}
             </div>
           </div>
@@ -4236,6 +4345,10 @@ serve(async (req) => {
     const asyncMode = body?.async === true;
     const seriesId = body?.seriesId;
     
+    // Debug logging
+    console.log(`[AI] Request received - seriesId: ${seriesId}, asyncMode: ${asyncMode}, contentBrief length: ${contentBrief?.length || 0}`);
+    console.log(`[AI] Full body keys: ${Object.keys(body || {}).join(', ')}`);
+    
     if (!contentBrief) {
       return jsonResponse({ error: "contentBrief is required" }, 400);
     }
@@ -4243,6 +4356,7 @@ serve(async (req) => {
     // Fetch series info if seriesId provided
     let seriesInfo: SeriesInfo | null = null;
     if (seriesId) {
+      console.log(`[AI] Looking up series with id: ${seriesId}`);
       const { data: series, error: seriesError } = await supabaseClient
         .from("series")
         .select("label, character_type, emoji")
@@ -4250,8 +4364,40 @@ serve(async (req) => {
         .single();
       
       if (!seriesError && series) {
-        seriesInfo = series as SeriesInfo;
+        // Map character_type to emoji if emoji column doesn't exist
+        const characterTypeToEmoji: Record<string, string> = {
+          'dog': '🐕',
+          'Dog': '🐕',
+          'cat': '🐱',
+          'Cat': '🐱',
+          'rabbit': '🐰',
+          'Rabbit': '🐰',
+          'bear': '🐻',
+          'Bear': '🐻',
+          'fox': '🦊',
+          'Fox': '🦊',
+          'owl': '🦉',
+          'Owl': '🦉',
+          'penguin': '🐧',
+          'Penguin': '🐧',
+          'lion': '🦁',
+          'Lion': '🦁',
+          'elephant': '🐘',
+          'Elephant': '🐘',
+          'monkey': '🐵',
+          'Monkey': '🐵',
+        };
+        
+        const emoji = series.emoji || characterTypeToEmoji[series.character_type] || '🐾';
+        
+        seriesInfo = {
+          label: series.label,
+          character_type: series.character_type,
+          emoji: emoji
+        };
         console.log(`[AI] Using series: ${seriesInfo.label} (${seriesInfo.character_type} ${seriesInfo.emoji})`);
+      } else {
+        console.log(`[AI] Series lookup failed for id ${seriesId}:`, seriesError);
       }
     }
     
