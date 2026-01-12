@@ -35,6 +35,10 @@ const childDetailView = document.getElementById('childDetailView')
 const childrenGrid = document.getElementById('childrenGrid')
 const parentUnlockedModulesGrid = document.getElementById('parentUnlockedModulesGrid')
 const parentLockedModulesGrid = document.getElementById('parentLockedModulesGrid')
+const allWorkbooksCategoryFilter = document.getElementById('allWorkbooksCategoryFilter')
+const allWorkbooksSeriesFilter = document.getElementById('allWorkbooksSeriesFilter')
+const dashboardCategoryFilter = document.getElementById('dashboardCategoryFilter')
+const dashboardSeriesFilter = document.getElementById('dashboardSeriesFilter')
 const modulesGrid = document.getElementById('modulesGrid')
 const modulesSeriesTabs = document.getElementById('modulesCategoryTabs')
 const logoutButton = document.getElementById('logoutButton')
@@ -112,8 +116,19 @@ const weeklyCheckinPanel = document.getElementById('weeklyCheckinPanel')
 
 updateMoreModulesButtonState()
 
-// Avatar options - 4 boys and 4 girls
-const avatarOptions = ['👦', '🧒', '👨', '👱', '👧', '👩', '👱‍♀️', '👶']
+const avatarCategories = {
+    animals: ['🦊', '🐼', '🦁', '🐨', '🦋', '🐸', '🐯', '🐺'],
+    magical: ['🧚', '🧙', '🧜', '🐉', '🦄', '🌈', '🔮', '🦕'],
+    heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎'],
+    space: ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌙', '⭐', '🪐', '☄️']
+}
+
+const avatarOptions = [
+    ...avatarCategories.animals,
+    ...avatarCategories.magical,
+    ...avatarCategories.heroes,
+    ...avatarCategories.space
+]
 const triggerOptions = ['Anger', 'Overwhelm', 'Worry/Anxiety', 'Sadness', 'Frustration']
 const selectedTriggers = new Set()
 
@@ -1008,6 +1023,10 @@ async function init() {
       
       modules = await getModules()
       
+      // Setup filters after modules are loaded
+      setupAllWorkbooksFilter()
+      setupDashboardFilters()
+      
     } catch (error) {
       console.error('Error loading modules:', error)
       modules = []
@@ -1264,20 +1283,370 @@ function renderAvatarPicker(selectedAvatar, pickerElement, hiddenInputElement) {
   })
 }
 
-// Edit child functions
-function promptEditChild(child) {
-  editingChild = child
-  
-  // Populate form with current child data
-  editChildName.value = child.name
-  editModalError.classList.add('hidden')
-  
-  // Render avatar picker with current avatar
-  renderAvatarPicker(child.avatar, avatarPicker, document.getElementById('editChildAvatar'))
-  
-  editChildModal.classList.remove('hidden')
-  setTimeout(() => editChildName.focus(), 100)
+function getEnhancedEditModalHTML() {
+    return `
+    <div class="modal-header-fun">
+        <button type="button" class="close-btn-fun" id="closeEditModalBtn">✕</button>
+        <div class="header-sparkles">
+            <span class="header-sparkle">✨</span>
+            <span class="header-sparkle">⭐</span>
+            <span class="header-sparkle">💫</span>
+            <span class="header-sparkle">🌟</span>
+        </div>
+        <h2 class="modal-title-fun">Edit Your Profile!</h2>
+        <p class="modal-subtitle-fun">Make it totally YOU! 🎨</p>
+        
+        <div class="avatar-preview-wrapper">
+            <div class="avatar-preview-circle" id="avatarPreviewCircle">🦊</div>
+        </div>
+    </div>
+
+    <div class="modal-body-fun">
+        <div id="editModalError" class="error-message hidden"></div>
+        
+        <form id="editChildForm">
+            <div class="form-group-fun">
+                <label class="form-label-fun">
+                    <span class="form-label-icon">📝</span>
+                    What's Your Name?
+                </label>
+                <input type="text" id="editChildName" class="form-input-fun" placeholder="Type your awesome name..." required>
+            </div>
+
+            <div class="avatar-section-fun" id="avatarSectionFun">
+                <h3 class="avatar-section-title"><span>🎭</span> Pick Your Avatar!</h3>
+                <p class="avatar-section-subtitle">Choose a cool character to represent you</p>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🐾</span> Cool Animals</div>
+                    <div class="avatar-picker-fun" id="avatarPickerAnimals"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>✨</span> Magical Creatures</div>
+                    <div class="avatar-picker-fun" id="avatarPickerMagical"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🦸</span> Super Heroes</div>
+                    <div class="avatar-picker-fun" id="avatarPickerHeroes"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🚀</span> Space & Adventure</div>
+                    <div class="avatar-picker-fun" id="avatarPickerSpace"></div>
+                </div>
+
+                <input type="hidden" id="editChildAvatar">
+            </div>
+
+            <div class="password-section-fun">
+                <button type="button" class="password-btn-fun" id="forgetPasswordBtn">
+                    <span>🔐</span> Reset Secret Password
+                </button>
+            </div>
+
+            <div class="modal-buttons-fun">
+                <button type="button" class="btn-fun btn-secondary-fun" id="cancelEditChildButton">Maybe Later</button>
+                <button type="submit" class="btn-fun btn-primary-fun"><span>✨</span> Save Changes!</button>
+            </div>
+
+            <div class="remove-section-fun">
+                <button type="button" class="btn-remove-fun" id="removeChildBtn"><span>🗑️</span> Remove Profile</button>
+            </div>
+        </form>
+    </div>
+    `;
 }
+
+// HTML for ADD Child Modal  
+function getEnhancedAddModalHTML() {
+    return `
+    <div class="modal-header-fun">
+        <button type="button" class="close-btn-fun" id="closeAddModalBtn">✕</button>
+        <div class="header-sparkles">
+            <span class="header-sparkle">✨</span>
+            <span class="header-sparkle">⭐</span>
+            <span class="header-sparkle">💫</span>
+            <span class="header-sparkle">🌟</span>
+        </div>
+        <h2 class="modal-title-fun">Add New Explorer!</h2>
+        <p class="modal-subtitle-fun">Let's create a profile! 🚀</p>
+        
+        <div class="avatar-preview-wrapper">
+            <div class="avatar-preview-circle" id="addAvatarPreviewCircle">🦊</div>
+        </div>
+    </div>
+
+    <div class="modal-body-fun">
+        <div id="modalError" class="error-message hidden"></div>
+        
+        <form id="addChildForm">
+            <div class="form-group-fun">
+                <label class="form-label-fun">
+                    <span class="form-label-icon">📝</span>
+                    What's Their Name?
+                </label>
+                <input type="text" id="childName" class="form-input-fun" placeholder="Type their awesome name..." required>
+            </div>
+
+            <div class="form-group-fun">
+                <label class="form-label-fun">
+                    <span class="form-label-icon">🎂</span>
+                    Date of Birth
+                </label>
+                <input type="date" id="childDob" class="form-input-fun" required>
+            </div>
+
+            <div class="avatar-section-fun" id="addAvatarSectionFun">
+                <h3 class="avatar-section-title"><span>🎭</span> Pick Their Avatar!</h3>
+                <p class="avatar-section-subtitle">Choose a cool character to represent them</p>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🐾</span> Cool Animals</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerAnimals"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>✨</span> Magical Creatures</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerMagical"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🦸</span> Super Heroes</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerHeroes"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🚀</span> Space & Adventure</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerSpace"></div>
+                </div>
+
+                <input type="hidden" id="addChildAvatar">
+            </div>
+
+            <div class="modal-buttons-fun">
+                <button type="button" class="btn-fun btn-secondary-fun" id="cancelAddChild">Maybe Later</button>
+                <button type="submit" class="btn-fun btn-primary-fun"><span>✨</span> Add Child!</button>
+            </div>
+        </form>
+    </div>
+    `;
+}
+
+// Render avatar picker for a specific category
+function renderAvatarCategory(containerId, avatars, selectedAvatar, hiddenInput, previewCircle) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    avatars.forEach(emoji => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'avatar-option-fun' + (selectedAvatar === emoji ? ' selected' : '');
+        button.innerHTML = `<span class="avatar-character">${emoji}</span>`;
+        
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Remove selected from all in this modal
+            const modal = button.closest('.modal');
+            modal.querySelectorAll('.avatar-option-fun').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            if (hiddenInput) hiddenInput.value = emoji;
+            
+            if (previewCircle) {
+                previewCircle.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    previewCircle.textContent = emoji;
+                    previewCircle.style.transform = 'scale(1.15)';
+                    setTimeout(() => previewCircle.style.transform = 'scale(1)', 150);
+                }, 100);
+            }
+        });
+        
+        container.appendChild(button);
+    });
+}
+
+// Render enhanced avatar picker for EDIT modal
+function renderEnhancedAvatarPicker(selectedAvatar) {
+    const hiddenInput = document.getElementById('editChildAvatar');
+    const previewCircle = document.getElementById('avatarPreviewCircle');
+    
+    if (hiddenInput) hiddenInput.value = selectedAvatar;
+    if (previewCircle) previewCircle.textContent = selectedAvatar;
+    
+    renderAvatarCategory('avatarPickerAnimals', avatarCategories.animals, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('avatarPickerMagical', avatarCategories.magical, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('avatarPickerHeroes', avatarCategories.heroes, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('avatarPickerSpace', avatarCategories.space, selectedAvatar, hiddenInput, previewCircle);
+    
+    if (previewCircle) {
+        previewCircle.onclick = () => {
+            document.getElementById('avatarSectionFun')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+    }
+}
+
+// Render enhanced avatar picker for ADD modal
+function renderEnhancedAddAvatarPicker(selectedAvatar) {
+    const hiddenInput = document.getElementById('addChildAvatar');
+    const previewCircle = document.getElementById('addAvatarPreviewCircle');
+    
+    if (hiddenInput) hiddenInput.value = selectedAvatar;
+    if (previewCircle) previewCircle.textContent = selectedAvatar;
+    
+    renderAvatarCategory('addAvatarPickerAnimals', avatarCategories.animals, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('addAvatarPickerMagical', avatarCategories.magical, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('addAvatarPickerHeroes', avatarCategories.heroes, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('addAvatarPickerSpace', avatarCategories.space, selectedAvatar, hiddenInput, previewCircle);
+    
+    if (previewCircle) {
+        previewCircle.onclick = () => {
+            document.getElementById('addAvatarSectionFun')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+    }
+}
+
+// Confetti celebration
+function createConfettiCelebration() {
+    const colors = ['#7c3aed', '#ec4899', '#fbbf24', '#14b8a6', '#3b82f6', '#f97316', '#22c55e'];
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    
+    for (let i = 0; i < 50; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.width = (6 + Math.random() * 8) + 'px';
+        piece.style.height = piece.style.width;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        container.appendChild(piece);
+    }
+    
+    setTimeout(() => container.remove(), 3500);
+}
+
+// Form submit handler for EDIT
+async function handleEditFormSubmit(e) {
+    e.preventDefault();
+    
+    if (!editingChild) return;
+    
+    const editModalError = document.getElementById('editModalError');
+    const editChildName = document.getElementById('editChildName');
+    
+    try {
+        const newName = editChildName.value.trim();
+        const newAvatar = document.getElementById('editChildAvatar').value.trim();
+        
+        if (!newName) {
+            editModalError.textContent = 'Name is required.';
+            editModalError.classList.remove('hidden');
+            return;
+        }
+        
+        const updates = { name: newName, avatar: newAvatar || null };
+        const updatedChild = await updateChildProfile(editingChild.id, updates);
+        
+        const childIndex = children.findIndex(c => c.id === editingChild.id);
+        if (childIndex !== -1) children[childIndex] = updatedChild;
+        if (selectedChild && selectedChild.id === editingChild.id) selectedChild = updatedChild;
+        
+        renderChildren();
+        createConfettiCelebration();
+        closeEditChildModal();
+        
+    } catch (error) {
+        console.error('Error updating child:', error);
+        editModalError.textContent = 'Failed to save changes. Please try again.';
+        editModalError.classList.remove('hidden');
+    }
+}
+
+// Form submit handler for ADD
+async function handleAddFormSubmit(e) {
+    e.preventDefault();
+    
+    const modalError = document.getElementById('modalError');
+    
+    try {
+        const name = document.getElementById('childName').value.trim();
+        const dob = document.getElementById('childDob').value;
+        const avatar = document.getElementById('addChildAvatar').value || '🦊';
+        
+        if (!name || !dob) {
+            modalError.textContent = 'Please fill in all fields.';
+            modalError.classList.remove('hidden');
+            return;
+        }
+        
+        modalError.classList.add('hidden');
+        
+        const newChild = await createChild(currentUser.id, name, dob, avatar);
+        children.push(newChild);
+        renderChildren();
+        createConfettiCelebration();
+        hideAddChildModal();
+        
+    } catch (error) {
+        console.error('Error creating child:', error);
+        modalError.textContent = error.message || 'Failed to add child';
+        modalError.classList.remove('hidden');
+    }
+}
+
+// Setup listeners for EDIT modal
+function setupEditModalListeners() {
+    document.getElementById('closeEditModalBtn')?.addEventListener('click', closeEditChildModal);
+    document.getElementById('cancelEditChildButton')?.addEventListener('click', closeEditChildModal);
+    
+    document.getElementById('forgetPasswordBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeEditChildModal();
+        parentPasswordModal.classList.remove('hidden');
+    });
+    
+    document.getElementById('removeChildBtn')?.addEventListener('click', () => {
+        if (editingChild) {
+            removeChildName.textContent = editingChild.name;
+            removeChildModal.classList.remove('hidden');
+        }
+    });
+    
+    document.getElementById('editChildForm')?.addEventListener('submit', handleEditFormSubmit);
+}
+
+// Setup listeners for ADD modal
+function setupAddModalListeners() {
+    document.getElementById('closeAddModalBtn')?.addEventListener('click', hideAddChildModal);
+    document.getElementById('cancelAddChild')?.addEventListener('click', hideAddChildModal);
+    document.getElementById('addChildForm')?.addEventListener('submit', handleAddFormSubmit);
+}
+
+
+function promptEditChild(child) {
+    editingChild = child;
+    
+    const modal = document.querySelector('#editChildModal .modal');
+    if (modal && !modal.querySelector('.modal-header-fun')) {
+        modal.innerHTML = getEnhancedEditModalHTML();
+        setupEditModalListeners();
+    }
+    
+    document.getElementById('editChildName').value = child.name;
+    document.getElementById('editModalError')?.classList.add('hidden');
+    
+    renderEnhancedAvatarPicker(child.avatar || '🦊');
+    
+    editChildModal.classList.remove('hidden');
+    setTimeout(() => document.getElementById('editChildName')?.focus(), 100);
+}
+
 
 function closeEditChildModal() {
   editChildModal.classList.add('hidden')
@@ -1347,6 +1716,52 @@ function showChildrenView() {
   }
 }
 
+// Setup All Workbooks filters
+function setupAllWorkbooksFilter() {
+  if (!allWorkbooksCategoryFilter || !allWorkbooksSeriesFilter || !modules) return
+  
+  // Get unique categories
+  const categories = [...new Set(modules.map(m => m.category).filter(Boolean))].sort()
+  
+  // Populate category filter options
+  allWorkbooksCategoryFilter.innerHTML = '<option value="all">All Categories</option>' + 
+    categories.map(cat => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('')
+  
+  // Get unique series
+  const series = [...new Set(modules.map(m => m.series).filter(Boolean))].sort()
+  
+  // Populate series filter options
+  allWorkbooksSeriesFilter.innerHTML = '<option value="all">All Series</option>' + 
+    series.map(s => `<option value="${s}">${s}</option>`).join('')
+  
+  // Add change event listeners
+  allWorkbooksCategoryFilter.addEventListener('change', renderParentModulesOverview)
+  allWorkbooksSeriesFilter.addEventListener('change', renderParentModulesOverview)
+}
+
+// Setup Dashboard filters
+function setupDashboardFilters() {
+  if (!dashboardCategoryFilter || !dashboardSeriesFilter || !modules) return
+  
+  // Get unique categories
+  const categories = [...new Set(modules.map(m => m.category).filter(Boolean))].sort()
+  
+  // Populate category filter options
+  dashboardCategoryFilter.innerHTML = '<option value="all">All Categories</option>' + 
+    categories.map(cat => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('')
+  
+  // Get unique series
+  const series = [...new Set(modules.map(m => m.series).filter(Boolean))].sort()
+  
+  // Populate series filter options
+  dashboardSeriesFilter.innerHTML = '<option value="all">All Series</option>' + 
+    series.map(s => `<option value="${s}">${s}</option>`).join('')
+  
+  // Add change event listeners
+  dashboardCategoryFilter.addEventListener('change', renderModules)
+  dashboardSeriesFilter.addEventListener('change', renderModules)
+}
+
 // Render parent-facing overview of unlocked vs locked modules
 function renderParentModulesOverview() {
   if (!parentUnlockedModulesGrid || !parentLockedModulesGrid) return
@@ -1371,12 +1786,24 @@ function renderParentModulesOverview() {
     }
   })
 
-  const unlocked = modules.filter(m => parentModuleMap.get(m.id))
+  // Get selected filters
+  const selectedCategory = allWorkbooksCategoryFilter ? allWorkbooksCategoryFilter.value : 'all'
+  const selectedSeries = allWorkbooksSeriesFilter ? allWorkbooksSeriesFilter.value : 'all'
+  
+  const unlocked = modules.filter(m => {
+    const parentHasModule = parentModuleMap.get(m.id)
+    const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory
+    const matchesSeries = selectedSeries === 'all' || m.series === selectedSeries
+    return parentHasModule && matchesCategory && matchesSeries
+  })
+  
   const locked = modules.filter(m => {
     const parentHasModule = parentModuleMap.has(m.id)
     const parentActive = parentModuleMap.get(m.id)
     const globallyInactive = m.is_active === false
-    return !parentHasModule || !parentActive || globallyInactive
+    const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory
+    const matchesSeries = selectedSeries === 'all' || m.series === selectedSeries
+    return (!parentHasModule || !parentActive || globallyInactive) && matchesCategory && matchesSeries
   })
 
   // Simple, factual cards for parent overview
@@ -1387,29 +1814,17 @@ function renderParentModulesOverview() {
     const ageRange = module.age_range || ''
     const shortDescription = module.short_description || ''
 
-    const palette = [
-      { border: '#f46b6b', iconBg: 'linear-gradient(135deg, #ffe1e1 0%, #fff5f5 100%)' },
-      { border: '#35a4d4', iconBg: 'linear-gradient(135deg, #def5ff 0%, #f2fbff 100%)' },
-      { border: '#f4a73b', iconBg: 'linear-gradient(135deg, #fff1da 0%, #fff8ea 100%)' },
-      { border: '#4caf50', iconBg: 'linear-gradient(135deg, #e0f5e9 0%, #f3fff7 100%)' },
-      { border: '#ab47bc', iconBg: 'linear-gradient(135deg, #f7e3ff 0%, #fdf5ff 100%)' }
-    ]
-
-    const key = (module.id || module.code || module.title || '').toString()
-    let hash = 0
-    for (let i = 0; i < key.length; i++) {
-      hash = (hash * 31 + key.charCodeAt(i)) >>> 0
-    }
-    const colors = palette[hash % palette.length]
-
-    card.style.borderLeftColor = options.locked ? '#9ca3af' : colors.border
+    // Use category colors like other sections
+    const categoryColor = categoryColors[module.category] || '#4c6c96'
+    
+    card.style.borderLeftColor = options.locked ? '#9ca3af' : categoryColor
 
     const icon = options.locked ? '🔒' : '📖'
     const statusText = options.locked ? 'Locked • Not yet active' : 'Unlocked • Active on your account'
 
     card.innerHTML = `
       <div class="module-left">
-        <div class="module-icon ${options.locked ? 'default' : ''}" style="background: ${options.locked ? 'linear-gradient(135deg, #eeeeee 0%, #f9f9f9 100%)' : colors.iconBg};">${icon}</div>
+        <div class="module-icon ${options.locked ? 'default' : ''}" style="background: ${options.locked ? 'linear-gradient(135deg, #eeeeee 0%, #f9f9f9 100%)' : `linear-gradient(135deg, ${categoryColor}20 0%, ${categoryColor}10 100%)`}">${icon}</div>
         <div>
           <h3 class="module-title">${module.title}</h3>
           ${ageRange ? `<div class="module-subtitle" style="font-weight: 600;">Ages ${ageRange}</div>` : ''}
@@ -1544,40 +1959,11 @@ function renderModules() {
   
   
 
-  // Build series tabs from modules
-  if (modulesSeriesTabs) {
-    const series = Array.from(new Set(
-      modules
-        .map(m => m.series)
-        .filter(Boolean)
-    ))
-
-    const allLabel = 'All'
-    const tabsHtml = [allLabel, ...series].map(ser => {
-      const value = ser === allLabel ? 'all' : ser
-      const isActive = value === currentModuleSeries
-      return `
-        <button
-          class="module-category-tab ${isActive ? 'active' : ''}"
-          data-series="${value}"
-        >
-          ${ser}
-        </button>
-      `
-    }).join('')
-
-    modulesSeriesTabs.innerHTML = tabsHtml
-
-    // Attach click handlers
-    Array.from(modulesSeriesTabs.querySelectorAll('.module-category-tab')).forEach(btn => {
-      btn.addEventListener('click', () => {
-        const value = btn.getAttribute('data-series') || 'all'
-        currentModuleSeries = value
-        showAllChildModules = false // Reset when changing series
-        renderModules()
-      })
-    })
-  }
+  // Series tabs removed - now using dropdown filters instead
+  
+  // Get selected filters
+  const selectedCategory = dashboardCategoryFilter ? dashboardCategoryFilter.value : 'all'
+  const selectedSeries = dashboardSeriesFilter ? dashboardSeriesFilter.value : 'all'
   
   // Filter to only show modules that the parent owns
   const parentModuleIds = parentModules.map(pm => pm.module_id)
@@ -1595,9 +1981,12 @@ function renderModules() {
     availableModules = parentOwnedModules.filter(m => activeChildModuleIds.includes(m.id))
 
   
-  const visibleModules = currentModuleSeries === 'all'
-    ? availableModules
-    : availableModules.filter(m => m.series === currentModuleSeries)
+  // Apply filters
+  let visibleModules = availableModules.filter(m => {
+    const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory
+    const matchesSeries = selectedSeries === 'all' || m.series === selectedSeries
+    return matchesCategory && matchesSeries
+  })
 
   if (visibleModules.length === 0) {
     modulesGrid.innerHTML = `
@@ -1621,6 +2010,16 @@ function renderModules() {
     const childModule = childModules.find(cm => cm.module_id === module.id)
     return childModule && childModule.is_completed === true
   })
+  
+  // Find the oldest incomplete module (created first)
+  let oldestIncompleteModule = null
+  if (incompleteModules.length > 0) {
+    oldestIncompleteModule = incompleteModules.reduce((oldest, current) => {
+      const oldestDate = new Date(oldest.created_at || 0)
+      const currentDate = new Date(current.created_at || 0)
+      return oldestDate < currentDate ? oldest : current
+    })
+  }
 
   // Render Incomplete Modules Section
   if (incompleteModules.length > 0) {
@@ -1630,6 +2029,36 @@ function renderModules() {
     const incompleteSection = document.createElement('div')
     incompleteSection.style.gridColumn = '1 / -1'
     incompleteSection.style.marginBottom = '32px'
+    
+    // Add highlighted oldest incomplete module at the top
+    if (oldestIncompleteModule && readyModulesToDisplay.includes(oldestIncompleteModule)) {
+      const highlightSection = document.createElement('div')
+      highlightSection.style.gridColumn = '1 / -1'
+      highlightSection.style.marginBottom = '24px'
+      highlightSection.style.padding = '20px'
+      highlightSection.style.borderRadius = '12px'
+      highlightSection.style.position = 'relative'
+      
+      const highlightLabel = document.createElement('div')
+      highlightLabel.style.position = 'absolute'
+      highlightLabel.style.top = '-10px'
+      highlightLabel.style.left = '20px'
+      highlightLabel.style.background = '#f59e0b'
+      highlightLabel.style.color = 'white'
+      highlightLabel.style.padding = '4px 12px'
+      highlightLabel.style.borderRadius = '20px'
+      highlightLabel.style.fontSize = '12px'
+      highlightLabel.style.fontWeight = '600'
+      highlightLabel.textContent = '⭐ NEXT MODULE'
+      
+      const highlightedCard = createModuleCard(oldestIncompleteModule)
+      highlightedCard.style.margin = '0'
+      highlightedCard.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
+      
+      highlightSection.appendChild(highlightLabel)
+      highlightSection.appendChild(highlightedCard)
+      incompleteSection.appendChild(highlightSection)
+    }
     
     const incompleteHeader = document.createElement('div')
     incompleteHeader.style.display = 'flex'
@@ -1652,6 +2081,8 @@ function renderModules() {
     incompleteGrid.style.gap = '20px'
     
     readyModulesToDisplay.forEach(module => {
+      // Skip the oldest module if it's already highlighted
+      if (oldestIncompleteModule && module.id === oldestIncompleteModule.id) return
       const moduleCard = createModuleCard(module)
       incompleteGrid.appendChild(moduleCard)
     })
@@ -1792,12 +2223,21 @@ async function startModule(module) {
 
 // Show add child modal
 function showAddChildModal() {
-  addChildModal.classList.remove('hidden')
-  modalError.classList.add('hidden')
-  addChildForm.reset()
-  
-  // Render avatar picker with no selection
-  renderAvatarPicker(null, addChildAvatarPicker, addChildAvatar)
+    const modal = document.querySelector('#addChildModal .modal');
+    if (modal && !modal.querySelector('.modal-header-fun')) {
+        modal.innerHTML = getEnhancedAddModalHTML();
+        setupAddModalListeners();
+    }
+    
+    // Reset form
+    document.getElementById('childName').value = '';
+    document.getElementById('childDob').value = '';
+    document.getElementById('modalError')?.classList.add('hidden');
+    
+    renderEnhancedAddAvatarPicker('🦊');
+    
+    addChildModal.classList.remove('hidden');
+    setTimeout(() => document.getElementById('childName')?.focus(), 100);
 }
 
 // Hide add child modal
@@ -1806,7 +2246,7 @@ function hideAddChildModal() {
 }
 
 // Handle add child form submission
-if (addChildForm) {
+/*if (addChildForm) {
   addChildForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     
@@ -1840,6 +2280,7 @@ if (addChildForm) {
     }
   })
 }
+*/
 
 // Purchase modal buttons
 if (cancelPurchaseButton) {
@@ -1936,7 +2377,7 @@ if (cancelPasswordButton) {
 }
 
 // Edit child form handler
-if (editChildForm) {
+/*if (editChildForm) {
   editChildForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     
@@ -1975,6 +2416,8 @@ if (editChildForm) {
       
       // Re-render children
       renderChildren()
+
+      createConfettiCelebration()
       
       // Close modal
       closeEditChildModal()
@@ -1985,9 +2428,9 @@ if (editChildForm) {
       editModalError.classList.remove('hidden')
     }
   })
-}
+} */
 
-if (cancelEditChildButton) {
+/*if (cancelEditChildButton) {
   cancelEditChildButton.addEventListener('click', () => {
     closeEditChildModal()
   })
@@ -2136,6 +2579,7 @@ if (confirmRemoveChildButton) {
     }
   })
 }
+  */
 
 // Quick add child button
 if (addChildQuickBtn) {

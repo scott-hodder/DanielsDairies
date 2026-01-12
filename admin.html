@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Daniel's Dairies</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" href="/images/logos/DanielsDiariesFavicon.png">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -162,7 +167,12 @@
 
                         <div class="form-group">
                             <label class="form-label">Short Description</label>
-                            <textarea class="form-textarea" id="editShortDescription" placeholder="Enter a brief description..."></textarea>
+                            <textarea class="form-textarea" id="editShortDescription" placeholder="Enter a brief description..." rows="2"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-textarea" id="editDescription" placeholder="Enter a detailed description..." rows="4"></textarea>
                         </div>
 
                         <div class="form-group">
@@ -1172,7 +1182,7 @@
             const selectedCategory = document.getElementById('categoryFilter').value;
             const selectedSeries = document.getElementById('seriesFilter').value;
             
-            const filteredModules = allModules.filter(module => {
+            let filteredModules = allModules.filter(module => {
                 // Check if module is active for THIS CHILD (from child_modules table)
                 // If no assignment exists, it's inactive for this child
                 const isActiveForChild = currentModuleAssignments[module.id] !== undefined 
@@ -1188,6 +1198,13 @@
                     (currentFilter === 'inactive' && !isActiveForChild);
                 
                 return matchesSearch && matchesCategory && matchesSeries && matchesFilter;
+            });
+            
+            // Sort modules by creation date (newest first)
+            filteredModules.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0);
+                const dateB = new Date(b.created_at || 0);
+                return dateB.getTime() - dateA.getTime(); // Newest first
             });
 
             if (filteredModules.length === 0) {
@@ -3383,6 +3400,7 @@ if (data.status === "running") {
             // Populate form
             document.getElementById('editTitle').value = selectedModule.title || '';
             document.getElementById('editShortDescription').value = selectedModule.short_description || '';
+            document.getElementById('editDescription').value = selectedModule.description || '';
             document.getElementById('editSeries').value = selectedModule.series || '';
             document.getElementById('editAgeRange').value = selectedModule.age_range || '';
             
@@ -3538,6 +3556,7 @@ if (data.status === "running") {
             const updates = {
                 title: document.getElementById('editTitle').value,
                 short_description: document.getElementById('editShortDescription').value,
+                description: document.getElementById('editDescription').value,
                 category: category,
                 series: document.getElementById('editSeries').value,
                 age_range: document.getElementById('editAgeRange').value

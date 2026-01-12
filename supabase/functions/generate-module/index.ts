@@ -262,6 +262,7 @@ interface InteractiveLessonContent {
   interactionType: "poll" | "circle-one" | "fill-blank" | "rate-scale" | "true-false";
   interactionPrompt: string;
   interactionOptions?: string[];
+  correctAnswerIndex?: number; // For poll/circle-one questions with a correct answer
   followUpText: string;
   mascotComment: string;
 }
@@ -676,7 +677,11 @@ Your content must be:
 - Engaging with a consistent character/mascot throughout
 - Interactive with activities that reinforce learning
 
-CRITICAL: Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.`;
+CRITICAL RULES:
+1. Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.
+2. If a specific character/mascot is mentioned (like "Daniel the Dog"), you MUST use EXACTLY that character name and type throughout.
+3. Never substitute a different animal or character name - if told to use "Daniel the Dog", every reference must be to "Daniel" and a dog, not a fox, bear, or any other animal.
+4. The mascot emoji must match the character type exactly.`;
 
 async function generateMetadata(
   apiKey: string,
@@ -1521,6 +1526,7 @@ Respond with ONLY this JSON:
       "interactionType": "poll",
       "interactionPrompt": "Question for the child to interact with",
       "interactionOptions": ["Option 1", "Option 2", "Option 3", "Option 4"],
+      "correctAnswerIndex": 1,
       "followUpText": "Brief explanation after interaction (1-2 sentences)",
       "mascotComment": "Encouraging comment from mascot"
     }
@@ -1529,7 +1535,8 @@ Respond with ONLY this JSON:
 
 IMPORTANT:
 - interactionType must be one of: "poll", "circle-one", "fill-blank", "rate-scale", "true-false"
-- For "poll" and "circle-one": provide 3-4 options
+- For "poll" and "circle-one" with factual questions: provide 3-4 options AND set "correctAnswerIndex" to the 0-based index of the correct option
+- For opinion-based "poll"/"circle-one": omit correctAnswerIndex (all choices are valid)
 - For "fill-blank": the prompt should have ___ where the child fills in
 - For "rate-scale": prompt asks to rate something 1-5
 - For "true-false": the prompt is a statement to agree/disagree with
@@ -1548,13 +1555,14 @@ IMPORTANT:
       heading: "Let's Think!",
       introText: "Sometimes our feelings can be tricky to understand. Let's explore together!",
       interactionType: type,
-      interactionPrompt: type === "poll" ? "How do you usually feel when trying something new?" :
+      interactionPrompt: type === "poll" ? "Which of these is the BEST way to handle big feelings?" :
                          type === "fill-blank" ? "When I feel worried, I can ___" :
                          type === "rate-scale" ? "How much do you like talking about your feelings?" :
                          type === "true-false" ? "It's okay to feel scared sometimes" :
                          "What helps you feel calm?",
-      interactionOptions: (type === "poll" || type === "circle-one") ? ["Excited", "Nervous", "Curious", "Unsure"] : undefined,
-      followUpText: "Whatever you chose is perfectly okay!",
+      interactionOptions: (type === "poll" || type === "circle-one") ? ["Yell at someone", "Take deep breaths", "Break things", "Run away"] : undefined,
+      correctAnswerIndex: (type === "poll" || type === "circle-one") ? 1 : undefined, // "Take deep breaths" is correct
+      followUpText: "Taking deep breaths helps calm our body and mind!",
       mascotComment: `${metadata.characterName} says: Great thinking!`
     });
     typeIndex++;
@@ -1996,33 +2004,52 @@ async function generateAffirmationBuilders(
 ): Promise<AffirmationBuilderContent[]> {
   const prompt = `Create ${count} affirmation builder activities for children about "${metadata.theme}".
 
+CRITICAL: All starters, middles, and endings must combine into GRAMMATICALLY CORRECT sentences.
+Test every possible combination before responding!
+
+Examples of CORRECT combinations:
+- "I am" + "brave and" + "strong" = "I am brave and strong" ✓
+- "I am becoming" + "more" + "confident every day" = "I am becoming more confident every day" ✓
+- "I choose to be" + "kind and" + "helpful" = "I choose to be kind and helpful" ✓
+
+Examples of WRONG combinations to AVOID:
+- "I choose to" + "brave and" + "strong" = "I choose to brave and strong" ✗ (grammatically incorrect!)
+- "I will" + "brave and" + "confident" = "I will brave and confident" ✗ (missing "be")
+
 Respond with ONLY this JSON:
 {
   "affirmationBuilders": [
     {
       "heading": "Activity title with star/sparkle emoji",
       "instructions": "Instructions for building affirmations (1-2 sentences)",
-      "starters": ["I am", "I can", "I choose to", "I believe"],
-      "middles": ["brave and", "kind and", "learning to be", "getting better at being"],
-      "endings": ["strong", "calm", "confident", "resilient"],
-      "decorationEmojis": ["star", "sparkles", "rainbow", "heart"],
+      "starters": ["I am", "I am becoming", "I choose to be", "Every day I am"],
+      "middles": ["brave and", "kind and", "more and more", "stronger and"],
+      "endings": ["strong", "confident", "capable", "resilient"],
+      "decorationEmojis": ["⭐", "✨", "🌈", "💖"],
       "savePrompt": "Prompt to save/remember their affirmation"
     }
   ]
-}`;
+}
+
+IMPORTANT: Use actual emoji characters in decorationEmojis, not text names!`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ affirmationBuilders: AffirmationBuilderContent[] }>(response);
   
   const builders = parsed?.affirmationBuilders || [];
   while (builders.length < count) {
+    // All combinations here are grammatically correct:
+    // "I am" + "brave and" + "strong" = "I am brave and strong"
+    // "I am becoming" + "brave and" + "strong" = "I am becoming brave and strong"
+    // "I choose to be" + "brave and" + "strong" = "I choose to be brave and strong"
+    // "Every day I am" + "brave and" + "strong" = "Every day I am brave and strong"
     builders.push({
-      heading: "Build Your Power Phrase!",
-      instructions: "Pick one word from each row to create your own special affirmation!",
-      starters: ["I am", "I can", "I choose to be", "I will be"],
-      middles: ["brave and", "calm and", "kind and", "strong and"],
-      endings: ["confident", "peaceful", "resilient", "happy"],
-      decorationEmojis: ["star", "sparkles", "rainbow", "heart", "butterfly", "flower"],
+      heading: "✨ Build Your Power Phrase!",
+      instructions: "Pick one phrase from each row to create your own special affirmation!",
+      starters: ["I am", "I am becoming", "I choose to be", "Every day I am"],
+      middles: ["brave and", "kind and", "calm and", "strong and"],
+      endings: ["confident", "capable", "resilient", "amazing"],
+      decorationEmojis: ["⭐", "✨", "🌈", "💖", "🦋", "🌸"],
       savePrompt: "Say your affirmation out loud 3 times! You can write it down and put it somewhere you'll see it every day."
     });
   }
@@ -2459,6 +2486,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     .scenario-option.selected.good { background-color: var(--light-green) !important; }
     .scenario-option.selected.not-good { background-color: #fef3c7 !important; }
     
+    /* Interactive Option Styles */
+    .interactive-option { background-color: white; }
+    .interactive-option.option-selected { background-color: var(--light-green) !important; }
+    .interactive-option.option-incorrect { background-color: #fecaca !important; }
+    
     /* Print Styles */
     @media print {
       .no-print { display: none !important; }
@@ -2474,17 +2506,259 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   </main>
   
   <script type="module">
-    // Use CDN paths for production
-    import { initModuleHeader } from 'https://cdn.jsdelivr.net/gh/supabase/supabase@master/examples/edge-functions/supabase/functions/_shared/module-header.js';
-    import {
-      initializeModule,
-      loadStarsFromDB,
-      saveStarsToDB,
-      awardSingleStar,
-      resolveChildDisplayName,
-      getChildId,
-      completeModuleDB
-    } from 'https://cdn.jsdelivr.net/gh/supabase/supabase@master/examples/edge-functions/supabase/functions/_shared/module-db.js';
+    // Embedded module functions (no external dependencies)
+    
+    // Module database functions - stub implementation for local preview
+    async function initializeModule() {
+      return true;
+    }
+
+    async function loadStarsFromDB() {
+      const saved = localStorage.getItem('moduleStars');
+      return saved ? parseInt(saved, 10) : 0;
+    }
+
+    async function saveStarsToDB(stars) {
+      localStorage.setItem('moduleStars', String(stars));
+      return stars;
+    }
+
+    async function awardSingleStar(currentStars) {
+      const newStars = currentStars + 1;
+      await saveStarsToDB(newStars);
+      return newStars;
+    }
+
+    async function resolveChildDisplayName() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childName') || 'Friend';
+    }
+
+    async function getChildId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childId') || 'unknown';
+    }
+
+    async function completeModuleDB() {
+      // Stub implementation - just mark as completed
+      localStorage.setItem('moduleCompleted', 'true');
+      return true;
+    }
+    
+    // Module header functions
+    function initModuleHeader(options = {}) {
+      const {
+        onPrev,
+        onNext,
+        onHome,
+        onPrint,
+        onShowStars,
+        onToggleParentMode,
+        showParentToggle = false,
+        initialPage = { current: 1, total: 1 },
+        initialStars = 0,
+        parentModeEnabled = false,
+        labels = {},
+      } = options;
+
+      const header = document.createElement('header');
+      header.className = 'module-header no-print';
+
+      const navSection = document.createElement('div');
+      navSection.className = 'module-header__nav';
+
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'module-header__btn module-header__btn--nav';
+      prevBtn.textContent = labels.prev ?? '← Back';
+      prevBtn.type = 'button';
+
+      const pageDisplay = document.createElement('div');
+      pageDisplay.className = 'module-header__page';
+
+      // ... (rest of the code remains the same)
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'module-header__btn module-header__btn--nav';
+      nextBtn.textContent = labels.next ?? 'Next →';
+      nextBtn.type = 'button';
+
+      navSection.append(prevBtn, pageDisplay, nextBtn);
+
+      const actionsSection = document.createElement('div');
+      actionsSection.className = 'module-header__actions';
+
+      const starButton = document.createElement('button');
+      starButton.className = 'module-header__star';
+      starButton.type = 'button';
+      starButton.innerHTML = \`
+        <span class="star-icon">⭐</span>
+        <span data-role="star-count">\$\{initialStars}</span>
+      \`;
+
+      const printButton = document.createElement('button');
+      printButton.className = 'module-header__btn module-header__print';
+      printButton.type = 'button';
+      printButton.textContent = '🖨 Print';
+
+      let parentModeButton = null;
+      if (showParentToggle) {
+        parentModeButton = document.createElement('button');
+        parentModeButton.className = 'module-header__btn module-header__parent';
+        parentModeButton.type = 'button';
+      }
+
+      const homeButton = document.createElement('button');
+      homeButton.className = 'module-header__btn module-header__home';
+      homeButton.type = 'button';
+      homeButton.textContent = '🏠 Home';
+
+      actionsSection.append(starButton);
+      if (parentModeButton) {
+        actionsSection.append(parentModeButton);
+      }
+      actionsSection.append(printButton, homeButton);
+
+      const inner = document.createElement('div');
+      inner.className = 'module-header__inner';
+      inner.append(navSection, actionsSection);
+      header.appendChild(inner);
+
+      document.body.prepend(header);
+      const spacer = document.createElement('div');
+      spacer.className = 'module-header-spacer no-print';
+
+      // Ensure there is always enough space below the fixed header
+      try {
+        const computedHeight = getComputedStyle(document.documentElement)
+          .getPropertyValue('--module-header-height')
+          .trim();
+        spacer.style.height = computedHeight || '75px';
+      } catch (error) {
+        spacer.style.height = '75px';
+      }
+
+      header.after(spacer);
+
+      function normalizePageValue(value, fallback = 1) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return fallback;
+        return Math.max(1, Math.round(numeric));
+      }
+
+      function updatePageDisplay(current = 1, total = 1) {
+        const safeTotal = normalizePageValue(total, 1);
+        const safeCurrent = Math.min(normalizePageValue(current, 1), safeTotal);
+        pageDisplay.textContent = \`Page \$\{safeCurrent} of \$\{safeTotal}\`;
+        
+        // Log page navigation (but don't auto-complete - user must click the Complete button)
+        console.log(\`[ModuleHeader] Page update: \$\{safeCurrent}/\$\{safeTotal}\`);
+      }
+
+      function updateParentMode(enabled) {
+        if (!parentModeButton) return;
+        parentModeButton.textContent = enabled ? '👨‍👩‍👧 Parent Mode ON' : '👨‍👩‍👧 Parent Mode';
+        parentModeButton.classList.toggle('is-on', enabled);
+      }
+
+      function updateStarCount(stars) {
+        const starCountEl = starButton.querySelector('[data-role="star-count"]');
+        if (starCountEl) {
+          starCountEl.textContent = stars;
+        }
+      }
+
+      updatePageDisplay(initialPage.current, initialPage.total);
+      updateStarCount(initialStars);
+      updateParentMode(parentModeEnabled);
+
+      if (typeof onPrev === 'function') {
+        prevBtn.addEventListener('click', () => onPrev());
+      } else {
+        prevBtn.disabled = true;
+      }
+
+      if (typeof onNext === 'function') {
+        nextBtn.addEventListener('click', () => onNext());
+      } else {
+        nextBtn.disabled = true;
+      }
+
+      function defaultGoHome() {
+        if (typeof window.goHome === 'function') {
+          try {
+            window.goHome();
+            return;
+          } catch (error) {
+            console.warn('[ModuleHeader] window.goHome threw an error:', error);
+          }
+        }
+
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const childId = params.get('childId');
+          if (childId) {
+            window.location.href = \`/dashboard.html?childId=\$\{encodeURIComponent(childId)}\`;
+            return;
+          }
+        } catch (error) {
+          console.warn('[ModuleHeader] Failed to parse URL params:', error);
+        }
+
+        if (document.referrer) {
+          window.location.href = document.referrer;
+          return;
+        }
+
+        window.location.href = '/dashboard.html';
+      }
+
+      homeButton.addEventListener('click', () => {
+        if (typeof onHome === 'function') {
+          onHome();
+        } else {
+          defaultGoHome();
+        }
+      });
+
+      printButton.addEventListener('click', () => {
+        if (typeof onPrint === 'function') {
+          onPrint();
+        } else if (typeof window.print === 'function') {
+          window.print();
+        }
+      });
+
+      if (typeof onShowStars === 'function') {
+        starButton.addEventListener('click', () => onShowStars());
+      }
+
+      if (parentModeButton && typeof onToggleParentMode === 'function') {
+        parentModeButton.addEventListener('click', () => onToggleParentMode());
+      } else if (parentModeButton) {
+        parentModeButton.style.display = 'none';
+      }
+
+      return {
+        updatePage(current, total, options = {}) {
+          updatePageDisplay(current, total);
+          if (typeof options.canPrev === 'boolean') {
+            prevBtn.disabled = !options.canPrev;
+          }
+          if (typeof options.canNext === 'boolean') {
+            nextBtn.disabled = !options.canNext;
+          }
+        },
+        updateStars(stars) {
+          updateStarCount(stars);
+        },
+        setParentMode(enabled) {
+          updateParentMode(enabled);
+        },
+        destroy() {
+          header.remove();
+          spacer.remove();
+        },
+      };
+    }
     
     const WORKBOOK_ID = "${escapeHtml(moduleCode)}";
     const MODULE_CODE = "${escapeHtml(moduleCode)}";
@@ -2602,13 +2876,13 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         }
       });
       
-      // Restore button selections (poll, rate-scale, true-false)
+      // Restore button selections (rate-scale only - not polls, as those should be re-answered)
       Object.keys(formData).forEach(key => {
-        if (key.startsWith('poll_') || key.startsWith('rate_')) {
+        if (key.startsWith('rate_')) {
           const buttons = document.querySelectorAll('.interactive-option');
           buttons.forEach(btn => {
-            if (btn.textContent.trim() === formData[key] || btn.textContent.trim() === String(formData[key])) {
-              btn.style.backgroundColor = 'var(--light-green)';
+            if (btn.textContent.trim() === String(formData[key])) {
+              btn.classList.add('option-selected');
             }
           });
         }
@@ -2620,8 +2894,8 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
             if (ff) ff.style.display = 'block';
             if (mf) mf.style.display = 'flex';
             const btns = page.querySelectorAll('.interactive-option');
-            if (formData[key] === 'agree' && btns[0]) btns[0].style.backgroundColor = 'var(--light-green)';
-            if (formData[key] === 'disagree' && btns[1]) btns[1].style.backgroundColor = '#fecaca';
+            if (formData[key] === 'agree' && btns[0]) btns[0].classList.add('option-selected');
+            if (formData[key] === 'disagree' && btns[1]) btns[1].classList.add('option-incorrect');
           }
         }
       });
@@ -2874,6 +3148,70 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.completeModule = completeModule;
     window.getChildName = getChildName;
     window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
+    
+    // Interactive lesson choice handler
+    window.handleInteractiveChoice = function(btn, starIndex, hasCorrectAnswer, correctIdx) {
+      const page = btn.closest('.page');
+      const buttons = btn.parentElement.querySelectorAll('.interactive-option');
+      const feedbackEl = page.querySelector('.interactive-feedback');
+      const ffEl = page.querySelector('.followup-feedback');
+      const mfEl = page.querySelector('.mascot-feedback');
+      const selectedIdx = parseInt(btn.dataset.index);
+      
+      // Reset all buttons - remove selection classes
+      buttons.forEach(b => {
+        b.classList.remove('option-selected', 'option-incorrect');
+        b.style.borderColor = 'var(--secondary)';
+      });
+      
+      if (hasCorrectAnswer) {
+        // Has a correct answer - show feedback
+        const isCorrect = selectedIdx === correctIdx;
+        btn.classList.add(isCorrect ? 'option-selected' : 'option-incorrect');
+        btn.style.borderColor = isCorrect ? 'var(--secondary)' : 'var(--accent)';
+        
+        if (feedbackEl) {
+          feedbackEl.style.display = 'block';
+          feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca';
+          feedbackEl.innerHTML = isCorrect 
+            ? '<span class="font-body" style="color: var(--dark);">✓ Great choice! That is right!</span>'
+            : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
+        }
+        
+        // Only show followup and mascot feedback on correct answer
+        if (isCorrect) {
+          if (ffEl) ffEl.style.display = 'block';
+          if (mfEl) mfEl.style.display = 'flex';
+        }
+      } else {
+        // Opinion-based - all answers valid
+        btn.classList.add('option-selected');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+      }
+      
+      saveFormData('poll_' + starIndex, btn.textContent.trim());
+    };
+    
+    // Fill-blank input handler for inline text fields
+    window.handleFillBlankInput = function(input, starIndex) {
+      const page = input.closest('.page');
+      const blankIndex = input.dataset.blankIndex;
+      
+      // Save this blank's value
+      saveFormData('fillblank_' + starIndex + '_' + blankIndex, input.value);
+      
+      // Check if all blanks are filled
+      const allBlanks = page.querySelectorAll('input[data-blank-index]');
+      const allFilled = Array.from(allBlanks).every(b => b.value.trim().length > 0);
+      
+      if (allFilled) {
+        const ffEl = page.querySelector('.followup-feedback');
+        const mfEl = page.querySelector('.mascot-feedback');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+      }
+    };
     
     // Sorting activity functions
     let selectedSortItem = null;
@@ -3248,7 +3586,7 @@ function renderScenarioPage(scenario: ScenarioContent, starIndex: number): strin
           <div class="space-y-3 mb-6">${optionsHtml}</div>
           <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" disabled onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
             <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
           </div>
         </div>
@@ -3570,33 +3908,48 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
   
   switch (lesson.interactionType) {
     case "poll":
-    case "circle-one":
+    case "circle-one": {
+      // Check if this has a correct answer (correctAnswerIndex) or is opinion-based
+      const hasCorrectAnswer = typeof lesson.correctAnswerIndex === 'number';
+      const correctIdx = lesson.correctAnswerIndex ?? -1;
       interactionHtml = `
         <div class="interactive-group">
           <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.interactionPrompt)}</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             ${options.map((opt, i) => `
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.style.backgroundColor = 'white'); this.style.backgroundColor = 'var(--light-green)'; saveFormData('poll_${starIndex}', '${escapeForTemplate(opt)}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="${hasCorrectAnswer ? (i === correctIdx ? 'true' : 'false') : 'opinion'}"
+                      data-index="${i}"
+                      onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
                 ${escapeForTemplate(opt)}
               </button>
             `).join("")}
           </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
         </div>`;
       break;
+    }
       
-    case "fill-blank":
+    case "fill-blank": {
+      // Parse the prompt and replace ___ with inline input fields
+      let blankCounter = 0;
+      const promptWithInputs = escapeForTemplate(lesson.interactionPrompt).replace(/___+/g, () => {
+        blankCounter++;
+        return `<input type="text" 
+                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
+                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
+                  placeholder="..."
+                  data-blank-index="${blankCounter}"
+                  oninput="handleFillBlankInput(this, ${starIndex})">`;
+      });
+      
       interactionHtml = `
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body" style="color: var(--dark);">${escapeForTemplate(lesson.interactionPrompt)}</p>
-          <input type="text" 
-                 class="w-full p-4 rounded-xl border-3 font-body text-lg mb-4" 
-                 style="background-color: white; border: 3px solid var(--primary); color: var(--dark);"
-                 placeholder="Type your answer here..."
-                 onchange="saveFormData('fillblank_${starIndex}', this.value); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">${promptWithInputs}</p>
         </div>`;
       break;
+    }
       
     case "rate-scale":
       interactionHtml = `
@@ -3605,8 +3958,8 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
           <div class="flex justify-between gap-2 mb-4">
             ${[1,2,3,4,5].map(n => `
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.style.backgroundColor = 'white'); this.style.backgroundColor = 'var(--light-green)'; saveFormData('rate_${starIndex}', '${n}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_${starIndex}', '${n}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 ${n}
               </button>
             `).join("")}
@@ -3626,13 +3979,13 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
           </div>
           <div class="flex gap-4 justify-center">
             <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
-                    style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-                    onclick="this.style.backgroundColor = 'var(--light-green)'; this.nextElementSibling.style.backgroundColor = 'white'; saveFormData('tf_${starIndex}', 'agree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                    style="border-color: var(--secondary); color: var(--dark);"
+                    onclick="this.classList.add('option-selected'); this.nextElementSibling.classList.remove('option-selected', 'option-incorrect'); saveFormData('tf_${starIndex}', 'agree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
               I Agree
             </button>
             <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
-                    style="border-color: var(--accent); background-color: white; color: var(--dark);"
-                    onclick="this.style.backgroundColor = '#fecaca'; this.previousElementSibling.style.backgroundColor = 'white'; saveFormData('tf_${starIndex}', 'disagree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                    style="border-color: var(--accent); color: var(--dark);"
+                    onclick="this.classList.add('option-incorrect'); this.previousElementSibling.classList.remove('option-selected', 'option-incorrect'); saveFormData('tf_${starIndex}', 'disagree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
               I Disagree
             </button>
           </div>
@@ -3680,9 +4033,12 @@ function renderFillInStoryPage(story: FillInStoryContent, starIndex: number, met
   
   let storyHtml = escapeForTemplate(story.storyTemplate);
   story.blanks.forEach((blank, i) => {
+    // Calculate width based on placeholder length (min 6rem, max 14rem)
+    const hintLength = blank.hint.length;
+    const widthRem = Math.min(14, Math.max(6, Math.ceil(hintLength * 0.65)));
     storyHtml = storyHtml.replace(
       `[${blank.id}]`,
-      `<input type="text" class="story-blank inline-block w-32 border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent;" placeholder="${escapeForTemplate(blank.hint)}" onchange="saveFormData('story_${starIndex}_${i}', this.value)">`
+      `<input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: ${widthRem}rem; min-width: 6rem;" placeholder="${escapeForTemplate(blank.hint)}" onchange="saveFormData('story_${starIndex}_${i}', this.value)">`
     );
   });
 
@@ -4356,12 +4712,46 @@ serve(async (req) => {
     // Fetch series info if seriesId provided
     let seriesInfo: SeriesInfo | null = null;
     if (seriesId) {
-      console.log(`[AI] Looking up series with id: ${seriesId}`);
-      const { data: series, error: seriesError } = await supabaseClient
-        .from("series")
-        .select("label, character_type, emoji")
-        .eq("id", seriesId)
-        .single();
+      console.log(`[AI] Looking up series with id/label: ${seriesId}`);
+      
+      // Check if seriesId looks like a UUID (contains dashes and is ~36 chars)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seriesId);
+      
+      let series = null;
+      let seriesError = null;
+      
+      if (isUUID) {
+        // Lookup by UUID
+        const result = await supabaseClient
+          .from("series")
+          .select("label, character_type, emoji")
+          .eq("id", seriesId)
+          .single();
+        series = result.data;
+        seriesError = result.error;
+      } else {
+        // Lookup by label name (case-insensitive)
+        const result = await supabaseClient
+          .from("series")
+          .select("label, character_type, emoji")
+          .ilike("label", seriesId)
+          .single();
+        series = result.data;
+        seriesError = result.error;
+        
+        // If not found by exact label, try partial match
+        if (seriesError && seriesError.code === 'PGRST116') {
+          console.log(`[AI] Exact label match failed, trying partial match...`);
+          const partialResult = await supabaseClient
+            .from("series")
+            .select("label, character_type, emoji")
+            .ilike("label", `%${seriesId}%`)
+            .limit(1)
+            .single();
+          series = partialResult.data;
+          seriesError = partialResult.error;
+        }
+      }
       
       if (!seriesError && series) {
         // Map character_type to emoji if emoji column doesn't exist

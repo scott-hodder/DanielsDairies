@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daniel's Dairies - Dashboard</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" href="/images/logos/DanielsDiariesFavicon.png">
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="/styles/dashboard.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Header -->
@@ -71,6 +76,22 @@
                 </div>
                 <p style="color: #4c6c96; font-size: 15px; margin-bottom: 24px;">Explore our complete library of workbooks - active ones are ready to use, locked ones can be unlocked</p>
                 
+                <!-- Filters -->
+                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                    <div>
+                        <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Category:</label>
+                        <select id="allWorkbooksCategoryFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                            <option value="all">All Categories</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Series:</label>
+                        <select id="allWorkbooksSeriesFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                            <option value="all">All Series</option>
+                        </select>
+                    </div>
+                </div>
+                
                 <!-- Active Modules -->
                 <div id="activeModulesSection">
                     <h3 style="font-size: 18px; color: #405878; font-weight: 600; margin-bottom: 16px;">✅ Active Workbooks</h3>
@@ -100,19 +121,19 @@
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
                 <div class="nav-tabs-content">
-                    <button class="nav-tab active" id="tabDashboard">
+                    <button class="nav-tab active" id="tabDashboard" data-emoji="🎯">
                         🎯 Dashboard
                     </button>
-                    <button class="nav-tab hidden" id="tabModules">
+                    <button class="nav-tab hidden" id="tabModules" data-emoji="📖">
                         📖 My Modules
                     </button>
-                    <button class="nav-tab" id="tabLeaderboard">
+                    <button class="nav-tab" id="tabLeaderboard" data-emoji="🏆">
                         🏆 Leaderboard
                     </button>
-                    <button class="nav-tab" id="tabSpendStars">
+                    <button class="nav-tab" id="tabSpendStars" data-emoji="🎁">
                         🎁 Spend Stars
                     </button>
-                    <button class="nav-tab" id="tabParentInsights">
+                    <button class="nav-tab" id="tabParentInsights" data-emoji="👨‍👩‍👧">
                         👨‍👩‍👧 Parent Insights
                     </button>
                 </div>
@@ -176,7 +197,24 @@
                 <div class="progress-section" style="margin-top: 24px;">
                     <h2 class="section-title" id="modulesTitle">Modules</h2>
                     <p class="progress-label" style="margin-bottom: 16px;">Choose a workbook to start or continue.</p>
-                    <div class="module-category-tabs" id="modulesCategoryTabs"></div>
+                    
+                    <!-- Dashboard Module Filters -->
+                    <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Category:</label>
+                            <select id="dashboardCategoryFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                <option value="all">All Categories</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Series:</label>
+                            <select id="dashboardSeriesFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                <option value="all">All Series</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="module-category-tabs" id="modulesCategoryTabs" style="display: none;"></div>
                     <div class="modules-grid" id="modulesGrid"></div>
                 </div>
             </div>
@@ -502,32 +540,10 @@
     <!-- Edit Child Modal -->
     <div id="editChildModal" class="modal-overlay hidden">
         <div class="modal">
-            <h2 class="modal-title" id="editChildModalTitle">Edit Child Profile</h2>
-            <div id="editModalError" class="error-message hidden"></div>
-            <form id="editChildForm">
-                <div class="form-group">
-                    <label class="form-label">Child's Name</label>
-                    <input type="text" id="editChildName" class="form-input" placeholder="Enter name" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Profile Picture</label>
-                    <p class="progress-label" style="margin-bottom: 12px; font-size: 12px;">Choose an emoji to represent this child</p>
-                    <div class="avatar-picker" id="avatarPicker"></div>
-                    <input type="hidden" id="editChildAvatar">
-                </div>
-                <div class="form-group">
-                    <button type="button" class="btn-secondary" id="forgetPasswordBtn" style="width: 100%;">🔑 Forget Password</button>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn-secondary" id="cancelEditChildButton">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                </div>
-                <div style="text-align: center; margin-top: 16px;">
-                    <button type="button" id="removeChildBtn" class="btn-remove-child">🗑️ Remove Child</button>
-                </div>
-            </form>
+            <!-- Content injected by JS -->
         </div>
     </div>
+
 
     <!-- Child Password Modal -->
     <div id="childPasswordModal" class="modal-overlay hidden">

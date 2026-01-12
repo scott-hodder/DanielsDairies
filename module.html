@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Loading Module...</title>
   
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/images/logos/DanielsDiariesFavicon.png">
+  <link rel="apple-touch-icon" href="/images/logos/DanielsDiariesFavicon.png">
+  
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -287,13 +291,21 @@
     }
     
     // =========================================
-    // MODULE FUNCTIONS
+    // MODULE FUNCTIONS (Database-backed)
+    // These MUST be set on window BEFORE module scripts run
     // =========================================
+    
+    // Initialize module and load child data
     window.initializeModule = async function(workbookId) {
+      console.log('🔌 initializeModule called (DB version)');
       await ResponseTracker.loadFromDB();
-      if (!_state.childId) return null;
+      if (!_state.childId) {
+        console.warn('No childId - running in preview mode');
+        return null;
+      }
       try {
         _state.currentChild = await _getChild(_state.childId);
+        console.log('✅ Child loaded:', _state.currentChild?.name);
         return _state.currentChild;
       } catch (e) {
         console.error('initializeModule error:', e);
@@ -301,49 +313,240 @@
       }
     };
     
+    // Load stars from database
     window.loadStarsFromDB = async function() {
-      if (!_state.childId) return 0;
+      console.log('🔌 loadStarsFromDB called (DB version)');
+      if (!_state.childId) {
+        console.warn('No childId - returning 0 stars');
+        return 0;
+      }
       try {
         _state.currentChild = await _getChild(_state.childId);
-        return _state.currentChild?.stars || 0;
-      } catch { return 0; }
+        const stars = _state.currentChild?.stars || 0;
+        console.log('✅ Stars loaded from DB:', stars);
+        return stars;
+      } catch (e) {
+        console.error('loadStarsFromDB error:', e);
+        return 0;
+      }
     };
     
+    // Save stars to database
     window.saveStarsToDB = async function(totalStars) {
-      if (_state.childId) await _updateStars(_state.childId, totalStars);
+      console.log('🔌 saveStarsToDB called (DB version) - saving:', totalStars);
+      if (!_state.childId) {
+        console.warn('No childId - cannot save stars');
+        return;
+      }
+      try {
+        await _updateStars(_state.childId, totalStars);
+        console.log('✅ Stars saved to DB:', totalStars);
+      } catch (e) {
+        console.error('saveStarsToDB error:', e);
+      }
     };
     
-    window.awardSingleStar = async function() {
-      if (!_state.childId) return 0;
-      const child = await _getChild(_state.childId);
-      const updated = await _updateStars(_state.childId, (child.stars || 0) + 1);
-      _state.currentChild = updated;
-      return updated.stars;
+    // Award a single star and return new total
+    window.awardSingleStar = async function(currentStars) {
+      console.log('🔌 awardSingleStar called (DB version) - current:', currentStars);
+      if (!_state.childId) {
+        console.warn('No childId - incrementing locally only');
+        return (currentStars || 0) + 1;
+      }
+      try {
+        // Always fetch fresh from DB to avoid race conditions
+        const child = await _getChild(_state.childId);
+        const newStars = (child.stars || 0) + 1;
+        const updated = await _updateStars(_state.childId, newStars);
+        _state.currentChild = updated;
+        console.log('✅ Star awarded, new total:', updated.stars);
+        return updated.stars;
+      } catch (e) {
+        console.error('awardSingleStar error:', e);
+        return (currentStars || 0) + 1;
+      }
     };
     
-    window.getChildName = () => _state.currentChild?.name || '';
-    window.getChildId = () => _state.childId;
+    // Get child's display name
+    window.getChildName = function() {
+      return _state.currentChild?.name || '';
+    };
     
-    window.resolveChildDisplayName = function(opts = {}) {
+    // Get child ID
+    window.getChildId = function() {
+      return _state.childId;
+    };
+    
+    // Resolve child display name with fallbacks
+    window.resolveChildDisplayName = async function(opts = {}) {
+      console.log('🔌 resolveChildDisplayName called (DB version)');
+      // If we have a preferred name passed in, use it
       if (opts?.preferredName?.trim()) return opts.preferredName.trim();
-      if (_state.currentChild?.name?.trim()) return _state.currentChild.name.trim();
-      try { const s = localStorage.getItem('moduleChildName'); if (s?.trim()) return s.trim(); } catch {}
+      
+      // If we already have the child loaded, use their name
+      if (_state.currentChild?.name?.trim()) {
+        console.log('✅ Using loaded child name:', _state.currentChild.name);
+        return _state.currentChild.name.trim();
+      }
+      
+      // Try to load the child if we have an ID
+      if (_state.childId && !_state.currentChild) {
+        try {
+          _state.currentChild = await _getChild(_state.childId);
+          if (_state.currentChild?.name?.trim()) {
+            console.log('✅ Loaded child name from DB:', _state.currentChild.name);
+            return _state.currentChild.name.trim();
+          }
+        } catch (e) {
+          console.warn('Could not load child:', e);
+        }
+      }
+      
+      // Check localStorage as last resort
+      try {
+        const s = localStorage.getItem('moduleChildName');
+        if (s?.trim()) return s.trim();
+      } catch {}
+      
       return opts?.fallback || 'Friend';
     };
     
+    // Mark module as completed in database
     window.completeModuleDB = async function(modCode) {
-      if (!_state.childId) throw new Error('No child ID');
-      const { data: mod } = await supabase.from('modules').select('id').eq('code', modCode).single();
-      if (!mod) throw new Error('Module not found');
-      await supabase.from('child_module_progress').upsert({
-        child_id: _state.childId,
-        module_id: mod.id,
-        completed: true,
-        completed_at: new Date().toISOString()
-      }, { onConflict: 'child_id,module_id' });
-      return true;
+      console.log('🔌 completeModuleDB called (DB version) - code:', modCode);
+      if (!_state.childId) {
+        console.warn('No childId - cannot mark complete');
+        throw new Error('No child ID');
+      }
+      
+      try {
+        const { data: mod } = await supabase.from('modules').select('id').eq('code', modCode).single();
+        if (!mod) throw new Error('Module not found');
+        
+        await supabase.from('child_modules').upsert({
+          child_id: _state.childId,
+          module_id: mod.id,
+          is_completed: true,
+          completed_at: new Date().toISOString()
+        }, { onConflict: 'child_id,module_id' });
+        
+        console.log('✅ Module marked complete in DB');
+        return true;
+      } catch (e) {
+        console.error('completeModuleDB error:', e);
+        throw e;
+      }
     };
     
+    // Module completion handling
+    let moduleCompletionHandled = false;
+
+    function handleModuleCompletion() {
+      // Prevent multiple completions
+      if (moduleCompletionHandled) {
+        console.log('[ModuleHeader] Module completion already handled, skipping...');
+        return;
+      }
+      moduleCompletionHandled = true;
+
+      console.log('[ModuleHeader] Handling module completion...');
+
+      // Get module parameters from URL
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        const moduleId = params.get('moduleId');
+        
+        console.log(`[ModuleHeader] URL params - childId: ${childId}, moduleId: ${moduleId}`);
+        
+        if (childId && moduleId) {
+          // Mark module as completed
+          completeModule(childId, moduleId);
+        } else {
+          console.error('[ModuleHeader] Missing childId or moduleId in URL');
+        }
+      } catch (error) {
+        console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+      }
+    }
+
+    async function completeModule(childId, moduleId) {
+      try {
+        // Import the database function (dynamically to avoid circular dependencies)
+        const { updateChildModuleStatus } = await import('./src/database.js');
+        
+        // Update module status to completed
+        await updateChildModuleStatus(childId, moduleId, 'completed');
+        
+        // Show completion celebration
+        showCompletionCelebration();
+        
+        console.log('[ModuleHeader] Module completed successfully');
+      } catch (error) {
+        console.error('[ModuleHeader] Error completing module:', error);
+      }
+    }
+
+    function showCompletionCelebration() {
+      // Create celebration modal
+      const modal = document.createElement('div');
+      modal.className = 'module-completion-modal';
+      modal.innerHTML = `
+        <div class="module-completion-content">
+          <div class="completion-emoji">🎉</div>
+          <h2 class="completion-title">Module Complete!</h2>
+          <p class="completion-message">Congratulations! You've finished this module and learned valuable emotional skills.</p>
+          <div class="completion-confetti" id="completionConfetti"></div>
+          <button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Generate confetti
+      generateCompletionConfetti();
+      
+      // Auto-close after 5 seconds
+      setTimeout(() => {
+        closeCompletionModal();
+      }, 5000);
+    }
+
+    function generateCompletionConfetti() {
+      const container = document.getElementById('completionConfetti');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const pieceCount = 40;
+      
+      for (let i = 0; i < pieceCount; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'completion-confetti-piece';
+        
+        const randomX = Math.random() * 300 - 150;
+        const randomDelay = Math.random() * 0.3;
+        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.top = Math.random() * 50 + '%';
+        piece.style.setProperty('--tx', randomX + 'px');
+        piece.style.animationDelay = randomDelay + 's';
+        piece.style.backgroundColor = randomColor;
+        
+        container.appendChild(piece);
+      }
+    }
+
+    // Make close function globally accessible
+    window.closeCompletionModal = function() {
+      const modal = document.querySelector('.module-completion-modal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+
+    // Module header initialization
     window.initModuleHeader = function(config = {}) {
       const { onNext, onPrev, onPrint, initialPage = { current: 1, total: 1 } } = config;
       let page = initialPage.current, total = initialPage.total, stars = 0;
@@ -378,7 +581,19 @@
       }
       render();
       return {
-        updatePage(c, t) { page = c; total = t; render(); },
+        updatePage(c, t) { 
+          page = c; 
+          total = t; 
+          render(); 
+          
+          // Check if user has reached the last page
+          console.log(`[ModuleHeader] Page update: ${page}/${total}`);
+          
+          if (page === total && total > 1) {
+            console.log(`[ModuleHeader] Last page detected! Triggering completion...`);
+            handleModuleCompletion();
+          }
+        },
         updateStars(s) { stars = s; const el = document.getElementById('mh-stars'); if (el) el.textContent = s; }
       };
     };
@@ -480,7 +695,74 @@
       });
     };
     
-    console.log('✅ Module functions ready');
+    console.log('✅ Module DB functions registered on window');
+    
+    // =========================================
+    // STRIP STUB FUNCTIONS FROM GENERATED CODE
+    // =========================================
+    function stripStubFunctions(code) {
+      // Remove the stub function definitions that the generated module includes
+      // These use localStorage and would override our database functions
+      
+      const stubPatterns = [
+        // Remove async function initializeModule() { ... }
+        /async\s+function\s+initializeModule\s*\([^)]*\)\s*\{[^}]*\}/g,
+        
+        // Remove async function loadStarsFromDB() { ... }
+        /async\s+function\s+loadStarsFromDB\s*\([^)]*\)\s*\{[^}]*\}/g,
+        
+        // Remove async function saveStarsToDB(stars) { ... }
+        /async\s+function\s+saveStarsToDB\s*\([^)]*\)\s*\{[^}]*\}/g,
+        
+        // Remove async function awardSingleStar(currentStars) { ... }
+        /async\s+function\s+awardSingleStar\s*\([^)]*\)\s*\{[^}]*\}/g,
+        
+        // Remove async function resolveChildDisplayName() { ... }
+        /async\s+function\s+resolveChildDisplayName\s*\([^)]*\)\s*\{[^}]*\}/g,
+        
+        // Remove async function getChildId() { ... }
+        /async\s+function\s+getChildId\s*\([^)]*\)\s*\{[^}]*\}/g,
+        
+        // Remove async function completeModuleDB() { ... }
+        /async\s+function\s+completeModuleDB\s*\([^)]*\)\s*\{[^}]*\}/g,
+      ];
+      
+      let strippedCode = code;
+      stubPatterns.forEach(pattern => {
+        strippedCode = strippedCode.replace(pattern, '// [stub removed - using DB version]');
+      });
+      
+      // Also handle the multi-line versions with more complex bodies
+      // Match function declarations that span multiple lines
+      const multiLinePatterns = [
+        // initializeModule with return true
+        /async\s+function\s+initializeModule\s*\(\)\s*\{[\s\S]*?return\s+true;[\s\S]*?\n\s*\}/g,
+        
+        // loadStarsFromDB with localStorage
+        /async\s+function\s+loadStarsFromDB\s*\(\)\s*\{[\s\S]*?localStorage[\s\S]*?\n\s*\}/g,
+        
+        // saveStarsToDB with localStorage  
+        /async\s+function\s+saveStarsToDB\s*\([\w]*\)\s*\{[\s\S]*?localStorage[\s\S]*?\n\s*\}/g,
+        
+        // awardSingleStar with saveStarsToDB call
+        /async\s+function\s+awardSingleStar\s*\([\w]*\)\s*\{[\s\S]*?saveStarsToDB[\s\S]*?\n\s*\}/g,
+        
+        // resolveChildDisplayName with URLSearchParams
+        /async\s+function\s+resolveChildDisplayName\s*\(\)\s*\{[\s\S]*?URLSearchParams[\s\S]*?\n\s*\}/g,
+        
+        // getChildId with URLSearchParams
+        /async\s+function\s+getChildId\s*\(\)\s*\{[\s\S]*?URLSearchParams[\s\S]*?\n\s*\}/g,
+        
+        // completeModuleDB with localStorage
+        /async\s+function\s+completeModuleDB\s*\(\)\s*\{[\s\S]*?localStorage[\s\S]*?\n\s*\}/g,
+      ];
+      
+      multiLinePatterns.forEach(pattern => {
+        strippedCode = strippedCode.replace(pattern, '// [stub removed - using DB version]');
+      });
+      
+      return strippedCode;
+    }
     
     // =========================================
     // LOAD MODULE
@@ -544,37 +826,40 @@
         div.innerHTML = doc.body.innerHTML;
         while (div.firstChild) document.body.appendChild(div.firstChild);
         
-        // Execute scripts with tracking injection
+        // Execute scripts with tracking injection AND stub removal
         if (scripts.length) {
           let code = scripts.join('\n\n');
+          
+          // Remove import statements
           code = code.replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]*['"];?\s*$/gm, '');
           code = code.replace(/^\s*import\s+['"][^'"]*['"];?\s*$/gm, '');
+          
+          // *** KEY FIX: Strip the stub functions that use localStorage ***
+          code = stripStubFunctions(code);
+          console.log('✅ Stripped stub functions from generated module');
           
           // Inject tracking into renderPage
           code = code.replace(
             /function\s+renderPage\s*\(\s*\)\s*\{/,
-            `function renderPage() {
-              setTimeout(() => {
-                if (typeof currentPage !== 'undefined') {
-                  enhancePageTracking(currentPage);
-                  restorePageResponses(currentPage);
-                }
-              }, 50);`
+            'function renderPage() { setTimeout(() => { if (typeof currentPage !== "undefined") { enhancePageTracking(currentPage); restorePageResponses(currentPage); } }, 50);'
           );
           
-          const wrapped = `(async function(){
-            const _ael = document.addEventListener.bind(document);
-            document.addEventListener = function(t,l,o){ t==='DOMContentLoaded' ? setTimeout(l,0) : _ael(t,l,o); };
-            try { ${code} } catch(e) { console.error('Script error:', e); }
-            document.addEventListener = _ael;
-          })();`;
+          // Build the wrapper code safely without template literal interpolation
+          const wrapperStart = '(async function(){ const _ael = document.addEventListener.bind(document); document.addEventListener = function(t,l,o){ t==="DOMContentLoaded" ? setTimeout(l,0) : _ael(t,l,o); }; try {';
+          const wrapperEnd = '} catch(e) { console.error("Script error:", e); } document.addEventListener = _ael; })();';
+          const fullCode = wrapperStart + '\n' + code + '\n' + wrapperEnd;
           
+          // Use Blob URL to avoid any escaping issues
+          const blob = new Blob([fullCode], { type: 'application/javascript' });
+          const scriptUrl = URL.createObjectURL(blob);
           const el = document.createElement('script');
-          el.textContent = wrapped;
+          el.src = scriptUrl;
+          el.onload = () => URL.revokeObjectURL(scriptUrl);
+          el.onerror = (e) => console.error('Script load error:', e);
           document.body.appendChild(el);
         }
         
-        console.log('✅ Module loaded');
+        console.log('✅ Module loaded with DB functions active');
       } catch (e) {
         console.error('Load error:', e);
         showError('Load Failed', e.message);
