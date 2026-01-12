@@ -2545,6 +2545,111 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       return true;
     }
     
+    // Module completion handling
+    let moduleCompletionHandled = false;
+
+    function handleModuleCompletion() {
+      // Prevent multiple completions
+      if (moduleCompletionHandled) {
+        console.log('[ModuleHeader] Module completion already handled, skipping...');
+        return;
+      }
+      moduleCompletionHandled = true;
+
+      console.log('[ModuleHeader] Handling module completion...');
+
+      // Get module parameters from URL
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        const moduleId = params.get('moduleId');
+        
+        console.log(\`[ModuleHeader] URL params - childId: \$\{childId}, moduleId: \$\{moduleId}\`);
+        
+        if (childId && moduleId) {
+          // Mark module as completed
+          completeModule(childId, moduleId);
+        } else {
+          console.error('[ModuleHeader] Missing childId or moduleId in URL');
+        }
+      } catch (error) {
+        console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+      }
+    }
+
+    async function completeModule(childId, moduleId) {
+      try {
+        // Use the completeModuleDB function for generated modules
+        await completeModuleDB();
+        
+        // Show completion celebration
+        showCompletionCelebration();
+        
+        console.log('[ModuleHeader] Module completed successfully');
+      } catch (error) {
+        console.error('[ModuleHeader] Error completing module:', error);
+      }
+    }
+
+    function showCompletionCelebration() {
+      // Create celebration modal
+      const modal = document.createElement('div');
+      modal.className = 'module-completion-modal';
+      modal.innerHTML = `
+        <div class="module-completion-content">
+          <div class="completion-emoji">🎉</div>
+          <h2 class="completion-title">Module Complete!</h2>
+          <p class="completion-message">Congratulations! You've finished this module and learned valuable emotional skills.</p>
+          <div class="completion-confetti" id="completionConfetti"></div>
+          <button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Generate confetti
+      generateCompletionConfetti();
+      
+      // Auto-close after 5 seconds
+      setTimeout(() => {
+        closeCompletionModal();
+      }, 5000);
+    }
+
+    function generateCompletionConfetti() {
+      const container = document.getElementById('completionConfetti');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const pieceCount = 40;
+      
+      for (let i = 0; i < pieceCount; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'completion-confetti-piece';
+        
+        const randomX = Math.random() * 300 - 150;
+        const randomDelay = Math.random() * 0.3;
+        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.top = Math.random() * 50 + '%';
+        piece.style.setProperty('--tx', randomX + 'px');
+        piece.style.animationDelay = randomDelay + 's';
+        piece.style.backgroundColor = randomColor;
+        
+        container.appendChild(piece);
+      }
+    }
+
+    // Make close function globally accessible
+    window.closeCompletionModal = function() {
+      const modal = document.querySelector('.module-completion-modal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+    
     // Module header functions
     function initModuleHeader(options = {}) {
       const {
@@ -3971,7 +4076,10 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
         </div>`;
       break;
       
-    case "true-false":
+    case "true-false": {
+      // Check if this has a correct answer
+      const hasCorrectAnswer = typeof lesson.correctAnswerIndex === 'number';
+      const correctIdx = lesson.correctAnswerIndex ?? 0; // Default to "I Agree" if not specified
       interactionHtml = `
         <div class="interactive-group">
           <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
@@ -3980,17 +4088,23 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
           <div class="flex gap-4 justify-center">
             <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
                     style="border-color: var(--secondary); color: var(--dark);"
-                    onclick="this.classList.add('option-selected'); this.nextElementSibling.classList.remove('option-selected', 'option-incorrect'); saveFormData('tf_${starIndex}', 'agree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                    data-correct="${hasCorrectAnswer ? (0 === correctIdx ? 'true' : 'false') : 'opinion'}"
+                    data-index="0"
+                    onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
               I Agree
             </button>
             <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
                     style="border-color: var(--accent); color: var(--dark);"
-                    onclick="this.classList.add('option-incorrect'); this.previousElementSibling.classList.remove('option-selected', 'option-incorrect'); saveFormData('tf_${starIndex}', 'disagree'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                    data-correct="${hasCorrectAnswer ? (1 === correctIdx ? 'true' : 'false') : 'opinion'}"
+                    data-index="1"
+                    onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
               I Disagree
             </button>
           </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
         </div>`;
       break;
+    }
   }
 
   return `
