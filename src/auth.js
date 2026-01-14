@@ -34,6 +34,24 @@ export async function signUp(email, password, metadata = {}) {
     throw error
   }
   
+  // Create parent profile after successful signup
+  if (data.user) {
+    try {
+      const { error: profileError } = await supabase.rpc('create_parent_profile', {
+        user_id: data.user.id,
+        user_email: email
+      })
+      
+      if (profileError) {
+        console.error('Error creating parent profile:', profileError)
+        // Don't throw - profile creation failure shouldn't block signup
+      }
+    } catch (err) {
+      console.error('Error calling create_parent_profile:', err)
+      // Don't throw - profile creation failure shouldn't block signup
+    }
+  }
+  
   return data
 }
 

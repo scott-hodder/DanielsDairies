@@ -109,25 +109,383 @@
   height: 75px;
 }
 
+/* Mobile hamburger menu button */
+.module-header__hamburger {
+  display: none;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--module-header-text, #1e3a5f);
+}
+
+/* Mobile menu overlay */
+.module-header__mobile-menu {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.module-header__mobile-menu.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.module-header__mobile-menu-content {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--module-header-bg, rgba(255, 251, 235, 0.95));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--module-header-border, rgba(45, 64, 89, 0.1));
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  min-width: 200px;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+
+.module-header__mobile-menu.active .module-header__mobile-menu-content {
+  transform: translateX(0);
+}
+
+.module-header__mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.module-header__mobile-menu-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--module-header-text, #1e3a5f);
+  padding: 4px;
+}
+
+.module-header__mobile-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.module-header__mobile-menu-actions .module-header__btn {
+  width: 100%;
+  justify-content: center;
+}
+
 @media (max-width: 768px) {
+  .module-header {
+    padding: 8px 12px;
+  }
+  
   .module-header__inner {
-    flex-direction: column;
-    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
   }
-
-  .module-header__nav,
+  
+  .module-header__nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+  }
+  
   .module-header__actions {
-    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
   }
-
-  .module-header__btn,
+  
+  .module-header__btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  
+  .module-header__btn--nav {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-width: auto;
+    white-space: nowrap;
+  }
+  
   .module-header__star {
-    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    gap: 5px;
+  }
+  
+  .module-header__star .star-icon {
+    font-size: 16px;
+  }
+  
+  .module-header__print,
+  .module-header__parent {
+    display: none;
+  }
+  
+  .module-header__home {
+    display: flex !important;
+    align-items: center;
     justify-content: center;
+    padding: 8px 12px;
+    font-size: 13px;
+    min-width: auto;
+    gap: 5px;
+  }
+  
+  .module-header__home .btn-text,
+  .module-header__home span.btn-text,
+  .module-header .module-header__home .btn-text {
+    display: none !important;
+  }
+  
+  .module-header__hamburger {
+    display: none;
+  }
+  
+  .module-header__mobile-menu {
+    display: none !important;
+  }
+  
+  .module-header__page {
+    font-size: 12px;
+    white-space: nowrap;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.9);
+  }
+  
+  .module-header-spacer {
+    height: 54px;
   }
 }
 
-@keyframes shimmer {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
+/* Extra small screens - even more compact */
+@media (max-width: 420px) {
+  .module-header {
+    padding: 6px 8px;
+  }
+  
+  .module-header__inner {
+    gap: 6px;
+  }
+  
+  .module-header__nav {
+    gap: 4px;
+  }
+  
+  .module-header__actions {
+    gap: 4px;
+  }
+  
+  .module-header__btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .module-header__btn--nav {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .module-header__star {
+    padding: 6px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+  
+  .module-header__star .star-icon {
+    font-size: 14px;
+  }
+  
+  .module-header__page {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+  
+  .module-header__home {
+    display: flex !important;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .module-header-spacer {
+    height: 48px;
+  }
+}
+
+/* Module Completion Celebration Modal */
+.module-completion-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+.module-completion-content {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 24px;
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #e9ecef;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.completion-emoji {
+  font-size: 80px;
+  margin-bottom: 16px;
+  display: inline-block;
+  animation: bounce 0.6s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.completion-title {
+  font-size: 48px;
+  color: #405878;
+  margin-bottom: 12px;
+  font-weight: 700;
+  font-family: 'League Spartan', sans-serif;
+}
+
+.completion-message {
+  font-size: 20px;
+  color: #6b7c8f;
+  margin-bottom: 32px;
+  font-weight: 500;
+  line-height: 1.5;
+  font-family: 'League Spartan', sans-serif;
+}
+
+.completion-confetti {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.completion-confetti-piece {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  animation: confettiFall 3s ease-out forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(-10px) translateX(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(400px) translateX(var(--tx, 0)) rotate(720deg);
+  }
+}
+
+.completion-btn {
+  background: linear-gradient(135deg, #405878 0%, #4c6c96 100%);
+  color: white;
+  border: none;
+  padding: 16px 40px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(64, 88, 120, 0.3);
+  font-family: 'League Spartan', sans-serif;
+  position: relative;
+  z-index: 1;
+}
+
+.completion-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(64, 88, 120, 0.4);
+}
+
+.completion-btn:active {
+  transform: translateY(-1px);
+}
+
+/* Mobile responsiveness for completion modal */
+@media (max-width: 768px) {
+  .module-completion-content {
+    padding: 32px 24px;
+    margin: 20px;
+  }
+  
+  .completion-emoji {
+    font-size: 60px;
+  }
+  
+  .completion-title {
+    font-size: 36px;
+  }
+  
+  .completion-message {
+    font-size: 18px;
+  }
+  
+  .completion-btn {
+    padding: 14px 32px;
+    font-size: 16px;
+  }
 }

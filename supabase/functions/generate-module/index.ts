@@ -1,15 +1,20 @@
-/**
- * AI Module Generator v3.0
+﻿/**
+ * AI Module Generator v4.0
  * ==========================
  * 
- * FIXES FROM v2:
- * - Fixed template literal escaping (${getChildName()} now works)
- * - Variable page count (18-24 pages, randomly varied)
- * - Proper CSS stylesheet references
+ * ENHANCEMENTS FROM v3:
+ * - 10+ new interactive activity types for variety
+ * - Enhanced "interactive lesson" pages with embedded polls/choices
+ * - Smarter activity category distribution (core, feelings, creative, cognitive)
+ * - Less text-heavy pages with more engagement
+ * - Fill-in stories, coping cards, gratitude jars, sorting activities
+ * - Thought bubbles, emoji check-ins, word scrambles, agree/disagree
+ * - Comic strips, affirmation builders
  * 
  * ARCHITECTURE:
  * - Claude generates content (text only)
  * - Code controls structure (guaranteed minimum 18 pages)
+ * - Activities selected from 4 categories for diversity
  * - Deterministic HTML rendering
  */
 
@@ -54,12 +59,36 @@ type PageType =
   | "welcome"
   | "chapter-divider"
   | "lesson"
+  | "interactive-lesson"
   | "checklist"
   | "reflection"
   | "quiz"
   | "drawing"
   | "breathing"
   | "scenario"
+  | "feeling-thermometer"
+  | "body-map"
+  | "feeling-selector"
+  | "calm-den-builder"
+  | "action-plan"
+  | "warning-signs"
+  | "matching-activity"
+  | "fill-in-story"
+  | "coping-cards"
+  | "gratitude-jar"
+  | "sorting-activity"
+  | "thought-bubbles"
+  | "emoji-check-in"
+  | "word-scramble"
+  | "agree-disagree"
+  | "comic-strip"
+  | "affirmation-builder"
+  // v5 NEW INTERACTIVE CHALLENGE TYPES
+  | "weather-controller"
+  | "power-up-collector"
+  | "emotion-maze"
+  | "strength-shield"
+  | "feeling-volcano"
   | "summary"
   | "completion";
 
@@ -76,6 +105,14 @@ interface ModuleMetadata {
   theme: string;
   characterName: string;
   characterEmoji: string;
+  characterType?: string;
+}
+
+// Series data from the database
+interface SeriesInfo {
+  label: string;
+  character_type: string;
+  emoji: string;
 }
 
 interface LessonContent {
@@ -151,17 +188,329 @@ interface CompletionContent {
   nextStepsText: string;
 }
 
+interface FeelingThermometerContent {
+  heading: string;
+  instructions: string;
+  lowLabel: string;
+  highLabel: string;
+  followUpQuestion: string;
+}
+
+interface BodyMapContent {
+  heading: string;
+  instructions: string;
+  bodyParts: Array<{
+    name: string;
+    emoji: string;
+    description: string;
+  }>;
+}
+
+interface FeelingSelectorContent {
+  heading: string;
+  instructions: string;
+  feelings: Array<{
+    name: string;
+    emoji: string;
+    color: string;
+  }>;
+  followUpQuestion: string;
+}
+
+interface CalmDenBuilderContent {
+  heading: string;
+  storyText: string;
+  instructions: string;
+  items: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+  }>;
+  locationQuestion: string;
+}
+
+interface ActionPlanContent {
+  heading: string;
+  instructions: string;
+  steps: Array<{
+    stepNumber: number;
+    title: string;
+    prompt: string;
+    placeholder: string;
+  }>;
+}
+
+interface WarningSingsContent {
+  heading: string;
+  instructions: string;
+  categories: Array<{
+    category: string;
+    emoji: string;
+    examples: string[];
+  }>;
+}
+
+interface MatchingActivityContent {
+  heading: string;
+  instructions: string;
+  pairs: Array<{
+    situation: string;
+    feeling: string;
+    emoji: string;
+  }>;
+}
+
+// NEW: Interactive lesson with embedded mini-activities
+interface InteractiveLessonContent {
+  heading: string;
+  introText: string;
+  interactionType: "poll" | "circle-one" | "fill-blank" | "rate-scale" | "true-false";
+  interactionPrompt: string;
+  interactionOptions?: string[];
+  correctAnswerIndex?: number; // For poll/circle-one questions with a correct answer
+  followUpText: string;
+  mascotComment: string;
+}
+
+interface FillInStoryContent {
+  heading: string;
+  instructions: string;
+  storyTemplate: string;
+  blanks: Array<{
+    id: string;
+    hint: string;
+    category: string;
+  }>;
+  reflection: string;
+}
+
+interface CopingCardsContent {
+  heading: string;
+  instructions: string;
+  categories: Array<{
+    name: string;
+    emoji: string;
+    color: string;
+    strategies: string[];
+  }>;
+  personalCardPrompt: string;
+}
+
+interface GratitudeJarContent {
+  heading: string;
+  introText: string;
+  promptCategories: Array<{
+    category: string;
+    emoji: string;
+    prompt: string;
+  }>;
+  encouragement: string;
+}
+
+interface SortingActivityContent {
+  heading: string;
+  instructions: string;
+  categories: Array<{
+    name: string;
+    emoji: string;
+    color: string;
+  }>;
+  items: Array<{
+    text: string;
+    correctCategory: string;
+    explanation: string;
+  }>;
+}
+
+interface ThoughtBubblesContent {
+  heading: string;
+  scenario: string;
+  characterEmoji: string;
+  unhelpfulThought: string;
+  helpfulPrompt: string;
+  exampleHelpful: string;
+  reflection: string;
+}
+
+interface EmojiCheckInContent {
+  heading: string;
+  instructions: string;
+  timePoints: Array<{
+    label: string;
+    emoji: string;
+  }>;
+  moodOptions: Array<{
+    emoji: string;
+    label: string;
+    color: string;
+  }>;
+  patternQuestion: string;
+}
+
+interface WordScrambleContent {
+  heading: string;
+  instructions: string;
+  words: Array<{
+    scrambled: string;
+    answer: string;
+    hint: string;
+    emoji: string;
+  }>;
+  completionMessage: string;
+}
+
+interface AgreeDisagreeContent {
+  heading: string;
+  instructions: string;
+  statements: Array<{
+    statement: string;
+    insight: string;
+  }>;
+  reflection: string;
+}
+
+interface ComicStripContent {
+  heading: string;
+  scenario: string;
+  panels: Array<{
+    panelNumber: number;
+    prompt: string;
+    placeholder: string;
+  }>;
+  sharePrompt: string;
+}
+
+interface AffirmationBuilderContent {
+  heading: string;
+  instructions: string;
+  starters: string[];
+  middles: string[];
+  endings: string[];
+  decorationEmojis: string[];
+  savePrompt: string;
+}
+
+// ====================
+// v5 NEW CHALLENGE INTERFACES
+// ====================
+
+interface WeatherControllerContent {
+  heading: string;
+  instructions: string;
+  weatherType: "storm" | "rain" | "fog" | "heat";
+  calmingActions: Array<{
+    id: string;
+    label: string;
+    emoji: string;
+    points: number;
+    feedbackText: string;
+  }>;
+  winText: string;
+  encouragement: string;
+}
+
+interface PowerUpCollectorContent {
+  heading: string;
+  instructions: string;
+  powerUps: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    description: string;
+    isPositive: boolean;
+  }>;
+  targetCount: number;
+  winText: string;
+  tipText: string;
+}
+
+interface EmotionMazeContent {
+  heading: string;
+  instructions: string;
+  startEmotion: { name: string; emoji: string };
+  goalEmotion: { name: string; emoji: string };
+  pathChoices: Array<{
+    step: number;
+    situation: string;
+    options: Array<{
+      text: string;
+      emoji: string;
+      isCorrect: boolean;
+      feedback: string;
+    }>;
+  }>;
+  completionMessage: string;
+}
+
+interface StrengthShieldContent {
+  heading: string;
+  instructions: string;
+  shieldSections: Array<{
+    id: string;
+    title: string;
+    emoji: string;
+    prompt: string;
+    placeholder: string;
+  }>;
+  decorations: string[];
+  completionMessage: string;
+}
+
+interface FeelingVolcanoContent {
+  heading: string;
+  instructions: string;
+  triggerScenario: string;
+  coolingActions: Array<{
+    id: string;
+    action: string;
+    emoji: string;
+    coolingPower: number;
+  }>;
+  levels: Array<{
+    level: number;
+    emoji: string;
+    label: string;
+    color: string;
+  }>;
+  safeMessage: string;
+}
+
 interface GeneratedContent {
   metadata: ModuleMetadata;
   welcome: { heading: string; paragraphs: string[] };
   chapters: ChapterDivider[];
   lessons: LessonContent[];
+  interactiveLessons: InteractiveLessonContent[];
   checklists: ChecklistContent[];
   reflections: ReflectionContent[];
   quizzes: QuizContent[];
   drawings: DrawingContent[];
   breathing: BreathingContent;
   scenarios: ScenarioContent[];
+  feelingThermometers: FeelingThermometerContent[];
+  bodyMaps: BodyMapContent[];
+  feelingSelectors: FeelingSelectorContent[];
+  calmDenBuilders: CalmDenBuilderContent[];
+  actionPlans: ActionPlanContent[];
+  warningSigns: WarningSingsContent[];
+  matchingActivities: MatchingActivityContent[];
+  // NEW
+  fillInStories: FillInStoryContent[];
+  copingCards: CopingCardsContent[];
+  gratitudeJars: GratitudeJarContent[];
+  sortingActivities: SortingActivityContent[];
+  thoughtBubbles: ThoughtBubblesContent[];
+  emojiCheckIns: EmojiCheckInContent[];
+  wordScrambles: WordScrambleContent[];
+  agreeDisagrees: AgreeDisagreeContent[];
+  comicStrips: ComicStripContent[];
+  affirmationBuilders: AffirmationBuilderContent[];
+  // v5 NEW CHALLENGE TYPES
+  weatherControllers: WeatherControllerContent[];
+  powerUpCollectors: PowerUpCollectorContent[];
+  emotionMazes: EmotionMazeContent[];
+  strengthShields: StrengthShieldContent[];
+  feelingVolcanoes: FeelingVolcanoContent[];
   summary: SummaryContent;
   completion: CompletionContent;
 }
@@ -220,56 +569,155 @@ function randomInt(min: number, max: number): number {
 // PAGE STRUCTURE GENERATOR
 // ====================
 
+// Helper to shuffle arrays
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 /**
  * Generate a variable page structure between MIN_PAGES and MAX_PAGES
- * Base structure (18 pages) + optional extra lessons/activities (up to 6 more)
+ * Activities are selected from 5 CATEGORIES for maximum diversity:
+ * - CORE: Classic activities (checklist, quiz, reflection, etc.)
+ * - FEELINGS: Emotional awareness activities 
+ * - CREATIVE: Artistic/building activities
+ * - COGNITIVE: Thinking/problem-solving activities
+ * - CHALLENGE: v5 interactive game-like challenges
  */
 function generatePageStructure(): PageTemplate[] {
   const targetPages = randomInt(MIN_PAGES, MAX_PAGES);
   
-  // Base structure - always included (18 pages minimum)
-  const baseStructure: PageTemplate[] = [
-    { type: "cover",           starReward: false },  // 0
-    { type: "welcome",         starReward: false },  // 1
-    { type: "chapter-divider", starReward: false },  // 2
-    { type: "lesson",          starReward: false },  // 3
-    { type: "lesson",          starReward: false },  // 4
-    { type: "checklist",       starReward: true  },  // 5
-    { type: "lesson",          starReward: false },  // 6
-    { type: "reflection",      starReward: true  },  // 7
-    { type: "lesson",          starReward: false },  // 8
-    { type: "chapter-divider", starReward: false },  // 9
-    { type: "lesson",          starReward: false },  // 10
-    { type: "quiz",            starReward: true  },  // 11
-    { type: "lesson",          starReward: false },  // 12
-    { type: "drawing",         starReward: true  },  // 13
-    { type: "breathing",       starReward: true  },  // 14
-    { type: "lesson",          starReward: false },  // 15
-    { type: "summary",         starReward: false },  // 16
-    { type: "completion",      starReward: false },  // 17
+  // CORE activities (classic, well-tested)
+  const coreActivities: PageTemplate[] = [
+    { type: "checklist",   starReward: true },
+    { type: "reflection",  starReward: true },
+    { type: "quiz",        starReward: true },
+    { type: "drawing",     starReward: true },
+    { type: "breathing",   starReward: true },
+    { type: "scenario",    starReward: true },
   ];
   
-  // Extra pages to add (randomly selected)
-  const extraOptions: PageTemplate[] = [
-    { type: "lesson",          starReward: false },
-    { type: "lesson",          starReward: false },
-    { type: "checklist",       starReward: true  },
-    { type: "reflection",      starReward: true  },
-    { type: "scenario",        starReward: true  },
-    { type: "quiz",            starReward: true  },
+  // FEELINGS-FOCUSED activities
+  const feelingsActivities: PageTemplate[] = [
+    { type: "feeling-thermometer", starReward: true },
+    { type: "body-map",            starReward: true },
+    { type: "feeling-selector",    starReward: true },
+    { type: "emoji-check-in",      starReward: true },
   ];
   
-  const extraCount = targetPages - baseStructure.length;
-  const structure = [...baseStructure];
+  // CREATIVE activities
+  const creativeActivities: PageTemplate[] = [
+    { type: "calm-den-builder",    starReward: true },
+    { type: "fill-in-story",       starReward: true },
+    { type: "comic-strip",         starReward: true },
+    { type: "affirmation-builder", starReward: true },
+    { type: "gratitude-jar",       starReward: true },
+  ];
   
-  if (extraCount > 0) {
-    // Insert extra pages before summary (index 16)
-    const insertPoint = structure.length - 2; // Before summary
-    const shuffled = [...extraOptions].sort(() => Math.random() - 0.5);
-    const extras = shuffled.slice(0, extraCount);
-    
-    structure.splice(insertPoint, 0, ...extras);
+  // COGNITIVE activities
+  const cognitiveActivities: PageTemplate[] = [
+    { type: "action-plan",         starReward: true },
+    { type: "warning-signs",       starReward: true },
+    { type: "matching-activity",   starReward: true },
+    { type: "sorting-activity",    starReward: true },
+    { type: "thought-bubbles",     starReward: true },
+    { type: "agree-disagree",      starReward: true },
+    { type: "word-scramble",       starReward: true },
+    { type: "coping-cards",        starReward: true },
+  ];
+  
+  // v5 NEW CHALLENGE activities (interactive games)
+  const challengeActivities: PageTemplate[] = [
+    { type: "weather-controller",  starReward: true },
+    { type: "power-up-collector",  starReward: true },
+    { type: "emotion-maze",        starReward: true },
+    { type: "strength-shield",     starReward: true },
+    { type: "feeling-volcano",     starReward: true },
+  ];
+  
+  // Select activities from each category for guaranteed diversity
+  const selectedActivities: PageTemplate[] = [];
+  
+  // Always include 2-3 core activities
+  const shuffledCore = shuffleArray(coreActivities);
+  selectedActivities.push(...shuffledCore.slice(0, randomInt(2, 3)));
+  
+  // Include 1-2 feelings activities  
+  const shuffledFeelings = shuffleArray(feelingsActivities);
+  selectedActivities.push(...shuffledFeelings.slice(0, randomInt(1, 2)));
+  
+  // Include 1-2 creative activities
+  const shuffledCreative = shuffleArray(creativeActivities);
+  selectedActivities.push(...shuffledCreative.slice(0, randomInt(1, 2)));
+  
+  // Include 1-2 cognitive activities
+  const shuffledCognitive = shuffleArray(cognitiveActivities);
+  selectedActivities.push(...shuffledCognitive.slice(0, randomInt(1, 2)));
+  
+  // v5: Always include 1-2 challenge activities for engagement
+  const shuffledChallenge = shuffleArray(challengeActivities);
+  selectedActivities.push(...shuffledChallenge.slice(0, randomInt(1, 2)));
+  
+  // Shuffle all selected activities for random placement
+  const activities = shuffleArray(selectedActivities);
+  
+  // Build structure with interactive lessons interspersed
+  const structure: PageTemplate[] = [
+    { type: "cover",           starReward: false },
+    { type: "welcome",         starReward: false },
+  ];
+  
+  // Chapter 1: Introduction - mix interactive lessons with activities
+  structure.push({ type: "chapter-divider", starReward: false });
+  structure.push({ type: "interactive-lesson", starReward: false }); // More engaging than plain lesson
+  structure.push({ type: "lesson", starReward: false });
+  if (activities.length > 0) structure.push(activities.shift()!);
+  structure.push({ type: "interactive-lesson", starReward: false });
+  if (activities.length > 0) structure.push(activities.shift()!);
+  
+  // Chapter 2: Deeper exploration
+  structure.push({ type: "chapter-divider", starReward: false });
+  structure.push({ type: "lesson", starReward: false });
+  if (activities.length > 0) structure.push(activities.shift()!);
+  structure.push({ type: "interactive-lesson", starReward: false });
+  if (activities.length > 0) structure.push(activities.shift()!);
+  structure.push({ type: "lesson", starReward: false });
+  
+  // Chapter 3 (if room)
+  if (targetPages >= 20) {
+    structure.push({ type: "chapter-divider", starReward: false });
+    structure.push({ type: "interactive-lesson", starReward: false });
   }
+  
+  // Add remaining activities with interactive lessons between
+  while (activities.length > 0) {
+    structure.push(activities.shift()!);
+    if (activities.length > 0 && structure.length < targetPages - 3) {
+      // Alternate between regular and interactive lessons
+      if (Math.random() > 0.4) {
+        structure.push({ type: "interactive-lesson", starReward: false });
+      } else {
+        structure.push({ type: "lesson", starReward: false });
+      }
+    }
+  }
+  
+  // Fill remaining slots - prefer interactive lessons for engagement
+  while (structure.length < targetPages - 2) {
+    if (Math.random() > 0.3) {
+      structure.push({ type: "interactive-lesson", starReward: false });
+    } else {
+      structure.push({ type: "lesson", starReward: false });
+    }
+  }
+  
+  // Always end with summary and completion
+  structure.push({ type: "summary", starReward: false });
+  structure.push({ type: "completion", starReward: false });
   
   return structure;
 }
@@ -339,40 +787,70 @@ Your content must be:
 - Engaging with a consistent character/mascot throughout
 - Interactive with activities that reinforce learning
 
-CRITICAL: Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.`;
+CRITICAL RULES:
+1. Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.
+2. If a specific character/mascot is mentioned (like "Daniel the Dog"), you MUST use EXACTLY that character name and type throughout.
+3. Never substitute a different animal or character name - if told to use "Daniel the Dog", every reference must be to "Daniel" and a dog, not a fox, bear, or any other animal.
+4. The mascot emoji must match the character type exactly.`;
 
 async function generateMetadata(
   apiKey: string,
-  contentBrief: string
+  contentBrief: string,
+  seriesInfo?: SeriesInfo | null
 ): Promise<ModuleMetadata> {
+  // Build full character name like "Daniel the Dog" if series info available
+  const fullCharacterName = seriesInfo 
+    ? `${seriesInfo.label} the ${seriesInfo.character_type.charAt(0).toUpperCase() + seriesInfo.character_type.slice(1)}`
+    : null;
+
+  // If we have series info, include it in the prompt to guide the AI
+  const seriesContext = seriesInfo 
+    ? `\n\nIMPORTANT - SERIES CHARACTER INFO:
+This module belongs to the "${seriesInfo.label}" series.
+The mascot is "${fullCharacterName}" - a friendly ${seriesInfo.character_type}.
+The mascot emoji MUST be: ${seriesInfo.emoji}
+The character name MUST be "${fullCharacterName}".
+Always refer to the mascot as "${fullCharacterName}" throughout the module.
+DO NOT use any other animal or emoji - only use ${seriesInfo.emoji} for the mascot.`
+    : "";
+
   const prompt = `Based on this content brief, create module metadata.
 
 CONTENT BRIEF:
-${contentBrief}
+${contentBrief}${seriesContext}
 
 Respond with ONLY this JSON structure:
 {
   "title": "Main module title (catchy, child-friendly)",
   "subtitle": "Brief tagline (10 words max)",
-  "series": "Series name if mentioned, otherwise 'custom'",
+  "series": "${seriesInfo?.label || 'custom'}",
   "targetAge": "Age range like '5-8' or '8-12'",
   "theme": "Core psychological theme (e.g., 'anxiety management', 'emotional regulation')",
-  "characterName": "Friendly mascot name (animal preferred)",
-  "characterEmoji": "Single emoji representing the mascot"
+  "characterName": "${fullCharacterName || 'Friendly mascot name (animal preferred)'}",
+  "characterEmoji": "${seriesInfo?.emoji || 'Single emoji representing the mascot'}"
 }`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<ModuleMetadata>(response);
   
+  // If we have series info, ALWAYS enforce the character type and emoji (override AI response)
+  if (seriesInfo && parsed) {
+    parsed.characterEmoji = seriesInfo.emoji;
+    parsed.characterName = fullCharacterName || seriesInfo.label;
+    parsed.characterType = seriesInfo.character_type;
+    parsed.series = seriesInfo.label;
+  }
+  
   if (!parsed || !parsed.title) {
     return {
       title: "My Feelings Adventure",
       subtitle: "Learning about emotions together",
-      series: "custom",
+      series: seriesInfo?.label || "custom",
       targetAge: "5-10",
       theme: "emotional awareness",
-      characterName: "Buddy",
-      characterEmoji: "🐕"
+      characterName: fullCharacterName || "Buddy",
+      characterEmoji: seriesInfo?.emoji || "🐕",
+      characterType: seriesInfo?.character_type
     };
   }
   
@@ -752,11 +1230,329 @@ Create exactly ${count} different scenarios.`;
   return scenarios.slice(0, count);
 }
 
+async function generateFeelingThermometers(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingThermometerContent[]> {
+  const prompt = `Create ${count} feeling thermometer activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "thermometers": [
+    {
+      "heading": "Activity title with thermometer emoji",
+      "instructions": "Instructions for using the feeling scale (1-2 sentences)",
+      "lowLabel": "Label for low end (e.g., 'Calm and peaceful')",
+      "highLabel": "Label for high end (e.g., 'Very big feelings')",
+      "followUpQuestion": "Question to ask after they rate their feeling"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ thermometers: FeelingThermometerContent[] }>(response);
+  
+  const thermometers = parsed?.thermometers || [];
+  while (thermometers.length < count) {
+    thermometers.push({
+      heading: "🌡️ My Feelings Thermometer",
+      instructions: "Move the slider to show how big your feelings are right now.",
+      lowLabel: "Calm and peaceful",
+      highLabel: "Very big feelings!",
+      followUpQuestion: "What helped you notice where your feelings are today?"
+    });
+  }
+  
+  return thermometers.slice(0, count);
+}
+
+async function generateBodyMaps(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<BodyMapContent[]> {
+  const prompt = `Create ${count} body map activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "bodyMaps": [
+    {
+      "heading": "Activity title with body emoji",
+      "instructions": "Instructions for exploring body sensations (1-2 sentences)",
+      "bodyParts": [
+        { "name": "Head", "emoji": "🧠 ", "description": "What happens here when you feel this emotion" },
+        { "name": "Chest", "emoji": "💗", "description": "What happens here" },
+        { "name": "Tummy", "emoji": "🦋", "description": "What happens here" },
+        { "name": "Hands", "emoji": "✋", "description": "What happens here" },
+        { "name": "Legs", "emoji": "🦵", "description": "What happens here" }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ bodyMaps: BodyMapContent[] }>(response);
+  
+  const bodyMaps = parsed?.bodyMaps || [];
+  while (bodyMaps.length < count) {
+    bodyMaps.push({
+      heading: "🫀 Where Do Feelings Live in My Body?",
+      instructions: "Tap on different parts of the body to see how feelings show up there!",
+      bodyParts: [
+        { name: "Head", emoji: "🧠 ", description: "Racing thoughts or foggy thinking" },
+        { name: "Chest", emoji: "💗", description: "Heart beating fast or tight feeling" },
+        { name: "Tummy", emoji: "🦋", description: "Butterflies or upset stomach" },
+        { name: "Hands", emoji: "✋", description: "Shaky or sweaty palms" },
+        { name: "Legs", emoji: "🦵", description: "Wobbly or wanting to run" }
+      ]
+    });
+  }
+  
+  return bodyMaps.slice(0, count);
+}
+
+async function generateFeelingSelectors(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingSelectorContent[]> {
+  const prompt = `Create ${count} feeling selector activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "selectors": [
+    {
+      "heading": "Activity title with emoji",
+      "instructions": "Instructions for selecting feelings (1-2 sentences)",
+      "feelings": [
+        { "name": "Happy", "emoji": "😊", "color": "#FFE8A3" },
+        { "name": "Sad", "emoji": "😢", "color": "#a8d8ea" },
+        { "name": "Angry", "emoji": "😀 ", "color": "#fecaca" },
+        { "name": "Scared", "emoji": "😨", "color": "#d4a5ff" },
+        { "name": "Calm", "emoji": "😌", "color": "#A8E6CF" },
+        { "name": "Excited", "emoji": "🤩", "color": "#F4A261" }
+      ],
+      "followUpQuestion": "Question after they select their feeling"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ selectors: FeelingSelectorContent[] }>(response);
+  
+  const selectors = parsed?.selectors || [];
+  while (selectors.length < count) {
+    selectors.push({
+      heading: "🎭 How Am I Feeling Right Now?",
+      instructions: "Tap on the feeling that matches how you feel right now. You can pick more than one!",
+      feelings: [
+        { name: "Happy", emoji: "😊", color: "#FFE8A3" },
+        { name: "Sad", emoji: "😢", color: "#a8d8ea" },
+        { name: "Angry", emoji: "😀 ", color: "#fecaca" },
+        { name: "Scared", emoji: "😨", color: "#d4a5ff" },
+        { name: "Calm", emoji: "😌", color: "#A8E6CF" },
+        { name: "Excited", emoji: "🤩", color: "#F4A261" }
+      ],
+      followUpQuestion: "What made you feel this way today?"
+    });
+  }
+  
+  return selectors.slice(0, count);
+}
+
+async function generateCalmDenBuilders(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<CalmDenBuilderContent[]> {
+  const prompt = `Create ${count} calm-down den builder activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "denBuilders": [
+    {
+      "heading": "Activity title with home emoji",
+      "storyText": "Short story about the mascot's calm space (2-3 sentences)",
+      "instructions": "Instructions for building their own calm space (1-2 sentences)",
+      "items": [
+        { "id": "blanket", "name": "Soft blanket", "emoji": "🧠¸" },
+        { "id": "pillow", "name": "Comfy pillow", "emoji": "🛏️" },
+        { "id": "music", "name": "Calm music", "emoji": "🎵" },
+        { "id": "book", "name": "Favorite book", "emoji": "📚" },
+        { "id": "toy", "name": "Special toy", "emoji": "🧠¸" },
+        { "id": "light", "name": "Dim lights", "emoji": "💡" }
+      ],
+      "locationQuestion": "Where will your calm-down space be?"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ denBuilders: CalmDenBuilderContent[] }>(response);
+  
+  const denBuilders = parsed?.denBuilders || [];
+  while (denBuilders.length < count) {
+    denBuilders.push({
+      heading: "🏠 Build Your Calm-Down Den",
+      storyText: `When ${metadata.characterName}'s feelings get too big, they go to their special calm-down space. It's cozy and safe, with all their favorite things to help them feel better.`,
+      instructions: "Tap on items to add them to YOUR calm-down den!",
+      items: [
+        { id: "blanket", name: "Soft blanket", emoji: "🧠£" },
+        { id: "pillow", name: "Comfy pillow", emoji: "🛏️" },
+        { id: "music", name: "Calm music", emoji: "🎵" },
+        { id: "book", name: "Favorite book", emoji: "📚" },
+        { id: "toy", name: "Special toy", emoji: "🧠¸" },
+        { id: "light", name: "Dim lights", emoji: "💡" }
+      ],
+      locationQuestion: "Where will your calm-down space be at home?"
+    });
+  }
+  
+  return denBuilders.slice(0, count);
+}
+
+async function generateActionPlans(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<ActionPlanContent[]> {
+  const prompt = `Create ${count} action plan activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "actionPlans": [
+    {
+      "heading": "Activity title with paw/step emoji",
+      "instructions": "Instructions for creating their plan (1-2 sentences)",
+      "steps": [
+        { "stepNumber": 1, "title": "NOTICE", "prompt": "What are my warning signs?", "placeholder": "e.g., tight fists, fast breathing..." },
+        { "stepNumber": 2, "title": "STOP", "prompt": "What will I say to myself?", "placeholder": "e.g., I need a break..." },
+        { "stepNumber": 3, "title": "CALM", "prompt": "What tool will I use?", "placeholder": "e.g., deep breathing, counting..." },
+        { "stepNumber": 4, "title": "HELP", "prompt": "Who can help me?", "placeholder": "e.g., Mum, Dad, teacher..." }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ actionPlans: ActionPlanContent[] }>(response);
+  
+  const actionPlans = parsed?.actionPlans || [];
+  while (actionPlans.length < count) {
+    actionPlans.push({
+      heading: "🐾 My Paw-Steps Plan",
+      instructions: "Fill in your personal plan for when feelings get big!",
+      steps: [
+        { stepNumber: 1, title: "NOTICE", prompt: "What are my warning signs?", placeholder: "e.g., tight fists, fast breathing..." },
+        { stepNumber: 2, title: "STOP", prompt: "What will I say to myself?", placeholder: "e.g., I need a break..." },
+        { stepNumber: 3, title: "CALM", prompt: "What calm-down tool will I use?", placeholder: "e.g., deep breathing, counting..." },
+        { stepNumber: 4, title: "HELP", prompt: "Who can help me if I need it?", placeholder: "e.g., Mum, Dad, teacher..." }
+      ]
+    });
+  }
+  
+  return actionPlans.slice(0, count);
+}
+
+async function generateWarningSigns(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<WarningSingsContent[]> {
+  const prompt = `Create ${count} warning signs identification activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "warningSigns": [
+    {
+      "heading": "Activity title with warning emoji",
+      "instructions": "Instructions for identifying warning signs (1-2 sentences)",
+      "categories": [
+        { "category": "Body Signs", "emoji": "🫀", "examples": ["Heart beats fast", "Hands get sweaty", "Tummy feels funny"] },
+        { "category": "Thought Signs", "emoji": "💭", "examples": ["Can't stop worrying", "Thoughts go fast", "Hard to focus"] },
+        { "category": "Action Signs", "emoji": "🏃", "examples": ["Want to run away", "Feel like yelling", "Can't sit still"] }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ warningSigns: WarningSingsContent[] }>(response);
+  
+  const warningSigns = parsed?.warningSigns || [];
+  while (warningSigns.length < count) {
+    warningSigns.push({
+      heading: "⚠ ï¸ My Early Warning Signs",
+      instructions: "Check the signs that happen to YOU when feelings start getting big!",
+      categories: [
+        { category: "Body Signs", emoji: "🫀", examples: ["Heart beats fast", "Hands get sweaty", "Tummy feels funny", "Face gets hot"] },
+        { category: "Thought Signs", emoji: "💭", examples: ["Can't stop worrying", "Thoughts go fast", "Hard to focus", "Feel confused"] },
+        { category: "Action Signs", emoji: "🏃", examples: ["Want to run away", "Feel like yelling", "Can't sit still", "Want to hide"] }
+      ]
+    });
+  }
+  
+  return warningSigns.slice(0, count);
+}
+
+async function generateMatchingActivities(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<MatchingActivityContent[]> {
+  const prompt = `Create ${count} matching activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "matchingActivities": [
+    {
+      "heading": "Activity title with matching emoji",
+      "instructions": "Instructions for the matching game (1-2 sentences)",
+      "pairs": [
+        { "situation": "A friend shares their toy with you", "feeling": "Happy", "emoji": "😊" },
+        { "situation": "Someone takes your turn", "feeling": "Frustrated", "emoji": "😤" },
+        { "situation": "You're about to try something new", "feeling": "Nervous", "emoji": "😰" },
+        { "situation": "Your pet cuddles with you", "feeling": "Loved", "emoji": "🥰" }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ matchingActivities: MatchingActivityContent[] }>(response);
+  
+  const matchingActivities = parsed?.matchingActivities || [];
+  while (matchingActivities.length < count) {
+    matchingActivities.push({
+      heading: "🎯 Match the Feeling!",
+      instructions: "Read each situation and pick the feeling that matches best!",
+      pairs: [
+        { situation: "A friend shares their toy with you", feeling: "Happy", emoji: "😊" },
+        { situation: "Someone takes your turn in a game", feeling: "Frustrated", emoji: "😤" },
+        { situation: "You're about to try something new", feeling: "Nervous", emoji: "😰" },
+        { situation: "Your pet cuddles with you", feeling: "Loved", emoji: "🥰" },
+        { situation: "You can't find your favorite toy", feeling: "Worried", emoji: "😟" }
+      ]
+    });
+  }
+  
+  return matchingActivities.slice(0, count);
+}
+
 async function generateSummary(
   apiKey: string,
   metadata: ModuleMetadata,
   contentBrief: string
 ): Promise<SummaryContent> {
+  // ... (rest of the code remains the same)
   const prompt = `Create a summary page for a child's workbook about "${metadata.theme}".
 
 Respond with ONLY this JSON:
@@ -811,6 +1607,889 @@ Respond with ONLY this JSON:
   };
 }
 
+// ========================================
+// NEW ACTIVITY GENERATORS (v4.0)
+// ========================================
+
+async function generateInteractiveLessons(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<InteractiveLessonContent[]> {
+  const interactionTypes = ["poll", "circle-one", "fill-blank", "rate-scale", "true-false"];
+  
+  const prompt = `Create ${count} INTERACTIVE lessons for a child's workbook about "${metadata.theme}".
+
+Module: "${metadata.title}"
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Age: ${metadata.targetAge}
+
+These lessons should have SHORT text plus a simple interactive element.
+
+Respond with ONLY this JSON:
+{
+  "interactiveLessons": [
+    {
+      "heading": "Engaging title with emoji",
+      "introText": "Brief introduction to the concept (2-3 sentences max)",
+      "interactionType": "poll",
+      "interactionPrompt": "Question for the child to interact with",
+      "interactionOptions": ["Option 1", "Option 2", "Option 3", "Option 4"],
+      "correctAnswerIndex": 1,
+      "followUpText": "Brief explanation after interaction (1-2 sentences)",
+      "mascotComment": "Encouraging comment from mascot"
+    }
+  ]
+}
+
+IMPORTANT:
+- interactionType must be one of: "poll", "circle-one", "fill-blank", "rate-scale", "true-false"
+- For "poll" and "circle-one" with factual questions: provide 3-4 options AND set "correctAnswerIndex" to the 0-based index of the correct option
+- For opinion-based "poll"/"circle-one": omit correctAnswerIndex (all choices are valid)
+- For "fill-blank": the prompt should have ___ where the child fills in
+- For "rate-scale": prompt asks to rate something 1-5
+- For "true-false": the prompt is a statement to agree/disagree with
+- Vary the interaction types across lessons
+- Keep text SHORT - focus on the interaction`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
+  const parsed = safeJsonParse<{ interactiveLessons: InteractiveLessonContent[] }>(response);
+  
+  const lessons = parsed?.interactiveLessons || [];
+  
+  let typeIndex = 0;
+  while (lessons.length < count) {
+    const type = interactionTypes[typeIndex % interactionTypes.length] as InteractiveLessonContent["interactionType"];
+    lessons.push({
+      heading: "Let's Think!",
+      introText: "Sometimes our feelings can be tricky to understand. Let's explore together!",
+      interactionType: type,
+      interactionPrompt: type === "poll" ? "Which of these is the BEST way to handle big feelings?" :
+                         type === "fill-blank" ? "When I feel worried, I can ___" :
+                         type === "rate-scale" ? "How much do you like talking about your feelings?" :
+                         type === "true-false" ? "It's okay to feel scared sometimes" :
+                         "What helps you feel calm?",
+      interactionOptions: (type === "poll" || type === "circle-one") ? ["Yell at someone", "Take deep breaths", "Break things", "Run away"] : undefined,
+      correctAnswerIndex: (type === "poll" || type === "circle-one") ? 1 : undefined, // "Take deep breaths" is correct
+      followUpText: "Taking deep breaths helps calm our body and mind!",
+      mascotComment: `${metadata.characterName} says: Great thinking!`
+    });
+    typeIndex++;
+  }
+  
+  return lessons.slice(0, count);
+}
+
+async function generateFillInStories(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FillInStoryContent[]> {
+  const prompt = `Create ${count} fill-in-the-blank story activities for children about "${metadata.theme}".
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "fillInStories": [
+    {
+      "heading": "Story activity title with book emoji",
+      "instructions": "Instructions for completing the story (1 sentence)",
+      "storyTemplate": "A short story with [BLANK1], [BLANK2], [BLANK3] placeholders where children fill in words",
+      "blanks": [
+        { "id": "BLANK1", "hint": "a feeling word", "category": "feeling" },
+        { "id": "BLANK2", "hint": "something you can do", "category": "action" },
+        { "id": "BLANK3", "hint": "a person who helps", "category": "person" }
+      ],
+      "reflection": "Question about their completed story"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ fillInStories: FillInStoryContent[] }>(response);
+  
+  const stories = parsed?.fillInStories || [];
+  while (stories.length < count) {
+    stories.push({
+      heading: "Complete My Story",
+      instructions: "Fill in the blanks to create your own story!",
+      storyTemplate: `One day, ${metadata.characterName} felt [BLANK1]. They decided to [BLANK2] to feel better. Then they talked to [BLANK3] about it, and everything felt a little easier.`,
+      blanks: [
+        { id: "BLANK1", hint: "a feeling word", category: "feeling" },
+        { id: "BLANK2", hint: "something calming", category: "action" },
+        { id: "BLANK3", hint: "someone who helps", category: "person" }
+      ],
+      reflection: "How would YOU feel in this story?"
+    });
+  }
+  
+  return stories.slice(0, count);
+}
+
+async function generateCopingCards(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<CopingCardsContent[]> {
+  const prompt = `Create ${count} coping cards builder activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "copingCards": [
+    {
+      "heading": "Activity title with card emoji",
+      "instructions": "Instructions for building coping cards (1-2 sentences)",
+      "categories": [
+        { "name": "Body Tools", "emoji": "muscle", "color": "#A8E6CF", "strategies": ["Deep breathing", "Stretching", "Running"] },
+        { "name": "Mind Tools", "emoji": "brain", "color": "#a8d8ea", "strategies": ["Counting to 10", "Thinking happy thoughts"] },
+        { "name": "Connect Tools", "emoji": "speech", "color": "#FFE8A3", "strategies": ["Talking to someone", "Asking for a hug"] }
+      ],
+      "personalCardPrompt": "Create your own special coping card below!"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ copingCards: CopingCardsContent[] }>(response);
+  
+  const cards = parsed?.copingCards || [];
+  while (cards.length < count) {
+    cards.push({
+      heading: "My Coping Cards",
+      instructions: "Tap on strategies you want to remember, then create your own!",
+      categories: [
+        { name: "Body Tools", emoji: "muscle", color: "#A8E6CF", strategies: ["Deep breathing", "Stretching", "Running in place", "Squeezing a ball"] },
+        { name: "Mind Tools", emoji: "brain", color: "#a8d8ea", strategies: ["Counting backwards", "Thinking of happy memories", "Saying kind words to myself"] },
+        { name: "Connect Tools", emoji: "speech", color: "#FFE8A3", strategies: ["Talking to a grown-up", "Playing with a pet", "Writing in a journal"] }
+      ],
+      personalCardPrompt: "Now create YOUR special coping card!"
+    });
+  }
+  
+  return cards.slice(0, count);
+}
+
+async function generateGratitudeJars(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<GratitudeJarContent[]> {
+  const prompt = `Create ${count} gratitude jar activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "gratitudeJars": [
+    {
+      "heading": "Activity title with jar/star emoji",
+      "introText": "Brief explanation of gratitude (2 sentences)",
+      "promptCategories": [
+        { "category": "People", "emoji": "family", "prompt": "Someone who makes me smile..." },
+        { "category": "Places", "emoji": "house", "prompt": "A place where I feel safe..." },
+        { "category": "Things", "emoji": "gift", "prompt": "Something I'm glad I have..." },
+        { "category": "Moments", "emoji": "sparkles", "prompt": "A happy memory..." }
+      ],
+      "encouragement": "Encouraging message about gratitude"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ gratitudeJars: GratitudeJarContent[] }>(response);
+  
+  const jars = parsed?.gratitudeJars || [];
+  while (jars.length < count) {
+    jars.push({
+      heading: "My Gratitude Jar",
+      introText: "Gratitude means thinking about good things in our life. When we feel grateful, it can help us feel happier!",
+      promptCategories: [
+        { category: "People", emoji: "family", prompt: "Someone who makes me smile..." },
+        { category: "Places", emoji: "house", prompt: "A place where I feel safe..." },
+        { category: "Things", emoji: "gift", prompt: "Something I'm glad I have..." },
+        { category: "Moments", emoji: "sparkles", prompt: "A happy memory..." }
+      ],
+      encouragement: "You can come back to your gratitude jar anytime you need a happiness boost!"
+    });
+  }
+  
+  return jars.slice(0, count);
+}
+
+async function generateSortingActivities(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<SortingActivityContent[]> {
+  const prompt = `Create ${count} sorting activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "sortingActivities": [
+    {
+      "heading": "Activity title with sorting emoji",
+      "instructions": "Instructions for sorting (1-2 sentences)",
+      "categories": [
+        { "name": "Helpful", "emoji": "checkmark", "color": "#A8E6CF" },
+        { "name": "Not Helpful", "emoji": "x", "color": "#fecaca" }
+      ],
+      "items": [
+        { "text": "Taking deep breaths", "correctCategory": "Helpful", "explanation": "Deep breaths help calm our body" },
+        { "text": "Yelling at someone", "correctCategory": "Not Helpful", "explanation": "This can hurt others" }
+      ]
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ sortingActivities: SortingActivityContent[] }>(response);
+  
+  const activities = parsed?.sortingActivities || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "Sort It Out!",
+      instructions: "Drag each item to the correct category!",
+      categories: [
+        { name: "Helpful", emoji: "checkmark", color: "#A8E6CF" },
+        { name: "Not Helpful", emoji: "x", color: "#fecaca" }
+      ],
+      items: [
+        { text: "Taking deep breaths", correctCategory: "Helpful", explanation: "Deep breaths help calm our body" },
+        { text: "Hitting something", correctCategory: "Not Helpful", explanation: "This can hurt us or others" },
+        { text: "Talking to someone you trust", correctCategory: "Helpful", explanation: "Sharing helps us feel understood" },
+        { text: "Keeping it all inside", correctCategory: "Not Helpful", explanation: "Bottling up feelings can make them bigger" },
+        { text: "Going for a walk", correctCategory: "Helpful", explanation: "Movement helps release big feelings" }
+      ]
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateThoughtBubbles(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<ThoughtBubblesContent[]> {
+  const prompt = `Create ${count} thought bubble challenge activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "thoughtBubbles": [
+    {
+      "heading": "Activity title with thought bubble emoji",
+      "scenario": "A relatable scenario (1-2 sentences)",
+      "characterEmoji": "worried face",
+      "unhelpfulThought": "An unhelpful thought the character might have",
+      "helpfulPrompt": "Prompt to help child think of a better thought",
+      "exampleHelpful": "Example of a helpful alternative thought",
+      "reflection": "Question about their own thoughts"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ thoughtBubbles: ThoughtBubblesContent[] }>(response);
+  
+  const bubbles = parsed?.thoughtBubbles || [];
+  while (bubbles.length < count) {
+    bubbles.push({
+      heading: "Thought Bubble Challenge",
+      scenario: "You made a mistake on your homework and feel embarrassed.",
+      characterEmoji: "worried",
+      unhelpfulThought: "I'm so stupid, I can't do anything right!",
+      helpfulPrompt: "What's a kinder thought you could have instead?",
+      exampleHelpful: "Everyone makes mistakes - that's how we learn!",
+      reflection: "Think of a time when you had an unhelpful thought. What could you say instead?"
+    });
+  }
+  
+  return bubbles.slice(0, count);
+}
+
+async function generateEmojiCheckIns(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<EmojiCheckInContent[]> {
+  const prompt = `Create ${count} emoji check-in activities for children about "${metadata.theme}".
+
+IMPORTANT: Use actual emoji characters, not text names!
+
+Respond with ONLY this JSON:
+{
+  "emojiCheckIns": [
+    {
+      "heading": "🎭 Activity title with emoji",
+      "instructions": "Instructions for the emoji check-in (1-2 sentences)",
+      "timePoints": [
+        { "label": "Morning", "emoji": "🌅" },
+        { "label": "Afternoon", "emoji": "☀️" },
+        { "label": "Evening", "emoji": "🌙" }
+      ],
+      "moodOptions": [
+        { "emoji": "😊", "label": "Great", "color": "#A8E6CF" },
+        { "emoji": "🙂", "label": "Good", "color": "#FFE8A3" },
+        { "emoji": "😐", "label": "Okay", "color": "#e5e7eb" },
+        { "emoji": "😕", "label": "Not great", "color": "#fecaca" },
+        { "emoji": "😢", "label": "Sad", "color": "#a8d8ea" }
+      ],
+      "patternQuestion": "Question about patterns they notice"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ emojiCheckIns: EmojiCheckInContent[] }>(response);
+  
+  const checkIns = parsed?.emojiCheckIns || [];
+  while (checkIns.length < count) {
+    checkIns.push({
+      heading: "🎭 My Emoji Mood Tracker",
+      instructions: "Pick an emoji for how you felt at each time today!",
+      timePoints: [
+        { label: "Morning", emoji: "🌅" },
+        { label: "Afternoon", emoji: "☀️" },
+        { label: "Evening", emoji: "🌙" }
+      ],
+      moodOptions: [
+        { emoji: "😊", label: "Great", color: "#A8E6CF" },
+        { emoji: "🙂", label: "Good", color: "#FFE8A3" },
+        { emoji: "😐", label: "Okay", color: "#e5e7eb" },
+        { emoji: "😕", label: "Not great", color: "#fecaca" },
+        { emoji: "😢", label: "Sad", color: "#a8d8ea" }
+      ],
+      patternQuestion: "Do you notice any patterns in your moods throughout the day?"
+    });
+  }
+  
+  return checkIns.slice(0, count);
+}
+
+async function generateWordScrambles(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<WordScrambleContent[]> {
+  const prompt = `Create ${count} word scramble activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "wordScrambles": [
+    {
+      "heading": "Activity title with puzzle emoji",
+      "instructions": "Instructions for the word scramble (1 sentence)",
+      "words": [
+        { "scrambled": "MLCA", "answer": "CALM", "hint": "A peaceful feeling", "emoji": "peaceful" },
+        { "scrambled": "RABEV", "answer": "BRAVE", "hint": "When you face fears", "emoji": "lion" }
+      ],
+      "completionMessage": "Message when all words are solved"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ wordScrambles: WordScrambleContent[] }>(response);
+  
+  const scrambles = parsed?.wordScrambles || [];
+  while (scrambles.length < count) {
+    scrambles.push({
+      heading: "Word Scramble Challenge",
+      instructions: "Unscramble the letters to find feeling words!",
+      words: [
+        { scrambled: "MLCA", answer: "CALM", hint: "A peaceful feeling", emoji: "peaceful" },
+        { scrambled: "RABEV", answer: "BRAVE", hint: "When you face your fears", emoji: "lion" },
+        { scrambled: "PPYHA", answer: "HAPPY", hint: "A joyful feeling", emoji: "grin" },
+        { scrambled: "EFSA", answer: "SAFE", hint: "When nothing can hurt you", emoji: "shield" }
+      ],
+      completionMessage: "Amazing! You're a word wizard!"
+    });
+  }
+  
+  return scrambles.slice(0, count);
+}
+
+async function generateAgreeDisagrees(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<AgreeDisagreeContent[]> {
+  const prompt = `Create ${count} agree/disagree activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "agreeDisagrees": [
+    {
+      "heading": "Activity title with thinking emoji",
+      "instructions": "Instructions (1 sentence)",
+      "statements": [
+        { "statement": "It's okay to feel angry sometimes", "insight": "Explanation of why this is true/helpful" },
+        { "statement": "Big feelings will last forever", "insight": "Actually, all feelings come and go like clouds" }
+      ],
+      "reflection": "Final reflection question"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ agreeDisagrees: AgreeDisagreeContent[] }>(response);
+  
+  const activities = parsed?.agreeDisagrees || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "Do You Agree?",
+      instructions: "Read each statement and decide if you agree or disagree!",
+      statements: [
+        { statement: "It's okay to cry when you're sad", insight: "Yes! Crying is a healthy way to release big feelings." },
+        { statement: "You should hide your feelings from others", insight: "Actually, sharing feelings with trusted people helps us feel better!" },
+        { statement: "Everyone feels scared sometimes", insight: "True! Fear is a normal feeling that everyone experiences." },
+        { statement: "If you feel anxious, something is wrong with you", insight: "Not true! Anxiety is common and you can learn to manage it." }
+      ],
+      reflection: "Which statement surprised you the most?"
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateComicStrips(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<ComicStripContent[]> {
+  const prompt = `Create ${count} comic strip activities for children about "${metadata.theme}".
+
+Respond with ONLY this JSON:
+{
+  "comicStrips": [
+    {
+      "heading": "Activity title with comic emoji",
+      "scenario": "A scenario for children to illustrate (1-2 sentences)",
+      "panels": [
+        { "panelNumber": 1, "prompt": "Draw: The beginning - what happened?", "placeholder": "Draw here..." },
+        { "panelNumber": 2, "prompt": "Draw: The feeling - how did they feel?", "placeholder": "Show the emotion..." },
+        { "panelNumber": 3, "prompt": "Draw: The solution - what helped?", "placeholder": "Draw the helpful action..." },
+        { "panelNumber": 4, "prompt": "Draw: The ending - how did it turn out?", "placeholder": "Happy ending!" }
+      ],
+      "sharePrompt": "Prompt to share or reflect on their comic"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ comicStrips: ComicStripContent[] }>(response);
+  
+  const comics = parsed?.comicStrips || [];
+  while (comics.length < count) {
+    comics.push({
+      heading: "Create Your Comic!",
+      scenario: "Create a comic about a time you felt a big feeling and found a way to feel better.",
+      panels: [
+        { panelNumber: 1, prompt: "What happened? (The situation)", placeholder: "Draw or write here..." },
+        { panelNumber: 2, prompt: "How did you feel? (The big feeling)", placeholder: "Show the emotion..." },
+        { panelNumber: 3, prompt: "What did you do? (Your coping tool)", placeholder: "Draw your strategy..." },
+        { panelNumber: 4, prompt: "How did it end? (Feeling better!)", placeholder: "The happy ending!" }
+      ],
+      sharePrompt: "Would you like to share your comic with someone you trust?"
+    });
+  }
+  
+  return comics.slice(0, count);
+}
+
+async function generateAffirmationBuilders(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<AffirmationBuilderContent[]> {
+  const prompt = `Create ${count} affirmation builder activities for children about "${metadata.theme}".
+
+CRITICAL: All starters, middles, and endings must combine into GRAMMATICALLY CORRECT sentences.
+Test every possible combination before responding!
+
+Examples of CORRECT combinations:
+- "I am" + "brave and" + "strong" = "I am brave and strong" ✓
+- "I am becoming" + "more" + "confident every day" = "I am becoming more confident every day" ✓
+- "I choose to be" + "kind and" + "helpful" = "I choose to be kind and helpful" ✓
+
+Examples of WRONG combinations to AVOID:
+- "I choose to" + "brave and" + "strong" = "I choose to brave and strong" ✗ (grammatically incorrect!)
+- "I will" + "brave and" + "confident" = "I will brave and confident" ✗ (missing "be")
+
+Respond with ONLY this JSON:
+{
+  "affirmationBuilders": [
+    {
+      "heading": "Activity title with star/sparkle emoji",
+      "instructions": "Instructions for building affirmations (1-2 sentences)",
+      "starters": ["I am", "I am becoming", "I choose to be", "Every day I am"],
+      "middles": ["brave and", "kind and", "more and more", "stronger and"],
+      "endings": ["strong", "confident", "capable", "resilient"],
+      "decorationEmojis": ["⭐", "✨", "🌈", "💖"],
+      "savePrompt": "Prompt to save/remember their affirmation"
+    }
+  ]
+}
+
+IMPORTANT: Use actual emoji characters in decorationEmojis, not text names!`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ affirmationBuilders: AffirmationBuilderContent[] }>(response);
+  
+  const builders = parsed?.affirmationBuilders || [];
+  while (builders.length < count) {
+    // All combinations here are grammatically correct:
+    // "I am" + "brave and" + "strong" = "I am brave and strong"
+    // "I am becoming" + "brave and" + "strong" = "I am becoming brave and strong"
+    // "I choose to be" + "brave and" + "strong" = "I choose to be brave and strong"
+    // "Every day I am" + "brave and" + "strong" = "Every day I am brave and strong"
+    builders.push({
+      heading: "✨ Build Your Power Phrase!",
+      instructions: "Pick one phrase from each row to create your own special affirmation!",
+      starters: ["I am", "I am becoming", "I choose to be", "Every day I am"],
+      middles: ["brave and", "kind and", "calm and", "strong and"],
+      endings: ["confident", "capable", "resilient", "amazing"],
+      decorationEmojis: ["⭐", "✨", "🌈", "💖", "🦋", "🌸"],
+      savePrompt: "Say your affirmation out loud 3 times! You can write it down and put it somewhere you'll see it every day."
+    });
+  }
+  
+  return builders.slice(0, count);
+}
+
+// ========================================
+// v5 NEW CHALLENGE GENERATORS
+// ========================================
+
+async function generateWeatherControllers(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<WeatherControllerContent[]> {
+  const prompt = `Create ${count} weather controller challenge activities for children about "${metadata.theme}".
+
+This is an interactive game where children control emotional "weather" by using calming actions.
+
+Respond with ONLY this JSON:
+{
+  "weatherControllers": [
+    {
+      "heading": "Activity title with weather emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "weatherType": "storm",
+      "calmingActions": [
+        { "id": "breath", "label": "Slow Breath", "emoji": "🌬️", "points": 15, "feedbackText": "Feel that calm air..." },
+        { "id": "name", "label": "Name the Feeling", "emoji": "💭", "points": 20, "feedbackText": "Understanding helps!" },
+        { "id": "ground", "label": "5-4-3-2-1 Senses", "emoji": "👀", "points": 25, "feedbackText": "Grounded and present!" },
+        { "id": "kind", "label": "Kind Thought", "emoji": "💗", "points": 15, "feedbackText": "Self-compassion helps!" }
+      ],
+      "winText": "You calmed the storm! The sky is clear again!",
+      "encouragement": "You have the power to calm big feelings!"
+    }
+  ]
+}
+
+IMPORTANT: weatherType must be one of: "storm", "rain", "fog", "heat"
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ weatherControllers: WeatherControllerContent[] }>(response);
+  
+  const controllers = parsed?.weatherControllers || [];
+  while (controllers.length < count) {
+    controllers.push({
+      heading: "🌩️ Calm the Storm",
+      instructions: "Big feelings can feel like a storm inside! Use your calming tools to bring back the sunshine.",
+      weatherType: "storm",
+      calmingActions: [
+        { id: "breath", label: "Slow Breath", emoji: "🌬️", points: 15, feedbackText: "Feel that calm air filling you up..." },
+        { id: "name", label: "Name the Feeling", emoji: "💭", points: 20, feedbackText: "When we name it, we can tame it!" },
+        { id: "ground", label: "5-4-3-2-1 Senses", emoji: "👀", points: 25, feedbackText: "You're here, you're safe, you're grounded!" },
+        { id: "kind", label: "Kind Thought", emoji: "💗", points: 15, feedbackText: "You deserve kindness, especially from yourself!" }
+      ],
+      winText: "☀️ You calmed the storm! The sky is clear again!",
+      encouragement: `${metadata.characterName} says: You have the power to calm any storm inside you!`
+    });
+  }
+  
+  return controllers.slice(0, count);
+}
+
+async function generatePowerUpCollectors(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<PowerUpCollectorContent[]> {
+  const prompt = `Create ${count} power-up collector activities for children about "${metadata.theme}".
+
+This is a game where children collect positive coping strategies while avoiding unhelpful ones.
+
+Respond with ONLY this JSON:
+{
+  "powerUpCollectors": [
+    {
+      "heading": "Activity title with sparkle emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "powerUps": [
+        { "id": "pu1", "name": "Deep Breath", "emoji": "🌬️", "description": "Calms your body", "isPositive": true },
+        { "id": "pu2", "name": "Talk to Someone", "emoji": "💬", "description": "Share your feelings", "isPositive": true },
+        { "id": "pu3", "name": "Yelling", "emoji": "😤", "description": "Might hurt others", "isPositive": false },
+        { "id": "pu4", "name": "Take a Walk", "emoji": "🚶", "description": "Move and feel better", "isPositive": true }
+      ],
+      "targetCount": 5,
+      "winText": "You collected all the power-ups!",
+      "tipText": "These tools can help you feel better anytime!"
+    }
+  ]
+}
+
+Include 6-8 powerUps with a mix of positive (true) and negative (false) options.
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ powerUpCollectors: PowerUpCollectorContent[] }>(response);
+  
+  const collectors = parsed?.powerUpCollectors || [];
+  while (collectors.length < count) {
+    collectors.push({
+      heading: "⚡ Collect Your Power-Ups!",
+      instructions: "Tap on the helpful strategies to collect them! Avoid the ones that might not help.",
+      powerUps: [
+        { id: "pu1", name: "Deep Breathing", emoji: "🌬️", description: "Calms your body and mind", isPositive: true },
+        { id: "pu2", name: "Talk to Someone", emoji: "💬", description: "Sharing helps you feel understood", isPositive: true },
+        { id: "pu3", name: "Keeping it Inside", emoji: "🤐", description: "Bottling up makes it worse", isPositive: false },
+        { id: "pu4", name: "Take a Walk", emoji: "🚶", description: "Movement releases big feelings", isPositive: true },
+        { id: "pu5", name: "Count to 10", emoji: "🔢", description: "Gives your brain time to think", isPositive: true },
+        { id: "pu6", name: "Yelling", emoji: "📢", description: "Might hurt others' feelings", isPositive: false },
+        { id: "pu7", name: "Draw or Write", emoji: "✏️", description: "Express feelings creatively", isPositive: true },
+        { id: "pu8", name: "Blaming Others", emoji: "👉", description: "Doesn't solve the problem", isPositive: false }
+      ],
+      targetCount: 5,
+      winText: "🎉 You collected all the helpful power-ups!",
+      tipText: `${metadata.characterName} says: Keep these tools in your pocket for whenever you need them!`
+    });
+  }
+  
+  return collectors.slice(0, count);
+}
+
+async function generateEmotionMazes(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<EmotionMazeContent[]> {
+  const prompt = `Create ${count} emotion maze activities for children about "${metadata.theme}".
+
+This is a path-choosing game where children navigate from a challenging emotion to a better state.
+
+Respond with ONLY this JSON:
+{
+  "emotionMazes": [
+    {
+      "heading": "Activity title with maze emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "startEmotion": { "name": "Worried", "emoji": "😰" },
+      "goalEmotion": { "name": "Calm", "emoji": "😌" },
+      "pathChoices": [
+        {
+          "step": 1,
+          "situation": "You're feeling worried about a test tomorrow.",
+          "options": [
+            { "text": "Take 3 deep breaths", "emoji": "🌬️", "isCorrect": true, "feedback": "Great choice! Breathing helps calm your body." },
+            { "text": "Stay up all night worrying", "emoji": "😫", "isCorrect": false, "feedback": "This might make you more tired and worried." }
+          ]
+        },
+        {
+          "step": 2,
+          "situation": "You still feel a little worried.",
+          "options": [
+            { "text": "Talk to a grown-up", "emoji": "💬", "isCorrect": true, "feedback": "Sharing worries makes them smaller!" },
+            { "text": "Keep it to yourself", "emoji": "🤐", "isCorrect": false, "feedback": "Keeping worries inside can make them grow." }
+          ]
+        }
+      ],
+      "completionMessage": "You made it through the maze!"
+    }
+  ]
+}
+
+Include 3 pathChoices steps with 2 options each.
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ emotionMazes: EmotionMazeContent[] }>(response);
+  
+  const mazes = parsed?.emotionMazes || [];
+  while (mazes.length < count) {
+    mazes.push({
+      heading: "🗺️ Navigate Your Feelings",
+      instructions: "Help find the path from a big feeling to a calmer place! Choose wisely at each step.",
+      startEmotion: { name: "Worried", emoji: "😰" },
+      goalEmotion: { name: "Calm", emoji: "😌" },
+      pathChoices: [
+        {
+          step: 1,
+          situation: "You're feeling worried about something at school.",
+          options: [
+            { text: "Take 3 deep breaths", emoji: "🌬️", isCorrect: true, feedback: "Great choice! Breathing helps calm your body." },
+            { text: "Stay up all night worrying", emoji: "😫", isCorrect: false, feedback: "This might make you more tired and worried. Try again!" }
+          ]
+        },
+        {
+          step: 2,
+          situation: "You still feel a little worried after breathing.",
+          options: [
+            { text: "Talk to someone you trust", emoji: "💬", isCorrect: true, feedback: "Sharing worries makes them feel smaller!" },
+            { text: "Keep the worry inside", emoji: "🤐", isCorrect: false, feedback: "Keeping worries inside can make them grow bigger. Try again!" }
+          ]
+        },
+        {
+          step: 3,
+          situation: "You talked about it and feel a bit better. What now?",
+          options: [
+            { text: "Make a plan for tomorrow", emoji: "📋", isCorrect: true, feedback: "Having a plan helps you feel ready!" },
+            { text: "Keep thinking about what might go wrong", emoji: "😟", isCorrect: false, feedback: "Focusing on worries keeps them strong. Try again!" }
+          ]
+        }
+      ],
+      completionMessage: `🎉 You navigated the maze! ${metadata.characterName} is so proud of you!`
+    });
+  }
+  
+  return mazes.slice(0, count);
+}
+
+async function generateStrengthShields(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<StrengthShieldContent[]> {
+  const prompt = `Create ${count} strength shield builder activities for children about "${metadata.theme}".
+
+This is an activity where children build a protective shield with their personal strengths.
+
+Respond with ONLY this JSON:
+{
+  "strengthShields": [
+    {
+      "heading": "Activity title with shield emoji",
+      "instructions": "Instructions explaining how to build the shield (2 sentences)",
+      "shieldSections": [
+        { "id": "s1", "title": "My Superpower", "emoji": "⚡", "prompt": "What are you really good at?", "placeholder": "I'm good at..." },
+        { "id": "s2", "title": "My Support Team", "emoji": "👥", "prompt": "Who helps you when things are hard?", "placeholder": "People who help me..." },
+        { "id": "s3", "title": "My Calm Tools", "emoji": "🧘", "prompt": "What helps you feel calm?", "placeholder": "When I need calm, I..." },
+        { "id": "s4", "title": "My Brave Moment", "emoji": "🦁", "prompt": "When were you brave?", "placeholder": "I was brave when..." }
+      ],
+      "decorations": ["⭐", "🌟", "💪", "🛡️", "✨", "💖"],
+      "completionMessage": "Your shield is complete! You are stronger than you know!"
+    }
+  ]
+}
+
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ strengthShields: StrengthShieldContent[] }>(response);
+  
+  const shields = parsed?.strengthShields || [];
+  while (shields.length < count) {
+    shields.push({
+      heading: "🛡️ Build Your Strength Shield",
+      instructions: "Every hero needs a shield! Fill in each section to build YOUR personal strength shield.",
+      shieldSections: [
+        { id: "s1", title: "My Superpower", emoji: "⚡", prompt: "What are you really good at?", placeholder: "I'm good at..." },
+        { id: "s2", title: "My Support Team", emoji: "👥", prompt: "Who helps you when things are hard?", placeholder: "People who help me..." },
+        { id: "s3", title: "My Calm Tools", emoji: "🧘", prompt: "What helps you feel calm?", placeholder: "When I need calm, I..." },
+        { id: "s4", title: "My Brave Moment", emoji: "🦁", prompt: "Tell about a time you were brave!", placeholder: "I was brave when..." }
+      ],
+      decorations: ["⭐", "🌟", "💪", "🛡️", "✨", "💖"],
+      completionMessage: `🛡️ Your shield is complete! ${metadata.characterName} says: You are stronger than you know!`
+    });
+  }
+  
+  return shields.slice(0, count);
+}
+
+async function generateFeelingVolcanoes(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingVolcanoContent[]> {
+  const prompt = `Create ${count} feeling volcano activities for children about "${metadata.theme}".
+
+This is a game where children learn to "cool down" a volcano of big feelings before it erupts.
+
+Respond with ONLY this JSON:
+{
+  "feelingVolcanoes": [
+    {
+      "heading": "Activity title with volcano emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "triggerScenario": "A scenario that might cause big feelings (1-2 sentences)",
+      "coolingActions": [
+        { "id": "c1", "action": "Take a deep breath", "emoji": "🌬️", "coolingPower": 20 },
+        { "id": "c2", "action": "Count to 5", "emoji": "🔢", "coolingPower": 15 },
+        { "id": "c3", "action": "Squeeze a pillow", "emoji": "🛏️", "coolingPower": 25 },
+        { "id": "c4", "action": "Walk away for a moment", "emoji": "🚶", "coolingPower": 20 }
+      ],
+      "levels": [
+        { "level": 5, "emoji": "🌋", "label": "About to Erupt!", "color": "#ef4444" },
+        { "level": 4, "emoji": "🔥", "label": "Very Hot", "color": "#f97316" },
+        { "level": 3, "emoji": "😤", "label": "Getting Warm", "color": "#eab308" },
+        { "level": 2, "emoji": "😊", "label": "Cooling Down", "color": "#84cc16" },
+        { "level": 1, "emoji": "😌", "label": "Cool and Calm", "color": "#22c55e" }
+      ],
+      "safeMessage": "You kept the volcano cool! Great job managing big feelings!"
+    }
+  ]
+}
+
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ feelingVolcanoes: FeelingVolcanoContent[] }>(response);
+  
+  const volcanoes = parsed?.feelingVolcanoes || [];
+  while (volcanoes.length < count) {
+    volcanoes.push({
+      heading: "🌋 Cool the Volcano!",
+      instructions: "When big feelings build up, they can feel like a volcano! Use your cooling tools before it erupts.",
+      triggerScenario: "Someone took your favorite toy without asking and you're feeling really angry inside.",
+      coolingActions: [
+        { id: "c1", action: "Take a deep breath", emoji: "🌬️", coolingPower: 20 },
+        { id: "c2", action: "Count backwards from 5", emoji: "🔢", coolingPower: 15 },
+        { id: "c3", action: "Squeeze something soft", emoji: "🧸", coolingPower: 25 },
+        { id: "c4", action: "Walk away for a moment", emoji: "🚶", coolingPower: 20 }
+      ],
+      levels: [
+        { level: 5, emoji: "🌋", label: "About to Erupt!", color: "#ef4444" },
+        { level: 4, emoji: "🔥", label: "Very Hot", color: "#f97316" },
+        { level: 3, emoji: "😤", label: "Getting Warm", color: "#eab308" },
+        { level: 2, emoji: "😊", label: "Cooling Down", color: "#84cc16" },
+        { level: 1, emoji: "😌", label: "Cool and Calm", color: "#22c55e" }
+      ],
+      safeMessage: `🎉 You kept the volcano cool! ${metadata.characterName} is so proud of your self-control!`
+    });
+  }
+  
+  return volcanoes.slice(0, count);
+}
+
 // ====================
 // ORCHESTRATOR
 // ====================
@@ -819,25 +2498,48 @@ async function generateAllContent(
   apiKey: string,
   contentBrief: string,
   pageStructure: PageTemplate[],
-  updateProgress: (step: string, message: string) => Promise<void>
+  updateProgress: (step: string, message: string) => Promise<void>,
+  seriesInfo?: SeriesInfo | null
 ): Promise<GeneratedContent> {
   
   // Count how many of each type we need
   const counts = {
     chapters: pageStructure.filter(p => p.type === "chapter-divider").length,
     lessons: pageStructure.filter(p => p.type === "lesson").length,
+    interactiveLessons: pageStructure.filter(p => p.type === "interactive-lesson").length,
     checklists: pageStructure.filter(p => p.type === "checklist").length,
     reflections: pageStructure.filter(p => p.type === "reflection").length,
     quizzes: pageStructure.filter(p => p.type === "quiz").length,
     drawings: pageStructure.filter(p => p.type === "drawing").length,
     scenarios: pageStructure.filter(p => p.type === "scenario").length,
+    feelingThermometers: pageStructure.filter(p => p.type === "feeling-thermometer").length,
+    bodyMaps: pageStructure.filter(p => p.type === "body-map").length,
+    feelingSelectors: pageStructure.filter(p => p.type === "feeling-selector").length,
+    calmDenBuilders: pageStructure.filter(p => p.type === "calm-den-builder").length,
+    actionPlans: pageStructure.filter(p => p.type === "action-plan").length,
+    warningSigns: pageStructure.filter(p => p.type === "warning-signs").length,
+    matchingActivities: pageStructure.filter(p => p.type === "matching-activity").length,
+    // NEW COUNTS
+    fillInStories: pageStructure.filter(p => p.type === "fill-in-story").length,
+    copingCards: pageStructure.filter(p => p.type === "coping-cards").length,
+    gratitudeJars: pageStructure.filter(p => p.type === "gratitude-jar").length,
+    sortingActivities: pageStructure.filter(p => p.type === "sorting-activity").length,
+    thoughtBubbles: pageStructure.filter(p => p.type === "thought-bubbles").length,
+    emojiCheckIns: pageStructure.filter(p => p.type === "emoji-check-in").length,
+    wordScrambles: pageStructure.filter(p => p.type === "word-scramble").length,
+    agreeDisagrees: pageStructure.filter(p => p.type === "agree-disagree").length,
+    comicStrips: pageStructure.filter(p => p.type === "comic-strip").length,
+    affirmationBuilders: pageStructure.filter(p => p.type === "affirmation-builder").length,
+    // v5 NEW CHALLENGE COUNTS
+    weatherControllers: pageStructure.filter(p => p.type === "weather-controller").length,
+    powerUpCollectors: pageStructure.filter(p => p.type === "power-up-collector").length,
+    emotionMazes: pageStructure.filter(p => p.type === "emotion-maze").length,
+    strengthShields: pageStructure.filter(p => p.type === "strength-shield").length,
+    feelingVolcanoes: pageStructure.filter(p => p.type === "feeling-volcano").length,
   };
   
-
-  
   await updateProgress("metadata", "Creating module theme and character...");
-  const metadata = await generateMetadata(apiKey, contentBrief);
-
+  const metadata = await generateMetadata(apiKey, contentBrief, seriesInfo);
   
   await updateProgress("structure", "Planning module structure...");
   const [chapters, welcome] = await Promise.all([
@@ -846,8 +2548,10 @@ async function generateAllContent(
   ]);
   
   await updateProgress("lessons", "Creating lesson content...");
-  const lessons = await generateLessons(apiKey, metadata, contentBrief, counts.lessons);
-
+  const [lessons, interactiveLessons] = await Promise.all([
+    counts.lessons > 0 ? generateLessons(apiKey, metadata, contentBrief, counts.lessons) : Promise.resolve([]),
+    counts.interactiveLessons > 0 ? generateInteractiveLessons(apiKey, metadata, contentBrief, counts.interactiveLessons) : Promise.resolve([]),
+  ]);
   
   await updateProgress("activities", "Designing interactive activities...");
   const [checklists, reflections, quizzes, drawings, scenarios, breathing] = await Promise.all([
@@ -858,7 +2562,44 @@ async function generateAllContent(
     counts.scenarios > 0 ? generateScenarios(apiKey, metadata, contentBrief, counts.scenarios) : Promise.resolve([]),
     generateBreathing(apiKey, metadata),
   ]);
-
+  
+  await updateProgress("interactive", "Creating interactive experiences...");
+  const [feelingThermometers, bodyMaps, feelingSelectors, calmDenBuilders, actionPlans, warningSigns, matchingActivities] = await Promise.all([
+    counts.feelingThermometers > 0 ? generateFeelingThermometers(apiKey, metadata, contentBrief, counts.feelingThermometers) : Promise.resolve([]),
+    counts.bodyMaps > 0 ? generateBodyMaps(apiKey, metadata, contentBrief, counts.bodyMaps) : Promise.resolve([]),
+    counts.feelingSelectors > 0 ? generateFeelingSelectors(apiKey, metadata, contentBrief, counts.feelingSelectors) : Promise.resolve([]),
+    counts.calmDenBuilders > 0 ? generateCalmDenBuilders(apiKey, metadata, contentBrief, counts.calmDenBuilders) : Promise.resolve([]),
+    counts.actionPlans > 0 ? generateActionPlans(apiKey, metadata, contentBrief, counts.actionPlans) : Promise.resolve([]),
+    counts.warningSigns > 0 ? generateWarningSigns(apiKey, metadata, contentBrief, counts.warningSigns) : Promise.resolve([]),
+    counts.matchingActivities > 0 ? generateMatchingActivities(apiKey, metadata, contentBrief, counts.matchingActivities) : Promise.resolve([]),
+  ]);
+  
+  await updateProgress("creative", "Creating creative activities...");
+  const [fillInStories, copingCards, gratitudeJars, comicStrips, affirmationBuilders] = await Promise.all([
+    counts.fillInStories > 0 ? generateFillInStories(apiKey, metadata, contentBrief, counts.fillInStories) : Promise.resolve([]),
+    counts.copingCards > 0 ? generateCopingCards(apiKey, metadata, contentBrief, counts.copingCards) : Promise.resolve([]),
+    counts.gratitudeJars > 0 ? generateGratitudeJars(apiKey, metadata, contentBrief, counts.gratitudeJars) : Promise.resolve([]),
+    counts.comicStrips > 0 ? generateComicStrips(apiKey, metadata, contentBrief, counts.comicStrips) : Promise.resolve([]),
+    counts.affirmationBuilders > 0 ? generateAffirmationBuilders(apiKey, metadata, contentBrief, counts.affirmationBuilders) : Promise.resolve([]),
+  ]);
+  
+  await updateProgress("cognitive", "Creating cognitive activities...");
+  const [sortingActivities, thoughtBubbles, emojiCheckIns, wordScrambles, agreeDisagrees] = await Promise.all([
+    counts.sortingActivities > 0 ? generateSortingActivities(apiKey, metadata, contentBrief, counts.sortingActivities) : Promise.resolve([]),
+    counts.thoughtBubbles > 0 ? generateThoughtBubbles(apiKey, metadata, contentBrief, counts.thoughtBubbles) : Promise.resolve([]),
+    counts.emojiCheckIns > 0 ? generateEmojiCheckIns(apiKey, metadata, contentBrief, counts.emojiCheckIns) : Promise.resolve([]),
+    counts.wordScrambles > 0 ? generateWordScrambles(apiKey, metadata, contentBrief, counts.wordScrambles) : Promise.resolve([]),
+    counts.agreeDisagrees > 0 ? generateAgreeDisagrees(apiKey, metadata, contentBrief, counts.agreeDisagrees) : Promise.resolve([]),
+  ]);
+  
+  await updateProgress("challenges", "Creating interactive challenges...");
+  const [weatherControllers, powerUpCollectors, emotionMazes, strengthShields, feelingVolcanoes] = await Promise.all([
+    counts.weatherControllers > 0 ? generateWeatherControllers(apiKey, metadata, contentBrief, counts.weatherControllers) : Promise.resolve([]),
+    counts.powerUpCollectors > 0 ? generatePowerUpCollectors(apiKey, metadata, contentBrief, counts.powerUpCollectors) : Promise.resolve([]),
+    counts.emotionMazes > 0 ? generateEmotionMazes(apiKey, metadata, contentBrief, counts.emotionMazes) : Promise.resolve([]),
+    counts.strengthShields > 0 ? generateStrengthShields(apiKey, metadata, contentBrief, counts.strengthShields) : Promise.resolve([]),
+    counts.feelingVolcanoes > 0 ? generateFeelingVolcanoes(apiKey, metadata, contentBrief, counts.feelingVolcanoes) : Promise.resolve([]),
+  ]);
   
   await updateProgress("summary", "Wrapping up...");
   const [summary, completion] = await Promise.all([
@@ -871,12 +2612,37 @@ async function generateAllContent(
     welcome,
     chapters,
     lessons,
+    interactiveLessons,
     checklists,
     reflections,
     quizzes,
     drawings,
     breathing,
     scenarios,
+    feelingThermometers,
+    bodyMaps,
+    feelingSelectors,
+    calmDenBuilders,
+    actionPlans,
+    warningSigns,
+    matchingActivities,
+    // v4
+    fillInStories,
+    copingCards,
+    gratitudeJars,
+    sortingActivities,
+    thoughtBubbles,
+    emojiCheckIns,
+    wordScrambles,
+    agreeDisagrees,
+    comicStrips,
+    affirmationBuilders,
+    // v5 NEW CHALLENGES
+    weatherControllers,
+    powerUpCollectors,
+    emotionMazes,
+    strengthShields,
+    feelingVolcanoes,
     summary,
     completion,
   };
@@ -884,7 +2650,6 @@ async function generateAllContent(
 
 // ====================
 // HTML RENDERER
-// ====================
 
 function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string): string {
   const { metadata } = content;
@@ -898,6 +2663,31 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     quiz: 0,
     drawing: 0,
     scenario: 0,
+    feelingThermometer: 0,
+    bodyMap: 0,
+    feelingSelector: 0,
+    calmDenBuilder: 0,
+    actionPlan: 0,
+    warningSigns: 0,
+    matchingActivity: 0,
+    // NEW
+    interactiveLesson: 0,
+    fillInStory: 0,
+    copingCards: 0,
+    gratitudeJar: 0,
+    sortingActivity: 0,
+    thoughtBubbles: 0,
+    emojiCheckIn: 0,
+    wordScramble: 0,
+    agreeDisagree: 0,
+    comicStrip: 0,
+    affirmationBuilder: 0,
+    // v5 NEW CHALLENGE INDICES
+    weatherController: 0,
+    powerUpCollector: 0,
+    emotionMaze: 0,
+    strengthShield: 0,
+    feelingVolcano: 0,
     star: 0,
   };
   
@@ -952,6 +2742,123 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         indices.scenario++;
         indices.star++;
         break;
+      case "feeling-thermometer":
+        pageHtml = renderFeelingThermometerPage(content.feelingThermometers[indices.feelingThermometer] || content.feelingThermometers[0], indices.star);
+        indices.feelingThermometer++;
+        indices.star++;
+        break;
+      case "body-map":
+        pageHtml = renderBodyMapPage(content.bodyMaps[indices.bodyMap] || content.bodyMaps[0], indices.star);
+        indices.bodyMap++;
+        indices.star++;
+        break;
+      case "feeling-selector":
+        pageHtml = renderFeelingSelectorPage(content.feelingSelectors[indices.feelingSelector] || content.feelingSelectors[0], indices.star);
+        indices.feelingSelector++;
+        indices.star++;
+        break;
+      case "calm-den-builder":
+        pageHtml = renderCalmDenBuilderPage(content.calmDenBuilders[indices.calmDenBuilder] || content.calmDenBuilders[0], indices.star, metadata);
+        indices.calmDenBuilder++;
+        indices.star++;
+        break;
+      case "action-plan":
+        pageHtml = renderActionPlanPage(content.actionPlans[indices.actionPlan] || content.actionPlans[0], indices.star);
+        indices.actionPlan++;
+        indices.star++;
+        break;
+      case "warning-signs":
+        pageHtml = renderWarningSignsPage(content.warningSigns[indices.warningSigns] || content.warningSigns[0], indices.star);
+        indices.warningSigns++;
+        indices.star++;
+        break;
+      case "matching-activity":
+        pageHtml = renderMatchingActivityPage(content.matchingActivities[indices.matchingActivity] || content.matchingActivities[0], indices.star);
+        indices.matchingActivity++;
+        indices.star++;
+        break;
+      // NEW PAGE TYPES
+      case "interactive-lesson":
+        pageHtml = renderInteractiveLessonPage(content.interactiveLessons[indices.interactiveLesson] || content.interactiveLessons[0], metadata, indices.star);
+        indices.interactiveLesson++;
+        indices.star++;
+        break;
+      case "fill-in-story":
+        pageHtml = renderFillInStoryPage(content.fillInStories[indices.fillInStory] || content.fillInStories[0], indices.star, metadata);
+        indices.fillInStory++;
+        indices.star++;
+        break;
+      case "coping-cards":
+        pageHtml = renderCopingCardsPage(content.copingCards[indices.copingCards] || content.copingCards[0], indices.star);
+        indices.copingCards++;
+        indices.star++;
+        break;
+      case "gratitude-jar":
+        pageHtml = renderGratitudeJarPage(content.gratitudeJars[indices.gratitudeJar] || content.gratitudeJars[0], indices.star);
+        indices.gratitudeJar++;
+        indices.star++;
+        break;
+      case "sorting-activity":
+        pageHtml = renderSortingActivityPage(content.sortingActivities[indices.sortingActivity] || content.sortingActivities[0], indices.star);
+        indices.sortingActivity++;
+        indices.star++;
+        break;
+      case "thought-bubbles":
+        pageHtml = renderThoughtBubblesPage(content.thoughtBubbles[indices.thoughtBubbles] || content.thoughtBubbles[0], indices.star);
+        indices.thoughtBubbles++;
+        indices.star++;
+        break;
+      case "emoji-check-in":
+        pageHtml = renderEmojiCheckInPage(content.emojiCheckIns[indices.emojiCheckIn] || content.emojiCheckIns[0], indices.star);
+        indices.emojiCheckIn++;
+        indices.star++;
+        break;
+      case "word-scramble":
+        pageHtml = renderWordScramblePage(content.wordScrambles[indices.wordScramble] || content.wordScrambles[0], indices.star);
+        indices.wordScramble++;
+        indices.star++;
+        break;
+      case "agree-disagree":
+        pageHtml = renderAgreeDisagreePage(content.agreeDisagrees[indices.agreeDisagree] || content.agreeDisagrees[0], indices.star);
+        indices.agreeDisagree++;
+        indices.star++;
+        break;
+      case "comic-strip":
+        pageHtml = renderComicStripPage(content.comicStrips[indices.comicStrip] || content.comicStrips[0], indices.star);
+        indices.comicStrip++;
+        indices.star++;
+        break;
+      case "affirmation-builder":
+        pageHtml = renderAffirmationBuilderPage(content.affirmationBuilders[indices.affirmationBuilder] || content.affirmationBuilders[0], indices.star);
+        indices.affirmationBuilder++;
+        indices.star++;
+        break;
+      // v5 NEW CHALLENGE PAGE TYPES
+      case "weather-controller":
+        pageHtml = renderWeatherControllerPage(content.weatherControllers[indices.weatherController] || content.weatherControllers[0], indices.star, metadata);
+        indices.weatherController++;
+        indices.star++;
+        break;
+      case "power-up-collector":
+        pageHtml = renderPowerUpCollectorPage(content.powerUpCollectors[indices.powerUpCollector] || content.powerUpCollectors[0], indices.star, metadata);
+        indices.powerUpCollector++;
+        indices.star++;
+        break;
+      case "emotion-maze":
+        pageHtml = renderEmotionMazePage(content.emotionMazes[indices.emotionMaze] || content.emotionMazes[0], indices.star, metadata);
+        indices.emotionMaze++;
+        indices.star++;
+        break;
+      case "strength-shield":
+        pageHtml = renderStrengthShieldPage(content.strengthShields[indices.strengthShield] || content.strengthShields[0], indices.star, metadata);
+        indices.strengthShield++;
+        indices.star++;
+        break;
+      case "feeling-volcano":
+        pageHtml = renderFeelingVolcanoPage(content.feelingVolcanoes[indices.feelingVolcano] || content.feelingVolcanoes[0], indices.star, metadata);
+        indices.feelingVolcano++;
+        indices.star++;
+        break;
       case "summary":
         pageHtml = renderSummaryPage(content.summary, metadata);
         break;
@@ -973,12 +2880,22 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   const totalStars = indices.star;
   const totalPages = pageStructure.length;
   
+  // Debug info for series
+  const debugInfo = `
+  Series Info Debug:
+  - characterName: ${metadata.characterName}
+  - characterEmoji: ${metadata.characterEmoji}
+  - characterType: ${metadata.characterType || 'not set'}
+  - series: ${metadata.series}
+  `;
+  
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(metadata.title)}</title>
+  <!-- DEBUG: ${escapeHtml(debugInfo)} -->
   
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -988,7 +2905,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/gh/supabase/supabase@master/examples/edge-functions/supabase/functions/_shared/module-response-tracker.js" type="module"></script>
   
   <!-- Module Stylesheets -->
   <link rel="stylesheet" href="./modules/shared/module-theme.css">
@@ -1056,6 +2972,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     .scenario-option.selected.good { background-color: var(--light-green) !important; }
     .scenario-option.selected.not-good { background-color: #fef3c7 !important; }
     
+    /* Interactive Option Styles */
+    .interactive-option { background-color: white; }
+    .interactive-option.option-selected { background-color: var(--light-green) !important; }
+    .interactive-option.option-incorrect { background-color: #fecaca !important; }
+    
     /* Print Styles */
     @media print {
       .no-print { display: none !important; }
@@ -1071,17 +2992,366 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   </main>
   
   <script type="module">
-    // Use CDN paths for production
-    import { initModuleHeader } from 'https://cdn.jsdelivr.net/gh/supabase/supabase@master/examples/edge-functions/supabase/functions/_shared/module-header.js';
-    import {
-      initializeModule,
-      loadStarsFromDB,
-      saveStarsToDB,
-      awardSingleStar,
-      resolveChildDisplayName,
-      getChildId,
-      completeModuleDB
-    } from 'https://cdn.jsdelivr.net/gh/supabase/supabase@master/examples/edge-functions/supabase/functions/_shared/module-db.js';
+    // Embedded module functions (no external dependencies)
+    
+    // Module database functions - stub implementation for local preview
+    async function initializeModule() {
+      return true;
+    }
+
+    async function loadStarsFromDB() {
+      const saved = localStorage.getItem('moduleStars');
+      return saved ? parseInt(saved, 10) : 0;
+    }
+
+    async function saveStarsToDB(stars) {
+      localStorage.setItem('moduleStars', String(stars));
+      return stars;
+    }
+
+    async function awardSingleStar(currentStars) {
+      const newStars = currentStars + 1;
+      await saveStarsToDB(newStars);
+      return newStars;
+    }
+
+    async function resolveChildDisplayName() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childName') || 'Friend';
+    }
+
+    async function getChildId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childId') || 'unknown';
+    }
+
+    async function completeModuleDB() {
+      // Stub implementation - just mark as completed
+      localStorage.setItem('moduleCompleted', 'true');
+      return true;
+    }
+    
+    // Module completion handling
+    let moduleCompletionHandled = false;
+
+    function handleModuleCompletion() {
+      // Prevent multiple completions
+      if (moduleCompletionHandled) {
+        console.log('[ModuleHeader] Module completion already handled, skipping...');
+        return;
+      }
+      moduleCompletionHandled = true;
+
+      console.log('[ModuleHeader] Handling module completion...');
+
+      // Get module parameters from URL
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        const moduleId = params.get('moduleId');
+        
+        console.log(\`[ModuleHeader] URL params - childId: \$\{childId}, moduleId: \$\{moduleId}\`);
+        
+        if (childId && moduleId) {
+          // Mark module as completed
+          completeModule(childId, moduleId);
+        } else {
+          console.error('[ModuleHeader] Missing childId or moduleId in URL');
+        }
+      } catch (error) {
+        console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+      }
+    }
+
+    async function completeModule(childId, moduleId) {
+      try {
+        // Use the completeModuleDB function for generated modules
+        if (typeof window.completeModuleDB === 'function') {
+          await window.completeModuleDB();
+        }
+        
+        // Show completion celebration
+        showCompletionCelebration();
+        
+        console.log('[ModuleHeader] Module completed successfully');
+      } catch (error) {
+        console.error('[ModuleHeader] Error completing module:', error);
+      }
+    }
+
+    function showCompletionCelebration() {
+      console.log('[showCompletionCelebration] Starting...');
+      try {
+        // Create celebration modal
+        const celebrationModal = document.createElement('div');
+        celebrationModal.className = 'module-completion-modal';
+        celebrationModal.innerHTML = '<div class="module-completion-content"><div class="completion-emoji">🎉</div><h2 class="completion-title">Module Complete!</h2><p class="completion-message">Congratulations! You\'ve finished this module and learned valuable emotional skills.</p><div class="completion-confetti" id="completionConfetti"></div><button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button></div>';
+        
+        document.body.appendChild(celebrationModal);
+        console.log('[showCompletionCelebration] Modal appended');
+        
+        // Generate confetti
+        if (typeof generateCompletionConfetti === 'function') {
+          generateCompletionConfetti();
+        }
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          closeCompletionModal();
+        }, 5000);
+      } catch (e) {
+        console.error('Error showing completion celebration:', e);
+      }
+    }
+
+    function generateCompletionConfetti() {
+      const container = document.getElementById('completionConfetti');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const pieceCount = 40;
+      
+      for (let i = 0; i < pieceCount; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'completion-confetti-piece';
+        
+        const randomX = Math.random() * 300 - 150;
+        const randomDelay = Math.random() * 0.3;
+        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.top = Math.random() * 50 + '%';
+        piece.style.setProperty('--tx', randomX + 'px');
+        piece.style.animationDelay = randomDelay + 's';
+        piece.style.backgroundColor = randomColor;
+        
+        container.appendChild(piece);
+      }
+    }
+
+    // Make close function globally accessible
+    window.closeCompletionModal = function() {
+      const modal = document.querySelector('.module-completion-modal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+    
+    // Module header functions
+    function initModuleHeader(options = {}) {
+      const {
+        onPrev,
+        onNext,
+        onHome,
+        onPrint,
+        onShowStars,
+        onToggleParentMode,
+        showParentToggle = false,
+        initialPage = { current: 1, total: 1 },
+        initialStars = 0,
+        parentModeEnabled = false,
+        labels = {},
+      } = options;
+
+      const header = document.createElement('header');
+      header.className = 'module-header no-print';
+
+      const navSection = document.createElement('div');
+      navSection.className = 'module-header__nav';
+
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'module-header__btn module-header__btn--nav';
+      prevBtn.textContent = labels.prev ?? '← Back';
+      prevBtn.type = 'button';
+
+      const pageDisplay = document.createElement('div');
+      pageDisplay.className = 'module-header__page';
+
+      // ... (rest of the code remains the same)
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'module-header__btn module-header__btn--nav';
+      nextBtn.textContent = labels.next ?? 'Next →';
+      nextBtn.type = 'button';
+
+      navSection.append(prevBtn, pageDisplay, nextBtn);
+
+      const actionsSection = document.createElement('div');
+      actionsSection.className = 'module-header__actions';
+
+      const starButton = document.createElement('button');
+      starButton.className = 'module-header__star';
+      starButton.type = 'button';
+      starButton.innerHTML = \`
+        <span class="star-icon">⭐</span>
+        <span data-role="star-count">\$\{initialStars}</span>
+      \`;
+
+      const printButton = document.createElement('button');
+      printButton.className = 'module-header__btn module-header__print';
+      printButton.type = 'button';
+      printButton.textContent = '🖨 Print';
+
+      let parentModeButton = null;
+      if (showParentToggle) {
+        parentModeButton = document.createElement('button');
+        parentModeButton.className = 'module-header__btn module-header__parent';
+        parentModeButton.type = 'button';
+      }
+
+      const homeButton = document.createElement('button');
+      homeButton.className = 'module-header__btn module-header__home';
+      homeButton.type = 'button';
+      homeButton.textContent = '🏠 Home';
+
+      actionsSection.append(starButton);
+      if (parentModeButton) {
+        actionsSection.append(parentModeButton);
+      }
+      actionsSection.append(printButton, homeButton);
+
+      const inner = document.createElement('div');
+      inner.className = 'module-header__inner';
+      inner.append(navSection, actionsSection);
+      header.appendChild(inner);
+
+      document.body.prepend(header);
+      const spacer = document.createElement('div');
+      spacer.className = 'module-header-spacer no-print';
+
+      // Ensure there is always enough space below the fixed header
+      try {
+        const computedHeight = getComputedStyle(document.documentElement)
+          .getPropertyValue('--module-header-height')
+          .trim();
+        spacer.style.height = computedHeight || '75px';
+      } catch (error) {
+        spacer.style.height = '75px';
+      }
+
+      header.after(spacer);
+
+      function normalizePageValue(value, fallback = 1) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return fallback;
+        return Math.max(1, Math.round(numeric));
+      }
+
+      function updatePageDisplay(current = 1, total = 1) {
+        const safeTotal = normalizePageValue(total, 1);
+        const safeCurrent = Math.min(normalizePageValue(current, 1), safeTotal);
+        pageDisplay.textContent = \`Page \$\{safeCurrent} of \$\{safeTotal}\`;
+        
+        // Log page navigation (but don't auto-complete - user must click the Complete button)
+        console.log(\`[ModuleHeader] Page update: \$\{safeCurrent}/\$\{safeTotal}\`);
+      }
+
+      function updateParentMode(enabled) {
+        if (!parentModeButton) return;
+        parentModeButton.textContent = enabled ? '👨‍👩‍👧 Parent Mode ON' : '👨‍👩‍👧 Parent Mode';
+        parentModeButton.classList.toggle('is-on', enabled);
+      }
+
+      function updateStarCount(stars) {
+        const starCountEl = starButton.querySelector('[data-role="star-count"]');
+        if (starCountEl) {
+          starCountEl.textContent = stars;
+        }
+      }
+
+      updatePageDisplay(initialPage.current, initialPage.total);
+      updateStarCount(initialStars);
+      updateParentMode(parentModeEnabled);
+
+      if (typeof onPrev === 'function') {
+        prevBtn.addEventListener('click', () => onPrev());
+      } else {
+        prevBtn.disabled = true;
+      }
+
+      if (typeof onNext === 'function') {
+        nextBtn.addEventListener('click', () => onNext());
+      } else {
+        nextBtn.disabled = true;
+      }
+
+      function defaultGoHome() {
+        if (typeof window.goHome === 'function') {
+          try {
+            window.goHome();
+            return;
+          } catch (error) {
+            console.warn('[ModuleHeader] window.goHome threw an error:', error);
+          }
+        }
+
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const childId = params.get('childId');
+          if (childId) {
+            window.location.href = \`/dashboard.html?childId=\$\{encodeURIComponent(childId)}\`;
+            return;
+          }
+        } catch (error) {
+          console.warn('[ModuleHeader] Failed to parse URL params:', error);
+        }
+
+        if (document.referrer) {
+          window.location.href = document.referrer;
+          return;
+        }
+
+        window.location.href = '/dashboard.html';
+      }
+
+      homeButton.addEventListener('click', () => {
+        if (typeof onHome === 'function') {
+          onHome();
+        } else {
+          defaultGoHome();
+        }
+      });
+
+      printButton.addEventListener('click', () => {
+        if (typeof onPrint === 'function') {
+          onPrint();
+        } else if (typeof window.print === 'function') {
+          window.print();
+        }
+      });
+
+      if (typeof onShowStars === 'function') {
+        starButton.addEventListener('click', () => onShowStars());
+      }
+
+      if (parentModeButton && typeof onToggleParentMode === 'function') {
+        parentModeButton.addEventListener('click', () => onToggleParentMode());
+      } else if (parentModeButton) {
+        parentModeButton.style.display = 'none';
+      }
+
+      return {
+        updatePage(current, total, options = {}) {
+          updatePageDisplay(current, total);
+          if (typeof options.canPrev === 'boolean') {
+            prevBtn.disabled = !options.canPrev;
+          }
+          if (typeof options.canNext === 'boolean') {
+            nextBtn.disabled = !options.canNext;
+          }
+        },
+        updateStars(stars) {
+          updateStarCount(stars);
+        },
+        setParentMode(enabled) {
+          updateParentMode(enabled);
+        },
+        destroy() {
+          header.remove();
+          spacer.remove();
+        },
+      };
+    }
     
     const WORKBOOK_ID = "${escapeHtml(moduleCode)}";
     const MODULE_CODE = "${escapeHtml(moduleCode)}";
@@ -1165,13 +3435,63 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
       bindPageInteractions();
-      
-      // Restore form state after rendering the page
-      setTimeout(() => {
-        if (typeof window.restoreModuleFormState === 'function') {
-          window.restoreModuleFormState();
+      restoreFormState();
+    }
+    
+    // Restore form values from localStorage
+    function restoreFormState() {
+      // Restore all text inputs
+      document.querySelectorAll('input[type="text"]').forEach(input => {
+        const onchange = input.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          input.value = formData[match[1]];
         }
-      }, 50);
+      });
+      
+      // Restore all textareas
+      document.querySelectorAll('textarea').forEach(textarea => {
+        const onchange = textarea.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          textarea.value = formData[match[1]];
+        }
+      });
+      
+      // Restore range sliders
+      document.querySelectorAll('input[type="range"]').forEach(range => {
+        const oninput = range.getAttribute('oninput') || '';
+        const match = oninput.match(/saveFormData\\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          range.value = formData[match[1]];
+          const valueDisplay = range.parentElement.querySelector('.thermometer-value');
+          if (valueDisplay) valueDisplay.textContent = formData[match[1]];
+        }
+      });
+      
+      // Restore button selections (rate-scale only - not polls, as those should be re-answered)
+      Object.keys(formData).forEach(key => {
+        if (key.startsWith('rate_')) {
+          const buttons = document.querySelectorAll('.interactive-option');
+          buttons.forEach(btn => {
+            if (btn.textContent.trim() === String(formData[key])) {
+              btn.classList.add('option-selected');
+            }
+          });
+        }
+        if (key.startsWith('tf_')) {
+          const page = document.querySelector('[data-page="interactive-lesson"]');
+          if (page) {
+            const ff = page.querySelector('.followup-feedback');
+            const mf = page.querySelector('.mascot-feedback');
+            if (ff) ff.style.display = 'block';
+            if (mf) mf.style.display = 'flex';
+            const btns = page.querySelectorAll('.interactive-option');
+            if (formData[key] === 'agree' && btns[0]) btns[0].classList.add('option-selected');
+            if (formData[key] === 'disagree' && btns[1]) btns[1].classList.add('option-incorrect');
+          }
+        }
+      });
     }
     
     // Stars
@@ -1207,7 +3527,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       
       // Star celebration animation
       const star = document.createElement('div');
-      star.textContent = '⭐';
+      star.textContent = '⭐';
       star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
       document.body.appendChild(star);
       star.animate([
@@ -1287,6 +3607,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       // Drawing canvas
       const canvas = document.querySelector('.drawing-canvas');
       if (canvas) initDrawingCanvas(canvas);
+      
+      // Comic strip canvases
+      document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
+        initDrawingCanvas(canvas);
+      });
     }
     
     function initDrawingCanvas(canvas) {
@@ -1349,18 +3674,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       }
     }
     
-    async function completeModule() {
-      try {
-        await completeModuleDB(WORKBOOK_ID);
-        const urlParams = new URLSearchParams(window.location.search);
-        const childId = urlParams.get('childId');
-        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
-      } catch (e) {
-        console.error('Error completing module:', e);
-        alert('Error completing module. Please try again.');
-      }
-    }
-    
     function goHome() {
       saveStarData().then(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -1415,6 +3728,241 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.goHome = goHome;
     window.completeModule = completeModule;
     window.getChildName = getChildName;
+    window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
+    
+    // Interactive lesson choice handler
+    window.handleInteractiveChoice = function(btn, starIndex, hasCorrectAnswer, correctIdx) {
+      const page = btn.closest('.page');
+      const buttons = btn.parentElement.querySelectorAll('.interactive-option');
+      const feedbackEl = page.querySelector('.interactive-feedback');
+      const ffEl = page.querySelector('.followup-feedback');
+      const mfEl = page.querySelector('.mascot-feedback');
+      const selectedIdx = parseInt(btn.dataset.index);
+      
+      // Reset all buttons - remove selection classes
+      buttons.forEach(b => {
+        b.classList.remove('option-selected', 'option-incorrect');
+        b.style.borderColor = 'var(--secondary)';
+      });
+      
+      if (hasCorrectAnswer) {
+        // Has a correct answer - show feedback
+        const isCorrect = selectedIdx === correctIdx;
+        btn.classList.add(isCorrect ? 'option-selected' : 'option-incorrect');
+        btn.style.borderColor = isCorrect ? 'var(--secondary)' : 'var(--accent)';
+        
+        if (feedbackEl) {
+          feedbackEl.style.display = 'block';
+          feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca';
+          feedbackEl.innerHTML = isCorrect 
+            ? '<span class="font-body" style="color: var(--dark);">✓ Great choice! That is right!</span>'
+            : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
+        }
+        
+        // Only show followup and mascot feedback on correct answer
+        if (isCorrect) {
+          if (ffEl) ffEl.style.display = 'block';
+          if (mfEl) mfEl.style.display = 'flex';
+        }
+      } else {
+        // Opinion-based - all answers valid
+        btn.classList.add('option-selected');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+      }
+      
+      saveFormData('poll_' + starIndex, btn.textContent.trim());
+    };
+    
+    // Fill-blank input handler for inline text fields
+    window.handleFillBlankInput = function(input, starIndex) {
+      const page = input.closest('.page');
+      const blankIndex = input.dataset.blankIndex;
+      
+      // Save this blank's value
+      saveFormData('fillblank_' + starIndex + '_' + blankIndex, input.value);
+      
+      // Check if all blanks are filled
+      const allBlanks = page.querySelectorAll('input[data-blank-index]');
+      const allFilled = Array.from(allBlanks).every(b => b.value.trim().length > 0);
+      
+      if (allFilled) {
+        const ffEl = page.querySelector('.followup-feedback');
+        const mfEl = page.querySelector('.mascot-feedback');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+      }
+    };
+    
+    // Sorting activity functions
+    let selectedSortItem = null;
+    window.selectSortItem = function(item) {
+      // Deselect previous
+      document.querySelectorAll('.sort-item.selected').forEach(el => {
+        el.classList.remove('selected');
+        el.style.backgroundColor = 'white';
+        el.style.borderColor = 'var(--primary)';
+      });
+      // Select this one
+      item.classList.add('selected');
+      item.style.backgroundColor = 'var(--soft-yellow)';
+      item.style.borderColor = 'var(--dark)';
+      selectedSortItem = item;
+    };
+    
+    window.sortSelectedItem = function(category, categoryName, starIndex) {
+      if (!selectedSortItem) return;
+      
+      const droppedArea = category.querySelector('.dropped-items');
+      const itemText = selectedSortItem.textContent.trim();
+      const correctCategory = selectedSortItem.dataset.correctCategory;
+      const explanation = selectedSortItem.dataset.explanation;
+      const isCorrect = correctCategory === categoryName;
+      
+      // Create sorted item display
+      const sortedItem = document.createElement('div');
+      sortedItem.className = 'p-2 rounded-lg font-body text-sm mb-1';
+      sortedItem.style.backgroundColor = isCorrect ? 'white' : '#fecaca';
+      sortedItem.style.border = isCorrect ? '2px solid var(--secondary)' : '2px solid var(--accent)';
+      sortedItem.innerHTML = (isCorrect ? '✓ ' : '✗ ') + itemText;
+      sortedItem.title = explanation;
+      droppedArea.appendChild(sortedItem);
+      
+      // Remove from items list
+      selectedSortItem.remove();
+      selectedSortItem = null;
+      
+      // Save to form data
+      saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName);
+    };
+    
+    // v5 CHALLENGE HANDLERS
+    let weatherCalmLevel = 0;
+    let weatherCooldown = false;
+    window.handleWeatherAction = function(btn, activityId, points) {
+      if (weatherCooldown || completedActivities[activityId]) return;
+      weatherCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { weatherCooldown = false; btn.classList.remove('cooldown'); }, 800);
+      weatherCalmLevel = Math.min(100, weatherCalmLevel + points);
+      const meterEl = document.getElementById('calmMeter');
+      const percentEl = document.getElementById('calmPercent');
+      const feedbackEl = document.getElementById('weatherFeedback');
+      const feedbackText = document.getElementById('feedbackText');
+      if (meterEl) meterEl.style.width = weatherCalmLevel + '%';
+      if (percentEl) percentEl.textContent = weatherCalmLevel;
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackText.textContent = btn.dataset.feedback; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      const overlayEl = document.getElementById('weatherOverlay');
+      const clearEl = document.getElementById('weatherClear');
+      if (overlayEl) overlayEl.style.opacity = 1 - (weatherCalmLevel / 100);
+      if (clearEl) clearEl.style.opacity = weatherCalmLevel / 100;
+      btn.classList.add('used');
+      if (weatherCalmLevel >= 100) { document.getElementById('weatherWin').style.display = 'block'; document.getElementById('weatherComplete').style.display = 'flex'; }
+      saveFormData('weather_' + activityId, weatherCalmLevel);
+    };
+    
+    let collectedPowerUps = [];
+    window.handlePowerUpClick = function(btn, activityId, targetCount) {
+      if (btn.classList.contains('collected') || completedActivities[activityId]) return;
+      const isPositive = btn.dataset.positive === 'true';
+      const feedbackEl = document.getElementById('powerupFeedback');
+      const feedbackText = document.getElementById('powerupFeedbackText');
+      const displayEl = document.getElementById('collectedDisplay');
+      const countEl = document.getElementById('collectedCount');
+      if (isPositive) {
+        btn.classList.add('collected');
+        collectedPowerUps.push(btn.dataset.name);
+        if (collectedPowerUps.length === 1 && displayEl) displayEl.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'inline-block px-3 py-1 m-1 rounded-full font-body text-sm';
+        badge.style.backgroundColor = 'var(--light-green)';
+        badge.textContent = btn.querySelector('.text-4xl').textContent + ' ' + btn.dataset.name;
+        if (displayEl) displayEl.appendChild(badge);
+        if (countEl) countEl.textContent = collectedPowerUps.length;
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '✓ Great choice!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+        if (collectedPowerUps.length >= targetCount) { document.getElementById('powerupWin').style.display = 'block'; document.getElementById('powerupComplete').style.display = 'flex'; }
+      } else {
+        btn.classList.add('wrong');
+        setTimeout(() => btn.classList.remove('wrong'), 500);
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = '#fecaca'; feedbackText.textContent = '✗ That one might not help - try another!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      }
+      saveFormData('powerup_' + activityId, collectedPowerUps.join(','));
+    };
+    
+    let mazeStep = 0;
+    window.handleMazeChoice = function(btn, stepIdx, totalSteps, activityId) {
+      if (btn.classList.contains('disabled') || completedActivities[activityId]) return;
+      const isCorrect = btn.dataset.correct === 'true';
+      const feedback = btn.dataset.feedback;
+      const feedbackEl = document.getElementById('mazeFeedback' + stepIdx);
+      btn.parentElement.querySelectorAll('.maze-option').forEach(b => b.classList.add('disabled'));
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+      if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca'; feedbackEl.innerHTML = '<p class="font-body">' + feedback + '</p>'; }
+      if (isCorrect) {
+        mazeStep++;
+        const progress = (mazeStep / totalSteps) * 100;
+        const progressEl = document.getElementById('mazeProgress');
+        const markerEl = document.getElementById('mazeMarker');
+        if (progressEl) progressEl.style.width = progress + '%';
+        if (markerEl) markerEl.style.left = progress + '%';
+        setTimeout(() => {
+          if (mazeStep < totalSteps) {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeStep' + (stepIdx + 1)).style.display = 'block';
+          } else {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeWin').style.display = 'block';
+            document.getElementById('mazeComplete').style.display = 'flex';
+          }
+        }, 1500);
+      }
+      saveFormData('maze_' + activityId + '_step' + stepIdx, isCorrect ? 'correct' : 'wrong');
+    };
+    
+    window.handleShieldInput = function(activityId, totalSections) {
+      const inputs = document.querySelectorAll('.shield-input');
+      let filled = 0;
+      inputs.forEach(input => { if (input.value.trim().length > 0) filled++; });
+      const progressEl = document.getElementById('shieldProgress');
+      if (progressEl) progressEl.textContent = filled;
+      if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; }
+    };
+    
+    window.addShieldDecoration = function(emoji) {
+      const display = document.getElementById('shieldDecorations');
+      if (display) {
+        // Create a span for each decoration to allow proper wrapping and display
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.style.display = 'inline-block';
+        span.style.margin = '2px';
+        display.appendChild(span);
+      }
+    };
+    
+    let volcanoTemp = 100;
+    let volcanoCooldown = false;
+    window.handleVolcanoCool = function(btn, activityId, coolingPower) {
+      if (volcanoCooldown || volcanoTemp <= 0 || completedActivities[activityId]) return;
+      volcanoCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { volcanoCooldown = false; btn.classList.remove('cooldown'); }, 600);
+      volcanoTemp = Math.max(0, volcanoTemp - coolingPower);
+      const tempEl = document.getElementById('volcanoTemp');
+      const lavaEl = document.getElementById('volcanoLava');
+      const indicatorEl = document.getElementById('volcanoIndicator');
+      const feedbackEl = document.getElementById('volcanoFeedback');
+      const feedbackText = document.getElementById('volcanoFeedbackText');
+      if (tempEl) tempEl.textContent = volcanoTemp;
+      if (lavaEl) lavaEl.style.opacity = volcanoTemp / 100;
+      const emojis = ['😌', '😊', '😤', '🔥', '🌋'];
+      const level = Math.ceil(volcanoTemp / 25);
+      if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
+      for (let i = 1; i <= 5; i++) { const lvl = document.getElementById('volcanoLevel' + i); if (lvl) lvl.classList.toggle('active', i === level); }
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '❄️ ' + btn.dataset.action + ' - Cooling down!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+      if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; }
+      saveFormData('volcano_' + activityId, volcanoTemp);
+    };
   </script>
 </body>
 </html>`;
@@ -1443,7 +3991,7 @@ function renderCoverPage(content: GeneratedContent): string {
           </div>
         </div>
         <div class="mt-8">
-          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
+          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
         </div>
       </div>
     </div>`;
@@ -1545,7 +4093,7 @@ function renderChecklistPage(checklist: ChecklistContent, starIndex: number): st
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
           </div>
         </div>
       </div>
@@ -1579,7 +4127,7 @@ function renderReflectionPage(reflection: ReflectionContent, starIndex: number):
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
           </div>
         </div>
       </div>
@@ -1622,7 +4170,7 @@ function renderQuizPage(quiz: QuizContent, starIndex: number): string {
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! ⭐</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! ⭐</label>
           </div>
         </div>
       </div>
@@ -1675,7 +4223,7 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
           </div>
         </div>
       </div>
@@ -1725,8 +4273,8 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! ⭐</label>
+            />
+            <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! ⭐</label>
           </div>
         </div>
       </div>
@@ -1736,32 +4284,200 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
 function renderScenarioPage(scenario: ScenarioContent, starIndex: number): string {
   const activityId = `scenario_${starIndex}`;
   const optionsHtml = scenario.options.map((opt) => `
-    <button 
-      class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
-      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-      data-good="${opt.isGood}"
-      data-feedback="${escapeForTemplate(opt.feedback)}"
-    >
-      ${escapeForTemplate(opt.text)}
-    </button>`).join("");
-
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="${opt.isGood}" data-feedback="${escapeForTemplate(opt.feedback)}">${escapeForTemplate(opt.text)}</button>`).join("");
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="scenario">
       <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(scenario.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);"><p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(scenario.scenario)}</p></div>
+          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(scenario.question)}</p>
+          <div class="space-y-3 mb-6">${optionsHtml}</div>
+          <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFeelingThermometerPage(thermometer: FeelingThermometerContent, starIndex: number): string {
+  const activityId = `thermometer_${starIndex}`;
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-thermometer">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(thermometer.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(thermometer.instructions)}</p>
+          <div class="mb-8">
+            <div class="flex justify-between mb-2">
+              <span class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(thermometer.lowLabel)}</span>
+              <span class="font-body text-sm" style="color: var(--accent);">${escapeForTemplate(thermometer.highLabel)}</span>
+            </div>
+            <input type="range" min="1" max="10" value="5" class="thermometer-slider w-full" oninput="this.parentElement.querySelector('.thermometer-value').textContent = this.value; saveFormData('thermometer_${starIndex}', this.value)">
+            <div class="text-center mt-4"><span class="thermometer-value text-4xl font-title" style="color: var(--primary);">5</span></div>
+          </div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(thermometer.followUpQuestion)}</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('thermometer_followup_${starIndex}', this.value)">\${formData['thermometer_followup_${starIndex}'] || ''}</textarea>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBodyMapPage(bodyMap: BodyMapContent, starIndex: number): string {
+  const activityId = `bodymap_${starIndex}`;
+  const partsHtml = bodyMap.bodyParts.map((part) => `
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">${escapeForTemplate(part.emoji)}</span>
+      <div>
+        <span class="font-title text-lg">${escapeForTemplate(part.name)}</span>
+        <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(part.description)}</p>
+      </div>
+    </button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="body-map">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(bodyMap.heading)}</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(scenario.scenario)}</p>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(bodyMap.instructions)}</p>
+          <div class="grid gap-3 mb-6">${partsHtml}</div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I explored my body map! ⭐</label>
           </div>
-          
-          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(scenario.question)}</p>
-          
-          <div class="space-y-3 mb-6">
-            ${optionsHtml}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: number): string {
+  const activityId = `feeling_${starIndex}`;
+  const feelingsHtml = selector.feelings.map((f) => `
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: ${f.color}; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '${f.color}' : 'white';">
+      <span class="text-4xl">${escapeForTemplate(f.emoji)}</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(f.name)}</span>
+    </button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(selector.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(selector.instructions)}</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${feelingsHtml}</div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(selector.followUpQuestion)}</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_${starIndex}', this.value)">\${formData['feeling_followup_${starIndex}'] || ''}</textarea>
           </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderCalmDenBuilderPage(denBuilder: CalmDenBuilderContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `calmden_${starIndex}`;
+  const itemsHtml = denBuilder.items.map((item) => `
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">${escapeForTemplate(item.emoji)}</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">${escapeForTemplate(item.name)}</span>
+    </button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="calm-den-builder">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(denBuilder.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="rounded-2xl p-6 mb-6 flex items-start gap-4" style="background-color: var(--soft-yellow);">
+            <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(denBuilder.storyText)}</p>
+          </div>
+          <p class="text-lg mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(denBuilder.instructions)}</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${itemsHtml}</div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(denBuilder.locationQuestion)}</label>
+            <input type="text" class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);" placeholder="e.g., My bedroom, under my blanket..." onchange="saveFormData('calmden_location_${starIndex}', this.value)" value="\${formData['calmden_location_${starIndex}'] || ''}">
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I built my calm-down den! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderActionPlanPage(actionPlan: ActionPlanContent, starIndex: number): string {
+  const activityId = `actionplan_${starIndex}`;
+  const stepsHtml = actionPlan.steps.map((step) => `
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${step.stepNumber}</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(step.title)}</h3>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">${escapeForTemplate(step.prompt)}</p>
+      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="${escapeForTemplate(step.placeholder)}" onchange="saveFormData('actionplan_step${step.stepNumber}_${starIndex}', this.value)" value="\${formData['actionplan_step${step.stepNumber}_${starIndex}'] || ''}">
+    </div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="action-plan">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(actionPlan.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(actionPlan.instructions)}</p>
+          ${stepsHtml}
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I created my action plan! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderWarningSignsPage(warningSigns: WarningSingsContent, starIndex: number): string {
+  const activityId = `warningsigns_${starIndex}`;
+  const categoriesHtml = warningSigns.categories.map((cat) => `
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">${escapeForTemplate(cat.emoji)}</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(cat.category)}</h3>
+      </div>
+      <div class="space-y-2">
+        ${cat.examples.map((ex, i) => `
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded" style="accent-color: var(--primary);">
+            <span class="font-body" style="color: var(--dark);">${escapeForTemplate(ex)}</span>
+          </label>
+        `).join("")}
+      </div>
+    </div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="warning-signs">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(warningSigns.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(warningSigns.instructions)}</p>
           
-          <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
+          ${categoriesHtml}
           
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input 
@@ -1769,11 +4485,54 @@ function renderScenarioPage(scenario: ScenarioContent, starIndex: number): strin
               class="w-8 h-8 rounded cursor-pointer"
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
-              disabled
               onchange="markActivityComplete('${activityId}')"
               \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my warning signs! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex: number): string {
+  const activityId = `matching_${starIndex}`;
+  const pairsHtml = matching.pairs.map((pair, i) => `
+    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <p class="font-body mb-3" style="color: var(--dark);">${escapeForTemplate(pair.situation)}</p>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
+          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
+          data-correct="${pair.feeling}"
+          data-pair="${i}"
+          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
+        >
+          ${escapeForTemplate(pair.emoji)} ${escapeForTemplate(pair.feeling)}
+        </button>
+      </div>
+    </div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="matching-activity">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(matching.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(matching.instructions)}</p>
+          
+          ${pairsHtml}
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
           </div>
         </div>
       </div>
@@ -1846,6 +4605,1129 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
     </div>`;
 }
 
+// ========================================
+// NEW PAGE RENDERERS (v4.0)
+// ========================================
+
+function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata: ModuleMetadata, starIndex: number): string {
+  const activityId = `interactive_${starIndex}`;
+  
+  let interactionHtml = "";
+  const options = lesson.interactionOptions || ["Option 1", "Option 2", "Option 3"];
+  
+  switch (lesson.interactionType) {
+    case "poll":
+    case "circle-one": {
+      // Check if this has a correct answer (correctAnswerIndex) or is opinion-based
+      const hasCorrectAnswer = typeof lesson.correctAnswerIndex === 'number';
+      const correctIdx = lesson.correctAnswerIndex ?? -1;
+      interactionHtml = `
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.interactionPrompt)}</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            ${options.map((opt, i) => `
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="${hasCorrectAnswer ? (i === correctIdx ? 'true' : 'false') : 'opinion'}"
+                      data-index="${i}"
+                      onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
+                ${escapeForTemplate(opt)}
+              </button>
+            `).join("")}
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>`;
+      break;
+    }
+      
+    case "fill-blank": {
+      // Parse the prompt and replace ___ with inline input fields
+      let blankCounter = 0;
+      const promptWithInputs = escapeForTemplate(lesson.interactionPrompt).replace(/___+/g, () => {
+        blankCounter++;
+        return `<input type="text" 
+                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
+                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
+                  placeholder="..."
+                  data-blank-index="${blankCounter}"
+                  oninput="handleFillBlankInput(this, ${starIndex})">`;
+      });
+      
+      interactionHtml = `
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">${promptWithInputs}</p>
+        </div>`;
+      break;
+    }
+      
+    case "rate-scale":
+      interactionHtml = `
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.interactionPrompt)}</p>
+          <div class="flex justify-between gap-2 mb-4">
+            ${[1,2,3,4,5].map(n => `
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_${starIndex}', '${n}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                ${n}
+              </button>
+            `).join("")}
+          </div>
+          <div class="flex justify-between text-sm font-body" style="color: var(--secondary);">
+            <span>Not at all</span>
+            <span>Very much!</span>
+          </div>
+        </div>`;
+      break;
+      
+    case "true-false": {
+      // Check if this has a correct answer
+      const hasCorrectAnswer = typeof lesson.correctAnswerIndex === 'number';
+      const correctIdx = lesson.correctAnswerIndex ?? 0; // Default to "I Agree" if not specified
+      interactionHtml = `
+        <div class="interactive-group">
+          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
+            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"${escapeForTemplate(lesson.interactionPrompt)}"</p>
+          </div>
+          <div class="flex gap-4 justify-center">
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--secondary); color: var(--dark);"
+                    data-correct="${hasCorrectAnswer ? (0 === correctIdx ? 'true' : 'false') : 'opinion'}"
+                    data-index="0"
+                    onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
+              I Agree
+            </button>
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--accent); color: var(--dark);"
+                    data-correct="${hasCorrectAnswer ? (1 === correctIdx ? 'true' : 'false') : 'opinion'}"
+                    data-index="1"
+                    onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
+              I Disagree
+            </button>
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>`;
+      break;
+    }
+  }
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(lesson.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">${escapeForTemplate(lesson.introText)}</p>
+          
+          ${interactionHtml}
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">${escapeForTemplate(lesson.followUpText)}</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.mascotComment)}</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFillInStoryPage(story: FillInStoryContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `fillin_${starIndex}`;
+  
+  let storyHtml = escapeForTemplate(story.storyTemplate);
+  story.blanks.forEach((blank, i) => {
+    // Calculate width based on placeholder length (min 6rem, max 14rem)
+    const hintLength = blank.hint.length;
+    const widthRem = Math.min(14, Math.max(6, Math.ceil(hintLength * 0.65)));
+    storyHtml = storyHtml.replace(
+      `[${blank.id}]`,
+      `<input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: ${widthRem}rem; min-width: 6rem;" placeholder="${escapeForTemplate(blank.hint)}" onchange="saveFormData('story_${starIndex}_${i}', this.value)">`
+    );
+  });
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="fill-in-story">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(story.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(story.instructions)}</p>
+          
+          <div class="p-6 rounded-2xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="text-xl leading-loose font-body" style="color: var(--dark);">${storyHtml}</p>
+          </div>
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">${escapeForTemplate(story.reflection)}</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 80px;" placeholder="Write your thoughts..." onchange="saveFormData('story_reflection_${starIndex}', this.value)"></textarea>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I completed my story!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderCopingCardsPage(cards: CopingCardsContent, starIndex: number): string {
+  const activityId = `coping_${starIndex}`;
+  
+  const categoriesHtml = cards.categories.map(cat => `
+    <div class="rounded-xl p-4 mb-4" style="background-color: ${cat.color};">
+      <h3 class="font-title text-lg mb-3" style="color: var(--dark);">${cat.emoji} ${escapeForTemplate(cat.name)}</h3>
+      <div class="flex flex-wrap gap-2">
+        ${cat.strategies.map(strat => `
+          <button class="coping-strategy px-3 py-2 rounded-lg font-body text-sm cursor-pointer transition-all" 
+                  style="background-color: white; color: var(--dark); border: 2px solid transparent;"
+                  onclick="this.classList.toggle('selected'); this.style.borderColor = this.classList.contains('selected') ? 'var(--dark)' : 'transparent';">
+            ${escapeForTemplate(strat)}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="coping-cards">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(cards.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(cards.instructions)}</p>
+          
+          ${categoriesHtml}
+          
+          <div class="mt-6 p-4 rounded-xl" style="background-color: var(--soft-yellow);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">${escapeForTemplate(cards.personalCardPrompt)}</p>
+            <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary);" placeholder="My personal coping strategy..." onchange="saveFormData('coping_personal_${starIndex}', this.value)">
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I built my coping cards!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderGratitudeJarPage(jar: GratitudeJarContent, starIndex: number): string {
+  const activityId = `gratitude_${starIndex}`;
+  
+  const promptsHtml = jar.promptCategories.map((cat, i) => `
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">${cat.emoji}</span>
+        <span class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(cat.category)}</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">${escapeForTemplate(cat.prompt)}</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_${starIndex}_${i}', this.value)">
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="gratitude-jar">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(jar.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(jar.introText)}</p>
+          
+          ${promptsHtml}
+          
+          <div class="mt-6 p-4 rounded-xl text-center" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(jar.encouragement)}</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I filled my gratitude jar!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderSortingActivityPage(sorting: SortingActivityContent, starIndex: number): string {
+  const activityId = `sorting_${starIndex}`;
+  
+  const categoriesHtml = sorting.categories.map((cat, ci) => `
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: ${cat.color}; border-color: var(--dark);" data-category="${escapeForTemplate(cat.name)}" data-category-index="${ci}" onclick="sortSelectedItem(this, '${escapeForTemplate(cat.name)}', ${starIndex})">
+      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">${cat.emoji} ${escapeForTemplate(cat.name)}</h3>
+      <div class="dropped-items space-y-2"></div>
+    </div>
+  `).join("");
+  
+  const itemsHtml = sorting.items.map((item, i) => `
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_${i}" data-correct-category="${escapeForTemplate(item.correctCategory)}" data-explanation="${escapeForTemplate(item.explanation)}" onclick="selectSortItem(this)">
+      ${escapeForTemplate(item.text)}
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sorting-activity">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(sorting.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(sorting.instructions)}</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            ${categoriesHtml}
+          </div>
+          
+          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
+            <div class="sort-items-list space-y-2">
+              ${itemsHtml}
+            </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderThoughtBubblesPage(thought: ThoughtBubblesContent, starIndex: number): string {
+  const activityId = `thought_${starIndex}`;
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="thought-bubbles">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(thought.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-lg" style="color: var(--dark);"><strong>Scenario:</strong> ${escapeForTemplate(thought.scenario)}</p>
+          </div>
+          
+          <div class="flex items-start gap-4 mb-6">
+            <span class="text-5xl">${thought.characterEmoji}</span>
+            <div class="flex-1 p-4 rounded-2xl relative" style="background-color: #fecaca; border: 2px solid var(--accent);">
+              <p class="font-body text-lg" style="color: var(--dark);"><strong>Unhelpful thought:</strong> "${escapeForTemplate(thought.unhelpfulThought)}"</p>
+            </div>
+          </div>
+          
+          <div class="p-4 rounded-xl mb-4" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">${escapeForTemplate(thought.helpfulPrompt)}</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 80px;" placeholder="Write a helpful thought..." onchange="saveFormData('helpful_thought_${starIndex}', this.value)"></textarea>
+          </div>
+          
+          <div class="p-3 rounded-lg text-sm" style="background-color: var(--cream);">
+            <p class="font-body" style="color: var(--secondary);"><strong>Example:</strong> "${escapeForTemplate(thought.exampleHelpful)}"</p>
+          </div>
+          
+          <div class="mt-6 p-4 rounded-xl" style="background-color: var(--soft-yellow);">
+            <p class="font-body" style="color: var(--dark);">${escapeForTemplate(thought.reflection)}</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I challenged my thoughts!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderEmojiCheckInPage(checkIn: EmojiCheckInContent, starIndex: number): string {
+  const activityId = `emoji_${starIndex}`;
+  
+  const moodGrid = checkIn.timePoints.map((time, ti) => `
+    <div class="text-center">
+      <div class="text-2xl mb-2">${time.emoji}</div>
+      <p class="font-title text-sm mb-3" style="color: var(--dark);">${escapeForTemplate(time.label)}</p>
+      <div class="flex flex-wrap justify-center gap-2">
+        ${checkIn.moodOptions.map((mood, mi) => `
+          <button class="mood-option w-12 h-12 rounded-full text-2xl flex items-center justify-center cursor-pointer transition-all border-2 border-transparent hover:scale-110" 
+                  style="background-color: ${mood.color};" 
+                  onclick="this.parentElement.querySelectorAll('.mood-option').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; saveFormData('mood_${starIndex}_${ti}', '${escapeForTemplate(mood.label)}');">
+            ${mood.emoji}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emoji-check-in">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(checkIn.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(checkIn.instructions)}</p>
+          
+          <div class="grid md:grid-cols-3 gap-6 mb-6">
+            ${moodGrid}
+          </div>
+          
+          <div class="flex flex-wrap justify-center gap-4 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
+            ${checkIn.moodOptions.map(mood => `
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${mood.emoji}</span>
+                <span class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(mood.label)}</span>
+              </div>
+            `).join("")}
+          </div>
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--soft-yellow);">
+            <p class="font-body font-semibold mb-2" style="color: var(--dark);">${escapeForTemplate(checkIn.patternQuestion)}</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 60px;" placeholder="I noticed..." onchange="saveFormData('mood_pattern_${starIndex}', this.value)"></textarea>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I tracked my moods!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderWordScramblePage(scramble: WordScrambleContent, starIndex: number): string {
+  const activityId = `scramble_${starIndex}`;
+  
+  const wordsHtml = scramble.words.map((word, wi) => `
+    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="${word.answer}">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">${word.emoji}</span>
+        <span class="font-body text-sm" style="color: var(--secondary);">Hint: ${escapeForTemplate(word.hint)}</span>
+      </div>
+      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">${word.scrambled}</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === '${word.answer}'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_${starIndex}_${wi}', this.value);">
+      <p class="word-feedback text-center font-title mt-2"></p>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="word-scramble">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(scramble.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(scramble.instructions)}</p>
+          
+          ${wordsHtml}
+          
+          <div class="p-4 rounded-xl text-center" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(scramble.completionMessage)}</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I solved all the scrambles!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAgreeDisagreePage(activity: AgreeDisagreeContent, starIndex: number): string {
+  const activityId = `agree_${starIndex}`;
+  
+  const statementsHtml = activity.statements.map((stmt, si) => `
+    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
+      <p class="font-body text-lg mb-3" style="color: var(--dark);">"${escapeForTemplate(stmt.statement)}"</p>
+      <div class="flex gap-3 mb-3">
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_${starIndex}_${si}', 'agree');">
+          I Agree
+        </button>
+        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_${starIndex}_${si}', 'disagree');">
+          I Disagree
+        </button>
+      </div>
+      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
+        <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(stmt.insight)}</p>
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="agree-disagree">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(activity.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(activity.instructions)}</p>
+          
+          ${statementsHtml}
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-2" style="color: var(--dark);">${escapeForTemplate(activity.reflection)}</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 60px;" placeholder="Write your thoughts..." onchange="saveFormData('agree_reflection_${starIndex}', this.value)"></textarea>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I shared my opinions!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderComicStripPage(comic: ComicStripContent, starIndex: number): string {
+  const activityId = `comic_${starIndex}`;
+  
+  const panelsHtml = comic.panels.map(panel => `
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${panel.panelNumber}</span>
+        <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(panel.prompt)}</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="${escapeForTemplate(panel.placeholder)}" onchange="saveFormData('comic_${starIndex}_${panel.panelNumber}', this.value)">
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="comic-strip">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(comic.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(comic.scenario)}</p>
+          </div>
+          
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            ${panelsHtml}
+          </div>
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(comic.sharePrompt)}</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I created my comic!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAffirmationBuilderPage(builder: AffirmationBuilderContent, starIndex: number): string {
+  const activityId = `affirm_${starIndex}`;
+  
+  const startersHtml = builder.starters.map(s => `<button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--light-green); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(s)}</button>`).join("");
+  const middlesHtml = builder.middles.map(m => `<button class="affirmation-part middle px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(m)}</button>`).join("");
+  const endingsHtml = builder.endings.map(e => `<button class="affirmation-part ending px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(e)}</button>`).join("");
+  const emojisHtml = builder.decorationEmojis.map(e => `<button class="emoji-decoration text-2xl p-1 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '${e} ' + display.textContent + ' ${e}';">${e}</button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="affirmation-builder">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(builder.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 affirmation-container" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(builder.instructions)}</p>
+          
+          <div class="mb-4">
+            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 1: Pick a starter</p>
+            <div class="flex flex-wrap">${startersHtml}</div>
+          </div>
+          
+          <div class="mb-4">
+            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 2: Pick a middle</p>
+            <div class="flex flex-wrap">${middlesHtml}</div>
+          </div>
+          
+          <div class="mb-4">
+            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 3: Pick an ending</p>
+            <div class="flex flex-wrap">${endingsHtml}</div>
+          </div>
+          
+          <div class="mb-6">
+            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Decorate with emojis:</p>
+            <div class="flex flex-wrap gap-1">${emojisHtml}</div>
+          </div>
+          
+          <div class="p-6 rounded-2xl text-center mb-4" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="font-body text-sm mb-2" style="color: var(--secondary);">Your affirmation:</p>
+            <p class="affirmation-display font-title text-2xl" style="color: var(--dark);">Tap the words above!</p>
+          </div>
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--soft-yellow);">
+            <p class="font-body" style="color: var(--dark);">${escapeForTemplate(builder.savePrompt)}</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="${activityId}"
+            onchange="markActivityComplete('${activityId}')"
+            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I built my power phrase!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ========================================
+// v5 NEW CHALLENGE RENDER FUNCTIONS
+// ========================================
+
+function renderWeatherControllerPage(weather: WeatherControllerContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `weather_${starIndex}`;
+  
+  const actionsHtml = weather.calmingActions.map(action => `
+    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background-color: white; border-color: var(--secondary);"
+            data-action-id="${action.id}"
+            data-points="${action.points}"
+            data-feedback="${escapeForTemplate(action.feedbackText)}"
+            onclick="handleWeatherAction(this, '${activityId}', ${action.points})">
+      <span class="text-4xl">${action.emoji}</span>
+      <span class="font-title text-lg text-center" style="color: var(--dark);">${escapeForTemplate(action.label)}</span>
+    </button>
+  `).join("");
+
+  const weatherEmoji = weather.weatherType === "storm" ? "⛈️" : 
+                       weather.weatherType === "rain" ? "🌧️" :
+                       weather.weatherType === "fog" ? "🌫️" : "🔥";
+  const weatherColors = weather.weatherType === "storm" ? "from-gray-600 to-gray-800" :
+                        weather.weatherType === "rain" ? "from-blue-400 to-blue-600" :
+                        weather.weatherType === "fog" ? "from-gray-300 to-gray-500" : "from-orange-400 to-red-500";
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="weather-controller" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(weather.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(weather.instructions)}</p>
+          
+          <!-- Weather Scene -->
+          <div class="weather-scene relative rounded-2xl overflow-hidden mb-6" style="height: 200px; background: linear-gradient(to-b, ${weatherColors});">
+            <div class="weather-overlay absolute inset-0 flex items-center justify-center transition-all duration-1000" id="weatherOverlay">
+              <span class="weather-emoji text-8xl animate-bounce" id="weatherEmoji">${weatherEmoji}</span>
+            </div>
+            <div class="weather-clear absolute inset-0 flex items-center justify-center transition-all duration-1000 opacity-0" id="weatherClear" style="background: linear-gradient(to-b, #87CEEB, #E0F6FF);">
+              <span class="text-8xl">☀️</span>
+            </div>
+            <!-- Animated elements -->
+            <div class="rain-drops absolute inset-0 pointer-events-none" id="rainDrops" style="opacity: 0.7;">
+              ${Array.from({length: 20}, (_, i) => `<div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: ${i * 5}%; animation: rainFall ${0.5 + Math.random()}s linear infinite; animation-delay: ${Math.random()}s;"></div>`).join("")}
+            </div>
+          </div>
+          
+          <!-- Calm Meter -->
+          <div class="mb-6">
+            <div class="flex justify-between mb-2">
+              <span class="font-body text-sm" style="color: var(--accent);">Stormy</span>
+              <span class="font-body text-sm" style="color: var(--secondary);">Calm</span>
+            </div>
+            <div class="h-8 rounded-full overflow-hidden" style="background-color: var(--soft-yellow);">
+              <div class="calm-meter h-full rounded-full transition-all duration-500" id="calmMeter" style="width: 0%; background: linear-gradient(to-r, var(--accent), var(--primary), var(--secondary), var(--light-green));"></div>
+            </div>
+            <p class="text-center font-title text-2xl mt-2" style="color: var(--primary);"><span id="calmPercent">0</span>% Calm</p>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            ${actionsHtml}
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all" id="weatherFeedback" style="background-color: var(--light-green); display: none;">
+            <p class="font-body text-lg" style="color: var(--dark);" id="feedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="weather-win p-6 rounded-2xl text-center" id="weatherWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">☀️</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(weather.winText)}</p>
+            <p class="font-body" style="color: var(--secondary);">${escapeForTemplate(weather.encouragement)}</p>
+          </div>
+          
+          <!-- Completion Checkbox (appears after win) -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="weatherComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I calmed the storm! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        @keyframes rainFall {
+          0% { transform: translateY(-20px); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(200px); opacity: 0; }
+        }
+        .weather-action:active { transform: scale(0.95); }
+        .weather-action.cooldown { opacity: 0.5; pointer-events: none; }
+        .weather-action.used { background-color: var(--light-green) !important; }
+      </style>
+    </div>`;
+}
+
+function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `powerup_${starIndex}`;
+  
+  const powerUpsHtml = collector.powerUps.map(pu => `
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="${pu.isPositive}"
+            data-name="${escapeForTemplate(pu.name)}"
+            onclick="handlePowerUpClick(this, '${activityId}', ${collector.targetCount})">
+      <div class="text-4xl mb-2">${pu.emoji}</div>
+      <p class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(pu.name)}</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(pu.description)}</p>
+    </button>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="power-up-collector" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(collector.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(collector.instructions)}</p>
+          
+          <!-- Collection Progress -->
+          <div class="flex justify-center items-center gap-4 mb-6">
+            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl" style="background-color: var(--soft-yellow);">
+              <span class="text-3xl">🎒</span>
+              <span class="font-title text-2xl" style="color: var(--dark);"><span id="collectedCount">0</span> / ${collector.targetCount}</span>
+            </div>
+          </div>
+          
+          <!-- Collected Items Display -->
+          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl" style="background-color: var(--cream);" id="collectedDisplay">
+            <p class="font-body text-sm self-center" style="color: var(--secondary);">Your collected power-ups will appear here!</p>
+          </div>
+          
+          <!-- Power-Up Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
+            ${powerUpsHtml}
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" style="display: none;">
+            <p class="font-body text-lg" id="powerupFeedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🎉</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(collector.winText)}</p>
+            <p class="font-body" style="color: var(--secondary);">${escapeForTemplate(collector.tipText)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="powerupComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .power-up-item:active { transform: scale(0.95); }
+        .power-up-item.collected { opacity: 0.5; pointer-events: none; border-color: var(--light-green) !important; }
+        .power-up-item.wrong { animation: shake 0.5s; background-color: #fecaca !important; }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+      </style>
+    </div>`;
+}
+
+function renderEmotionMazePage(maze: EmotionMazeContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `maze_${starIndex}`;
+  
+  const stepsHtml = maze.pathChoices.map((choice, idx) => `
+    <div class="maze-step rounded-2xl p-6 mb-4 transition-all" id="mazeStep${idx}" style="background-color: var(--soft-yellow); display: ${idx === 0 ? 'block' : 'none'};">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${choice.step}</span>
+        <p class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(choice.situation)}</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        ${choice.options.map((opt, oi) => `
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="${opt.isCorrect}"
+                  data-feedback="${escapeForTemplate(opt.feedback)}"
+                  data-step="${idx}"
+                  onclick="handleMazeChoice(this, ${idx}, ${maze.pathChoices.length}, '${activityId}')">
+            <span class="text-2xl mr-2">${opt.emoji}</span>
+            <span class="font-body" style="color: var(--dark);">${escapeForTemplate(opt.text)}</span>
+          </button>
+        `).join("")}
+      </div>
+      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback${idx}" style="display: none;"></div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emotion-maze" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(maze.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(maze.instructions)}</p>
+          
+          <!-- Journey Progress -->
+          <div class="flex justify-between items-center mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+            <div class="text-center">
+              <span class="text-4xl">${maze.startEmotion.emoji}</span>
+              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(maze.startEmotion.name)}</p>
+            </div>
+            <div class="flex-1 mx-4 relative">
+              <div class="h-3 rounded-full" style="background-color: var(--soft-yellow);">
+                <div class="maze-progress h-full rounded-full transition-all duration-500" id="mazeProgress" style="width: 0%; background-color: var(--light-green);"></div>
+              </div>
+              <div class="maze-marker absolute top-1/2 -translate-y-1/2 text-2xl transition-all duration-500" id="mazeMarker" style="left: 0%;">🚶</div>
+            </div>
+            <div class="text-center">
+              <span class="text-4xl">${maze.goalEmotion.emoji}</span>
+              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(maze.goalEmotion.name)}</p>
+            </div>
+          </div>
+          
+          <!-- Steps -->
+          ${stepsHtml}
+          
+          <!-- Win Message -->
+          <div class="maze-win p-6 rounded-2xl text-center" id="mazeWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">${maze.goalEmotion.emoji}</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(maze.completionMessage)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="mazeComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I navigated the maze! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .maze-option:active { transform: scale(0.98); }
+        .maze-option.correct { background-color: var(--light-green) !important; border-color: var(--secondary) !important; }
+        .maze-option.wrong { background-color: #fecaca !important; border-color: var(--accent) !important; }
+        .maze-option.disabled { opacity: 0.5; pointer-events: none; }
+      </style>
+    </div>`;
+}
+
+function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `shield_${starIndex}`;
+  
+  const sectionsHtml = shield.shieldSections.map((section, idx) => `
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: ${['var(--light-green)', 'var(--soft-yellow)', 'var(--primary)', '#a8d8ea'][idx % 4]};">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">${section.emoji}</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(section.title)}</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">${escapeForTemplate(section.prompt)}</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="${escapeForTemplate(section.placeholder)}"
+             data-section="${section.id}"
+             onchange="handleShieldInput('${activityId}', ${shield.shieldSections.length}); saveFormData('shield_${starIndex}_${section.id}', this.value)"
+             value="\${formData['shield_${starIndex}_${section.id}'] || ''}">
+    </div>
+  `).join("");
+
+  const decorationsHtml = shield.decorations.map(d => `
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('${d}')">${d}</button>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(shield.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(shield.instructions)}</p>
+          
+          <!-- Shield Visual -->
+          <div class="flex justify-center mb-6">
+            <div class="shield-container relative w-64 h-72">
+              <svg viewBox="0 0 200 220" class="w-full h-full">
+                <path d="M100 10 L180 50 L180 130 Q180 200 100 210 Q20 200 20 130 L20 50 Z" 
+                      fill="url(#shieldGradient)" stroke="var(--dark)" stroke-width="4"/>
+                <defs>
+                  <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--soft-yellow)"/>
+                    <stop offset="100%" style="stop-color:var(--light-green)"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="shield-decorations absolute inset-0 flex items-center justify-center text-4xl flex-wrap" id="shieldDecorations">
+                🛡️
+              </div>
+            </div>
+          </div>
+          
+          <!-- Decoration Buttons -->
+          <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
+            <span class="font-body text-sm self-center mr-2" style="color: var(--dark);">Add decorations:</span>
+            ${decorationsHtml}
+          </div>
+          
+          <!-- Shield Sections -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            ${sectionsHtml}
+          </div>
+          
+          <!-- Progress Indicator -->
+          <div class="text-center mb-4">
+            <p class="font-body" style="color: var(--secondary);">Sections filled: <span id="shieldProgress">0</span> / ${shield.shieldSections.length}</p>
+          </div>
+          
+          <!-- Win Message -->
+          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🛡️</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(shield.completionMessage)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="shieldComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `volcano_${starIndex}`;
+  
+  const actionsHtml = volcano.coolingActions.map(action => `
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--secondary);"
+            data-cooling="${action.coolingPower}"
+            data-action="${escapeForTemplate(action.action)}"
+            onclick="handleVolcanoCool(this, '${activityId}', ${action.coolingPower})">
+      <span class="text-3xl">${action.emoji}</span>
+      <span class="font-body text-sm text-center" style="color: var(--dark);">${escapeForTemplate(action.action)}</span>
+    </button>
+  `).join("");
+
+  const levelsHtml = volcano.levels.map(level => `
+    <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel${level.level}" style="background-color: ${level.color}20;">
+      <span class="text-xl">${level.emoji}</span>
+      <span class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(level.label)}</span>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-volcano" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(volcano.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(volcano.instructions)}</p>
+          
+          <!-- Scenario -->
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center" style="color: var(--dark);"><strong>The situation:</strong> ${escapeForTemplate(volcano.triggerScenario)}</p>
+          </div>
+          
+          <!-- Volcano Visual -->
+          <div class="flex justify-center items-end gap-8 mb-6">
+            <!-- Level Indicator -->
+            <div class="flex flex-col-reverse gap-1">
+              ${levelsHtml}
+            </div>
+            
+            <!-- Volcano -->
+            <div class="volcano-container relative">
+              <svg viewBox="0 0 200 200" class="w-48 h-48">
+                <!-- Volcano body -->
+                <path d="M20 200 L60 80 L80 90 L100 60 L120 90 L140 80 L180 200 Z" 
+                      fill="#8B4513" stroke="#5D3A1A" stroke-width="3"/>
+                <!-- Lava inside -->
+                <path d="M65 95 L80 95 L100 70 L120 95 L135 95 L120 130 L80 130 Z" 
+                      class="volcano-lava" id="volcanoLava"
+                      fill="#ef4444" opacity="0.9"/>
+                <!-- Bubbles -->
+                <circle class="lava-bubble" cx="90" cy="100" r="5" fill="#fbbf24" opacity="0.8">
+                  <animate attributeName="cy" values="100;85;100" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <circle class="lava-bubble" cx="110" cy="105" r="4" fill="#fbbf24" opacity="0.8">
+                  <animate attributeName="cy" values="105;90;105" dur="1.2s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+              <div class="volcano-indicator absolute -top-6 left-1/2 -translate-x-1/2 text-4xl transition-all" id="volcanoIndicator">🌋</div>
+            </div>
+            
+            <!-- Temperature Display -->
+            <div class="text-center">
+              <p class="font-title text-3xl" style="color: var(--accent);"><span id="volcanoTemp">100</span>°</p>
+              <p class="font-body text-sm" style="color: var(--dark);">Heat Level</p>
+            </div>
+          </div>
+          
+          <!-- Cooling Actions -->
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Use your cooling tools! 🧊</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            ${actionsHtml}
+          </div>
+          
+          <!-- Feedback -->
+          <div class="volcano-feedback p-4 rounded-xl text-center mb-4" id="volcanoFeedback" style="display: none;">
+            <p class="font-body text-lg" id="volcanoFeedbackText"></p>
+          </div>
+          
+          <!-- Safe Message -->
+          <div class="volcano-safe p-6 rounded-2xl text-center" id="volcanoSafe" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">😌</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(volcano.safeMessage)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="volcanoComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I cooled the volcano! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .cooling-action:active { transform: scale(0.95); }
+        .cooling-action.cooldown { opacity: 0.5; pointer-events: none; }
+        .volcano-level.active { transform: scale(1.1); font-weight: bold; }
+      </style>
+    </div>`;
+}
+
 // ====================
 // MAIN GENERATOR
 // ====================
@@ -1853,7 +5735,8 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
 async function generateModule(
   supabaseClient: any,
   contentBrief: string,
-  jobId?: string
+  jobId?: string,
+  seriesInfo?: SeriesInfo | null
 ): Promise<{ html: string; pageCount: number; characterCount: number; spec: any }> {
   
   const updateProgress = async (step: string, message: string) => {
@@ -1879,7 +5762,7 @@ async function generateModule(
 
   
   await updateProgress("generating", `Creating ${pageStructure.length}-page module...`);
-  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress);
+  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo);
   
   // Generate module code
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
@@ -1911,7 +5794,8 @@ async function generateModule(
 async function runAsyncGeneration(
   supabaseClient: any,
   jobId: string,
-  contentBrief: string
+  contentBrief: string,
+  seriesInfo?: SeriesInfo | null
 ) {
   const startTime = Date.now();
   
@@ -1925,7 +5809,7 @@ async function runAsyncGeneration(
       setTimeout(() => reject(new Error("Generation timeout")), JOB_TIMEOUT_MS);
     });
     
-    const generationPromise = generateModule(supabaseClient, contentBrief, jobId);
+    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
     
     await supabaseClient
@@ -2003,9 +5887,96 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const contentBrief = body?.contentBrief;
     const asyncMode = body?.async === true;
+    const seriesId = body?.seriesId;
+    
+    // Debug logging
+    console.log(`[AI] Request received - seriesId: ${seriesId}, asyncMode: ${asyncMode}, contentBrief length: ${contentBrief?.length || 0}`);
+    console.log(`[AI] Full body keys: ${Object.keys(body || {}).join(', ')}`);
     
     if (!contentBrief) {
       return jsonResponse({ error: "contentBrief is required" }, 400);
+    }
+    
+    // Fetch series info if seriesId provided
+    let seriesInfo: SeriesInfo | null = null;
+    if (seriesId) {
+      console.log(`[AI] Looking up series with id/label: ${seriesId}`);
+      
+      // Check if seriesId looks like a UUID (contains dashes and is ~36 chars)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seriesId);
+      
+      let series = null;
+      let seriesError = null;
+      
+      if (isUUID) {
+        // Lookup by UUID
+        const result = await supabaseClient
+          .from("series")
+          .select("label, character_type, emoji")
+          .eq("id", seriesId)
+          .single();
+        series = result.data;
+        seriesError = result.error;
+      } else {
+        // Lookup by label name (case-insensitive)
+        const result = await supabaseClient
+          .from("series")
+          .select("label, character_type, emoji")
+          .ilike("label", seriesId)
+          .single();
+        series = result.data;
+        seriesError = result.error;
+        
+        // If not found by exact label, try partial match
+        if (seriesError && seriesError.code === 'PGRST116') {
+          console.log(`[AI] Exact label match failed, trying partial match...`);
+          const partialResult = await supabaseClient
+            .from("series")
+            .select("label, character_type, emoji")
+            .ilike("label", `%${seriesId}%`)
+            .limit(1)
+            .single();
+          series = partialResult.data;
+          seriesError = partialResult.error;
+        }
+      }
+      
+      if (!seriesError && series) {
+        // Map character_type to emoji if emoji column doesn't exist
+        const characterTypeToEmoji: Record<string, string> = {
+          'dog': '🐕',
+          'Dog': '🐕',
+          'cat': '🐱',
+          'Cat': '🐱',
+          'rabbit': '🐰',
+          'Rabbit': '🐰',
+          'bear': '🐻',
+          'Bear': '🐻',
+          'fox': '🦊',
+          'Fox': '🦊',
+          'owl': '🦉',
+          'Owl': '🦉',
+          'penguin': '🐧',
+          'Penguin': '🐧',
+          'lion': '🦁',
+          'Lion': '🦁',
+          'elephant': '🐘',
+          'Elephant': '🐘',
+          'monkey': '🐵',
+          'Monkey': '🐵',
+        };
+        
+        const emoji = series.emoji || characterTypeToEmoji[series.character_type] || '🐾';
+        
+        seriesInfo = {
+          label: series.label,
+          character_type: series.character_type,
+          emoji: emoji
+        };
+        console.log(`[AI] Using series: ${seriesInfo.label} (${seriesInfo.character_type} ${seriesInfo.emoji})`);
+      } else {
+        console.log(`[AI] Series lookup failed for id ${seriesId}:`, seriesError);
+      }
     }
     
     // Async mode
@@ -2023,16 +5994,16 @@ serve(async (req) => {
       
       const anyGlobal = globalThis as any;
       if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
-        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief));
+        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo));
       } else {
-        runAsyncGeneration(supabaseClient, jobId, contentBrief).catch(console.error);
+        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo).catch(console.error);
       }
       
       return jsonResponse({ jobId });
     }
     
     // Sync mode
-    const result = await generateModule(supabaseClient, contentBrief);
+    const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo);
     return jsonResponse({
       html: result.html,
       pageCount: result.pageCount,

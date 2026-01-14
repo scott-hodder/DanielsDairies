@@ -14,7 +14,7 @@
   --module-shadow-card: 0 10px 22px rgba(15, 23, 42, 0.08);
 
   /* Header sizing (single source of truth) */
-  --module-header-height: 92px;
+  --module-header-height: 75px;
 
   /* Default (Daniel-ish fallback) */
   --theme-primary: #1d3564;
@@ -418,7 +418,7 @@ input:focus{
 
 /* Mobile */
 @media (max-width: 768px){
-  :root{ --module-header-height: 92px; } /* header often gets taller on mobile */
+  :root{ --module-header-height: 75px; } /* header often gets taller on mobile */
   .module-hero{ padding: 26px 18px; }
   .page-inner{ padding: 20px; }
   

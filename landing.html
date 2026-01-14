@@ -3,11 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome - Daniel's Dairies</title>
+    <title>Welcome - Daniel's Diaries</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/landing.css">
+    <link href="/styles/dashboard.css" rel="stylesheet">
 </head>
 <body>
     <!-- Header -->
@@ -15,16 +24,16 @@
         <div class="header-content">
             <div class="header-left">
                 <a href="/landing.html" class="header-logo">
-                    <img src="/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
                     <div>
-                        <h1 class="header-title">Daniel's Dairies</h1>
+                        <h1 class="header-title">Daniel's Diaries</h1>
                         <p class="header-subtitle" id="headerSubtitle">Your journey together</p>
                     </div>
                 </a>
             </div>
             <div class="header-right">
-                <button class="btn-header" id="dashboardHomeButton">
-                    Dashboard
+                <button class="btn-header" id="viewDashboardBtn">
+                    📊 Dashboard
                 </button>
                 <button class="btn-header" id="profileButton">
                     Profile
@@ -37,6 +46,17 @@
         </div>
     </header>
 
+    <!-- Streak Celebration Modal -->
+    <div id="streakCelebrationModal" class="streak-celebration-modal hidden" style="display: none;">
+        <div class="streak-celebration-content">
+            <div class="streak-celebration-emoji">🔥</div>
+            <h2 class="streak-celebration-title">Well Done!</h2>
+            <p class="streak-celebration-message" id="streakMessage">Your streak is <span id="streakCount">2</span> days!</p>
+            <div class="streak-celebration-confetti" id="confetti"></div>
+            <button class="streak-celebration-btn" onclick="closeStreakCelebration()">Keep it going! 💪</button>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="main-content">
         <!-- Loading State -->
@@ -44,101 +64,133 @@
             Loading...
         </div>
 
+        <!-- Welcome Landing Page (for users with no children) -->
+        <div id="welcomeLandingPage" class="hidden" style="display: none;">
+            <div style="max-width: 700px; text-align: center; padding: 40px 20px;">
+                <!-- Welcome Header -->
+                <div style="margin-bottom: 40px;">
+                    <img src="/public/images/characters/DanielTheDog.png" alt="Daniel the Dog" style="height: 200px; animation: bounce 2s infinite; display: block; margin-left: auto; margin-right: auto;">
+                    <h1 style="font-size: 48px; color: #405878; font-weight: 700; margin-bottom: 16px;">Welcome to Daniel's Diaries</h1>
+                    <p style="font-size: 18px; color: #4c6c96; line-height: 1.6; margin-bottom: 24px;">
+                        Daniel's Diaries is an interactive workbook designed to help children build emotional intelligence, resilience, and coping skills through engaging stories and activities. Each workbook is expertly crafted to support your child's mental wellbeing journey.
+                    </p>
+                </div>
+
+                <!-- Features -->
+                <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px;">
+                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin-bottom: 24px;">What You'll Get</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;">
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">📚</span>
+                            <div>
+                                <strong style="color: #405878;">Interactive Workbooks</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Engaging stories and activities</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">📈</span>
+                            <div>
+                                <strong style="color: #405878;">Progress Tracking</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Monitor your child's growth</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">🎯</span>
+                            <div>
+                                <strong style="color: #405878;">Expert-Designed</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Created by specialists</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <span style="font-size: 28px; flex-shrink: 0;">⭐</span>
+                            <div>
+                                <strong style="color: #405878;">Reward System</strong>
+                                <p style="color: #4c6c96; font-size: 14px; margin: 4px 0 0 0;">Earn stars for achievements</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <button id="welcomeGetStartedBtn" class="btn-continue" type="button" style="font-size: 18px; padding: 16px 40px; cursor: pointer; width: 100%; max-width: 400px;">
+                    Add Your Child
+                </button>
+            </div>
+        </div>
+
         <!-- Welcome Section -->
-        <div id="welcomeSection" class="welcome-section hidden">
-            <span class="welcome-icon">🌱</span>
+        <div id="welcomeSection" class="welcome-section hidden" style="display: none;">
+            <img src="/public/images/characters/DanielTheDog.png" alt="Daniel the Dog" style="height: 140px; animation: bounce 2s infinite; display: block; margin-left: auto; margin-right: auto;">
             <h1 class="welcome-greeting" id="welcomeGreeting">Welcome back</h1>
             <p class="welcome-message">Today is a good day to check in. Every small step forward matters.</p>
         </div>
 
         <!-- Child Selection -->
-        <div id="childSelection" class="child-selection hidden">
-            <h2 class="section-title">Who's using Daniel's Dairies today?</h2>
+        <div id="childSelection" class="child-selection hidden" style="display: none;">
+            <h2 class="section-title">Who's using Daniel's Diaries today?</h2>
             <div class="children-list" id="childrenList"></div>
         </div>
 
-        <!-- Next Step Section -->
-        <div id="nextStepSection" class="next-step-section">
-            <h2 class="next-step-title" id="nextStepTitle">Loading...</h2>
-            <p class="next-step-subtitle" id="nextStepSubtitle">Continue your journey</p>
-            
-            <div class="module-card-large" id="currentModuleCard">
-                <h3 class="module-title-large" id="moduleTitle">
-                    <span id="moduleEmoji">📖</span>
-                    <span id="moduleTitleText">Loading...</span>
-                </h3>
-                <p class="module-description" id="moduleDescription">Loading module information...</p>
-                
-                <div class="module-why" id="moduleWhy">
-                    <strong>💡 Why this module?</strong> <span id="moduleReason">Loading...</span>
-                </div>
-
-                <div class="module-guidance">
-                    <div class="guidance-item">
-                        <span>⏱️</span>
-                        <span>5–10 min per activity</span>
-                    </div>
-                    <div class="guidance-item">
-                        <span>👪</span>
-                        <span>Best done together</span>
-                    </div>
-                </div>
-                
-                <div class="progress-info" id="progressInfo">
-                    <p class="progress-text" id="progressText">Loading progress...</p>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <button class="btn-continue" id="continueButton">Continue Module</button>
-                <button class="btn-browse" id="browseButton">Browse All Modules</button>
-
-                <div class="reassurance-message">
-                    <p class="reassurance-text">💜 You don't need to do everything at once. Even one small activity is enough.</p>
-                </div>
-            </div>
-
-            <!-- Journey Progress -->
-            <div class="journey-progress">
-                <h3 class="journey-title">
-                    <span>✨</span>
-                    <span>Your Journey This Week</span>
-                </h3>
-                <div class="journey-stats">
-                    <div class="journey-stat">
-                        <span class="journey-stat-value" id="skillsPracticed">0</span>
-                        <span class="journey-stat-label">Skills explored</span>
-                    </div>
-                    <div class="journey-stat">
-                        <span class="journey-stat-value" id="toolsLearned">0</span>
-                        <span class="journey-stat-label">Tools introduced</span>
-                    </div>
-                    <div class="journey-stat">
-                        <span class="journey-stat-value" id="activitiesCompleted">0</span>
-                        <span class="journey-stat-label">Activities completed</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <button class="btn-quick-action" id="viewDashboardBtn" style="width: 100%;">
-                    📊 View Full Dashboard
-                </button>
-            </div>
-        </div>
     </main>
+
+    <script>
+        // Global functions for streak celebration (outside module scope)
+        function closeStreakCelebration() {
+            const modal = document.getElementById('streakCelebrationModal')
+            modal.classList.add('hidden')
+            modal.style.display = 'none'
+        }
+
+        function showStreakCelebration(streakDays) {
+            const modal = document.getElementById('streakCelebrationModal')
+            const streakCount = document.getElementById('streakCount')
+            const confettiContainer = document.getElementById('confetti')
+            
+            streakCount.textContent = streakDays
+            modal.classList.remove('hidden')
+            modal.style.display = 'flex'
+            
+            // Generate confetti
+            generateConfetti(confettiContainer)
+            
+            // Auto-close after 5 seconds
+            setTimeout(() => {
+                closeStreakCelebration()
+            }, 5000)
+        }
+
+        function generateConfetti(container) {
+            container.innerHTML = ''
+            const pieceCount = 30
+            
+            for (let i = 0; i < pieceCount; i++) {
+                const piece = document.createElement('div')
+                piece.className = 'confetti-piece'
+                
+                const randomX = Math.random() * 200 - 100
+                const randomDelay = Math.random() * 0.2
+                
+                piece.style.left = Math.random() * 100 + '%'
+                piece.style.top = Math.random() * 50 + '%'
+                piece.style.setProperty('--tx', randomX + 'px')
+                piece.style.animationDelay = randomDelay + 's'
+                
+                container.appendChild(piece)
+            }
+        }
+    </script>
 
     <script type="module">
         import { checkAuth, signOut } from './src/auth.js'
-        import { getChildren, getModules, getChildModules, getParentProfile } from './src/database.js'
+        import { getChildren, getModules, getChildModules, getParentProfile, createChild, setChildPassword, updateChildModuleStatus } from './src/database.js'
+        import { supabase } from './src/supabaseClient.js'
 
         let currentUser = null
         let children = []
         let selectedChild = null
         let modules = []
         let childModules = []
+        let streakShown = false
 
         // Calming welcome messages
         const welcomeMessages = [
@@ -173,6 +225,7 @@
 
         // DOM Elements
         const loadingState = document.getElementById('loadingState')
+        const welcomeLandingPage = document.getElementById('welcomeLandingPage')
         const welcomeSection = document.getElementById('welcomeSection')
         const childSelection = document.getElementById('childSelection')
         const nextStepSection = document.getElementById('nextStepSection')
@@ -186,6 +239,18 @@
         const continueButton = document.getElementById('continueButton')
         const browseButton = document.getElementById('browseButton')
         const viewDashboardBtn = document.getElementById('viewDashboardBtn')
+
+        function showElement(element, display = 'block') {
+            if (!element) return
+            element.classList.remove('hidden')
+            element.style.display = display
+        }
+
+        function hideElement(element) {
+            if (!element) return
+            element.classList.add('hidden')
+            element.style.display = 'none'
+        }
 
         // Initialize
         async function init() {
@@ -206,6 +271,25 @@
                     welcomeGreeting.textContent = `Welcome back, ${displayName}`
                 }
 
+                // Check and show streak celebration if streak > 1
+                try {
+                    const { data: streakData } = await supabase
+                        .from('login_streaks')
+                        .select('current_streak')
+                        .eq('user_id', currentUser.id)
+                        .single()
+                    
+                    if (streakData && streakData.current_streak > 1 && !streakShown) {
+                        streakShown = true
+                        // Show celebration after a brief delay to let page load
+                        setTimeout(() => {
+                            showStreakCelebration(streakData.current_streak)
+                        }, 500)
+                    }
+                } catch (error) {
+                    console.log('Could not fetch streak:', error)
+                }
+
                 await setupAdminAccess(currentUser.id)
 
                 // Load children (pass user ID)
@@ -214,17 +298,49 @@
                 // Load modules
                 modules = await getModules()
 
-                // Show welcome and child selection
-                loadingState.classList.add('hidden')
-                welcomeSection.classList.remove('hidden')
-                childSelection.classList.remove('hidden')
+                // Hide loading state
+                loadingState.style.display = 'none'
+                
+                // If no children, show welcome landing page
+                if (!children || children.length === 0) {
+                    // Show only welcome landing page
+                    showElement(welcomeLandingPage, 'flex')
+                    hideElement(welcomeSection)
+                    hideElement(childSelection)
+                    hideElement(nextStepSection)
+                    
+                    // Add event listener to Get Started button to open add child modal
+                    const welcomeGetStartedBtn = document.getElementById('welcomeGetStartedBtn')
+                    if (welcomeGetStartedBtn) {
+                        welcomeGetStartedBtn.addEventListener('click', showAddChildModal)
+                    }
+                    return
+                }
 
+                // User has children - check if there's only one child
+                hideElement(welcomeLandingPage)
+                showElement(welcomeSection, 'block')
+                
                 // Display random welcome message
                 const randomMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)]
                 document.querySelector('.welcome-message').textContent = randomMessage
 
-                // Render children
-                renderChildren()
+                // If only one child, automatically select them
+                if (children.length === 1) {
+                    hideElement(childSelection)
+                    hideElement(nextStepSection)
+                    loadingState.style.display = 'block'
+                    
+                    // Auto-select the single child
+                    await selectChild(children[0])
+                } else {
+                    // Multiple children - show selection screen
+                    showElement(childSelection, 'block')
+                    hideElement(nextStepSection)
+                    
+                    // Render children for selection
+                    renderChildren()
+                }
 
             } catch (error) {
                 console.error('Initialization error:', error)
@@ -252,63 +368,58 @@
         // Select child and show next step
         async function selectChild(child) {
             selectedChild = child
-            
-            // Hide selection, show loading
-            childSelection.classList.add('hidden')
-            loadingState.classList.remove('hidden')
-
-            try {
-                // Load child's modules
-                childModules = await getChildModules(child.id)
-                
-                // Find next module to work on
-                const nextModule = findNextModule()
-                
-                // Update UI
-                loadingState.classList.add('hidden')
-                nextStepSection.classList.add('active')
-                
-                if (nextModule) {
-                    displayNextModule(nextModule)
-                } else {
-                    displayNoModules()
-                }
-
-                // Update journey stats
-                updateJourneyStats()
-
-            } catch (error) {
-                console.error('Error loading child data:', error)
-                alert('Failed to load child data. Please try again.')
-                window.location.reload()
-            }
+            window.location.href = `/dashboard.html?childId=${child.id}`
         }
 
         // Find the next module to work on
         function findNextModule() {
-            // First, find in-progress modules
-            const inProgress = childModules
-                .filter(cm => !cm.is_completed && cm.stars_earned > 0)
-                .map(cm => {
-                    const module = modules.find(m => m.id === cm.module_id)
-                    return { ...module, childModule: cm }
-                })
-                .filter(m => m && m.is_active)
-
-            if (inProgress.length > 0) {
-                return inProgress[0]
+            // Get only the child's active modules
+            const activeChildModules = childModules.filter(cm => cm.is_active)
+            
+            if (activeChildModules.length === 0) {
+                return null
             }
 
-            // If no in-progress, find first available module
-            const available = modules
-                .filter(m => m.is_active)
-                .map(m => {
-                    const cm = childModules.find(cm => cm.module_id === m.id)
-                    return { ...m, childModule: cm }
+            // Map to include full module data
+            const activeModulesWithData = activeChildModules
+                .map(cm => {
+                    const module = modules.find(m => m.id === cm.module_id)
+                    return module ? { ...module, childModule: cm } : null
                 })
-                .filter(m => !m.childModule || !m.childModule.is_completed)
+                .filter(m => m !== null)
 
-            return available[0] || null
+            // Filter to only incomplete modules (not completed)
+            const incompleteModules = activeModulesWithData.filter(m => !m.childModule.is_completed)
+            
+            if (incompleteModules.length === 0) {
+                return null
+            }
+
+            // First priority: Find in-progress modules (has stars but not completed)
+            const inProgress = incompleteModules.filter(m => m.childModule.stars_earned > 0)
+
+            if (inProgress.length > 0) {
+                // Return the oldest in-progress module
+                return inProgress.sort((a, b) => {
+                    const dateA = new Date(a.created_at || 0)
+                    const dateB = new Date(b.created_at || 0)
+                    return dateA - dateB
+                })[0]
+            }
+
+            // Second priority: Find the oldest not-started module
+            const notStarted = incompleteModules.filter(m => !m.childModule.stars_earned || m.childModule.stars_earned === 0)
+            
+            if (notStarted.length > 0) {
+                // Return the oldest not-started module
+                return notStarted.sort((a, b) => {
+                    const dateA = new Date(a.created_at || 0)
+                    const dateB = new Date(b.created_at || 0)
+                    return dateA - dateB
+                })[0]
+            }
+
+            return null
         }
 
         // Display next module
@@ -341,37 +452,32 @@
             const progressText = document.getElementById('progressText')
 
             if (module.childModule && module.childModule.stars_earned > 0) {
-                const totalActivities = module.total_stars || 100
-                const activitiesCompleted = Math.round((module.childModule.stars_earned / totalActivities) * 8) // Estimate 8 activities
-                const percentage = Math.round((module.childModule.stars_earned / totalActivities) * 100)
+                const totalStars = module.total_stars || 100
+                const percentage = Math.round((module.childModule.stars_earned / totalStars) * 100)
                 progressBar.style.width = percentage + '%'
-                progressText.textContent = `${activitiesCompleted} of 8 activities completed`
+                progressText.textContent = 'Progress: ' + percentage + '%'
                 continueButton.textContent = '▶️ Continue Module'
             } else {
                 progressBar.style.width = '0%'
-                progressText.textContent = 'Not started yet • 0 of 8 activities completed'
+                progressText.textContent = 'Not started yet'
                 continueButton.textContent = '🌟 Start Module'
             }
 
             // Button actions
-            continueButton.onclick = () => {
-                // Map module codes to files (same as dashboard)
-                const moduleFiles = {
-                    'MODULE1': 'module1.html',
-                    'MODULE2': 'module2.html',
-                    'MODULE3': 'module3.html',
-                    'MODULE4': 'module4.html',
-                    'MODULE5': 'module5.html',
-                    'MODULE6': 'module6.html',
-                    'MODULE7': 'module7.html',
-                    'MODULE8': 'module8.html'
-                }
-                
-                const moduleFile = moduleFiles[module.code]
-                if (moduleFile) {
-                    window.location.href = `/modules/${moduleFile}?childId=${selectedChild.id}`
-                } else {
-                    // Fallback to dashboard if module file not found
+            continueButton.onclick = async () => {
+                try {
+                    // Update module status to in_progress
+                    await updateChildModuleStatus(selectedChild.id, module.id, 'in_progress')
+                    
+                    // Get current user for the URL
+                    const { data: { user } } = await supabase.auth.getUser()
+                    
+                    // Load module through the module player (same as dashboard)
+                    const moduleUrl = `/module.html?code=${module.code}&childId=${selectedChild.id}&moduleId=${module.id}&parentUserId=${user.id}`
+                    window.location.href = moduleUrl
+                } catch (error) {
+                    console.error('Error starting module:', error)
+                    // Fallback to dashboard if there's an error
                     window.location.href = `/dashboard.html?childId=${selectedChild.id}`
                 }
             }
@@ -455,8 +561,249 @@
             })
         }
 
+        // Add child modal functions
+        const addChildModal = document.getElementById('addChildModal')
+        const addChildForm = document.getElementById('addChildForm')
+        const cancelAddChild = document.getElementById('cancelAddChild')
+        const modalError = document.getElementById('modalError')
+        const addChildAvatarPicker = document.getElementById('addChildAvatarPicker')
+        const addChildAvatar = document.getElementById('addChildAvatar')
+
+function showAddChildModal() {
+    const modal = document.querySelector('#addChildModal .modal');
+    if (modal && !modal.querySelector('.modal-header-fun')) {
+        modal.innerHTML = getEnhancedAddModalHTML();
+        setupAddModalListeners();
+    }
+    
+    document.getElementById('childName').value = '';
+    document.getElementById('childDob').value = '';
+    document.getElementById('childPassword').value = '';
+    document.getElementById('modalError')?.classList.add('hidden');
+    
+    renderEnhancedAddAvatarPicker('🦊');
+    
+    addChildModal.style.display = 'flex';
+    setTimeout(() => document.getElementById('childName')?.focus(), 100);
+}
+
+        function hideAddChildModal() {
+            addChildModal.style.display = 'none'
+            addChildForm.reset()
+            modalError.style.display = 'none'
+        }
+
+
+const avatarCategories = {
+    animals: ['🦊', '🐼', '🦁', '🐨', '🦋', '🐸', '🐯', '🐺'],
+    magical: ['🧚', '🧙', '🧜', '🐉', '🦄', '🌈', '🔮', '🦕'],
+    heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎'],
+    space: ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌙', '⭐', '🪐', '☄️']
+};
+
+function getEnhancedAddModalHTML() {
+    return `
+    <div class="modal-header-fun">
+        <button type="button" class="close-btn-fun" id="closeAddModalBtn">✕</button>
+        <div class="header-sparkles">
+            <span class="header-sparkle">✨</span>
+            <span class="header-sparkle">⭐</span>
+            <span class="header-sparkle">💫</span>
+            <span class="header-sparkle">🌟</span>
+        </div>
+        <h2 class="modal-title-fun">Add New Explorer!</h2>
+        <p class="modal-subtitle-fun">Let's create a profile! 🚀</p>
+        
+        <div class="avatar-preview-wrapper">
+            <div class="avatar-preview-circle" id="addAvatarPreviewCircle">🦊</div>
+        </div>
+    </div>
+
+    <div class="modal-body-fun">
+        <div id="modalError" class="error-message hidden"></div>
+        
+        <form id="addChildForm">
+            <div class="form-group-fun">
+                <label class="form-label-fun">
+                    <span class="form-label-icon">📝</span>
+                    What's Their Name?
+                </label>
+                <input type="text" id="childName" class="form-input-fun" placeholder="Type their awesome name..." required>
+            </div>
+
+            <div class="form-group-fun">
+                <label class="form-label-fun">
+                    <span class="form-label-icon">🎂</span>
+                    Date of Birth
+                </label>
+                <input type="date" id="childDob" class="form-input-fun" required>
+            </div>
+
+            <div class="form-group-fun">
+                <label class="form-label-fun">
+                    <span class="form-label-icon">🔐</span>
+                    Child's Secret Password
+                </label>
+                <input type="password" id="childPassword" class="form-input-fun" placeholder="Create a secret password..." required>
+            </div>
+
+            <div class="avatar-section-fun" id="addAvatarSectionFun">
+                <h3 class="avatar-section-title"><span>🎭</span> Pick Their Avatar!</h3>
+                <p class="avatar-section-subtitle">Choose a cool character to represent them</p>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🐾</span> Cool Animals</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerAnimals"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>✨</span> Magical Creatures</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerMagical"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🦸</span> Super Heroes</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerHeroes"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label"><span>🚀</span> Space & Adventure</div>
+                    <div class="avatar-picker-fun" id="addAvatarPickerSpace"></div>
+                </div>
+
+                <input type="hidden" id="addChildAvatar">
+            </div>
+
+            <div class="modal-buttons-fun">
+                <button type="button" class="btn-fun btn-secondary-fun" id="cancelAddChild">Maybe Later</button>
+                <button type="submit" class="btn-fun btn-primary-fun"><span>✨</span> Add Child!</button>
+            </div>
+        </form>
+    </div>
+    `;
+}
+
+function renderAvatarCategory(containerId, avatars, selectedAvatar, hiddenInput, previewCircle) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    avatars.forEach(emoji => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'avatar-option-fun' + (selectedAvatar === emoji ? ' selected' : '');
+        button.innerHTML = `<span class="avatar-character">${emoji}</span>`;
+        
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const modal = button.closest('.modal');
+            modal.querySelectorAll('.avatar-option-fun').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            if (hiddenInput) hiddenInput.value = emoji;
+            
+            if (previewCircle) {
+                previewCircle.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    previewCircle.textContent = emoji;
+                    previewCircle.style.transform = 'scale(1.15)';
+                    setTimeout(() => previewCircle.style.transform = 'scale(1)', 150);
+                }, 100);
+            }
+        });
+        
+        container.appendChild(button);
+    });
+}
+
+function renderEnhancedAddAvatarPicker(selectedAvatar) {
+    const hiddenInput = document.getElementById('addChildAvatar');
+    const previewCircle = document.getElementById('addAvatarPreviewCircle');
+    
+    if (hiddenInput) hiddenInput.value = selectedAvatar;
+    if (previewCircle) previewCircle.textContent = selectedAvatar;
+    
+    renderAvatarCategory('addAvatarPickerAnimals', avatarCategories.animals, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('addAvatarPickerMagical', avatarCategories.magical, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('addAvatarPickerHeroes', avatarCategories.heroes, selectedAvatar, hiddenInput, previewCircle);
+    renderAvatarCategory('addAvatarPickerSpace', avatarCategories.space, selectedAvatar, hiddenInput, previewCircle);
+    
+    if (previewCircle) {
+        previewCircle.onclick = () => {
+            document.getElementById('addAvatarSectionFun')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+    }
+}
+
+function createConfettiCelebration() {
+    const colors = ['#7c3aed', '#ec4899', '#fbbf24', '#14b8a6', '#3b82f6', '#f97316', '#22c55e'];
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    
+    for (let i = 0; i < 50; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.width = (6 + Math.random() * 8) + 'px';
+        piece.style.height = piece.style.width;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        container.appendChild(piece);
+    }
+    
+    setTimeout(() => container.remove(), 3500);
+}
+
+function setupAddModalListeners() {
+    document.getElementById('closeAddModalBtn')?.addEventListener('click', hideAddChildModal);
+    document.getElementById('cancelAddChild')?.addEventListener('click', hideAddChildModal);
+    
+    document.getElementById('addChildForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const childName = document.getElementById('childName').value;
+        const childDob = document.getElementById('childDob').value;
+        const childPassword = document.getElementById('childPassword').value;
+        const avatar = document.getElementById('addChildAvatar').value || '🦊';
+
+        if (!childName || !childDob || !childPassword) {
+            modalError.textContent = 'Please fill in all fields';
+            modalError.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            const newChild = await createChild(currentUser.id, childName, childDob, avatar);
+            await setChildPassword(newChild.id, childPassword);
+            
+            createConfettiCelebration();
+            hideAddChildModal();
+            window.location.reload();
+        } catch (error) {
+            console.error('Error creating child:', error);
+            modalError.textContent = error.message || 'Failed to create child';
+            modalError.classList.remove('hidden');
+        }
+    });
+}
+
+
+        if (cancelAddChild) {
+            cancelAddChild.addEventListener('click', hideAddChildModal)
+        }
+
+
         // Initialize app
         init()
     </script>
+
+    <!-- Add Child Modal -->
+<div id="addChildModal" class="modal-overlay hidden" style="display: none;">
+    <div class="modal">
+        <!-- Content injected by JS -->
+    </div>
+</div>
 </body>
 </html>

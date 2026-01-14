@@ -211,7 +211,7 @@ export async function getModules() {
   const { data, error } = await supabase
     .from('modules')
     .select('*')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
   
   if (error) {
     throw error
@@ -391,18 +391,16 @@ export async function getAllChildrenLeaderboard(limit = 10) {
 
 // Check if user is admin
 export async function isUserAdmin(userId) {
+  // Use the security definer function to avoid RLS recursion
   const { data, error } = await supabase
-    .from('parent_profiles')
-    .select('is_admin')
-    .eq('id', userId)
-    .single()
+    .rpc('is_user_admin_check', { user_id: userId })
   
   if (error) {
     console.error('Error checking admin status:', error)
     return false
   }
   
-  return data?.is_admin || false
+  return data || false
 }
 
 // Set user admin status
@@ -944,6 +942,147 @@ export async function updateSettings(settings) {
     }
   } catch (error) {
     console.error('Error updating settings:', error)
+    throw error
+  }
+}
+
+// Series Management
+export async function getSeries() {
+  try {
+    const { data, error } = await supabase
+      .from('series')
+      .select('*')
+      .order('label', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching series:', error)
+    throw error
+  }
+}
+
+export async function addSeries(label) {
+  try {
+    const { data, error } = await supabase
+      .from('series')
+      .insert([{ label }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error adding series:', error)
+    throw error
+  }
+}
+
+export async function deleteSeries(id) {
+  try {
+    const { error } = await supabase
+      .from('series')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Error deleting series:', error)
+    throw error
+  }
+}
+
+// Emotions Management
+export async function getEmotions() {
+  try {
+    const { data, error } = await supabase
+      .from('emotions')
+      .select('*')
+      .order('label', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching emotions:', error)
+    throw error
+  }
+}
+
+export async function addEmotion(id, label) {
+  try {
+    const { data, error } = await supabase
+      .from('emotions')
+      .insert([{ id, label }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error adding emotion:', error)
+    throw error
+  }
+}
+
+export async function deleteEmotion(id) {
+  try {
+    const { error } = await supabase
+      .from('emotions')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Error deleting emotion:', error)
+    throw error
+  }
+}
+
+// Skills Management
+export async function getSkills() {
+  try {
+    const { data, error } = await supabase
+      .from('skills')
+      .select('*')
+      .order('label', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching skills:', error)
+    throw error
+  }
+}
+
+export async function addSkill(id, label) {
+  try {
+    const { data, error } = await supabase
+      .from('skills')
+      .insert([{ id, label }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error adding skill:', error)
+    throw error
+  }
+}
+
+export async function deleteSkill(id) {
+  try {
+    const { error } = await supabase
+      .from('skills')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Error deleting skill:', error)
     throw error
   }
 }

@@ -1,239 +1,2227 @@
-<!-- Daniel's Diaries - Module 3 (Content-Only) -->
-<article class="dd-module" data-module data-module-code="MODULE03" data-runtime="1">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Me, You, and Social Glue</title>
+  <!-- DEBUG: 
+  Series Info Debug:
+  - characterName: Daniel the Dog
+  - characterEmoji: 🐕
+  - characterType: Dog
+  - series: Daniel
+   -->
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Module Stylesheets -->
+  <link rel="stylesheet" href="./modules/shared/module-theme.css">
+  <link rel="stylesheet" href="./modules/shared/module-header.css">
+  <link rel="stylesheet" href="./modules/shared/module-base.css">
+  
+  <style>
+    /* Brand Colors */
+    :root {
+      --primary: #F4A261;
+      --secondary: #2A9D8F;
+      --accent: #E76F51;
+      --dark: #264653;
+      --cream: #FFF8F0;
+      --light-green: #A8E6CF;
+      --soft-yellow: #FFE8A3;
+    }
+    
+    /* Typography */
+    .font-title { font-family: 'Fredoka One', cursive; }
+    .font-body { font-family: 'Nunito', sans-serif; }
+    body { font-family: 'Nunito', sans-serif; background: var(--cream); }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Fredoka One', cursive; }
+    
+    /* Page Layout */
+    .page { min-height: 100vh; padding-top: 80px; padding-bottom: 100px; }
+    
+    /* Animations */
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(244, 162, 97, 0.3); }
+      50% { box-shadow: 0 0 35px rgba(244, 162, 97, 0.6); }
+    }
+    .animate-glow { animation: pulse-glow 3s ease-in-out infinite; }
+    
+    /* Form Elements */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 30px;
+      border-radius: 15px;
+      background: linear-gradient(to right, var(--secondary), var(--soft-yellow), var(--primary), var(--accent));
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid var(--dark);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    /* Quiz Styles */
+    .quiz-answer.selected.correct { background-color: var(--light-green) !important; border-color: var(--secondary) !important; }
+    .quiz-answer.selected.incorrect { background-color: #fecaca !important; border-color: var(--accent) !important; }
+    
+    /* Scenario Styles */
+    .scenario-option.selected.good { background-color: var(--light-green) !important; }
+    .scenario-option.selected.not-good { background-color: #fef3c7 !important; }
+    
+    /* Interactive Option Styles */
+    .interactive-option { background-color: white; }
+    .interactive-option.option-selected { background-color: var(--light-green) !important; }
+    .interactive-option.option-incorrect { background-color: #fecaca !important; }
+    
+    /* Print Styles */
+    @media print {
+      .no-print { display: none !important; }
+      .page { page-break-after: always; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body class="module-theme" data-series="Daniel">
+  <div id="moduleHeaderRoot"></div>
+  
+  <main class="module-content">
+    <section id="pageContainer"></section>
+  </main>
+  
+  <script type="module">
+    // Embedded module functions (no external dependencies)
+    
+    // Module database functions - stub implementation for local preview
+    async function initializeModule() {
+      return true;
+    }
 
-  <!-- Optional: module header metadata for your quick-jump menu -->
-  <header class="dd-module-header">
-    <h1 class="dd-title">Daniel's Diaries: The Sensory Superpower Lab</h1>
-    <p class="dd-subtitle">Module 3</p>
-    <p class="dd-meta">
-      <span class="dd-chip">Ages 8–13</span>
-      <span class="dd-chip">Sensory Integration</span>
-    </p>
-  </header>
+    async function loadStarsFromDB() {
+      const saved = localStorage.getItem('moduleStars');
+      return saved ? parseInt(saved, 10) : 0;
+    }
 
-  <!-- PAGE 0: Cover -->
-  <section class="dd-page" data-page data-page-title="Cover" data-page-icon="🌟">
-    <div class="dd-hero">
-      <div class="dd-emoji">🌟</div>
-      <h2 class="dd-h2">The Sensory Superpower Lab</h2>
-      <p class="dd-quote">“My senses help me experience the world… but sometimes, it’s a LOT.”</p>
-    </div>
+    async function saveStarsToDB(stars) {
+      localStorage.setItem('moduleStars', String(stars));
+      return stars;
+    }
 
-    <div class="dd-card">
-      <label class="dd-label" for="userName">This Sensory Scientist Journey belongs to:</label>
-      <input
-        id="userName"
-        class="dd-input dd-input--xl"
-        type="text"
-        placeholder="Your Name"
-        data-bind="userName"
-      />
-    </div>
-  </section>
+    async function awardSingleStar(currentStars) {
+      const newStars = currentStars + 1;
+      await saveStarsToDB(newStars);
+      return newStars;
+    }
 
-  <!-- PAGE 1: Welcome -->
-  <section class="dd-page" data-page data-page-title="Welcome" data-page-icon="🌈">
-    <h2 class="dd-h2">Welcome to Your Sensory Superpower Lab!</h2>
+    async function resolveChildDisplayName() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childName') || 'Friend';
+    }
 
-    <div class="dd-card dd-callout dd-callout--success">
-      <h3 class="dd-h3">Your senses are superpowers</h3>
-      <p>
-        Your brain processes millions of sensory messages every day. Some brains experience sensory input
-        differently — that’s not a problem, it can be a superpower.
-      </p>
-      <p>
-        This module helps you understand how YOUR brain processes sensory information and gives you tools
-        to feel your best.
-      </p>
-    </div>
+    async function getChildId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childId') || 'unknown';
+    }
 
-    <div class="dd-grid">
-      <div class="dd-card">
-        <h3 class="dd-h3">What you’ll learn</h3>
-        <ul class="dd-list">
-          <li>How your senses work (all of them!)</li>
-          <li>What makes your brain feel calm or “zappy”</li>
-          <li>Tools to help you regulate</li>
-          <li>How to create your comfort space</li>
-          <li>Ways to communicate your sensory needs</li>
-        </ul>
+    async function completeModuleDB() {
+      // Stub implementation - just mark as completed
+      localStorage.setItem('moduleCompleted', 'true');
+      return true;
+    }
+    
+    // Module completion handling
+    let moduleCompletionHandled = false;
+
+    function handleModuleCompletion() {
+      // Prevent multiple completions
+      if (moduleCompletionHandled) {
+        console.log('[ModuleHeader] Module completion already handled, skipping...');
+        return;
+      }
+      moduleCompletionHandled = true;
+
+      console.log('[ModuleHeader] Handling module completion...');
+
+      // Get module parameters from URL
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        const moduleId = params.get('moduleId');
+        
+        console.log(`[ModuleHeader] URL params - childId: ${childId}, moduleId: ${moduleId}`);
+        
+        if (childId && moduleId) {
+          // Mark module as completed
+          completeModule(childId, moduleId);
+        } else {
+          console.error('[ModuleHeader] Missing childId or moduleId in URL');
+        }
+      } catch (error) {
+        console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+      }
+    }
+
+    async function completeModule(childId, moduleId) {
+      try {
+        // Use the completeModuleDB function for generated modules
+        await completeModuleDB();
+        
+        // Show completion celebration
+        showCompletionCelebration();
+        
+        console.log('[ModuleHeader] Module completed successfully');
+      } catch (error) {
+        console.error('[ModuleHeader] Error completing module:', error);
+      }
+    }
+
+    function showCompletionCelebration() {
+      
+      document.body.appendChild(modal);
+      
+      // Generate confetti
+      generateCompletionConfetti();
+      
+      // Auto-close after 5 seconds
+      setTimeout(() => {
+        closeCompletionModal();
+      }, 5000);
+    }
+
+    function generateCompletionConfetti() {
+      const container = document.getElementById('completionConfetti');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const pieceCount = 40;
+      
+      for (let i = 0; i < pieceCount; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'completion-confetti-piece';
+        
+        const randomX = Math.random() * 300 - 150;
+        const randomDelay = Math.random() * 0.3;
+        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.top = Math.random() * 50 + '%';
+        piece.style.setProperty('--tx', randomX + 'px');
+        piece.style.animationDelay = randomDelay + 's';
+        piece.style.backgroundColor = randomColor;
+        
+        container.appendChild(piece);
+      }
+    }
+
+    // Make close function globally accessible
+    window.closeCompletionModal = function() {
+      const modal = document.querySelector('.module-completion-modal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+    
+    // Module header functions
+    function initModuleHeader(options = {}) {
+      const {
+        onPrev,
+        onNext,
+        onHome,
+        onPrint,
+        onShowStars,
+        onToggleParentMode,
+        showParentToggle = false,
+        initialPage = { current: 1, total: 1 },
+        initialStars = 0,
+        parentModeEnabled = false,
+        labels = {},
+      } = options;
+
+      const header = document.createElement('header');
+      header.className = 'module-header no-print';
+
+      const navSection = document.createElement('div');
+      navSection.className = 'module-header__nav';
+
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'module-header__btn module-header__btn--nav';
+      prevBtn.textContent = labels.prev ?? '← Back';
+      prevBtn.type = 'button';
+
+      const pageDisplay = document.createElement('div');
+      pageDisplay.className = 'module-header__page';
+
+      // ... (rest of the code remains the same)
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'module-header__btn module-header__btn--nav';
+      nextBtn.textContent = labels.next ?? 'Next →';
+      nextBtn.type = 'button';
+
+      navSection.append(prevBtn, pageDisplay, nextBtn);
+
+      const actionsSection = document.createElement('div');
+      actionsSection.className = 'module-header__actions';
+
+      const starButton = document.createElement('button');
+      starButton.className = 'module-header__star';
+      starButton.type = 'button';
+      starButton.innerHTML = `
+        <span class="star-icon">⭐</span>
+        <span data-role="star-count">${initialStars}</span>
+      `;
+
+      const printButton = document.createElement('button');
+      printButton.className = 'module-header__btn module-header__print';
+      printButton.type = 'button';
+      printButton.textContent = '🖨 Print';
+
+      let parentModeButton = null;
+      if (showParentToggle) {
+        parentModeButton = document.createElement('button');
+        parentModeButton.className = 'module-header__btn module-header__parent';
+        parentModeButton.type = 'button';
+      }
+
+      const homeButton = document.createElement('button');
+      homeButton.className = 'module-header__btn module-header__home';
+      homeButton.type = 'button';
+      homeButton.textContent = '🏠 Home';
+
+      actionsSection.append(starButton);
+      if (parentModeButton) {
+        actionsSection.append(parentModeButton);
+      }
+      actionsSection.append(printButton, homeButton);
+
+      const inner = document.createElement('div');
+      inner.className = 'module-header__inner';
+      inner.append(navSection, actionsSection);
+      header.appendChild(inner);
+
+      document.body.prepend(header);
+      const spacer = document.createElement('div');
+      spacer.className = 'module-header-spacer no-print';
+
+      // Ensure there is always enough space below the fixed header
+      try {
+        const computedHeight = getComputedStyle(document.documentElement)
+          .getPropertyValue('--module-header-height')
+          .trim();
+        spacer.style.height = computedHeight || '75px';
+      } catch (error) {
+        spacer.style.height = '75px';
+      }
+
+      header.after(spacer);
+
+      function normalizePageValue(value, fallback = 1) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return fallback;
+        return Math.max(1, Math.round(numeric));
+      }
+
+      function updatePageDisplay(current = 1, total = 1) {
+        const safeTotal = normalizePageValue(total, 1);
+        const safeCurrent = Math.min(normalizePageValue(current, 1), safeTotal);
+        pageDisplay.textContent = `Page ${safeCurrent} of ${safeTotal}`;
+        
+        // Log page navigation (but don't auto-complete - user must click the Complete button)
+        console.log(`[ModuleHeader] Page update: ${safeCurrent}/${safeTotal}`);
+      }
+
+      function updateParentMode(enabled) {
+        if (!parentModeButton) return;
+        parentModeButton.textContent = enabled ? '👨‍👩‍👧 Parent Mode ON' : '👨‍👩‍👧 Parent Mode';
+        parentModeButton.classList.toggle('is-on', enabled);
+      }
+
+      function updateStarCount(stars) {
+        const starCountEl = starButton.querySelector('[data-role="star-count"]');
+        if (starCountEl) {
+          starCountEl.textContent = stars;
+        }
+      }
+
+      updatePageDisplay(initialPage.current, initialPage.total);
+      updateStarCount(initialStars);
+      updateParentMode(parentModeEnabled);
+
+      if (typeof onPrev === 'function') {
+        prevBtn.addEventListener('click', () => onPrev());
+      } else {
+        prevBtn.disabled = true;
+      }
+
+      if (typeof onNext === 'function') {
+        nextBtn.addEventListener('click', () => onNext());
+      } else {
+        nextBtn.disabled = true;
+      }
+
+      function defaultGoHome() {
+        if (typeof window.goHome === 'function') {
+          try {
+            window.goHome();
+            return;
+          } catch (error) {
+            console.warn('[ModuleHeader] window.goHome threw an error:', error);
+          }
+        }
+
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const childId = params.get('childId');
+          if (childId) {
+            window.location.href = `/dashboard.html?childId=${encodeURIComponent(childId)}`;
+            return;
+          }
+        } catch (error) {
+          console.warn('[ModuleHeader] Failed to parse URL params:', error);
+        }
+
+        if (document.referrer) {
+          window.location.href = document.referrer;
+          return;
+        }
+
+        window.location.href = '/dashboard.html';
+      }
+
+      homeButton.addEventListener('click', () => {
+        if (typeof onHome === 'function') {
+          onHome();
+        } else {
+          defaultGoHome();
+        }
+      });
+
+      printButton.addEventListener('click', () => {
+        if (typeof onPrint === 'function') {
+          onPrint();
+        } else if (typeof window.print === 'function') {
+          window.print();
+        }
+      });
+
+      if (typeof onShowStars === 'function') {
+        starButton.addEventListener('click', () => onShowStars());
+      }
+
+      if (parentModeButton && typeof onToggleParentMode === 'function') {
+        parentModeButton.addEventListener('click', () => onToggleParentMode());
+      } else if (parentModeButton) {
+        parentModeButton.style.display = 'none';
+      }
+
+      return {
+        updatePage(current, total, options = {}) {
+          updatePageDisplay(current, total);
+          if (typeof options.canPrev === 'boolean') {
+            prevBtn.disabled = !options.canPrev;
+          }
+          if (typeof options.canNext === 'boolean') {
+            nextBtn.disabled = !options.canNext;
+          }
+        },
+        updateStars(stars) {
+          updateStarCount(stars);
+        },
+        setParentMode(enabled) {
+          updateParentMode(enabled);
+        },
+        destroy() {
+          header.remove();
+          spacer.remove();
+        },
+      };
+    }
+    
+    const WORKBOOK_ID = "MOD_MKCCTZ4S";
+    const MODULE_CODE = "MOD_MKCCTZ4S";
+    const MAX_STARS = 13;
+    const TOTAL_PAGES = 22;
+    
+    let currentPage = 0;
+    let totalStars = 0;
+    let completedActivities = {};
+    let formData = {};
+    let header;
+    let childDisplayName = 'Friend';
+    
+    // Load saved data
+    function loadProgress() {
+      const saved = localStorage.getItem('cbtProgress_' + WORKBOOK_ID);
+      if (saved) {
+        try { completedActivities = JSON.parse(saved); } catch (e) {}
+      }
+    }
+    
+    function saveProgress() {
+      localStorage.setItem('cbtProgress_' + WORKBOOK_ID, JSON.stringify(completedActivities));
+    }
+    
+    function loadFormData() {
+      const saved = localStorage.getItem('cbtData_' + WORKBOOK_ID);
+      if (saved) {
+        try { formData = JSON.parse(saved); } catch (e) {}
+      }
+    }
+    
+    function saveFormData(key, value) {
+      formData[key] = value;
+      localStorage.setItem('cbtData_' + WORKBOOK_ID, JSON.stringify(formData));
+    }
+    
+    // Child name helper - this is called from page templates
+    function getChildName() {
+      return childDisplayName || formData.userName || 'Friend';
+    }
+    
+    // Page generators
+    function generatePage0() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream));" data-page="cover">
+      <div class="text-center max-w-4xl">
+        <div class="mb-6 animate-bounce-slow text-8xl">🐕</div>
+        <h1 class="text-5xl md:text-6xl mb-4 font-title" style="color: var(--dark);">Me, You, and Social Glue</h1>
+        <h2 class="text-2xl md:text-3xl mb-8 font-title" style="color: var(--primary);">Understanding friendship and being yourself with others</h2>
+        <div class="text-xl mb-8 font-body" style="color: var(--secondary);">
+          <p class="mb-2">An Interactive Adventure for Ages 7-12</p>
+          <p class="italic">Learn with Daniel the Dog! 🐕</p>
+        </div>
+        <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
+          <p class="font-semibold mb-2 font-body text-lg" style="color: var(--dark);">This adventure belongs to:</p>
+          <div class="text-3xl font-title" style="color: var(--primary);">
+            ${getChildName()}
+          </div>
+        </div>
+        <div class="mt-8">
+          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
+        </div>
       </div>
+    </div>`;
+}
 
-      <div class="dd-card">
-        <h3 class="dd-h3">What you’ll do</h3>
-        <ul class="dd-list">
-          <li>Read Daniel’s sensory story</li>
-          <li>Become a sensory detective</li>
-          <li>Design your Comfort Cave</li>
-          <li>Learn about hidden senses</li>
-          <li>Build your Sensory First Aid Kit</li>
-          <li>Create your Comfort Code</li>
-        </ul>
+    function generatePage1() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="welcome">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-4 mb-6">
+          <span class="text-6xl">🐕</span>
+          <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">Welcome to Me, You, and Social Glue with Daniel the Dog! 🐕</h1>
+        </div>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white; border-left: 6px solid var(--primary);">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Woof! Hi there, friend! I&#039;m Daniel the Dog, and I&#039;m so excited you&#039;re here with me today. I love making new friends, but sometimes the people stuff can feel pretty confusing - and that&#039;s totally okay!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Together, we&#039;re going to explore the amazing world of friendships and learn about something I call &#039;social glue&#039; - the special stuff that helps us connect with others. We&#039;ll discover how to understand boundaries, practice saying no when we need to, and celebrate what makes you wonderfully YOU!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Remember, your brain might work differently than others, and that&#039;s not rude or wrong - it&#039;s just your special way of seeing the world. I&#039;m here to help you feel confident and safe being exactly who you are, because you&#039;re pretty amazing just as you are!</p>
+        </div>
+        
+        <div class="rounded-xl p-6 text-center flex items-center justify-center gap-3" style="background-color: var(--soft-yellow);">
+          <span class="text-4xl">🐕</span>
+          <p class="text-xl font-semibold font-body" style="color: var(--dark);">
+            "All feelings are okay—even the big ones!" 💛
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage2() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 1</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">What Is Social Glue?</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          Understanding how friendships stick together
+        </p>
+      </div>
+    </div>`;
+}
+
+    function generatePage3() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Personal Space Bubbles 🫧</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Everyone has an invisible bubble around them called personal space. Daniel the Dog knows that respecting others&#039; bubbles helps friendships grow strong!</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Which action shows good respect for someone&#039;s personal space?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Hugging without asking
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Standing an arm&#039;s length away
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Taking someone&#039;s belongings
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Whispering in their ear
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Great choice! Standing about an arm&#039;s length away gives people comfortable space to breathe and feel safe.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐕</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">Woof! Daniel says you&#039;re becoming a personal space expert! Remember, when in doubt, just ask if it&#039;s okay to come closer.</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_0"
+            onchange="markActivityComplete('interactive_0')"
+            ${completedActivities['interactive_0'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage4() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">What Is Social Glue? 🤝</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hey there! Daniel the Dog here, and I want to tell you about something super cool called &#039;social glue.&#039; Social glue is like invisible magic that helps people connect and feel good together. It&#039;s made up of things like kindness, respect, and understanding how others feel.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Think about your favorite friends - what makes you feel happy and safe with them? Maybe they listen when you talk, share their toys, or give you space when you need it. That&#039;s social glue working! Just like how different dogs have different ways of playing, people have different social styles too.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Sometimes your brain might work differently than others, and that&#039;s totally okay! You might need more time to understand social situations, or you might show friendship in your own special way. The important thing is learning how to build that social glue in a way that feels right for you and others.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
+      <p class="font-body" style="color: var(--dark);">Social glue is built through kindness, respect, and understanding - and everyone&#039;s social style is different!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐕</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">Daniel says: &#039;Just like I wag my tail to show I&#039;m happy, you have your own special ways to show friendship!&#039;</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage5() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="reflection">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Friendship Boundaries 🤝</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Think about a time when someone did something that made you feel uncomfortable or when you had to say &#039;no&#039; to a friend. How did you handle it, and what did you learn about keeping yourself safe while still being a good friend?</p>
+          
+          <textarea 
+            class="reflection-input w-full rounded-xl p-4 border-3 font-body text-lg mb-6" 
+            style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 150px;"
+            placeholder="I remember when my friend wanted me to... I felt... I learned that good friends respect when I say..."
+            onchange="saveFormData('reflection_1', this.value)"
+          >${formData['reflection_1'] || ''}</textarea>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="reflection_1"
+              disabled
+              onchange="markActivityComplete('reflection_1')"
+              ${completedActivities['reflection_1'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage6() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">The Magic Word: NO! ✋</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Sometimes we need to say &#039;no&#039; to protect ourselves or our feelings. Daniel the Dog learned that saying &#039;no&#039; kindly but firmly is perfectly okay!</p>
+          
+          
+        <div class="interactive-group">
+          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
+            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"It&#039;s mean to say &#039;no&#039; when someone asks you to do something that makes you uncomfortable."</p>
+          </div>
+          <div class="flex gap-4 justify-center">
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--secondary); color: var(--dark);"
+                    data-correct="opinion"
+                    data-index="0"
+                    onclick="handleInteractiveChoice(this, 2, false, 0)">
+              I Agree
+            </button>
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--accent); color: var(--dark);"
+                    data-correct="opinion"
+                    data-index="1"
+                    onclick="handleInteractiveChoice(this, 2, false, 0)">
+              I Disagree
+            </button>
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Actually, saying &#039;no&#039; to protect yourself is brave and healthy! You have the right to feel safe and comfortable.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐕</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">Daniel barks with pride! You understand that &#039;no&#039; is a complete sentence and helps keep you safe. Practice saying it with confidence!</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_2"
+            onchange="markActivityComplete('interactive_2')"
+            ${completedActivities['interactive_2'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage7() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="matching-activity">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Boundary Buddy Match 🤝</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Match each situation with the right boundary response. Think about what feels safe and respectful!</p>
+          
+          
+    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <p class="font-body mb-3" style="color: var(--dark);">A friend wants to hug you but you don&#039;t feel like it</p>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
+          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
+          data-correct="It's okay to say 'No thank you'"
+          data-pair="0"
+          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
+        >
+          🚫 It&#039;s okay to say &#039;No thank you&#039;
+        </button>
       </div>
     </div>
-
-    <div class="dd-banner">
-      <p class="dd-banner-title">Your senses are YOURS — let’s celebrate them!</p>
-      <p>There’s no “right” way to experience the world.</p>
-    </div>
-  </section>
-
-  <!-- PAGE 2: Story + reflection -->
-  <section class="dd-page" data-page data-page-title="Story" data-page-icon="📖">
-    <h2 class="dd-h2">Daniel’s Sensory Adventure</h2>
-
-    <div class="dd-card dd-callout dd-callout--info">
-      <p>Let’s read about Daniel’s experience at the school cafeteria…</p>
-    </div>
-
-    <div class="dd-card">
-      <div class="dd-story">
-        <p>Daniel stood at the cafeteria door and took a deep breath. <em>Big mistake.</em></p>
-        <p>The smell hit him first — a weird mix of pizza, cleaning spray, and something he couldn’t identify.</p>
-        <p>Then came the noise: chairs scraping, trays clattering, kids laughing and shouting.</p>
-        <p>Daniel’s heart started beating faster. Everything felt too bright, too loud, too much.</p>
-        <p>Then he remembered his toolkit: headphones and a fidget. Slowly… the room became manageable.</p>
-        <p><strong>He’d made it through.</strong></p>
+    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <p class="font-body mb-3" style="color: var(--dark);">Someone asks to borrow your special toy</p>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
+          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
+          data-correct="You can say 'This is special to me'"
+          data-pair="1"
+          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
+        >
+          🧸 You can say &#039;This is special to me&#039;
+        </button>
       </div>
     </div>
-
-    <div class="dd-card">
-      <h3 class="dd-h3">Reflection Questions</h3>
-
-      <label class="dd-label" for="story_overload">What made Daniel feel overloaded?</label>
-      <textarea
-        id="story_overload"
-        class="dd-textarea"
-        rows="2"
-        placeholder="The loud noises, bright lights, smells..."
-        data-bind="story_overload"
-      ></textarea>
-
-      <label class="dd-label" for="story_relate">Have you ever felt like Daniel? When?</label>
-      <textarea
-        id="story_relate"
-        class="dd-textarea"
-        rows="3"
-        placeholder="Describe a time you felt sensory overload..."
-        data-bind="story_relate"
-      ></textarea>
-
-      <label class="dd-label" for="story_tools">What helped Daniel recover?</label>
-      <textarea
-        id="story_tools"
-        class="dd-textarea"
-        rows="2"
-        placeholder="His headphones, fidget cube..."
-        data-bind="story_tools"
-      ></textarea>
+    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <p class="font-body mb-3" style="color: var(--dark);">A classmate keeps interrupting you</p>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
+          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
+          data-correct="You can say 'Please let me finish'"
+          data-pair="2"
+          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
+        >
+          ✋ You can say &#039;Please let me finish&#039;
+        </button>
+      </div>
     </div>
-
-    <div class="dd-card dd-check">
-      <label class="dd-check-label">
-        <input type="checkbox" data-activity="story_complete" />
-        <span>✓ I’ve read Daniel’s Sensory Adventure</span>
-      </label>
+    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <p class="font-body mb-3" style="color: var(--dark);">Someone shares a secret with you</p>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
+          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
+          data-correct="Keep it private and safe"
+          data-pair="3"
+          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
+        >
+          🤐 Keep it private and safe
+        </button>
+      </div>
     </div>
-  </section>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="matching_3"
+              onchange="markActivityComplete('matching_3')"
+              ${completedActivities['matching_3'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
 
-  <!-- PAGE 3: Sensory Detective (converted to a declarative component) -->
-  <section class="dd-page" data-page data-page-title="Sensory Detective" data-page-icon="🔍">
-    <h2 class="dd-h2">Activity: Sensory Detective Mission</h2>
+    function generatePage8() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 2</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">My Social Traffic Light</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          Learning green, yellow, and red zone boundaries
+        </p>
+      </div>
+    </div>`;
+}
 
-    <div class="dd-card dd-callout dd-callout--warning">
-      <p><strong>Discover which sensory inputs make YOUR brain feel calm or zappy.</strong></p>
+    function generatePage9() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Green, Yellow, Red Social Zones 🚦</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Let me teach you about social zones - they&#039;re like traffic lights for relationships! Green zone means &#039;go ahead&#039; - this is when someone feels comfortable and happy. Yellow zone means &#039;slow down and check&#039; - someone might need space or feel unsure. Red zone means &#039;stop&#039; - someone feels uncomfortable or needs you to back away.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Here&#039;s how it works: If your friend is laughing and playing, that&#039;s green zone! If they seem quiet or step back a little, that&#039;s yellow - time to ask &#039;Are you okay?&#039; If someone says &#039;no&#039; or looks upset, that&#039;s red zone - time to give them space right away.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Learning to read these zones takes practice, and that&#039;s okay! Some kids pick up on these signals quickly, while others need more time to learn. The most important thing is to always listen when someone tells you how they feel, and remember that everyone&#039;s zones can change throughout the day.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
+      <p class="font-body" style="color: var(--dark);">Pay attention to green, yellow, and red social signals - and always respect when someone says &#039;no.&#039;</p>
     </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐕</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">Daniel says: &#039;I watch for tail wags and body language in other dogs - you can watch for smiles and body language in people!&#039;</p>
+    </div>
+      </div>
+    </div>`;
+}
 
-    <!-- This block is intentionally declarative: your runtime renders the options -->
-    <div
-      class="dd-card"
-      data-component="sensory-rating"
-      data-bind="sensory_detective"
-      data-scale="like,dislike,depends,calm,zippy"
+    function generatePage10() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="quiz">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Personal Space Quiz 🤗</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">What should you do if someone is standing too close to you and it makes you feel uncomfortable?</p>
+          
+          <div class="space-y-3 mb-6">
+            
+    <button 
+      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
+      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
+      data-correct="true"
+      data-feedback="Great job! It&#039;s always okay to ask for the space you need to feel comfortable."
     >
-      <h3 class="dd-h3">Rate these inputs</h3>
-
-      <div class="dd-rating-group" data-rating-group data-title="Visual" data-items="Bright lights|Screen time|Busy patterns|Dark rooms|Nature/outdoors|Flashing lights"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Auditory" data-items="Whispering|Loud music|Alarms/sirens|Nature sounds|Crowds talking|Silence"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Smell" data-items="Popcorn|Perfume/cologne|Flowers|Cleaning products|Food cooking|Fresh air"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Taste" data-items="Crunchy foods|Spicy foods|Sweet treats|Sour flavors|Smooth textures|Mixed textures"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Touch" data-items="Clothing tags|Hugs|Sand/water|Soft blankets|Sticky things|Temperature changes"></div>
-      <div class="dd-rating-group" data-rating-group data-title="Movement" data-items="Swinging|Spinning|Jumping|Sitting still|Walking|Dancing"></div>
-
-      <p class="dd-help">Your app should render buttons and save selections into <code>sensory_detective</code>.</p>
-    </div>
-
-    <div class="dd-card">
-      <h3 class="dd-h3">What I discovered</h3>
-      <textarea
-        class="dd-textarea"
-        rows="4"
-        placeholder="What patterns did you notice? What surprised you?"
-        data-bind="detective_discovery"
-      ></textarea>
-    </div>
-
-    <div class="dd-card dd-check">
-      <label class="dd-check-label">
-        <input type="checkbox" data-activity="detective_complete" />
-        <span>✓ I’ve completed my Sensory Detective Mission</span>
-      </label>
-    </div>
-  </section>
-
-  <!-- PAGE 4: Comfort Cave -->
-  <section class="dd-page" data-page data-page-title="Comfort Cave" data-page-icon="🏰">
-    <h2 class="dd-h2">Activity: Build My Comfort Cave</h2>
-
-    <div class="dd-card dd-callout dd-callout--success">
-      <p><strong>Design a cozy space that feels just right for YOUR brain.</strong></p>
-    </div>
-
-    <div class="dd-card">
-      <h3 class="dd-h3">My Comfort Cave Design</h3>
-      <textarea
-        class="dd-textarea"
-        rows="8"
-        placeholder="Describe your comfort cave… What’s in it?"
-        data-bind="comfort_cave_design"
-      ></textarea>
-    </div>
-
-    <div class="dd-grid">
-      <div class="dd-card">
-        <h3 class="dd-h3">Sounds I like</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_sounds"></textarea>
-      </div>
-      <div class="dd-card">
-        <h3 class="dd-h3">Things I like to touch</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_touch"></textarea>
-      </div>
-      <div class="dd-card">
-        <h3 class="dd-h3">Lighting I prefer</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_lighting"></textarea>
-      </div>
-      <div class="dd-card">
-        <h3 class="dd-h3">Colors that feel good</h3>
-        <textarea class="dd-textarea" rows="2" data-bind="cave_colors"></textarea>
-      </div>
-    </div>
-
-    <div class="dd-card dd-check">
-      <label class="dd-check-label">
-        <input type="checkbox" data-activity="comfort_cave_complete" />
-        <span>✓ I’ve designed my Comfort Cave</span>
-      </label>
-    </div>
-  </section>
-
-  <!-- Optional: actions your runtime can wire -->
-  <footer class="dd-module-footer">
-    <button type="button" class="dd-btn" data-action="award-star" data-amount="1">
-      Earn a Star ⭐
+      Politely ask them to give you some space
     </button>
-    <button type="button" class="dd-btn dd-btn--primary" data-action="complete-module">
-      Finish Module ✅
+    <button 
+      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
+      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
+      data-correct="false"
+      data-feedback="Not quite, but good try! It&#039;s better to speak up for yourself when you need space."
+    >
+      Just ignore it and hope they move away
     </button>
-  </footer>
+    <button 
+      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
+      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
+      data-correct="false"
+      data-feedback="Let&#039;s think about this... Using our words is always better than pushing someone."
+    >
+      Push them away without saying anything
+    </button>
+    <button 
+      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
+      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
+      data-correct="false"
+      data-feedback="Almost! While leaving is okay, it&#039;s helpful to let people know what you need first."
+    >
+      Leave without saying anything
+    </button>
+          </div>
+          
+          <p class="quiz-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--soft-yellow); color: var(--dark);"></p>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="quiz_4"
+              disabled
+              onchange="markActivityComplete('quiz_4')"
+              ${completedActivities['quiz_4'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
 
-</article>
+    function generatePage11() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Friendship Traffic Lights 🚦</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Just like traffic lights help cars stay safe, friendship signals help us know when to go, slow down, or stop in social situations.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">When a friend looks upset and turns away from you, that&#039;s a <input type="text" 
+                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
+                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
+                  placeholder="..."
+                  data-blank-index="1"
+                  oninput="handleFillBlankInput(this, 5)"> light signal to give them space.</p>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Red light means stop! When someone shows they need space, the kindest thing is to respect that signal.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐕</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">Daniel wags his tail! You&#039;re learning to read social signals like a pro. Good friends always watch for these important clues!</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_5"
+            onchange="markActivityComplete('interactive_5')"
+            ${completedActivities['interactive_5'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage12() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sorting-activity">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Boundary Sorting 🔄</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Help sort these actions into helpful or not helpful for keeping good relationships and boundaries!</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #A8E6CF; border-color: var(--dark);" data-category="Helpful" data-category-index="0" onclick="sortSelectedItem(this, 'Helpful', 6)">
+      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">✅ Helpful</h3>
+      <div class="dropped-items space-y-2"></div>
+    </div>
+  
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #fecaca; border-color: var(--dark);" data-category="Not Helpful" data-category-index="1" onclick="sortSelectedItem(this, 'Not Helpful', 6)">
+      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">❌ Not Helpful</h3>
+      <div class="dropped-items space-y-2"></div>
+    </div>
+  
+          </div>
+          
+          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
+            <div class="sort-items-list space-y-2">
+              
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_0" data-correct-category="Helpful" data-explanation="It&#039;s okay to keep some things just for yourself" onclick="selectSortItem(this)">
+      Saying &#039;no&#039; when you don&#039;t want to share your special toy
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_1" data-correct-category="Not Helpful" data-explanation="This crosses their boundary and isn&#039;t respectful" onclick="selectSortItem(this)">
+      Taking someone&#039;s lunch without asking
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_2" data-correct-category="Helpful" data-explanation="This respects their personal space and feelings" onclick="selectSortItem(this)">
+      Asking before giving someone a hug
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_3" data-correct-category="Not Helpful" data-explanation="Everyone deserves privacy with their belongings" onclick="selectSortItem(this)">
+      Going through someone&#039;s backpack without permission
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_4" data-correct-category="Helpful" data-explanation="Adults can help keep you safe and respected" onclick="selectSortItem(this)">
+      Telling a trusted adult when someone makes you uncomfortable
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_5" data-correct-category="Not Helpful" data-explanation="When someone says stop, we need to listen and respect that" onclick="selectSortItem(this)">
+      Pushing someone when they say stop
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_6" data-correct-category="Helpful" data-explanation="Kind words help maintain friendship even during disagreements" onclick="selectSortItem(this)">
+      Using kind words when you disagree with a friend
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_7" data-correct-category="Not Helpful" data-explanation="We should always listen when someone asks us to stop" onclick="selectSortItem(this)">
+      Ignoring when someone asks you to stop teasing them
+    </div>
+  
+            </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="sorting_6"
+            onchange="markActivityComplete('sorting_6')"
+            ${completedActivities['sorting_6'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage13() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Being You in Friendships 🌟</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">The best friendships happen when you can be yourself! This means you don&#039;t have to pretend to like things you don&#039;t like, or act completely different just to fit in. Real friends will like you for who you are - your interests, your sense of humor, and even your quirky habits.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Sometimes you might feel pressure to change yourself to make friends, but here&#039;s a secret: the right friends will appreciate what makes you unique! Maybe you love talking about dinosaurs, or you need quiet time to recharge, or you have a different way of showing you care. These things make you special, not weird.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">It&#039;s also important to let your friends be themselves too. This means accepting their differences, respecting their boundaries, and celebrating what makes them unique. When everyone feels safe to be themselves, that&#039;s when the strongest social glue forms!</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
+      <p class="font-body" style="color: var(--dark);">The best friendships happen when everyone feels safe to be their true selves.</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐕</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">Daniel says: &#039;I&#039;m proud of my floppy ears and waggy tail - be proud of what makes you uniquely you!&#039;</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage14() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="weather-controller" data-activity="weather_7">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Friendship Boundary Storm ⛈️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">When friends don&#039;t respect our boundaries, it can feel like an emotional storm inside! Use your calming tools to clear the storm clouds and find your peaceful center.</p>
+          
+          <!-- Weather Scene -->
+          <div class="weather-scene relative rounded-2xl overflow-hidden mb-6" style="height: 200px; background: linear-gradient(to-b, from-gray-600 to-gray-800);">
+            <div class="weather-overlay absolute inset-0 flex items-center justify-center transition-all duration-1000" id="weatherOverlay">
+              <span class="weather-emoji text-8xl animate-bounce" id="weatherEmoji">⛈️</span>
+            </div>
+            <div class="weather-clear absolute inset-0 flex items-center justify-center transition-all duration-1000 opacity-0" id="weatherClear" style="background: linear-gradient(to-b, #87CEEB, #E0F6FF);">
+              <span class="text-8xl">☀️</span>
+            </div>
+            <!-- Animated elements -->
+            <div class="rain-drops absolute inset-0 pointer-events-none" id="rainDrops" style="opacity: 0.7;">
+              <div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 0%; animation: rainFall 1.106271678746492s linear infinite; animation-delay: 0.14843479343446742s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 5%; animation: rainFall 1.2616265398444846s linear infinite; animation-delay: 0.3168625487518475s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 10%; animation: rainFall 0.7142095142957403s linear infinite; animation-delay: 0.46634686769034706s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 15%; animation: rainFall 0.8103481599941325s linear infinite; animation-delay: 0.2634351828020898s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 20%; animation: rainFall 0.8300074750911668s linear infinite; animation-delay: 0.5528479342107806s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 25%; animation: rainFall 0.6536673301215972s linear infinite; animation-delay: 0.6563683761457615s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 30%; animation: rainFall 0.8522107403173593s linear infinite; animation-delay: 0.7780874022819031s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 35%; animation: rainFall 1.4054374074625537s linear infinite; animation-delay: 0.40743211317642847s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 40%; animation: rainFall 1.1027391058353087s linear infinite; animation-delay: 0.6094579016888932s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 45%; animation: rainFall 1.4312448390673902s linear infinite; animation-delay: 0.9470074773058528s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 50%; animation: rainFall 1.1400222479449806s linear infinite; animation-delay: 0.20848517348356843s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 55%; animation: rainFall 1.1108290007545556s linear infinite; animation-delay: 0.04072363834083048s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 60%; animation: rainFall 1.0528893599875209s linear infinite; animation-delay: 0.77846744688408s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 65%; animation: rainFall 0.9557418764290544s linear infinite; animation-delay: 0.32637010087595675s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 70%; animation: rainFall 1.212167807605858s linear infinite; animation-delay: 0.6540391755755961s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 75%; animation: rainFall 0.95001702105928s linear infinite; animation-delay: 0.42146155226465276s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 80%; animation: rainFall 1.3719016052278494s linear infinite; animation-delay: 0.7056800129198468s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 85%; animation: rainFall 0.9381784329884819s linear infinite; animation-delay: 0.17331396454605197s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 90%; animation: rainFall 0.513870403168933s linear infinite; animation-delay: 0.8069594955445414s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 95%; animation: rainFall 0.6483731162193611s linear infinite; animation-delay: 0.34479519127336844s;"></div>
+            </div>
+          </div>
+          
+          <!-- Calm Meter -->
+          <div class="mb-6">
+            <div class="flex justify-between mb-2">
+              <span class="font-body text-sm" style="color: var(--accent);">Stormy</span>
+              <span class="font-body text-sm" style="color: var(--secondary);">Calm</span>
+            </div>
+            <div class="h-8 rounded-full overflow-hidden" style="background-color: var(--soft-yellow);">
+              <div class="calm-meter h-full rounded-full transition-all duration-500" id="calmMeter" style="width: 0%; background: linear-gradient(to-r, var(--accent), var(--primary), var(--secondary), var(--light-green));"></div>
+            </div>
+            <p class="text-center font-title text-2xl mt-2" style="color: var(--primary);"><span id="calmPercent">0</span>% Calm</p>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            
+    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background-color: white; border-color: var(--secondary);"
+            data-action-id="breath"
+            data-points="15"
+            data-feedback="Feel that calm air..."
+            onclick="handleWeatherAction(this, 'weather_7', 15)">
+      <span class="text-4xl">🌬️</span>
+      <span class="font-title text-lg text-center" style="color: var(--dark);">Slow Breath</span>
+    </button>
+  
+    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background-color: white; border-color: var(--secondary);"
+            data-action-id="name"
+            data-points="20"
+            data-feedback="Understanding helps!"
+            onclick="handleWeatherAction(this, 'weather_7', 20)">
+      <span class="text-4xl">💭</span>
+      <span class="font-title text-lg text-center" style="color: var(--dark);">Name the Feeling</span>
+    </button>
+  
+    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background-color: white; border-color: var(--secondary);"
+            data-action-id="ground"
+            data-points="25"
+            data-feedback="Grounded and present!"
+            onclick="handleWeatherAction(this, 'weather_7', 25)">
+      <span class="text-4xl">👀</span>
+      <span class="font-title text-lg text-center" style="color: var(--dark);">5-4-3-2-1 Senses</span>
+    </button>
+  
+    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background-color: white; border-color: var(--secondary);"
+            data-action-id="kind"
+            data-points="15"
+            data-feedback="Self-compassion helps!"
+            onclick="handleWeatherAction(this, 'weather_7', 15)">
+      <span class="text-4xl">💗</span>
+      <span class="font-title text-lg text-center" style="color: var(--dark);">Kind Thought</span>
+    </button>
+  
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all" id="weatherFeedback" style="background-color: var(--light-green); display: none;">
+            <p class="font-body text-lg" style="color: var(--dark);" id="feedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="weather-win p-6 rounded-2xl text-center" id="weatherWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">☀️</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">You calmed the storm! The sky is clear again!</p>
+            <p class="font-body" style="color: var(--secondary);">You have the power to calm big feelings!</p>
+          </div>
+          
+          <!-- Completion Checkbox (appears after win) -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="weatherComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="weather_7"
+              onchange="markActivityComplete('weather_7')"
+              ${completedActivities['weather_7'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I calmed the storm! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        @keyframes rainFall {
+          0% { transform: translateY(-20px); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(200px); opacity: 0; }
+        }
+        .weather-action:active { transform: scale(0.95); }
+        .weather-action.cooldown { opacity: 0.5; pointer-events: none; }
+        .weather-action.used { background-color: var(--light-green) !important; }
+      </style>
+    </div>`;
+}
+
+    function generatePage15() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Sharing vs. Caring 💝</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Daniel the Dog discovered there&#039;s a difference between sharing because you want to and feeling forced to give up your things.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">On a scale of 1-5, how comfortable would you feel if someone took your favorite toy without asking? (1 = very uncomfortable, 5 = totally fine)</p>
+          <div class="flex justify-between gap-2 mb-4">
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '1'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                1
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '2'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                2
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '3'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                3
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '4'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                4
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '5'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                5
+              </button>
+            
+          </div>
+          <div class="flex justify-between text-sm font-body" style="color: var(--secondary);">
+            <span>Not at all</span>
+            <span>Very much!</span>
+          </div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Most people feel uncomfortable when their belongings are taken without permission. It&#039;s normal to want control over your own things!</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐕</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">Daniel&#039;s ears perk up! You understand that true sharing comes from the heart, not from pressure. Your feelings about your belongings matter!</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_8"
+            onchange="markActivityComplete('interactive_8')"
+            ${completedActivities['interactive_8'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage16() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">How Do You Feel About Boundaries? 🤗</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Think about when someone asks you to do something you don&#039;t want to do. How does that make you feel?</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #FFE8A3; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#FFE8A3' : 'white';">
+      <span class="text-4xl">😊</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Happy</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #a8d8ea; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#a8d8ea' : 'white';">
+      <span class="text-4xl">😢</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Sad</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #fecaca; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#fecaca' : 'white';">
+      <span class="text-4xl">😠</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Angry</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #d4a5ff; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#d4a5ff' : 'white';">
+      <span class="text-4xl">😨</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Scared</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #A8E6CF; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#A8E6CF' : 'white';">
+      <span class="text-4xl">😌</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Calm</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #F4A261; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#F4A261' : 'white';">
+      <span class="text-4xl">🤩</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Excited</span>
+    </button></div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What words can you use to kindly say &#039;no&#039; when you feel uncomfortable?</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_9', this.value)">${formData['feeling_followup_9'] || ''}</textarea>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="feeling_9" onchange="markActivityComplete('feeling_9')" ${completedActivities['feeling_9'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage17() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="drawing">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Personal Space Bubble 🫧</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Draw yourself in the center of your paper, then draw a big bubble around you. Inside the bubble, draw or write the names of people who are allowed in your personal space for hugs and close contact.</p>
+          
+          <div class="border-4 rounded-xl mb-4 overflow-hidden" style="border-color: var(--primary); background-color: white;">
+            <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" style="touch-action: none; display: block;"></canvas>
+          </div>
+          
+          <div class="flex flex-wrap gap-2 mb-6">
+            <button class="clear-canvas-btn px-4 py-2 rounded-lg text-white font-bold font-body" style="background-color: var(--accent);">
+              Clear
+            </button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#264653" style="background-color: #264653;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#F4A261" style="background-color: #F4A261;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#E76F51" style="background-color: #E76F51;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#2A9D8F" style="background-color: #2A9D8F;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#9b59b6" style="background-color: #9b59b6;"></button>
+          </div>
+          
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">Who did you include in your personal space bubble and why do you feel safe with them?</label>
+            <input 
+              type="text" 
+              class="w-full rounded-xl p-3 font-body text-lg" 
+              style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);"
+              placeholder="Type your answer here..."
+              onchange="saveFormData('drawing_answer_10', this.value)"
+              value="${formData['drawing_answer_10'] || ''}"
+            >
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="drawing_10"
+              onchange="markActivityComplete('drawing_10')"
+              ${completedActivities['drawing_10'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage18() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="comic-strip">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Space, Your Space Comic 📚</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-lg" style="color: var(--dark);">Emma loves to read quietly in the library corner, but her friend Jake keeps interrupting and getting too close. How can Emma set a kind boundary while keeping their friendship?</p>
+          </div>
+          
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">1</span>
+        <p class="font-body text-sm" style="color: var(--dark);">Draw: Emma trying to read while Jake interrupts</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Draw here..." onchange="saveFormData('comic_11_1', this.value)">
+    </div>
+  
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">2</span>
+        <p class="font-body text-sm" style="color: var(--dark);">Draw: How Emma feels when her space isn&#039;t respected</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Show the emotion..." onchange="saveFormData('comic_11_2', this.value)">
+    </div>
+  
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">3</span>
+        <p class="font-body text-sm" style="color: var(--dark);">Draw: Emma kindly telling Jake she needs reading time</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Draw the helpful action..." onchange="saveFormData('comic_11_3', this.value)">
+    </div>
+  
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">4</span>
+        <p class="font-body text-sm" style="color: var(--dark);">Draw: Both friends happy - Emma reading, Jake finding his own activity</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Happy ending!" onchange="saveFormData('comic_11_4', this.value)">
+    </div>
+  
+          </div>
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold" style="color: var(--dark);">Share your comic with a friend! Talk about times when you needed space or when someone needed space from you. What kind words can you use to ask for personal space?</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="comic_11"
+            onchange="markActivityComplete('comic_11')"
+            ${completedActivities['comic_11'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I created my comic!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage19() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="shield_12">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Friendship Boundary Shield 🛡️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Build your special shield that helps you have healthy friendships and know your boundaries! Fill in each section with your own strengths and tools.</p>
+          
+          <!-- Shield Visual -->
+          <div class="flex justify-center mb-6">
+            <div class="shield-container relative w-64 h-72">
+              <svg viewBox="0 0 200 220" class="w-full h-full">
+                <path d="M100 10 L180 50 L180 130 Q180 200 100 210 Q20 200 20 130 L20 50 Z" 
+                      fill="url(#shieldGradient)" stroke="var(--dark)" stroke-width="4"/>
+                <defs>
+                  <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--soft-yellow)"/>
+                    <stop offset="100%" style="stop-color:var(--light-green)"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="shield-decorations absolute inset-0 flex items-center justify-center text-4xl flex-wrap" id="shieldDecorations">
+                🛡️
+              </div>
+            </div>
+          </div>
+          
+          <!-- Decoration Buttons -->
+          <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
+            <span class="font-body text-sm self-center mr-2" style="color: var(--dark);">Add decorations:</span>
+            
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('⭐')">⭐</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🌟')">🌟</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('💪')">💪</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🛡️')">🛡️</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('✨')">✨</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('💖')">💖</button>
+  
+          </div>
+          
+          <!-- Shield Sections -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--light-green);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">⚡</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Friendship Superpower</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">What makes you a great friend?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="I&#039;m a great friend because..."
+             data-section="s1"
+             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s1', this.value)"
+             value="${formData['shield_12_s1'] || ''}">
+    </div>
+  
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">👥</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Trust Circle</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">Who are the safe people you can talk to?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="I trust and feel safe with..."
+             data-section="s2"
+             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s2', this.value)"
+             value="${formData['shield_12_s2'] || ''}">
+    </div>
+  
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--primary);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🧘</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My &#039;No&#039; Power</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">How do you say no when something doesn&#039;t feel right?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="When I need to say no, I..."
+             data-section="s3"
+             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s3', this.value)"
+             value="${formData['shield_12_s3'] || ''}">
+    </div>
+  
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: #a8d8ea;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🦁</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Boundary Brave Moment</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">When did you stand up for yourself or others?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="I was brave when I..."
+             data-section="s4"
+             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s4', this.value)"
+             value="${formData['shield_12_s4'] || ''}">
+    </div>
+  
+          </div>
+          
+          <!-- Progress Indicator -->
+          <div class="text-center mb-4">
+            <p class="font-body" style="color: var(--secondary);">Sections filled: <span id="shieldProgress">0</span> / 4</p>
+          </div>
+          
+          <!-- Win Message -->
+          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🛡️</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Your shield is complete! You have the power to build healthy friendships and protect your boundaries!</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="shieldComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="shield_12"
+              onchange="markActivityComplete('shield_12')"
+              ${completedActivities['shield_12'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage20() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="summary">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🤝 What We Learned About Relationships and Boundaries!</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <div class="space-y-4 mb-8">
+            
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Healthy relationships are built on kindness, respect, and trust with family and friends</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Personal boundaries help us feel safe and comfortable - it&#039;s okay to say &#039;no&#039; when something doesn&#039;t feel right</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Good friends listen to each other, share, and respect each other&#039;s feelings and space</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">We can communicate our boundaries clearly and kindly, and we should always respect others&#039; boundaries too</span>
+    </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-6 flex items-center gap-4" style="background-color: var(--soft-yellow);">
+          <span class="text-5xl">🐕</span>
+          <p class="font-body text-lg font-semibold" style="color: var(--dark);">🐕 Great job learning about relationships and boundaries! Remember, you deserve to feel safe and respected in all your relationships. Keep practicing these skills - you&#039;re becoming such a caring and confident friend! Woof woof!</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage21() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
+      <div class="text-center max-w-2xl">
+        <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
+        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">🎉 Congratulations! You Did It! 🎉</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
+          <p class="text-xl mb-4 font-body" style="color: var(--dark);">Wow! You&#039;ve completed your whole workbook with Daniel the Dog 🐕! Daniel is so proud of how hard you worked and all the amazing things you learned about your feelings and friendships.</p>
+          <p class="text-lg font-body" style="color: var(--secondary);">Keep practicing what you&#039;ve learned every day, and remember that Daniel the Dog 🐕 believes in you! You can always come back to this workbook whenever you need a reminder of how awesome you are.</p>
+        </div>
+        
+        <div class="flex flex-col gap-4">
+          <button 
+            onclick="completeModule()"
+            class="w-full py-4 px-8 rounded-xl text-white font-bold text-xl font-title shadow-lg hover:shadow-xl transition-all cursor-pointer"
+            style="background: linear-gradient(135deg, var(--secondary), #1ABC9C);"
+          >
+            ✅ Complete Module & Return Home
+          </button>
+          
+          <button 
+            onclick="jumpToPage(0)"
+            class="w-full py-3 px-6 rounded-xl font-semibold font-body cursor-pointer"
+            style="background-color: white; color: var(--dark); border: 2px solid var(--secondary);"
+          >
+            📖 Review This Module
+          </button>
+        </div>
+        
+        <div class="mt-8 flex items-center justify-center gap-2">
+          <span class="text-4xl">🐕</span>
+          <p class="font-body text-lg" style="color: var(--dark);">
+            Daniel the Dog is proud of you!
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
+    
+    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17, generatePage18, generatePage19, generatePage20, generatePage21];
+    
+    // Navigation
+    function nextPage() {
+      if (currentPage < pages.length - 1) {
+        currentPage++;
+        renderPage();
+      }
+    }
+    
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        renderPage();
+      }
+    }
+    
+    function jumpToPage(pageNum) {
+      if (pageNum >= 0 && pageNum < pages.length) {
+        currentPage = pageNum;
+        renderPage();
+      }
+    }
+    
+    function renderPage() {
+      const container = document.getElementById('pageContainer');
+      if (!container) return;
+      container.innerHTML = pages[currentPage]();
+      
+      if (header && typeof header.updatePage === 'function') {
+        header.updatePage(currentPage + 1, pages.length, {
+          canPrev: currentPage > 0,
+          canNext: currentPage < pages.length - 1
+        });
+      }
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      bindPageInteractions();
+      restoreFormState();
+    }
+    
+    // Restore form values from localStorage
+    function restoreFormState() {
+      // Restore all text inputs
+      document.querySelectorAll('input[type="text"]').forEach(input => {
+        const onchange = input.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          input.value = formData[match[1]];
+        }
+      });
+      
+      // Restore all textareas
+      document.querySelectorAll('textarea').forEach(textarea => {
+        const onchange = textarea.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          textarea.value = formData[match[1]];
+        }
+      });
+      
+      // Restore range sliders
+      document.querySelectorAll('input[type="range"]').forEach(range => {
+        const oninput = range.getAttribute('oninput') || '';
+        const match = oninput.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          range.value = formData[match[1]];
+          const valueDisplay = range.parentElement.querySelector('.thermometer-value');
+          if (valueDisplay) valueDisplay.textContent = formData[match[1]];
+        }
+      });
+      
+      // Restore button selections (rate-scale only - not polls, as those should be re-answered)
+      Object.keys(formData).forEach(key => {
+        if (key.startsWith('rate_')) {
+          const buttons = document.querySelectorAll('.interactive-option');
+          buttons.forEach(btn => {
+            if (btn.textContent.trim() === String(formData[key])) {
+              btn.classList.add('option-selected');
+            }
+          });
+        }
+        if (key.startsWith('tf_')) {
+          const page = document.querySelector('[data-page="interactive-lesson"]');
+          if (page) {
+            const ff = page.querySelector('.followup-feedback');
+            const mf = page.querySelector('.mascot-feedback');
+            if (ff) ff.style.display = 'block';
+            if (mf) mf.style.display = 'flex';
+            const btns = page.querySelectorAll('.interactive-option');
+            if (formData[key] === 'agree' && btns[0]) btns[0].classList.add('option-selected');
+            if (formData[key] === 'disagree' && btns[1]) btns[1].classList.add('option-incorrect');
+          }
+        }
+      });
+    }
+    
+    // Stars
+    async function loadStarData() {
+      try {
+        totalStars = await loadStarsFromDB();
+      } catch (e) {
+        totalStars = 0;
+      }
+      if (header) header.updateStars(totalStars);
+    }
+    
+    async function saveStarData() {
+      try {
+        await saveStarsToDB(totalStars);
+      } catch (e) {
+        console.error('Failed to save stars:', e);
+      }
+      if (header) header.updateStars(totalStars);
+    }
+    
+    async function markActivityComplete(activityId) {
+      if (completedActivities[activityId]) return;
+      
+      completedActivities[activityId] = true;
+      try {
+        totalStars = await awardSingleStar(totalStars);
+      } catch (e) {
+        totalStars++;
+      }
+      await saveStarData();
+      saveProgress();
+      
+      // Star celebration animation
+      const star = document.createElement('div');
+      star.textContent = '⭐';
+      star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
+      document.body.appendChild(star);
+      star.animate([
+        { transform: 'translate(-50%,-50%) scale(0.5)', opacity: 1 },
+        { transform: 'translate(-50%,-150%) scale(2)', opacity: 0 }
+      ], { duration: 1200, easing: 'ease-out' }).onfinish = () => star.remove();
+      
+      renderPage();
+    }
+    
+    function bindPageInteractions() {
+      // Quiz answers
+      document.querySelectorAll('.quiz-answer').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const isCorrect = this.dataset.correct === 'true';
+          const feedback = this.dataset.feedback;
+          document.querySelectorAll('.quiz-answer').forEach(b => b.classList.remove('selected', 'correct', 'incorrect'));
+          this.classList.add('selected', isCorrect ? 'correct' : 'incorrect');
+          
+          const feedbackEl = document.querySelector('.quiz-feedback');
+          if (feedbackEl) {
+            feedbackEl.textContent = feedback;
+            feedbackEl.style.display = 'block';
+          }
+          
+          const completeBox = document.querySelector('[data-activity^="quiz"]');
+          if (completeBox && isCorrect) {
+            completeBox.disabled = false;
+          }
+        });
+      });
+      
+      // Scenario options
+      document.querySelectorAll('.scenario-option').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const isGood = this.dataset.good === 'true';
+          const feedback = this.dataset.feedback;
+          document.querySelectorAll('.scenario-option').forEach(b => b.classList.remove('selected', 'good', 'not-good'));
+          this.classList.add('selected', isGood ? 'good' : 'not-good');
+          
+          const feedbackEl = document.querySelector('.scenario-feedback');
+          if (feedbackEl) {
+            feedbackEl.textContent = feedback;
+            feedbackEl.style.display = 'block';
+          }
+          
+          const completeBox = document.querySelector('[data-activity^="scenario"]');
+          if (completeBox) {
+            completeBox.disabled = false;
+          }
+        });
+      });
+      
+      // Checklists
+      const checklistItems = document.querySelectorAll('.checklist-item');
+      const checklistComplete = document.querySelector('[data-activity^="checklist"]');
+      if (checklistComplete && checklistItems.length) {
+        const updateChecklist = () => {
+          const allChecked = Array.from(checklistItems).every(item => item.checked);
+          checklistComplete.disabled = !allChecked;
+        };
+        checklistItems.forEach(item => item.addEventListener('change', updateChecklist));
+        updateChecklist();
+      }
+      
+      // Reflection
+      const reflectionInput = document.querySelector('.reflection-input');
+      const reflectionComplete = document.querySelector('[data-activity^="reflection"]');
+      if (reflectionComplete && reflectionInput) {
+        const updateReflection = () => {
+          reflectionComplete.disabled = reflectionInput.value.trim().length < 20;
+        };
+        reflectionInput.addEventListener('input', updateReflection);
+        updateReflection();
+      }
+      
+      // Drawing canvas
+      const canvas = document.querySelector('.drawing-canvas');
+      if (canvas) initDrawingCanvas(canvas);
+      
+      // Comic strip canvases
+      document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
+        initDrawingCanvas(canvas);
+      });
+    }
+    
+    function initDrawingCanvas(canvas) {
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+      let currentColor = '#264653';
+      
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const touch = e.touches?.[0];
+        return {
+          x: ((touch?.clientX || e.clientX) - rect.left) * scaleX,
+          y: ((touch?.clientY || e.clientY) - rect.top) * scaleY
+        };
+      };
+      
+      const start = (e) => {
+        drawing = true;
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      };
+      
+      const move = (e) => {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = getPos(e);
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = currentColor;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      };
+      
+      const end = () => { drawing = false; };
+      
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      canvas.addEventListener('mouseup', end);
+      canvas.addEventListener('mouseleave', end);
+      canvas.addEventListener('touchstart', start, { passive: false });
+      canvas.addEventListener('touchmove', move, { passive: false });
+      canvas.addEventListener('touchend', end);
+      
+      // Color buttons
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentColor = btn.dataset.color;
+        });
+      });
+      
+      // Clear button
+      const clearBtn = document.querySelector('.clear-canvas-btn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+      }
+    }
+    
+    function goHome() {
+      saveStarData().then(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const childId = urlParams.get('childId');
+        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
+      }).catch(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const childId = urlParams.get('childId');
+        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
+      });
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadProgress();
+      loadFormData();
+      
+      try {
+        await initializeModule(WORKBOOK_ID);
+        const childId = getChildId();
+        childDisplayName = await resolveChildDisplayName(childId) || 'Friend';
+      } catch (e) {
+        console.warn('Module DB init failed, using local storage only:', e);
+        childDisplayName = formData.userName || 'Friend';
+      }
+      
+      try {
+        header = initModuleHeader({
+          title: "Me, You, and Social Glue",
+          childName: childDisplayName,
+          onNext: nextPage,
+          onPrev: prevPage,
+          onGoToPage: jumpToPage,
+          onShowStars: () => {},
+          onPrint: () => window.print(),
+          initialPage: { current: 1, total: pages.length }
+        });
+        await loadStarData();
+      } catch (e) {
+        console.warn('Header init failed:', e);
+      }
+      
+      renderPage();
+    });
+    
+    // Global exports for onclick handlers
+    window.nextPage = nextPage;
+    window.prevPage = prevPage;
+    window.jumpToPage = jumpToPage;
+    window.saveFormData = saveFormData;
+    window.markActivityComplete = markActivityComplete;
+    window.goHome = goHome;
+    window.completeModule = completeModule;
+    window.getChildName = getChildName;
+    window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
+    
+    // Interactive lesson choice handler
+    window.handleInteractiveChoice = function(btn, starIndex, hasCorrectAnswer, correctIdx) {
+      const page = btn.closest('.page');
+      const buttons = btn.parentElement.querySelectorAll('.interactive-option');
+      const feedbackEl = page.querySelector('.interactive-feedback');
+      const ffEl = page.querySelector('.followup-feedback');
+      const mfEl = page.querySelector('.mascot-feedback');
+      const selectedIdx = parseInt(btn.dataset.index);
+      
+      // Reset all buttons - remove selection classes
+      buttons.forEach(b => {
+        b.classList.remove('option-selected', 'option-incorrect');
+        b.style.borderColor = 'var(--secondary)';
+      });
+      
+      if (hasCorrectAnswer) {
+        // Has a correct answer - show feedback
+        const isCorrect = selectedIdx === correctIdx;
+        btn.classList.add(isCorrect ? 'option-selected' : 'option-incorrect');
+        btn.style.borderColor = isCorrect ? 'var(--secondary)' : 'var(--accent)';
+        
+        if (feedbackEl) {
+          feedbackEl.style.display = 'block';
+          feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca';
+          feedbackEl.innerHTML = isCorrect 
+            ? '<span class="font-body" style="color: var(--dark);">✓ Great choice! That is right!</span>'
+            : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
+        }
+        
+        // Only show followup and mascot feedback on correct answer
+        if (isCorrect) {
+          if (ffEl) ffEl.style.display = 'block';
+          if (mfEl) mfEl.style.display = 'flex';
+        }
+      } else {
+        // Opinion-based - all answers valid
+        btn.classList.add('option-selected');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+      }
+      
+      saveFormData('poll_' + starIndex, btn.textContent.trim());
+    };
+    
+    // Fill-blank input handler for inline text fields
+    window.handleFillBlankInput = function(input, starIndex) {
+      const page = input.closest('.page');
+      const blankIndex = input.dataset.blankIndex;
+      
+      // Save this blank's value
+      saveFormData('fillblank_' + starIndex + '_' + blankIndex, input.value);
+      
+      // Check if all blanks are filled
+      const allBlanks = page.querySelectorAll('input[data-blank-index]');
+      const allFilled = Array.from(allBlanks).every(b => b.value.trim().length > 0);
+      
+      if (allFilled) {
+        const ffEl = page.querySelector('.followup-feedback');
+        const mfEl = page.querySelector('.mascot-feedback');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+      }
+    };
+    
+    // Sorting activity functions
+    let selectedSortItem = null;
+    window.selectSortItem = function(item) {
+      // Deselect previous
+      document.querySelectorAll('.sort-item.selected').forEach(el => {
+        el.classList.remove('selected');
+        el.style.backgroundColor = 'white';
+        el.style.borderColor = 'var(--primary)';
+      });
+      // Select this one
+      item.classList.add('selected');
+      item.style.backgroundColor = 'var(--soft-yellow)';
+      item.style.borderColor = 'var(--dark)';
+      selectedSortItem = item;
+    };
+    
+    window.sortSelectedItem = function(category, categoryName, starIndex) {
+      if (!selectedSortItem) return;
+      
+      const droppedArea = category.querySelector('.dropped-items');
+      const itemText = selectedSortItem.textContent.trim();
+      const correctCategory = selectedSortItem.dataset.correctCategory;
+      const explanation = selectedSortItem.dataset.explanation;
+      const isCorrect = correctCategory === categoryName;
+      
+      // Create sorted item display
+      const sortedItem = document.createElement('div');
+      sortedItem.className = 'p-2 rounded-lg font-body text-sm mb-1';
+      sortedItem.style.backgroundColor = isCorrect ? 'white' : '#fecaca';
+      sortedItem.style.border = isCorrect ? '2px solid var(--secondary)' : '2px solid var(--accent)';
+      sortedItem.innerHTML = (isCorrect ? '✓ ' : '✗ ') + itemText;
+      sortedItem.title = explanation;
+      droppedArea.appendChild(sortedItem);
+      
+      // Remove from items list
+      selectedSortItem.remove();
+      selectedSortItem = null;
+      
+      // Save to form data
+      saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName);
+    };
+    
+    // v5 CHALLENGE HANDLERS
+    let weatherCalmLevel = 0;
+    let weatherCooldown = false;
+    window.handleWeatherAction = function(btn, activityId, points) {
+      if (weatherCooldown || completedActivities[activityId]) return;
+      weatherCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { weatherCooldown = false; btn.classList.remove('cooldown'); }, 800);
+      weatherCalmLevel = Math.min(100, weatherCalmLevel + points);
+      const meterEl = document.getElementById('calmMeter');
+      const percentEl = document.getElementById('calmPercent');
+      const feedbackEl = document.getElementById('weatherFeedback');
+      const feedbackText = document.getElementById('feedbackText');
+      if (meterEl) meterEl.style.width = weatherCalmLevel + '%';
+      if (percentEl) percentEl.textContent = weatherCalmLevel;
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackText.textContent = btn.dataset.feedback; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      const overlayEl = document.getElementById('weatherOverlay');
+      const clearEl = document.getElementById('weatherClear');
+      if (overlayEl) overlayEl.style.opacity = 1 - (weatherCalmLevel / 100);
+      if (clearEl) clearEl.style.opacity = weatherCalmLevel / 100;
+      btn.classList.add('used');
+      if (weatherCalmLevel >= 100) { document.getElementById('weatherWin').style.display = 'block'; document.getElementById('weatherComplete').style.display = 'flex'; }
+      saveFormData('weather_' + activityId, weatherCalmLevel);
+    };
+    
+    let collectedPowerUps = [];
+    window.handlePowerUpClick = function(btn, activityId, targetCount) {
+      if (btn.classList.contains('collected') || completedActivities[activityId]) return;
+      const isPositive = btn.dataset.positive === 'true';
+      const feedbackEl = document.getElementById('powerupFeedback');
+      const feedbackText = document.getElementById('powerupFeedbackText');
+      const displayEl = document.getElementById('collectedDisplay');
+      const countEl = document.getElementById('collectedCount');
+      if (isPositive) {
+        btn.classList.add('collected');
+        collectedPowerUps.push(btn.dataset.name);
+        if (collectedPowerUps.length === 1 && displayEl) displayEl.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'inline-block px-3 py-1 m-1 rounded-full font-body text-sm';
+        badge.style.backgroundColor = 'var(--light-green)';
+        badge.textContent = btn.querySelector('.text-4xl').textContent + ' ' + btn.dataset.name;
+        if (displayEl) displayEl.appendChild(badge);
+        if (countEl) countEl.textContent = collectedPowerUps.length;
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '✓ Great choice!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+        if (collectedPowerUps.length >= targetCount) { document.getElementById('powerupWin').style.display = 'block'; document.getElementById('powerupComplete').style.display = 'flex'; }
+      } else {
+        btn.classList.add('wrong');
+        setTimeout(() => btn.classList.remove('wrong'), 500);
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = '#fecaca'; feedbackText.textContent = '✗ That one might not help - try another!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      }
+      saveFormData('powerup_' + activityId, collectedPowerUps.join(','));
+    };
+    
+    let mazeStep = 0;
+    window.handleMazeChoice = function(btn, stepIdx, totalSteps, activityId) {
+      if (btn.classList.contains('disabled') || completedActivities[activityId]) return;
+      const isCorrect = btn.dataset.correct === 'true';
+      const feedback = btn.dataset.feedback;
+      const feedbackEl = document.getElementById('mazeFeedback' + stepIdx);
+      btn.parentElement.querySelectorAll('.maze-option').forEach(b => b.classList.add('disabled'));
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+      if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca'; feedbackEl.innerHTML = '<p class="font-body">' + feedback + '</p>'; }
+      if (isCorrect) {
+        mazeStep++;
+        const progress = (mazeStep / totalSteps) * 100;
+        const progressEl = document.getElementById('mazeProgress');
+        const markerEl = document.getElementById('mazeMarker');
+        if (progressEl) progressEl.style.width = progress + '%';
+        if (markerEl) markerEl.style.left = progress + '%';
+        setTimeout(() => {
+          if (mazeStep < totalSteps) {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeStep' + (stepIdx + 1)).style.display = 'block';
+          } else {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeWin').style.display = 'block';
+            document.getElementById('mazeComplete').style.display = 'flex';
+          }
+        }, 1500);
+      }
+      saveFormData('maze_' + activityId + '_step' + stepIdx, isCorrect ? 'correct' : 'wrong');
+    };
+    
+    window.handleShieldInput = function(activityId, totalSections) {
+      const inputs = document.querySelectorAll('.shield-input');
+      let filled = 0;
+      inputs.forEach(input => { if (input.value.trim().length > 0) filled++; });
+      const progressEl = document.getElementById('shieldProgress');
+      if (progressEl) progressEl.textContent = filled;
+      if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; }
+    };
+    
+    window.addShieldDecoration = function(emoji) {
+      const display = document.getElementById('shieldDecorations');
+      if (display && display.textContent.length < 20) display.textContent += emoji;
+    };
+    
+    let volcanoTemp = 100;
+    let volcanoCooldown = false;
+    window.handleVolcanoCool = function(btn, activityId, coolingPower) {
+      if (volcanoCooldown || volcanoTemp <= 0 || completedActivities[activityId]) return;
+      volcanoCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { volcanoCooldown = false; btn.classList.remove('cooldown'); }, 600);
+      volcanoTemp = Math.max(0, volcanoTemp - coolingPower);
+      const tempEl = document.getElementById('volcanoTemp');
+      const lavaEl = document.getElementById('volcanoLava');
+      const indicatorEl = document.getElementById('volcanoIndicator');
+      const feedbackEl = document.getElementById('volcanoFeedback');
+      const feedbackText = document.getElementById('volcanoFeedbackText');
+      if (tempEl) tempEl.textContent = volcanoTemp;
+      if (lavaEl) lavaEl.style.opacity = volcanoTemp / 100;
+      const emojis = ['😌', '😊', '😤', '🔥', '🌋'];
+      const level = Math.ceil(volcanoTemp / 25);
+      if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
+      for (let i = 1; i <= 5; i++) { const lvl = document.getElementById('volcanoLevel' + i); if (lvl) lvl.classList.toggle('active', i === level); }
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '❄️ ' + btn.dataset.action + ' - Cooling down!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+      if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; }
+      saveFormData('volcano_' + activityId, volcanoTemp);
+    };
+  </script>
+</body>
+</html>

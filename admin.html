@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Daniel's Dairies</title>
+    <title>Admin Panel - Daniel's Diaries</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" href="/images/logos/DanielsDiariesFavicon.png">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,7 +47,68 @@
             <button class="tab" onclick="switchTab('childModules')">Parent's Modules</button>
             <button class="tab" onclick="switchTab('rewards')">Rewards</button>
             <button class="tab" onclick="switchTab('parentToolkit')">Parent Toolkit</button>
+            <button class="tab" onclick="switchTab('generalSettings')">General Settings</button>
         </div>
+        <!-- Tab Content: General Settings -->
+        <div id="generalSettingsTab" class="tab-content">
+            <div class="rewards-panel" style="max-width: 1200px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 class="panel-title" style="margin-bottom: 4px;">General Settings</h2>
+                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Configure categories, series, emotions, and skills</p>
+                    </div>
+                </div>
+
+                <!-- Settings Grid - Two Columns -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    
+                    <!-- Categories Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Categories</h3>
+                        <div id="categoriesList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <input type="color" id="newCategoryColor" value="#4c6c96" style="width: 40px; height: 32px; border: none; border-radius: 4px; cursor: pointer;" onchange="document.getElementById('newCategoryColorHex').value = this.value;" oninput="document.getElementById('newCategoryColorHex').value = this.value;">
+                            <input type="text" class="form-input" id="newCategoryName" placeholder="Name" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralCategory()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                        <input type="text" class="form-input" id="newCategoryColorHex" placeholder="#4c6c96" value="#4c6c96" style="width: 100%; padding: 6px 10px; font-size: 12px; margin-top: 6px;" onchange="document.getElementById('newCategoryColor').value = this.value;">
+                    </div>
+
+                    <!-- Series Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Series</h3>
+                        <div id="seriesList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-input" id="newSeriesName" placeholder="Series name" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralSeries()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Emotions Targeted Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Emotions Targeted</h3>
+                        <div id="emotionsList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-input" id="newEmotionName" placeholder="Emotion" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralEmotion()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Skills Developed Management -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px;">
+                        <h3 style="font-size: 14px; color: #405878; margin: 0 0 8px 0; font-weight: 600;">Skills Developed</h3>
+                        <div id="skillsList" style="display: grid; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-input" id="newSkillName" placeholder="Skill" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                            <button class="btn-save" onclick="addGeneralSkill()" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">Add</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- End General Settings Tab -->
+
         <div id="moduleCustomisationTab" class="tab-content active">
             <div class="admin-grid">
                 <!-- Modules List -->
@@ -101,17 +167,19 @@
 
                         <div class="form-group">
                             <label class="form-label">Short Description</label>
-                            <textarea class="form-textarea" id="editShortDescription" placeholder="Enter a brief description..."></textarea>
+                            <textarea class="form-textarea" id="editShortDescription" placeholder="Enter a brief description..." rows="2"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-textarea" id="editDescription" placeholder="Enter a detailed description..." rows="4"></textarea>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Category</label>
-                            <div style="display: flex; gap: 8px;">
-                                <select class="form-select" id="editCategory" style="flex: 1;">
-                                    <option value="">Select category...</option>
-                                </select>
-                                <button class="btn-add-category" onclick="addNewCategory()">+ Add Category</button>
-                            </div>
+                            <select class="form-select" id="editCategory">
+                                <option value="">Select category...</option>
+                            </select>
                         </div>
 
                         <div class="form-group">
@@ -415,6 +483,7 @@
                         <select class="form-select" id="newModuleSeries">
                             <option value="">Select series...</option>
                         </select>
+                        <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Manage series in General Settings tab</p>
                     </div>
                 </div>
 
@@ -434,40 +503,18 @@
                     <div class="form-group">
                         <label class="form-label required-label">Emotions Targeted</label>
                         <select class="form-select" id="newModuleEmotions" multiple required style="height: 120px;">
-                            <option value="Anger">Anger</option>
-                            <option value="Anxiety">Anxiety</option>
-                            <option value="Fear">Fear</option>
-                            <option value="Sadness">Sadness</option>
-                            <option value="Frustration">Frustration</option>
-                            <option value="Overwhelm">Overwhelm</option>
-                            <option value="Worry">Worry</option>
-                            <option value="Jealousy">Jealousy</option>
-                            <option value="Shame">Shame</option>
-                            <option value="Guilt">Guilt</option>
                         </select>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                             <p style="font-size: 12px; color: #6b7c8f; margin: 0;">Hold Ctrl/Cmd to select multiple</p>
-                            <button type="button" onclick="addCustomEmotion()" style="font-size: 12px; padding: 4px 8px; background: #4c6c96; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Add Custom</button>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label required-label">Skills Developed</label>
                         <select class="form-select" id="newModuleSkills" multiple required style="height: 120px;">
-                            <option value="Emotional Identification">Emotional Identification</option>
-                            <option value="Calming Strategies">Calming Strategies</option>
-                            <option value="Problem Solving">Problem Solving</option>
-                            <option value="Confidence / Self-belief">Confidence / Self-belief</option>
-                            <option value="Social Skills">Social Skills</option>
-                            <option value="Empathy">Empathy</option>
-                            <option value="Self-regulation">Self-regulation</option>
-                            <option value="Communication">Communication</option>
-                            <option value="Resilience">Resilience</option>
-                            <option value="Mindfulness">Mindfulness</option>
                         </select>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                             <p style="font-size: 12px; color: #6b7c8f; margin: 0;">Hold Ctrl/Cmd to select multiple</p>
-                            <button type="button" onclick="addCustomSkill()" style="font-size: 12px; padding: 4px 8px; background: #4c6c96; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Add Custom</button>
                         </div>
                     </div>
                 </div>
@@ -502,19 +549,6 @@
                             ✨ Generate Module with AI
                         </button>
                         <span id="aiGenerationStatus" style="font-size: 13px; color: #6b7c8f;"></span>
-                    </div>
-
-                    <div class="file-upload-card">
-                        <div class="file-upload-header">
-                            <div>
-                                <p class="file-upload-title">Have an existing module?</p>
-                                <p class="file-upload-subtitle">Upload the original HTML and we’ll auto-convert it to the new format.</p>
-                            </div>
-                            <button type="button" class="btn" id="triggerModuleUpload" style="background:#405878; color:#fff;">⤴️ Upload & Migrate</button>
-                        </div>
-                        <input type="file" id="legacyModuleFile" accept=".html" style="display:none">
-                        <p class="file-upload-hint">Supports .html exports from the old system.</p>
-                        <div class="migration-status" id="migrationStatus" style="display:none;"></div>
                     </div>
                     
                     <p style="font-size: 12px; color: #6b7c8f; margin-top: 8px;">
@@ -666,10 +700,91 @@
         }
     </style>
 
+    <!-- Early function definitions for inline onclick handlers -->
+    <script>
+        // These functions are defined early (before module script) to ensure they're available
+        // for inline onclick handlers in the HTML
+        window.showPreviewModal = function() {
+            if (!window.generatedModuleHTML) {
+                alert('Please generate a module first');
+                return;
+            }
+            
+            const modal = document.getElementById('previewModal');
+            const iframe = document.getElementById('modulePreviewFrame');
+            
+            iframe.srcdoc = window.generatedModuleHTML;
+            if (window.updateQualityIndicators) window.updateQualityIndicators();
+            modal.classList.add('active');
+            
+            setTimeout(() => {
+                if (window.checkModuleQuality) window.checkModuleQuality(iframe);
+            }, 2000);
+        }
+
+        window.closePreviewModal = function() {
+            const modal = document.getElementById('previewModal');
+            modal.classList.remove('active');
+        }
+
+        window.updateQualityIndicators = function() {
+            const pageCount = (window.generatedModuleHTML?.match(/data-page="/g) || []).length;
+            const wordCount = window.currentGenerationSpec ? '~3800' : '~3800';
+            
+            const pageCountEl = document.getElementById('pageCount');
+            const wordCountEl = document.getElementById('wordCount');
+            if (pageCountEl) pageCountEl.textContent = pageCount;
+            if (wordCountEl) wordCountEl.textContent = wordCount;
+            
+            const pageIndicator = document.getElementById('pageCountIndicator');
+            if (pageIndicator) {
+                pageIndicator.classList.remove('pass', 'warning', 'fail');
+                if (pageCount >= 18) {
+                    pageIndicator.classList.add('pass');
+                } else if (pageCount >= 15) {
+                    pageIndicator.classList.add('warning');
+                } else {
+                    pageIndicator.classList.add('fail');
+                }
+            }
+        }
+
+        window.checkModuleQuality = function(iframe) {
+            const icon = document.getElementById('jsCheckIcon');
+            const text = document.getElementById('jsCheckText');
+            const indicator = document.getElementById('jsCheckIndicator');
+            
+            if (icon) icon.textContent = '⏳';
+            if (text) text.textContent = 'Checking...';
+            if (indicator) indicator.classList.remove('pass', 'warning', 'fail');
+            
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                // Check for actual page elements (data-page attribute) instead of window.pages
+                const pageElements = iframeDoc.querySelectorAll('[data-page]');
+                const hasPages = pageElements && pageElements.length > 0;
+                const hasHeader = iframeDoc.querySelector('#moduleHeaderRoot')?.innerHTML.length > 0;
+                
+                if (hasPages && hasHeader) {
+                    if (icon) icon.textContent = '✅';
+                    if (text) text.textContent = 'Module loaded successfully';
+                    if (indicator) indicator.classList.add('pass');
+                } else {
+                    if (icon) icon.textContent = '⚠️';
+                    if (text) text.textContent = 'Module structure incomplete';
+                    if (indicator) indicator.classList.add('warning');
+                }
+            } catch (e) {
+                if (icon) icon.textContent = '❌';
+                if (text) text.textContent = 'Error checking module';
+                if (indicator) indicator.classList.add('fail');
+            }
+        }
+    </script>
+
     <script type="module">
         import { supabase } from './src/supabaseClient.js';
         import { getSettings, updateSettings } from './src/database.js';
-        import { convertModule } from './convert-module-browser.js';
 
         let allChildren = [];
         let allParents = [];
@@ -692,6 +807,38 @@
             }
             return String(moduleId);
         }
+
+        // Tab switching function - defined early to be available for HTML onclick handlers
+        window.switchTab = function(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tabName === 'generalSettings') {
+                document.getElementById('generalSettingsTab').classList.add('active');
+                loadGeneralSettings();
+            } else if (tabName === 'childModules') {
+                document.getElementById('parentModulesTab').classList.add('active');
+                // Load parents if not already loaded
+                if (allParents.length === 0) {
+                    loadAllParents();
+                }
+            } else if (tabName === 'moduleCustomisation') {
+                document.getElementById('moduleCustomisationTab').classList.add('active');
+                renderAllModulesList();
+            } else if (tabName === 'rewards') {
+                document.getElementById('rewardsTab').classList.add('active');
+                if (!rewards || rewards.length === 0) {
+                    loadRewards();
+                }
+            } else if (tabName === 'parentToolkit') {
+                document.getElementById('parentToolkitTab').classList.add('active');
+                loadToolkitSettings();
+            }
+        };
 
         const rewardsListElement = document.getElementById('rewardsList');
 
@@ -1035,7 +1182,7 @@
             const selectedCategory = document.getElementById('categoryFilter').value;
             const selectedSeries = document.getElementById('seriesFilter').value;
             
-            const filteredModules = allModules.filter(module => {
+            let filteredModules = allModules.filter(module => {
                 // Check if module is active for THIS CHILD (from child_modules table)
                 // If no assignment exists, it's inactive for this child
                 const isActiveForChild = currentModuleAssignments[module.id] !== undefined 
@@ -1051,6 +1198,13 @@
                     (currentFilter === 'inactive' && !isActiveForChild);
                 
                 return matchesSearch && matchesCategory && matchesSeries && matchesFilter;
+            });
+            
+            // Sort modules by creation date (newest first)
+            filteredModules.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0);
+                const dateB = new Date(b.created_at || 0);
+                return dateB.getTime() - dateA.getTime(); // Newest first
             });
 
             if (filteredModules.length === 0) {
@@ -1138,7 +1292,8 @@
         }
 
         // ========== AI MODULE GENERATION ==========
-        let generatedModuleHTML = null;
+        window.generatedModuleHTML = null;
+        let generatedModuleHTML = window.generatedModuleHTML;
         const legacyFileInput = document.getElementById('legacyModuleFile');
         const triggerModuleUploadBtn = document.getElementById('triggerModuleUpload');
         const migrationStatusEl = document.getElementById('migrationStatus');
@@ -1175,8 +1330,10 @@
                         .replace(/__WORKBOOK_ID__/g, moduleCode);
                 }
 
-                generatedModuleHTML = migratedHtml;
-                currentGenerationSpec = null;
+                window.generatedModuleHTML = migratedHtml;
+                generatedModuleHTML = window.generatedModuleHTML;
+                window.currentGenerationSpec = null;
+                currentGenerationSpec = window.currentGenerationSpec;
 
                 const resultPanel = document.getElementById('aiGeneratedResult');
                 const saveBtn = document.getElementById('saveAiGeneratedModuleBtn');
@@ -1228,7 +1385,8 @@
 let generationStartTime = null;
 let elapsedInterval = null;
 let currentJobId = null;
-let currentGenerationSpec = null;
+window.currentGenerationSpec = null;
+let currentGenerationSpec = window.currentGenerationSpec;
 
 // ========== SESSION RECOVERY ==========
 function saveGenerationSession(jobId, brief) {
@@ -1509,78 +1667,10 @@ function classifyGenerationError(error) {
         }
 
         // ========== PREVIEW MODAL ==========
-        function showPreviewModal() {
-            if (!generatedModuleHTML) {
-                alert('Please generate a module first');
-                return;
-            }
-            
-            const modal = document.getElementById('previewModal');
-            const iframe = document.getElementById('modulePreviewFrame');
-            
-            iframe.srcdoc = generatedModuleHTML;
-            updateQualityIndicators();
-            modal.classList.add('active');
-            
-            setTimeout(() => checkModuleQuality(iframe), 2000);
-        }
-
-        function closePreviewModal() {
-            const modal = document.getElementById('previewModal');
-            modal.classList.remove('active');
-        }
-
-        function updateQualityIndicators() {
-            const pageCount = (generatedModuleHTML.match(/data-page="/g) || []).length;
-            const wordCount = currentGenerationSpec ? '~3800' : '~3800';
-            
-            document.getElementById('pageCount').textContent = pageCount;
-            document.getElementById('wordCount').textContent = wordCount;
-            
-            const pageIndicator = document.getElementById('pageCountIndicator');
-            pageIndicator.classList.remove('pass', 'warning', 'fail');
-            if (pageCount >= 18) {
-                pageIndicator.classList.add('pass');
-            } else if (pageCount >= 15) {
-                pageIndicator.classList.add('warning');
-            } else {
-                pageIndicator.classList.add('fail');
-            }
-        }
-
-        function checkModuleQuality(iframe) {
-            const icon = document.getElementById('jsCheckIcon');
-            const text = document.getElementById('jsCheckText');
-            const indicator = document.getElementById('jsCheckIndicator');
-            
-            icon.textContent = '⏳';
-            text.textContent = 'Checking...';
-            indicator.classList.remove('pass', 'warning', 'fail');
-            
-            try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                const hasPages = iframe.contentWindow.pages && iframe.contentWindow.pages.length > 0;
-                const hasHeader = iframeDoc.querySelector('#moduleHeaderRoot')?.innerHTML.length > 0;
-                
-                if (hasPages && hasHeader) {
-                    icon.textContent = '✅';
-                    text.textContent = 'JavaScript working';
-                    indicator.classList.add('pass');
-                } else {
-                    icon.textContent = '⚠️';
-                    text.textContent = 'JavaScript issues detected';
-                    indicator.classList.add('warning');
-                }
-            } catch (e) {
-                icon.textContent = '❌';
-                text.textContent = 'JavaScript broken';
-                indicator.classList.add('fail');
-                console.error('Preview check error:', e);
-            }
-        }
+        // Functions moved to early non-module script for availability to inline onclick handlers
 
         function approveAndSaveFromPreview() {
-            closePreviewModal();
+            window.closePreviewModal();
             document.getElementById('saveAiGeneratedModuleBtn').click();
         }
 
@@ -1607,6 +1697,7 @@ function classifyGenerationError(error) {
     const title = document.getElementById('newModuleTitle').value.trim();
     const moduleCode = document.getElementById('newModuleCode').value.trim();
     const category = document.getElementById('newModuleCategory').value;
+    const seriesId = document.getElementById('newModuleSeries').value;
     const emotions = Array.from(document.getElementById('newModuleEmotions').selectedOptions).map(o => o.value);
     const skills = Array.from(document.getElementById('newModuleSkills').selectedOptions).map(o => o.value);
     const contentBrief = document.getElementById('newModuleContentBrief').value.trim();
@@ -1663,7 +1754,7 @@ function classifyGenerationError(error) {
         updatePipelineStep('initializing');
         addLog('Calling AI generation service...', 'info');
         
-        const jobId = await startGenerationJob(enrichedBrief);
+        const jobId = await startGenerationJob(enrichedBrief, seriesId);
         currentJobId = jobId;
         saveGenerationSession(jobId, contentBrief);
         
@@ -1678,11 +1769,14 @@ function classifyGenerationError(error) {
             throw new Error('AI did not return valid HTML');
         }
 
-        generatedModuleHTML = result.html;
-        currentGenerationSpec = result.spec;
+        window.generatedModuleHTML = result.html;
+        generatedModuleHTML = window.generatedModuleHTML;
+        window.currentGenerationSpec = result.spec;
+        currentGenerationSpec = window.currentGenerationSpec;
         
-        if (moduleCode && generatedModuleHTML.includes('__MODULE_CODE__')) {
-            generatedModuleHTML = generatedModuleHTML.replace(/__MODULE_CODE__/g, moduleCode);
+        if (moduleCode && window.generatedModuleHTML.includes('__MODULE_CODE__')) {
+            window.generatedModuleHTML = window.generatedModuleHTML.replace(/__MODULE_CODE__/g, moduleCode);
+            generatedModuleHTML = window.generatedModuleHTML;
 
         }
         
@@ -1729,7 +1823,7 @@ function sleep(ms) {
 }
 
 // Start generation job (returns job ID)
-async function startGenerationJob(contentBrief) {
+async function startGenerationJob(contentBrief, seriesId) {
 
 
   const response = await fetch(
@@ -1741,7 +1835,7 @@ async function startGenerationJob(contentBrief) {
         "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY
       },
-      body: JSON.stringify({ contentBrief, async: true })
+      body: JSON.stringify({ contentBrief, seriesId, async: true })
     }
   );
 
@@ -1865,15 +1959,19 @@ if (data.status === "running") {
             const generateBtn = document.getElementById('generateModuleBtn');
 
             try {
-                if (!generatedModuleHTML) {
+                if (!window.generatedModuleHTML) {
                     alert('Please generate a module with AI before saving.');
                     return;
                 }
 
-                saveBtn.disabled = true;
-                saveBtn.textContent = 'Saving...';
-                statusEl.textContent = '💾 Saving module...';
-                statusEl.style.color = '#7b3ff2';
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving...';
+                }
+                if (statusEl) {
+                    statusEl.textContent = '💾 Saving module...';
+                    statusEl.style.color = '#7b3ff2';
+                }
 
                 const loadingOverlay = document.getElementById('aiLoadingOverlay');
                 if (loadingOverlay) loadingOverlay.style.display = 'flex';
@@ -1912,8 +2010,10 @@ if (data.status === "running") {
                 if (insertError) throw insertError;
 
 
-                statusEl.textContent = '✅ Saved!';
-                statusEl.style.color = '#10b981';
+                if (statusEl) {
+                    statusEl.textContent = '✅ Saved!';
+                    statusEl.style.color = '#10b981';
+                }
 
                 // Show success message
                 alert(`✨ Module "${title}" created successfully!\n\nModule Code: ${moduleCode}\n\nThe module is now available in your module list.`);
@@ -1930,8 +2030,10 @@ if (data.status === "running") {
 
             } catch (error) {
                 console.error('[Admin] Save error:', error);
-                statusEl.textContent = '❌ Save failed';
-                statusEl.style.color = '#ef4444';
+                if (statusEl) {
+                    statusEl.textContent = '❌ Save failed';
+                    statusEl.style.color = '#ef4444';
+                }
                 
                 // Hide loading overlay
                 const loadingOverlay3 = document.getElementById('aiLoadingOverlay');
@@ -1940,8 +2042,10 @@ if (data.status === "running") {
                 alert('Failed to save module: ' + error.message);
                 throw error;
             } finally {
-                saveBtn.textContent = '💾 Create Module';
-                saveBtn.disabled = !generatedModuleHTML;
+                if (saveBtn) {
+                    saveBtn.textContent = '💾 Create Module';
+                    saveBtn.disabled = !window.generatedModuleHTML;
+                }
                 if (generateBtn) generateBtn.disabled = false;
                 const overlay = document.getElementById('aiLoadingOverlay');
                 if (overlay) overlay.style.display = 'none';
@@ -1969,7 +2073,7 @@ if (data.status === "running") {
         }
 
         window.copyGeneratedModuleHTML = async function() {
-            if (!generatedModuleHTML) {
+            if (!window.generatedModuleHTML) {
                 alert('Generate a module first to copy it.');
                 return;
             }
@@ -2249,11 +2353,46 @@ if (data.status === "running") {
                                 <label class="form-label" style="margin-bottom:0; font-size:12px;">Star Cost</label>
                                 <input type="number" min="1" class="reward-input" id="reward-cost-${reward.id}" value="${reward.star_cost || 0}">
                             </div>
-                            <div class="reward-actions">
-                                <button class="btn-outline primary" onclick="saveRewardCost('${reward.id}')">Save</button>
-                            </div>
+                            <div class="modal-actions">
+                <button type="button" class="btn" onclick="closeAddModuleModal()" style="background:#cfd8dc; color:#1a1f36;">Cancel</button>
+                <button type="submit" class="btn-save">Save Module</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <!-- Add Category Modal -->
+    <div class="modal" id="addCategoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Category</h2>
+                <button class="modal-close" onclick="closeAddCategoryModal()">×</button>
+            </div>
+
+            <form id="addCategoryForm" onsubmit="handleAddCategorySubmit(event); return false;">
+                <div class="form-group">
+                    <label class="form-label" for="addCategoryName">Category Name</label>
+                    <input type="text" id="addCategoryName" class="form-input" placeholder="e.g. Resilience" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="addCategoryColorPicker">Category Color</label>
+                    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                        <input type="color" id="addCategoryColorPicker" value="#4c6c96" style="width:64px; height:48px; border:none; background:none;">
+                        <div style="flex:1;">
+                            <label class="form-label" for="addCategoryColorHex" style="font-size:13px; display:block;">Hex Value</label>
+                            <input type="text" id="addCategoryColorHex" class="form-input" value="#4c6c96" placeholder="#4c6c96">
                         </div>
                     </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeAddCategoryModal()" style="background:#cfd8dc; color:#1a1f36;">Cancel</button>
+                    <button type="submit" class="btn-save">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
                 `;
             }).join('');
         }
@@ -2357,32 +2496,342 @@ if (data.status === "running") {
             alert('Reward added successfully.');
         }
 
-        // Tab switching
-        window.switchTab = function(tabName) {
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+        // General Settings Management
+        let generalCategories = [];
+        let generalSeries = [];
+        let generalEmotions = [];
+        let generalSkills = [];
 
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            if (tabName === 'childModules') {
-                document.getElementById('parentModulesTab').classList.add('active');
-                // Load parents if not already loaded
-                if (allParents.length === 0) {
-                    loadAllParents();
+        async function loadGeneralSettings() {
+            try {
+                // Load categories from category_colors table
+                const { data: categoryData, error: categoryError } = await supabase
+                    .from('category_colors')
+                    .select('*')
+                    .order('category', { ascending: true });
+
+                if (!categoryError && categoryData) {
+                    generalCategories = categoryData.map(c => ({
+                        name: c.category,
+                        color: c.color
+                    }));
                 }
-            } else if (tabName === 'moduleCustomisation') {
-                document.getElementById('moduleCustomisationTab').classList.add('active');
-                renderAllModulesList();
-            } else if (tabName === 'rewards') {
-                document.getElementById('rewardsTab').classList.add('active');
-                if (!rewards || rewards.length === 0) {
-                    loadRewards();
+
+                // Load series from series table
+                const { data: seriesData, error: seriesError } = await supabase
+                    .from('series')
+                    .select('*')
+                    .order('label', { ascending: true });
+
+                if (!seriesError && seriesData) {
+                    generalSeries = seriesData;
                 }
-            } else if (tabName === 'parentToolkit') {
-                document.getElementById('parentToolkitTab').classList.add('active');
-                loadToolkitSettings();
+
+                // Load emotions from emotions table
+                const { data: emotionsData, error: emotionsError } = await supabase
+                    .from('emotions')
+                    .select('*')
+                    .order('label', { ascending: true });
+
+                if (!emotionsError && emotionsData) {
+                    generalEmotions = emotionsData;
+                }
+
+                // Load skills from skills table
+                const { data: skillsData, error: skillsError } = await supabase
+                    .from('skills')
+                    .select('*')
+                    .order('label', { ascending: true });
+
+                if (!skillsError && skillsData) {
+                    generalSkills = skillsData;
+                }
+
+                renderGeneralCategories();
+                renderGeneralSeries();
+                renderGeneralEmotions();
+                renderGeneralSkills();
+            } catch (error) {
+                console.error('Error loading general settings:', error);
+                alert('Failed to load settings. Please refresh the page.');
+            }
+        }
+
+        function renderGeneralCategories() {
+            const list = document.getElementById('categoriesList');
+            if (!list) return;
+
+            if (generalCategories.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No categories</p>';
+                return;
+            }
+
+            list.innerHTML = generalCategories.map((cat, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                        <div style="width: 20px; height: 20px; background: ${cat.color}; border-radius: 3px; border: 1px solid #ddd; flex-shrink: 0;"></div>
+                        <span style="color: #374151; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${cat.name}</span>
+                    </div>
+                    <button onclick="deleteGeneralCategory(${index})" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderGeneralSeries() {
+            const list = document.getElementById('seriesList');
+            if (!list) return;
+
+            if (generalSeries.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No series</p>';
+                return;
+            }
+
+            list.innerHTML = generalSeries.map((series) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <span style="color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${series.label}</span>
+                    <button onclick="deleteGeneralSeries('${series.id}')" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderGeneralEmotions() {
+            const list = document.getElementById('emotionsList');
+            if (!list) return;
+
+            if (generalEmotions.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No emotions</p>';
+                return;
+            }
+
+            list.innerHTML = generalEmotions.map((emotion) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <span style="color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${emotion.label}</span>
+                    <button onclick="deleteGeneralEmotion('${emotion.id}')" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderGeneralSkills() {
+            const list = document.getElementById('skillsList');
+            if (!list) return;
+
+            if (generalSkills.length === 0) {
+                list.innerHTML = '<p style="color: #6b7c8f; font-size: 12px; margin: 0;">No skills</p>';
+                return;
+            }
+
+            list.innerHTML = generalSkills.map((skill) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: white; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 12px;">
+                    <span style="color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${skill.label}</span>
+                    <button onclick="deleteGeneralSkill('${skill.id}')" style="padding: 2px 6px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; flex-shrink: 0; margin-left: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        window.addGeneralCategory = async function() {
+            const nameInput = document.getElementById('newCategoryName');
+            const colorPicker = document.getElementById('newCategoryColor');
+            const colorHex = document.getElementById('newCategoryColorHex');
+
+            const name = nameInput.value.trim().toLowerCase();
+            const color = colorPicker.value;
+
+            if (!name) {
+                alert('Please enter a category name');
+                return;
+            }
+
+            if (generalCategories.some(c => c.name === name)) {
+                alert('Category already exists');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('category_colors')
+                    .upsert({ category: name, color }, { onConflict: 'category' });
+
+                if (error) throw error;
+
+                generalCategories.push({ name, color });
+                nameInput.value = '';
+                colorPicker.value = '#4c6c96';
+                colorHex.value = '#4c6c96';
+                renderGeneralCategories();
+                alert('Category added successfully');
+            } catch (error) {
+                console.error('Error adding category:', error);
+                alert('Failed to add category. Please try again.');
+            }
+        }
+
+        window.deleteGeneralCategory = async function(index) {
+            if (!confirm('Delete this category?')) return;
+
+            const category = generalCategories[index];
+            try {
+                const { error } = await supabase
+                    .from('category_colors')
+                    .delete()
+                    .eq('category', category.name);
+
+                if (error) throw error;
+
+                generalCategories.splice(index, 1);
+                renderGeneralCategories();
+                alert('Category deleted successfully');
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                alert('Failed to delete category. Please try again.');
+            }
+        }
+
+        window.addGeneralSeries = async function() {
+            const input = document.getElementById('newSeriesName');
+            const value = input.value.trim();
+
+            if (!value) {
+                alert('Please enter a series name');
+                return;
+            }
+
+            if (generalSeries.some(s => s.label.toLowerCase() === value.toLowerCase())) {
+                alert('Series already exists');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('series')
+                    .insert([{ label: value }]);
+
+                if (error) throw error;
+
+                input.value = '';
+                await loadGeneralSettings();
+                alert('Series added successfully');
+            } catch (error) {
+                console.error('Error adding series:', error);
+                alert('Failed to add series. Please try again.');
+            }
+        }
+
+        window.deleteGeneralSeries = async function(id) {
+            if (!confirm('Delete this series?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('series')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                await loadGeneralSettings();
+                alert('Series deleted successfully');
+            } catch (error) {
+                console.error('Error deleting series:', error);
+                alert('Failed to delete series. Please try again.');
+            }
+        }
+
+        window.addGeneralEmotion = async function() {
+            const input = document.getElementById('newEmotionName');
+            const value = input.value.trim();
+
+            if (!value) {
+                alert('Please enter an emotion');
+                return;
+            }
+
+            if (generalEmotions.some(e => e.label.toLowerCase() === value.toLowerCase())) {
+                alert('Emotion already exists');
+                return;
+            }
+
+            try {
+                const id = value.toLowerCase().replace(/\s+/g, '_');
+                const { error } = await supabase
+                    .from('emotions')
+                    .insert([{ id, label: value }]);
+
+                if (error) throw error;
+
+                input.value = '';
+                await loadGeneralSettings();
+                alert('Emotion added successfully');
+            } catch (error) {
+                console.error('Error adding emotion:', error);
+                alert('Failed to add emotion. Please try again.');
+            }
+        }
+
+        window.deleteGeneralEmotion = async function(id) {
+            if (!confirm('Delete this emotion?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('emotions')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                await loadGeneralSettings();
+                alert('Emotion deleted successfully');
+            } catch (error) {
+                console.error('Error deleting emotion:', error);
+                alert('Failed to delete emotion. Please try again.');
+            }
+        }
+
+        window.addGeneralSkill = async function() {
+            const input = document.getElementById('newSkillName');
+            const value = input.value.trim();
+
+            if (!value) {
+                alert('Please enter a skill');
+                return;
+            }
+
+            if (generalSkills.some(s => s.label.toLowerCase() === value.toLowerCase())) {
+                alert('Skill already exists');
+                return;
+            }
+
+            try {
+                const id = value.toLowerCase().replace(/\s+/g, '_');
+                const { error } = await supabase
+                    .from('skills')
+                    .insert([{ id, label: value }]);
+
+                if (error) throw error;
+
+                input.value = '';
+                await loadGeneralSettings();
+                alert('Skill added successfully');
+            } catch (error) {
+                console.error('Error adding skill:', error);
+                alert('Failed to add skill. Please try again.');
+            }
+        }
+
+        window.deleteGeneralSkill = async function(id) {
+            if (!confirm('Delete this skill?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('skills')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                await loadGeneralSettings();
+                alert('Skill deleted successfully');
+            } catch (error) {
+                console.error('Error deleting skill:', error);
+                alert('Failed to delete skill. Please try again.');
             }
         }
 
@@ -2951,6 +3400,7 @@ if (data.status === "running") {
             // Populate form
             document.getElementById('editTitle').value = selectedModule.title || '';
             document.getElementById('editShortDescription').value = selectedModule.short_description || '';
+            document.getElementById('editDescription').value = selectedModule.description || '';
             document.getElementById('editSeries').value = selectedModule.series || '';
             document.getElementById('editAgeRange').value = selectedModule.age_range || '';
             
@@ -2998,20 +3448,102 @@ if (data.status === "running") {
             });
         }
 
-        // Add new category
-        window.addNewCategory = function() {
-            const newCategory = prompt('Enter new category name:');
-            if (!newCategory) return;
+        function normalizeHexColor(value) {
+            if (!value) return null;
+            let color = value.trim();
+            if (!color.startsWith('#')) {
+                color = `#${color}`;
+            }
+            if (/^#([0-9a-fA-F]{6})$/.test(color)) {
+                return color.toLowerCase();
+            }
+            return null;
+        }
 
-            const categoryLower = newCategory.toLowerCase().trim();
+        window.openAddCategoryModal = function() {
+            console.log('[Admin] openAddCategoryModal called');
+            const modal = document.getElementById('addCategoryModal');
+            const form = document.getElementById('addCategoryForm');
+            console.log('[Admin] Modal element:', modal);
+            if (modal) {
+                if (form) form.reset();
+                document.getElementById('addCategoryColorPicker').value = '#4c6c96';
+                document.getElementById('addCategoryColorHex').value = '#4c6c96';
+                modal.classList.add('active');
+                console.log('[Admin] Modal should now be visible');
+            } else {
+                console.error('[Admin] Modal element not found');
+            }
+        }
+
+        window.closeAddCategoryModal = function() {
+            const modal = document.getElementById('addCategoryModal');
+            modal?.classList.remove('active');
+        }
+
+        function syncCategoryColorInputs(source) {
+            const colorPicker = document.getElementById('addCategoryColorPicker');
+            const colorHex = document.getElementById('addCategoryColorHex');
+            if (source === 'picker') {
+                colorHex.value = colorPicker.value;
+            } else {
+                const normalized = normalizeHexColor(colorHex.value);
+                if (normalized) {
+                    colorHex.value = normalized;
+                    colorPicker.value = normalized;
+                }
+            }
+        }
+
+        document.getElementById('addCategoryColorPicker')?.addEventListener('input', () => syncCategoryColorInputs('picker'));
+        document.getElementById('addCategoryColorHex')?.addEventListener('blur', () => syncCategoryColorInputs('hex'));
+
+        window.handleAddCategorySubmit = async function(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('addCategoryName');
+            const colorInput = document.getElementById('addCategoryColorHex');
+            const categoryName = nameInput.value.trim();
+            const categoryLower = categoryName.toLowerCase();
+            if (!categoryName) {
+                alert('Please enter a category name.');
+                return;
+            }
             if (availableCategories.includes(categoryLower)) {
                 alert('Category already exists!');
                 return;
             }
+            const normalizedColor = normalizeHexColor(colorInput.value);
+            if (!normalizedColor) {
+                alert('Please enter a valid 6-digit hex color (e.g. #4c6c96).');
+                return;
+            }
 
+            const { error } = await supabase
+                .from('category_colors')
+                .upsert({ category: categoryLower, color: normalizedColor }, { onConflict: 'category' });
+
+            if (error) {
+                console.error('[Admin] Failed to save category color:', error);
+                alert('Failed to add category. Please try again.');
+                return;
+            }
+
+            categoryColors[categoryLower] = normalizedColor;
             availableCategories.push(categoryLower);
             populateEditCategoryDropdown();
             document.getElementById('editCategory').value = categoryLower;
+            updateCategoryColorDisplay();
+
+            // Update add-module dropdown options too
+            const newModuleCategory = document.getElementById('newModuleCategory');
+            if (newModuleCategory) {
+                const option = document.createElement('option');
+                option.value = categoryLower;
+                option.textContent = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+                newModuleCategory.appendChild(option);
+            }
+
+            closeAddCategoryModal();
         }
 
         // Save module changes
@@ -3024,6 +3556,7 @@ if (data.status === "running") {
             const updates = {
                 title: document.getElementById('editTitle').value,
                 short_description: document.getElementById('editShortDescription').value,
+                description: document.getElementById('editDescription').value,
                 category: category,
                 series: document.getElementById('editSeries').value,
                 age_range: document.getElementById('editAgeRange').value
@@ -3070,7 +3603,7 @@ if (data.status === "running") {
         }
 
         // Open Add Module Modal
-        window.openAddModuleModal = function() {
+        window.openAddModuleModal = async function() {
             const modal = document.getElementById('addModuleModal');
             modal.classList.add('active');
             
@@ -3092,19 +3625,71 @@ if (data.status === "running") {
                 categorySelect.appendChild(option);
             });
             
-            // Populate series dropdown
-            const seriesSelect = document.getElementById('newModuleSeries');
-            const series = Array.from(new Set(
-                allModules.map(m => m.series).filter(Boolean)
-            )).sort();
+            // Populate series dropdown from database
+            try {
+                const { data: seriesData } = await supabase
+                    .from('series')
+                    .select('*')
+                    .order('label', { ascending: true });
+                
+                const seriesSelect = document.getElementById('newModuleSeries');
+                seriesSelect.innerHTML = '<option value="">Select series...</option>';
+                
+                if (seriesData) {
+                    seriesData.forEach(ser => {
+                        const option = document.createElement('option');
+                        option.value = ser.label;
+                        option.textContent = ser.label;
+                        seriesSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading series:', error);
+            }
             
-            seriesSelect.innerHTML = '<option value="">Select series...</option>';
-            series.forEach(ser => {
-                const option = document.createElement('option');
-                option.value = ser;
-                option.textContent = ser;
-                seriesSelect.appendChild(option);
-            });
+            // Populate emotions dropdown from database
+            try {
+                const { data: emotionsData } = await supabase
+                    .from('emotions')
+                    .select('*')
+                    .order('label', { ascending: true });
+                
+                const emotionsSelect = document.getElementById('newModuleEmotions');
+                emotionsSelect.innerHTML = '';
+                
+                if (emotionsData) {
+                    emotionsData.forEach(emotion => {
+                        const option = document.createElement('option');
+                        option.value = emotion.label;
+                        option.textContent = emotion.label;
+                        emotionsSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading emotions:', error);
+            }
+            
+            // Populate skills dropdown from database
+            try {
+                const { data: skillsData } = await supabase
+                    .from('skills')
+                    .select('*')
+                    .order('label', { ascending: true });
+                
+                const skillsSelect = document.getElementById('newModuleSkills');
+                skillsSelect.innerHTML = '';
+                
+                if (skillsData) {
+                    skillsData.forEach(skill => {
+                        const option = document.createElement('option');
+                        option.value = skill.label;
+                        option.textContent = skill.label;
+                        skillsSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading skills:', error);
+            }
         }
 
         // Generate next module code (MODULE10, MODULE11, etc.)
@@ -3123,14 +3708,23 @@ if (data.status === "running") {
         // Close Add Module Modal
         window.closeAddModuleModal = function() {
             const modal = document.getElementById('addModuleModal');
-            modal.classList.remove('active');
-            document.getElementById('addModuleForm').reset();
+            if (modal) modal.classList.remove('active');
+            
+            const form = document.getElementById('addModuleForm');
+            if (form) form.reset();
             
             // Reset AI generation state
-            generatedModuleHTML = null;
-            document.getElementById('aiGeneratedPreview').style.display = 'none';
-            document.getElementById('aiGenerationStatus').textContent = '';
-            document.getElementById('filePreview').style.display = 'none';
+            window.generatedModuleHTML = null;
+            generatedModuleHTML = window.generatedModuleHTML;
+            
+            const aiPreview = document.getElementById('aiGeneratedPreview');
+            if (aiPreview) aiPreview.style.display = 'none';
+            
+            const aiStatus = document.getElementById('aiGenerationStatus');
+            if (aiStatus) aiStatus.textContent = '';
+            
+            const filePreview = document.getElementById('filePreview');
+            if (filePreview) filePreview.style.display = 'none';
         }
 
         // Add Custom Emotion
@@ -3511,7 +4105,8 @@ if (data.status === "running") {
 
             await Promise.all([
                 loadAllChildren(),
-                loadAllModules()
+                loadAllModules(),
+                loadGeneralSettings()
             ]);
 
             await loadRewards();

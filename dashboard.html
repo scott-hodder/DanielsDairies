@@ -1,13 +1,223 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daniel's Dairies - Dashboard</title>
+    <title>Daniel's Diaries - Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="/styles/dashboard.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+    /* ADVENTURE_MAP_V2 */
+    /* Adventure Map v2 - self-contained */
+    .adventure-map-section {
+        background: #fff;
+        border-radius: 18px;
+        padding: 18px 18px 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        border: 1px solid rgba(64,88,120,0.10);
+        margin-top: 18px;
+    }
+    .adventure-header {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:4px;
+        padding: 6px 6px 14px;
+    }
+    .adventure-title {
+        font-family: 'Fredoka','League Spartan',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+        font-size: 28px;
+        letter-spacing: .2px;
+        margin: 0;
+        color: #405878;
+        display:flex;
+        align-items:center;
+        gap:10px;
+    }
+    .adventure-subtitle {
+        margin:0;
+        color:#6d86a8;
+        font-size:14px;
+        text-align:center;
+    }
+    .adventure-map-container {
+        position: relative;
+        width: 100%;
+        height: clamp(380px, 52vh, 560px);
+        border-radius: 18px;
+        background:
+            radial-gradient(900px 420px at 30% 10%, rgba(255,196,140,.35), rgba(255,255,255,0) 55%),
+            radial-gradient(760px 420px at 70% 15%, rgba(176,227,255,.28), rgba(255,255,255,0) 55%),
+            linear-gradient(180deg, #fbfdff 0%, #f7f9fc 60%, #f2f6fb 100%);
+        border: 1px solid rgba(64,88,120,0.10);
+        overflow:hidden;
+        padding: 18px;
+    }
+    .adventure-map-container::before {
+        content:"";
+        position:absolute;
+        inset:0;
+        background-image:
+            radial-gradient(circle at 18px 18px, rgba(64,88,120,.06) 1.2px, transparent 1.3px);
+        background-size: 22px 22px;
+        opacity:.55;
+        pointer-events:none;
+    }
+    svg.adventure-path {
+        position:absolute;
+        inset: 0;
+        width:100%;
+        height:100%;
+        pointer-events:none;
+        filter: drop-shadow(0 1px 0 rgba(255,255,255,0.7));
+    }
+    .adventure-nodes {
+        position:absolute;
+        inset: 0;
+        z-index: 2;
+    }
+    .adventure-node {
+        position:absolute;
+        width: 64px;
+        height: 64px;
+        border-radius: 999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 30px;
+        user-select:none;
+        cursor:pointer;
+        transform: translate(-50%, -50%);
+        transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+        box-shadow: 0 10px 22px rgba(17,24,39,.10);
+        border: 2px solid rgba(255,255,255,.75);
+        backdrop-filter: blur(4px);
+    }
+    .adventure-node:hover {
+        transform: translate(-50%, -50%) scale(1.04);
+        box-shadow: 0 14px 28px rgba(17,24,39,.14);
+    }
+    .adventure-node .node-number {
+        position:absolute;
+        top: -8px;
+        right: -8px;
+        width: 26px;
+        height: 26px;
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 12px;
+        font-weight: 800;
+        color: #1f2f46;
+        background: rgba(255,255,255,.95);
+        border: 1px solid rgba(64,88,120,.18);
+        box-shadow: 0 6px 14px rgba(17,24,39,.12);
+    }
+    .adventure-node .node-badge {
+        position:absolute;
+        bottom: -8px;
+        right: -8px;
+        width: 26px;
+        height: 26px;
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 14px;
+        font-weight: 900;
+        color: white;
+        background: linear-gradient(180deg, #2dd4bf 0%, #10b981 100%);
+        border: 2px solid rgba(255,255,255,.9);
+        box-shadow: 0 8px 18px rgba(16,185,129,.28);
+    }
+    .adventure-node.available {
+        background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.75) 100%);
+        outline: 0;
+    }
+    .adventure-node.available::after {
+        content:"";
+        position:absolute;
+        inset:-6px;
+        border-radius:999px;
+        background: radial-gradient(circle, rgba(255,165,80,.55), rgba(255,255,255,0) 60%);
+        filter: blur(1px);
+        opacity:.9;
+        animation: nodePulse 2.2s ease-in-out infinite;
+        z-index:-1;
+    }
+    @keyframes nodePulse {
+        0%,100% { transform: scale(0.92); opacity:.55; }
+        50% { transform: scale(1.08); opacity: .95; }
+    }
+    .adventure-node.completed {
+        background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.78) 100%);
+        box-shadow: 0 14px 30px rgba(16,185,129,.18);
+    }
+    .adventure-node.completed::after {
+        content:"";
+        position:absolute;
+        inset:-8px;
+        border-radius:999px;
+        background: radial-gradient(circle, rgba(16,185,129,.35), rgba(255,255,255,0) 62%);
+        opacity:.95;
+        z-index:-1;
+    }
+    .adventure-node.locked {
+        cursor:not-allowed;
+        background: linear-gradient(180deg, rgba(203,213,225,.75) 0%, rgba(148,163,184,.55) 100%);
+        filter: grayscale(.25) saturate(.6);
+        box-shadow: 0 10px 22px rgba(17,24,39,.08);
+    }
+    .adventure-node.locked::before {
+        content:"🔒";
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 20px;
+        opacity:.9;
+    }
+    .adventure-node.locked > span.emoji {
+        opacity:.28;
+    }
+    .adventure-tooltip {
+        position:absolute;
+        left:50%;
+        bottom: 78px;
+        transform: translateX(-50%);
+        background: rgba(17,24,39,.92);
+        color: #fff;
+        padding: 8px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.2;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events:none;
+        transition: opacity .12s ease, transform .12s ease;
+        box-shadow: 0 14px 34px rgba(0,0,0,.18);
+    }
+    .adventure-tooltip .tt-title {
+        font-weight: 800;
+    }
+    .adventure-node:hover .adventure-tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-2px);
+    }
+    </style>
+    
 </head>
 <body>
     <!-- Header -->
@@ -15,9 +225,9 @@
         <div class="header-content">
             <div class="header-left">
                 <a href="/dashboard.html" class="header-logo">
-                    <img src="/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" class="header-logo-img">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
                     <div>
-                        <h1 class="header-title">Daniel's Dairies</h1>
+                        <h1 class="header-title">Daniel's Diaries</h1>
                         <p class="header-subtitle" id="headerSubtitle">Welcome back!</p>
                     </div>
                 </a>
@@ -50,24 +260,6 @@
             <div style="text-align: center; margin-bottom: 40px;">
                 <h1 style="font-size: 32px; color: #405878; font-weight: 700; margin-bottom: 8px;">Welcome to Your Family Dashboard</h1>
                 <p style="color: #4c6c96; font-size: 16px;">Select a child to view their progress and continue their learning journey</p>
-                
-                <!-- Login Streak Display -->
-                <div id="streakDisplay" class="streak-display" style="display: none;">
-                    <div class="streak-card">
-                        <div class="streak-icon">🔥</div>
-                        <div class="streak-info">
-                            <div class="streak-number" id="currentStreak">0</div>
-                            <div class="streak-label">day streak!</div>
-                        </div>
-                        <div class="streak-details">
-                            <div class="streak-stat">
-                                <span class="streak-value" id="longestStreak">0</span>
-                                <span class="streak-stat-label">longest</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="streak-message" id="streakMessage">Keep it going!</div>
-                </div>
             </div>
 
             <!-- Children Cards -->
@@ -81,54 +273,52 @@
                 <div class="children-grid" id="childrenGrid"></div>
             </div>
 
-            <!-- Active Modules Section -->
+            <!-- All Modules Section -->
             <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                    <span style="font-size: 28px;">✅</span>
-                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin: 0;">Your Active Workbooks</h2>
+                    <span style="font-size: 28px;">📚</span>
+                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin: 0;">All Workbooks</h2>
                 </div>
-                <p style="color: #4c6c96; font-size: 15px; margin-bottom: 24px;">These workbooks are unlocked and ready for your children to explore</p>
-                <div class="modules-grid" id="parentUnlockedModulesGrid"></div>
-            </div>
-
-            <!-- Unlock More Modules CTA Section -->
-            <div class="unlock-more-section">
-                <div class="unlock-more-content">
-                    <div class="unlock-more-badge">✨ New Workbooks Available</div>
-                    <h2 class="unlock-more-title">Unlock More Learning Adventures</h2>
-                    <p class="unlock-more-description">Give your child access to our complete library of expert-designed workbooks. Each module builds confidence, emotional intelligence, and resilience through engaging stories and activities.</p>
-                    <div class="unlock-more-benefits">
-                        <div class="unlock-benefit">
-                            <span class="unlock-benefit-icon">🎯</span>
-                            <div>
-                                <strong>Expert-Designed Content</strong>
-                                <p>Created by child development specialists</p>
-                            </div>
-                        </div>
-                        <div class="unlock-benefit">
-                            <span class="unlock-benefit-icon">📈</span>
-                            <div>
-                                <strong>Track Progress</strong>
-                                <p>See your child's growth in real-time</p>
-                            </div>
-                        </div>
-                        <div class="unlock-benefit">
-                            <span class="unlock-benefit-icon">👨‍👩‍👧</span>
-                            <div>
-                                <strong>Parent Support Included</strong>
-                                <p>Coaching scripts and guidance for every module</p>
-                            </div>
-                        </div>
+                <p style="color: #4c6c96; font-size: 15px; margin-bottom: 24px;">Explore our complete library of workbooks - active ones are ready to use, locked ones can be unlocked</p>
+                
+                <!-- Filters -->
+                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                    <div>
+                        <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Category:</label>
+                        <select id="allWorkbooksCategoryFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                            <option value="all">All Categories</option>
+                        </select>
                     </div>
-                    <button type="button" id="moreModulesButton" class="unlock-more-cta">
-                        <span>🚀 Explore All Workbooks</span>
-                    </button>
-                    <p class="unlock-more-note">💎 One-time purchase • Lifetime access • No subscriptions</p>
+                    <div>
+                        <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Series:</label>
+                        <select id="allWorkbooksSeriesFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                            <option value="all">All Series</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Active Modules -->
+                <div id="activeModulesSection">
+                    <h3 style="font-size: 18px; color: #405878; font-weight: 600; margin-bottom: 16px;">✅ Active Workbooks</h3>
+                    <div class="modules-grid" id="parentUnlockedModulesGrid"></div>
+                </div>
+                
+                <!-- Inactive Modules -->
+                <div id="inactiveModulesSection" style="margin-top: 32px;">
+                    <h3 style="font-size: 18px; color: #888; font-weight: 600; margin-bottom: 16px;">🔒 Locked Workbooks</h3>
+                    <div class="modules-grid" id="parentLockedModulesGrid"></div>
+                    
+                    <!-- Show More/Less Button -->
+                    <div style="text-align: center; margin-top: 24px;">
+                        <button type="button" id="showMoreModulesBtn" class="btn-secondary" style="display: none;">
+                            Show More
+                        </button>
+                        <button type="button" id="showLessModulesBtn" class="btn-secondary" style="display: none;">
+                            Show Less
+                        </button>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Hidden grid for locked modules (needed by JavaScript) -->
-            <div class="modules-grid" id="parentLockedModulesGrid" style="display: none;"></div>
         </div>
 
         <!-- Child Detail View -->
@@ -136,19 +326,19 @@
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
                 <div class="nav-tabs-content">
-                    <button class="nav-tab active" id="tabDashboard">
+                    <button class="nav-tab active" id="tabDashboard" data-emoji="🎯">
                         🎯 Dashboard
                     </button>
-                    <button class="nav-tab hidden" id="tabModules">
+                    <button class="nav-tab hidden" id="tabModules" data-emoji="📖">
                         📖 My Modules
                     </button>
-                    <button class="nav-tab" id="tabLeaderboard">
+                    <button class="nav-tab" id="tabLeaderboard" data-emoji="🏆">
                         🏆 Leaderboard
                     </button>
-                    <button class="nav-tab" id="tabSpendStars">
+                    <button class="nav-tab" id="tabSpendStars" data-emoji="🎁">
                         🎁 Spend Stars
                     </button>
-                    <button class="nav-tab" id="tabParentInsights">
+                    <button class="nav-tab" id="tabParentInsights" data-emoji="👨‍👩‍👧">
                         👨‍👩‍👧 Parent Insights
                     </button>
                 </div>
@@ -156,64 +346,179 @@
 
             <!-- Dashboard Tab -->
             <div id="dashboardTabContent">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-card-content">
-                            <div>
-                                <p class="stat-label">Total Stars</p>
-                                <h3 class="stat-value" id="totalStars">0</h3>
+                <!-- Top Row: Daniel Hub + Daily Quest + Stats -->
+                <div class="dashboard-top-row">
+                    <!-- Daniel Hub -->
+                    <div class="daniel-hub" id="danielHub">
+                        <div class="daniel-character" id="danielCharacter">
+                            <img class="daniel-avatar" src="/images/characters/DanielTheDog.png" alt="Daniel the dog avatar" role="presentation" />
+                            <div class="mood-bubble" id="moodBubble">
+                                <span id="moodText">Happy to see you!</span>
                             </div>
-                            <span style="font-size: 32px;">⭐</span>
+                        </div>
+                        <div class="daniel-info">
+                            <h3 class="daniel-name">Daniel</h3>
+                            <p class="daniel-status" id="danielStatus">Ready for adventure!</p>
                         </div>
                     </div>
 
-                    <div class="stat-card">
-                        <div class="stat-card-content">
+                    <!-- Daily Quest Card -->
+                    <div class="stat-card daily-quest-card" id="dailyQuestCard" 
+                        style="background: linear-gradient(135deg, #f4a261 0%, #e9c46a 100%); color: white;">
+                        <div class="quest-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div class="quest-icon" style="font-size: 32px;">🎯</div>
                             <div>
-                                <p class="stat-label">Completed</p>
-                                <h3 class="stat-value"><span id="completedModules">0</span>/<span id="totalModules">0</span></h3>
+                                <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Daily Quest</h3>
+                                <p style="margin: 0; font-size: 12px; opacity: 0.9;">Complete for bonus stars!</p>
                             </div>
-                            <span style="font-size: 32px;">✓</span>
+                        </div>
+                        
+                        <div class="quest-progress-section">
+                            <p class="quest-description" id="questDescription" 
+                            style="margin: 0 0 12px 0; font-size: 15px;">
+                                Loading quest...
+                            </p>
+                            
+                            <!-- Button will be rendered by JS -->
+                            <button class="daily-quest-btn" id="doQuestBtn">
+                                Do Daily Quest
+                            </button>
                         </div>
                     </div>
-
-                    <div class="stat-card">
-                        <div class="stat-card-content">
-                            <div>
-                                <p class="stat-label">Day Streak</p>
-                                <h3 class="stat-value" id="dayStreak">0</h3>
+                    <!-- Combined Stats Box -->
+                    <div style="background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid rgba(64,88,120,0.08);">
+                        <!-- Stats Row -->
+                        <div style="display: flex; gap: 20px; justify-content: space-around; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                <div style="font-size: 32px;">⭐</div>
+                                <div>
+                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="totalStars">0</div>
+                                    <div style="font-size: 12px; color: #6d86a8; font-weight: 600;">Stars</div>
+                                </div>
                             </div>
-                            <span style="font-size: 32px;">🔥</span>
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                <div style="font-size: 32px;">🔥</div>
+                                <div>
+                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="dayStreak">0</div>
+                                    <div style="font-size: 12px; color: #6d86a8; font-weight: 600;">Day Streak</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                <div style="font-size: 32px;">🏆</div>
+                                <div>
+                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="childRank">#-</div>
+                                    <div style="font-size: 12px; color: #6d86a8; font-weight: 600;">Rank</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="stat-card">
-                        <div class="stat-card-content">
-                            <div>
-                                <p class="stat-label">Rank</p>
-                                <h3 class="stat-value" id="childRank">#-</h3>
+                        <!-- Your Journey So Far Section -->
+                        <div style="padding-top: 20px; border-top: 1px solid rgba(64,88,120,0.1);">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                <span style="font-size: 20px;">🐝</span>
+                                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #405878;">Your Journey So Far</h3>
                             </div>
-                            <span style="font-size: 32px;">🏆</span>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                                <div style="background: #f0f4ff; border-radius: 12px; padding: 12px; text-align: center; grid-column: 1 / -1;" id="skillsExploredBox">
+                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="skillsExploredCount">0</div>
+                                    <div style="font-size: 11px; color: #6d86a8; font-weight: 600; margin-top: 4px;" id="skillsExploredLabel">SKILLS EXPLORED</div>
+                                </div>
+                                <div style="background: #f0f4ff; border-radius: 12px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="toolsIntroducedCount">0</div>
+                                    <div style="font-size: 11px; color: #6d86a8; font-weight: 600; margin-top: 4px;" id="toolsIntroducedLabel">TOOLS INTRODUCED</div>
+                                </div>
+                                <div style="background: #f0f4ff; border-radius: 12px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="activitiesCompletedCount">0</div>
+                                    <div style="font-size: 11px; color: #6d86a8; font-weight: 600; margin-top: 4px;" id="activitiesCompletedLabel">ACTIVITIES COMPLETED</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="progress-section">
-                    <h2 class="section-title">Progress</h2>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" id="progressBar" style="width: 0%;">
-                            <span class="progress-text" id="progressPercent">0%</span>
+
+<!-- 
+  ADVENTURE MAP V3 - HTML SNIPPET
+  Replace your existing adventure-map-section div with this.
+  This works with dashboard-enhanced-v3.js
+-->
+
+<!-- Adventure Map Section -->
+<div class="adventure-map-section">
+    <div class="adventure-header">
+        <h2 class="adventure-title">🗺️ Your Adventure Map</h2>
+        <p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>
+    </div>
+    
+    <!-- The map will be rendered here by JavaScript -->
+    <div id="adventureMapContainer"></div>
+</div>
+
+<!-- Module Preview Panel (keep this somewhere in your HTML) -->
+<div id="modulePreviewPanel" class="module-preview-panel hidden">
+    <button class="preview-close" id="closePreviewBtn">✕</button>
+    <div class="preview-content">
+        <div class="preview-emoji" id="previewEmoji">📘</div>
+        <h3 class="preview-title" id="previewTitle">Module Title</h3>
+        <p class="preview-description" id="previewDescription">Module description goes here...</p>
+        
+        <div class="preview-stats">
+            <div class="preview-stat">
+                <span class="preview-stat-icon">⏱️</span>
+                <span class="preview-stat-text" id="previewTime">8-12 mins</span>
+            </div>
+            <div class="preview-stat">
+                <span class="preview-stat-icon">⭐</span>
+                <span class="preview-stat-text" id="previewReward">Up to 4 stars</span>
+            </div>
+            <div class="preview-stat">
+                <span class="preview-stat-icon">🎮</span>
+                <span class="preview-stat-text" id="previewActivities">Interactive activities</span>
+            </div>
+        </div>
+        
+        <div class="preview-actions">
+            <button class="preview-start-btn" id="startModuleBtn">
+                🚀 Start Adventure!
+            </button>
+        </div>
+    </div>
+</div>
+
+                <!-- Module Preview Panel -->
+                <div class="module-preview-panel hidden" id="modulePreviewPanel">
+                    <div class="preview-modal">
+                        <div class="preview-header">
+                            <h3 class="preview-title" id="previewTitle">Module Preview</h3>
+                            <button class="preview-close" id="previewCloseBtn">✕</button>
+                        </div>
+                        <div class="preview-content">
+                            <div class="preview-image" id="previewImage">
+                                <div class="preview-placeholder">📚</div>
+                            </div>
+                            <div class="preview-details">
+                                <h4 class="preview-module-title" id="previewModuleTitle">Module Title</h4>
+                                <p class="preview-description" id="previewDescription">Module description goes here...</p>
+                                <div class="preview-stats">
+                                    <div class="preview-stat">
+                                        <span class="preview-stat-icon">⏱️</span>
+                                        <span class="preview-stat-text" id="previewTime">8-12 mins</span>
+                                    </div>
+                                    <div class="preview-stat">
+                                        <span class="preview-stat-icon">⭐</span>
+                                        <span class="preview-stat-text" id="previewReward">Up to 4 stars</span>
+                                    </div>
+                                    <div class="preview-stat">
+                                        <span class="preview-stat-icon">🎯</span>
+                                        <span class="preview-stat-text" id="previewActivities">Draw, sliders, games</span>
+                                    </div>
+                                </div>
+                                <div class="preview-actions">
+                                    <button class="btn-primary preview-start-btn" id="previewStartBtn">Start Adventure!</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <p class="progress-label"><span id="progressText">0 of 0</span> modules completed</p>
-                </div>
-
-                <!-- Modules List on Dashboard -->
-                <div class="progress-section" style="margin-top: 24px;">
-                    <h2 class="section-title" id="modulesTitle">Modules</h2>
-                    <p class="progress-label" style="margin-bottom: 16px;">Choose a workbook to start or continue.</p>
-                    <div class="module-category-tabs" id="modulesCategoryTabs"></div>
-                    <div class="modules-grid" id="modulesGrid"></div>
                 </div>
             </div>
 
@@ -240,43 +545,49 @@
                 </div>
             </div>
 
-            <!-- Spend Stars Tab -->
+            <!-- Star Shop Tab -->
             <div id="spendStarsTabContent" class="hidden">
-                <!-- Spendable Stars Display -->
-                <div style="background: linear-gradient(135deg, #4c6c96 0%, #405878 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; color: white; text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 8px;">⭐</div>
-                    <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 4px;" id="spendableStarsDisplay">0</h2>
-                    <p style="opacity: 0.9; font-size: 14px;">Spendable Stars</p>
-                    <p style="opacity: 0.7; font-size: 12px; margin-top: 8px;">Total Stars Earned: <span id="totalStarsDisplay">0</span></p>
+                <!-- Shop Header -->
+                <div class="shop-header">
+                    <div class="shop-title-section">
+                        <h2 class="shop-title">🌟 Daniel's Star Shop</h2>
+                        <p class="shop-subtitle">Spend your hard-earned stars on awesome rewards!</p>
+                    </div>
+                    <div class="shop-stars-display">
+                        <div class="stars-stats">
+                            <div class="star-stat">
+                                <span class="stat-label">⭐ Total Stars</span>
+                                <span class="stat-value" id="totalStarsCount">0</span>
+                            </div>
+                            <div class="star-stat">
+                                <span class="stat-label">✨ Spent</span>
+                                <span class="stat-value" id="spentStarsCount">0</span>
+                            </div>
+                            <div class="star-stat">
+                                <span class="stat-label">🌟 Available</span>
+                                <span class="stat-value" id="availableStarsCount">0</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Rewards Section -->
-                <div style="margin-bottom: 32px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                        <h3 style="font-size: 20px; color: #405878; font-weight: 700; margin: 0;">Available Rewards</h3>
-                        <button id="addCustomRewardBtn" class="btn-header" style="background: #4c6c96; color: white; padding: 8px 16px; font-size: 14px;">
-                            ➕ Add Custom Reward
-                        </button>
-                    </div>
-                    
-                    <!-- Category Filter -->
-                    <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;" id="rewardCategoryTabs">
-                        <button class="reward-category-tab active" data-category="all">All</button>
-                        <button class="reward-category-tab" data-category="screen_time">📱 Screen Time</button>
-                        <button class="reward-category-tab" data-category="activities">🎪 Activities</button>
-                        <button class="reward-category-tab" data-category="treats">🍦 Treats</button>
-                        <button class="reward-category-tab" data-category="privileges">✨ Privileges</button>
-                        <button class="reward-category-tab" data-category="other">🎁 Other</button>
-                    </div>
-
-                    <!-- Rewards Grid -->
-                    <div class="rewards-grid" id="rewardsGrid"></div>
+                <!-- Real Rewards Grid -->
+                <div class="rewards-header">
+                    <h3 class="rewards-title">🎁 Available Rewards</h3>
+                    <button id="addCustomRewardBtn" class="btn-secondary add-reward-btn">
+                        ➕ Add Custom Reward
+                    </button>
+                </div>
+                <div class="shop-items-grid" id="rewardsGrid">
+                    <!-- Rewards will be populated by JavaScript -->
                 </div>
 
-                <!-- Purchase History -->
-                <div>
-                    <h3 style="font-size: 20px; color: #405878; font-weight: 700; margin-bottom: 16px;">Purchase History</h3>
-                    <div id="purchaseHistory"></div>
+                <!-- Purchase History Section -->
+                <div class="my-inventory-section">
+                    <h3 class="inventory-title">📜 Purchase History</h3>
+                    <div class="purchase-history" id="purchaseHistory">
+                        <!-- Purchase history will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
 
@@ -538,32 +849,10 @@
     <!-- Edit Child Modal -->
     <div id="editChildModal" class="modal-overlay hidden">
         <div class="modal">
-            <h2 class="modal-title" id="editChildModalTitle">Edit Child Profile</h2>
-            <div id="editModalError" class="error-message hidden"></div>
-            <form id="editChildForm">
-                <div class="form-group">
-                    <label class="form-label">Child's Name</label>
-                    <input type="text" id="editChildName" class="form-input" placeholder="Enter name" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Profile Picture</label>
-                    <p class="progress-label" style="margin-bottom: 12px; font-size: 12px;">Choose an emoji to represent this child</p>
-                    <div class="avatar-picker" id="avatarPicker"></div>
-                    <input type="hidden" id="editChildAvatar">
-                </div>
-                <div class="form-group">
-                    <button type="button" class="btn-secondary" id="forgetPasswordBtn" style="width: 100%;">🔑 Forget Password</button>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn-secondary" id="cancelEditChildButton">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                </div>
-                <div style="text-align: center; margin-top: 16px;">
-                    <button type="button" id="removeChildBtn" class="btn-remove-child">🗑️ Remove Child</button>
-                </div>
-            </form>
+            <!-- Content injected by JS -->
         </div>
     </div>
+
 
     <!-- Child Password Modal -->
     <div id="childPasswordModal" class="modal-overlay hidden">
@@ -690,6 +979,30 @@
         </div>
     </div>
 
-    <script type="module" src="/src/dashboard.js"></script>
+    <script type="module" src="./src/dashboard.js"></script>
+    <script type="module" src="./src/dashboard-enhanced.js"></script>
+    <script type ="module" src="./src/daily-quest-system.js"></script>
+    <script>
+// Initialize daily quest when child is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait for child to be selected
+    const checkChild = setInterval(() => {
+        const child = window.selectedChild;
+        if (child && child.id) {
+            clearInterval(checkChild);
+            if (typeof window.initDailyQuest === 'function') {
+                window.initDailyQuest(child.id);
+            }
+        }
+    }, 500);
+});
+
+// Also re-init when child selection changes
+window.addEventListener('childSelected', (e) => {
+    if (e.detail && e.detail.childId && typeof window.initDailyQuest === 'function') {
+        window.initDailyQuest(e.detail.childId);
+    }
+});
+</script>
 </body>
 </html>
