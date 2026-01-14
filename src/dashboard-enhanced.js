@@ -152,15 +152,21 @@ class AdventureMapV4 {
     this.currentCategory = 'all';
     this.boundHandlers = {};
     
+    this.updateMobileConfig();
+  }
+
+  updateMobileConfig() {
+    this.isMobile = window.innerWidth <= 768;
+    
     this.config = {
-      nodeSize: 68,
-      nodeSpacingY: 115,
-      pathAmplitude: 120,
-      zigzagFrequency: 1.2,
-      topPadding: 100,
-      bottomPadding: 140,
-      sidePadding: 80,
-      minCanvasHeight: 500
+      nodeSize: this.isMobile ? 50 : 68,
+      nodeSpacingY: this.isMobile ? 75 : 115,
+      pathAmplitude: this.isMobile ? 50 : 120,
+      zigzagFrequency: this.isMobile ? 0.8 : 1.2,
+      topPadding: this.isMobile ? 50 : 100,
+      bottomPadding: this.isMobile ? 70 : 140,
+      sidePadding: this.isMobile ? 30 : 80,
+      minCanvasHeight: this.isMobile ? 400 : 500
     };
     
     this.decorations = [
@@ -265,7 +271,7 @@ class AdventureMapV4 {
     css.push('.map-empty-emoji { font-size: 64px; margin-bottom: 16px; opacity: 0.6; }');
     css.push('.map-empty-title { font-family: "Fredoka", sans-serif; font-size: 20px; font-weight: 600; color: #405878; margin-bottom: 8px; }');
     css.push('.map-empty-text { font-size: 14px; max-width: 300px; }');
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 400px; } .adventure-node { width: 60px; height: 60px; } .adventure-node .node-emoji { font-size: 26px; } .node-number { width: 22px; height: 22px; font-size: 10px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } }');
+    css.push('@media (max-width: 768px) { .adventure-viewport { height: 400px; } .adventure-node { width: 56px; height: 56px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .zone-label { font-size: 12px; padding: 2px 8px; } .current-indicator { width: 48px; height: 48px; top: -48px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
     
     var styles = document.createElement('style');
     styles.id = 'adventure-map-v4-styles';
@@ -638,16 +644,36 @@ class AdventureMapV4 {
         }
       }
 
+      var statusLabel = '';
       if (module.status === 'completed') {
         var badge = document.createElement('div');
         badge.className = 'node-badge check';
         badge.textContent = '✓';
         node.appendChild(badge);
+        statusLabel = 'Done!';
       } else if (module.status === 'available') {
         var badge = document.createElement('div');
         badge.className = 'node-badge star';
         badge.textContent = '★';
         node.appendChild(badge);
+        statusLabel = 'Next';
+      }
+
+      if (statusLabel) {
+        var label = document.createElement('div');
+        label.className = 'node-label';
+        label.textContent = statusLabel;
+        label.style.position = 'absolute';
+        label.style.bottom = '-24px';
+        label.style.left = '50%';
+        label.style.transform = 'translateX(-50%)';
+        label.style.fontSize = '11px';
+        label.style.fontWeight = '700';
+        label.style.color = '#405878';
+        label.style.whiteSpace = 'nowrap';
+        label.style.fontFamily = '"Fredoka", sans-serif';
+        label.style.textShadow = '0 1px 2px rgba(255,255,255,0.8)';
+        node.appendChild(label);
       }
 
       if (index === currentIndex && currentIndex !== -1) {
@@ -730,7 +756,11 @@ class AdventureMapV4 {
       mouseleave: function() { self.endDrag(); },
       touchstart: function(e) { self.startDrag(e); },
       touchmove: function(e) { self.drag(e); },
-      touchend: function() { self.endDrag(); }
+      touchend: function() { self.endDrag(); },
+      resize: function() { 
+        self.updateMobileConfig();
+        self.render();
+      }
     };
 
     this.viewport.addEventListener('mousedown', this.boundHandlers.mousedown);
@@ -756,6 +786,9 @@ class AdventureMapV4 {
         self.render();
       });
     }
+
+    // Add window resize listener
+    window.addEventListener('resize', this.boundHandlers.resize);
   }
 
   removeEventListeners() {
@@ -767,6 +800,10 @@ class AdventureMapV4 {
       this.viewport.removeEventListener('touchstart', this.boundHandlers.touchstart);
       this.viewport.removeEventListener('touchmove', this.boundHandlers.touchmove);
       this.viewport.removeEventListener('touchend', this.boundHandlers.touchend);
+    }
+    
+    if (this.boundHandlers && this.boundHandlers.resize) {
+      window.removeEventListener('resize', this.boundHandlers.resize);
     }
   }
 

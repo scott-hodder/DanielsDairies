@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daniel's Dairies - Login</title>
+    <title>Daniel's Diaries - Login</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
@@ -29,20 +29,79 @@
         /* Login Screen */
         .login-container {
             min-height: 100vh;
-            background: linear-gradient(135deg, #405878 0%, #4c6c96 100%);
+            background: linear-gradient(135deg, #364f66 0%, #405878 50%, #fffff5 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Decorative background elements */
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 182, 193, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .login-container::after {
+            content: '';
+            position: absolute;
+            bottom: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 218, 185, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .login-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1100px;
+            width: 100%;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-character {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        .character-image {
+            width: 100%;
+            max-width: 350px;
+            height: auto;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.15));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
 
         .login-card {
             background-color: #fffff5;
-            border-radius: 24px;
+            border-radius: 32px;
             padding: 48px;
-            max-width: 440px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            max-width: 480px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border: 3px solid #E8F4F8;
         }
 
         .login-header {
@@ -50,21 +109,27 @@
             margin-bottom: 32px;
         }
 
-        .login-icon {
-            font-size: 48px;
+        .login-logo {
+            height: 80px;
             margin-bottom: 16px;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
         }
 
         .login-title {
-            font-size: 32px;
+            font-size: 36px;
             color: #405878;
             margin-bottom: 8px;
             font-weight: 700;
+            background: linear-gradient(135deg, #405878 0%, #6B9BD1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .login-subtitle {
-            color: #4c6c96;
-            font-size: 16px;
+            color: #6B9BD1;
+            font-size: 15px;
+            font-weight: 500;
         }
 
         .form-group {
@@ -73,7 +138,7 @@
 
         .form-label {
             display: block;
-            color: #364f66;
+            color: #405878;
             margin-bottom: 8px;
             font-size: 14px;
             font-weight: 600;
@@ -81,36 +146,49 @@
 
         .form-input {
             width: 100%;
-            padding: 14px;
-            border: 2px solid #dfdbca;
-            border-radius: 12px;
+            padding: 14px 16px;
+            border: 2px solid #E8F4F8;
+            border-radius: 14px;
             font-size: 16px;
-            background-color: white;
-            color: #364f66;
+            background-color: #FAFBFC;
+            color: #405878;
             outline: none;
             font-family: 'League Spartan', sans-serif;
+            transition: all 0.3s ease;
         }
 
         .form-input:focus {
             border-color: #4c6c96;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(107, 155, 209, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #A8B8C8;
         }
 
         .btn-primary {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #405878 0%, #4c6c96 100%);
-            color: #fffff5;
+            background: linear-gradient(135deg, #364f66 0%, #405878 100%);
+            color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 18px;
             font-weight: 700;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
             font-family: 'League Spartan', sans-serif;
+            box-shadow: 0 6px 20px rgba(107, 155, 209, 0.3);
         }
 
         .btn-primary:hover {
-            transform: scale(1.02);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(107, 155, 209, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
         .btn-primary:disabled {
@@ -120,23 +198,27 @@
         }
 
         .error-message {
-            background-color: #ff4444;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
+            background-color: #FFE5E5;
+            color: #C62828;
+            padding: 14px 16px;
+            border-radius: 12px;
             margin-bottom: 20px;
             font-size: 14px;
             text-align: center;
+            border-left: 4px solid #C62828;
+            font-weight: 500;
         }
 
         .success-message {
-            background-color: #4c6c96;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
+            background-color: #E8F5E9;
+            color: #2E7D32;
+            padding: 14px 16px;
+            border-radius: 12px;
             margin-bottom: 20px;
             font-size: 14px;
             text-align: center;
+            border-left: 4px solid #2E7D32;
+            font-weight: 500;
         }
 
         .hidden {
@@ -146,25 +228,27 @@
         .login-note {
             text-align: center;
             margin-top: 24px;
-            color: #4c6c96;
+            color: #6B7C8F;
             font-size: 14px;
         }
 
         .login-link {
-            color: #405878;
+            color: #6B9BD1;
             text-decoration: none;
             font-weight: 600;
             cursor: pointer;
+            transition: color 0.2s ease;
         }
 
         .login-link:hover {
+            color: #405878;
             text-decoration: underline;
         }
 
         .info-text {
             font-size: 14px;
-            color: #4c6c96;
-            line-height: 1.45;
+            color: #6B7C8F;
+            line-height: 1.5;
             margin-bottom: 16px;
             text-align: center;
         }
@@ -174,7 +258,7 @@
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
@@ -184,119 +268,156 @@
             to { transform: rotate(360deg); }
         }
 
+        @media (max-width: 1024px) {
+            .login-wrapper {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .login-character {
+                max-width: 300px;
+                margin: 0 auto;
+            }
+
+            .character-image {
+                max-width: 280px;
+            }
+        }
+
         @media (max-width: 768px) {
+            .login-container {
+                padding: 16px;
+            }
+
             .login-card {
                 padding: 32px 24px;
+                border-radius: 24px;
             }
 
             .login-title {
                 font-size: 28px;
+            }
+
+            .login-wrapper {
+                gap: 20px;
+            }
+
+            .character-image {
+                max-width: 200px;
             }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Dairies Logo" style="height: 120px;">
-                <h1 class="login-title">Daniel's Dairies</h1>
-                <p class="login-subtitle">Your journey to understanding yourself</p>
+        <div class="login-wrapper">
+            <!-- Character Section -->
+            <div class="login-character">
+                <img src="/images/characters/DanielTheDogReading.png" alt="Daniel the Dog" class="character-image">
             </div>
 
-            <!-- Error/Success Messages -->
-            <div id="errorMessage" class="error-message hidden"></div>
-            <div id="successMessage" class="success-message hidden"></div>
-
-            <!-- Login Form -->
-            <form id="loginForm">
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" required>
+            <!-- Login Card -->
+            <div class="login-card">
+                <div class="login-header">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="login-logo">
+                    <h1 class="login-title">Daniel's Diaries</h1>
+                    <p class="login-subtitle">Your journey to understanding yourself</p>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
-                    <div style="text-align:right; margin-top:8px;">
-                        <button type="button" id="forgotPasswordLink" class="login-link" style="font-size:13px; background:none; border:none; padding:0;">Forgot password?</button>
+                <!-- Error/Success Messages -->
+                <div id="errorMessage" class="error-message hidden"></div>
+                <div id="successMessage" class="success-message hidden"></div>
+
+                <!-- Login Form -->
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" required>
                     </div>
-                </div>
 
-                <button type="submit" class="btn-primary" id="loginButton">
-                    <span id="loginButtonText">Sign In</span>
-                    <span id="loginSpinner" class="spinner hidden"></span>
-                </button>
-            </form>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+                        <div style="text-align:right; margin-top:8px;">
+                            <button type="button" id="forgotPasswordLink" class="login-link" style="font-size:13px; background:none; border:none; padding:0;">Forgot password?</button>
+                        </div>
+                    </div>
 
-            <!-- Sign Up Form -->
-            <form id="signupForm" class="hidden">
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="signupEmail" class="form-input" placeholder="your@email.com" required>
-                </div>
+                    <button type="submit" class="btn-primary" id="loginButton">
+                        <span id="loginButtonText">Sign In</span>
+                        <span id="loginSpinner" class="spinner hidden"></span>
+                    </button>
+                </form>
 
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="signupPassword" class="form-input" placeholder="••••••••" required>
-                </div>
+                <!-- Sign Up Form -->
+                <form id="signupForm" class="hidden">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="signupEmail" class="form-input" placeholder="your@email.com" required>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Confirm Password</label>
-                    <input type="password" id="signupPasswordConfirm" class="form-input" placeholder="••••••••" required>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="signupPassword" class="form-input" placeholder="••••••••" required>
+                    </div>
 
-                <button type="submit" class="btn-primary" id="signupButton">
-                    <span id="signupButtonText">Create Account</span>
-                    <span id="signupSpinner" class="spinner hidden"></span>
-                </button>
-            </form>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" id="signupPasswordConfirm" class="form-input" placeholder="••••••••" required>
+                    </div>
 
-            <!-- Forgot Password Form -->
-            <form id="forgotPasswordForm" class="hidden">
-                <p class="info-text">Enter the email linked to your account and we'll send a password reset link.</p>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="forgotPasswordEmail" class="form-input" placeholder="your@email.com" required>
-                </div>
+                    <button type="submit" class="btn-primary" id="signupButton">
+                        <span id="signupButtonText">Create Account</span>
+                        <span id="signupSpinner" class="spinner hidden"></span>
+                    </button>
+                </form>
 
-                <button type="submit" class="btn-primary" id="forgotPasswordButton">
-                    <span id="forgotPasswordButtonText">Send Reset Link</span>
-                    <span id="forgotPasswordSpinner" class="spinner hidden"></span>
-                </button>
+                <!-- Forgot Password Form -->
+                <form id="forgotPasswordForm" class="hidden">
+                    <p class="info-text">Enter the email linked to your account and we'll send a password reset link.</p>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="forgotPasswordEmail" class="form-input" placeholder="your@email.com" required>
+                    </div>
 
-                <button type="button" class="login-link" id="forgotBackToLogin" style="display:block; margin:16px auto 0; text-align:center; background:none; border:none;">
-                    ← Back to sign in
-                </button>
-            </form>
+                    <button type="submit" class="btn-primary" id="forgotPasswordButton">
+                        <span id="forgotPasswordButtonText">Send Reset Link</span>
+                        <span id="forgotPasswordSpinner" class="spinner hidden"></span>
+                    </button>
 
-            <!-- Reset Password Form (after email link) -->
-            <form id="resetPasswordForm" class="hidden">
-                <p class="info-text">You're almost there! Create a new password for your account.</p>
-                <div class="form-group">
-                    <label class="form-label">New Password</label>
-                    <input type="password" id="resetNewPassword" class="form-input" placeholder="••••••••" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Confirm New Password</label>
-                    <input type="password" id="resetConfirmPassword" class="form-input" placeholder="••••••••" required>
-                </div>
+                    <button type="button" class="login-link" id="forgotBackToLogin" style="display:block; margin:16px auto 0; text-align:center; background:none; border:none;">
+                        ← Back to sign in
+                    </button>
+                </form>
 
-                <button type="submit" class="btn-primary" id="resetPasswordButton">
-                    <span id="resetPasswordButtonText">Update Password</span>
-                    <span id="resetPasswordSpinner" class="spinner hidden"></span>
-                </button>
+                <!-- Reset Password Form (after email link) -->
+                <form id="resetPasswordForm" class="hidden">
+                    <p class="info-text">You're almost there! Create a new password for your account.</p>
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="resetNewPassword" class="form-input" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" id="resetConfirmPassword" class="form-input" placeholder="••••••••" required>
+                    </div>
 
-                <button type="button" class="login-link" id="resetBackToLogin" style="display:block; margin:16px auto 0; text-align:center; background:none; border:none;">
-                    ← Back to sign in
-                </button>
-            </form>
+                    <button type="submit" class="btn-primary" id="resetPasswordButton">
+                        <span id="resetPasswordButtonText">Update Password</span>
+                        <span id="resetPasswordSpinner" class="spinner hidden"></span>
+                    </button>
 
-            <!-- Toggle between login and signup -->
-            <p class="login-note">
-                <span id="toggleText">Don't have an account?</span>
-                <a class="login-link" id="toggleLink">Sign up</a>
-            </p>
+                    <button type="button" class="login-link" id="resetBackToLogin" style="display:block; margin:16px auto 0; text-align:center; background:none; border:none;">
+                        ← Back to sign in
+                    </button>
+                </form>
+
+                <!-- Toggle between login and signup -->
+                <p class="login-note">
+                    <span id="toggleText">Don't have an account?</span>
+                    <a class="login-link" id="toggleLink">Sign up</a>
+                </p>
+            </div>
         </div>
     </div>
 

@@ -3,6 +3,7 @@ import { checkAuth, signOut, getCurrentUser } from './auth.js'
 import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin } from './database.js'
 import { redirectToPaymentLink } from './stripe.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-rewards.js'
+import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 
 // State
 let currentUser = null
@@ -981,13 +982,13 @@ const leaderboardList = document.getElementById('leaderboardList')
 
 // Initialize
 async function init() {
+  // Show fun loading screen
+  showLoadingScreen()
   
   // Safety timeout - force hide loading after 10 seconds
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout reached - forcing UI to show')
-    if (loadingState) {
-      loadingState.classList.add('hidden')
-    }
+    hideLoadingScreen()
     if (childrenView) {
       childrenView.classList.remove('hidden')
     }
@@ -1101,7 +1102,7 @@ async function init() {
           showTab(tabFromUrl)
         }
         
-        
+        hideLoadingScreen()
         clearTimeout(loadingTimeout)
         return
       }
@@ -1110,7 +1111,7 @@ async function init() {
     // Default: show children/profile view
     
     showChildrenView()
-    
+    hideLoadingScreen()
     clearTimeout(loadingTimeout)
     
   } catch (error) {
@@ -1120,12 +1121,11 @@ async function init() {
     // Show children view anyway so user isn't stuck
     try {
       showChildrenView()
+      hideLoadingScreen()
     } catch (e) {
       console.error('Error showing children view:', e)
       // Force hide loading state
-      if (loadingState) {
-        loadingState.classList.add('hidden')
-      }
+      hideLoadingScreen()
       if (childrenView) {
         childrenView.classList.remove('hidden')
       }
@@ -2930,6 +2930,64 @@ function updateParentInsights() {
     normalizeTextArray(module?.skills).forEach(skill => completedSkills.add(skill))
     normalizeTextArray(module?.emotions).forEach(emotion => completedEmotions.add(emotion))
   })
+
+  // Update "Your Journey This Week" stats
+  const skillsCount = completedSkills.size
+  const emotionsCount = completedEmotions.size
+  const activitiesCount = completedCount
+
+  const skillsExploredCountEl = document.getElementById('skillsExploredCount')
+  const skillsExploredLabelEl = document.getElementById('skillsExploredLabel')
+  const toolsIntroducedCountEl = document.getElementById('toolsIntroducedCount')
+  const toolsIntroducedLabelEl = document.getElementById('toolsIntroducedLabel')
+  const activitiesCompletedCountEl = document.getElementById('activitiesCompletedCount')
+  const activitiesCompletedLabelEl = document.getElementById('activitiesCompletedLabel')
+
+  // Get the skills box container
+  const skillsExploredBoxEl = document.getElementById('skillsExploredBox')
+
+  // If all counts are 0, show one large box with a single message
+  if (skillsCount === 0 && emotionsCount === 0 && activitiesCount === 0) {
+    if (skillsExploredBoxEl) {
+      skillsExploredBoxEl.style.gridColumn = '1 / -1'
+    }
+    if (skillsExploredCountEl) {
+      skillsExploredCountEl.textContent = ''
+      skillsExploredCountEl.style.display = 'none'
+    }
+    if (skillsExploredLabelEl) {
+      skillsExploredLabelEl.textContent = 'Your child\'s journey will appear here as they explore modules and build skills.'
+      skillsExploredLabelEl.style.fontSize = '12px'
+      skillsExploredLabelEl.style.lineHeight = '1.4'
+    }
+    if (toolsIntroducedCountEl) toolsIntroducedCountEl.parentElement.style.display = 'none'
+    if (activitiesCompletedCountEl) activitiesCompletedCountEl.parentElement.style.display = 'none'
+  } else {
+    // Show all three boxes with their data
+    if (skillsExploredBoxEl) {
+      skillsExploredBoxEl.style.gridColumn = 'auto'
+    }
+    if (toolsIntroducedCountEl) toolsIntroducedCountEl.parentElement.style.display = 'block'
+    if (activitiesCompletedCountEl) activitiesCompletedCountEl.parentElement.style.display = 'block'
+    if (skillsExploredCountEl) {
+      skillsExploredCountEl.style.display = 'block'
+      skillsExploredCountEl.textContent = skillsCount
+    }
+    if (skillsExploredLabelEl) {
+      skillsExploredLabelEl.textContent = 'SKILLS EXPLORED'
+      skillsExploredLabelEl.style.fontSize = '11px'
+    }
+    if (toolsIntroducedCountEl) toolsIntroducedCountEl.textContent = emotionsCount
+    if (toolsIntroducedLabelEl) {
+      toolsIntroducedLabelEl.textContent = 'TOOLS INTRODUCED'
+      toolsIntroducedLabelEl.style.fontSize = '11px'
+    }
+    if (activitiesCompletedCountEl) activitiesCompletedCountEl.textContent = activitiesCount
+    if (activitiesCompletedLabelEl) {
+      activitiesCompletedLabelEl.textContent = 'ACTIVITIES COMPLETED'
+      activitiesCompletedLabelEl.style.fontSize = '11px'
+    }
+  }
   
   // Reinforcement tips sourced from active modules
   const reinforcements = []
