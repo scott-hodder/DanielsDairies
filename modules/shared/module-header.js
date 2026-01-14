@@ -1,3 +1,10 @@
+/**
+ * Module Header Component
+ * =======================
+ * Creates and manages the navigation header for interactive modules.
+ * Handles page navigation, star display, and module completion.
+ */
+
 export function initModuleHeader(options = {}) {
   const {
     onPrev,
@@ -257,6 +264,9 @@ export function initModuleHeader(options = {}) {
     }
   }
 
+  // =========================================
+  // MODULE COMPLETION HANDLING
+  // =========================================
   let moduleCompletionHandled = false;
 
   function handleModuleCompletion() {
@@ -269,65 +279,269 @@ export function initModuleHeader(options = {}) {
 
     console.log('[ModuleHeader] Handling module completion...');
 
-    // Get module parameters from URL
+    // Check if window.handleModuleCompletion exists (from module.html)
+    // This is the preferred method as it has the full database context
+    if (typeof window.handleModuleCompletion === 'function') {
+      console.log('[ModuleHeader] Using window.handleModuleCompletion from module.html');
+      window.handleModuleCompletion();
+      return;
+    }
+
+    // Fallback: Get module parameters from URL and complete directly
     try {
       const params = new URLSearchParams(window.location.search);
       const childId = params.get('childId');
-      const moduleId = params.get('moduleId');
+      const moduleCode = params.get('code');
       
-      console.log(`[ModuleHeader] URL params - childId: ${childId}, moduleId: ${moduleId}`);
+      console.log(`[ModuleHeader] URL params - childId: ${childId}, code: ${moduleCode}`);
       
-      if (childId && moduleId) {
+      if (childId && moduleCode) {
         // Mark module as completed
-        completeModule(childId, moduleId);
+        completeModule(childId, moduleCode);
       } else {
-        console.error('[ModuleHeader] Missing childId or moduleId in URL');
+        console.error('[ModuleHeader] Missing childId or module code in URL');
+        // Still show celebration even without DB save
+        showCompletionCelebration();
       }
     } catch (error) {
       console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+      showCompletionCelebration();
     }
   }
 
-  async function completeModule(childId, moduleId) {
+  async function completeModule(childId, moduleCode) {
     try {
-      // Import the database function (dynamically to avoid circular dependencies)
-      const { updateChildModuleStatus } = await import('../src/database.js');
+      console.log('[ModuleHeader] Completing module...');
       
-      // Update module status to completed
-      await updateChildModuleStatus(childId, moduleId, 'completed');
+      // Try using the database-backed helper defined in module.html
+      if (typeof window.completeModuleDB === 'function') {
+        console.log('[ModuleHeader] Using window.completeModuleDB');
+        await window.completeModuleDB(moduleCode);
+        showCompletionCelebration();
+        console.log('[ModuleHeader] Module completed successfully via completeModuleDB');
+        return;
+      }
       
-      // Show completion celebration
+      // Fallback: Try to use supabase directly if available
+      if (typeof window.supabase !== 'undefined') {
+        console.log('[ModuleHeader] Using window.supabase directly');
+        
+        // Get module ID from code
+        const { data: mod, error: modError } = await window.supabase
+          .from('modules')
+          .select('id')
+          .eq('code', moduleCode)
+          .single();
+        
+        if (modError || !mod) {
+          console.error('[ModuleHeader] Could not find module:', modError);
+          showCompletionCelebration();
+          return;
+        }
+        
+        // Update child_modules
+        const { error: updateError } = await window.supabase
+          .from('child_modules')
+          .upsert({
+            child_id: childId,
+            module_id: mod.id,
+            is_completed: true,
+            completed_at: new Date().toISOString()
+          }, { 
+            onConflict: 'child_id,module_id'
+          });
+        
+        if (updateError) {
+          console.error('[ModuleHeader] Error updating child_modules:', updateError);
+        } else {
+          console.log('[ModuleHeader] Module marked as completed in DB');
+        }
+        
+        showCompletionCelebration();
+        return;
+      }
+      
+      // Last resort: Try legacy import
+      try {
+        const { updateChildModuleStatus } = await import('../src/database.js');
+        await updateChildModuleStatus(childId, moduleCode, 'completed');
+        console.log('[ModuleHeader] Module completed via legacy database.js');
+      } catch (importError) {
+        console.warn('[ModuleHeader] Could not import database.js:', importError);
+      }
+
       showCompletionCelebration();
-      
-      console.log('[ModuleHeader] Module completed successfully');
     } catch (error) {
       console.error('[ModuleHeader] Error completing module:', error);
+      // Still show celebration even if DB save fails
+      showCompletionCelebration();
     }
   }
 
   function showCompletionCelebration() {
+    console.log('[ModuleHeader] showCompletionCelebration called');
+    
+    // Check if modal already exists
+    if (document.querySelector('.module-completion-modal')) {
+      console.log('[ModuleHeader] Celebration modal already exists, skipping...');
+      return;
+    }
+    
+    // Check if window.showCompletionCelebration exists (from module.html)
+    // and use it instead for consistent styling
+    if (typeof window.showCompletionCelebration === 'function' && 
+        window.showCompletionCelebration !== showCompletionCelebration) {
+      console.log('[ModuleHeader] Using window.showCompletionCelebration from module.html');
+      window.showCompletionCelebration();
+      return;
+    }
+    
     // Create celebration modal
-    const modal = document.createElement('div');
-    modal.className = 'module-completion-modal';
-    modal.innerHTML = `
+    const celebrationModal = document.createElement('div');
+    celebrationModal.className = 'module-completion-modal';
+    celebrationModal.innerHTML = `
       <div class="module-completion-content">
         <div class="completion-emoji">🎉</div>
         <h2 class="completion-title">Module Complete!</h2>
         <p class="completion-message">Congratulations! You've finished this module and learned valuable emotional skills.</p>
         <div class="completion-confetti" id="completionConfetti"></div>
-        <button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button>
+        <button class="completion-btn" onclick="window.closeCompletionModal()">Continue Journey</button>
       </div>
     `;
     
-    document.body.appendChild(modal);
+    // Add styles if not already present
+    if (!document.getElementById('completion-modal-styles')) {
+      const styles = document.createElement('style');
+      styles.id = 'completion-modal-styles';
+      styles.textContent = `
+        .module-completion-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        
+        .module-completion-content {
+          background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 100%);
+          border-radius: 24px;
+          padding: 48px;
+          text-align: center;
+          max-width: 500px;
+          width: 90%;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          position: relative;
+          overflow: hidden;
+          animation: scaleIn 0.4s ease;
+        }
+        
+        @keyframes scaleIn {
+          from { transform: scale(0.8); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        
+        .completion-emoji {
+          font-size: 80px;
+          margin-bottom: 16px;
+          animation: bounce 1s ease infinite;
+        }
+        
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        
+        .completion-title {
+          font-family: 'Fredoka One', cursive;
+          font-size: 36px;
+          color: #264653;
+          margin-bottom: 16px;
+        }
+        
+        .completion-message {
+          font-family: 'Nunito', sans-serif;
+          font-size: 18px;
+          color: #405878;
+          margin-bottom: 32px;
+          line-height: 1.6;
+        }
+        
+        .completion-confetti {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          overflow: hidden;
+        }
+        
+        .completion-confetti-piece {
+          position: absolute;
+          width: 12px;
+          height: 12px;
+          border-radius: 3px;
+          animation: confettiFall 2s ease forwards;
+        }
+        
+        @keyframes confettiFall {
+          0% {
+            transform: translateY(-100px) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(400px) translateX(var(--tx, 0)) rotate(720deg);
+            opacity: 0;
+          }
+        }
+        
+        .completion-btn {
+          background: linear-gradient(135deg, #f4a261, #e76f51);
+          color: white;
+          border: none;
+          padding: 16px 40px;
+          border-radius: 999px;
+          font-family: 'Nunito', sans-serif;
+          font-size: 18px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          box-shadow: 0 4px 15px rgba(244, 162, 97, 0.4);
+        }
+        
+        .completion-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(244, 162, 97, 0.5);
+        }
+      `;
+      document.head.appendChild(styles);
+    }
     
-    // Generate confetti
+    document.body.appendChild(celebrationModal);
+    console.log('[ModuleHeader] Celebration modal appended');
+    
     generateCompletionConfetti();
-    
-    // Auto-close after 5 seconds
+
+    // Auto-close after 8 seconds
     setTimeout(() => {
-      closeCompletionModal();
-    }, 5000);
+      window.closeCompletionModal();
+    }, 8000);
   }
 
   function generateCompletionConfetti() {
@@ -335,19 +549,20 @@ export function initModuleHeader(options = {}) {
     if (!container) return;
     
     container.innerHTML = '';
-    const pieceCount = 40;
+
+    const pieceCount = 50;
     
     for (let i = 0; i < pieceCount; i++) {
       const piece = document.createElement('div');
       piece.className = 'completion-confetti-piece';
       
       const randomX = Math.random() * 300 - 150;
-      const randomDelay = Math.random() * 0.3;
-      const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+      const randomDelay = Math.random() * 0.5;
+      const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc', '#ffd700', '#ff69b4'];
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
       
       piece.style.left = Math.random() * 100 + '%';
-      piece.style.top = Math.random() * 50 + '%';
+      piece.style.top = Math.random() * 30 + '%';
       piece.style.setProperty('--tx', randomX + 'px');
       piece.style.animationDelay = randomDelay + 's';
       piece.style.backgroundColor = randomColor;
@@ -360,7 +575,22 @@ export function initModuleHeader(options = {}) {
   window.closeCompletionModal = function() {
     const modal = document.querySelector('.module-completion-modal');
     if (modal) {
-      modal.remove();
+      modal.style.animation = 'fadeOut 0.3s ease forwards';
+      setTimeout(() => {
+        modal.remove();
+        // Redirect to dashboard after closing
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const childId = params.get('childId');
+          if (childId) {
+            window.location.href = '/dashboard.html?childId=' + childId;
+          } else {
+            window.location.href = '/dashboard.html';
+          }
+        } catch (e) {
+          window.location.href = '/dashboard.html';
+        }
+      }, 300);
     }
   };
 

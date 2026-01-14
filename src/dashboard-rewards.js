@@ -3,18 +3,17 @@ import { getRewards, createCustomReward, purchaseReward, getChildPurchaseHistory
 
 // State
 let rewards = []
-let currentRewardCategory = 'all'
 let currentPurchaseReward = null
 let childSpendableStars = 0
+let selectedChildId = null
 
 // DOM Elements
-const spendStarsTabContent = document.getElementById('spendStarsTabContent')
-const spendableStarsDisplay = document.getElementById('spendableStarsDisplay')
-const totalStarsDisplay = document.getElementById('totalStarsDisplay')
+const totalStarsCount = document.getElementById('totalStarsCount')
+const spentStarsCount = document.getElementById('spentStarsCount')
+const availableStarsCount = document.getElementById('availableStarsCount')
 const rewardsGrid = document.getElementById('rewardsGrid')
 const purchaseHistory = document.getElementById('purchaseHistory')
 const addCustomRewardBtn = document.getElementById('addCustomRewardBtn')
-const rewardCategoryTabs = document.getElementById('rewardCategoryTabs')
 
 // Modals
 const customRewardModal = document.getElementById('customRewardModal')
@@ -38,15 +37,22 @@ const confirmPurchaseRewardButton = document.getElementById('confirmPurchaseRewa
 export async function initializeRewardsTab(selectedChild) {
   if (!selectedChild) return
   
+  selectedChildId = selectedChild.id
+  
   try {
     // Load rewards and child's spendable stars
     rewards = await getRewards()
     const starsData = await getChildSpendableStars(selectedChild.id)
     childSpendableStars = starsData.spendable_stars || 0
     
-    // Update displays
-    if (spendableStarsDisplay) spendableStarsDisplay.textContent = childSpendableStars
-    if (totalStarsDisplay) totalStarsDisplay.textContent = starsData.stars || 0
+    // Calculate star statistics
+    const totalStars = starsData.stars || 0
+    const spentStars = totalStars - childSpendableStars
+    
+    // Update star count displays
+    if (totalStarsCount) totalStarsCount.textContent = totalStars
+    if (spentStarsCount) spentStarsCount.textContent = spentStars
+    if (availableStarsCount) availableStarsCount.textContent = childSpendableStars
     
     // Render rewards and history
     renderRewards(selectedChild)
@@ -64,31 +70,26 @@ function renderRewards(selectedChild) {
   
   rewardsGrid.innerHTML = ''
   
-  // Filter rewards by category
-  const filteredRewards = currentRewardCategory === 'all'
-    ? rewards
-    : rewards.filter(r => r.category === currentRewardCategory)
-  
-  if (filteredRewards.length === 0) {
+  if (rewards.length === 0) {
     rewardsGrid.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #4c6c96;">
-        <p style="font-size: 18px; margin-bottom: 12px;">No rewards available in this category.</p>
+        <p style="font-size: 18px; margin-bottom: 12px;">No rewards available.</p>
         <p style="font-size: 14px;">Try adding a custom reward!</p>
       </div>
     `
     return
   }
   
-  filteredRewards.forEach(reward => {
+  rewards.forEach(reward => {
     const canAfford = childSpendableStars >= reward.star_cost
     const card = document.createElement('div')
-    card.className = `reward-card ${canAfford ? '' : 'insufficient-stars'}`
+    card.className = `shop-item ${canAfford ? '' : 'insufficient-stars'}`
     
     card.innerHTML = `
-      <div class="reward-icon">${reward.icon || '🎁'}</div>
-      <div class="reward-title">${reward.title}</div>
-      ${reward.description ? `<div class="reward-description">${reward.description}</div>` : ''}
-      <div class="reward-cost">
+      <div class="item-icon">${reward.icon || '🎁'}</div>
+      <div class="item-name">${reward.title}</div>
+      ${reward.description ? `<div style="font-size: 13px; color: #4c6c96; margin-bottom: 12px;">${reward.description}</div>` : ''}
+      <div class="item-price">
         <span>⭐</span>
         <span>${reward.star_cost}</span>
       </div>
@@ -96,7 +97,11 @@ function renderRewards(selectedChild) {
     `
     
     if (canAfford) {
+      card.style.cursor = 'pointer'
       card.addEventListener('click', () => showPurchaseModal(reward, selectedChild))
+    } else {
+      card.style.opacity = '0.6'
+      card.style.cursor = 'not-allowed'
     }
     
     rewardsGrid.appendChild(card)
@@ -219,19 +224,6 @@ function closeCustomRewardModal() {
  * Setup event listeners
  */
 export function setupRewardsEventListeners(selectedChild) {
-  // Category tabs
-  if (rewardCategoryTabs) {
-    const tabs = rewardCategoryTabs.querySelectorAll('.reward-category-tab')
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'))
-        tab.classList.add('active')
-        currentRewardCategory = tab.getAttribute('data-category') || 'all'
-        renderRewards(selectedChild)
-      })
-    })
-  }
-  
   // Add custom reward button
   if (addCustomRewardBtn) {
     addCustomRewardBtn.addEventListener('click', showCustomRewardModal)
@@ -285,9 +277,16 @@ export function setupRewardsEventListeners(selectedChild) {
         
         const result = await purchaseReward(selectedChild.id, currentPurchaseReward.id)
         
-        // Update spendable stars
+        // Update spendable stars and recalculate statistics
         childSpendableStars = result.remaining_stars
-        if (spendableStarsDisplay) spendableStarsDisplay.textContent = childSpendableStars
+        const starsData = await getChildSpendableStars(selectedChild.id)
+        const totalStars = starsData.stars || 0
+        const spentStars = totalStars - childSpendableStars
+        
+        // Update all star displays
+        if (totalStarsCount) totalStarsCount.textContent = totalStars
+        if (spentStarsCount) spentStarsCount.textContent = spentStars
+        if (availableStarsCount) availableStarsCount.textContent = childSpendableStars
         
         // Refresh displays
         renderRewards(selectedChild)

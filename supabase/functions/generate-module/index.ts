@@ -59,7 +59,7 @@ type PageType =
   | "welcome"
   | "chapter-divider"
   | "lesson"
-  | "interactive-lesson"  // NEW: Lesson with embedded mini-activities
+  | "interactive-lesson"
   | "checklist"
   | "reflection"
   | "quiz"
@@ -73,7 +73,6 @@ type PageType =
   | "action-plan"
   | "warning-signs"
   | "matching-activity"
-  // NEW ACTIVITY TYPES
   | "fill-in-story"
   | "coping-cards"
   | "gratitude-jar"
@@ -84,6 +83,12 @@ type PageType =
   | "agree-disagree"
   | "comic-strip"
   | "affirmation-builder"
+  // v5 NEW INTERACTIVE CHALLENGE TYPES
+  | "weather-controller"
+  | "power-up-collector"
+  | "emotion-maze"
+  | "strength-shield"
+  | "feeling-volcano"
   | "summary"
   | "completion";
 
@@ -385,6 +390,91 @@ interface AffirmationBuilderContent {
   savePrompt: string;
 }
 
+// ====================
+// v5 NEW CHALLENGE INTERFACES
+// ====================
+
+interface WeatherControllerContent {
+  heading: string;
+  instructions: string;
+  weatherType: "storm" | "rain" | "fog" | "heat";
+  calmingActions: Array<{
+    id: string;
+    label: string;
+    emoji: string;
+    points: number;
+    feedbackText: string;
+  }>;
+  winText: string;
+  encouragement: string;
+}
+
+interface PowerUpCollectorContent {
+  heading: string;
+  instructions: string;
+  powerUps: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    description: string;
+    isPositive: boolean;
+  }>;
+  targetCount: number;
+  winText: string;
+  tipText: string;
+}
+
+interface EmotionMazeContent {
+  heading: string;
+  instructions: string;
+  startEmotion: { name: string; emoji: string };
+  goalEmotion: { name: string; emoji: string };
+  pathChoices: Array<{
+    step: number;
+    situation: string;
+    options: Array<{
+      text: string;
+      emoji: string;
+      isCorrect: boolean;
+      feedback: string;
+    }>;
+  }>;
+  completionMessage: string;
+}
+
+interface StrengthShieldContent {
+  heading: string;
+  instructions: string;
+  shieldSections: Array<{
+    id: string;
+    title: string;
+    emoji: string;
+    prompt: string;
+    placeholder: string;
+  }>;
+  decorations: string[];
+  completionMessage: string;
+}
+
+interface FeelingVolcanoContent {
+  heading: string;
+  instructions: string;
+  triggerScenario: string;
+  coolingActions: Array<{
+    id: string;
+    action: string;
+    emoji: string;
+    coolingPower: number;
+  }>;
+  levels: Array<{
+    level: number;
+    emoji: string;
+    label: string;
+    color: string;
+  }>;
+  safeMessage: string;
+}
+
 interface GeneratedContent {
   metadata: ModuleMetadata;
   welcome: { heading: string; paragraphs: string[] };
@@ -415,6 +505,12 @@ interface GeneratedContent {
   agreeDisagrees: AgreeDisagreeContent[];
   comicStrips: ComicStripContent[];
   affirmationBuilders: AffirmationBuilderContent[];
+  // v5 NEW CHALLENGE TYPES
+  weatherControllers: WeatherControllerContent[];
+  powerUpCollectors: PowerUpCollectorContent[];
+  emotionMazes: EmotionMazeContent[];
+  strengthShields: StrengthShieldContent[];
+  feelingVolcanoes: FeelingVolcanoContent[];
   summary: SummaryContent;
   completion: CompletionContent;
 }
@@ -485,11 +581,12 @@ function shuffleArray<T>(arr: T[]): T[] {
 
 /**
  * Generate a variable page structure between MIN_PAGES and MAX_PAGES
- * Activities are selected from 4 CATEGORIES for maximum diversity:
+ * Activities are selected from 5 CATEGORIES for maximum diversity:
  * - CORE: Classic activities (checklist, quiz, reflection, etc.)
  * - FEELINGS: Emotional awareness activities 
  * - CREATIVE: Artistic/building activities
  * - COGNITIVE: Thinking/problem-solving activities
+ * - CHALLENGE: v5 interactive game-like challenges
  */
 function generatePageStructure(): PageTemplate[] {
   const targetPages = randomInt(MIN_PAGES, MAX_PAGES);
@@ -533,6 +630,15 @@ function generatePageStructure(): PageTemplate[] {
     { type: "coping-cards",        starReward: true },
   ];
   
+  // v5 NEW CHALLENGE activities (interactive games)
+  const challengeActivities: PageTemplate[] = [
+    { type: "weather-controller",  starReward: true },
+    { type: "power-up-collector",  starReward: true },
+    { type: "emotion-maze",        starReward: true },
+    { type: "strength-shield",     starReward: true },
+    { type: "feeling-volcano",     starReward: true },
+  ];
+  
   // Select activities from each category for guaranteed diversity
   const selectedActivities: PageTemplate[] = [];
   
@@ -551,6 +657,10 @@ function generatePageStructure(): PageTemplate[] {
   // Include 1-2 cognitive activities
   const shuffledCognitive = shuffleArray(cognitiveActivities);
   selectedActivities.push(...shuffledCognitive.slice(0, randomInt(1, 2)));
+  
+  // v5: Always include 1-2 challenge activities for engagement
+  const shuffledChallenge = shuffleArray(challengeActivities);
+  selectedActivities.push(...shuffledChallenge.slice(0, randomInt(1, 2)));
   
   // Shuffle all selected activities for random placement
   const activities = shuffleArray(selectedActivities);
@@ -2057,6 +2167,329 @@ IMPORTANT: Use actual emoji characters in decorationEmojis, not text names!`;
   return builders.slice(0, count);
 }
 
+// ========================================
+// v5 NEW CHALLENGE GENERATORS
+// ========================================
+
+async function generateWeatherControllers(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<WeatherControllerContent[]> {
+  const prompt = `Create ${count} weather controller challenge activities for children about "${metadata.theme}".
+
+This is an interactive game where children control emotional "weather" by using calming actions.
+
+Respond with ONLY this JSON:
+{
+  "weatherControllers": [
+    {
+      "heading": "Activity title with weather emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "weatherType": "storm",
+      "calmingActions": [
+        { "id": "breath", "label": "Slow Breath", "emoji": "🌬️", "points": 15, "feedbackText": "Feel that calm air..." },
+        { "id": "name", "label": "Name the Feeling", "emoji": "💭", "points": 20, "feedbackText": "Understanding helps!" },
+        { "id": "ground", "label": "5-4-3-2-1 Senses", "emoji": "👀", "points": 25, "feedbackText": "Grounded and present!" },
+        { "id": "kind", "label": "Kind Thought", "emoji": "💗", "points": 15, "feedbackText": "Self-compassion helps!" }
+      ],
+      "winText": "You calmed the storm! The sky is clear again!",
+      "encouragement": "You have the power to calm big feelings!"
+    }
+  ]
+}
+
+IMPORTANT: weatherType must be one of: "storm", "rain", "fog", "heat"
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ weatherControllers: WeatherControllerContent[] }>(response);
+  
+  const controllers = parsed?.weatherControllers || [];
+  while (controllers.length < count) {
+    controllers.push({
+      heading: "🌩️ Calm the Storm",
+      instructions: "Big feelings can feel like a storm inside! Use your calming tools to bring back the sunshine.",
+      weatherType: "storm",
+      calmingActions: [
+        { id: "breath", label: "Slow Breath", emoji: "🌬️", points: 15, feedbackText: "Feel that calm air filling you up..." },
+        { id: "name", label: "Name the Feeling", emoji: "💭", points: 20, feedbackText: "When we name it, we can tame it!" },
+        { id: "ground", label: "5-4-3-2-1 Senses", emoji: "👀", points: 25, feedbackText: "You're here, you're safe, you're grounded!" },
+        { id: "kind", label: "Kind Thought", emoji: "💗", points: 15, feedbackText: "You deserve kindness, especially from yourself!" }
+      ],
+      winText: "☀️ You calmed the storm! The sky is clear again!",
+      encouragement: `${metadata.characterName} says: You have the power to calm any storm inside you!`
+    });
+  }
+  
+  return controllers.slice(0, count);
+}
+
+async function generatePowerUpCollectors(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<PowerUpCollectorContent[]> {
+  const prompt = `Create ${count} power-up collector activities for children about "${metadata.theme}".
+
+This is a game where children collect positive coping strategies while avoiding unhelpful ones.
+
+Respond with ONLY this JSON:
+{
+  "powerUpCollectors": [
+    {
+      "heading": "Activity title with sparkle emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "powerUps": [
+        { "id": "pu1", "name": "Deep Breath", "emoji": "🌬️", "description": "Calms your body", "isPositive": true },
+        { "id": "pu2", "name": "Talk to Someone", "emoji": "💬", "description": "Share your feelings", "isPositive": true },
+        { "id": "pu3", "name": "Yelling", "emoji": "😤", "description": "Might hurt others", "isPositive": false },
+        { "id": "pu4", "name": "Take a Walk", "emoji": "🚶", "description": "Move and feel better", "isPositive": true }
+      ],
+      "targetCount": 5,
+      "winText": "You collected all the power-ups!",
+      "tipText": "These tools can help you feel better anytime!"
+    }
+  ]
+}
+
+Include 6-8 powerUps with a mix of positive (true) and negative (false) options.
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ powerUpCollectors: PowerUpCollectorContent[] }>(response);
+  
+  const collectors = parsed?.powerUpCollectors || [];
+  while (collectors.length < count) {
+    collectors.push({
+      heading: "⚡ Collect Your Power-Ups!",
+      instructions: "Tap on the helpful strategies to collect them! Avoid the ones that might not help.",
+      powerUps: [
+        { id: "pu1", name: "Deep Breathing", emoji: "🌬️", description: "Calms your body and mind", isPositive: true },
+        { id: "pu2", name: "Talk to Someone", emoji: "💬", description: "Sharing helps you feel understood", isPositive: true },
+        { id: "pu3", name: "Keeping it Inside", emoji: "🤐", description: "Bottling up makes it worse", isPositive: false },
+        { id: "pu4", name: "Take a Walk", emoji: "🚶", description: "Movement releases big feelings", isPositive: true },
+        { id: "pu5", name: "Count to 10", emoji: "🔢", description: "Gives your brain time to think", isPositive: true },
+        { id: "pu6", name: "Yelling", emoji: "📢", description: "Might hurt others' feelings", isPositive: false },
+        { id: "pu7", name: "Draw or Write", emoji: "✏️", description: "Express feelings creatively", isPositive: true },
+        { id: "pu8", name: "Blaming Others", emoji: "👉", description: "Doesn't solve the problem", isPositive: false }
+      ],
+      targetCount: 5,
+      winText: "🎉 You collected all the helpful power-ups!",
+      tipText: `${metadata.characterName} says: Keep these tools in your pocket for whenever you need them!`
+    });
+  }
+  
+  return collectors.slice(0, count);
+}
+
+async function generateEmotionMazes(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<EmotionMazeContent[]> {
+  const prompt = `Create ${count} emotion maze activities for children about "${metadata.theme}".
+
+This is a path-choosing game where children navigate from a challenging emotion to a better state.
+
+Respond with ONLY this JSON:
+{
+  "emotionMazes": [
+    {
+      "heading": "Activity title with maze emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "startEmotion": { "name": "Worried", "emoji": "😰" },
+      "goalEmotion": { "name": "Calm", "emoji": "😌" },
+      "pathChoices": [
+        {
+          "step": 1,
+          "situation": "You're feeling worried about a test tomorrow.",
+          "options": [
+            { "text": "Take 3 deep breaths", "emoji": "🌬️", "isCorrect": true, "feedback": "Great choice! Breathing helps calm your body." },
+            { "text": "Stay up all night worrying", "emoji": "😫", "isCorrect": false, "feedback": "This might make you more tired and worried." }
+          ]
+        },
+        {
+          "step": 2,
+          "situation": "You still feel a little worried.",
+          "options": [
+            { "text": "Talk to a grown-up", "emoji": "💬", "isCorrect": true, "feedback": "Sharing worries makes them smaller!" },
+            { "text": "Keep it to yourself", "emoji": "🤐", "isCorrect": false, "feedback": "Keeping worries inside can make them grow." }
+          ]
+        }
+      ],
+      "completionMessage": "You made it through the maze!"
+    }
+  ]
+}
+
+Include 3 pathChoices steps with 2 options each.
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ emotionMazes: EmotionMazeContent[] }>(response);
+  
+  const mazes = parsed?.emotionMazes || [];
+  while (mazes.length < count) {
+    mazes.push({
+      heading: "🗺️ Navigate Your Feelings",
+      instructions: "Help find the path from a big feeling to a calmer place! Choose wisely at each step.",
+      startEmotion: { name: "Worried", emoji: "😰" },
+      goalEmotion: { name: "Calm", emoji: "😌" },
+      pathChoices: [
+        {
+          step: 1,
+          situation: "You're feeling worried about something at school.",
+          options: [
+            { text: "Take 3 deep breaths", emoji: "🌬️", isCorrect: true, feedback: "Great choice! Breathing helps calm your body." },
+            { text: "Stay up all night worrying", emoji: "😫", isCorrect: false, feedback: "This might make you more tired and worried. Try again!" }
+          ]
+        },
+        {
+          step: 2,
+          situation: "You still feel a little worried after breathing.",
+          options: [
+            { text: "Talk to someone you trust", emoji: "💬", isCorrect: true, feedback: "Sharing worries makes them feel smaller!" },
+            { text: "Keep the worry inside", emoji: "🤐", isCorrect: false, feedback: "Keeping worries inside can make them grow bigger. Try again!" }
+          ]
+        },
+        {
+          step: 3,
+          situation: "You talked about it and feel a bit better. What now?",
+          options: [
+            { text: "Make a plan for tomorrow", emoji: "📋", isCorrect: true, feedback: "Having a plan helps you feel ready!" },
+            { text: "Keep thinking about what might go wrong", emoji: "😟", isCorrect: false, feedback: "Focusing on worries keeps them strong. Try again!" }
+          ]
+        }
+      ],
+      completionMessage: `🎉 You navigated the maze! ${metadata.characterName} is so proud of you!`
+    });
+  }
+  
+  return mazes.slice(0, count);
+}
+
+async function generateStrengthShields(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<StrengthShieldContent[]> {
+  const prompt = `Create ${count} strength shield builder activities for children about "${metadata.theme}".
+
+This is an activity where children build a protective shield with their personal strengths.
+
+Respond with ONLY this JSON:
+{
+  "strengthShields": [
+    {
+      "heading": "Activity title with shield emoji",
+      "instructions": "Instructions explaining how to build the shield (2 sentences)",
+      "shieldSections": [
+        { "id": "s1", "title": "My Superpower", "emoji": "⚡", "prompt": "What are you really good at?", "placeholder": "I'm good at..." },
+        { "id": "s2", "title": "My Support Team", "emoji": "👥", "prompt": "Who helps you when things are hard?", "placeholder": "People who help me..." },
+        { "id": "s3", "title": "My Calm Tools", "emoji": "🧘", "prompt": "What helps you feel calm?", "placeholder": "When I need calm, I..." },
+        { "id": "s4", "title": "My Brave Moment", "emoji": "🦁", "prompt": "When were you brave?", "placeholder": "I was brave when..." }
+      ],
+      "decorations": ["⭐", "🌟", "💪", "🛡️", "✨", "💖"],
+      "completionMessage": "Your shield is complete! You are stronger than you know!"
+    }
+  ]
+}
+
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ strengthShields: StrengthShieldContent[] }>(response);
+  
+  const shields = parsed?.strengthShields || [];
+  while (shields.length < count) {
+    shields.push({
+      heading: "🛡️ Build Your Strength Shield",
+      instructions: "Every hero needs a shield! Fill in each section to build YOUR personal strength shield.",
+      shieldSections: [
+        { id: "s1", title: "My Superpower", emoji: "⚡", prompt: "What are you really good at?", placeholder: "I'm good at..." },
+        { id: "s2", title: "My Support Team", emoji: "👥", prompt: "Who helps you when things are hard?", placeholder: "People who help me..." },
+        { id: "s3", title: "My Calm Tools", emoji: "🧘", prompt: "What helps you feel calm?", placeholder: "When I need calm, I..." },
+        { id: "s4", title: "My Brave Moment", emoji: "🦁", prompt: "Tell about a time you were brave!", placeholder: "I was brave when..." }
+      ],
+      decorations: ["⭐", "🌟", "💪", "🛡️", "✨", "💖"],
+      completionMessage: `🛡️ Your shield is complete! ${metadata.characterName} says: You are stronger than you know!`
+    });
+  }
+  
+  return shields.slice(0, count);
+}
+
+async function generateFeelingVolcanoes(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingVolcanoContent[]> {
+  const prompt = `Create ${count} feeling volcano activities for children about "${metadata.theme}".
+
+This is a game where children learn to "cool down" a volcano of big feelings before it erupts.
+
+Respond with ONLY this JSON:
+{
+  "feelingVolcanoes": [
+    {
+      "heading": "Activity title with volcano emoji",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "triggerScenario": "A scenario that might cause big feelings (1-2 sentences)",
+      "coolingActions": [
+        { "id": "c1", "action": "Take a deep breath", "emoji": "🌬️", "coolingPower": 20 },
+        { "id": "c2", "action": "Count to 5", "emoji": "🔢", "coolingPower": 15 },
+        { "id": "c3", "action": "Squeeze a pillow", "emoji": "🛏️", "coolingPower": 25 },
+        { "id": "c4", "action": "Walk away for a moment", "emoji": "🚶", "coolingPower": 20 }
+      ],
+      "levels": [
+        { "level": 5, "emoji": "🌋", "label": "About to Erupt!", "color": "#ef4444" },
+        { "level": 4, "emoji": "🔥", "label": "Very Hot", "color": "#f97316" },
+        { "level": 3, "emoji": "😤", "label": "Getting Warm", "color": "#eab308" },
+        { "level": 2, "emoji": "😊", "label": "Cooling Down", "color": "#84cc16" },
+        { "level": 1, "emoji": "😌", "label": "Cool and Calm", "color": "#22c55e" }
+      ],
+      "safeMessage": "You kept the volcano cool! Great job managing big feelings!"
+    }
+  ]
+}
+
+Make the content relevant to ${metadata.theme}.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ feelingVolcanoes: FeelingVolcanoContent[] }>(response);
+  
+  const volcanoes = parsed?.feelingVolcanoes || [];
+  while (volcanoes.length < count) {
+    volcanoes.push({
+      heading: "🌋 Cool the Volcano!",
+      instructions: "When big feelings build up, they can feel like a volcano! Use your cooling tools before it erupts.",
+      triggerScenario: "Someone took your favorite toy without asking and you're feeling really angry inside.",
+      coolingActions: [
+        { id: "c1", action: "Take a deep breath", emoji: "🌬️", coolingPower: 20 },
+        { id: "c2", action: "Count backwards from 5", emoji: "🔢", coolingPower: 15 },
+        { id: "c3", action: "Squeeze something soft", emoji: "🧸", coolingPower: 25 },
+        { id: "c4", action: "Walk away for a moment", emoji: "🚶", coolingPower: 20 }
+      ],
+      levels: [
+        { level: 5, emoji: "🌋", label: "About to Erupt!", color: "#ef4444" },
+        { level: 4, emoji: "🔥", label: "Very Hot", color: "#f97316" },
+        { level: 3, emoji: "😤", label: "Getting Warm", color: "#eab308" },
+        { level: 2, emoji: "😊", label: "Cooling Down", color: "#84cc16" },
+        { level: 1, emoji: "😌", label: "Cool and Calm", color: "#22c55e" }
+      ],
+      safeMessage: `🎉 You kept the volcano cool! ${metadata.characterName} is so proud of your self-control!`
+    });
+  }
+  
+  return volcanoes.slice(0, count);
+}
+
 // ====================
 // ORCHESTRATOR
 // ====================
@@ -2097,6 +2530,12 @@ async function generateAllContent(
     agreeDisagrees: pageStructure.filter(p => p.type === "agree-disagree").length,
     comicStrips: pageStructure.filter(p => p.type === "comic-strip").length,
     affirmationBuilders: pageStructure.filter(p => p.type === "affirmation-builder").length,
+    // v5 NEW CHALLENGE COUNTS
+    weatherControllers: pageStructure.filter(p => p.type === "weather-controller").length,
+    powerUpCollectors: pageStructure.filter(p => p.type === "power-up-collector").length,
+    emotionMazes: pageStructure.filter(p => p.type === "emotion-maze").length,
+    strengthShields: pageStructure.filter(p => p.type === "strength-shield").length,
+    feelingVolcanoes: pageStructure.filter(p => p.type === "feeling-volcano").length,
   };
   
   await updateProgress("metadata", "Creating module theme and character...");
@@ -2153,6 +2592,15 @@ async function generateAllContent(
     counts.agreeDisagrees > 0 ? generateAgreeDisagrees(apiKey, metadata, contentBrief, counts.agreeDisagrees) : Promise.resolve([]),
   ]);
   
+  await updateProgress("challenges", "Creating interactive challenges...");
+  const [weatherControllers, powerUpCollectors, emotionMazes, strengthShields, feelingVolcanoes] = await Promise.all([
+    counts.weatherControllers > 0 ? generateWeatherControllers(apiKey, metadata, contentBrief, counts.weatherControllers) : Promise.resolve([]),
+    counts.powerUpCollectors > 0 ? generatePowerUpCollectors(apiKey, metadata, contentBrief, counts.powerUpCollectors) : Promise.resolve([]),
+    counts.emotionMazes > 0 ? generateEmotionMazes(apiKey, metadata, contentBrief, counts.emotionMazes) : Promise.resolve([]),
+    counts.strengthShields > 0 ? generateStrengthShields(apiKey, metadata, contentBrief, counts.strengthShields) : Promise.resolve([]),
+    counts.feelingVolcanoes > 0 ? generateFeelingVolcanoes(apiKey, metadata, contentBrief, counts.feelingVolcanoes) : Promise.resolve([]),
+  ]);
+  
   await updateProgress("summary", "Wrapping up...");
   const [summary, completion] = await Promise.all([
     generateSummary(apiKey, metadata, contentBrief),
@@ -2178,7 +2626,7 @@ async function generateAllContent(
     actionPlans,
     warningSigns,
     matchingActivities,
-    // NEW
+    // v4
     fillInStories,
     copingCards,
     gratitudeJars,
@@ -2189,6 +2637,12 @@ async function generateAllContent(
     agreeDisagrees,
     comicStrips,
     affirmationBuilders,
+    // v5 NEW CHALLENGES
+    weatherControllers,
+    powerUpCollectors,
+    emotionMazes,
+    strengthShields,
+    feelingVolcanoes,
     summary,
     completion,
   };
@@ -2228,6 +2682,12 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     agreeDisagree: 0,
     comicStrip: 0,
     affirmationBuilder: 0,
+    // v5 NEW CHALLENGE INDICES
+    weatherController: 0,
+    powerUpCollector: 0,
+    emotionMaze: 0,
+    strengthShield: 0,
+    feelingVolcano: 0,
     star: 0,
   };
   
@@ -2371,6 +2831,32 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       case "affirmation-builder":
         pageHtml = renderAffirmationBuilderPage(content.affirmationBuilders[indices.affirmationBuilder] || content.affirmationBuilders[0], indices.star);
         indices.affirmationBuilder++;
+        indices.star++;
+        break;
+      // v5 NEW CHALLENGE PAGE TYPES
+      case "weather-controller":
+        pageHtml = renderWeatherControllerPage(content.weatherControllers[indices.weatherController] || content.weatherControllers[0], indices.star, metadata);
+        indices.weatherController++;
+        indices.star++;
+        break;
+      case "power-up-collector":
+        pageHtml = renderPowerUpCollectorPage(content.powerUpCollectors[indices.powerUpCollector] || content.powerUpCollectors[0], indices.star, metadata);
+        indices.powerUpCollector++;
+        indices.star++;
+        break;
+      case "emotion-maze":
+        pageHtml = renderEmotionMazePage(content.emotionMazes[indices.emotionMaze] || content.emotionMazes[0], indices.star, metadata);
+        indices.emotionMaze++;
+        indices.star++;
+        break;
+      case "strength-shield":
+        pageHtml = renderStrengthShieldPage(content.strengthShields[indices.strengthShield] || content.strengthShields[0], indices.star, metadata);
+        indices.strengthShield++;
+        indices.star++;
+        break;
+      case "feeling-volcano":
+        pageHtml = renderFeelingVolcanoPage(content.feelingVolcanoes[indices.feelingVolcano] || content.feelingVolcanoes[0], indices.star, metadata);
+        indices.feelingVolcano++;
         indices.star++;
         break;
       case "summary":
@@ -2580,7 +3066,9 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     async function completeModule(childId, moduleId) {
       try {
         // Use the completeModuleDB function for generated modules
-        await completeModuleDB();
+        if (typeof window.completeModuleDB === 'function') {
+          await window.completeModuleDB();
+        }
         
         // Show completion celebration
         showCompletionCelebration();
@@ -2592,28 +3080,28 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     }
 
     function showCompletionCelebration() {
-      // Create celebration modal
-      const modal = document.createElement('div');
-      modal.className = 'module-completion-modal';
-      modal.innerHTML = `
-        <div class="module-completion-content">
-          <div class="completion-emoji">🎉</div>
-          <h2 class="completion-title">Module Complete!</h2>
-          <p class="completion-message">Congratulations! You've finished this module and learned valuable emotional skills.</p>
-          <div class="completion-confetti" id="completionConfetti"></div>
-          <button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button>
-        </div>
-      `;
-      
-      document.body.appendChild(modal);
-      
-      // Generate confetti
-      generateCompletionConfetti();
-      
-      // Auto-close after 5 seconds
-      setTimeout(() => {
-        closeCompletionModal();
-      }, 5000);
+      console.log('[showCompletionCelebration] Starting...');
+      try {
+        // Create celebration modal
+        const celebrationModal = document.createElement('div');
+        celebrationModal.className = 'module-completion-modal';
+        celebrationModal.innerHTML = '<div class="module-completion-content"><div class="completion-emoji">🎉</div><h2 class="completion-title">Module Complete!</h2><p class="completion-message">Congratulations! You\'ve finished this module and learned valuable emotional skills.</p><div class="completion-confetti" id="completionConfetti"></div><button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button></div>';
+        
+        document.body.appendChild(celebrationModal);
+        console.log('[showCompletionCelebration] Modal appended');
+        
+        // Generate confetti
+        if (typeof generateCompletionConfetti === 'function') {
+          generateCompletionConfetti();
+        }
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          closeCompletionModal();
+        }, 5000);
+      } catch (e) {
+        console.error('Error showing completion celebration:', e);
+      }
     }
 
     function generateCompletionConfetti() {
@@ -3186,18 +3674,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       }
     }
     
-    async function completeModule() {
-      try {
-        await completeModuleDB(WORKBOOK_ID);
-        const urlParams = new URLSearchParams(window.location.search);
-        const childId = urlParams.get('childId');
-        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
-      } catch (e) {
-        console.error('Error completing module:', e);
-        alert('Error completing module. Please try again.');
-      }
-    }
-    
     function goHome() {
       saveStarData().then(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -3358,6 +3834,134 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       
       // Save to form data
       saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName);
+    };
+    
+    // v5 CHALLENGE HANDLERS
+    let weatherCalmLevel = 0;
+    let weatherCooldown = false;
+    window.handleWeatherAction = function(btn, activityId, points) {
+      if (weatherCooldown || completedActivities[activityId]) return;
+      weatherCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { weatherCooldown = false; btn.classList.remove('cooldown'); }, 800);
+      weatherCalmLevel = Math.min(100, weatherCalmLevel + points);
+      const meterEl = document.getElementById('calmMeter');
+      const percentEl = document.getElementById('calmPercent');
+      const feedbackEl = document.getElementById('weatherFeedback');
+      const feedbackText = document.getElementById('feedbackText');
+      if (meterEl) meterEl.style.width = weatherCalmLevel + '%';
+      if (percentEl) percentEl.textContent = weatherCalmLevel;
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackText.textContent = btn.dataset.feedback; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      const overlayEl = document.getElementById('weatherOverlay');
+      const clearEl = document.getElementById('weatherClear');
+      if (overlayEl) overlayEl.style.opacity = 1 - (weatherCalmLevel / 100);
+      if (clearEl) clearEl.style.opacity = weatherCalmLevel / 100;
+      btn.classList.add('used');
+      if (weatherCalmLevel >= 100) { document.getElementById('weatherWin').style.display = 'block'; document.getElementById('weatherComplete').style.display = 'flex'; }
+      saveFormData('weather_' + activityId, weatherCalmLevel);
+    };
+    
+    let collectedPowerUps = [];
+    window.handlePowerUpClick = function(btn, activityId, targetCount) {
+      if (btn.classList.contains('collected') || completedActivities[activityId]) return;
+      const isPositive = btn.dataset.positive === 'true';
+      const feedbackEl = document.getElementById('powerupFeedback');
+      const feedbackText = document.getElementById('powerupFeedbackText');
+      const displayEl = document.getElementById('collectedDisplay');
+      const countEl = document.getElementById('collectedCount');
+      if (isPositive) {
+        btn.classList.add('collected');
+        collectedPowerUps.push(btn.dataset.name);
+        if (collectedPowerUps.length === 1 && displayEl) displayEl.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'inline-block px-3 py-1 m-1 rounded-full font-body text-sm';
+        badge.style.backgroundColor = 'var(--light-green)';
+        badge.textContent = btn.querySelector('.text-4xl').textContent + ' ' + btn.dataset.name;
+        if (displayEl) displayEl.appendChild(badge);
+        if (countEl) countEl.textContent = collectedPowerUps.length;
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '✓ Great choice!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+        if (collectedPowerUps.length >= targetCount) { document.getElementById('powerupWin').style.display = 'block'; document.getElementById('powerupComplete').style.display = 'flex'; }
+      } else {
+        btn.classList.add('wrong');
+        setTimeout(() => btn.classList.remove('wrong'), 500);
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = '#fecaca'; feedbackText.textContent = '✗ That one might not help - try another!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      }
+      saveFormData('powerup_' + activityId, collectedPowerUps.join(','));
+    };
+    
+    let mazeStep = 0;
+    window.handleMazeChoice = function(btn, stepIdx, totalSteps, activityId) {
+      if (btn.classList.contains('disabled') || completedActivities[activityId]) return;
+      const isCorrect = btn.dataset.correct === 'true';
+      const feedback = btn.dataset.feedback;
+      const feedbackEl = document.getElementById('mazeFeedback' + stepIdx);
+      btn.parentElement.querySelectorAll('.maze-option').forEach(b => b.classList.add('disabled'));
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+      if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca'; feedbackEl.innerHTML = '<p class="font-body">' + feedback + '</p>'; }
+      if (isCorrect) {
+        mazeStep++;
+        const progress = (mazeStep / totalSteps) * 100;
+        const progressEl = document.getElementById('mazeProgress');
+        const markerEl = document.getElementById('mazeMarker');
+        if (progressEl) progressEl.style.width = progress + '%';
+        if (markerEl) markerEl.style.left = progress + '%';
+        setTimeout(() => {
+          if (mazeStep < totalSteps) {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeStep' + (stepIdx + 1)).style.display = 'block';
+          } else {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeWin').style.display = 'block';
+            document.getElementById('mazeComplete').style.display = 'flex';
+          }
+        }, 1500);
+      }
+      saveFormData('maze_' + activityId + '_step' + stepIdx, isCorrect ? 'correct' : 'wrong');
+    };
+    
+    window.handleShieldInput = function(activityId, totalSections) {
+      const inputs = document.querySelectorAll('.shield-input');
+      let filled = 0;
+      inputs.forEach(input => { if (input.value.trim().length > 0) filled++; });
+      const progressEl = document.getElementById('shieldProgress');
+      if (progressEl) progressEl.textContent = filled;
+      if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; }
+    };
+    
+    window.addShieldDecoration = function(emoji) {
+      const display = document.getElementById('shieldDecorations');
+      if (display) {
+        // Create a span for each decoration to allow proper wrapping and display
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.style.display = 'inline-block';
+        span.style.margin = '2px';
+        display.appendChild(span);
+      }
+    };
+    
+    let volcanoTemp = 100;
+    let volcanoCooldown = false;
+    window.handleVolcanoCool = function(btn, activityId, coolingPower) {
+      if (volcanoCooldown || volcanoTemp <= 0 || completedActivities[activityId]) return;
+      volcanoCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { volcanoCooldown = false; btn.classList.remove('cooldown'); }, 600);
+      volcanoTemp = Math.max(0, volcanoTemp - coolingPower);
+      const tempEl = document.getElementById('volcanoTemp');
+      const lavaEl = document.getElementById('volcanoLava');
+      const indicatorEl = document.getElementById('volcanoIndicator');
+      const feedbackEl = document.getElementById('volcanoFeedback');
+      const feedbackText = document.getElementById('volcanoFeedbackText');
+      if (tempEl) tempEl.textContent = volcanoTemp;
+      if (lavaEl) lavaEl.style.opacity = volcanoTemp / 100;
+      const emojis = ['😌', '😊', '😤', '🔥', '🌋'];
+      const level = Math.ceil(volcanoTemp / 25);
+      if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
+      for (let i = 1; i <= 5; i++) { const lvl = document.getElementById('volcanoLevel' + i); if (lvl) lvl.classList.toggle('active', i === level); }
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '❄️ ' + btn.dataset.action + ' - Cooling down!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+      if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; }
+      saveFormData('volcano_' + activityId, volcanoTemp);
     };
   </script>
 </body>
@@ -4651,6 +5255,476 @@ function renderAffirmationBuilderPage(builder: AffirmationBuilderContent, starIn
           <label class="font-title text-xl" style="color: var(--dark);">I built my power phrase!</label>
         </div>
       </div>
+    </div>`;
+}
+
+// ========================================
+// v5 NEW CHALLENGE RENDER FUNCTIONS
+// ========================================
+
+function renderWeatherControllerPage(weather: WeatherControllerContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `weather_${starIndex}`;
+  
+  const actionsHtml = weather.calmingActions.map(action => `
+    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background-color: white; border-color: var(--secondary);"
+            data-action-id="${action.id}"
+            data-points="${action.points}"
+            data-feedback="${escapeForTemplate(action.feedbackText)}"
+            onclick="handleWeatherAction(this, '${activityId}', ${action.points})">
+      <span class="text-4xl">${action.emoji}</span>
+      <span class="font-title text-lg text-center" style="color: var(--dark);">${escapeForTemplate(action.label)}</span>
+    </button>
+  `).join("");
+
+  const weatherEmoji = weather.weatherType === "storm" ? "⛈️" : 
+                       weather.weatherType === "rain" ? "🌧️" :
+                       weather.weatherType === "fog" ? "🌫️" : "🔥";
+  const weatherColors = weather.weatherType === "storm" ? "from-gray-600 to-gray-800" :
+                        weather.weatherType === "rain" ? "from-blue-400 to-blue-600" :
+                        weather.weatherType === "fog" ? "from-gray-300 to-gray-500" : "from-orange-400 to-red-500";
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="weather-controller" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(weather.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(weather.instructions)}</p>
+          
+          <!-- Weather Scene -->
+          <div class="weather-scene relative rounded-2xl overflow-hidden mb-6" style="height: 200px; background: linear-gradient(to-b, ${weatherColors});">
+            <div class="weather-overlay absolute inset-0 flex items-center justify-center transition-all duration-1000" id="weatherOverlay">
+              <span class="weather-emoji text-8xl animate-bounce" id="weatherEmoji">${weatherEmoji}</span>
+            </div>
+            <div class="weather-clear absolute inset-0 flex items-center justify-center transition-all duration-1000 opacity-0" id="weatherClear" style="background: linear-gradient(to-b, #87CEEB, #E0F6FF);">
+              <span class="text-8xl">☀️</span>
+            </div>
+            <!-- Animated elements -->
+            <div class="rain-drops absolute inset-0 pointer-events-none" id="rainDrops" style="opacity: 0.7;">
+              ${Array.from({length: 20}, (_, i) => `<div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: ${i * 5}%; animation: rainFall ${0.5 + Math.random()}s linear infinite; animation-delay: ${Math.random()}s;"></div>`).join("")}
+            </div>
+          </div>
+          
+          <!-- Calm Meter -->
+          <div class="mb-6">
+            <div class="flex justify-between mb-2">
+              <span class="font-body text-sm" style="color: var(--accent);">Stormy</span>
+              <span class="font-body text-sm" style="color: var(--secondary);">Calm</span>
+            </div>
+            <div class="h-8 rounded-full overflow-hidden" style="background-color: var(--soft-yellow);">
+              <div class="calm-meter h-full rounded-full transition-all duration-500" id="calmMeter" style="width: 0%; background: linear-gradient(to-r, var(--accent), var(--primary), var(--secondary), var(--light-green));"></div>
+            </div>
+            <p class="text-center font-title text-2xl mt-2" style="color: var(--primary);"><span id="calmPercent">0</span>% Calm</p>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            ${actionsHtml}
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all" id="weatherFeedback" style="background-color: var(--light-green); display: none;">
+            <p class="font-body text-lg" style="color: var(--dark);" id="feedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="weather-win p-6 rounded-2xl text-center" id="weatherWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">☀️</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(weather.winText)}</p>
+            <p class="font-body" style="color: var(--secondary);">${escapeForTemplate(weather.encouragement)}</p>
+          </div>
+          
+          <!-- Completion Checkbox (appears after win) -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="weatherComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I calmed the storm! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        @keyframes rainFall {
+          0% { transform: translateY(-20px); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(200px); opacity: 0; }
+        }
+        .weather-action:active { transform: scale(0.95); }
+        .weather-action.cooldown { opacity: 0.5; pointer-events: none; }
+        .weather-action.used { background-color: var(--light-green) !important; }
+      </style>
+    </div>`;
+}
+
+function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `powerup_${starIndex}`;
+  
+  const powerUpsHtml = collector.powerUps.map(pu => `
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="${pu.isPositive}"
+            data-name="${escapeForTemplate(pu.name)}"
+            onclick="handlePowerUpClick(this, '${activityId}', ${collector.targetCount})">
+      <div class="text-4xl mb-2">${pu.emoji}</div>
+      <p class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(pu.name)}</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(pu.description)}</p>
+    </button>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="power-up-collector" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(collector.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(collector.instructions)}</p>
+          
+          <!-- Collection Progress -->
+          <div class="flex justify-center items-center gap-4 mb-6">
+            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl" style="background-color: var(--soft-yellow);">
+              <span class="text-3xl">🎒</span>
+              <span class="font-title text-2xl" style="color: var(--dark);"><span id="collectedCount">0</span> / ${collector.targetCount}</span>
+            </div>
+          </div>
+          
+          <!-- Collected Items Display -->
+          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl" style="background-color: var(--cream);" id="collectedDisplay">
+            <p class="font-body text-sm self-center" style="color: var(--secondary);">Your collected power-ups will appear here!</p>
+          </div>
+          
+          <!-- Power-Up Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
+            ${powerUpsHtml}
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" style="display: none;">
+            <p class="font-body text-lg" id="powerupFeedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🎉</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(collector.winText)}</p>
+            <p class="font-body" style="color: var(--secondary);">${escapeForTemplate(collector.tipText)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="powerupComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .power-up-item:active { transform: scale(0.95); }
+        .power-up-item.collected { opacity: 0.5; pointer-events: none; border-color: var(--light-green) !important; }
+        .power-up-item.wrong { animation: shake 0.5s; background-color: #fecaca !important; }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+      </style>
+    </div>`;
+}
+
+function renderEmotionMazePage(maze: EmotionMazeContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `maze_${starIndex}`;
+  
+  const stepsHtml = maze.pathChoices.map((choice, idx) => `
+    <div class="maze-step rounded-2xl p-6 mb-4 transition-all" id="mazeStep${idx}" style="background-color: var(--soft-yellow); display: ${idx === 0 ? 'block' : 'none'};">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${choice.step}</span>
+        <p class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(choice.situation)}</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        ${choice.options.map((opt, oi) => `
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="${opt.isCorrect}"
+                  data-feedback="${escapeForTemplate(opt.feedback)}"
+                  data-step="${idx}"
+                  onclick="handleMazeChoice(this, ${idx}, ${maze.pathChoices.length}, '${activityId}')">
+            <span class="text-2xl mr-2">${opt.emoji}</span>
+            <span class="font-body" style="color: var(--dark);">${escapeForTemplate(opt.text)}</span>
+          </button>
+        `).join("")}
+      </div>
+      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback${idx}" style="display: none;"></div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emotion-maze" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(maze.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(maze.instructions)}</p>
+          
+          <!-- Journey Progress -->
+          <div class="flex justify-between items-center mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+            <div class="text-center">
+              <span class="text-4xl">${maze.startEmotion.emoji}</span>
+              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(maze.startEmotion.name)}</p>
+            </div>
+            <div class="flex-1 mx-4 relative">
+              <div class="h-3 rounded-full" style="background-color: var(--soft-yellow);">
+                <div class="maze-progress h-full rounded-full transition-all duration-500" id="mazeProgress" style="width: 0%; background-color: var(--light-green);"></div>
+              </div>
+              <div class="maze-marker absolute top-1/2 -translate-y-1/2 text-2xl transition-all duration-500" id="mazeMarker" style="left: 0%;">🚶</div>
+            </div>
+            <div class="text-center">
+              <span class="text-4xl">${maze.goalEmotion.emoji}</span>
+              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(maze.goalEmotion.name)}</p>
+            </div>
+          </div>
+          
+          <!-- Steps -->
+          ${stepsHtml}
+          
+          <!-- Win Message -->
+          <div class="maze-win p-6 rounded-2xl text-center" id="mazeWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">${maze.goalEmotion.emoji}</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(maze.completionMessage)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="mazeComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I navigated the maze! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .maze-option:active { transform: scale(0.98); }
+        .maze-option.correct { background-color: var(--light-green) !important; border-color: var(--secondary) !important; }
+        .maze-option.wrong { background-color: #fecaca !important; border-color: var(--accent) !important; }
+        .maze-option.disabled { opacity: 0.5; pointer-events: none; }
+      </style>
+    </div>`;
+}
+
+function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `shield_${starIndex}`;
+  
+  const sectionsHtml = shield.shieldSections.map((section, idx) => `
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: ${['var(--light-green)', 'var(--soft-yellow)', 'var(--primary)', '#a8d8ea'][idx % 4]};">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">${section.emoji}</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(section.title)}</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">${escapeForTemplate(section.prompt)}</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="${escapeForTemplate(section.placeholder)}"
+             data-section="${section.id}"
+             onchange="handleShieldInput('${activityId}', ${shield.shieldSections.length}); saveFormData('shield_${starIndex}_${section.id}', this.value)"
+             value="\${formData['shield_${starIndex}_${section.id}'] || ''}">
+    </div>
+  `).join("");
+
+  const decorationsHtml = shield.decorations.map(d => `
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('${d}')">${d}</button>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(shield.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(shield.instructions)}</p>
+          
+          <!-- Shield Visual -->
+          <div class="flex justify-center mb-6">
+            <div class="shield-container relative w-64 h-72">
+              <svg viewBox="0 0 200 220" class="w-full h-full">
+                <path d="M100 10 L180 50 L180 130 Q180 200 100 210 Q20 200 20 130 L20 50 Z" 
+                      fill="url(#shieldGradient)" stroke="var(--dark)" stroke-width="4"/>
+                <defs>
+                  <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--soft-yellow)"/>
+                    <stop offset="100%" style="stop-color:var(--light-green)"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="shield-decorations absolute inset-0 flex items-center justify-center text-4xl flex-wrap" id="shieldDecorations">
+                🛡️
+              </div>
+            </div>
+          </div>
+          
+          <!-- Decoration Buttons -->
+          <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
+            <span class="font-body text-sm self-center mr-2" style="color: var(--dark);">Add decorations:</span>
+            ${decorationsHtml}
+          </div>
+          
+          <!-- Shield Sections -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            ${sectionsHtml}
+          </div>
+          
+          <!-- Progress Indicator -->
+          <div class="text-center mb-4">
+            <p class="font-body" style="color: var(--secondary);">Sections filled: <span id="shieldProgress">0</span> / ${shield.shieldSections.length}</p>
+          </div>
+          
+          <!-- Win Message -->
+          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🛡️</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(shield.completionMessage)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="shieldComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `volcano_${starIndex}`;
+  
+  const actionsHtml = volcano.coolingActions.map(action => `
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--secondary);"
+            data-cooling="${action.coolingPower}"
+            data-action="${escapeForTemplate(action.action)}"
+            onclick="handleVolcanoCool(this, '${activityId}', ${action.coolingPower})">
+      <span class="text-3xl">${action.emoji}</span>
+      <span class="font-body text-sm text-center" style="color: var(--dark);">${escapeForTemplate(action.action)}</span>
+    </button>
+  `).join("");
+
+  const levelsHtml = volcano.levels.map(level => `
+    <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel${level.level}" style="background-color: ${level.color}20;">
+      <span class="text-xl">${level.emoji}</span>
+      <span class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(level.label)}</span>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-volcano" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(volcano.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(volcano.instructions)}</p>
+          
+          <!-- Scenario -->
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center" style="color: var(--dark);"><strong>The situation:</strong> ${escapeForTemplate(volcano.triggerScenario)}</p>
+          </div>
+          
+          <!-- Volcano Visual -->
+          <div class="flex justify-center items-end gap-8 mb-6">
+            <!-- Level Indicator -->
+            <div class="flex flex-col-reverse gap-1">
+              ${levelsHtml}
+            </div>
+            
+            <!-- Volcano -->
+            <div class="volcano-container relative">
+              <svg viewBox="0 0 200 200" class="w-48 h-48">
+                <!-- Volcano body -->
+                <path d="M20 200 L60 80 L80 90 L100 60 L120 90 L140 80 L180 200 Z" 
+                      fill="#8B4513" stroke="#5D3A1A" stroke-width="3"/>
+                <!-- Lava inside -->
+                <path d="M65 95 L80 95 L100 70 L120 95 L135 95 L120 130 L80 130 Z" 
+                      class="volcano-lava" id="volcanoLava"
+                      fill="#ef4444" opacity="0.9"/>
+                <!-- Bubbles -->
+                <circle class="lava-bubble" cx="90" cy="100" r="5" fill="#fbbf24" opacity="0.8">
+                  <animate attributeName="cy" values="100;85;100" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <circle class="lava-bubble" cx="110" cy="105" r="4" fill="#fbbf24" opacity="0.8">
+                  <animate attributeName="cy" values="105;90;105" dur="1.2s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+              <div class="volcano-indicator absolute -top-6 left-1/2 -translate-x-1/2 text-4xl transition-all" id="volcanoIndicator">🌋</div>
+            </div>
+            
+            <!-- Temperature Display -->
+            <div class="text-center">
+              <p class="font-title text-3xl" style="color: var(--accent);"><span id="volcanoTemp">100</span>°</p>
+              <p class="font-body text-sm" style="color: var(--dark);">Heat Level</p>
+            </div>
+          </div>
+          
+          <!-- Cooling Actions -->
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Use your cooling tools! 🧊</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            ${actionsHtml}
+          </div>
+          
+          <!-- Feedback -->
+          <div class="volcano-feedback p-4 rounded-xl text-center mb-4" id="volcanoFeedback" style="display: none;">
+            <p class="font-body text-lg" id="volcanoFeedbackText"></p>
+          </div>
+          
+          <!-- Safe Message -->
+          <div class="volcano-safe p-6 rounded-2xl text-center" id="volcanoSafe" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">😌</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(volcano.safeMessage)}</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="volcanoComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="${activityId}"
+              onchange="markActivityComplete('${activityId}')"
+              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I cooled the volcano! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .cooling-action:active { transform: scale(0.95); }
+        .cooling-action.cooldown { opacity: 0.5; pointer-events: none; }
+        .volcano-level.active { transform: scale(1.1); font-weight: bold; }
+      </style>
     </div>`;
 }
 

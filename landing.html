@@ -6,8 +6,9 @@
     <title>Welcome - Daniel's Dairies</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/images/logos/DanielsDiariesFavicon.png">
-    <link rel="apple-touch-icon" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -130,101 +131,6 @@
             <div class="children-list" id="childrenList"></div>
         </div>
 
-        <!-- Next Step Section -->
-        <div id="nextStepSection" class="next-step-section hidden" style="display: none;">
-            <!-- Main Content Grid -->
-            <div class="landing-grid">
-                <!-- Left Column: Current Module -->
-                <div class="module-spotlight">
-                    <div class="spotlight-header">
-                        <h2 class="next-step-title" id="nextStepTitle">Loading...</h2>
-                        <p class="next-step-subtitle" id="nextStepSubtitle">Continue your journey</p>
-                    </div>
-                    
-                    <div class="module-card-hero" id="currentModuleCard">
-                        <div class="module-hero-content">
-                            <div class="module-hero-header">
-                                <span class="module-emoji-large" id="moduleEmoji">📖</span>
-                                <div class="module-hero-text">
-                                    <h3 class="module-title-hero" id="moduleTitleText">Loading...</h3>
-                                    <p class="module-description-hero" id="moduleDescription">Loading module information...</p>
-                                </div>
-                            </div>
-                            
-                            <div class="module-insight" id="moduleWhy">
-                                <div class="insight-icon">💡</div>
-                                <div class="insight-content">
-                                    <strong class="insight-title">Why this module?</strong>
-                                    <p class="insight-text" id="moduleReason">Loading...</p>
-                                </div>
-                            </div>
-
-                            <div class="module-meta">
-                                <div class="meta-item">
-                                    <span class="meta-icon">⏱️</span>
-                                    <span class="meta-text">5–10 min per activity</span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-icon">👪</span>
-                                    <span class="meta-text">Best done together</span>
-                                </div>
-                            </div>
-                            
-                            <div class="progress-section" id="progressInfo">
-                                <div class="progress-header">
-                                    <span class="progress-label" id="progressText">Loading progress...</span>
-                                </div>
-                                <div class="progress-bar-modern">
-                                    <div class="progress-bar-fill-modern" id="progressBar" style="width: 0%"></div>
-                                </div>
-                            </div>
-
-                            <div class="action-buttons">
-                                <button class="btn-primary-large" id="continueButton">
-                                    <span class="btn-icon">🚀</span>
-                                    <span>Continue Module</span>
-                                </button>
-                                <button class="btn-secondary-large" id="browseButton">
-                                    <span class="btn-icon">📚</span>
-                                    <span>Browse All Modules</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column: Journey Stats & Encouragement -->
-                <div class="journey-sidebar">
-                    <!-- Journey Progress -->
-                    <div class="stats-card">
-                        <div class="stats-header">
-                            <span class="stats-icon">✨</span>
-                            <h3 class="stats-title">Your Journey This Week</h3>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <div class="stat-value" id="skillsPracticed">0</div>
-                                <div class="stat-label">Skills explored</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="toolsLearned">0</div>
-                                <div class="stat-label">Tools introduced</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="activitiesCompleted">0</div>
-                                <div class="stat-label">Activities completed</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Encouragement Card -->
-                    <div class="encouragement-card">
-                        <div class="encouragement-icon">💜</div>
-                        <p class="encouragement-text">You don't need to do everything at once. Even one small activity is enough.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
     <script>
@@ -319,6 +225,7 @@
 
         // DOM Elements
         const loadingState = document.getElementById('loadingState')
+        const welcomeLandingPage = document.getElementById('welcomeLandingPage')
         const welcomeSection = document.getElementById('welcomeSection')
         const childSelection = document.getElementById('childSelection')
         const nextStepSection = document.getElementById('nextStepSection')
@@ -332,6 +239,18 @@
         const continueButton = document.getElementById('continueButton')
         const browseButton = document.getElementById('browseButton')
         const viewDashboardBtn = document.getElementById('viewDashboardBtn')
+
+        function showElement(element, display = 'block') {
+            if (!element) return
+            element.classList.remove('hidden')
+            element.style.display = display
+        }
+
+        function hideElement(element) {
+            if (!element) return
+            element.classList.add('hidden')
+            element.style.display = 'none'
+        }
 
         // Initialize
         async function init() {
@@ -385,10 +304,10 @@
                 // If no children, show welcome landing page
                 if (!children || children.length === 0) {
                     // Show only welcome landing page
-                    document.getElementById('welcomeLandingPage').style.display = 'flex'
-                    welcomeSection.style.display = 'none'
-                    childSelection.style.display = 'none'
-                    nextStepSection.style.display = 'none'
+                    showElement(welcomeLandingPage, 'flex')
+                    hideElement(welcomeSection)
+                    hideElement(childSelection)
+                    hideElement(nextStepSection)
                     
                     // Add event listener to Get Started button to open add child modal
                     const welcomeGetStartedBtn = document.getElementById('welcomeGetStartedBtn')
@@ -399,8 +318,8 @@
                 }
 
                 // User has children - check if there's only one child
-                document.getElementById('welcomeLandingPage').style.display = 'none'
-                welcomeSection.style.display = 'block'
+                hideElement(welcomeLandingPage)
+                showElement(welcomeSection, 'block')
                 
                 // Display random welcome message
                 const randomMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)]
@@ -408,16 +327,16 @@
 
                 // If only one child, automatically select them
                 if (children.length === 1) {
-                    childSelection.style.display = 'none'
-                    nextStepSection.style.display = 'none'
+                    hideElement(childSelection)
+                    hideElement(nextStepSection)
                     loadingState.style.display = 'block'
                     
                     // Auto-select the single child
                     await selectChild(children[0])
                 } else {
                     // Multiple children - show selection screen
-                    childSelection.style.display = 'block'
-                    nextStepSection.style.display = 'none'
+                    showElement(childSelection, 'block')
+                    hideElement(nextStepSection)
                     
                     // Render children for selection
                     renderChildren()
@@ -449,39 +368,7 @@
         // Select child and show next step
         async function selectChild(child) {
             selectedChild = child
-            
-            // Update greeting to show child's name
-            welcomeGreeting.textContent = `Welcome back, ${child.name}!`
-            
-            // Hide selection, show loading
-            childSelection.style.display = 'none'
-            loadingState.style.display = 'block'
-
-            try {
-                // Load child's modules
-                childModules = await getChildModules(child.id)
-                
-                // Find next module to work on
-                const nextModule = findNextModule()
-                
-                // Update UI
-                loadingState.style.display = 'none'
-                nextStepSection.style.display = 'grid'
-                
-                if (nextModule) {
-                    displayNextModule(nextModule)
-                } else {
-                    displayNoModules()
-                }
-
-                // Update journey stats
-                updateJourneyStats()
-
-            } catch (error) {
-                console.error('Error loading child data:', error)
-                alert('Failed to load child data. Please try again.')
-                window.location.reload()
-            }
+            window.location.href = `/dashboard.html?childId=${child.id}`
         }
 
         // Find the next module to work on

@@ -11,6 +11,10 @@ body {
     color: #364f66;
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* Header */
 .header {
     background: linear-gradient(135deg, var(--fm-primary, #405878) 0%, var(--fm-primary-light, #4c6c96) 100%);

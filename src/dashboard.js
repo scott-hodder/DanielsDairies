@@ -1018,12 +1018,21 @@ async function init() {
     // Load login streak display
     await loadStreakDisplay()
     
-    // Load modules first
+    // Load modules
     try {
-      
       modules = await getModules()
       
-      // Setup filters after modules are loaded
+      // Load parent modules
+      parentModules = await getModules(currentUser.id)
+      
+      // Update global variables for enhanced dashboard
+      window.modules = modules
+      window.parentModules = parentModules
+      
+      // Setup category colors
+      setupCategoryColors()
+      
+      // Setup filters
       setupAllWorkbooksFilter()
       setupDashboardFilters()
       
@@ -1676,14 +1685,14 @@ async function selectChild(child) {
     await loadLatestWeeklyPlan()
     
     // Show child detail view
-    showChildDetailView()
+    showChildDetailView(child)
     
   } catch (error) {
     console.error('Error loading child modules:', error)
     console.error('Error details:', error.message, error.stack)
     // Still show the view even if modules fail to load
     childModules = []
-    showChildDetailView()
+    showChildDetailView(child)
   }
 }
 
@@ -1694,25 +1703,40 @@ function showChildrenView() {
   if (loadingState) {
     loadingState.classList.add('hidden')
   }
+
+  if (welcomeLandingPage) {
+    if (!children || children.length === 0) {
+      welcomeLandingPage.classList.remove('hidden')
+    } else {
+      welcomeLandingPage.classList.add('hidden')
+    }
+  }
   
-  // If no children, show welcome landing page instead
-  if (!children || children.length === 0) {
-    if (welcomeLandingPage) welcomeLandingPage.classList.remove('hidden')
-    childrenView.classList.add('hidden')
-    childDetailView.classList.add('hidden')
-  } else {
-    // Show normal children view
-    if (welcomeLandingPage) welcomeLandingPage.classList.add('hidden')
-    childrenView.classList.remove('hidden')
-    childDetailView.classList.add('hidden')
-    
-    // Render parent overview of modules
+  childrenView.classList.remove('hidden')
+  childDetailView.classList.add('hidden')
+  
+  if (children && children.length > 0) {
     renderParentModulesOverview()
   }
   
   // Hide dashboard button when on main view
   if (dashboardButton) {
     dashboardButton.style.display = 'none'
+  }
+}
+
+// Setup category colors
+function setupCategoryColors() {
+  // Default category colors if none are loaded from database
+  if (!categoryColors || Object.keys(categoryColors).length === 0) {
+    categoryColors = {
+      'emotions': '#4c6c96',
+      'social': '#14b8a6',
+      'coping': '#f59e0b',
+      'cognitive': '#8b5cf6',
+      'behavioral': '#ef4444',
+      'default': '#6b7280'
+    }
   }
 }
 
@@ -1926,22 +1950,32 @@ function renderParentModulesOverview() {
 }
 
 // Show child detail view
-function showChildDetailView() {
-  // Hide loading state
-  if (loadingState) {
-    loadingState.classList.add('hidden')
-  }
+function showChildDetailView(child) {
+  // Update header
+  headerSubtitle.textContent = `Welcome back, ${child.name}!`
   
+  // Show child detail view
   childrenView.classList.add('hidden')
   childDetailView.classList.remove('hidden')
+  
+  // Show dashboard tab by default
+  showTab('dashboard')
+  
+  // Update global variables for enhanced dashboard
+  window.selectedChild = child
+  window.childModules = childModules
+  
+  // Refresh enhanced dashboard if it exists
+  if (typeof window.refreshEnhancedDashboard === 'function') {
+    setTimeout(() => {
+      window.refreshEnhancedDashboard()
+    }, 100)
+  }
   
   // Show dashboard button when viewing child details
   if (dashboardButton) {
     dashboardButton.style.display = 'inline-block'
   }
-  
-  // Show dashboard tab by default
-  showTab('dashboard')
   
   // Update stats and render content
   updateDashboardStats()
@@ -2781,18 +2815,23 @@ async function updateDashboardStats() {
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
   
   // Update stats
-  document.getElementById('totalStars').textContent = selectedChild.stars || 0
-  document.getElementById('completedModules').textContent = completedCount
-  document.getElementById('totalModules').textContent = totalCount
+  const totalStarsEl = document.getElementById('totalStars')
+  const completedModulesEl = document.getElementById('completedModules')
+  const totalModulesEl = document.getElementById('totalModules')
+  if (totalStarsEl) totalStarsEl.textContent = selectedChild.stars || 0
+  if (completedModulesEl) completedModulesEl.textContent = completedCount
+  if (totalModulesEl) totalModulesEl.textContent = totalCount
   
   // Get rank from leaderboard
   try {
     const leaderboard = await getAllChildrenLeaderboard(100)
     const rank = leaderboard.findIndex(child => child.id === selectedChild.id) + 1
-    document.getElementById('childRank').textContent = rank > 0 ? `#${rank}` : '#-'
+    const childRankEl = document.getElementById('childRank')
+    if (childRankEl) childRankEl.textContent = rank > 0 ? `#${rank}` : '#-'
   } catch (error) {
     console.error('Error getting rank:', error)
-    document.getElementById('childRank').textContent = '#-'
+    const childRankEl = document.getElementById('childRank')
+    if (childRankEl) childRankEl.textContent = '#-'
   }
   
   // Update progress bar
@@ -3106,6 +3145,24 @@ if (adminButton) {
   adminButton.addEventListener('click', () => {
     window.location.href = '/admin.html'
   })
+}
+
+// Export global variables for enhanced dashboard
+window.modules = modules
+window.childModules = childModules
+window.selectedChild = selectedChild
+window.children = children
+
+// Function to get child rank from leaderboard
+window.getChildRank = function(childId) {
+  if (!children || children.length === 0) return null
+  
+  const sortedChildren = children
+    .filter(child => child.total_stars !== undefined)
+    .sort((a, b) => (b.total_stars || 0) - (a.total_stars || 0))
+  
+  const rank = sortedChildren.findIndex(child => child.id === childId) + 1
+  return rank > 0 ? rank : null
 }
 
 // Initialize app

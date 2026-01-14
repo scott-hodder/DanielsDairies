@@ -149,6 +149,118 @@
       cursor: pointer;
       margin: 0 8px;
     }
+    
+    /* Completion Modal Styles */
+    .module-completion-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .module-completion-content {
+      background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 100%);
+      border-radius: 24px;
+      padding: 48px;
+      text-align: center;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      animation: scaleIn 0.4s ease;
+    }
+    
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    .completion-emoji {
+      font-size: 80px;
+      margin-bottom: 16px;
+      animation: bounce 1s ease infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    .completion-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 36px;
+      color: #264653;
+      margin-bottom: 16px;
+    }
+    
+    .completion-message {
+      font-family: 'Nunito', sans-serif;
+      font-size: 18px;
+      color: #405878;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+    
+    .completion-confetti {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    
+    .completion-confetti-piece {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      animation: confettiFall 2s ease forwards;
+    }
+    
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(400px) translateX(var(--tx, 0)) rotate(720deg);
+        opacity: 0;
+      }
+    }
+    
+    .completion-btn {
+      background: linear-gradient(135deg, #f4a261, #e76f51);
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      border-radius: 999px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 15px rgba(244, 162, 97, 0.4);
+    }
+    
+    .completion-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(244, 162, 97, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -175,6 +287,7 @@
     window.childId = childId;
     window.moduleId = moduleId;
     window.parentUserId = parentUserId;
+    window.moduleCode = moduleCode;
     
     const _state = { 
       childId, 
@@ -201,11 +314,11 @@
       getCache() {
         try {
           return JSON.parse(localStorage.getItem(this.getCacheKey()) || '{}');
-        } catch { return {}; }
+        } catch (e) { return {}; }
       },
       
       saveCache(data) {
-        try { localStorage.setItem(this.getCacheKey(), JSON.stringify(data)); } catch {}
+        try { localStorage.setItem(this.getCacheKey(), JSON.stringify(data)); } catch (e) { /* ignore */ }
       },
       
       async track(data) {
@@ -253,7 +366,7 @@
             const cache = this.getCache();
             data.forEach(r => {
               let val = r.response_value;
-              try { val = JSON.parse(r.response_value); } catch {}
+              try { val = JSON.parse(r.response_value); } catch (e) { /* use raw value */ }
               cache[r.question_id] = {
                 questionId: r.question_id,
                 questionText: r.question_text,
@@ -406,31 +519,93 @@
       try {
         const s = localStorage.getItem('moduleChildName');
         if (s?.trim()) return s.trim();
-      } catch {}
+      } catch (e) { /* ignore */ }
       
       return opts?.fallback || 'Friend';
     };
     
-    // Mark module as completed in database
+    // =========================================
+    // MARK MODULE AS COMPLETED IN DATABASE
+    // =========================================
     window.completeModuleDB = async function(modCode) {
-      console.log('🔌 completeModuleDB called (DB version) - code:', modCode);
+      // Use provided code or fall back to moduleCode from URL params
+      const code = modCode || moduleCode;
+      console.log('🔌 completeModuleDB called (DB version) - code:', code);
+      
       if (!_state.childId) {
         console.warn('No childId - cannot mark complete');
         throw new Error('No child ID');
       }
+      if (!code) {
+        console.warn('No module code available');
+        throw new Error('No module code');
+      }
       
       try {
-        const { data: mod } = await supabase.from('modules').select('id').eq('code', modCode).single();
-        if (!mod) throw new Error('Module not found');
+        // Get the module ID from the code
+        const { data: mod, error: modError } = await supabase
+          .from('modules')
+          .select('id')
+          .eq('code', code)
+          .single();
         
-        await supabase.from('child_modules').upsert({
-          child_id: _state.childId,
-          module_id: mod.id,
-          is_completed: true,
-          completed_at: new Date().toISOString()
-        }, { onConflict: 'child_id,module_id' });
+        if (modError) {
+          console.error('Error finding module:', modError);
+          throw new Error(`Module not found for code: ${code}`);
+        }
+        if (!mod) {
+          throw new Error(`Module not found for code: ${code}`);
+        }
         
-        console.log('✅ Module marked complete in DB');
+        console.log('📝 Marking module as completed - childId:', _state.childId, 'moduleId:', mod.id);
+        
+        // First check if a record already exists
+        const { data: existingRecord, error: checkError } = await supabase
+          .from('child_modules')
+          .select('id')
+          .eq('child_id', _state.childId)
+          .eq('module_id', mod.id)
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error('Error checking existing record:', checkError);
+          throw checkError;
+        }
+        
+        if (existingRecord) {
+          // Update existing record
+          console.log('📝 Updating existing child_modules record:', existingRecord.id);
+          const { error: updateError } = await supabase
+            .from('child_modules')
+            .update({
+              is_completed: true,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', existingRecord.id);
+          
+          if (updateError) {
+            console.error('Error updating child_modules:', updateError);
+            throw updateError;
+          }
+        } else {
+          // Insert new record
+          console.log('📝 Inserting new child_modules record');
+          const { error: insertError } = await supabase
+            .from('child_modules')
+            .insert({
+              child_id: _state.childId,
+              module_id: mod.id,
+              is_completed: true,
+              completed_at: new Date().toISOString()
+            });
+          
+          if (insertError) {
+            console.error('Error inserting child_modules:', insertError);
+            throw insertError;
+          }
+        }
+        
+        console.log('✅ Module marked as completed successfully!');
         return true;
       } catch (e) {
         console.error('completeModuleDB error:', e);
@@ -438,10 +613,19 @@
       }
     };
     
-    // Module completion handling
+    // =========================================
+    // MODULE COMPLETION HANDLING
+    // =========================================
     let moduleCompletionHandled = false;
 
-    function handleModuleCompletion() {
+    // Global completeModule function for buttons in generated HTML
+    window.completeModule = async function(childIdParam, moduleIdParam) {
+      console.log('[module.html] window.completeModule called with:', childIdParam, moduleIdParam);
+      // Use the handleModuleCompletion which has all the logic
+      window.handleModuleCompletion();
+    };
+
+    window.handleModuleCompletion = function() {
       // Prevent multiple completions
       if (moduleCompletionHandled) {
         console.log('[ModuleHeader] Module completion already handled, skipping...');
@@ -453,96 +637,123 @@
 
       // Get module parameters from URL
       try {
-        const params = new URLSearchParams(window.location.search);
-        const childId = params.get('childId');
-        const moduleId = params.get('moduleId');
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlChildId = urlParams.get('childId');
+        const urlModuleCode = urlParams.get('code');
         
-        console.log(`[ModuleHeader] URL params - childId: ${childId}, moduleId: ${moduleId}`);
+        console.log(`[ModuleHeader] URL params - childId: ${urlChildId}, code: ${urlModuleCode}`);
         
-        if (childId && moduleId) {
+        if (urlChildId && urlModuleCode) {
           // Mark module as completed
-          completeModule(childId, moduleId);
+          completeModuleAndCelebrate();
         } else {
-          console.error('[ModuleHeader] Missing childId or moduleId in URL');
+          console.error('[ModuleHeader] Missing childId or module code in URL');
+          // Still show celebration even if we can't save to DB
+          window.showCompletionCelebration();
         }
       } catch (error) {
         console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+        // Show celebration anyway
+        window.showCompletionCelebration();
       }
-    }
+    };
 
-    async function completeModule(childId, moduleId) {
+    async function completeModuleAndCelebrate() {
       try {
-        // Import the database function (dynamically to avoid circular dependencies)
-        const { updateChildModuleStatus } = await import('./src/database.js');
-        
-        // Update module status to completed
-        await updateChildModuleStatus(childId, moduleId, 'completed');
-        
-        // Show completion celebration
-        showCompletionCelebration();
-        
-        console.log('[ModuleHeader] Module completed successfully');
+        console.log('[ModuleHeader] Starting module completion...');
+        // Call the database function
+        await window.completeModuleDB();
+        console.log('[ModuleHeader] Module completed in DB, showing celebration...');
+        window.showCompletionCelebration();
       } catch (error) {
         console.error('[ModuleHeader] Error completing module:', error);
+        // Still show celebration even if DB save fails
+        window.showCompletionCelebration();
       }
     }
 
-    function showCompletionCelebration() {
-      // Create celebration modal
-      const modal = document.createElement('div');
-      modal.className = 'module-completion-modal';
-      modal.innerHTML = `
-        <div class="module-completion-content">
-          <div class="completion-emoji">🎉</div>
-          <h2 class="completion-title">Module Complete!</h2>
-          <p class="completion-message">Congratulations! You've finished this module and learned valuable emotional skills.</p>
-          <div class="completion-confetti" id="completionConfetti"></div>
-          <button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button>
-        </div>
-      `;
+    window.showCompletionCelebration = function() {
+      console.log('[ModuleHeader] showCompletionCelebration called');
       
-      document.body.appendChild(modal);
+      // Check if modal already exists
+      if (document.querySelector('.module-completion-modal')) {
+        console.log('[ModuleHeader] Celebration modal already exists, skipping...');
+        return;
+      }
       
-      // Generate confetti
-      generateCompletionConfetti();
-      
-      // Auto-close after 5 seconds
-      setTimeout(() => {
-        closeCompletionModal();
-      }, 5000);
-    }
+      try {
+        // Create celebration modal
+        const celebrationModal = document.createElement('div');
+        celebrationModal.className = 'module-completion-modal';
+        celebrationModal.innerHTML = `
+          <div class="module-completion-content">
+            <div class="completion-emoji">🎉</div>
+            <h2 class="completion-title">Module Complete!</h2>
+            <p class="completion-message">Congratulations! You've finished this module and learned valuable emotional skills.</p>
+            <div class="completion-confetti" id="completionConfetti"></div>
+            <button class="completion-btn" onclick="window.closeCompletionModal()">Continue Journey</button>
+          </div>
+        `;
+        
+        document.body.appendChild(celebrationModal);
+        console.log('[ModuleHeader] Celebration modal appended to body');
+        
+        // Generate confetti
+        generateCompletionConfetti();
+        
+        // Auto-close after 8 seconds (giving user time to enjoy)
+        setTimeout(() => {
+          window.closeCompletionModal();
+        }, 8000);
+      } catch (e) {
+        console.error('[ModuleHeader] Error showing completion celebration:', e);
+      }
+    };
 
     function generateCompletionConfetti() {
       const container = document.getElementById('completionConfetti');
-      if (!container) return;
+      if (!container) {
+        console.warn('[ModuleHeader] Confetti container not found');
+        return;
+      }
       
       container.innerHTML = '';
-      const pieceCount = 40;
+      const pieceCount = 50;
       
       for (let i = 0; i < pieceCount; i++) {
         const piece = document.createElement('div');
         piece.className = 'completion-confetti-piece';
         
         const randomX = Math.random() * 300 - 150;
-        const randomDelay = Math.random() * 0.3;
-        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+        const randomDelay = Math.random() * 0.5;
+        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc', '#ffd700', '#ff69b4'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
         
         piece.style.left = Math.random() * 100 + '%';
-        piece.style.top = Math.random() * 50 + '%';
+        piece.style.top = Math.random() * 30 + '%';
         piece.style.setProperty('--tx', randomX + 'px');
         piece.style.animationDelay = randomDelay + 's';
         piece.style.backgroundColor = randomColor;
         
         container.appendChild(piece);
       }
+      console.log('[ModuleHeader] Generated', pieceCount, 'confetti pieces');
     }
 
     // Make close function globally accessible
     window.closeCompletionModal = function() {
       const modal = document.querySelector('.module-completion-modal');
       if (modal) {
-        modal.remove();
+        modal.style.animation = 'fadeOut 0.3s ease forwards';
+        setTimeout(() => {
+          modal.remove();
+          // Redirect to dashboard after closing
+          if (_state.childId) {
+            window.location.href = '/dashboard.html?childId=' + _state.childId;
+          } else {
+            window.location.href = '/dashboard.html';
+          }
+        }, 300);
       }
     };
 
@@ -591,10 +802,14 @@
           
           if (page === total && total > 1) {
             console.log(`[ModuleHeader] Last page detected! Triggering completion...`);
-            handleModuleCompletion();
+            window.handleModuleCompletion();
           }
         },
-        updateStars(s) { stars = s; const el = document.getElementById('mh-stars'); if (el) el.textContent = s; }
+        updateStars(s) { 
+          stars = s; 
+          const el = document.getElementById('mh-stars'); 
+          if (el) el.textContent = s; 
+        }
       };
     };
     
@@ -695,73 +910,103 @@
       });
     };
     
-    console.log('✅ Module DB functions registered on window');
-    
     // =========================================
     // STRIP STUB FUNCTIONS FROM GENERATED CODE
     // =========================================
     function stripStubFunctions(code) {
-      // Remove the stub function definitions that the generated module includes
-      // These use localStorage and would override our database functions
-      
-      const stubPatterns = [
-        // Remove async function initializeModule() { ... }
-        /async\s+function\s+initializeModule\s*\([^)]*\)\s*\{[^}]*\}/g,
-        
-        // Remove async function loadStarsFromDB() { ... }
-        /async\s+function\s+loadStarsFromDB\s*\([^)]*\)\s*\{[^}]*\}/g,
-        
-        // Remove async function saveStarsToDB(stars) { ... }
-        /async\s+function\s+saveStarsToDB\s*\([^)]*\)\s*\{[^}]*\}/g,
-        
-        // Remove async function awardSingleStar(currentStars) { ... }
-        /async\s+function\s+awardSingleStar\s*\([^)]*\)\s*\{[^}]*\}/g,
-        
-        // Remove async function resolveChildDisplayName() { ... }
-        /async\s+function\s+resolveChildDisplayName\s*\([^)]*\)\s*\{[^}]*\}/g,
-        
-        // Remove async function getChildId() { ... }
-        /async\s+function\s+getChildId\s*\([^)]*\)\s*\{[^}]*\}/g,
-        
-        // Remove async function completeModuleDB() { ... }
-        /async\s+function\s+completeModuleDB\s*\([^)]*\)\s*\{[^}]*\}/g,
+      // List of function names to strip (these are defined in module.html)
+      const functionsToStrip = [
+        'initializeModule',
+        'loadStarsFromDB',
+        'saveStarsToDB',
+        'awardSingleStar',
+        'resolveChildDisplayName',
+        'getChildId',
+        'completeModuleDB',
+        'showCompletionCelebration',
+        'generateCompletionConfetti',
+        'handleModuleCompletion',
+        'completeModule'
       ];
       
-      let strippedCode = code;
-      stubPatterns.forEach(pattern => {
-        strippedCode = strippedCode.replace(pattern, '// [stub removed - using DB version]');
-      });
+      let result = code;
       
-      // Also handle the multi-line versions with more complex bodies
-      // Match function declarations that span multiple lines
-      const multiLinePatterns = [
-        // initializeModule with return true
-        /async\s+function\s+initializeModule\s*\(\)\s*\{[\s\S]*?return\s+true;[\s\S]*?\n\s*\}/g,
+      // Helper function to find matching closing brace
+      function findMatchingBrace(str, startIndex) {
+        let depth = 0;
+        let inString = false;
+        let stringChar = '';
+        let inTemplate = false;
         
-        // loadStarsFromDB with localStorage
-        /async\s+function\s+loadStarsFromDB\s*\(\)\s*\{[\s\S]*?localStorage[\s\S]*?\n\s*\}/g,
-        
-        // saveStarsToDB with localStorage  
-        /async\s+function\s+saveStarsToDB\s*\([\w]*\)\s*\{[\s\S]*?localStorage[\s\S]*?\n\s*\}/g,
-        
-        // awardSingleStar with saveStarsToDB call
-        /async\s+function\s+awardSingleStar\s*\([\w]*\)\s*\{[\s\S]*?saveStarsToDB[\s\S]*?\n\s*\}/g,
-        
-        // resolveChildDisplayName with URLSearchParams
-        /async\s+function\s+resolveChildDisplayName\s*\(\)\s*\{[\s\S]*?URLSearchParams[\s\S]*?\n\s*\}/g,
-        
-        // getChildId with URLSearchParams
-        /async\s+function\s+getChildId\s*\(\)\s*\{[\s\S]*?URLSearchParams[\s\S]*?\n\s*\}/g,
-        
-        // completeModuleDB with localStorage
-        /async\s+function\s+completeModuleDB\s*\(\)\s*\{[\s\S]*?localStorage[\s\S]*?\n\s*\}/g,
-      ];
+        for (let i = startIndex; i < str.length; i++) {
+          const char = str[i];
+          const prevChar = i > 0 ? str[i - 1] : '';
+          
+          // Handle string literals
+          if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
+            if (!inString) {
+              inString = true;
+              stringChar = char;
+              if (char === '`') inTemplate = true;
+            } else if (char === stringChar) {
+              inString = false;
+              inTemplate = false;
+            }
+            continue;
+          }
+          
+          if (inString) continue;
+          
+          if (char === '{') {
+            depth++;
+          } else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+              return i;
+            }
+          }
+        }
+        return -1;
+      }
       
-      multiLinePatterns.forEach(pattern => {
-        strippedCode = strippedCode.replace(pattern, '// [stub removed - using DB version]');
-      });
+      // Strip each function
+      for (const funcName of functionsToStrip) {
+        // Match both "async function name" and "function name" patterns
+        const patterns = [
+          new RegExp(`(async\\s+)?function\\s+${funcName}\\s*\\([^)]*\\)\\s*\\{`),
+        ];
+        
+        for (const pattern of patterns) {
+          let match;
+          while ((match = pattern.exec(result)) !== null) {
+            const startIndex = match.index;
+            const braceStart = result.indexOf('{', startIndex);
+            if (braceStart === -1) break;
+            
+            const braceEnd = findMatchingBrace(result, braceStart);
+            if (braceEnd === -1) break;
+            
+            // Replace the entire function with a comment
+            const before = result.substring(0, startIndex);
+            const after = result.substring(braceEnd + 1);
+            result = before + `/* [${funcName} stub removed - using module.html version] */` + after;
+          }
+        }
+      }
       
-      return strippedCode;
+      // Also remove window.closeCompletionModal assignments
+      result = result.replace(
+        /window\.closeCompletionModal\s*=\s*function\s*\([^)]*\)\s*\{[^{}]*\};?/g,
+        '/* [closeCompletionModal removed] */'
+      );
+      
+      // Remove let moduleCompletionHandled declarations
+      result = result.replace(
+        /let\s+moduleCompletionHandled\s*=\s*(true|false)\s*;?/g,
+        '/* [moduleCompletionHandled removed] */'
+      );
+      
+      return result;
     }
     
     // =========================================
@@ -834,27 +1079,49 @@
           code = code.replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]*['"];?\s*$/gm, '');
           code = code.replace(/^\s*import\s+['"][^'"]*['"];?\s*$/gm, '');
           
-          // *** KEY FIX: Strip the stub functions that use localStorage ***
+          // Strip the buggy stub functions from generated module
           code = stripStubFunctions(code);
           console.log('✅ Stripped stub functions from generated module');
           
           // Inject tracking into renderPage
           code = code.replace(
             /function\s+renderPage\s*\(\s*\)\s*\{/,
-            'function renderPage() { setTimeout(() => { if (typeof currentPage !== "undefined") { enhancePageTracking(currentPage); restorePageResponses(currentPage); } }, 50);'
+            'function renderPage() { setTimeout(function() { if (typeof currentPage !== "undefined") { window.enhancePageTracking(currentPage); window.restorePageResponses(currentPage); } }, 50);'
           );
           
-          // Build the wrapper code safely without template literal interpolation
-          const wrapperStart = '(async function(){ const _ael = document.addEventListener.bind(document); document.addEventListener = function(t,l,o){ t==="DOMContentLoaded" ? setTimeout(l,0) : _ael(t,l,o); }; try {';
-          const wrapperEnd = '} catch(e) { console.error("Script error:", e); } document.addEventListener = _ael; })();';
-          const fullCode = wrapperStart + '\n' + code + '\n' + wrapperEnd;
+          // Wrap the code safely
+          const wrappedCode = `
+(async function() {
+  // Override DOMContentLoaded to run immediately since DOM is already loaded
+  var _originalAddEventListener = document.addEventListener.bind(document);
+  document.addEventListener = function(type, listener, options) {
+    if (type === 'DOMContentLoaded') {
+      setTimeout(listener, 0);
+    } else {
+      _originalAddEventListener(type, listener, options);
+    }
+  };
+  
+  try {
+    ${code}
+  } catch(e) {
+    console.error('Module script error:', e);
+  }
+  
+  // Restore original addEventListener
+  document.addEventListener = _originalAddEventListener;
+})();
+`;
           
           // Use Blob URL to avoid any escaping issues
-          const blob = new Blob([fullCode], { type: 'application/javascript' });
+          const blob = new Blob([wrappedCode], { type: 'application/javascript' });
           const scriptUrl = URL.createObjectURL(blob);
           const el = document.createElement('script');
           el.src = scriptUrl;
-          el.onload = () => URL.revokeObjectURL(scriptUrl);
+          el.onload = () => {
+            URL.revokeObjectURL(scriptUrl);
+            console.log('✅ Module scripts executed successfully');
+          };
           el.onerror = (e) => console.error('Script load error:', e);
           document.body.appendChild(el);
         }
@@ -866,6 +1133,54 @@
       }
     }
     
+    // Add fadeOut animation for modal
+    const fadeOutStyle = document.createElement('style');
+    fadeOutStyle.textContent = `
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+    `;
+    document.head.appendChild(fadeOutStyle);
+    
+    // =========================================
+    // PAGE CHANGE OBSERVER
+    // Watch for page changes to trigger completion on last page
+    // =========================================
+    function setupPageObserver() {
+      // Watch for changes to page display elements
+      const observer = new MutationObserver((mutations) => {
+        // Look for page display updates
+        const pageDisplays = document.querySelectorAll('.module-header__page, [class*="page"]');
+        pageDisplays.forEach(el => {
+          const text = el.textContent || '';
+          // Match patterns like "Page 21 of 21" or "21/21"
+          const match = text.match(/(?:Page\s+)?(\d+)\s*(?:of|\/)\s*(\d+)/i);
+          if (match) {
+            const current = parseInt(match[1], 10);
+            const total = parseInt(match[2], 10);
+            if (current === total && total > 1 && !moduleCompletionHandled) {
+              console.log(`[PageObserver] Last page detected: ${current}/${total}`);
+              window.handleModuleCompletion();
+            }
+          }
+        });
+      });
+      
+      // Observe the entire body for changes
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      
+      console.log('✅ Page observer set up');
+    }
+    
+    // Set up observer after a short delay to let the module load
+    setTimeout(setupPageObserver, 1000);
+    
+    console.log('✅ Module functions ready');
     loadModule();
   </script>
 </body>
