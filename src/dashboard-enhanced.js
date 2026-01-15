@@ -318,9 +318,11 @@ class AdventureMapV4 {
       var self = this;
       this.allModules = sorted.map(function(m, index) {
         var childModule = childMods.find(function(cm) { return cm.module_id === m.id; }) || null;
-        var status = (childModule && childModule.is_completed) ? 'completed' : 'available';
+        var completed = !!(childModule && childModule.is_completed);
+        var status = completed ? 'completed' : 'available';
         var seriesName = (m.series && m.series.label) || m.series_name || m.series || '';
         var category = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || 'general').toLowerCase();
+        var pathwayOrder = (m.pathway_order !== undefined && m.pathway_order !== null) ? Number(m.pathway_order) : null;
 
         return {
           id: m.id,
@@ -329,6 +331,8 @@ class AdventureMapV4 {
           series: seriesName,
           category: category,
           status: status,
+          completed: completed,
+          pathwayOrder: pathwayOrder,
           emoji: self.getModuleEmoji(m, category),
           module: m,
           childModule: childModule
@@ -351,6 +355,38 @@ class AdventureMapV4 {
       this.modules = this.allModules.slice();
     } else {
       this.modules = this.allModules.filter(function(m) { return m.category === self.currentCategory; });
+    }
+
+    // Pathway ordering: if modules have pathway_order, sort ascending (1,2,3...).
+    // Fallback keeps original order for items without pathway_order.
+    this.modules.sort(function(a, b) {
+      var ao = (a.pathwayOrder !== null && a.pathwayOrder !== undefined) ? a.pathwayOrder : Number.POSITIVE_INFINITY;
+      var bo = (b.pathwayOrder !== null && b.pathwayOrder !== undefined) ? b.pathwayOrder : Number.POSITIVE_INFINITY;
+      if (ao !== bo) return ao - bo;
+      return 0;
+    });
+
+    // Sequential unlocking: only the first incomplete module is playable; later ones are locked.
+    // Completed modules stay completed.
+    if (this.currentCategory !== 'all') {
+      var firstIncompleteIndex = -1;
+      for (var i = 0; i < this.modules.length; i++) {
+        if (!this.modules[i].completed) {
+          firstIncompleteIndex = i;
+          break;
+        }
+      }
+
+      for (var j = 0; j < this.modules.length; j++) {
+        var mod = this.modules[j];
+        if (mod.completed) {
+          mod.status = 'completed';
+        } else if (firstIncompleteIndex === -1 || j === firstIncompleteIndex) {
+          mod.status = 'available';
+        } else {
+          mod.status = 'locked';
+        }
+      }
     }
   }
 
@@ -625,7 +661,11 @@ class AdventureMapV4 {
 
       var emoji = document.createElement('span');
       emoji.className = 'node-emoji';
-      emoji.textContent = module.emoji;
+      if (self.currentCategory === 'anger') {
+        emoji.textContent = (module.status === 'completed') ? '😊' : '😠';
+      } else {
+        emoji.textContent = module.emoji;
+      }
       node.appendChild(emoji);
 
       var num = document.createElement('div');
@@ -702,10 +742,6 @@ class AdventureMapV4 {
         statusClass = 'locked-status';
       }
 
-      var tooltipCatTheme = CATEGORY_THEMES[module.category] || CATEGORY_THEMES.general;
-      tooltip.innerHTML = '<div class="tooltip-category">' + tooltipCatTheme.emoji + ' ' + tooltipCatTheme.name + '</div><div class="tooltip-title">' + module.name + '</div><div class="tooltip-status ' + statusClass + '">' + statusText + '</div>';
-      node.appendChild(tooltip);
-
       node.addEventListener('click', function(e) {
         e.stopPropagation();
         if (module.status !== 'locked') {
@@ -713,6 +749,14 @@ class AdventureMapV4 {
         }
       });
 
+      node.addEventListener('touchend', function(e) {
+        e.stopPropagation();
+        if (module.status !== 'locked') {
+          self.onNodeClick(module);
+        }
+      });
+
+      node.style.pointerEvents = 'auto';
       container.appendChild(node);
     });
   }

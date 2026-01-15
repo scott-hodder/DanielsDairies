@@ -57,7 +57,7 @@ export function initModuleHeader(options = {}) {
   const printButton = document.createElement('button');
   printButton.className = 'module-header__btn module-header__print';
   printButton.type = 'button';
-  printButton.textContent = '🖨 Print';
+  printButton.textContent = '🖨️';
 
   let parentModeButton = null;
   if (showParentToggle) {
@@ -69,7 +69,7 @@ export function initModuleHeader(options = {}) {
   const homeButton = document.createElement('button');
   homeButton.className = 'module-header__btn module-header__home';
   homeButton.type = 'button';
-  homeButton.innerHTML = '<span class="btn-icon">🏠</span><span class="btn-text"> Home</span>';
+  homeButton.textContent = '🏠';
   homeButton.setAttribute('aria-label', 'Go home');
 
   actionsSection.append(starButton);

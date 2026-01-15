@@ -251,13 +251,13 @@ window.initModuleHeader = function(config) {
         <div class="module-header__inner">
           <div class="module-header__nav">
             <button class="module-header__btn" id="mh-prev" ${!canPrev ? 'disabled' : ''}>
-              ← Back
+              ←
             </button>
             <span class="module-header__page">
-              Page ${currentPage} of ${totalPages}
+              ${currentPage} of ${totalPages}
             </span>
             <button class="module-header__btn" id="mh-next" ${!canNext ? 'disabled' : ''}>
-              Next →
+              →
             </button>
           </div>
           <div class="module-header__actions">
@@ -266,10 +266,10 @@ window.initModuleHeader = function(config) {
               <span id="mh-star-count">${stars}</span>
             </button>
             <button class="module-header__btn module-header__home" id="mh-home">
-              🏠 Home
+              🏠
             </button>
             <button class="module-header__btn module-header__print" id="mh-print">
-              🖨️ Print
+              🖨️
             </button>
           </div>
         </div>

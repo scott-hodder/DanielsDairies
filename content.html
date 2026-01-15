@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Me, You, and Social Glue</title>
+  <title>Ask Early, Stay Strong</title>
   <!-- DEBUG: 
   Series Info Debug:
   - characterName: Daniel the Dog
@@ -11,6 +11,8 @@
   - characterType: Dog
   - series: Daniel
    -->
+  <!-- CATEGORY_COLOR: #8B0000 -->
+  <!-- PALETTE: primary=#c32222 secondary=#2eb8b8 accent=#a86624 -->
   
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,15 +29,16 @@
   <link rel="stylesheet" href="./modules/shared/module-base.css">
   
   <style>
-    /* Brand Colors */
+    /* Brand Colors - Dynamic based on category */
     :root {
-      --primary: #F4A261;
-      --secondary: #2A9D8F;
-      --accent: #E76F51;
+      --primary: #c32222;
+      --secondary: #2eb8b8;
+      --accent: #a86624;
       --dark: #264653;
-      --cream: #FFF8F0;
+      --cream: #f9f6f6;
       --light-green: #A8E6CF;
-      --soft-yellow: #FFE8A3;
+      --soft-yellow: #f2f0d9;
+      --success: #A8E6CF;
     }
     
     /* Typography */
@@ -80,16 +83,16 @@
     }
     
     /* Quiz Styles */
-    .quiz-answer.selected.correct { background-color: var(--light-green) !important; border-color: var(--secondary) !important; }
+    .quiz-answer.selected.correct { background-color: var(--success) !important; border-color: var(--secondary) !important; }
     .quiz-answer.selected.incorrect { background-color: #fecaca !important; border-color: var(--accent) !important; }
     
     /* Scenario Styles */
-    .scenario-option.selected.good { background-color: var(--light-green) !important; }
+    .scenario-option.selected.good { background-color: var(--success) !important; }
     .scenario-option.selected.not-good { background-color: #fef3c7 !important; }
     
     /* Interactive Option Styles */
     .interactive-option { background-color: white; }
-    .interactive-option.option-selected { background-color: var(--light-green) !important; }
+    .interactive-option.option-selected { background-color: var(--success) !important; }
     .interactive-option.option-incorrect { background-color: #fecaca !important; }
     
     /* Print Styles */
@@ -181,7 +184,9 @@
     async function completeModule(childId, moduleId) {
       try {
         // Use the completeModuleDB function for generated modules
-        await completeModuleDB();
+        if (typeof window.completeModuleDB === 'function') {
+          await window.completeModuleDB();
+        }
         
         // Show completion celebration
         showCompletionCelebration();
@@ -193,16 +198,28 @@
     }
 
     function showCompletionCelebration() {
-      
-      document.body.appendChild(modal);
-      
-      // Generate confetti
-      generateCompletionConfetti();
-      
-      // Auto-close after 5 seconds
-      setTimeout(() => {
-        closeCompletionModal();
-      }, 5000);
+      console.log('[showCompletionCelebration] Starting...');
+      try {
+        // Create celebration modal
+        const celebrationModal = document.createElement('div');
+        celebrationModal.className = 'module-completion-modal';
+        celebrationModal.innerHTML = '<div class="module-completion-content"><div class="completion-emoji">🎉</div><h2 class="completion-title">Module Complete!</h2><p class="completion-message">Congratulations! You have finished this module and learned valuable emotional skills.</p><div class="completion-confetti" id="completionConfetti"></div><button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button></div>';
+        
+        document.body.appendChild(celebrationModal);
+        console.log('[showCompletionCelebration] Modal appended');
+        
+        // Generate confetti
+        if (typeof generateCompletionConfetti === 'function') {
+          generateCompletionConfetti();
+        }
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          closeCompletionModal();
+        }, 5000);
+      } catch (e) {
+        console.error('Error showing completion celebration:', e);
+      }
     }
 
     function generateCompletionConfetti() {
@@ -263,16 +280,15 @@
 
       const prevBtn = document.createElement('button');
       prevBtn.className = 'module-header__btn module-header__btn--nav';
-      prevBtn.textContent = labels.prev ?? '← Back';
+      prevBtn.textContent = labels.prev ?? '←';
       prevBtn.type = 'button';
 
       const pageDisplay = document.createElement('div');
       pageDisplay.className = 'module-header__page';
 
-      // ... (rest of the code remains the same)
       const nextBtn = document.createElement('button');
       nextBtn.className = 'module-header__btn module-header__btn--nav';
-      nextBtn.textContent = labels.next ?? 'Next →';
+      nextBtn.textContent = labels.next ?? '→';
       nextBtn.type = 'button';
 
       navSection.append(prevBtn, pageDisplay, nextBtn);
@@ -454,10 +470,10 @@
       };
     }
     
-    const WORKBOOK_ID = "MOD_MKCCTZ4S";
-    const MODULE_CODE = "MOD_MKCCTZ4S";
-    const MAX_STARS = 13;
-    const TOTAL_PAGES = 22;
+    const WORKBOOK_ID = "MOD_MKF8E1QN";
+    const MODULE_CODE = "MOD_MKF8E1QN";
+    const MAX_STARS = 14;
+    const TOTAL_PAGES = 25;
     
     let currentPage = 0;
     let totalStars = 0;
@@ -501,10 +517,10 @@
     <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream));" data-page="cover">
       <div class="text-center max-w-4xl">
         <div class="mb-6 animate-bounce-slow text-8xl">🐕</div>
-        <h1 class="text-5xl md:text-6xl mb-4 font-title" style="color: var(--dark);">Me, You, and Social Glue</h1>
-        <h2 class="text-2xl md:text-3xl mb-8 font-title" style="color: var(--primary);">Understanding friendship and being yourself with others</h2>
+        <h1 class="text-5xl md:text-6xl mb-4 font-title" style="color: var(--dark);">Ask Early, Stay Strong</h1>
+        <h2 class="text-2xl md:text-3xl mb-8 font-title" style="color: var(--primary);">Learning when to ask for help before anger grows</h2>
         <div class="text-xl mb-8 font-body" style="color: var(--secondary);">
-          <p class="mb-2">An Interactive Adventure for Ages 7-12</p>
+          <p class="mb-2">An Interactive Adventure for Ages 5-12</p>
           <p class="italic">Learn with Daniel the Dog! 🐕</p>
         </div>
         <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
@@ -526,11 +542,11 @@
       <div class="max-w-4xl mx-auto">
         <div class="flex items-center gap-4 mb-6">
           <span class="text-6xl">🐕</span>
-          <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">Welcome to Me, You, and Social Glue with Daniel the Dog! 🐕</h1>
+          <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">Welcome to Daniel&#039;s Help-Seeking Adventure! 🐕</h1>
         </div>
         
         <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white; border-left: 6px solid var(--primary);">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Woof! Hi there, friend! I&#039;m Daniel the Dog, and I&#039;m so excited you&#039;re here with me today. I love making new friends, but sometimes the people stuff can feel pretty confusing - and that&#039;s totally okay!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Together, we&#039;re going to explore the amazing world of friendships and learn about something I call &#039;social glue&#039; - the special stuff that helps us connect with others. We&#039;ll discover how to understand boundaries, practice saying no when we need to, and celebrate what makes you wonderfully YOU!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Remember, your brain might work differently than others, and that&#039;s not rude or wrong - it&#039;s just your special way of seeing the world. I&#039;m here to help you feel confident and safe being exactly who you are, because you&#039;re pretty amazing just as you are!</p>
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hi there, amazing friend! I&#039;m Daniel the Dog, and I&#039;m so excited to go on this special journey with you. I love wagging my tail, playing fetch, and most importantly, learning how to ask for help when I need it!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Together, we&#039;re going to discover something super important - how asking for help early can keep us feeling strong and happy. We&#039;ll learn to notice the special signals our bodies send us, and practice brave ways to speak up before our feelings get too big.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Remember, having big feelings is completely normal - every kid and every dog has them! The coolest part is learning that asking for help early isn&#039;t giving up, it&#039;s actually being really smart and strong. Let&#039;s start this pawsome adventure together!</p>
         </div>
         
         <div class="rounded-xl p-6 text-center flex items-center justify-center gap-3" style="background-color: var(--soft-yellow);">
@@ -549,9 +565,9 @@
       <div class="text-center">
         <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
         <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 1</h1>
-        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">What Is Social Glue?</h2>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Daniel&#039;s Early Warning System</h2>
         <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
-          Understanding how friendships stick together
+          Learning to ask before anger grows big
         </p>
       </div>
     </div>`;
@@ -561,14 +577,14 @@
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Personal Space Bubbles 🫧</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🚨 Daniel&#039;s Warning Signs</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Everyone has an invisible bubble around them called personal space. Daniel the Dog knows that respecting others&#039; bubbles helps friendships grow strong!</p>
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Daniel the Dog knows that our bodies give us warning signs before we get really angry. Just like a smoke detector beeps before there&#039;s a big fire!</p>
           
           
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Which action shows good respect for someone&#039;s personal space?</p>
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Which of these is a warning sign that anger might be building up?</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -576,7 +592,7 @@
                       data-correct="false"
                       data-index="0"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                Hugging without asking
+                Feeling sleepy
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -584,7 +600,7 @@
                       data-correct="true"
                       data-index="1"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                Standing an arm&#039;s length away
+                Clenched fists and tight jaw
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -592,7 +608,7 @@
                       data-correct="false"
                       data-index="2"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                Taking someone&#039;s belongings
+                Being hungry
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -600,7 +616,7 @@
                       data-correct="false"
                       data-index="3"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                Whispering in their ear
+                Laughing with friends
               </button>
             
           </div>
@@ -608,13 +624,13 @@
         </div>
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Great choice! Standing about an arm&#039;s length away gives people comfortable space to breathe and feel safe.</p>
+            <p class="font-body" style="color: var(--dark);">Great choice! When we notice these early signs, we can ask for help before anger gets too big.</p>
           </div>
         </div>
         
         <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
           <span class="text-3xl">🐕</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">Woof! Daniel says you&#039;re becoming a personal space expert! Remember, when in doubt, just ask if it&#039;s okay to come closer.</p>
+          <p class="font-body font-semibold" style="color: var(--dark);">Woof! You&#039;re learning to be a feelings detective just like me! 🐕</p>
         </div>
         
         <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
@@ -636,21 +652,21 @@
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">What Is Social Glue? 🤝</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🐕 Daniel&#039;s Check-In: It&#039;s Okay to Ask Early</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hey there! Daniel the Dog here, and I want to tell you about something super cool called &#039;social glue.&#039; Social glue is like invisible magic that helps people connect and feel good together. It&#039;s made up of things like kindness, respect, and understanding how others feel.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Think about your favorite friends - what makes you feel happy and safe with them? Maybe they listen when you talk, share their toys, or give you space when you need it. That&#039;s social glue working! Just like how different dogs have different ways of playing, people have different social styles too.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Sometimes your brain might work differently than others, and that&#039;s totally okay! You might need more time to understand social situations, or you might show friendship in your own special way. The important thing is learning how to build that social glue in a way that feels right for you and others.</p>
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hi there! It&#039;s me, Daniel the Dog, and I want to tell you something super important. Asking for help early isn&#039;t failing - it&#039;s actually being really smart and strong! Just like how I ask my owner for water before I get too thirsty, you can ask for help before things get too hard.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Sometimes kids think they should handle everything by themselves, but that&#039;s not true at all. Even grown-ups ask for help all the time! When you notice you&#039;re starting to feel upset, frustrated, or overwhelmed, that&#039;s the perfect time to reach out to someone you trust.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Think of asking early like putting on a raincoat before it starts pouring. It&#039;s much easier to stay dry when you prepare ahead of time! When you ask for help early, you&#039;re protecting yourself and making sure small problems don&#039;t turn into big explosions of anger.</p>
         </div>
         
         
     <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
-      <p class="font-body" style="color: var(--dark);">Social glue is built through kindness, respect, and understanding - and everyone&#039;s social style is different!</p>
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Daniel&#039;s Truth</h3>
+      <p class="font-body" style="color: var(--dark);">Asking early is not failing - it&#039;s being brave and taking care of yourself!</p>
     </div>
         
     <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
       <span class="text-3xl">🐕</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Daniel says: &#039;Just like I wag my tail to show I&#039;m happy, you have your own special ways to show friendship!&#039;</p>
+      <p class="font-body font-semibold" style="color: var(--dark);">🐕 Woof! I always bark softly first before I bark loudly. Try asking quietly before you need to ask urgently!</p>
     </div>
       </div>
     </div>`;
@@ -658,631 +674,12 @@
 
     function generatePage5() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="reflection">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Friendship Boundaries 🤝</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Think about a time when someone did something that made you feel uncomfortable or when you had to say &#039;no&#039; to a friend. How did you handle it, and what did you learn about keeping yourself safe while still being a good friend?</p>
-          
-          <textarea 
-            class="reflection-input w-full rounded-xl p-4 border-3 font-body text-lg mb-6" 
-            style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 150px;"
-            placeholder="I remember when my friend wanted me to... I felt... I learned that good friends respect when I say..."
-            onchange="saveFormData('reflection_1', this.value)"
-          >${formData['reflection_1'] || ''}</textarea>
-          
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input 
-              type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
-              data-activity="reflection_1"
-              disabled
-              onchange="markActivityComplete('reflection_1')"
-              ${completedActivities['reflection_1'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage6() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">The Magic Word: NO! ✋</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Sometimes we need to say &#039;no&#039; to protect ourselves or our feelings. Daniel the Dog learned that saying &#039;no&#039; kindly but firmly is perfectly okay!</p>
-          
-          
-        <div class="interactive-group">
-          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
-            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"It&#039;s mean to say &#039;no&#039; when someone asks you to do something that makes you uncomfortable."</p>
-          </div>
-          <div class="flex gap-4 justify-center">
-            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
-                    style="border-color: var(--secondary); color: var(--dark);"
-                    data-correct="opinion"
-                    data-index="0"
-                    onclick="handleInteractiveChoice(this, 2, false, 0)">
-              I Agree
-            </button>
-            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
-                    style="border-color: var(--accent); color: var(--dark);"
-                    data-correct="opinion"
-                    data-index="1"
-                    onclick="handleInteractiveChoice(this, 2, false, 0)">
-              I Disagree
-            </button>
-          </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
-        </div>
-          
-          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Actually, saying &#039;no&#039; to protect yourself is brave and healthy! You have the right to feel safe and comfortable.</p>
-          </div>
-        </div>
-        
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
-          <span class="text-3xl">🐕</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">Daniel barks with pride! You understand that &#039;no&#039; is a complete sentence and helps keep you safe. Practice saying it with confidence!</p>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="interactive_2"
-            onchange="markActivityComplete('interactive_2')"
-            ${completedActivities['interactive_2'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage7() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="matching-activity">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Boundary Buddy Match 🤝</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Match each situation with the right boundary response. Think about what feels safe and respectful!</p>
-          
-          
-    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <p class="font-body mb-3" style="color: var(--dark);">A friend wants to hug you but you don&#039;t feel like it</p>
-      <div class="flex flex-wrap gap-2">
-        <button 
-          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
-          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
-          data-correct="It's okay to say 'No thank you'"
-          data-pair="0"
-          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
-        >
-          🚫 It&#039;s okay to say &#039;No thank you&#039;
-        </button>
-      </div>
-    </div>
-    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <p class="font-body mb-3" style="color: var(--dark);">Someone asks to borrow your special toy</p>
-      <div class="flex flex-wrap gap-2">
-        <button 
-          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
-          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
-          data-correct="You can say 'This is special to me'"
-          data-pair="1"
-          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
-        >
-          🧸 You can say &#039;This is special to me&#039;
-        </button>
-      </div>
-    </div>
-    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <p class="font-body mb-3" style="color: var(--dark);">A classmate keeps interrupting you</p>
-      <div class="flex flex-wrap gap-2">
-        <button 
-          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
-          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
-          data-correct="You can say 'Please let me finish'"
-          data-pair="2"
-          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
-        >
-          ✋ You can say &#039;Please let me finish&#039;
-        </button>
-      </div>
-    </div>
-    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <p class="font-body mb-3" style="color: var(--dark);">Someone shares a secret with you</p>
-      <div class="flex flex-wrap gap-2">
-        <button 
-          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
-          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
-          data-correct="Keep it private and safe"
-          data-pair="3"
-          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
-        >
-          🤐 Keep it private and safe
-        </button>
-      </div>
-    </div>
-          
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input 
-              type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
-              data-activity="matching_3"
-              onchange="markActivityComplete('matching_3')"
-              ${completedActivities['matching_3'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage8() {
-  return `
-    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
-      <div class="text-center">
-        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
-        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 2</h1>
-        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">My Social Traffic Light</h2>
-        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
-          Learning green, yellow, and red zone boundaries
-        </p>
-      </div>
-    </div>`;
-}
-
-    function generatePage9() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Green, Yellow, Red Social Zones 🚦</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Let me teach you about social zones - they&#039;re like traffic lights for relationships! Green zone means &#039;go ahead&#039; - this is when someone feels comfortable and happy. Yellow zone means &#039;slow down and check&#039; - someone might need space or feel unsure. Red zone means &#039;stop&#039; - someone feels uncomfortable or needs you to back away.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Here&#039;s how it works: If your friend is laughing and playing, that&#039;s green zone! If they seem quiet or step back a little, that&#039;s yellow - time to ask &#039;Are you okay?&#039; If someone says &#039;no&#039; or looks upset, that&#039;s red zone - time to give them space right away.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Learning to read these zones takes practice, and that&#039;s okay! Some kids pick up on these signals quickly, while others need more time to learn. The most important thing is to always listen when someone tells you how they feel, and remember that everyone&#039;s zones can change throughout the day.</p>
-        </div>
-        
-        
-    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
-      <p class="font-body" style="color: var(--dark);">Pay attention to green, yellow, and red social signals - and always respect when someone says &#039;no.&#039;</p>
-    </div>
-        
-    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-      <span class="text-3xl">🐕</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Daniel says: &#039;I watch for tail wags and body language in other dogs - you can watch for smiles and body language in people!&#039;</p>
-    </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage10() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="quiz">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Personal Space Quiz 🤗</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">What should you do if someone is standing too close to you and it makes you feel uncomfortable?</p>
-          
-          <div class="space-y-3 mb-6">
-            
-    <button 
-      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
-      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-      data-correct="true"
-      data-feedback="Great job! It&#039;s always okay to ask for the space you need to feel comfortable."
-    >
-      Politely ask them to give you some space
-    </button>
-    <button 
-      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
-      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-      data-correct="false"
-      data-feedback="Not quite, but good try! It&#039;s better to speak up for yourself when you need space."
-    >
-      Just ignore it and hope they move away
-    </button>
-    <button 
-      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
-      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-      data-correct="false"
-      data-feedback="Let&#039;s think about this... Using our words is always better than pushing someone."
-    >
-      Push them away without saying anything
-    </button>
-    <button 
-      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
-      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
-      data-correct="false"
-      data-feedback="Almost! While leaving is okay, it&#039;s helpful to let people know what you need first."
-    >
-      Leave without saying anything
-    </button>
-          </div>
-          
-          <p class="quiz-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--soft-yellow); color: var(--dark);"></p>
-          
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input 
-              type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
-              data-activity="quiz_4"
-              disabled
-              onchange="markActivityComplete('quiz_4')"
-              ${completedActivities['quiz_4'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! ⭐</label>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage11() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Friendship Traffic Lights 🚦</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Just like traffic lights help cars stay safe, friendship signals help us know when to go, slow down, or stop in social situations.</p>
-          
-          
-        <div class="interactive-group">
-          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">When a friend looks upset and turns away from you, that&#039;s a <input type="text" 
-                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
-                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
-                  placeholder="..."
-                  data-blank-index="1"
-                  oninput="handleFillBlankInput(this, 5)"> light signal to give them space.</p>
-        </div>
-          
-          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Red light means stop! When someone shows they need space, the kindest thing is to respect that signal.</p>
-          </div>
-        </div>
-        
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
-          <span class="text-3xl">🐕</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">Daniel wags his tail! You&#039;re learning to read social signals like a pro. Good friends always watch for these important clues!</p>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="interactive_5"
-            onchange="markActivityComplete('interactive_5')"
-            ${completedActivities['interactive_5'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage12() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sorting-activity">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Boundary Sorting 🔄</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Help sort these actions into helpful or not helpful for keeping good relationships and boundaries!</p>
-          
-          <div class="grid md:grid-cols-2 gap-4 mb-6">
-            
-    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #A8E6CF; border-color: var(--dark);" data-category="Helpful" data-category-index="0" onclick="sortSelectedItem(this, 'Helpful', 6)">
-      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">✅ Helpful</h3>
-      <div class="dropped-items space-y-2"></div>
-    </div>
-  
-    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #fecaca; border-color: var(--dark);" data-category="Not Helpful" data-category-index="1" onclick="sortSelectedItem(this, 'Not Helpful', 6)">
-      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">❌ Not Helpful</h3>
-      <div class="dropped-items space-y-2"></div>
-    </div>
-  
-          </div>
-          
-          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
-            <div class="sort-items-list space-y-2">
-              
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_0" data-correct-category="Helpful" data-explanation="It&#039;s okay to keep some things just for yourself" onclick="selectSortItem(this)">
-      Saying &#039;no&#039; when you don&#039;t want to share your special toy
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_1" data-correct-category="Not Helpful" data-explanation="This crosses their boundary and isn&#039;t respectful" onclick="selectSortItem(this)">
-      Taking someone&#039;s lunch without asking
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_2" data-correct-category="Helpful" data-explanation="This respects their personal space and feelings" onclick="selectSortItem(this)">
-      Asking before giving someone a hug
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_3" data-correct-category="Not Helpful" data-explanation="Everyone deserves privacy with their belongings" onclick="selectSortItem(this)">
-      Going through someone&#039;s backpack without permission
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_4" data-correct-category="Helpful" data-explanation="Adults can help keep you safe and respected" onclick="selectSortItem(this)">
-      Telling a trusted adult when someone makes you uncomfortable
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_5" data-correct-category="Not Helpful" data-explanation="When someone says stop, we need to listen and respect that" onclick="selectSortItem(this)">
-      Pushing someone when they say stop
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_6" data-correct-category="Helpful" data-explanation="Kind words help maintain friendship even during disagreements" onclick="selectSortItem(this)">
-      Using kind words when you disagree with a friend
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_7" data-correct-category="Not Helpful" data-explanation="We should always listen when someone asks us to stop" onclick="selectSortItem(this)">
-      Ignoring when someone asks you to stop teasing them
-    </div>
-  
-            </div>
-          </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="sorting_6"
-            onchange="markActivityComplete('sorting_6')"
-            ${completedActivities['sorting_6'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage13() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Being You in Friendships 🌟</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">The best friendships happen when you can be yourself! This means you don&#039;t have to pretend to like things you don&#039;t like, or act completely different just to fit in. Real friends will like you for who you are - your interests, your sense of humor, and even your quirky habits.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Sometimes you might feel pressure to change yourself to make friends, but here&#039;s a secret: the right friends will appreciate what makes you unique! Maybe you love talking about dinosaurs, or you need quiet time to recharge, or you have a different way of showing you care. These things make you special, not weird.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">It&#039;s also important to let your friends be themselves too. This means accepting their differences, respecting their boundaries, and celebrating what makes them unique. When everyone feels safe to be themselves, that&#039;s when the strongest social glue forms!</p>
-        </div>
-        
-        
-    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
-      <p class="font-body" style="color: var(--dark);">The best friendships happen when everyone feels safe to be their true selves.</p>
-    </div>
-        
-    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-      <span class="text-3xl">🐕</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Daniel says: &#039;I&#039;m proud of my floppy ears and waggy tail - be proud of what makes you uniquely you!&#039;</p>
-    </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage14() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="weather-controller" data-activity="weather_7">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Friendship Boundary Storm ⛈️</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">When friends don&#039;t respect our boundaries, it can feel like an emotional storm inside! Use your calming tools to clear the storm clouds and find your peaceful center.</p>
-          
-          <!-- Weather Scene -->
-          <div class="weather-scene relative rounded-2xl overflow-hidden mb-6" style="height: 200px; background: linear-gradient(to-b, from-gray-600 to-gray-800);">
-            <div class="weather-overlay absolute inset-0 flex items-center justify-center transition-all duration-1000" id="weatherOverlay">
-              <span class="weather-emoji text-8xl animate-bounce" id="weatherEmoji">⛈️</span>
-            </div>
-            <div class="weather-clear absolute inset-0 flex items-center justify-center transition-all duration-1000 opacity-0" id="weatherClear" style="background: linear-gradient(to-b, #87CEEB, #E0F6FF);">
-              <span class="text-8xl">☀️</span>
-            </div>
-            <!-- Animated elements -->
-            <div class="rain-drops absolute inset-0 pointer-events-none" id="rainDrops" style="opacity: 0.7;">
-              <div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 0%; animation: rainFall 1.106271678746492s linear infinite; animation-delay: 0.14843479343446742s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 5%; animation: rainFall 1.2616265398444846s linear infinite; animation-delay: 0.3168625487518475s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 10%; animation: rainFall 0.7142095142957403s linear infinite; animation-delay: 0.46634686769034706s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 15%; animation: rainFall 0.8103481599941325s linear infinite; animation-delay: 0.2634351828020898s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 20%; animation: rainFall 0.8300074750911668s linear infinite; animation-delay: 0.5528479342107806s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 25%; animation: rainFall 0.6536673301215972s linear infinite; animation-delay: 0.6563683761457615s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 30%; animation: rainFall 0.8522107403173593s linear infinite; animation-delay: 0.7780874022819031s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 35%; animation: rainFall 1.4054374074625537s linear infinite; animation-delay: 0.40743211317642847s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 40%; animation: rainFall 1.1027391058353087s linear infinite; animation-delay: 0.6094579016888932s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 45%; animation: rainFall 1.4312448390673902s linear infinite; animation-delay: 0.9470074773058528s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 50%; animation: rainFall 1.1400222479449806s linear infinite; animation-delay: 0.20848517348356843s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 55%; animation: rainFall 1.1108290007545556s linear infinite; animation-delay: 0.04072363834083048s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 60%; animation: rainFall 1.0528893599875209s linear infinite; animation-delay: 0.77846744688408s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 65%; animation: rainFall 0.9557418764290544s linear infinite; animation-delay: 0.32637010087595675s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 70%; animation: rainFall 1.212167807605858s linear infinite; animation-delay: 0.6540391755755961s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 75%; animation: rainFall 0.95001702105928s linear infinite; animation-delay: 0.42146155226465276s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 80%; animation: rainFall 1.3719016052278494s linear infinite; animation-delay: 0.7056800129198468s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 85%; animation: rainFall 0.9381784329884819s linear infinite; animation-delay: 0.17331396454605197s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 90%; animation: rainFall 0.513870403168933s linear infinite; animation-delay: 0.8069594955445414s;"></div><div class="rain-drop absolute w-1 h-4 rounded-full" style="background: rgba(255,255,255,0.6); left: 95%; animation: rainFall 0.6483731162193611s linear infinite; animation-delay: 0.34479519127336844s;"></div>
-            </div>
-          </div>
-          
-          <!-- Calm Meter -->
-          <div class="mb-6">
-            <div class="flex justify-between mb-2">
-              <span class="font-body text-sm" style="color: var(--accent);">Stormy</span>
-              <span class="font-body text-sm" style="color: var(--secondary);">Calm</span>
-            </div>
-            <div class="h-8 rounded-full overflow-hidden" style="background-color: var(--soft-yellow);">
-              <div class="calm-meter h-full rounded-full transition-all duration-500" id="calmMeter" style="width: 0%; background: linear-gradient(to-r, var(--accent), var(--primary), var(--secondary), var(--light-green));"></div>
-            </div>
-            <p class="text-center font-title text-2xl mt-2" style="color: var(--primary);"><span id="calmPercent">0</span>% Calm</p>
-          </div>
-          
-          <!-- Action Buttons -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            
-    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            style="background-color: white; border-color: var(--secondary);"
-            data-action-id="breath"
-            data-points="15"
-            data-feedback="Feel that calm air..."
-            onclick="handleWeatherAction(this, 'weather_7', 15)">
-      <span class="text-4xl">🌬️</span>
-      <span class="font-title text-lg text-center" style="color: var(--dark);">Slow Breath</span>
-    </button>
-  
-    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            style="background-color: white; border-color: var(--secondary);"
-            data-action-id="name"
-            data-points="20"
-            data-feedback="Understanding helps!"
-            onclick="handleWeatherAction(this, 'weather_7', 20)">
-      <span class="text-4xl">💭</span>
-      <span class="font-title text-lg text-center" style="color: var(--dark);">Name the Feeling</span>
-    </button>
-  
-    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            style="background-color: white; border-color: var(--secondary);"
-            data-action-id="ground"
-            data-points="25"
-            data-feedback="Grounded and present!"
-            onclick="handleWeatherAction(this, 'weather_7', 25)">
-      <span class="text-4xl">👀</span>
-      <span class="font-title text-lg text-center" style="color: var(--dark);">5-4-3-2-1 Senses</span>
-    </button>
-  
-    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            style="background-color: white; border-color: var(--secondary);"
-            data-action-id="kind"
-            data-points="15"
-            data-feedback="Self-compassion helps!"
-            onclick="handleWeatherAction(this, 'weather_7', 15)">
-      <span class="text-4xl">💗</span>
-      <span class="font-title text-lg text-center" style="color: var(--dark);">Kind Thought</span>
-    </button>
-  
-          </div>
-          
-          <!-- Feedback Area -->
-          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all" id="weatherFeedback" style="background-color: var(--light-green); display: none;">
-            <p class="font-body text-lg" style="color: var(--dark);" id="feedbackText"></p>
-          </div>
-          
-          <!-- Win Message (hidden initially) -->
-          <div class="weather-win p-6 rounded-2xl text-center" id="weatherWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-4xl mb-2">☀️</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">You calmed the storm! The sky is clear again!</p>
-            <p class="font-body" style="color: var(--secondary);">You have the power to calm big feelings!</p>
-          </div>
-          
-          <!-- Completion Checkbox (appears after win) -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="weatherComplete">
-            <input 
-              type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
-              data-activity="weather_7"
-              onchange="markActivityComplete('weather_7')"
-              ${completedActivities['weather_7'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I calmed the storm! ⭐</label>
-          </div>
-        </div>
-      </div>
-      
-      <style>
-        @keyframes rainFall {
-          0% { transform: translateY(-20px); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translateY(200px); opacity: 0; }
-        }
-        .weather-action:active { transform: scale(0.95); }
-        .weather-action.cooldown { opacity: 0.5; pointer-events: none; }
-        .weather-action.used { background-color: var(--light-green) !important; }
-      </style>
-    </div>`;
-}
-
-    function generatePage15() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Sharing vs. Caring 💝</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Daniel the Dog discovered there&#039;s a difference between sharing because you want to and feeling forced to give up your things.</p>
-          
-          
-        <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">On a scale of 1-5, how comfortable would you feel if someone took your favorite toy without asking? (1 = very uncomfortable, 5 = totally fine)</p>
-          <div class="flex justify-between gap-2 mb-4">
-            
-              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '1'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
-                1
-              </button>
-            
-              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '2'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
-                2
-              </button>
-            
-              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '3'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
-                3
-              </button>
-            
-              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '4'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
-                4
-              </button>
-            
-              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_8', '5'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
-                5
-              </button>
-            
-          </div>
-          <div class="flex justify-between text-sm font-body" style="color: var(--secondary);">
-            <span>Not at all</span>
-            <span>Very much!</span>
-          </div>
-        </div>
-          
-          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Most people feel uncomfortable when their belongings are taken without permission. It&#039;s normal to want control over your own things!</p>
-          </div>
-        </div>
-        
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
-          <span class="text-3xl">🐕</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">Daniel&#039;s ears perk up! You understand that true sharing comes from the heart, not from pressure. Your feelings about your belongings matter!</p>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="interactive_8"
-            onchange="markActivityComplete('interactive_8')"
-            ${completedActivities['interactive_8'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage16() {
-  return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">How Do You Feel About Boundaries? 🤗</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">How Am I Feeling Right Now? 🌟</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Think about when someone asks you to do something you don&#039;t want to do. How does that make you feel?</p>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Pick the feeling that matches how you feel today. It&#039;s okay to have big feelings!</p>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
     <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #FFE8A3; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#FFE8A3' : 'white';">
       <span class="text-4xl">😊</span>
@@ -1309,11 +706,11 @@
       <span class="font-body font-semibold" style="color: var(--dark);">Excited</span>
     </button></div>
           <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What words can you use to kindly say &#039;no&#039; when you feel uncomfortable?</label>
-            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_9', this.value)">${formData['feeling_followup_9'] || ''}</textarea>
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">When you feel this way, who is a safe grown-up you could talk to for help?</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_1', this.value)">${formData['feeling_followup_1'] || ''}</textarea>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="feeling_9" onchange="markActivityComplete('feeling_9')" ${completedActivities['feeling_9'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="feeling_1" onchange="markActivityComplete('feeling_1')" ${completedActivities['feeling_1'] ? 'checked disabled' : ''}>
             <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
           </div>
         </div>
@@ -1321,119 +718,163 @@
     </div>`;
 }
 
-    function generatePage17() {
+    function generatePage6() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="drawing">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Personal Space Bubble 🫧</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🆘 Who Can Help Me?</h1>
         
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Daniel the Dog reminds us that asking for help early is super smart! There are many safe people who want to help us with big feelings.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Who would be the BEST person to talk to when you first start feeling angry?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 2, true, 0)">
+                A trusted adult like a parent or teacher
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 2, true, 0)">
+                Your little brother or sister
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 2, true, 0)">
+                Nobody - handle it alone
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 2, true, 0)">
+                A stranger
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Perfect! Trusted adults have lots of experience helping kids with big feelings.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐕</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">That&#039;s my smart friend! I always go to my favorite humans when I need help too! 🐕</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_2"
+            onchange="markActivityComplete('interactive_2')"
+            ${completedActivities['interactive_2'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage7() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-thermometer">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Anger Warning Signs Thermometer 🌡️</h1>
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Draw yourself in the center of your paper, then draw a big bubble around you. Inside the bubble, draw or write the names of people who are allowed in your personal space for hugs and close contact.</p>
-          
-          <div class="border-4 rounded-xl mb-4 overflow-hidden" style="border-color: var(--primary); background-color: white;">
-            <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" style="touch-action: none; display: block;"></canvas>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Look at the thermometer and point to where your anger feelings are right now. Remember, all feelings are okay!</p>
+          <div class="mb-8">
+            <div class="flex justify-between mb-2">
+              <span class="font-body text-sm" style="color: var(--secondary);">Cool and calm like a gentle breeze</span>
+              <span class="font-body text-sm" style="color: var(--accent);">Hot and steamy like a boiling pot</span>
+            </div>
+            <input type="range" min="1" max="10" value="5" class="thermometer-slider w-full" oninput="this.parentElement.querySelector('.thermometer-value').textContent = this.value; saveFormData('thermometer_3', this.value)">
+            <div class="text-center mt-4"><span class="thermometer-value text-4xl font-title" style="color: var(--primary);">5</span></div>
           </div>
-          
-          <div class="flex flex-wrap gap-2 mb-6">
-            <button class="clear-canvas-btn px-4 py-2 rounded-lg text-white font-bold font-body" style="background-color: var(--accent);">
-              Clear
-            </button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#264653" style="background-color: #264653;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#F4A261" style="background-color: #F4A261;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#E76F51" style="background-color: #E76F51;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#2A9D8F" style="background-color: #2A9D8F;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#9b59b6" style="background-color: #9b59b6;"></button>
-          </div>
-          
           <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">Who did you include in your personal space bubble and why do you feel safe with them?</label>
-            <input 
-              type="text" 
-              class="w-full rounded-xl p-3 font-body text-lg" 
-              style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);"
-              placeholder="Type your answer here..."
-              onchange="saveFormData('drawing_answer_10', this.value)"
-              value="${formData['drawing_answer_10'] || ''}"
-            >
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What are some warning signs your body gives you when your anger starts to heat up, and who is a safe grown-up you could talk to for help?</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('thermometer_followup_3', this.value)">${formData['thermometer_followup_3'] || ''}</textarea>
           </div>
-          
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input 
-              type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
-              data-activity="drawing_10"
-              onchange="markActivityComplete('drawing_10')"
-              ${completedActivities['drawing_10'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="thermometer_3" onchange="markActivityComplete('thermometer_3')" ${completedActivities['thermometer_3'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! ⭐</label>
           </div>
         </div>
       </div>
     </div>`;
 }
 
-    function generatePage18() {
+    function generatePage8() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="comic-strip">
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 2</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Body Signals &amp; Help Words</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          Recognizing when it&#039;s time to reach out
+        </p>
+      </div>
+    </div>`;
+}
+
+    function generatePage9() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Space, Your Space Comic 📚</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🚨 Why Asking Early Helps Stop Anger</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-lg" style="color: var(--dark);">Emma loves to read quietly in the library corner, but her friend Jake keeps interrupting and getting too close. How can Emma set a kind boundary while keeping their friendship?</p>
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Let me tell you a secret about feelings - they&#039;re much easier to handle when they&#039;re small! When you ask for help early, it&#039;s like catching a small snowball before it rolls down a hill and becomes a giant snowball. Your needs are so much easier to meet when you speak up right away.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Here&#039;s what happens when we wait too long: anger starts to grow and grow, like a balloon filling up with air. The longer we wait, the bigger that angry balloon gets, until POP! It might explode in ways we don&#039;t want. But when we ask early, we can let a little air out of the balloon before it gets too full.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">When your needs get ignored for too long - even by yourself - anger becomes your body&#039;s way of trying to get attention. It&#039;s like your feelings are jumping up and down saying &#039;Hey! Pay attention to me!&#039; But if you listen to those early whispers, you won&#039;t need the loud shouts later.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Prevention Power</h3>
+      <p class="font-body" style="color: var(--dark);">Small problems + early help = easy solutions. Big problems + late help = much harder!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐕</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">🐕 I&#039;ve learned that a gentle paw tap works better than jumping on someone. Try gentle words first!</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage10() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="fill-in-story">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Daniel&#039;s Help-Seeking Adventure 📖</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Fill in the blanks to help Daniel learn about asking for help when feeling angry.</p>
+          
+          <div class="p-6 rounded-2xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="text-xl leading-loose font-body" style="color: var(--dark);">Daniel the Dog 🐕 was playing with his favorite toy when his little sister accidentally broke it. Daniel started to feel <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 10rem; min-width: 6rem;" placeholder="a feeling word" onchange="saveFormData('story_4_0', this.value)"> building up inside him like a storm cloud. But Daniel remembered what he learned about getting help early! Instead of letting his anger grow bigger, Daniel decided to <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 13rem; min-width: 6rem;" placeholder="something you can do" onchange="saveFormData('story_4_1', this.value)"> right away. He went to find <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 12rem; min-width: 6rem;" placeholder="a person who helps" onchange="saveFormData('story_4_2', this.value)"> and said, &#039;I&#039;m starting to feel really angry about my broken toy. Can you help me figure out what to do?&#039; Daniel felt so proud that he asked for help before his anger got too big to handle!</p>
           </div>
           
-          <div class="grid md:grid-cols-2 gap-4 mb-6">
-            
-    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">1</span>
-        <p class="font-body text-sm" style="color: var(--dark);">Draw: Emma trying to read while Jake interrupts</p>
-      </div>
-      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
-        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
-      </div>
-      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Draw here..." onchange="saveFormData('comic_11_1', this.value)">
-    </div>
-  
-    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">2</span>
-        <p class="font-body text-sm" style="color: var(--dark);">Draw: How Emma feels when her space isn&#039;t respected</p>
-      </div>
-      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
-        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
-      </div>
-      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Show the emotion..." onchange="saveFormData('comic_11_2', this.value)">
-    </div>
-  
-    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">3</span>
-        <p class="font-body text-sm" style="color: var(--dark);">Draw: Emma kindly telling Jake she needs reading time</p>
-      </div>
-      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
-        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
-      </div>
-      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Draw the helpful action..." onchange="saveFormData('comic_11_3', this.value)">
-    </div>
-  
-    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">4</span>
-        <p class="font-body text-sm" style="color: var(--dark);">Draw: Both friends happy - Emma reading, Jake finding his own activity</p>
-      </div>
-      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
-        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
-      </div>
-      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="Happy ending!" onchange="saveFormData('comic_11_4', this.value)">
-    </div>
-  
-          </div>
-          
-          <div class="p-4 rounded-xl" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold" style="color: var(--dark);">Share your comic with a friend! Talk about times when you needed space or when someone needed space from you. What kind words can you use to ask for personal space?</p>
+          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">How do you think Daniel felt after asking for help instead of letting his anger grow bigger?</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 80px;" placeholder="Write your thoughts..." onchange="saveFormData('story_reflection_4', this.value)"></textarea>
           </div>
         </div>
         
@@ -1442,11 +883,449 @@
             type="checkbox" 
             class="w-8 h-8 rounded cursor-pointer"
             style="accent-color: var(--primary);"
-            data-activity="comic_11"
-            onchange="markActivityComplete('comic_11')"
-            ${completedActivities['comic_11'] ? 'checked disabled' : ''}
+            data-activity="fillin_4"
+            onchange="markActivityComplete('fillin_4')"
+            ${completedActivities['fillin_4'] ? 'checked disabled' : ''}
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I created my comic!</label>
+          <label class="font-title text-xl" style="color: var(--dark);">I completed my story!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage11() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🌡️ My Anger Temperature</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Daniel the Dog uses an anger thermometer! When anger is at 1-3, it&#039;s easier to cool down. When it gets to 8-10, it&#039;s much harder!</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Rate how angry you felt the last time something bothered you (1 = barely upset, 5 = very angry)</p>
+          <div class="flex justify-between gap-2 mb-4">
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '1'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                1
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '2'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                2
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '3'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                3
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '4'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                4
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '5'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                5
+              </button>
+            
+          </div>
+          <div class="flex justify-between text-sm font-body" style="color: var(--secondary);">
+            <span>Not at all</span>
+            <span>Very much!</span>
+          </div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Remember, the lower the number, the easier it is to ask for help and use coping strategies!</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐕</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">Good job checking your anger temperature! Now you know when to ask for help early! 🐕</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_5"
+            onchange="markActivityComplete('interactive_5')"
+            ${completedActivities['interactive_5'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage12() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emotion-maze" data-activity="maze_6">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Anger Prevention Maze 🧩</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Help navigate from feeling angry to feeling calm by making good choices along the way. Choose the path that helps prevent anger from growing bigger!</p>
+          
+          <!-- Journey Progress -->
+          <div class="flex justify-between items-center mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+            <div class="text-center">
+              <span class="text-4xl">😠</span>
+              <p class="font-body text-sm" style="color: var(--dark);">Angry</p>
+            </div>
+            <div class="flex-1 mx-4 relative">
+              <div class="h-3 rounded-full" style="background-color: var(--soft-yellow);">
+                <div class="maze-progress h-full rounded-full transition-all duration-500" id="mazeProgress" style="width: 0%; background-color: var(--light-green);"></div>
+              </div>
+              <div class="maze-marker absolute top-1/2 -translate-y-1/2 text-2xl transition-all duration-500" id="mazeMarker" style="left: 0%;">🚶</div>
+            </div>
+            <div class="text-center">
+              <span class="text-4xl">😌</span>
+              <p class="font-body text-sm" style="color: var(--dark);">Calm</p>
+            </div>
+          </div>
+          
+          <!-- Steps -->
+          
+    <div class="maze-step rounded-2xl p-6 mb-4 transition-all" id="mazeStep0" style="background-color: var(--soft-yellow); display: block;">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">1</span>
+        <p class="font-body text-lg" style="color: var(--dark);">Your friend took your favorite crayon without asking and you feel your anger starting to build.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="true"
+                  data-feedback="Smart choice! Breathing helps your body calm down before anger gets too big."
+                  data-step="0"
+                  onclick="handleMazeChoice(this, 0, 3, 'maze_6')">
+            <span class="text-2xl mr-2">🌬️</span>
+            <span class="font-body" style="color: var(--dark);">Take 5 deep breaths and count to 10</span>
+          </button>
+        
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="false"
+                  data-feedback="This might make your anger bigger and hurt your friendship."
+                  data-step="0"
+                  onclick="handleMazeChoice(this, 0, 3, 'maze_6')">
+            <span class="text-2xl mr-2">😤</span>
+            <span class="font-body" style="color: var(--dark);">Yell at your friend right away</span>
+          </button>
+        
+      </div>
+      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback0" style="display: none;"></div>
+    </div>
+  
+    <div class="maze-step rounded-2xl p-6 mb-4 transition-all" id="mazeStep1" style="background-color: var(--soft-yellow); display: none;">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">2</span>
+        <p class="font-body text-lg" style="color: var(--dark);">You&#039;re feeling a bit better, but still upset about what happened.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="true"
+                  data-feedback="Excellent! Getting help early prevents small problems from becoming big ones."
+                  data-step="1"
+                  onclick="handleMazeChoice(this, 1, 3, 'maze_6')">
+            <span class="text-2xl mr-2">🙋</span>
+            <span class="font-body" style="color: var(--dark);">Ask a teacher or grown-up for help</span>
+          </button>
+        
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="false"
+                  data-feedback="This keeps angry feelings growing and might cause more problems."
+                  data-step="1"
+                  onclick="handleMazeChoice(this, 1, 3, 'maze_6')">
+            <span class="text-2xl mr-2">😈</span>
+            <span class="font-body" style="color: var(--dark);">Plan to get revenge later</span>
+          </button>
+        
+      </div>
+      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback1" style="display: none;"></div>
+    </div>
+  
+    <div class="maze-step rounded-2xl p-6 mb-4 transition-all" id="mazeStep2" style="background-color: var(--soft-yellow); display: none;">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">3</span>
+        <p class="font-body text-lg" style="color: var(--dark);">The grown-up helped you talk to your friend, and they apologized.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="true"
+                  data-feedback="Perfect! Forgiving helps you feel peaceful and keeps friendships strong."
+                  data-step="2"
+                  onclick="handleMazeChoice(this, 2, 3, 'maze_6')">
+            <span class="text-2xl mr-2">🤝</span>
+            <span class="font-body" style="color: var(--dark);">Accept the apology and move on</span>
+          </button>
+        
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
+                  style="background-color: white; border-color: var(--secondary);"
+                  data-correct="false"
+                  data-feedback="Holding onto anger hurts you more than anyone else."
+                  data-step="2"
+                  onclick="handleMazeChoice(this, 2, 3, 'maze_6')">
+            <span class="text-2xl mr-2">😒</span>
+            <span class="font-body" style="color: var(--dark);">Stay mad and ignore them</span>
+          </button>
+        
+      </div>
+      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback2" style="display: none;"></div>
+    </div>
+  
+          
+          <!-- Win Message -->
+          <div class="maze-win p-6 rounded-2xl text-center" id="mazeWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">😌</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">You made it through the maze! You learned that getting help early and using calming strategies prevents anger from taking over. Great job!</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="mazeComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="maze_6"
+              onchange="markActivityComplete('maze_6')"
+              ${completedActivities['maze_6'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I navigated the maze! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .maze-option:active { transform: scale(0.98); }
+        .maze-option.correct { background-color: var(--light-green) !important; border-color: var(--secondary) !important; }
+        .maze-option.wrong { background-color: #fecaca !important; border-color: var(--accent) !important; }
+        .maze-option.disabled { opacity: 0.5; pointer-events: none; }
+      </style>
+    </div>`;
+}
+
+    function generatePage13() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">⚠️ Early Warning Signs: Your Body&#039;s Help Signals</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Your amazing body is like a smart alarm system that tries to warn you before anger takes over! Let&#039;s learn to notice these early signals together. When your body starts getting tense, feeling rushed, or when your thoughts get really loud and jumbled, these are all signs that it&#039;s time to ask for help.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Sometimes you might feel like you want to escape or run away from a situation. That&#039;s another important signal! Your body might also feel restless, like you can&#039;t sit still, or you might notice your chest feeling tight or your heart beating faster. These are all your body&#039;s way of saying &#039;Hey, I need some support right now!&#039;</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Other signs include getting a headache, feeling too full of emotions, or noticing that everything feels too much. The cool thing is that once you start paying attention to these signals, you become really good at catching them early. It&#039;s like becoming a detective of your own feelings!</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Body Wisdom</h3>
+      <p class="font-body" style="color: var(--dark);">Your body is trying to help you by sending early warning signals - listen to them!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐕</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">🐕 My ears perk up when I sense something&#039;s not right. What does your body do to get your attention?</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage14() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 3</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Asking Makes You Stronger</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          Why getting help early protects everyone
+        </p>
+      </div>
+    </div>`;
+}
+
+    function generatePage15() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">💪 Early Help = Super Strength</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Daniel the Dog knows a secret: asking for help when problems are small makes you STRONGER, not weaker!</p>
+          
+          
+        <div class="interactive-group">
+          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
+            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"Only weak people ask for help with their feelings"</p>
+          </div>
+          <div class="flex gap-4 justify-center">
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--secondary); color: var(--dark);"
+                    data-correct="false"
+                    data-index="0"
+                    onclick="handleInteractiveChoice(this, 7, true, 1)">
+              I Agree
+            </button>
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--accent); color: var(--dark);"
+                    data-correct="true"
+                    data-index="1"
+                    onclick="handleInteractiveChoice(this, 7, true, 1)">
+              I Disagree
+            </button>
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">You&#039;re absolutely right! The strongest people know when to ask for help early.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐕</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">Woof woof! You&#039;ve got it! Even the strongest dogs know when to ask their pack for help! 🐕</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_7"
+            onchange="markActivityComplete('interactive_7')"
+            ${completedActivities['interactive_7'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage16() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="gratitude-jar">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Calm Helpers Gratitude Jar ⭐</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">When we feel grateful for the people and things that help us stay calm, it becomes easier to ask for help before anger grows too big. Let&#039;s fill our jar with all the wonderful helpers in our lives!</p>
+          
+          
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">👨‍👩‍👧‍👦</span>
+        <span class="font-title text-lg" style="color: var(--dark);">People</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">Someone I can talk to when I feel upset...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_8_0', this.value)">
+    </div>
+  
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🏠</span>
+        <span class="font-title text-lg" style="color: var(--dark);">Places</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">A peaceful place where I can calm down...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_8_1', this.value)">
+    </div>
+  
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🎁</span>
+        <span class="font-title text-lg" style="color: var(--dark);">Things</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">Something that helps me feel better when I&#039;m mad...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_8_2', this.value)">
+    </div>
+  
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">✨</span>
+        <span class="font-title text-lg" style="color: var(--dark);">Moments</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">A time when asking for help made me feel better...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_8_3', this.value)">
+    </div>
+  
+          
+          <div class="mt-6 p-4 rounded-xl text-center" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold" style="color: var(--dark);">Remember, being grateful for your helpers makes it easier to reach out to them when you need support. You&#039;re building a wonderful team of calm helpers!</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="gratitude_8"
+            onchange="markActivityComplete('gratitude_8')"
+            ${completedActivities['gratitude_8'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I filled my gratitude jar!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage17() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">💪 Breaking Through the Fear of Asking</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Sometimes asking for help feels scary, and that&#039;s totally normal! Many kids worry they might get in trouble for speaking up, or they&#039;re afraid that adults won&#039;t believe them or take them seriously. But here&#039;s the truth: most grown-ups want to help you, and they&#039;re usually glad when you come to them early instead of waiting until things are really hard.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">It&#039;s important to know that your feelings and needs matter, no matter how big or small they seem. You deserve to be heard and helped! If the first person you ask can&#039;t help right away, that doesn&#039;t mean you should give up. Sometimes it takes trying a few different people or ways of asking before you get the help you need.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Remember, asking for help actually shows that you&#039;re being responsible and taking good care of yourself. It&#039;s like brushing your teeth to prevent cavities - you&#039;re doing something now to prevent bigger problems later. The adults in your life will be proud of you for being so smart about your own needs!</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Fear Buster</h3>
+      <p class="font-body" style="color: var(--dark);">You deserve to be heard and helped. Asking early shows you&#039;re taking good care of yourself!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐕</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">🐕 Even when I&#039;m nervous to ask for something, I remember that my family loves me and wants to help. Yours does too!</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage18() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="scenario">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">The Broken Game 🎮</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);"><p class="text-lg font-body" style="color: var(--dark);">You&#039;ve been looking forward to playing your favorite video game all day. When you finally get home and turn it on, it won&#039;t work and keeps freezing. You can feel yourself getting really frustrated and angry.</p></div>
+          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">What would you do?</p>
+          <div class="space-y-3 mb-6">
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="true" data-feedback="Great thinking! This helps because taking deep breaths calms your body down, and asking for help early prevents your anger from getting bigger!">Take three deep breaths and ask a grown-up for help</button>
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="false" data-feedback="This could work, but there might be a better way. When we&#039;re frustrated, it&#039;s harder to think clearly and fix problems.">Keep trying to fix it yourself while getting more upset</button>
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="false" data-feedback="Let&#039;s think about why this might not help. Throwing things when angry can break them more and make us feel worse afterward.">Throw the controller and yell about how unfair it is</button></div>
+          <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="scenario_9" onchange="markActivityComplete('scenario_9')" ${completedActivities['scenario_9'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1454,133 +1333,48 @@
 
     function generatePage19() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="shield_12">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="checklist">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Friendship Boundary Shield 🛡️</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Daniel&#039;s Early Help Signs Checklist 🐕✋</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Build your special shield that helps you have healthy friendships and know your boundaries! Fill in each section with your own strengths and tools.</p>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Check off each sign that shows you&#039;re ready to ask for help before anger gets too big. Daniel the Dog is proud when you ask early!</p>
           
-          <!-- Shield Visual -->
-          <div class="flex justify-center mb-6">
-            <div class="shield-container relative w-64 h-72">
-              <svg viewBox="0 0 200 220" class="w-full h-full">
-                <path d="M100 10 L180 50 L180 130 Q180 200 100 210 Q20 200 20 130 L20 50 Z" 
-                      fill="url(#shieldGradient)" stroke="var(--dark)" stroke-width="4"/>
-                <defs>
-                  <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:var(--soft-yellow)"/>
-                    <stop offset="100%" style="stop-color:var(--light-green)"/>
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div class="shield-decorations absolute inset-0 flex items-center justify-center text-4xl flex-wrap" id="shieldDecorations">
-                🛡️
-              </div>
-            </div>
-          </div>
-          
-          <!-- Decoration Buttons -->
-          <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
-            <span class="font-body text-sm self-center mr-2" style="color: var(--dark);">Add decorations:</span>
+          <div class="space-y-3 mb-6">
             
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('⭐')">⭐</button>
-  
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🌟')">🌟</button>
-  
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('💪')">💪</button>
-  
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🛡️')">🛡️</button>
-  
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('✨')">✨</button>
-  
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('💖')">💖</button>
-  
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Notice when your body feels tense or tight</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Recognize when your thoughts start racing or getting jumbled</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Identify when you feel frustrated but not explosive yet</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Remember that asking for help shows strength, not weakness</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Practice saying &#039;I need help&#039; or &#039;I&#039;m starting to feel upset&#039;</span>
+    </label>
           </div>
           
-          <!-- Shield Sections -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            
-    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--light-green);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">⚡</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My Friendship Superpower</h3>
-      </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">What makes you a great friend?</p>
-      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
-             style="border-color: var(--secondary); background-color: white;"
-             placeholder="I&#039;m a great friend because..."
-             data-section="s1"
-             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s1', this.value)"
-             value="${formData['shield_12_s1'] || ''}">
-    </div>
-  
-    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--soft-yellow);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">👥</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My Trust Circle</h3>
-      </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">Who are the safe people you can talk to?</p>
-      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
-             style="border-color: var(--secondary); background-color: white;"
-             placeholder="I trust and feel safe with..."
-             data-section="s2"
-             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s2', this.value)"
-             value="${formData['shield_12_s2'] || ''}">
-    </div>
-  
-    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--primary);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">🧘</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My &#039;No&#039; Power</h3>
-      </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">How do you say no when something doesn&#039;t feel right?</p>
-      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
-             style="border-color: var(--secondary); background-color: white;"
-             placeholder="When I need to say no, I..."
-             data-section="s3"
-             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s3', this.value)"
-             value="${formData['shield_12_s3'] || ''}">
-    </div>
-  
-    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: #a8d8ea;">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">🦁</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My Boundary Brave Moment</h3>
-      </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">When did you stand up for yourself or others?</p>
-      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
-             style="border-color: var(--secondary); background-color: white;"
-             placeholder="I was brave when I..."
-             data-section="s4"
-             onchange="handleShieldInput('shield_12', 4); saveFormData('shield_12_s4', this.value)"
-             value="${formData['shield_12_s4'] || ''}">
-    </div>
-  
-          </div>
-          
-          <!-- Progress Indicator -->
-          <div class="text-center mb-4">
-            <p class="font-body" style="color: var(--secondary);">Sections filled: <span id="shieldProgress">0</span> / 4</p>
-          </div>
-          
-          <!-- Win Message -->
-          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-4xl mb-2">🛡️</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Your shield is complete! You have the power to build healthy friendships and protect your boundaries!</p>
-          </div>
-          
-          <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="shieldComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input 
               type="checkbox" 
               class="w-8 h-8 rounded cursor-pointer"
               style="accent-color: var(--primary);"
-              data-activity="shield_12"
-              onchange="markActivityComplete('shield_12')"
-              ${completedActivities['shield_12'] ? 'checked disabled' : ''}
+              data-activity="checklist_10"
+              disabled
+              onchange="markActivityComplete('checklist_10')"
+              ${completedActivities['checklist_10'] ? 'checked disabled' : ''}
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
+            <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
           </div>
         </div>
       </div>
@@ -1589,35 +1383,90 @@
 
     function generatePage20() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="summary">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="word-scramble">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🤝 What We Learned About Relationships and Boundaries!</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Help-Seeking Heroes Word Scramble 🧩</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <div class="space-y-4 mb-8">
-            
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">Healthy relationships are built on kindness, respect, and trust with family and friends</span>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Unscramble these words about getting help when you feel angry or upset!</p>
+          
+          
+    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="HELP">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">🤝</span>
+        <span class="font-body text-sm" style="color: var(--secondary);">Hint: What you ask for when you need support</span>
+      </div>
+      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">PLEH</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'HELP'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_11_0', this.value);">
+      <p class="word-feedback text-center font-title mt-2"></p>
     </div>
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">Personal boundaries help us feel safe and comfortable - it&#039;s okay to say &#039;no&#039; when something doesn&#039;t feel right</span>
+  
+    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="TALK">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">💬</span>
+        <span class="font-body text-sm" style="color: var(--secondary);">Hint: Using words to share your feelings</span>
+      </div>
+      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">KALT</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'TALK'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_11_1', this.value);">
+      <p class="word-feedback text-center font-title mt-2"></p>
     </div>
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">Good friends listen to each other, share, and respect each other&#039;s feelings and space</span>
+  
+    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="TRUST">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">❤️</span>
+        <span class="font-body text-sm" style="color: var(--secondary);">Hint: Believing someone will keep you safe</span>
+      </div>
+      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">STURT</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'TRUST'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_11_2', this.value);">
+      <p class="word-feedback text-center font-title mt-2"></p>
     </div>
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">We can communicate our boundaries clearly and kindly, and we should always respect others&#039; boundaries too</span>
+  
+    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="CALM">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">😌</span>
+        <span class="font-body text-sm" style="color: var(--secondary);">Hint: A peaceful, quiet feeling inside</span>
+      </div>
+      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">MLAC</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'CALM'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_11_3', this.value);">
+      <p class="word-feedback text-center font-title mt-2"></p>
     </div>
+  
+    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="SAFE">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">🛡️</span>
+        <span class="font-body text-sm" style="color: var(--secondary);">Hint: Protected and secure</span>
+      </div>
+      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">TEFAS</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'SAFE'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_11_4', this.value);">
+      <p class="word-feedback text-center font-title mt-2"></p>
+    </div>
+  
+    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="BREATHE">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">🌬️</span>
+        <span class="font-body text-sm" style="color: var(--secondary);">Hint: What you do slowly when upset</span>
+      </div>
+      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">HEATREB</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'BREATHE'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_11_5', this.value);">
+      <p class="word-feedback text-center font-title mt-2"></p>
+    </div>
+  
+          
+          <div class="p-4 rounded-xl text-center" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold" style="color: var(--dark);">Fantastic work! Remember, asking for help when you feel angry shows how brave and smart you are. There are always caring adults ready to help you!</p>
           </div>
         </div>
         
-        <div class="rounded-xl p-6 flex items-center gap-4" style="background-color: var(--soft-yellow);">
-          <span class="text-5xl">🐕</span>
-          <p class="font-body text-lg font-semibold" style="color: var(--dark);">🐕 Great job learning about relationships and boundaries! Remember, you deserve to feel safe and respected in all your relationships. Keep practicing these skills - you&#039;re becoming such a caring and confident friend! Woof woof!</p>
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="scramble_11"
+            onchange="markActivityComplete('scramble_11')"
+            ${completedActivities['scramble_11'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I solved all the scrambles!</label>
         </div>
       </div>
     </div>`;
@@ -1625,14 +1474,275 @@
 
     function generatePage21() {
   return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="power-up-collector" data-activity="powerup_12">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Anger Helper Power-Ups ✨</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Collect the helpful anger tools and avoid the ones that might make things worse! Try to gather all the positive power-ups to build your calm toolkit.</p>
+          
+          <!-- Collection Progress -->
+          <div class="flex justify-center items-center gap-4 mb-6">
+            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl" style="background-color: var(--soft-yellow);">
+              <span class="text-3xl">🎒</span>
+              <span class="font-title text-2xl" style="color: var(--dark);"><span id="collectedCount">0</span> / 5</span>
+            </div>
+          </div>
+          
+          <!-- Collected Items Display -->
+          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl" style="background-color: var(--cream);" id="collectedDisplay">
+            <p class="font-body text-sm self-center" style="color: var(--secondary);">Your collected power-ups will appear here!</p>
+          </div>
+          
+          <!-- Power-Up Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
+            
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Ask for Help"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">🙋</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Ask for Help</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Tell a trusted adult</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Count to 10"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">🔢</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Count to 10</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Slow down your feelings</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="Hit Something"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">👊</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Hit Something</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Might hurt you or others</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Deep Breathing"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">🌬️</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Deep Breathing</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Calms your whole body</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="Bottle Up Feelings"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">🫙</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Bottle Up Feelings</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Keeps anger trapped inside</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Use Words"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">💬</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Use Words</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Share how you feel</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Take a Break"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">⏸️</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Take a Break</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Step away to cool down</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="Slam Doors"
+            onclick="handlePowerUpClick(this, 'powerup_12', 5)">
+      <div class="text-4xl mb-2">🚪</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Slam Doors</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Makes loud scary sounds</p>
+    </button>
+  
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" style="display: none;">
+            <p class="font-body text-lg" id="powerupFeedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🎉</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">You collected all the power-ups!</p>
+            <p class="font-body" style="color: var(--secondary);">These tools can help you feel better anytime!</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="powerupComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="powerup_12"
+              onchange="markActivityComplete('powerup_12')"
+              ${completedActivities['powerup_12'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .power-up-item:active { transform: scale(0.95); }
+        .power-up-item.collected { opacity: 0.5; pointer-events: none; border-color: var(--light-green) !important; }
+        .power-up-item.wrong { animation: shake 0.5s; background-color: #fecaca !important; }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+      </style>
+    </div>`;
+}
+
+    function generatePage22() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sorting-activity">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Help or Hurt? 🔄</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Sort these actions into &#039;Helpful&#039; (things that help when you feel angry) or &#039;Not Helpful&#039; (things that might make anger worse).</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #A8E6CF; border-color: var(--dark);" data-category="Helpful" data-category-index="0" onclick="sortSelectedItem(this, 'Helpful', 13)">
+      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">✅ Helpful</h3>
+      <div class="dropped-items space-y-2"></div>
+    </div>
+  
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #fecaca; border-color: var(--dark);" data-category="Not Helpful" data-category-index="1" onclick="sortSelectedItem(this, 'Not Helpful', 13)">
+      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">❌ Not Helpful</h3>
+      <div class="dropped-items space-y-2"></div>
+    </div>
+  
+          </div>
+          
+          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
+            <div class="sort-items-list space-y-2">
+              
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_0" data-correct-category="Helpful" data-explanation="Deep breaths help calm our body and mind" onclick="selectSortItem(this)">
+      Taking deep breaths
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_1" data-correct-category="Not Helpful" data-explanation="This can hurt others and make problems bigger" onclick="selectSortItem(this)">
+      Yelling at someone
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_2" data-correct-category="Helpful" data-explanation="Adults can help us solve problems and feel better" onclick="selectSortItem(this)">
+      Talking to a trusted adult
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_3" data-correct-category="Not Helpful" data-explanation="This can hurt people or break things" onclick="selectSortItem(this)">
+      Hitting or throwing things
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_4" data-correct-category="Helpful" data-explanation="This gives us time to calm down before acting" onclick="selectSortItem(this)">
+      Counting to 10
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_5" data-correct-category="Not Helpful" data-explanation="Bottled up feelings can grow bigger and harder to handle" onclick="selectSortItem(this)">
+      Keeping anger inside and not telling anyone
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_6" data-correct-category="Helpful" data-explanation="This helps us express emotions in a safe way" onclick="selectSortItem(this)">
+      Drawing or writing about feelings
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_7" data-correct-category="Not Helpful" data-explanation="Mean words can damage friendships and hurt people" onclick="selectSortItem(this)">
+      Saying mean things to hurt someone&#039;s feelings
+    </div>
+  
+            </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="sorting_13"
+            onchange="markActivityComplete('sorting_13')"
+            ${completedActivities['sorting_13'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage23() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="summary">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🌟 What We Learned About Getting Help Early! 🌟</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <div class="space-y-4 mb-8">
+            
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">It&#039;s always okay to ask for help when you feel angry or upset - that&#039;s what brave kids do!</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Taking deep breaths and counting to 10 can help us feel calmer before our anger gets too big</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Trusted adults like parents, teachers, and counselors are always there to help us work through tough feelings</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Using our words to express how we feel helps prevent anger from building up inside us</span>
+    </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-6 flex items-center gap-4" style="background-color: var(--soft-yellow);">
+          <span class="text-5xl">🐕</span>
+          <p class="font-body text-lg font-semibold" style="color: var(--dark);">🐕 Great job learning these important skills! Remember, asking for help early makes you strong and smart. I&#039;m so proud of how hard you worked! Keep practicing these tools whenever you need them. - Your friend, Buddy the Helper Dog</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage24() {
+  return `
     <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
       <div class="text-center max-w-2xl">
         <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
-        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">🎉 Congratulations! You Did It! 🎉</h1>
+        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">Congratulations! You Did It! 🎉</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
-          <p class="text-xl mb-4 font-body" style="color: var(--dark);">Wow! You&#039;ve completed your whole workbook with Daniel the Dog 🐕! Daniel is so proud of how hard you worked and all the amazing things you learned about your feelings and friendships.</p>
-          <p class="text-lg font-body" style="color: var(--secondary);">Keep practicing what you&#039;ve learned every day, and remember that Daniel the Dog 🐕 believes in you! You can always come back to this workbook whenever you need a reminder of how awesome you are.</p>
+          <p class="text-xl mb-4 font-body" style="color: var(--dark);">Wow! Daniel the Dog is so proud of you for completing this workbook! 🐕 You&#039;ve learned so many important skills about understanding your feelings and being kind to others. Daniel thinks you&#039;re absolutely amazing!</p>
+          <p class="text-lg font-body" style="color: var(--secondary);">Keep practicing what you&#039;ve learned every day, and remember that Daniel the Dog believes in you! You can always come back to this workbook whenever you need a reminder of how wonderful and capable you are.</p>
         </div>
         
         <div class="flex flex-col gap-4">
@@ -1663,7 +1773,7 @@
     </div>`;
 }
     
-    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17, generatePage18, generatePage19, generatePage20, generatePage21];
+    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17, generatePage18, generatePage19, generatePage20, generatePage21, generatePage22, generatePage23, generatePage24];
     
     // Navigation
     function nextPage() {
@@ -1968,7 +2078,7 @@
       
       try {
         header = initModuleHeader({
-          title: "Me, You, and Social Glue",
+          title: "Ask Early, Stay Strong",
           childName: childDisplayName,
           onNext: nextPage,
           onPrev: prevPage,
@@ -2019,7 +2129,7 @@
         
         if (feedbackEl) {
           feedbackEl.style.display = 'block';
-          feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca';
+          feedbackEl.style.backgroundColor = isCorrect ? 'var(--success)' : '#fecaca';
           feedbackEl.innerHTML = isCorrect 
             ? '<span class="font-body" style="color: var(--dark);">✓ Great choice! That is right!</span>'
             : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
@@ -2039,6 +2149,142 @@
       
       saveFormData('poll_' + starIndex, btn.textContent.trim());
     };
+    
+    // Breathing exercise animation
+    const breathingStates = {};
+    window.toggleBreathing = function(breathingId) {
+      if (breathingStates[breathingId]?.running) {
+        stopBreathing(breathingId);
+      } else {
+        startBreathing(breathingId);
+      }
+    };
+    
+    function startBreathing(breathingId) {
+      const circle = document.getElementById(breathingId);
+      const inhaleCard = document.getElementById(breathingId + '_inhale');
+      const holdCard = document.getElementById(breathingId + '_hold');
+      const exhaleCard = document.getElementById(breathingId + '_exhale');
+      const countEl = document.getElementById(breathingId + '_count');
+      
+      if (!circle) return;
+      
+      breathingStates[breathingId] = { running: true, count: 0, phase: 'ready' };
+      
+      const textEl = circle.querySelector('.breathing-text');
+      const emojiEl = circle.querySelector('.breathing-emoji');
+      
+      function resetCards() {
+        [inhaleCard, holdCard, exhaleCard].forEach(card => {
+          if (card) {
+            card.style.opacity = '0.5';
+            card.style.transform = 'scale(0.95)';
+            const timer = card.querySelector('.breathing-timer');
+            if (timer) timer.style.display = 'none';
+          }
+        });
+      }
+      
+      function activateCard(card, duration) {
+        resetCards();
+        if (card) {
+          card.style.opacity = '1';
+          card.style.transform = 'scale(1.02)';
+          const timer = card.querySelector('.breathing-timer');
+          if (timer) {
+            timer.style.display = 'block';
+            let remaining = duration;
+            timer.textContent = remaining;
+            const interval = setInterval(() => {
+              remaining--;
+              if (remaining > 0 && breathingStates[breathingId]?.running) {
+                timer.textContent = remaining;
+              } else {
+                clearInterval(interval);
+              }
+            }, 1000);
+          }
+        }
+      }
+      
+      function runBreathCycle() {
+        if (!breathingStates[breathingId]?.running) return;
+        
+        // INHALE - 4 seconds
+        breathingStates[breathingId].phase = 'inhale';
+        circle.style.transform = 'scale(1.3)';
+        circle.style.boxShadow = '0 0 40px rgba(168, 230, 207, 0.6)';
+        if (textEl) textEl.textContent = 'Breathe In...';
+        if (emojiEl) emojiEl.textContent = '😤';
+        activateCard(inhaleCard, 4);
+        
+        setTimeout(() => {
+          if (!breathingStates[breathingId]?.running) return;
+          
+          // HOLD - 4 seconds
+          breathingStates[breathingId].phase = 'hold';
+          circle.style.transform = 'scale(1.3)';
+          circle.style.boxShadow = '0 0 30px rgba(255, 232, 163, 0.6)';
+          if (textEl) textEl.textContent = 'Hold...';
+          if (emojiEl) emojiEl.textContent = '😊';
+          activateCard(holdCard, 4);
+          
+          setTimeout(() => {
+            if (!breathingStates[breathingId]?.running) return;
+            
+            // EXHALE - 4 seconds
+            breathingStates[breathingId].phase = 'exhale';
+            circle.style.transform = 'scale(1)';
+            circle.style.boxShadow = '0 0 20px rgba(125, 44, 52, 0.3)';
+            if (textEl) textEl.textContent = 'Breathe Out...';
+            if (emojiEl) emojiEl.textContent = '😌';
+            activateCard(exhaleCard, 4);
+            
+            setTimeout(() => {
+              if (!breathingStates[breathingId]?.running) return;
+              
+              // Increment breath count
+              breathingStates[breathingId].count++;
+              if (countEl) countEl.textContent = breathingStates[breathingId].count;
+              
+              // Check if completed 3 breaths
+              if (breathingStates[breathingId].count >= 3) {
+                stopBreathing(breathingId);
+                if (textEl) textEl.textContent = 'Great job! 🎉';
+                if (emojiEl) emojiEl.textContent = '⭐';
+                resetCards();
+                // Auto-check the checkbox
+                const checkbox = document.getElementById('breathing_' + breathingId.split('_')[1] + '_checkbox');
+                if (checkbox && !checkbox.checked) {
+                  checkbox.checked = true;
+                  checkbox.dispatchEvent(new Event('change'));
+                }
+              } else {
+                // Continue to next breath
+                runBreathCycle();
+              }
+            }, 4000);
+          }, 4000);
+        }, 4000);
+      }
+      
+      runBreathCycle();
+    }
+    
+    function stopBreathing(breathingId) {
+      const circle = document.getElementById(breathingId);
+      if (breathingStates[breathingId]) {
+        breathingStates[breathingId].running = false;
+      }
+      if (circle) {
+        circle.style.transform = 'scale(1)';
+        circle.style.boxShadow = 'none';
+        const textEl = circle.querySelector('.breathing-text');
+        if (textEl) textEl.textContent = 'Tap to Start';
+        const emojiEl = circle.querySelector('.breathing-emoji');
+        if (emojiEl) emojiEl.textContent = '🌬️';
+      }
+    }
     
     // Fill-blank input handler for inline text fields
     window.handleFillBlankInput = function(input, starIndex) {
@@ -2196,7 +2442,14 @@
     
     window.addShieldDecoration = function(emoji) {
       const display = document.getElementById('shieldDecorations');
-      if (display && display.textContent.length < 20) display.textContent += emoji;
+      if (display) {
+        // Create a span for each decoration to allow proper wrapping and display
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.style.display = 'inline-block';
+        span.style.margin = '2px';
+        display.appendChild(span);
+      }
     };
     
     let volcanoTemp = 100;
