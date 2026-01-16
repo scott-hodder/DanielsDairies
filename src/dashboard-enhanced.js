@@ -27,11 +27,17 @@ const CATEGORY_THEMES = {
     emoji: '🗺️',
     color: '#405878',
     description: 'View all your adventures',
-    skyGradient: ['#4AB8E8', '#6ECFF5', '#87CEEB', '#98D8C8', '#7CCD7C'],
-    decorations: ['🌲', '🌳', '🌸', '🌻', '🌼', '🏠', '⛺', '🌈'],
+    // Progress-based sky: starts neutral, ends peaceful
+    skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
+    skyGradientEnd: ['#87CEEB', '#98D8C8', '#7CCD7C', '#90EE90', '#98FB98'],
+    decorationsStart: ['🌲', '🌳', '🍂', '🍃'],
+    decorationsEnd: ['🌸', '🌻', '🌼', '🦋', '🐦', '🌈'],
     pathColor: { main: '#A08868', light: '#C4A882', shadow: 'rgba(101, 78, 55, 0.3)' },
     startMarker: '🏠',
-    endMarker: '🏁'
+    endMarker: '🏁',
+    destination: { name: "Adventure's End", emoji: '🏆' },
+    nodeEmojis: { incomplete: '📘', complete: '✨' },
+    danielExpressions: { start: 'focused', middle: 'happy', end: 'proud' }
   },
   
   anger: {
@@ -39,11 +45,17 @@ const CATEGORY_THEMES = {
     emoji: '🔥',
     color: '#8B0000',
     description: 'From fiery feelings to peaceful calm',
-    skyGradient: ['#FF6B6B', '#FF8E8E', '#FFB4B4', '#FFDADA', '#87CEEB'],
-    decorations: ['🔥', '💨', '🌿', '🌸', '🌼', '🌳', '🌈', '☀️'],
+    // Progress-based sky: harsh reds → orange warmth → calm blues/greens
+    skyGradientStart: ['#8B0000', '#A52A2A', '#CD5C5C', '#DC143C', '#FF6347'],
+    skyGradientEnd: ['#87CEEB', '#98D8C8', '#90EE90', '#98FB98', '#E0FFFF'],
+    decorationsStart: ['🔥', '💨', '💢', '⚡', '🌪️'],
+    decorationsEnd: ['🌸', '🌼', '🦋', '🐦', '☀️', '🌈', '🌿'],
     pathColor: { main: '#8B4513', light: '#A0522D', shadow: 'rgba(139, 0, 0, 0.3)' },
     startMarker: '🔥',
-    endMarker: '🌸'
+    endMarker: '🌸',
+    destination: { name: 'Calm Meadow', emoji: '🏕️' },
+    nodeEmojis: { incomplete: '😠', complete: '😊' },
+    danielExpressions: { start: 'stressed', middle: 'focused', end: 'calm' }
   },
   
   anxiety: {
@@ -51,11 +63,17 @@ const CATEGORY_THEMES = {
     emoji: '🌧️',
     color: '#ab47bc',
     description: 'From stormy skies to sunshine',
-    skyGradient: ['#6B7B8C', '#8899AA', '#AAB8C8', '#CCE0F0', '#87CEEB'],
-    decorations: ['🌧️', '💨', '☁️', '🌤️', '☀️', '🌈', '🌻', '🌳'],
+    // Progress-based sky: dark stormy → clearing → bright sunny
+    skyGradientStart: ['#4A5568', '#5A6578', '#6B7B8C', '#7C8B9C', '#8D9BAC'],
+    skyGradientEnd: ['#87CEEB', '#FFE4B5', '#FFFACD', '#FFF8DC', '#FFFFF0'],
+    decorationsStart: ['🌧️', '💨', '☁️', '🌫️', '⛈️'],
+    decorationsEnd: ['☀️', '🌈', '🌻', '🦋', '🐦', '🌸'],
     pathColor: { main: '#9370DB', light: '#BA55D3', shadow: 'rgba(171, 71, 188, 0.3)' },
     startMarker: '🌧️',
-    endMarker: '☀️'
+    endMarker: '☀️',
+    destination: { name: 'Sunny Clearing', emoji: '🌅' },
+    nodeEmojis: { incomplete: '😰', complete: '😌' },
+    danielExpressions: { start: 'worried', middle: 'hopeful', end: 'peaceful' }
   },
   
   depression: {
@@ -63,11 +81,17 @@ const CATEGORY_THEMES = {
     emoji: '🌙',
     color: '#002657',
     description: 'From darkness to bright garden',
-    skyGradient: ['#2C3E50', '#4A5568', '#718096', '#A0AEC0', '#87CEEB'],
-    decorations: ['🌙', '✨', '🌱', '🌿', '🌷', '🌸', '🌻', '🌈'],
+    // Progress-based sky: dark night → dawn → bright day
+    skyGradientStart: ['#1a1a2e', '#16213e', '#1f3460', '#2C3E50', '#34495E'],
+    skyGradientEnd: ['#87CEEB', '#FFB347', '#FFCC33', '#FFD700', '#FFF8DC'],
+    decorationsStart: ['🌙', '✨', '🌑', '💫'],
+    decorationsEnd: ['🌻', '🌷', '🌸', '🦋', '🐦', '☀️', '🌈'],
     pathColor: { main: '#4682B4', light: '#5F9EA0', shadow: 'rgba(0, 38, 87, 0.3)' },
     startMarker: '🌙',
-    endMarker: '🌻'
+    endMarker: '🌻',
+    destination: { name: 'Bright Garden', emoji: '🌻' },
+    nodeEmojis: { incomplete: '😔', complete: '😊' },
+    danielExpressions: { start: 'sad', middle: 'hopeful', end: 'joyful' }
   },
   
   emotions: {
@@ -75,11 +99,17 @@ const CATEGORY_THEMES = {
     emoji: '💭',
     color: '#f46b6b',
     description: 'Understanding all feelings',
-    skyGradient: ['#FFB6C1', '#FFDAB9', '#E6E6FA', '#B0E0E6', '#87CEEB'],
-    decorations: ['💭', '😊', '💪', '🌟', '💖', '🌈', '✨', '🌸'],
+    // Progress-based sky: mixed/confused → balanced → harmonious
+    skyGradientStart: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2'],
+    skyGradientEnd: ['#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFF0F5', '#FFFAFA'],
+    decorationsStart: ['💭', '❓', '🌀', '💫'],
+    decorationsEnd: ['💖', '😊', '🌈', '✨', '🦋', '🌸'],
     pathColor: { main: '#FF6B6B', light: '#FF8E8E', shadow: 'rgba(244, 107, 107, 0.3)' },
     startMarker: '💭',
-    endMarker: '💖'
+    endMarker: '💖',
+    destination: { name: 'Heart Haven', emoji: '💖' },
+    nodeEmojis: { incomplete: '🤔', complete: '😊' },
+    danielExpressions: { start: 'curious', middle: 'understanding', end: 'loving' }
   },
   
   body: {
@@ -87,11 +117,17 @@ const CATEGORY_THEMES = {
     emoji: '💪',
     color: '#f4a73b',
     description: 'Connect with your body',
-    skyGradient: ['#FFE4B5', '#FFDAB9', '#FFF8DC', '#E0FFFF', '#87CEEB'],
-    decorations: ['⚡', '💪', '🏃', '🧘', '🌊', '🍃', '🌸', '🌈'],
+    // Progress-based sky: tense energy → flowing → calm
+    skyGradientStart: ['#FF8C00', '#FFA500', '#FFB347', '#FFCC00', '#FFD700'],
+    skyGradientEnd: ['#87CEEB', '#B0E0E6', '#ADD8E6', '#E0FFFF', '#F0FFFF'],
+    decorationsStart: ['⚡', '💨', '🔥', '💪'],
+    decorationsEnd: ['🧘', '🌊', '🍃', '🦋', '🌸', '☀️'],
     pathColor: { main: '#F4A73B', light: '#FFB84D', shadow: 'rgba(244, 167, 59, 0.3)' },
     startMarker: '⚡',
-    endMarker: '🧘'
+    endMarker: '🧘',
+    destination: { name: 'Zen Garden', emoji: '🧘' },
+    nodeEmojis: { incomplete: '😤', complete: '😌' },
+    danielExpressions: { start: 'tense', middle: 'relaxing', end: 'zen' }
   },
   
   cognitive: {
@@ -99,11 +135,17 @@ const CATEGORY_THEMES = {
     emoji: '🧠',
     color: '#35a4d4',
     description: 'Train your brain',
-    skyGradient: ['#B0C4DE', '#ADD8E6', '#87CEEB', '#00CED1', '#48D1CC'],
-    decorations: ['💭', '💡', '🧠', '📚', '🎯', '⭐', '🌟', '✨'],
+    // Progress-based sky: foggy → clearing → crystal clear
+    skyGradientStart: ['#778899', '#8899AA', '#99AABB', '#AABBCC', '#BBCCDD'],
+    skyGradientEnd: ['#00CED1', '#48D1CC', '#40E0D0', '#7FFFD4', '#AFEEEE'],
+    decorationsStart: ['💭', '🌫️', '❓', '🤔'],
+    decorationsEnd: ['💡', '⭐', '🌟', '✨', '🎯', '🏆'],
     pathColor: { main: '#35A4D4', light: '#5BB8DE', shadow: 'rgba(53, 164, 212, 0.3)' },
     startMarker: '💭',
-    endMarker: '💡'
+    endMarker: '💡',
+    destination: { name: 'Clarity Peak', emoji: '💡' },
+    nodeEmojis: { incomplete: '🤔', complete: '🧠' },
+    danielExpressions: { start: 'confused', middle: 'thinking', end: 'enlightened' }
   },
   
   social: {
@@ -111,11 +153,17 @@ const CATEGORY_THEMES = {
     emoji: '👫',
     color: '#4caf50',
     description: 'Connect with others',
-    skyGradient: ['#98FB98', '#90EE90', '#87CEEB', '#ADD8E6', '#E0FFFF'],
-    decorations: ['🏠', '👫', '🤝', '💬', '❤️', '🎉', '🌳', '🌈'],
+    // Progress-based sky: isolated → connecting → together
+    skyGradientStart: ['#90A4AE', '#A5B5BF', '#B0BEC5', '#CFD8DC', '#ECEFF1'],
+    skyGradientEnd: ['#98FB98', '#90EE90', '#7CCD7C', '#66CDAA', '#3CB371'],
+    decorationsStart: ['🏠', '🚪', '🌲'],
+    decorationsEnd: ['👫', '🤝', '❤️', '🎉', '🎊', '🦋', '🌈'],
     pathColor: { main: '#4CAF50', light: '#66BB6A', shadow: 'rgba(76, 175, 80, 0.3)' },
     startMarker: '🏠',
-    endMarker: '🎉'
+    endMarker: '🎉',
+    destination: { name: 'Friendship Circle', emoji: '🎉' },
+    nodeEmojis: { incomplete: '🙂', complete: '😄' },
+    danielExpressions: { start: 'shy', middle: 'friendly', end: 'celebrating' }
   },
   
   general: {
@@ -123,12 +171,45 @@ const CATEGORY_THEMES = {
     emoji: '📚',
     color: '#4c6c96',
     description: 'Life skills and more',
-    skyGradient: ['#B0C4DE', '#ADD8E6', '#87CEEB', '#98D8F0', '#E0FFFF'],
-    decorations: ['📚', '📖', '✏️', '🎓', '🌟', '🏆', '🎯', '🌈'],
+    // Progress-based sky: learning → growing → mastering
+    skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
+    skyGradientEnd: ['#87CEEB', '#98D8F0', '#ADD8E6', '#B0E0E6', '#E0FFFF'],
+    decorationsStart: ['📚', '📖', '✏️'],
+    decorationsEnd: ['🎓', '🏆', '⭐', '🌟', '✨', '🎯'],
     pathColor: { main: '#4C6C96', light: '#6080A8', shadow: 'rgba(76, 108, 150, 0.3)' },
     startMarker: '📚',
-    endMarker: '🏆'
+    endMarker: '🏆',
+    destination: { name: 'Achievement Hall', emoji: '🏆' },
+    nodeEmojis: { incomplete: '📖', complete: '🎓' },
+    danielExpressions: { start: 'curious', middle: 'learning', end: 'proud' }
   }
+};
+
+// Daniel expression images mapping
+const DANIEL_EXPRESSIONS = {
+  stressed: '/images/characters/DanielTheDog.png',
+  worried: '/images/characters/DanielTheDog.png',
+  sad: '/images/characters/DanielTheDog.png',
+  tense: '/images/characters/DanielTheDog.png',
+  confused: '/images/characters/DanielTheDog.png',
+  shy: '/images/characters/DanielTheDog.png',
+  curious: '/images/characters/DanielTheDog.png',
+  focused: '/images/characters/DanielTheDog.png',
+  hopeful: '/images/characters/DanielTheDog.png',
+  relaxing: '/images/characters/DanielTheDog.png',
+  thinking: '/images/characters/DanielTheDog.png',
+  friendly: '/images/characters/DanielTheDog.png',
+  learning: '/images/characters/DanielTheDog.png',
+  understanding: '/images/characters/DanielTheDog.png',
+  happy: '/images/characters/DanielTheDog.png',
+  calm: '/images/characters/DanielTheDog.png',
+  peaceful: '/images/characters/DanielTheDog.png',
+  joyful: '/images/characters/DanielTheDog.png',
+  loving: '/images/characters/DanielTheDog.png',
+  zen: '/images/characters/DanielTheDog.png',
+  enlightened: '/images/characters/DanielTheDog.png',
+  celebrating: '/images/characters/DanielTheDog.png',
+  proud: '/images/characters/DanielTheDog.png'
 };
 
 // ================================================
@@ -271,6 +352,51 @@ class AdventureMapV4 {
     css.push('.map-empty-emoji { font-size: 64px; margin-bottom: 16px; opacity: 0.6; }');
     css.push('.map-empty-title { font-family: "Fredoka", sans-serif; font-size: 20px; font-weight: 600; color: #405878; margin-bottom: 8px; }');
     css.push('.map-empty-text { font-size: 14px; max-width: 300px; }');
+    
+    // Enhanced "next" node styles - bigger, pulsing, dramatic
+    css.push('.adventure-node.available { width: 76px; height: 76px; background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%); animation: nextNodePulse 2s ease-in-out infinite, nextNodeGlow 1.5s ease-in-out infinite alternate; }');
+    css.push('.adventure-node.available .node-emoji { font-size: 32px; animation: emojiShake 0.5s ease-in-out infinite; }');
+    css.push('@keyframes nextNodePulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }');
+    css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
+    css.push('@keyframes emojiShake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }');
+    
+    // Daniel companion on path styles
+    css.push('.daniel-companion { position: absolute; width: 64px; height: 64px; z-index: 12; pointer-events: none; transition: all 0.5s ease; }');
+    css.push('.daniel-companion-inner { width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,0.95); padding: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: danielWalk 1s ease-in-out infinite; }');
+    css.push('.daniel-companion img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }');
+    css.push('.daniel-expression-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; color: #405878; white-space: nowrap; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 10px; font-family: "Fredoka", sans-serif; }');
+    css.push('@keyframes danielWalk { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }');
+    
+    // Destination marker styles
+    css.push('.destination-marker { position: absolute; z-index: 6; text-align: center; pointer-events: none; animation: destinationFloat 3s ease-in-out infinite; }');
+    css.push('.destination-icon { font-size: 48px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }');
+    css.push('.destination-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #fff; background: linear-gradient(135deg, rgba(34,197,94,0.9), rgba(22,163,74,0.9)); padding: 6px 14px; border-radius: 20px; margin-top: 8px; display: inline-block; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }');
+    css.push('@keyframes destinationFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }');
+    
+    // Mini-moments on path (signposts, campfires)
+    css.push('.path-moment { position: absolute; z-index: 3; pointer-events: none; text-align: center; }');
+    css.push('.path-moment-icon { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }');
+    css.push('.path-moment-label { font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 600; color: #405878; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: 8px; margin-top: 4px; display: block; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }');
+    css.push('.path-moment.campfire .path-moment-icon { animation: campfireFlicker 0.5s ease-in-out infinite alternate; }');
+    css.push('@keyframes campfireFlicker { 0% { transform: scale(1); filter: drop-shadow(0 2px 4px rgba(255,100,0,0.4)); } 100% { transform: scale(1.1); filter: drop-shadow(0 2px 8px rgba(255,150,0,0.6)); } }');
+    
+    // Environmental feedback elements
+    css.push('.env-element { position: absolute; pointer-events: none; z-index: 1; transition: opacity 0.5s ease; }');
+    css.push('.env-element.bloom { animation: bloomIn 0.8s ease-out forwards; }');
+    css.push('@keyframes bloomIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }');
+    css.push('.env-butterfly { animation: butterflyFloat 4s ease-in-out infinite; }');
+    css.push('@keyframes butterflyFloat { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 25% { transform: translate(10px, -15px) rotate(5deg); } 50% { transform: translate(20px, 0) rotate(0deg); } 75% { transform: translate(10px, 10px) rotate(-5deg); } }');
+    css.push('.env-bird { animation: birdFly 6s ease-in-out infinite; }');
+    css.push('@keyframes birdFly { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -20px); } }');
+    css.push('.env-sparkle { animation: sparkleShine 1.5s ease-in-out infinite; }');
+    css.push('@keyframes sparkleShine { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }');
+    
+    // Progress-reactive grass layer
+    css.push('.map-bg-grass-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; pointer-events: none; transition: background 0.8s ease; }');
+    
+    // Cracked ground effect for start zone
+    css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
+    
     css.push('@media (max-width: 768px) { .adventure-viewport { height: 400px; } .adventure-node { width: 56px; height: 56px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .zone-label { font-size: 12px; padding: 2px 8px; } .current-indicator { width: 48px; height: 48px; top: -48px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
     
     var styles = document.createElement('style');
@@ -498,9 +624,55 @@ class AdventureMapV4 {
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
     var bgSky = document.getElementById('mapBgSky');
     
-    if (bgSky && theme.skyGradient) {
-      bgSky.style.background = 'linear-gradient(180deg, ' + theme.skyGradient[0] + ' 0%, ' + theme.skyGradient[1] + ' 25%, ' + theme.skyGradient[2] + ' 50%, ' + theme.skyGradient[3] + ' 75%, ' + theme.skyGradient[4] + ' 100%)';
+    // Calculate progress percentage for dynamic sky
+    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var total = this.modules.length;
+    var progress = total > 0 ? completed / total : 0;
+    
+    if (bgSky && theme.skyGradientStart && theme.skyGradientEnd) {
+      var self = this;
+      var interpolatedGradient = [];
+      for (var i = 0; i < 5; i++) {
+        var startColor = theme.skyGradientStart[i];
+        var endColor = theme.skyGradientEnd[i];
+        interpolatedGradient.push(self.interpolateColor(startColor, endColor, progress));
+      }
+      bgSky.style.background = 'linear-gradient(180deg, ' + interpolatedGradient[0] + ' 0%, ' + interpolatedGradient[1] + ' 25%, ' + interpolatedGradient[2] + ' 50%, ' + interpolatedGradient[3] + ' 75%, ' + interpolatedGradient[4] + ' 100%)';
     }
+  }
+  
+  interpolateColor(color1, color2, factor) {
+    var c1 = this.hexToRgb(color1);
+    var c2 = this.hexToRgb(color2);
+    if (!c1 || !c2) return color1;
+    var r = Math.round(c1.r + (c2.r - c1.r) * factor);
+    var g = Math.round(c1.g + (c2.g - c1.g) * factor);
+    var b = Math.round(c1.b + (c2.b - c1.b) * factor);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  
+  hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+  }
+  
+  getProgressLevel() {
+    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var total = this.modules.length;
+    if (total === 0) return 0;
+    var progress = completed / total;
+    if (progress < 0.33) return 0;
+    if (progress < 0.66) return 1;
+    return 2;
+  }
+  
+  getDanielExpression() {
+    var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
+    var level = this.getProgressLevel();
+    var expressions = theme.danielExpressions || { start: 'focused', middle: 'happy', end: 'proud' };
+    if (level === 0) return expressions.start;
+    if (level === 1) return expressions.middle;
+    return expressions.end;
   }
 
   calculateNodePositions() {
@@ -563,24 +735,38 @@ class AdventureMapV4 {
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
     var positions = this.calculateNodePositions();
     var viewportWidth = this.viewport ? this.viewport.offsetWidth : 400;
+    var progressLevel = this.getProgressLevel();
+    var self = this;
 
-    for (var i = 0; i < 3; i++) {
+    // Clouds - fewer as progress increases
+    var numClouds = Math.max(1, 3 - progressLevel);
+    for (var i = 0; i < numClouds; i++) {
       var cloud = document.createElement('div');
       cloud.className = 'floating-cloud';
       cloud.textContent = '☁️';
       cloud.style.top = (20 + Math.random() * 60) + 'px';
       cloud.style.animationDelay = (i * 7) + 's';
       cloud.style.animationDuration = (18 + Math.random() * 10) + 's';
+      cloud.style.opacity = (0.4 + (1 - progressLevel * 0.3) * 0.3).toString();
       container.appendChild(cloud);
     }
 
-    var self = this;
+    // Get progress-based decorations
+    var decorationsStart = theme.decorationsStart || ['🌲', '🌳'];
+    var decorationsEnd = theme.decorationsEnd || ['🌸', '🌻', '🦋'];
+    
     positions.forEach(function(pos, index) {
-      var numDecorations = 2 + Math.floor(Math.random() * 3);
+      var module = self.modules[index];
+      var isCompleted = module && module.status === 'completed';
+      var nodeProgress = self.modules.length > 0 ? index / self.modules.length : 0;
+      
+      // Choose decorations based on position in journey
+      var decorations = nodeProgress < 0.5 ? decorationsStart : decorationsEnd;
+      var numDecorations = 2 + Math.floor(Math.random() * 2);
       
       for (var d = 0; d < numDecorations; d++) {
-        var decoIndex = (index + d) % theme.decorations.length;
-        var deco = theme.decorations[decoIndex];
+        var decoIndex = (index + d) % decorations.length;
+        var deco = decorations[decoIndex];
         var angle = (d / numDecorations) * Math.PI * 2 + Math.random() * 0.5;
         var distance = 60 + Math.random() * 80;
         var decoX = pos.x + Math.cos(angle) * distance;
@@ -602,8 +788,50 @@ class AdventureMapV4 {
         }
         container.appendChild(el);
       }
+      
+      // Add environmental feedback near completed nodes
+      if (isCompleted) {
+        // Add flowers blooming near completed nodes
+        var flowerEmojis = ['🌸', '🌼', '🌻', '🌷'];
+        for (var f = 0; f < 2; f++) {
+          var flower = document.createElement('div');
+          flower.className = 'env-element bloom';
+          flower.textContent = flowerEmojis[Math.floor(Math.random() * flowerEmojis.length)];
+          flower.style.left = (pos.x + (Math.random() - 0.5) * 100) + 'px';
+          flower.style.top = (pos.y + 30 + Math.random() * 40) + 'px';
+          flower.style.fontSize = '20px';
+          flower.style.animationDelay = (Math.random() * 0.5) + 's';
+          container.appendChild(flower);
+        }
+        
+        // Add butterflies/birds near completed nodes
+        if (Math.random() > 0.5) {
+          var creature = document.createElement('div');
+          creature.className = 'env-element ' + (Math.random() > 0.5 ? 'env-butterfly' : 'env-bird');
+          creature.textContent = Math.random() > 0.5 ? '🦋' : '🐦';
+          creature.style.left = (pos.x + (Math.random() - 0.5) * 80) + 'px';
+          creature.style.top = (pos.y - 20 - Math.random() * 30) + 'px';
+          creature.style.fontSize = '18px';
+          creature.style.animationDelay = (Math.random() * 2) + 's';
+          container.appendChild(creature);
+        }
+        
+        // Add sparkles
+        var sparkle = document.createElement('div');
+        sparkle.className = 'env-element env-sparkle';
+        sparkle.textContent = '✨';
+        sparkle.style.left = (pos.x + 35) + 'px';
+        sparkle.style.top = (pos.y - 25) + 'px';
+        sparkle.style.fontSize = '16px';
+        sparkle.style.animationDelay = (Math.random() * 1.5) + 's';
+        container.appendChild(sparkle);
+      }
     });
 
+    // Add mini-moments on path (signposts, campfires)
+    this.renderPathMoments(container, positions);
+
+    // Add zone labels
     var zones = this.getZoneLabels();
     if (positions.length >= 3) {
       var zoneSpacing = Math.floor(positions.length / zones.length);
@@ -619,8 +847,127 @@ class AdventureMapV4 {
         container.appendChild(label);
       });
     }
-  }
 
+    // Add destination marker at the end
+    this.renderDestination(container, positions);
+    
+    // Add Daniel companion on the path
+    this.renderDanielCompanion(container, positions);
+  }
+  
+  renderPathMoments(container, positions) {
+    if (positions.length < 3) return;
+    
+    var moments = [
+      { icon: '🪧', label: 'Pause', type: 'signpost' },
+      { icon: '🔥', label: 'Rest', type: 'campfire' },
+      { icon: '🪧', label: 'Breathe', type: 'signpost' },
+      { icon: '💭', label: 'Check In', type: 'signpost' }
+    ];
+    
+    // Place moments between nodes (not on every gap)
+    var momentSpacing = Math.max(2, Math.floor(positions.length / 3));
+    var momentIndex = 0;
+    
+    for (var i = momentSpacing; i < positions.length - 1; i += momentSpacing) {
+      if (momentIndex >= moments.length) break;
+      
+      var pos1 = positions[i - 1];
+      var pos2 = positions[i];
+      var midX = (pos1.x + pos2.x) / 2 + (Math.random() - 0.5) * 40;
+      var midY = (pos1.y + pos2.y) / 2;
+      
+      var moment = moments[momentIndex];
+      var momentEl = document.createElement('div');
+      momentEl.className = 'path-moment ' + moment.type;
+      momentEl.style.left = (midX - 20) + 'px';
+      momentEl.style.top = (midY - 20) + 'px';
+      
+      var iconEl = document.createElement('div');
+      iconEl.className = 'path-moment-icon';
+      iconEl.textContent = moment.icon;
+      momentEl.appendChild(iconEl);
+      
+      var labelEl = document.createElement('div');
+      labelEl.className = 'path-moment-label';
+      labelEl.textContent = moment.label;
+      momentEl.appendChild(labelEl);
+      
+      container.appendChild(momentEl);
+      momentIndex++;
+    }
+  }
+  
+  renderDestination(container, positions) {
+    if (positions.length === 0) return;
+    
+    var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
+    var destination = theme.destination || { name: 'Finish', emoji: '🏆' };
+    var lastPos = positions[positions.length - 1];
+    
+    var destMarker = document.createElement('div');
+    destMarker.className = 'destination-marker';
+    destMarker.style.left = (lastPos.x + 60) + 'px';
+    destMarker.style.top = (lastPos.y - 30) + 'px';
+    
+    var destIcon = document.createElement('div');
+    destIcon.className = 'destination-icon';
+    destIcon.textContent = destination.emoji;
+    destMarker.appendChild(destIcon);
+    
+    var destLabel = document.createElement('div');
+    destLabel.className = 'destination-label';
+    destLabel.textContent = destination.name;
+    destMarker.appendChild(destLabel);
+    
+    container.appendChild(destMarker);
+  }
+  
+  renderDanielCompanion(container, positions) {
+    if (positions.length === 0) return;
+    
+    // Find Daniel's position - he should be at the furthest completed module
+    var danielIndex = -1;
+    for (var i = 0; i < this.modules.length; i++) {
+      if (this.modules[i].status === 'completed') {
+        danielIndex = i;
+      } else if (this.modules[i].status === 'available') {
+        // Daniel is just before the current available module
+        break;
+      }
+    }
+    
+    // If no modules completed, Daniel is at the start
+    if (danielIndex < 0) danielIndex = 0;
+    
+    var pos = positions[danielIndex];
+    if (!pos) return;
+    
+    var expression = this.getDanielExpression();
+    var expressionImage = DANIEL_EXPRESSIONS[expression] || DANIEL_EXPRESSIONS.focused;
+    
+    var daniel = document.createElement('div');
+    daniel.className = 'daniel-companion';
+    daniel.style.left = (pos.x - 32) + 'px';
+    daniel.style.top = (pos.y - 80) + 'px';
+    
+    var danielInner = document.createElement('div');
+    danielInner.className = 'daniel-companion-inner';
+    
+    var danielImg = document.createElement('img');
+    danielImg.src = expressionImage;
+    danielImg.alt = 'Daniel - ' + expression;
+    danielInner.appendChild(danielImg);
+    daniel.appendChild(danielInner);
+    
+    var expressionLabel = document.createElement('div');
+    expressionLabel.className = 'daniel-expression-label';
+    expressionLabel.textContent = expression.charAt(0).toUpperCase() + expression.slice(1);
+    daniel.appendChild(expressionLabel);
+    
+    container.appendChild(daniel);
+  }
+  
   getZoneLabels() {
     var zonesByCategory = {
       anger: ['🔥 Hot Start', '❄️ Cooling Down', '🌸 Finding Peace'],
@@ -661,8 +1008,10 @@ class AdventureMapV4 {
 
       var emoji = document.createElement('span');
       emoji.className = 'node-emoji';
-      if (self.currentCategory === 'anger') {
-        emoji.textContent = (module.status === 'completed') ? '😊' : '😠';
+      // Use category-specific node emojis for all categories
+      var catThemeForEmoji = CATEGORY_THEMES[self.currentCategory] || CATEGORY_THEMES.all;
+      if (catThemeForEmoji.nodeEmojis) {
+        emoji.textContent = (module.status === 'completed') ? catThemeForEmoji.nodeEmojis.complete : catThemeForEmoji.nodeEmojis.incomplete;
       } else {
         emoji.textContent = module.emoji;
       }

@@ -175,9 +175,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
   
-  // Debug: Log what palette was generated
-  console.log(`[renderHtml] categoryColor input: ${categoryColor}`);
-  console.log(`[renderHtml] Generated palette:`, JSON.stringify(palette));
   
   // Track indices for each content type
   const indices = {
@@ -568,12 +565,10 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     function handleModuleCompletion() {
       // Prevent multiple completions
       if (moduleCompletionHandled) {
-        console.log('[ModuleHeader] Module completion already handled, skipping...');
         return;
       }
       moduleCompletionHandled = true;
 
-      console.log('[ModuleHeader] Handling module completion...');
 
       // Get module parameters from URL
       try {
@@ -581,7 +576,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         const childId = params.get('childId');
         const moduleId = params.get('moduleId');
         
-        console.log(\`[ModuleHeader] URL params - childId: \$\{childId}, moduleId: \$\{moduleId}\`);
         
         if (childId && moduleId) {
           // Mark module as completed
@@ -601,7 +595,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
           await window.completeModuleDB();
         }
         
-        console.log('[ModuleHeader] Module completed successfully');
         
         // Navigate back to dashboard
         goHome();
@@ -611,7 +604,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     }
 
     function showCompletionCelebration() {
-      console.log('[showCompletionCelebration] Starting...');
       try {
         // Create celebration modal
         const celebrationModal = document.createElement('div');
@@ -619,7 +611,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         celebrationModal.innerHTML = '<div class="module-completion-content"><div class="completion-emoji">🎉</div><h2 class="completion-title">Module Complete!</h2><p class="completion-message">Congratulations! You have finished this module and learned valuable emotional skills.</p><div class="completion-confetti" id="completionConfetti"></div><button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button></div>';
         
         document.body.appendChild(celebrationModal);
-        console.log('[showCompletionCelebration] Modal appended');
         
         // Generate confetti
         if (typeof generateCompletionConfetti === 'function') {
@@ -3365,9 +3356,6 @@ serve(async (req) => {
     const seriesId = body?.seriesId;
     const category = body?.category;
     
-    // Debug logging
-    console.log(`[AI] Request received - seriesId: ${seriesId}, category: ${category}, asyncMode: ${asyncMode}, contentBrief length: ${contentBrief?.length || 0}`);
-    console.log(`[AI] Full body keys: ${Object.keys(body || {}).join(', ')}`);
     
     if (!contentBrief) {
       return jsonResponse({ error: "contentBrief is required" }, 400);
@@ -3376,7 +3364,6 @@ serve(async (req) => {
     // Look up category color if category provided
     let categoryColor: string | null = null;
     if (category) {
-      console.log(`[AI] Looking up category color for: ${category}`);
       const { data: categoryData, error: categoryError } = await supabaseClient
         .from("category_colors")
         .select("color")
@@ -3385,16 +3372,12 @@ serve(async (req) => {
       
       if (!categoryError && categoryData?.color) {
         categoryColor = categoryData.color;
-        console.log(`[AI] Using category color: ${categoryColor}`);
-      } else {
-        console.log(`[AI] Category lookup failed or no color:`, categoryError);
       }
     }
     
     // Fetch series info if seriesId provided
     let seriesInfo: SeriesInfo | null = null;
     if (seriesId) {
-      console.log(`[AI] Looking up series with id/label: ${seriesId}`);
       
       // Check if seriesId looks like a UUID (contains dashes and is ~36 chars)
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seriesId);
@@ -3423,7 +3406,6 @@ serve(async (req) => {
         
         // If not found by exact label, try partial match
         if (seriesError && seriesError.code === 'PGRST116') {
-          console.log(`[AI] Exact label match failed, trying partial match...`);
           const partialResult = await supabaseClient
             .from("series")
             .select("label, character_type, emoji")
@@ -3467,9 +3449,7 @@ serve(async (req) => {
           character_type: series.character_type,
           emoji: emoji
         };
-        console.log(`[AI] Using series: ${seriesInfo.label} (${seriesInfo.character_type} ${seriesInfo.emoji})`);
       } else {
-        console.log(`[AI] Series lookup failed for id ${seriesId}:`, seriesError);
       }
     }
     

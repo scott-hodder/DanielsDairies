@@ -1086,3 +1086,252 @@ export async function deleteSkill(id) {
     throw error
   }
 }
+
+// ================================================
+// Child Focus Plan Functions
+// ================================================
+
+// Get active focus plan for a child
+export async function getChildFocusPlan(childId) {
+  try {
+    const { data, error } = await supabase
+      .from('child_focus_plan')
+      .select('*')
+      .eq('child_id', childId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    
+    if (error) {
+      // Table might not exist yet - return null instead of throwing
+      console.warn('Warning getting child focus plan:', error.message)
+      return null
+    }
+    return data
+  } catch (error) {
+    console.error('Error getting child focus plan:', error)
+    return null
+  }
+}
+
+// Get all focus plans for a child (including inactive)
+export async function getChildFocusPlanHistory(childId) {
+  try {
+    const { data, error } = await supabase
+      .from('child_focus_plan')
+      .select('*')
+      .eq('child_id', childId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error getting child focus plan history:', error)
+    throw error
+  }
+}
+
+// Create a new focus plan for a child
+export async function createChildFocusPlan({
+  childId,
+  targetCategoryIds,
+  defaultPathwayId = null,
+  goalKeys = null,
+  goalText = null,
+  frequency = null,
+  intensity = null,
+  comments = null
+}) {
+  try {
+    // First, deactivate any existing active plans for this child
+    try {
+      await supabase
+        .from('child_focus_plan')
+        .update({ is_active: false })
+        .eq('child_id', childId)
+        .eq('is_active', true)
+    } catch (deactivateError) {
+      // Log but don't fail if deactivation fails
+      console.warn('Warning deactivating old plans:', deactivateError)
+    }
+    
+    // Build the insert object with only non-null fields
+    const insertData = {
+      child_id: childId,
+      is_active: true,
+      target_category_ids: targetCategoryIds || []
+    }
+    
+    // Set the primary category (first selected)
+    if (targetCategoryIds && targetCategoryIds.length > 0) {
+      insertData.category = targetCategoryIds[0]
+      
+      // Look up the pathway for this category
+      try {
+        const { data: categoryData } = await supabase
+          .from('category_colors')
+          .select('category')
+          .eq('id', targetCategoryIds[0])
+          .single()
+        
+        if (categoryData && categoryData.category) {
+          // Find the pathway that matches this category
+          const { data: pathwayData } = await supabase
+            .from('pathways')
+            .select('id')
+            .eq('category', categoryData.category)
+            .single()
+          
+          if (pathwayData) {
+            insertData.default_pathway_id = pathwayData.id
+          }
+        }
+      } catch (pathwayError) {
+        console.warn('Warning looking up pathway:', pathwayError)
+        // Continue without pathway if lookup fails
+      }
+    }
+    
+    // Store selected categories in comments as well
+    let categoryInfo = ''
+    if (targetCategoryIds && targetCategoryIds.length > 0) {
+      categoryInfo = `Focus areas: ${targetCategoryIds.join(', ')}`
+    }
+    
+    // Add optional fields only if they have values
+    if (goalKeys) insertData.goal_key = Array.isArray(goalKeys) ? goalKeys.join(',') : goalKeys
+    if (goalText) insertData.goal_text = goalText
+    if (frequency) insertData.frequency = frequency
+    if (intensity) insertData.intensity = intensity
+    
+    // Combine category info with comments
+    if (categoryInfo && comments) {
+      insertData.comments = `${categoryInfo} | ${comments}`
+    } else if (categoryInfo) {
+      insertData.comments = categoryInfo
+    } else if (comments) {
+      insertData.comments = comments
+    }
+    
+    // Create the new plan
+    const { data, error } = await supabase
+      .from('child_focus_plan')
+      .insert([insertData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating child focus plan - Details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        insertData: insertData
+      })
+      throw error
+    }
+    return data
+  } catch (error) {
+    console.error('Error creating child focus plan:', error)
+    throw error
+  }
+}
+
+// Update an existing focus plan
+export async function updateChildFocusPlan(planId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('child_focus_plan')
+      .update(updates)
+      .eq('id', planId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error updating child focus plan:', error)
+    throw error
+  }
+}
+
+// Deactivate a focus plan (for starting a new cycle)
+export async function deactivateChildFocusPlan(planId) {
+  try {
+    const { data, error } = await supabase
+      .from('child_focus_plan')
+      .update({ is_active: false })
+      .eq('id', planId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error deactivating child focus plan:', error)
+    throw error
+  }
+}
+
+// Get all categories from the category_colors table
+export async function getCategories() {
+  try {
+    const { data, error } = await supabase
+      .from('category_colors')
+      .select('id, category')
+      .order('category', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    // Return empty array instead of throwing - let fallback categories work
+    return []
+  }
+}
+
+// Get all pathways
+export async function getPathways() {
+  try {
+    const { data, error } = await supabase
+      .from('pathways')
+      .select('*')
+      .order('name', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching pathways:', error)
+    throw error
+  }
+}
+
+// Determine default pathway based on selected categories
+export function determineDefaultPathway(selectedCategoryNames, pathways) {
+  // Priority order for pathway mapping
+  const pathwayMapping = {
+    'anger': 'Anger Journey',
+    'anxiety': 'Bravery Journey',
+    'sadness': 'Heavy Heart Journey',
+    'depression': 'Heavy Heart Journey'
+  }
+  
+  // Check selected categories in priority order
+  const lowerCaseNames = selectedCategoryNames.map(n => n.toLowerCase())
+  
+  for (const [category, pathwayName] of Object.entries(pathwayMapping)) {
+    if (lowerCaseNames.some(name => name.includes(category))) {
+      const pathway = pathways.find(p => p.name === pathwayName)
+      if (pathway) return pathway
+    }
+  }
+  
+  // Default to "Foundations" or first available pathway
+  const foundationsPathway = pathways.find(p => 
+    p.name.toLowerCase().includes('foundation') || 
+    p.name.toLowerCase().includes('general')
+  )
+  
+  return foundationsPathway || pathways[0] || null
+}

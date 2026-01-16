@@ -82,6 +82,11 @@ type PageType =
   | "emotion-maze"
   | "strength-shield"
   | "feeling-volcano"
+  // v6 NEW FUN INTERACTIVE LESSONS
+  | "spin-the-wheel"
+  | "sticker-collector"
+  | "mindful-adventure"
+  | "emotion-detective"
   | "summary"
   | "completion";
 
@@ -468,6 +473,67 @@ interface FeelingVolcanoContent {
   safeMessage: string;
 }
 
+// v6 NEW FUN INTERACTIVE LESSON TYPES
+interface SpinTheWheelContent {
+  heading: string;
+  instructions: string;
+  wheelQuestion: string;
+  segments: Array<{
+    id: string;
+    label: string;
+    emoji: string;
+    color: string;
+    response: string;
+  }>;
+  celebrationMessage: string;
+}
+
+interface StickerCollectorContent {
+  heading: string;
+  storyText: string;
+  instructions: string;
+  challenges: Array<{
+    id: string;
+    emoji: string;
+    title: string;
+    description: string;
+  }>;
+  totalStickers: number;
+  completionMessage: string;
+}
+
+interface MindfulAdventureContent {
+  heading: string;
+  introText: string;
+  scenes: Array<{
+    id: string;
+    sceneName: string;
+    emoji: string;
+    description: string;
+    mindfulPrompt: string;
+    placeholder: string;
+  }>;
+  closingMessage: string;
+}
+
+interface EmotionDetectiveContent {
+  heading: string;
+  caseDescription: string;
+  instructions: string;
+  clues: Array<{
+    id: string;
+    clueEmoji: string;
+    clueText: string;
+  }>;
+  emotionOptions: Array<{
+    emotion: string;
+    emoji: string;
+    explanation: string;
+    isCorrect: boolean;
+  }>;
+  revelationMessage: string;
+}
+
 interface GeneratedContent {
   metadata: ModuleMetadata;
   welcome: { heading: string; paragraphs: string[] };
@@ -504,6 +570,11 @@ interface GeneratedContent {
   emotionMazes: EmotionMazeContent[];
   strengthShields: StrengthShieldContent[];
   feelingVolcanoes: FeelingVolcanoContent[];
+  // v6 NEW FUN INTERACTIVE LESSONS
+  spinTheWheels: SpinTheWheelContent[];
+  stickerCollectors: StickerCollectorContent[];
+  mindfulAdventures: MindfulAdventureContent[];
+  emotionDetectives: EmotionDetectiveContent[];
   summary: SummaryContent;
   completion: CompletionContent;
 }
@@ -2487,6 +2558,264 @@ Make the content relevant to ${metadata.theme}.`;
 }
 
 // ====================
+// v6 NEW FUN INTERACTIVE LESSON GENERATORS
+// ====================
+
+async function generateSpinTheWheels(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<SpinTheWheelContent[]> {
+  const prompt = `Create ${count} "Spin the Wheel" activities for children about "${metadata.theme}".
+
+This is a fun, engaging game where children spin a wheel and get different feelings/responses. Make it interactive and colorful!
+
+Respond with ONLY this JSON:
+{
+  "spinTheWheels": [
+    {
+      "heading": "Activity title with wheel emoji 🎡",
+      "instructions": "Simple instructions for the game (1-2 sentences)",
+      "wheelQuestion": "What feeling are you spinning for?",
+      "segments": [
+        { "id": "s1", "label": "Happy", "emoji": "😊", "color": "#fbbf24", "response": "Wonderful! Tell me what made you happy!" },
+        { "id": "s2", "label": "Calm", "emoji": "😌", "color": "#10b981", "response": "Great! You're feeling peaceful and calm." },
+        { "id": "s3", "label": "Brave", "emoji": "💪", "color": "#f97316", "response": "Awesome! You're being so brave!" },
+        { "id": "s4", "label": "Curious", "emoji": "🤔", "color": "#8b5cf6", "response": "Fun! Let's explore what you're curious about!" },
+        { "id": "s5", "label": "Loved", "emoji": "❤️", "color": "#ec4899", "response": "Beautiful! You are loved and special!" },
+        { "id": "s6", "label": "Strong", "emoji": "⭐", "color": "#06b6d4", "response": "Excellent! You have inner strength!" }
+      ],
+      "celebrationMessage": "You spun the wheel! Keep celebrating all your feelings!"
+    }
+  ]
+}
+
+Make each activity unique and fun for children ages 5-12.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ spinTheWheels: SpinTheWheelContent[] }>(response);
+  
+  const wheels = parsed?.spinTheWheels || [];
+  while (wheels.length < count) {
+    wheels.push({
+      heading: "🎡 Spin the Feeling Wheel!",
+      instructions: "Click the wheel and let it spin! See what feeling comes up and let's explore it together.",
+      wheelQuestion: "What feeling will you discover?",
+      segments: [
+        { id: "s1", label: "Happy", emoji: "😊", color: "#fbbf24", response: "Happiness is wonderful! What made you feel this way?" },
+        { id: "s2", label: "Peaceful", emoji: "😌", color: "#10b981", response: "Peaceful feelings help us relax and recharge." },
+        { id: "s3", label: "Excited", emoji: "🤩", color: "#f97316", response: "Excitement is full of energy and adventure!" },
+        { id: "s4", label: "Curious", emoji: "🤔", color: "#8b5cf6", response: "Curiosity helps us learn new things!" },
+        { id: "s5", label: "Grateful", emoji: "🙏", color: "#ec4899", response: "Gratitude fills our hearts with warmth." },
+        { id: "s6", label: "Proud", emoji: "⭐", color: "#06b6d4", response: "Being proud of yourself is amazing!" }
+      ],
+      celebrationMessage: `🎉 Great spin! ${metadata.characterName} loves how you explore your feelings!`
+    });
+  }
+  
+  return wheels.slice(0, count);
+}
+
+async function generateStickerCollectors(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<StickerCollectorContent[]> {
+  const prompt = `Create ${count} "Sticker Collector" activities for children about "${metadata.theme}".
+
+This is a gamified activity where children collect stickers by completing challenges. Make it fun and rewarding!
+
+Respond with ONLY this JSON:
+{
+  "stickerCollectors": [
+    {
+      "heading": "Activity title with sticker emoji ⭐",
+      "storyText": "A short engaging story introduction (2-3 sentences)",
+      "instructions": "Instructions for how to collect stickers (1-2 sentences)",
+      "challenges": [
+        { "id": "c1", "emoji": "🌟", "title": "Name a Strength", "description": "Tell about one thing you're good at!" },
+        { "id": "c2", "emoji": "💚", "title": "Practice Kindness", "description": "Do something kind for someone today" },
+        { "id": "c3", "emoji": "😌", "title": "Try Calm Down", "description": "Use a calming technique when you feel big feelings" },
+        { "id": "c4", "emoji": "🗣️", "title": "Use Your Voice", "description": "Tell someone how you're feeling" },
+        { "id": "c5", "emoji": "🎨", "title": "Be Creative", "description": "Draw, write, or create something you love" }
+      ],
+      "totalStickers": 5,
+      "completionMessage": "You collected all the stickers! You're a champion of emotional growth!"
+    }
+  ]
+}
+
+Make it interactive, encouraging, and suitable for children learning about feelings.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ stickerCollectors: StickerCollectorContent[] }>(response);
+  
+  const collectors = parsed?.stickerCollectors || [];
+  while (collectors.length < count) {
+    collectors.push({
+      heading: "⭐ Sticker Collector Challenge",
+      storyText: `${metadata.characterName} is going on an adventure to collect special stickers! Each sticker represents a feeling skill you can master. Join the quest!`,
+      instructions: "Complete each challenge to earn a sticker. You can do them in any order. When you finish all 5, you're a Feelings Master!",
+      challenges: [
+        { id: "c1", emoji: "🌟", title: "Spot Your Strength", description: "Tell about one thing you're really good at!" },
+        { id: "c2", emoji: "💚", title: "Spread Kindness", description: "Do one kind thing for someone" },
+        { id: "c3", emoji: "😌", title: "Cool Calm Moment", description: "Practice deep breathing when you need to calm down" },
+        { id: "c4", emoji: "🗣️", title: "Express Yourself", description: "Tell someone how you're feeling using words" },
+        { id: "c5", emoji: "🎨", title: "Create with Joy", description: "Make something creative that makes you happy" }
+      ],
+      totalStickers: 5,
+      completionMessage: `🎉 Amazing! You collected all 5 stickers! ${metadata.characterName} is so proud - you're a true Feelings Master!`
+    });
+  }
+  
+  return collectors.slice(0, count);
+}
+
+async function generateMindfulAdventures(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<MindfulAdventureContent[]> {
+  const prompt = `Create ${count} "Mindful Adventure" activities for children about "${metadata.theme}".
+
+This is a guided journey through different mindful scenes where children pause and reflect on their senses and feelings.
+
+Respond with ONLY this JSON:
+{
+  "mindfulAdventures": [
+    {
+      "heading": "Activity title with adventure emoji 🧭",
+      "introText": "Welcome to your mindful adventure! We'll visit special places and use all our senses. (2-3 sentences)",
+      "scenes": [
+        { "id": "sc1", "sceneName": "Calm Forest", "emoji": "🌲", "description": "You're in a quiet forest with tall trees and soft ground.", "mindfulPrompt": "What do you hear? What do you smell?", "placeholder": "Write what you notice with your senses..." },
+        { "id": "sc2", "sceneName": "Peaceful Beach", "emoji": "🏖️", "description": "Warm sand beneath your feet, gentle waves in the distance.", "mindfulPrompt": "How does the warmth feel on your skin?", "placeholder": "Describe the beach sensations..." },
+        { "id": "sc3", "sceneName": "Cozy Home", "emoji": "🏡", "description": "Your safe, comfortable space filled with things you love.", "mindfulPrompt": "What makes you feel safe and loved here?", "placeholder": "Share what makes this space special..." }
+      ],
+      "closingMessage": "Thank you for this mindful adventure! You practiced noticing and being present. That's wonderful!"
+    }
+  ]
+}
+
+Make it calming, sensory-rich, and suitable for children to feel peaceful and present.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ mindfulAdventures: MindfulAdventureContent[] }>(response);
+  
+  const adventures = parsed?.mindfulAdventures || [];
+  while (adventures.length < count) {
+    adventures.push({
+      heading: "🧭 Mindful Adventure Journey",
+      introText: `Welcome to a special journey with ${metadata.characterName}! We're going to visit calm, beautiful places and use our senses to notice everything around us. This helps us feel peaceful and present.`,
+      scenes: [
+        { 
+          id: "sc1", 
+          sceneName: "Enchanted Forest", 
+          emoji: "🌲", 
+          description: "You're walking through a beautiful forest with tall trees, soft moss, and gentle sunlight filtering through the leaves.",
+          mindfulPrompt: "Close your eyes and imagine: What do you hear? What do you smell? How does it feel?",
+          placeholder: "Describe what you notice with all your senses..."
+        },
+        { 
+          id: "sc2", 
+          sceneName: "Peaceful Seashore", 
+          emoji: "🏖️", 
+          description: "You're sitting on warm sand by the ocean. Gentle waves lap at the shore and a warm breeze touches your face.",
+          mindfulPrompt: "How does the warmth feel? What do you taste in the air?",
+          placeholder: "Write about the beach sensations..."
+        },
+        { 
+          id: "sc3", 
+          sceneName: "Safe Garden Sanctuary", 
+          emoji: "🌸", 
+          description: "You're in a beautiful garden with colorful flowers, a comfortable place to sit, and everything you need to feel safe.",
+          mindfulPrompt: "What do you see that brings you joy? What makes you feel protected here?",
+          placeholder: "Share what makes this garden special for you..."
+        }
+      ],
+      closingMessage: `Wonderful journey! You just practiced mindfulness with ${metadata.characterName}. By noticing and being present, you're building a superpower of peace and calm!`
+    });
+  }
+  
+  return adventures.slice(0, count);
+}
+
+async function generateEmotionDetectives(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<EmotionDetectiveContent[]> {
+  const prompt = `Create ${count} "Emotion Detective" mystery activities for children about "${metadata.theme}".
+
+This is a mystery game where children collect clues and solve an emotion-based mystery. Very engaging and educational!
+
+Respond with ONLY this JSON:
+{
+  "emotionDetectives": [
+    {
+      "heading": "Activity title with detective emoji 🔍",
+      "caseDescription": "A fun mystery to solve about emotions (2-3 sentences)",
+      "instructions": "Read the clues and figure out what emotion the character is feeling!",
+      "clues": [
+        { "id": "cl1", "clueEmoji": "😊", "clueText": "They're smiling and laughing with friends" },
+        { "id": "cl2", "clueEmoji": "🎉", "clueText": "Something exciting just happened to them" },
+        { "id": "cl3", "clueEmoji": "💃", "clueText": "They feel like dancing and moving around" }
+      ],
+      "emotionOptions": [
+        { "emotion": "Happy/Excited", "emoji": "🎊", "explanation": "Great detective work! All the clues point to joy and excitement!", "isCorrect": true },
+        { "emotion": "Sad", "emoji": "😢", "explanation": "This emotion wouldn't fit with smiling and laughing. Keep investigating!", "isCorrect": false },
+        { "emotion": "Scared", "emoji": "😨", "explanation": "The clues show positive feelings, not fear. Try again, detective!", "isCorrect": false }
+      ],
+      "revelationMessage": "Case solved! You're a true emotion detective! You can recognize feelings by looking at body language and behavior!"
+    }
+  ]
+}
+
+Make it fun, like a real mystery game, and appropriate for children.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ emotionDetectives: EmotionDetectiveContent[] }>(response);
+  
+  const detectives = parsed?.emotionDetectives || [];
+  while (detectives.length < count) {
+    detectives.push({
+      heading: "🔍 Emotion Detective Mystery",
+      caseDescription: `Detective, we have a case for you! Someone is experiencing a big emotion, and we need your help figuring out what it is. Read the clues carefully and use your emotion detective skills!`,
+      instructions: "Study each clue, then choose which emotion you think the person is experiencing. Good luck, detective!",
+      clues: [
+        { id: "cl1", clueEmoji: "😊", clueText: "Their face is bright and they're smiling really big" },
+        { id: "cl2", clueEmoji: "👏", clueText: "They just got great news and want to celebrate" },
+        { id: "cl3", clueEmoji: "💫", clueText: "They can't stop bouncing around with energy" }
+      ],
+      emotionOptions: [
+        { 
+          emotion: "Joy & Happiness", 
+          emoji: "🎉", 
+          explanation: "Excellent detective work! All the clues - the big smile, the celebration, the bouncy energy - point to joy and happiness!", 
+          isCorrect: true 
+        },
+        { 
+          emotion: "Sadness", 
+          emoji: "😢", 
+          explanation: "Hmm, not quite. Sadness usually has different clues like frowning or sitting alone. Keep investigating!", 
+          isCorrect: false 
+        },
+        { 
+          emotion: "Worry", 
+          emoji: "😟", 
+          explanation: "Not this time, detective! Worry looks different. The clues here show positive feelings. Try again!", 
+          isCorrect: false 
+        }
+      ],
+      revelationMessage: `🎉 Case Solved! You're a true Emotion Detective! You successfully read the clues and figured out the feeling. ${metadata.characterName} is impressed with your detective skills!`
+    });
+  }
+  
+  return detectives.slice(0, count);
+}
 // ORCHESTRATOR
 // ====================
 
@@ -2532,6 +2861,11 @@ async function generateAllContent(
     emotionMazes: pageStructure.filter(p => p.type === "emotion-maze").length,
     strengthShields: pageStructure.filter(p => p.type === "strength-shield").length,
     feelingVolcanoes: pageStructure.filter(p => p.type === "feeling-volcano").length,
+    // v6 NEW FUN INTERACTIVE LESSON COUNTS
+    spinTheWheels: pageStructure.filter(p => p.type === "spin-the-wheel").length,
+    stickerCollectors: pageStructure.filter(p => p.type === "sticker-collector").length,
+    mindfulAdventures: pageStructure.filter(p => p.type === "mindful-adventure").length,
+    emotionDetectives: pageStructure.filter(p => p.type === "emotion-detective").length,
   };
   
   await updateProgress("metadata", "Creating module theme and character...");
@@ -2597,6 +2931,14 @@ async function generateAllContent(
     counts.feelingVolcanoes > 0 ? generateFeelingVolcanoes(apiKey, metadata, contentBrief, counts.feelingVolcanoes) : Promise.resolve([]),
   ]);
   
+  await updateProgress("fun-interactive", "Creating fun interactive lessons...");
+  const [spinTheWheels, stickerCollectors, mindfulAdventures, emotionDetectives] = await Promise.all([
+    counts.spinTheWheels > 0 ? generateSpinTheWheels(apiKey, metadata, contentBrief, counts.spinTheWheels) : Promise.resolve([]),
+    counts.stickerCollectors > 0 ? generateStickerCollectors(apiKey, metadata, contentBrief, counts.stickerCollectors) : Promise.resolve([]),
+    counts.mindfulAdventures > 0 ? generateMindfulAdventures(apiKey, metadata, contentBrief, counts.mindfulAdventures) : Promise.resolve([]),
+    counts.emotionDetectives > 0 ? generateEmotionDetectives(apiKey, metadata, contentBrief, counts.emotionDetectives) : Promise.resolve([]),
+  ]);
+  
   await updateProgress("summary", "Wrapping up...");
   const [summary, completion] = await Promise.all([
     generateSummary(apiKey, metadata, contentBrief),
@@ -2639,6 +2981,11 @@ async function generateAllContent(
     emotionMazes,
     strengthShields,
     feelingVolcanoes,
+    // v6 NEW FUN INTERACTIVE LESSONS
+    spinTheWheels,
+    stickerCollectors,
+    mindfulAdventures,
+    emotionDetectives,
     summary,
     completion,
   };
@@ -2688,6 +3035,10 @@ export {
   type EmotionMazeContent,
   type StrengthShieldContent,
   type FeelingVolcanoContent,
+  type SpinTheWheelContent,
+  type StickerCollectorContent,
+  type MindfulAdventureContent,
+  type EmotionDetectiveContent,
   
   // Configuration
   corsHeaders,

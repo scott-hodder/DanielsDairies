@@ -1,9 +1,10 @@
 import { supabase } from './supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from './auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin } from './database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan } from './database.js'
 import { redirectToPaymentLink } from './stripe.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-rewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
+import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focus-plan.js'
 
 // State
 let currentUser = null
@@ -20,6 +21,7 @@ let editingChild = null
 let showAllUnlockedModules = false
 let showAllChildModules = false
 let currentWeeklyPlan = null
+let currentFocusPlan = null
 let currentInsightsSubtab = 'overview'
 let lockedModulesShowcase = []
 let moreModulesCurrentIndex = 0
@@ -1684,6 +1686,24 @@ async function selectChild(child) {
     setupRewardsEventListeners(child)
     await loadLatestWeeklyPlan()
     
+    // Check for active focus plan
+    currentFocusPlan = await checkFocusPlan(child.id)
+    
+    if (!currentFocusPlan) {
+      // No active focus plan - show onboarding
+      showFocusPlanOnboarding(child.id, (plan, pathway) => {
+        currentFocusPlan = plan
+        // Update the adventure map with the default pathway
+        if (pathway && window.adventureMap) {
+          window.adventureMap.currentCategory = pathway.name?.toLowerCase().replace(/\s+journey$/i, '') || 'all'
+          window.adventureMap.render()
+        }
+        // Now show the child detail view
+        showChildDetailView(child)
+      })
+      return // Don't show detail view yet - wait for onboarding
+    }
+    
     // Show child detail view
     showChildDetailView(child)
     
@@ -1964,6 +1984,15 @@ function showChildDetailView(child) {
   // Update global variables for enhanced dashboard
   window.selectedChild = child
   window.childModules = childModules
+  window.currentFocusPlan = currentFocusPlan
+  
+  // Apply focus plan's default pathway to adventure map
+  if (currentFocusPlan && currentFocusPlan.default_pathway_id) {
+    applyFocusPlanToMap(currentFocusPlan)
+  }
+  
+  // Show/setup Focus Plan settings button
+  setupFocusPlanSettingsButton()
   
   // Refresh enhanced dashboard if it exists
   if (typeof window.refreshEnhancedDashboard === 'function') {
@@ -1982,6 +2011,84 @@ function showChildDetailView(child) {
   renderModules()
   renderLeaderboard()
   renderWeeklyPlan(currentWeeklyPlan)
+}
+
+// Apply focus plan to adventure map
+async function applyFocusPlanToMap(focusPlan) {
+  if (!focusPlan || !focusPlan.default_pathway_id) return
+  
+  try {
+    // Look up the pathway to get its name/category
+    const { data: pathway } = await supabase
+      .from('pathways')
+      .select('id, name, category')
+      .eq('id', focusPlan.default_pathway_id)
+      .single()
+    
+    if (!pathway) return
+    
+    // Get the category name from the pathway
+    let categoryName = pathway.category || pathway.name || 'all'
+    categoryName = categoryName.toLowerCase()
+    
+    // Update the adventure map category filter dropdown
+    const categoryFilter = document.getElementById('categoryFilter')
+    if (categoryFilter) {
+      // Find the matching option in the dropdown
+      const options = Array.from(categoryFilter.options)
+      const matchingOption = options.find(opt => 
+        opt.value.toLowerCase() === categoryName.toLowerCase() ||
+        opt.textContent.toLowerCase().includes(categoryName.toLowerCase())
+      )
+      
+      if (matchingOption) {
+        categoryFilter.value = matchingOption.value
+        // Trigger change event to update the map
+        categoryFilter.dispatchEvent(new Event('change'))
+      }
+    }
+    
+    // Also update window.adventureMap if it exists
+    if (window.adventureMap) {
+      window.adventureMap.currentCategory = categoryName
+      window.adventureMap.render()
+    }
+  } catch (error) {
+    console.error('Error applying focus plan to map:', error)
+  }
+}
+
+// Setup Focus Plan settings button
+function setupFocusPlanSettingsButton() {
+  const focusPlanBtn = document.getElementById('focusPlanSettingsBtn')
+  if (!focusPlanBtn) return
+  
+  // Show the button if there's a focus plan
+  if (currentFocusPlan) {
+    focusPlanBtn.style.display = 'flex'
+    
+    // Remove old listener and add new one
+    const newBtn = focusPlanBtn.cloneNode(true)
+    focusPlanBtn.parentNode.replaceChild(newBtn, focusPlanBtn)
+    
+    newBtn.addEventListener('click', () => {
+      if (selectedChild && currentFocusPlan) {
+        showFocusPlanSettings(selectedChild.id, currentFocusPlan, (updatedPlan, pathway) => {
+          currentFocusPlan = updatedPlan
+          window.currentFocusPlan = updatedPlan
+          
+          // Refresh the adventure map with new pathway
+          if (pathway && window.adventureMap) {
+            const categoryName = pathway.name?.toLowerCase().replace(/\s+journey$/i, '') || 'all'
+            window.adventureMap.currentCategory = categoryName
+            window.adventureMap.render()
+          }
+        })
+      }
+    })
+  } else {
+    focusPlanBtn.style.display = 'none'
+  }
 }
 
 // Render modules

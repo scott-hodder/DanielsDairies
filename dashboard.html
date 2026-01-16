@@ -446,8 +446,15 @@
 <!-- Adventure Map Section -->
 <div class="adventure-map-section">
     <div class="adventure-header">
-        <h2 class="adventure-title">🗺️ Your Adventure Map</h2>
-        <p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div>
+                <h2 class="adventure-title">🗺️ Your Adventure Map</h2>
+                <p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>
+            </div>
+            <button type="button" id="focusPlanSettingsBtn" class="focus-plan-settings-btn" title="Focus Plan Settings" style="display: none;">
+                ⚙️ Focus Plan
+            </button>
+        </div>
     </div>
     
     <!-- The map will be rendered here by JavaScript -->
