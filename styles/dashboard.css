@@ -3475,13 +3475,49 @@ box-shadow: 0 8px 20px rgba(0,0,0,0.25);
     
     .adventure-map-container {
         padding: 20px;
-        min-height: 400px;
+        min-height: 75vh;
+        height: 75vh;
     }
+
+    .adventure-node {
+        width: 35px !important;
+        height: 35px !important;
+        font-size: 24px;
+    }
+
+    .zone-label{
+        display:none !important;
+    }
+
+    .adventure-map-section {
+        padding: 10px !important;
+    }
+
+    .map-progress {
+        display: none !important;
+    }
+
     
     .adventure-node {
         width: 60px;
         height: 60px;
         font-size: 24px;
+    }
+
+    .adventure-viewport {
+        height: 75vh !important;
+    }
+    
+    .map-progress {
+        display: none;
+    }
+    
+    .scroll-hint {
+        display: none;
+    }
+
+    .daily-quest-btn {
+        
     }
     
     .shop-header {
