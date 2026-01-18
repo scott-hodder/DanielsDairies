@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -217,7 +216,8 @@
         transform: translateX(-50%) translateY(-2px);
     }
     </style>
-    
+    <script type="module" src="./src/progress-tracking-system.js"></script>
+
 </head>
 <body>
     <!-- Header -->
@@ -338,11 +338,12 @@
                     <button class="nav-tab" id="tabSpendStars" data-emoji="🎁">
                         🎁 Spend Stars
                     </button>
-                    <button class="nav-tab" id="tabParentInsights" data-emoji="👨‍👩‍👧">
-                        👨‍👩‍👧 Parent Insights
+                    <button class="nav-tab nav-tab-highlight" id="tabParentInsights" data-emoji="📊" title="View detailed progress insights">
+                        📊 Progress & Insights
                     </button>
                 </div>
             </div>
+            
 
             <!-- Dashboard Tab -->
             <div id="dashboardTabContent">
@@ -651,6 +652,22 @@
                             </div>
                         </div>
 
+                        <!-- NEW: Progress Assessment Tracking Section -->
+                        <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 12px; padding: 20px; margin-top: 16px; border-left: 4px solid #4caf50;">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span>📈</span> Journey Progress Assessment
+                            </h3>
+                            <p style="color: #388e3c; font-size: 13px; margin-bottom: 16px;">
+                                Track your child's measurable progress through their emotional learning journey with psychology-based assessments.
+                            </p>
+                            <div id="progressAssessmentContainer" style="color: #388e3c; font-size: 14px; line-height: 1.6;">
+                                <p style="margin: 4px 0;">Loading progress data...</p>
+                            </div>
+                            <div id="progressChartContainer" style="margin-top: 16px; background: white; border-radius: 12px; min-height: 100px;">
+                                <!-- Progress chart will be rendered here by JavaScript -->
+                            </div>
+                        </div>
+
                         <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius: 12px; padding: 20px; margin-top: 16px; border-left: 4px solid #ff9800;">
                             <h3 style="font-size: 16px; font-weight: 600; color: #e65100; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                                 <span>🌟</span> Recent Achievements
@@ -876,6 +893,11 @@
                     <button type="submit" class="btn-primary">Continue</button>
                 </div>
             </form>
+            <div style="text-align: center; margin-top: 12px;">
+                <button type="button" class="btn-link" id="childForgotPasswordBtn" style="background: none; border: none; color: #667eea; font-size: 13px; text-decoration: underline; cursor: pointer;">
+                    🔑 Forgot Password?
+                </button>
+            </div>
             <p class="progress-label" style="margin-top: 16px; text-align: center; font-size: 12px;">
                 First time? You'll be asked to set a password.
             </p>
@@ -1009,6 +1031,163 @@ window.addEventListener('childSelected', (e) => {
     if (e.detail && e.detail.childId && typeof window.initDailyQuest === 'function') {
         window.initDailyQuest(e.detail.childId);
     }
+});
+
+// Load progress assessment data for Parent Insights
+async function loadProgressAssessments() {
+    const child = window.selectedChild;
+    if (!child || !child.id || !window.supabase || !window.progressTrackingSystem) {
+        return;
+    }
+
+    const container = document.getElementById('progressAssessmentContainer');
+    const chartContainer = document.getElementById('progressChartContainer');
+    if (!container) return;
+
+    try {
+        await window.progressTrackingSystem.init(window.supabase);
+        
+        // Get the current pathway category from the adventure map or default
+        const currentCategory = window.enhancedDashboard?.adventureMap?.currentCategory || 'all';
+        
+        // Fetch all assessments for this child
+        const { data: allAssessments, error } = await window.supabase
+            .from('pathway_assessments')
+            .select('*')
+            .eq('child_id', child.id)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        if (!allAssessments || allAssessments.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <span style="font-size: 48px;">📋</span>
+                    <p style="margin-top: 12px; color: #388e3c;">
+                        <strong>No assessments yet</strong><br>
+                        <span style="font-size: 13px;">Your child will complete a quick check-in when they start their first module on a pathway. This helps us track their progress!</span>
+                    </p>
+                </div>
+            `;
+            if (chartContainer) chartContainer.innerHTML = '';
+            return;
+        }
+
+        // Group assessments by pathway
+        const pathwayGroups = {};
+        allAssessments.forEach(a => {
+            if (!pathwayGroups[a.pathway_category]) {
+                pathwayGroups[a.pathway_category] = [];
+            }
+            pathwayGroups[a.pathway_category].push(a);
+        });
+
+        // Build the display
+        let html = '<div style="display: grid; gap: 16px;">';
+        
+        for (const [pathway, assessments] of Object.entries(pathwayGroups)) {
+            const baseline = assessments.find(a => a.assessment_type === 'baseline');
+            const midpoint = assessments.find(a => a.assessment_type === 'midpoint');
+            const endpoint = assessments.find(a => a.assessment_type === 'endpoint');
+            
+            const pathwayThemes = {
+                anger: { name: 'Anger Journey', icon: '🔥', color: '#8B0000' },
+                anxiety: { name: 'Anxiety Journey', icon: '🌧️', color: '#ab47bc' },
+                depression: { name: 'Mood Journey', icon: '🌙', color: '#002657' },
+                emotions: { name: 'Emotions Journey', icon: '💭', color: '#f46b6b' },
+                social: { name: 'Social Skills', icon: '👫', color: '#4caf50' },
+                body: { name: 'Body Awareness', icon: '💪', color: '#f4a73b' },
+                cognitive: { name: 'Thinking Skills', icon: '🧠', color: '#35a4d4' },
+                general: { name: 'General Skills', icon: '📚', color: '#4c6c96' }
+            };
+            
+            const theme = pathwayThemes[pathway] || pathwayThemes.general;
+            
+            // Calculate progress
+            const completedSteps = [baseline, midpoint, endpoint].filter(Boolean).length;
+            const totalSteps = 3;
+            const progressPercent = (completedSteps / totalSteps) * 100;
+            
+            // Calculate improvement if possible
+            let improvementText = '';
+            if (baseline && (midpoint || endpoint)) {
+                const latestScore = endpoint?.total_score || midpoint?.total_score;
+                const change = latestScore - baseline.total_score;
+                // For negative pathways (anger, anxiety, depression), lower is better
+                const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(pathway);
+                const improved = lowerIsBetter ? change < 0 : change > 0;
+                
+                if (change !== 0) {
+                    improvementText = improved 
+                        ? `<span style="color: #4caf50; font-weight: 700;">↓ ${Math.abs(change)} point improvement!</span>`
+                        : `<span style="color: #ff9800;">Score changed by ${change > 0 ? '+' : ''}${change}</span>`;
+                }
+            }
+            
+            html += `
+                <div style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 24px;">${theme.icon}</span>
+                            <span style="font-weight: 700; color: ${theme.color};">${theme.name}</span>
+                        </div>
+                        <span style="font-size: 12px; color: #6c757d;">${completedSteps}/3 check-ins</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <div style="flex: 1; text-align: center; padding: 8px; border-radius: 8px; ${baseline ? 'background: #e8f5e9;' : 'background: #f5f5f5;'}">
+                            <div style="font-size: 10px; color: ${baseline ? '#4caf50' : '#9e9e9e'}; text-transform: uppercase; font-weight: 600;">Baseline</div>
+                            <div style="font-size: 16px; font-weight: 700; color: ${baseline ? '#2e7d32' : '#bdbdbd'};">${baseline ? baseline.total_score : '—'}</div>
+                        </div>
+                        <div style="flex: 1; text-align: center; padding: 8px; border-radius: 8px; ${midpoint ? 'background: #e3f2fd;' : 'background: #f5f5f5;'}">
+                            <div style="font-size: 10px; color: ${midpoint ? '#2196f3' : '#9e9e9e'}; text-transform: uppercase; font-weight: 600;">Midpoint</div>
+                            <div style="font-size: 16px; font-weight: 700; color: ${midpoint ? '#1565c0' : '#bdbdbd'};">${midpoint ? midpoint.total_score : '—'}</div>
+                        </div>
+                        <div style="flex: 1; text-align: center; padding: 8px; border-radius: 8px; ${endpoint ? 'background: #fff3e0;' : 'background: #f5f5f5;'}">
+                            <div style="font-size: 10px; color: ${endpoint ? '#ff9800' : '#9e9e9e'}; text-transform: uppercase; font-weight: 600;">Complete</div>
+                            <div style="font-size: 16px; font-weight: 700; color: ${endpoint ? '#e65100' : '#bdbdbd'};">${endpoint ? endpoint.total_score : '—'}</div>
+                        </div>
+                    </div>
+                    
+                    ${improvementText ? `<div style="text-align: center; margin-top: 8px;">${improvementText}</div>` : ''}
+                    
+                    <div style="height: 6px; background: #e0e0e0; border-radius: 3px; margin-top: 8px;">
+                        <div style="height: 100%; width: ${progressPercent}%; background: linear-gradient(90deg, ${theme.color}, ${theme.color}99); border-radius: 3px; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        if (chartContainer) {
+            chartContainer.innerHTML = `
+                <div style="padding: 16px; text-align: center; color: #6c757d; font-size: 13px;">
+                    <p style="margin: 0;">📊 Assessment scores are based on validated psychology frameworks including adapted versions of the Strengths and Difficulties Questionnaire (SDQ), SCARED anxiety screening, and emotion regulation measures.</p>
+                </div>
+            `;
+        }
+
+    } catch (error) {
+        console.error('Error loading progress assessments:', error);
+        container.innerHTML = '<p style="color: #ef5350;">Unable to load progress data. Please try again later.</p>';
+    }
+}
+
+// Load progress when Parent Insights tab is clicked
+document.addEventListener('DOMContentLoaded', () => {
+    const insightsTab = document.getElementById('tabParentInsights');
+    if (insightsTab) {
+        insightsTab.addEventListener('click', () => {
+            setTimeout(loadProgressAssessments, 100);
+        });
+    }
+    
+    // Also load when child changes
+    window.addEventListener('childSelected', () => {
+        setTimeout(loadProgressAssessments, 500);
+    });
 });
 </script>
 </body>

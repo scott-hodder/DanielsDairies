@@ -6,6 +6,9 @@ import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-re
 import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focus-plan.js'
 
+// Make supabase available to non-module scripts and inline dashboard.html code
+window.supabase = supabase
+
 // State
 let currentUser = null
 let children = []
@@ -827,13 +830,13 @@ function renderWeeklyPlan(plan) {
 
     planSkillsEl.innerHTML = renderPlanChips(plan.skills, 'No skills yet')
     planEmotionsEl.innerHTML = renderPlanChips(plan.triggers, 'No focus feelings yet')
-    planToolsEl.innerHTML = plan.tools.map(tool => `
+    planToolsEl.innerHTML = (plan.tools && plan.tools.length > 0) ? plan.tools.map(tool => `
       <div class="plan-tool-card">
         <h5>${tool.label}</h5>
         <p>${tool.description}</p>
-        <span>Helps with: ${tool.triggers.join(', ')}</span>
+        <span>Helps with: ${tool.triggers?.join(', ') || ''}</span>
       </div>
-    `).join('') || '<p style="color:#9ca3af;">No tools suggested yet.</p>'
+    `).join('') : '<p style="color:#9ca3af;">No tools suggested yet.</p>'
 
     if (plan.script) {
       planScriptEl.innerHTML = `
@@ -982,25 +985,26 @@ const spendStarsTabContent = document.getElementById('spendStarsTabContent')
 const parentInsightsTabContent = document.getElementById('parentInsightsTabContent')
 const leaderboardList = document.getElementById('leaderboardList')
 
-// Initialize
+// Initialize - OPTIMIZED for performance
 async function init() {
   // Show fun loading screen
   showLoadingScreen()
   
-  // Safety timeout - force hide loading after 10 seconds
+  // Reduced timeout - 6 seconds should be enough
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout reached - forcing UI to show')
     hideLoadingScreen()
     if (childrenView) {
       childrenView.classList.remove('hidden')
     }
-  }, 10000)
+  }, 6000)
   
   try {
-    // Check authentication
+    // Check authentication first (required before anything else)
     const session = await checkAuth()
     
     if (!session) {
+      clearTimeout(loadingTimeout)
       window.location.href = '/'
       return
     }
@@ -1008,83 +1012,101 @@ async function init() {
     // Get current user
     currentUser = await getCurrentUser()
     
-    // Update login streak
-    await updateLoginStreak(currentUser.id)
-    
     if (currentUser && currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${currentUser.email}!`
     }
     
-    // Check if user is admin and show admin button
-    await checkAdminStatus()
+    // PARALLEL LOADING - Load all independent data at once
+    const [
+      modulesResult,
+      parentModulesResult,
+      categoryColorsResult,
+      childrenResult,
+      adminResult,
+      streakResult
+    ] = await Promise.allSettled([
+      // Load modules
+      getModules(),
+      // Load parent modules with full module data
+      supabase
+        .from('parent_modules')
+        .select('module_id, is_active, modules(*)')
+        .eq('parent_id', currentUser.id),
+      // Load category colors
+      supabase
+        .from('category_colors')
+        .select('*'),
+      // Load children
+      getChildren(currentUser.id),
+      // Check admin status (non-blocking)
+      isUserAdmin(currentUser.id),
+      // Update and get login streak (non-blocking)
+      updateLoginStreak(currentUser.id).then(() => getLoginStreak(currentUser.id))
+    ])
     
-    // Load login streak display
-    await loadStreakDisplay()
-    
-    // Load modules
-    try {
-      modules = await getModules()
-      
-      // Load parent modules
-      parentModules = await getModules(currentUser.id)
-      
-      // Update global variables for enhanced dashboard
-      window.modules = modules
-      window.parentModules = parentModules
-      
-      // Setup category colors
-      setupCategoryColors()
-      
-      // Setup filters
-      setupAllWorkbooksFilter()
-      setupDashboardFilters()
-      
-    } catch (error) {
-      console.error('Error loading modules:', error)
+    // Process modules
+    if (modulesResult.status === 'fulfilled') {
+      modules = modulesResult.value || []
+    } else {
+      console.error('Error loading modules:', modulesResult.reason)
       modules = []
     }
     
-    // Load parent's modules
-    try {
-      
-      const { data, error } = await supabase
-        .from('parent_modules')
-        .select('module_id, is_active, modules(*)')
-        .eq('parent_id', currentUser.id)
-      
-      if (error) throw error
-      parentModules = data || []
-
-      if (parentModules.length > 0) {
-       
-      }
-      
-    } catch (error) {
-      console.error('Error loading parent modules:', error)
+    // Process parent modules
+    if (parentModulesResult.status === 'fulfilled' && parentModulesResult.value.data) {
+      parentModules = parentModulesResult.value.data
+    } else {
+      console.error('Error loading parent modules:', parentModulesResult.reason)
       parentModules = []
     }
     
-    // Load category colors
-    try {
-      const { data, error } = await supabase
-        .from('category_colors')
-        .select('*')
-      
-      if (error) throw error
+    // Process category colors
+    if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
       categoryColors = {}
-      data?.forEach(cc => {
-        if (!cc?.category || !cc?.color) return
-        categoryColors[cc.category] = cc.color
+      categoryColorsResult.value.data.forEach(cc => {
+        if (cc?.category && cc?.color) {
+          categoryColors[cc.category] = cc.color
+        }
       })
-    } catch (error) {
-      console.error('Error loading category colors:', error)
+    } else {
       categoryColors = {}
     }
     
-    // Load children
+    // Process children
+    if (childrenResult.status === 'fulfilled') {
+      children = childrenResult.value || []
+    } else {
+      console.error('Error loading children:', childrenResult.reason)
+      children = []
+    }
     
-    await loadChildren()
+    // Process admin status (non-critical)
+    if (adminResult.status === 'fulfilled' && adminResult.value) {
+      const adminButton = document.getElementById('adminButton')
+      if (adminButton) adminButton.style.display = 'block'
+    }
     
+    // Process streak (non-critical)
+    if (streakResult.status === 'fulfilled') {
+      const dayStreakEl = document.getElementById('dayStreak')
+      if (dayStreakEl) {
+        dayStreakEl.textContent = streakResult.value?.current_streak ?? 0
+      }
+    }
+    
+    // Update global variables for enhanced dashboard
+    window.modules = modules
+    window.parentModules = parentModules
+    
+    // Setup category colors (use defaults if none loaded)
+    setupCategoryColors()
+    
+    // Setup filters (batch DOM operations)
+    requestAnimationFrame(() => {
+      setupAllWorkbooksFilter()
+      setupDashboardFilters()
+      renderChildren()
+    })
 
     // Check URL for a childId to auto-select (coming back from a module)
     const params = new URLSearchParams(window.location.search)
@@ -1094,13 +1116,11 @@ async function init() {
     if (childIdFromUrl && children && children.length > 0) {
       const childFromUrl = children.find(c => String(c.id) === String(childIdFromUrl))
       if (childFromUrl) {
-        
         // Skip password check when returning from module (already authenticated)
         await selectChild(childFromUrl)
         
         // Switch to specific tab if requested
         if (tabFromUrl) {
-          
           showTab(tabFromUrl)
         }
         
@@ -1111,7 +1131,6 @@ async function init() {
     }
 
     // Default: show children/profile view
-    
     showChildrenView()
     hideLoadingScreen()
     clearTimeout(loadingTimeout)
@@ -1678,16 +1697,35 @@ async function selectChild(child) {
   selectedChild = child
   
   try {
-    // Load child's module progress
+    // PARALLEL LOADING - Load child modules and weekly plan together
+    const [childModulesResult, weeklyPlanResult, focusPlanResult] = await Promise.allSettled([
+      getChildModules(child.id),
+      loadLatestWeeklyPlanData(child.id), // New optimized function
+      checkFocusPlan(child.id)
+    ])
     
-    childModules = await getChildModules(child.id)
+    // Process child modules
+    if (childModulesResult.status === 'fulfilled') {
+      childModules = childModulesResult.value || []
+    } else {
+      console.error('Error loading child modules:', childModulesResult.reason)
+      childModules = []
+    }
+    
+    // Process weekly plan
+    if (weeklyPlanResult.status === 'fulfilled') {
+      currentWeeklyPlan = weeklyPlanResult.value
+    }
+    
+    // Process focus plan
+    if (focusPlanResult.status === 'fulfilled') {
+      currentFocusPlan = focusPlanResult.value
+    } else {
+      currentFocusPlan = null
+    }
 
-    // Setup rewards event listeners for this child
+    // Setup rewards event listeners for this child (non-blocking)
     setupRewardsEventListeners(child)
-    await loadLatestWeeklyPlan()
-    
-    // Check for active focus plan
-    currentFocusPlan = await checkFocusPlan(child.id)
     
     if (!currentFocusPlan) {
       // No active focus plan - show onboarding
@@ -1713,6 +1751,20 @@ async function selectChild(child) {
     // Still show the view even if modules fail to load
     childModules = []
     showChildDetailView(child)
+  }
+}
+
+// Optimized weekly plan loading - returns data directly instead of setting global
+async function loadLatestWeeklyPlanData(childId) {
+  try {
+    if (!currentUser || !currentUser.id) {
+      console.warn('Current user not available for weekly plan loading')
+      return null
+    }
+    return await getLatestWeeklyPlan(currentUser.id, childId)
+  } catch (error) {
+    console.error('Error loading weekly plan:', error)
+    return null
   }
 }
 
@@ -1969,22 +2021,36 @@ function renderParentModulesOverview() {
   }
 }
 
-// Show child detail view
+// Show child detail view - OPTIMIZED with batched DOM operations
 function showChildDetailView(child) {
-  // Update header
-  headerSubtitle.textContent = `Welcome back, ${child.name}!`
+  // Batch DOM reads first
+  const currentHeaderText = headerSubtitle.textContent
   
-  // Show child detail view
-  childrenView.classList.add('hidden')
-  childDetailView.classList.remove('hidden')
-  
-  // Show dashboard tab by default
-  showTab('dashboard')
-  
-  // Update global variables for enhanced dashboard
-  window.selectedChild = child
-  window.childModules = childModules
-  window.currentFocusPlan = currentFocusPlan
+  // Batch DOM writes using requestAnimationFrame to avoid forced reflow
+  requestAnimationFrame(() => {
+    // Update header
+    headerSubtitle.textContent = `Welcome back, ${child.name}!`
+    
+    // Show child detail view
+    childrenView.classList.add('hidden')
+    childDetailView.classList.remove('hidden')
+    
+    // Show dashboard tab by default
+    showTab('dashboard')
+    
+    // Update global variables for enhanced dashboard
+    window.selectedChild = child
+    window.childModules = childModules
+    window.currentFocusPlan = currentFocusPlan
+    
+    // Show dashboard button when viewing child details
+    if (dashboardButton) {
+      dashboardButton.style.display = 'inline-block'
+    }
+    
+    // Update stats immediately (fast operation)
+    updateDashboardStats()
+  })
   
   // Apply focus plan's default pathway to adventure map
   if (currentFocusPlan && currentFocusPlan.default_pathway_id) {
@@ -1994,23 +2060,30 @@ function showChildDetailView(child) {
   // Show/setup Focus Plan settings button
   setupFocusPlanSettingsButton()
   
-  // Refresh enhanced dashboard if it exists
-  if (typeof window.refreshEnhancedDashboard === 'function') {
-    setTimeout(() => {
+  // Defer non-critical renders to next frame
+  requestAnimationFrame(() => {
+    // Refresh enhanced dashboard if it exists
+    if (typeof window.refreshEnhancedDashboard === 'function') {
       window.refreshEnhancedDashboard()
+    }
+    
+    // Render modules (can be deferred)
+    renderModules()
+  })
+  
+  // Defer leaderboard and weekly plan to idle callback or setTimeout
+  // These are not visible on initial load
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      renderLeaderboard()
+      renderWeeklyPlan(currentWeeklyPlan)
+    }, { timeout: 2000 })
+  } else {
+    setTimeout(() => {
+      renderLeaderboard()
+      renderWeeklyPlan(currentWeeklyPlan)
     }, 100)
   }
-  
-  // Show dashboard button when viewing child details
-  if (dashboardButton) {
-    dashboardButton.style.display = 'inline-block'
-  }
-  
-  // Update stats and render content
-  updateDashboardStats()
-  renderModules()
-  renderLeaderboard()
-  renderWeeklyPlan(currentWeeklyPlan)
 }
 
 // Apply focus plan to adventure map
@@ -2908,7 +2981,14 @@ if (tabSpendStars) {
   tabSpendStars.addEventListener('click', () => showTab('spendStars'))
 }
 if (tabParentInsights) {
-  tabParentInsights.addEventListener('click', () => showTab('parentInsights'))
+  tabParentInsights.addEventListener('click', () => {
+    // Navigate to the dedicated Parent Insights page for better performance and richer data
+    if (selectedChild) {
+      window.location.href = `/parent-insights.html?childId=${selectedChild.id}`
+    } else {
+      window.location.href = '/parent-insights.html'
+    }
+  })
 }
 
 // Update dashboard stats

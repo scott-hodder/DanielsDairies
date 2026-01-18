@@ -1323,7 +1323,10 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         if (displayEl) displayEl.appendChild(badge);
         if (countEl) countEl.textContent = collectedPowerUps.length;
         if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '✓ Great choice!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
-        if (collectedPowerUps.length >= targetCount) { document.getElementById('powerupWin').style.display = 'block'; document.getElementById('powerupComplete').style.display = 'flex'; }
+        if (collectedPowerUps.length >= targetCount) { 
+          document.getElementById('powerupWin').style.display = 'block'; 
+          // Don't automatically show completion checkbox - user must manually check it
+        }
       } else {
         btn.classList.add('wrong');
         setTimeout(() => btn.classList.remove('wrong'), 500);
@@ -2882,7 +2885,7 @@ function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starInde
           </div>
           
           <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="powerupComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);" id="powerupComplete">
             <input 
               type="checkbox" 
               class="w-8 h-8 rounded cursor-pointer"

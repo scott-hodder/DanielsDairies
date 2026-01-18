@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Insights - Daniel's Diaries</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link href="/styles/parent-insights.css" rel="stylesheet">
+    <link href="/styles/parent-insights.css" rel="stylesheet">
+    
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="/dashboard.html" class="header-logo">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
+                    <div>
+                        <h1 class="header-title">Parent Insights</h1>
+                        <p class="header-subtitle">Track progress & understand your child's journey</p>
+                    </div>
+                </a>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-header" onclick="window.print()">📄 Print Report</button>
+                <button class="btn-header" onclick="window.location.href='/dashboard.html'">← Back to Dashboard</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Child Selector -->
+        <div class="child-selector">
+            <span class="child-selector-label">Viewing insights for:</span>
+            <div class="child-tabs" id="childTabs">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <section class="hero-section" id="heroSection">
+            <div class="hero-content">
+                <p class="hero-greeting" id="heroGreeting">Your child's emotional growth journey</p>
+                <h2 class="hero-title" id="heroTitle">Loading...</h2>
+                <p class="hero-subtitle" id="heroSubtitle">Evidence-based insights into your child's emotional development progress.</p>
+                
+                <div class="hero-stats" id="heroStats">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="section-grid">
+            <!-- Progress Chart Card -->
+            <div class="card progress-overview">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">📈</span>
+                        Progress Over Time
+                    </h3>
+                    <span class="card-badge badge-info">Based on validated assessments</span>
+                </div>
+                <div id="progressChartArea">
+                    <div class="chart-container">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+                <div id="noAssessmentsMessage" style="display: none;">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <h3 class="empty-state-title">Assessments Coming Soon</h3>
+                        <p class="empty-state-text">Your child will complete quick check-ins as they progress through their journey. These science-backed assessments help track meaningful change.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What to Expect Card -->
+            <div class="card expectations-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">🎯</span>
+                        What to Expect
+                    </h3>
+                </div>
+                <ul class="expectation-list">
+                    <li class="expectation-item">
+                        <span class="expectation-icon">⏱️</span>
+                        <div class="expectation-content">
+                            <h4>Time Commitment</h4>
+                            <p>10-15 minutes per module. Most children complete 2-3 modules per week.</p>
+                        </div>
+                    </li>
+                    <li class="expectation-item">
+                        <span class="expectation-icon">📈</span>
+                        <div class="expectation-content">
+                            <h4>Progress Isn't Linear</h4>
+                            <p>Expect ups and downs. Emotional growth happens in waves, not straight lines.</p>
+                        </div>
+                    </li>
+                    <li class="expectation-item">
+                        <span class="expectation-icon">🔄</span>
+                        <div class="expectation-content">
+                            <h4>Built-in Check-ins</h4>
+                            <p>We assess at the start, middle, and end of each pathway to track real change.</p>
+                        </div>
+                    </li>
+                    <li class="expectation-item">
+                        <span class="expectation-icon">💪</span>
+                        <div class="expectation-content">
+                            <h4>Consistency Matters Most</h4>
+                            <p>Regular practice beats intensive bursts. Small daily moments create lasting change.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Active Journeys Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">🗺️</span>
+                        Active Journeys
+                    </h3>
+                </div>
+                <div class="journey-cards" id="journeyCards">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Milestones Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">🏆</span>
+                        Key Milestones
+                    </h3>
+                </div>
+                <div class="milestone-timeline" id="milestoneTimeline">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- This Week's Insights Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">💡</span>
+                        This Week's Insights
+                    </h3>
+                </div>
+                <div id="weeklyInsights">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What Research Shows Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">🔬</span>
+                        What Research Shows
+                    </h3>
+                    <span class="card-badge badge-success">Evidence-Based</span>
+                </div>
+                <div id="communityStats">
+                    <div class="community-stat">
+                        <span class="community-stat-icon">📉</span>
+                        <div class="community-stat-content">
+                            <div class="community-stat-value">68%</div>
+                            <div class="community-stat-label">of children show reduced emotional intensity after completing 4+ modules</div>
+                        </div>
+                    </div>
+                    <div class="community-stat">
+                        <span class="community-stat-icon">🧠</span>
+                        <div class="community-stat-content">
+                            <div class="community-stat-value">3x</div>
+                            <div class="community-stat-label">more likely to use coping strategies when practiced consistently</div>
+                        </div>
+                    </div>
+                    <div class="community-stat">
+                        <span class="community-stat-icon">⏰</span>
+                        <div class="community-stat-content">
+                            <div class="community-stat-value">6-8 weeks</div>
+                            <div class="community-stat-label">typical timeframe to see meaningful behavioral changes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended Actions Card -->
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">✨</span>
+                        Recommended This Week
+                    </h3>
+                </div>
+                <div id="recommendedActions">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Check-In & Plan Section -->
+        <section class="weekly-checkin-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span>🗓️</span>
+                    Weekly Check-In & Plan
+                </h2>
+                <p class="section-subtitle">Track patterns and get personalized strategies for your child</p>
+            </div>
+
+            <div class="checkin-grid">
+                <!-- Weekly Check-In Form -->
+                <div class="card checkin-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">📝</span>
+                            Weekly Check-In
+                        </h3>
+                        <span class="card-badge badge-info">30 seconds</span>
+                    </div>
+                    
+                    <form id="weeklyCheckinForm">
+                        <div class="form-group">
+                            <label class="form-label">How big were the big feelings this week?</label>
+                            <div class="intensity-scale">
+                                <button type="button" class="scale-btn" data-value="1">
+                                    <span class="scale-number">1</span>
+                                    <span class="scale-label">Mostly calm</span>
+                                </button>
+                                <button type="button" class="scale-btn" data-value="2">
+                                    <span class="scale-number">2</span>
+                                </button>
+                                <button type="button" class="scale-btn" data-value="3">
+                                    <span class="scale-number">3</span>
+                                    <span class="scale-label">A few hard moments</span>
+                                </button>
+                                <button type="button" class="scale-btn" data-value="4">
+                                    <span class="scale-number">4</span>
+                                </button>
+                                <button type="button" class="scale-btn" data-value="5">
+                                    <span class="scale-number">5</span>
+                                    <span class="scale-label">Really tough</span>
+                                </button>
+                            </div>
+                            <input type="hidden" id="checkinIntensity" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">What was the hardest moment to manage?</label>
+                            <select class="form-select" id="checkinChallenge" required>
+                                <option value="">Select one</option>
+                                <option>Morning routine</option>
+                                <option>School refusal / drop-off</option>
+                                <option>Homework / focus</option>
+                                <option>Bedtime</option>
+                                <option>Sibling conflict</option>
+                                <option>Social worries</option>
+                                <option>Anger outbursts</option>
+                                <option>Sensory overwhelm</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Which feelings showed up most?</label>
+                            <div class="trigger-chips" id="checkinTriggers">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Pick one small goal for this week</label>
+                            <select class="form-select" id="checkinGoal">
+                                <option value="">Choose a goal</option>
+                                <option>Use a calm-down tool once</option>
+                                <option>Name emotions once a day</option>
+                                <option>Practice a coping tool 3 times</option>
+                                <option>Handle a transition better (school/bed)</option>
+                                <option>Try one brave step</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Anything you want us to know? <span class="optional">(optional)</span></label>
+                            <textarea class="form-textarea" id="checkinNotes" rows="2" maxlength="200" placeholder="Max 200 characters"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-submit" id="checkinSubmitButton">
+                            <span id="checkinSubmitText">✨ Save & Build Plan</span>
+                            <span id="checkinSubmitSpinner" class="spinner-small hidden"></span>
+                        </button>
+                        
+                        <p id="checkinMessage" class="form-message hidden"></p>
+                    </form>
+                </div>
+
+                <!-- This Week's Plan -->
+                <div class="card plan-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">📋</span>
+                            This Week's Plan
+                        </h3>
+                    </div>
+                    
+                    <div id="weeklyPlanContent">
+                        <div class="plan-summary" id="weeklyPlanSummary">
+                            <p class="plan-empty">Complete a quick check-in to generate a tailored plan.</p>
+                        </div>
+
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Focus Skills</h4>
+                            <div class="plan-chips" id="planSkills">
+                                <span class="plan-chip-empty">—</span>
+                            </div>
+                        </div>
+
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Key Feelings / Triggers</h4>
+                            <div class="plan-chips" id="planEmotions">
+                                <span class="plan-chip-empty">—</span>
+                            </div>
+                        </div>
+
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Tools to Try</h4>
+                            <div class="plan-chips" id="planTools">
+                                <span class="plan-chip-empty">—</span>
+                            </div>
+                        </div>
+
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Parent Script Spotlight</h4>
+                            <div class="plan-script" id="planScript">
+                                <p class="plan-empty">We'll surface a script once a plan is created.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parent Scripts Library -->
+            <div class="card scripts-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">💬</span>
+                        Parent Scripts Library
+                    </h3>
+                    <span class="card-badge badge-success">Evidence-Based</span>
+                </div>
+                <p class="scripts-intro">Quick phrases to use in the moment. These are based on child psychology best practices.</p>
+                
+                <div class="scripts-grid" id="parentScriptsList">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { supabase } from './src/supabaseClient.js'
+        import { checkAuth, getCurrentUser } from './src/auth.js'
+        import { getChildren, getChildModules, saveWeeklyCheckin, getLatestWeeklyPlan } from './src/database.js'
+
+        // State
+        let currentUser = null;
+        let children = [];
+        let selectedChild = null;
+        let childModules = [];
+        let assessments = [];
+        let progressChart = null;
+        let currentWeeklyPlan = null;
+        const selectedTriggers = new Set();
+
+        // Trigger options for check-in
+        const triggerOptions = ['Anger', 'Overwhelm', 'Worry/Anxiety', 'Sadness', 'Frustration'];
+
+        // Parent scripts library
+        const parentScripts = [
+            {
+                title: 'Anger (in the moment)',
+                context: 'Use when a child is actively angry',
+                script: '"I can see you\'re really angry. You\'re not in trouble. I\'m here. Let\'s do 3 slow breaths together."',
+                feelings: ['Anger'],
+                tool: 'Belly Breathing'
+            },
+            {
+                title: 'Overwhelm (in the moment)',
+                context: 'When everything feels "too much"',
+                script: '"This feels like too much right now. Let\'s make it smaller. What\'s one tiny next step we can do first?"',
+                feelings: ['Overwhelm'],
+                tool: 'Fix-It / Accept-It'
+            },
+            {
+                title: 'Worry (reassurance)',
+                context: 'Validate worry while keeping agency',
+                script: '"Thanks for telling me. Worry is trying to protect you. Let\'s take a breath and then we\'ll make a plan."',
+                feelings: ['Worry/Anxiety'],
+                tool: 'Thought Bubble'
+            },
+            {
+                title: 'After a meltdown (repair)',
+                context: 'Debrief once everyone is calm',
+                script: '"That was really hard. I\'m glad you\'re safe now. What did your body feel like right before it got too big?"',
+                feelings: ['Anger', 'Overwhelm'],
+                tool: 'Emotional Identification'
+            },
+            {
+                title: 'Volcano scale prompt',
+                context: 'Scale the feeling and choose a step',
+                script: '"If your volcano is a 1 to 5 right now, what number are you? What helps you go down by one?"',
+                feelings: ['Anger', 'Frustration'],
+                tool: 'Volcano Scale'
+            },
+            {
+                title: '5-4-3-2-1 grounding',
+                context: 'Bring focus back to the present',
+                script: '"Let\'s find 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, and 1 you can taste."',
+                feelings: ['Worry/Anxiety', 'Overwhelm'],
+                tool: '5-4-3-2-1 Grounding'
+            },
+            {
+                title: 'Sadness validation',
+                context: 'When your child is feeling down',
+                script: '"It\'s okay to feel sad. I\'m here with you. Do you want to talk about it, or just sit together?"',
+                feelings: ['Sadness'],
+                tool: 'Emotional Validation'
+            },
+            {
+                title: 'Frustration helper',
+                context: 'When something isn\'t working',
+                script: '"This is frustrating! It\'s hard when things don\'t go the way we want. What\'s one thing we could try differently?"',
+                feelings: ['Frustration'],
+                tool: 'Problem Solving'
+            }
+        ];
+
+        // Pathway themes
+        const PATHWAY_THEMES = {
+            anger: { name: 'Anger Journey', icon: '🔥', color: '#dc2626', gradient: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' },
+            anxiety: { name: 'Anxiety Journey', icon: '🌧️', color: '#7c3aed', gradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)' },
+            depression: { name: 'Mood Journey', icon: '🌙', color: '#1e40af', gradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' },
+            emotions: { name: 'Emotions Journey', icon: '💭', color: '#db2777', gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)' },
+            social: { name: 'Social Skills', icon: '👫', color: '#059669', gradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' },
+            body: { name: 'Body Awareness', icon: '💪', color: '#d97706', gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
+            cognitive: { name: 'Thinking Skills', icon: '🧠', color: '#0891b2', gradient: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)' },
+            general: { name: 'General Skills', icon: '📚', color: '#4c6c96', gradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)' }
+        };
+
+        // Initialize
+        async function init() {
+            try {
+                const session = await checkAuth();
+                if (!session) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                currentUser = await getCurrentUser();
+                children = await getChildren(currentUser.id);
+
+                if (children.length === 0) {
+                    showNoChildrenState();
+                    return;
+                }
+
+                renderChildTabs();
+
+                // Check URL for child ID
+                const params = new URLSearchParams(window.location.search);
+                const childIdFromUrl = params.get('childId');
+                
+                if (childIdFromUrl) {
+                    const child = children.find(c => c.id === childIdFromUrl);
+                    if (child) {
+                        await selectChild(child);
+                        return;
+                    }
+                }
+
+                // Select first child by default
+                await selectChild(children[0]);
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+            }
+        }
+
+        // Render child tabs
+        function renderChildTabs() {
+            const container = document.getElementById('childTabs');
+            container.innerHTML = children.map(child => `
+                <button class="child-tab" data-child-id="${child.id}">
+                    <span class="child-tab-avatar">${child.avatar || '👤'}</span>
+                    <span>${child.name}</span>
+                </button>
+            `).join('');
+
+            container.querySelectorAll('.child-tab').forEach(tab => {
+                tab.addEventListener('click', async () => {
+                    const childId = tab.dataset.childId;
+                    const child = children.find(c => c.id === childId);
+                    if (child) await selectChild(child);
+                });
+            });
+        }
+
+        // Select child
+        async function selectChild(child) {
+            selectedChild = child;
+
+            // Update URL
+            const url = new URL(window.location);
+            url.searchParams.set('childId', child.id);
+            window.history.replaceState({}, '', url);
+
+            // Update active tab
+            document.querySelectorAll('.child-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.childId === child.id);
+            });
+
+            // Load data in parallel
+            const [modulesData, assessmentsData, weeklyPlanData] = await Promise.all([
+                getChildModules(child.id),
+                loadAssessments(child.id),
+                loadWeeklyPlan(child.id)
+            ]);
+
+            childModules = modulesData || [];
+            assessments = assessmentsData || [];
+            currentWeeklyPlan = weeklyPlanData;
+
+            // Render all sections
+            renderHeroSection();
+            renderProgressChart();
+            renderJourneyCards();
+            renderMilestones();
+            renderWeeklyInsights();
+            renderRecommendedActions();
+            
+            // Initialize check-in section
+            initializeCheckinForm();
+            renderWeeklyPlan();
+            renderParentScripts();
+        }
+
+        // Load weekly plan from database
+        async function loadWeeklyPlan(childId) {
+            try {
+                const plan = await getLatestWeeklyPlan(childId);
+                return plan;
+            } catch (error) {
+                console.error('Error loading weekly plan:', error);
+                return null;
+            }
+        }
+
+        // Load assessments from database
+        async function loadAssessments(childId) {
+            try {
+                const { data, error } = await supabase
+                    .from('pathway_assessments')
+                    .select('*')
+                    .eq('child_id', childId)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('Error loading assessments:', error);
+                return [];
+            }
+        }
+
+        // Render hero section
+        function renderHeroSection() {
+            const completedModules = childModules.filter(cm => cm.is_completed).length;
+            const totalStars = selectedChild.total_stars || selectedChild.stars || 0;
+            const dayStreak = selectedChild.streak || 0;
+            
+            // Calculate days since started
+            const firstModule = childModules.reduce((oldest, cm) => {
+                if (!cm.started_at) return oldest;
+                const date = new Date(cm.started_at);
+                return !oldest || date < oldest ? date : oldest;
+            }, null);
+            const daysSinceStart = firstModule 
+                ? Math.floor((new Date() - firstModule) / (1000 * 60 * 60 * 24))
+                : 0;
+
+            document.getElementById('heroGreeting').textContent = `${selectedChild.name}'s emotional growth journey`;
+            document.getElementById('heroTitle').textContent = getJourneyStageTitle(completedModules, assessments);
+            document.getElementById('heroSubtitle').textContent = getJourneyStageSubtitle(completedModules, assessments);
+
+            document.getElementById('heroStats').innerHTML = `
+                <div class="hero-stat">
+                    <span class="hero-stat-value">${completedModules}</span>
+                    <span class="hero-stat-label">Modules Completed</span>
+                </div>
+                <div class="hero-stat">
+                    <span class="hero-stat-value">${totalStars}</span>
+                    <span class="hero-stat-label">Stars Earned</span>
+                </div>
+                <div class="hero-stat">
+                    <span class="hero-stat-value">${assessments.length}</span>
+                    <span class="hero-stat-label">Check-ins Done</span>
+                </div>
+                <div class="hero-stat">
+                    <span class="hero-stat-value">${daysSinceStart}</span>
+                    <span class="hero-stat-label">Days on Journey</span>
+                </div>
+            `;
+        }
+
+        // Get journey stage title
+        function getJourneyStageTitle(completedModules, assessments) {
+            if (completedModules === 0) return "Ready to Begin! 🌱";
+            if (completedModules < 3) return "Building Foundations 🏗️";
+            if (completedModules < 6) return "Making Progress! 📈";
+            if (completedModules < 10) return "Growing Stronger 💪";
+            return "Emotional Champion! 🏆";
+        }
+
+        // Get journey stage subtitle
+        function getJourneyStageSubtitle(completedModules, assessments) {
+            if (completedModules === 0) {
+                return "Every journey starts with a single step. Begin exploring emotional tools today.";
+            }
+            
+            // Check for improvement in assessments
+            const hasImprovement = checkForImprovement(assessments);
+            if (hasImprovement) {
+                return "Assessment data shows positive progress! Consistent practice is paying off.";
+            }
+            
+            if (completedModules < 5) {
+                return "Building a toolkit of emotional strategies. Keep going!";
+            }
+            
+            return "Demonstrating real growth in emotional awareness and regulation.";
+        }
+
+        // Check assessments for improvement
+        function checkForImprovement(assessments) {
+            const grouped = {};
+            assessments.forEach(a => {
+                if (!grouped[a.pathway_category]) grouped[a.pathway_category] = [];
+                grouped[a.pathway_category].push(a);
+            });
+
+            for (const pathway of Object.keys(grouped)) {
+                const sorted = grouped[pathway].sort((a, b) => 
+                    new Date(a.created_at) - new Date(b.created_at)
+                );
+                
+                if (sorted.length >= 2) {
+                    const first = sorted[0].total_score;
+                    const last = sorted[sorted.length - 1].total_score;
+                    // For negative pathways (anger, anxiety, depression), lower is better
+                    const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(pathway);
+                    if (lowerIsBetter && last < first) return true;
+                    if (!lowerIsBetter && last > first) return true;
+                }
+            }
+            return false;
+        }
+
+        // Render progress chart
+        function renderProgressChart() {
+            const chartArea = document.getElementById('progressChartArea');
+            const noAssessmentsMsg = document.getElementById('noAssessmentsMessage');
+
+            if (assessments.length === 0) {
+                chartArea.style.display = 'none';
+                noAssessmentsMsg.style.display = 'block';
+                return;
+            }
+
+            chartArea.style.display = 'block';
+            noAssessmentsMsg.style.display = 'none';
+
+            // Prepare data by pathway
+            const datasets = [];
+            const labels = [];
+            const grouped = {};
+
+            assessments.forEach(a => {
+                if (!grouped[a.pathway_category]) grouped[a.pathway_category] = [];
+                grouped[a.pathway_category].push(a);
+            });
+
+            // Create date labels
+            const allDates = [...new Set(assessments.map(a => 
+                new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            ))];
+            labels.push(...allDates);
+
+            // Create dataset for each pathway
+            Object.keys(grouped).forEach(pathway => {
+                const theme = PATHWAY_THEMES[pathway] || PATHWAY_THEMES.general;
+                const pathwayAssessments = grouped[pathway].sort((a, b) => 
+                    new Date(a.created_at) - new Date(b.created_at)
+                );
+
+                // For negative pathways, show improvement as going up (invert score)
+                const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(pathway);
+                
+                const data = pathwayAssessments.map(a => {
+                    const maxScore = a.max_score || 24;
+                    const score = a.total_score;
+                    // Convert to "wellness score" where higher is better
+                    return lowerIsBetter ? maxScore - score : score;
+                });
+
+                datasets.push({
+                    label: theme.name,
+                    data: data,
+                    borderColor: theme.color,
+                    backgroundColor: theme.color + '20',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                });
+            });
+
+            // Destroy existing chart
+            if (progressChart) {
+                progressChart.destroy();
+            }
+
+            // Create new chart
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Start'],
+                    datasets: datasets.length > 0 ? datasets : [{
+                        label: 'Progress',
+                        data: [0],
+                        borderColor: '#4c6c96',
+                        backgroundColor: '#4c6c9620'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    family: "'League Spartan', sans-serif",
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'white',
+                            titleColor: '#1f2937',
+                            bodyColor: '#6b7280',
+                            borderColor: '#e5e7eb',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}/24 wellness score`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 24,
+                            title: {
+                                display: true,
+                                text: 'Wellness Score (higher = better)',
+                                font: {
+                                    family: "'League Spartan', sans-serif"
+                                }
+                            },
+                            grid: {
+                                color: '#f3f4f6'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render journey cards
+        function renderJourneyCards() {
+            const container = document.getElementById('journeyCards');
+            
+            // Group modules and assessments by category
+            const journeys = {};
+            
+            childModules.forEach(cm => {
+                const module = cm.modules || cm;
+                const category = (module.category || 'general').toLowerCase();
+                if (!journeys[category]) {
+                    journeys[category] = { modules: [], assessments: [] };
+                }
+                journeys[category].modules.push(cm);
+            });
+
+            assessments.forEach(a => {
+                const category = a.pathway_category;
+                if (!journeys[category]) {
+                    journeys[category] = { modules: [], assessments: [] };
+                }
+                journeys[category].assessments.push(a);
+            });
+
+            if (Object.keys(journeys).length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: span 2;">
+                        <div class="empty-state-icon">🗺️</div>
+                        <h3 class="empty-state-title">No Active Journeys Yet</h3>
+                        <p class="empty-state-text">Start exploring modules to begin your child's emotional learning journey.</p>
+                        <button class="btn-action btn-primary" onclick="window.location.href='/dashboard.html'">
+                            Start Exploring →
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = Object.keys(journeys).map(category => {
+                const theme = PATHWAY_THEMES[category] || PATHWAY_THEMES.general;
+                const journey = journeys[category];
+                const completed = journey.modules.filter(m => m.is_completed).length;
+                const total = journey.modules.length;
+                const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+                
+                // Calculate score change
+                const categoryAssessments = journey.assessments.sort((a, b) => 
+                    new Date(a.created_at) - new Date(b.created_at)
+                );
+                let changeHtml = '';
+                if (categoryAssessments.length >= 2) {
+                    const first = categoryAssessments[0].total_score;
+                    const last = categoryAssessments[categoryAssessments.length - 1].total_score;
+                    const change = last - first;
+                    const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(category);
+                    const improved = lowerIsBetter ? change < 0 : change > 0;
+                    const changeClass = improved ? 'positive' : (change === 0 ? '' : 'negative');
+                    const arrow = improved ? '↓' : (change === 0 ? '→' : '↑');
+                    changeHtml = `<span class="journey-card-change ${changeClass}">${arrow} ${Math.abs(change)} pts</span>`;
+                }
+
+                return `
+                    <div class="journey-card" style="background: ${theme.gradient}">
+                        <div class="journey-card-icon">${theme.icon}</div>
+                        <div class="journey-card-name">${theme.name}</div>
+                        <div class="journey-card-progress">
+                            <div class="journey-card-progress-fill" style="width: ${progress}%; background: ${theme.color}"></div>
+                        </div>
+                        <div class="journey-card-stats">
+                            <span>${completed}/${total} modules</span>
+                            ${changeHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render milestones
+        function renderMilestones() {
+            const container = document.getElementById('milestoneTimeline');
+            
+            const milestones = [];
+            
+            // Add assessment milestones
+            assessments.forEach(a => {
+                const theme = PATHWAY_THEMES[a.pathway_category] || PATHWAY_THEMES.general;
+                const typeLabel = a.assessment_type === 'baseline' ? 'Started' : 
+                                  a.assessment_type === 'midpoint' ? 'Midpoint Check-in' : 'Completed';
+                milestones.push({
+                    date: new Date(a.created_at),
+                    title: `${theme.name} - ${typeLabel}`,
+                    description: `Score: ${a.total_score}/${a.max_score}`,
+                    completed: true
+                });
+            });
+
+            // Add module completion milestones (significant ones)
+            const completedModules = childModules.filter(cm => cm.is_completed && cm.completed_at);
+            completedModules.slice(-5).forEach(cm => {
+                const module = cm.modules || cm;
+                milestones.push({
+                    date: new Date(cm.completed_at),
+                    title: `Completed: ${module.title || 'Module'}`,
+                    description: `Earned ${cm.stars_earned || 0} stars`,
+                    completed: true
+                });
+            });
+
+            // Sort by date descending
+            milestones.sort((a, b) => b.date - a.date);
+
+            if (milestones.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏆</div>
+                        <h3 class="empty-state-title">Milestones Await!</h3>
+                        <p class="empty-state-text">Complete modules and check-ins to start tracking milestones.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = milestones.slice(0, 5).map((milestone, index) => `
+                <div class="milestone-item ${index === 0 ? 'current' : 'completed'}">
+                    <div class="milestone-date">${milestone.date.toLocaleDateString('en-US', { 
+                        month: 'short', day: 'numeric', year: 'numeric' 
+                    })}</div>
+                    <div class="milestone-title">${milestone.title}</div>
+                    <div class="milestone-description">${milestone.description}</div>
+                </div>
+            `).join('');
+        }
+
+        // Render weekly insights
+        function renderWeeklyInsights() {
+            const container = document.getElementById('weeklyInsights');
+            
+            // Calculate weekly stats
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            const weekModules = childModules.filter(cm => {
+                if (!cm.updated_at) return false;
+                return new Date(cm.updated_at) >= oneWeekAgo;
+            });
+
+            const completedThisWeek = weekModules.filter(cm => cm.is_completed).length;
+            const inProgressThisWeek = weekModules.filter(cm => !cm.is_completed && cm.progress > 0).length;
+
+            const insights = [];
+
+            if (completedThisWeek > 0) {
+                insights.push({
+                    icon: '🎉',
+                    title: `${completedThisWeek} Module${completedThisWeek > 1 ? 's' : ''} Completed!`,
+                    description: 'Great progress this week. Each completed module builds emotional skills.'
+                });
+            }
+
+            if (inProgressThisWeek > 0) {
+                insights.push({
+                    icon: '📖',
+                    title: `${inProgressThisWeek} Module${inProgressThisWeek > 1 ? 's' : ''} In Progress`,
+                    description: 'Active learning happening. Encourage completion for maximum benefit.'
+                });
+            }
+
+            // Add personalized insight based on patterns
+            if (childModules.length > 3) {
+                insights.push({
+                    icon: '💡',
+                    title: 'Consistency Tip',
+                    description: 'Try to complete at least one activity together each day, even for just 5 minutes.'
+                });
+            }
+
+            if (assessments.length > 0) {
+                const latestAssessment = assessments[assessments.length - 1];
+                const efficacy = latestAssessment.efficacy_score;
+                if (efficacy && efficacy < 2) {
+                    insights.push({
+                        icon: '🌟',
+                        title: 'Building Confidence',
+                        description: 'Focus on celebrating small wins to build your child\'s self-efficacy.'
+                    });
+                }
+            }
+
+            if (insights.length === 0) {
+                insights.push({
+                    icon: '🌱',
+                    title: 'Ready to Grow',
+                    description: 'Start a module this week to begin tracking progress and insights.'
+                });
+            }
+
+            container.innerHTML = insights.map(insight => `
+                <div class="insight-item">
+                    <span class="insight-icon">${insight.icon}</span>
+                    <div class="insight-content">
+                        <h4>${insight.title}</h4>
+                        <p>${insight.description}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render recommended actions
+        function renderRecommendedActions() {
+            const container = document.getElementById('recommendedActions');
+            
+            const actions = [];
+            const completedCount = childModules.filter(cm => cm.is_completed).length;
+            const hasBaseline = assessments.some(a => a.assessment_type === 'baseline');
+
+            if (completedCount === 0) {
+                actions.push({
+                    icon: '🚀',
+                    title: 'Start Your First Module',
+                    description: 'Begin with an age-appropriate module to introduce emotional concepts.',
+                    action: 'Go to Dashboard',
+                    href: '/dashboard.html'
+                });
+            }
+
+            if (!hasBaseline && completedCount > 0) {
+                actions.push({
+                    icon: '📋',
+                    title: 'Complete Baseline Assessment',
+                    description: 'The next module will include a check-in to establish baseline measurements.',
+                    action: 'Continue Journey',
+                    href: '/dashboard.html'
+                });
+            }
+
+            if (completedCount >= 2 && completedCount < 5) {
+                actions.push({
+                    icon: '🔄',
+                    title: 'Build Consistency',
+                    description: 'Try to complete 2-3 modules per week for best results.',
+                    action: 'Set Reminder',
+                    href: '#'
+                });
+            }
+
+            // Always add real-world practice
+            actions.push({
+                icon: '🏠',
+                title: 'Practice at Home',
+                description: 'Use the strategies from completed modules during real emotional moments.',
+                action: 'View Scripts',
+                href: '/dashboard.html?tab=parentInsights'
+            });
+
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                    ${actions.map(action => `
+                        <div class="insight-item" style="flex-direction: column; align-items: flex-start;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <span style="font-size: 28px;">${action.icon}</span>
+                                <h4 style="margin: 0; font-size: 16px; color: var(--primary);">${action.title}</h4>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">${action.description}</p>
+                            <a href="${action.href}" class="btn-action btn-secondary" style="font-size: 13px; padding: 10px 16px;">
+                                ${action.action} →
+                            </a>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Show no children state
+        function showNoChildrenState() {
+            document.querySelector('.main-content').innerHTML = `
+                <div class="empty-state" style="padding: 80px 24px;">
+                    <div class="empty-state-icon">👶</div>
+                    <h3 class="empty-state-title">No Children Added Yet</h3>
+                    <p class="empty-state-text">Add a child profile to start tracking their emotional development journey.</p>
+                    <button class="btn-action btn-primary" onclick="window.location.href='/dashboard.html'">
+                        Add Child →
+                    </button>
+                </div>
+            `;
+        }
+
+        // Initialize check-in form
+        function initializeCheckinForm() {
+            const triggersContainer = document.getElementById('checkinTriggers');
+            if (triggersContainer) {
+                triggersContainer.innerHTML = triggerOptions.map(trigger => `
+                    <button type="button" class="trigger-chip" data-trigger="${trigger}">
+                        ${trigger}
+                    </button>
+                `).join('');
+
+                // Add click handlers for trigger chips
+                triggersContainer.querySelectorAll('.trigger-chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        const trigger = chip.dataset.trigger;
+                        if (selectedTriggers.has(trigger)) {
+                            selectedTriggers.delete(trigger);
+                            chip.classList.remove('selected');
+                        } else {
+                            selectedTriggers.add(trigger);
+                            chip.classList.add('selected');
+                        }
+                    });
+                });
+            }
+
+            // Add click handlers for intensity scale
+            document.querySelectorAll('.scale-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    document.getElementById('checkinIntensity').value = btn.dataset.value;
+                });
+            });
+
+            // Handle form submission
+            const form = document.getElementById('weeklyCheckinForm');
+            if (form) {
+                form.addEventListener('submit', handleCheckinSubmit);
+            }
+        }
+
+        // Handle check-in form submission
+        async function handleCheckinSubmit(e) {
+            e.preventDefault();
+            
+            if (!selectedChild) return;
+
+            const submitBtn = document.getElementById('checkinSubmitButton');
+            const submitText = document.getElementById('checkinSubmitText');
+            const submitSpinner = document.getElementById('checkinSubmitSpinner');
+            const messageEl = document.getElementById('checkinMessage');
+
+            // Get form values
+            const intensity = document.getElementById('checkinIntensity').value;
+            const challenge = document.getElementById('checkinChallenge').value;
+            const goal = document.getElementById('checkinGoal').value;
+            const notes = document.getElementById('checkinNotes').value;
+            const triggers = Array.from(selectedTriggers);
+
+            if (!intensity || !challenge) {
+                messageEl.textContent = 'Please select an intensity level and challenge.';
+                messageEl.className = 'form-message error';
+                messageEl.classList.remove('hidden');
+                return;
+            }
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitText.classList.add('hidden');
+            submitSpinner.classList.remove('hidden');
+
+            try {
+                const result = await saveWeeklyCheckin(selectedChild.id, {
+                    intensity: parseInt(intensity),
+                    challenge,
+                    triggers,
+                    goal,
+                    notes
+                });
+
+                if (result) {
+                    currentWeeklyPlan = result;
+                    renderWeeklyPlan();
+                    
+                    messageEl.textContent = '✓ Plan created successfully!';
+                    messageEl.className = 'form-message success';
+                    messageEl.classList.remove('hidden');
+
+                    // Reset form
+                    document.getElementById('weeklyCheckinForm').reset();
+                    document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+                    document.querySelectorAll('.trigger-chip').forEach(c => c.classList.remove('selected'));
+                    selectedTriggers.clear();
+                }
+            } catch (error) {
+                console.error('Error saving check-in:', error);
+                messageEl.textContent = 'Failed to save. Please try again.';
+                messageEl.className = 'form-message error';
+                messageEl.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                submitSpinner.classList.add('hidden');
+            }
+        }
+
+        // Render weekly plan
+        function renderWeeklyPlan() {
+            const summaryEl = document.getElementById('weeklyPlanSummary');
+            const skillsEl = document.getElementById('planSkills');
+            const emotionsEl = document.getElementById('planEmotions');
+            const toolsEl = document.getElementById('planTools');
+            const scriptEl = document.getElementById('planScript');
+
+            if (!currentWeeklyPlan) {
+                summaryEl.innerHTML = '<p class="plan-empty">Complete a quick check-in to generate a tailored plan.</p>';
+                skillsEl.innerHTML = '<span class="plan-chip-empty">—</span>';
+                emotionsEl.innerHTML = '<span class="plan-chip-empty">—</span>';
+                toolsEl.innerHTML = '<span class="plan-chip-empty">—</span>';
+                scriptEl.innerHTML = '<p class="plan-empty">We\'ll surface a script once a plan is created.</p>';
+                return;
+            }
+
+            // Summary
+            const plan = currentWeeklyPlan;
+            const intensityText = ['', 'mostly calm', 'fairly calm', 'some hard moments', 'quite challenging', 'really tough'][plan.intensity] || '';
+            summaryEl.innerHTML = `
+                <p class="plan-summary-text">
+                    <strong>This week:</strong> ${plan.challenge || 'General challenges'} was the hardest moment.
+                    The week was <strong>${intensityText}</strong>.
+                    ${plan.goal ? `<br><strong>Goal:</strong> ${plan.goal}` : ''}
+                </p>
+            `;
+
+            // Skills
+            if (plan.focus_skills && plan.focus_skills.length > 0) {
+                skillsEl.innerHTML = plan.focus_skills.map(skill => 
+                    `<span class="plan-chip skill-chip">${skill}</span>`
+                ).join('');
+            } else {
+                skillsEl.innerHTML = '<span class="plan-chip-empty">—</span>';
+            }
+
+            // Emotions/Triggers
+            if (plan.triggers && plan.triggers.length > 0) {
+                emotionsEl.innerHTML = plan.triggers.map(trigger => 
+                    `<span class="plan-chip emotion-chip">${trigger}</span>`
+                ).join('');
+            } else {
+                emotionsEl.innerHTML = '<span class="plan-chip-empty">—</span>';
+            }
+
+            // Tools
+            if (plan.tools && plan.tools.length > 0) {
+                toolsEl.innerHTML = plan.tools.map(tool => 
+                    `<span class="plan-chip tool-chip">${tool}</span>`
+                ).join('');
+            } else {
+                toolsEl.innerHTML = '<span class="plan-chip-empty">—</span>';
+            }
+
+            // Script
+            if (plan.script) {
+                scriptEl.innerHTML = `
+                    <div class="script-spotlight">
+                        <p class="script-text">${plan.script}</p>
+                    </div>
+                `;
+            } else {
+                scriptEl.innerHTML = '<p class="plan-empty">No specific script for this week.</p>';
+            }
+        }
+
+        // Render parent scripts library
+        function renderParentScripts() {
+            const container = document.getElementById('parentScriptsList');
+            if (!container) return;
+
+            // Filter scripts based on current weekly plan triggers if available
+            let scriptsToShow = parentScripts;
+            if (currentWeeklyPlan && currentWeeklyPlan.triggers && currentWeeklyPlan.triggers.length > 0) {
+                const relevantScripts = parentScripts.filter(script => 
+                    script.feelings.some(f => currentWeeklyPlan.triggers.includes(f))
+                );
+                // Show relevant first, then others
+                const otherScripts = parentScripts.filter(script => 
+                    !script.feelings.some(f => currentWeeklyPlan.triggers.includes(f))
+                );
+                scriptsToShow = [...relevantScripts, ...otherScripts];
+            }
+
+            container.innerHTML = scriptsToShow.map((script, index) => {
+                const isRelevant = currentWeeklyPlan && currentWeeklyPlan.triggers && 
+                    script.feelings.some(f => currentWeeklyPlan.triggers.includes(f));
+                
+                return `
+                    <div class="script-card ${isRelevant ? 'highlighted' : ''}">
+                        <div class="script-header">
+                            <h4 class="script-title">${script.title}</h4>
+                            ${isRelevant ? '<span class="relevant-badge">Relevant This Week</span>' : ''}
+                        </div>
+                        <p class="script-context">${script.context}</p>
+                        <blockquote class="script-quote">${script.script}</blockquote>
+                        <div class="script-meta">
+                            <span class="script-tool">🛠️ ${script.tool}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

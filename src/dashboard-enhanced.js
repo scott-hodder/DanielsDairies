@@ -406,21 +406,33 @@ class AdventureMapV4 {
   }
 
   render() {
+    var self = this;
+    
+    // Get data first (synchronous)
     getDashboardData();
     this.buildModuleList();
     this.filterModulesByCategory();
-    this.createMapHTML();
     
-    if (this.modules.length > 0) {
-      this.applyThemeToBackground();
-      this.renderPath();
-      this.renderDecorations();
-      this.renderNodes();
-      this.updateProgress();
-      this.centerOnCurrentModule();
-    }
-    
-    this.setupEventListeners();
+    // Batch all DOM operations in a single animation frame
+    requestAnimationFrame(function() {
+      self.createMapHTML();
+      
+      if (self.modules.length > 0) {
+        // Batch these operations together
+        self.applyThemeToBackground();
+        self.renderPath();
+        
+        // Defer decorations and nodes slightly for smoother rendering
+        requestAnimationFrame(function() {
+          self.renderDecorations();
+          self.renderNodes();
+          self.updateProgress();
+          self.centerOnCurrentModule();
+        });
+      }
+      
+      self.setupEventListeners();
+    });
   }
 
   buildModuleList() {
@@ -1312,23 +1324,50 @@ var DANIEL_MOODS = [
   "Time to explore! 🗺️"
 ];
 
+var DANIEL_IMAGES = [
+  "/images/characters/DanielTheDog.png",
+  "/images/characters/DanielReading.png",
+  "/images/characters/DanielTheDogHoldingHeart.png",
+  "/images/characters/DanielTheDogReading.png",
+  "/images/characters/DanielTheDogThumbsUp.png",
+  "/images/characters/DanielWithFootball.png"
+];
+
 class EnhancedDashboard {
   constructor() {
     this.adventureMap = null;
     this.currentQuest = null;
     this.questProgress = 0;
     this.danielMoodIndex = 0;
+    this.initialized = false;
+    this.eventListenersAttached = false;
   }
 
   init() {
+    var self = this;
     getDashboardData();
-    this.setupDanielHub();
-    this.setupDailyQuest();
-    this.setupAdventureMap();
-    this.setupModulePreview();
+    
+    // Only attach event listeners once
+    if (!this.eventListenersAttached) {
+      this.setupDanielHub();
+      this.setupModulePreview();
+      this.eventListenersAttached = true;
+    }
+    
+    // Load quest data (synchronous localStorage read)
     this.loadDailyQuest();
-    this.updateDanielMood();
-    this.updateRankDisplay();
+    
+    // Batch DOM updates in animation frame
+    requestAnimationFrame(function() {
+      self.updateDanielMood();
+      self.updateQuestDisplay();
+      self.updateRankDisplay();
+      
+      // Setup adventure map (heavy operation - do last)
+      self.setupAdventureMap();
+    });
+    
+    this.initialized = true;
   }
 
   setupDanielHub() {
@@ -1346,8 +1385,16 @@ class EnhancedDashboard {
       setTimeout(function() { danielAvatar.style.transform = 'scale(1)'; }, 200);
     }
 
+    // Randomly select a mood quote
     this.danielMoodIndex = (this.danielMoodIndex + 1) % DANIEL_MOODS.length;
     if (moodText) moodText.textContent = DANIEL_MOODS[this.danielMoodIndex];
+
+    // Randomly select and set a new Daniel image
+    var randomImageIndex = Math.floor(Math.random() * DANIEL_IMAGES.length);
+    if (danielAvatar && DANIEL_IMAGES[randomImageIndex]) {
+      danielAvatar.src = DANIEL_IMAGES[randomImageIndex];
+    }
+
     this.addSparkleEffect(danielAvatar);
   }
 
@@ -1437,42 +1484,112 @@ class EnhancedDashboard {
     var self = this;
     var closeBtn = document.getElementById('closePreviewBtn');
     if (closeBtn) closeBtn.addEventListener('click', function() { self.hideModulePreview(); });
+
+    var previewCloseBtn = document.getElementById('previewCloseBtn');
+    if (previewCloseBtn) previewCloseBtn.addEventListener('click', function() { self.hideModulePreview(); });
   }
 
   showModulePreview(module) {
-    var panel = document.getElementById('modulePreviewPanel');
-    if (!panel) return;
+    var panels = document.querySelectorAll('.module-preview-panel');
+    if (!panels || panels.length === 0) return;
 
     var emoji = document.getElementById('previewEmoji');
     var title = document.getElementById('previewTitle');
     var description = document.getElementById('previewDescription');
-    var startBtn = document.getElementById('startModuleBtn');
+    var startBtnA = document.getElementById('startModuleBtn');
+
+    var titleB = document.getElementById('previewModuleTitle');
+    var imageB = document.getElementById('previewImage');
+    var startBtnB = document.getElementById('previewStartBtn');
 
     if (emoji) emoji.textContent = module.emoji || '📘';
     if (title) title.textContent = module.name;
     if (description) description.textContent = (module.module && module.module.description) ? module.module.description : 'Explore emotions and learn coping strategies in this interactive module.';
 
-    var self = this;
-    if (startBtn) {
-      startBtn.onclick = function() {
-        self.hideModulePreview();
-        self.startModule(module);
-      };
+    if (titleB) titleB.textContent = module.name;
+    if (imageB) {
+      imageB.innerHTML = '<div class="preview-placeholder">' + (module.emoji || '📚') + '</div>';
     }
-    panel.classList.remove('hidden');
+
+    var self = this;
+    var startHandler = function() {
+      self.hideModulePreview();
+      self.startModule(module);
+    };
+
+    if (startBtnA) startBtnA.onclick = startHandler;
+    if (startBtnB) startBtnB.onclick = startHandler;
+
+    panels.forEach(function(p) {
+      p.classList.remove('hidden');
+    });
   }
 
   hideModulePreview() {
-    var panel = document.getElementById('modulePreviewPanel');
-    if (panel) panel.classList.add('hidden');
+    var panels = document.querySelectorAll('.module-preview-panel');
+    if (!panels || panels.length === 0) return;
+    panels.forEach(function(p) {
+      p.classList.add('hidden');
+    });
   }
 
-  startModule(module) {
+  async startModule(module) {
     var child = window.selectedChild || dashboardSelectedChild;
-    if (module.module && child) {
-      var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code) + '&childName=' + encodeURIComponent(child.name || '');
-      window.location.href = moduleUrl;
+    if (!module.module || !child) return;
+
+    var self = this;
+    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code) + '&childName=' + encodeURIComponent(child.name || '');
+    
+    // Check if assessment is needed before starting module
+    if (window.progressTrackingSystem && window.supabase) {
+      try {
+        var pathwayCategory = this.adventureMap ? this.adventureMap.currentCategory : 'all';
+        if (pathwayCategory === 'all') {
+          pathwayCategory = module.category || 'general';
+        }
+
+        var completedCount = 0;
+        var totalCount = 0;
+        if (this.adventureMap) {
+          // Use unfiltered list so counts are per pathway even when map is on 'all'
+          var source = this.adventureMap.allModules || this.adventureMap.modules || [];
+          var pathwayOnly = source.filter(function(m) { return m.category === pathwayCategory; });
+          completedCount = pathwayOnly.filter(function(m) { return !!m.completed || m.status === 'completed'; }).length;
+          totalCount = pathwayOnly.length;
+        }
+
+        await window.progressTrackingSystem.init(window.supabase);
+
+        var assessmentNeeded = await window.progressTrackingSystem.checkAssessmentNeeded(
+          child.id, pathwayCategory, completedCount, totalCount
+        );
+
+        if (assessmentNeeded) {
+          window.progressTrackingSystem.showAssessment(
+            child.id, pathwayCategory, assessmentNeeded,
+            function(results) {
+              console.log('Assessment completed:', results);
+              window.location.href = moduleUrl;
+            },
+            function() {
+              console.log('Assessment skipped');
+              window.location.href = moduleUrl;
+            }
+          );
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking assessment:', error);
+      }
     }
+    window.location.href = moduleUrl;
+  }
+
+  async getPathwayProgress(childId, pathwayCategory) {
+    if (!window.progressTrackingSystem || !window.supabase) return null;
+    await window.progressTrackingSystem.init(window.supabase);
+    var assessments = await window.progressTrackingSystem.getProgressData(childId, pathwayCategory);
+    return window.progressTrackingSystem.generateProgressReport(assessments);
   }
 
   updateRankDisplay() {
@@ -1503,34 +1620,64 @@ document.head.appendChild(sparkleCSS);
 
 // Initialize
 var enhancedDashboard;
+var enhancedDashboardInitialized = false;
 
 function initEnhancedDashboard() {
-  console.log('Initializing enhanced dashboard with Adventure Map V4 (Category Themed)...');
-  if (!enhancedDashboard) {
-    enhancedDashboard = new EnhancedDashboard();
-  } else {
+  if (enhancedDashboardInitialized && enhancedDashboard) {
+    // Already initialized, just refresh
     enhancedDashboard.init();
+    return;
   }
+  
+  console.log('Initializing enhanced dashboard with Adventure Map V4 (Category Themed)...');
+  enhancedDashboard = new EnhancedDashboard();
+  enhancedDashboardInitialized = true;
+  window.enhancedDashboard = enhancedDashboard;
 }
 
+// OPTIMIZED: Use event-driven initialization instead of polling
 document.addEventListener('DOMContentLoaded', function() {
-  function checkAndInit() {
+  // Check immediately if data is available
+  if (typeof window.modules !== 'undefined' && window.modules && window.modules.length > 0) {
+    requestAnimationFrame(initEnhancedDashboard);
+    return;
+  }
+  
+  // If not ready, use MutationObserver to watch for data instead of polling
+  var checkCount = 0;
+  var maxChecks = 25; // Max 5 seconds (25 * 200ms)
+  
+  function checkDataReady() {
+    checkCount++;
     if (typeof window.modules !== 'undefined' || typeof window.selectedChild !== 'undefined') {
-      initEnhancedDashboard();
+      requestAnimationFrame(initEnhancedDashboard);
+    } else if (checkCount < maxChecks) {
+      setTimeout(checkDataReady, 200);
     } else {
-      setTimeout(checkAndInit, 200);
+      console.warn('Enhanced dashboard: Data not available after timeout');
     }
   }
-  setTimeout(checkAndInit, 100);
+  
+  // Start checking after a short delay
+  setTimeout(checkDataReady, 100);
 });
 
+// Optimized refresh function with debouncing
+var refreshDebounceTimer = null;
 window.refreshEnhancedDashboard = function() {
-  if (enhancedDashboard) {
-    setTimeout(function() { enhancedDashboard.init(); }, 50);
-  } else {
-    initEnhancedDashboard();
+  // Debounce rapid refresh calls
+  if (refreshDebounceTimer) {
+    clearTimeout(refreshDebounceTimer);
   }
+  
+  refreshDebounceTimer = setTimeout(function() {
+    refreshDebounceTimer = null;
+    if (enhancedDashboard) {
+      enhancedDashboard.init();
+    } else {
+      initEnhancedDashboard();
+    }
+  }, 50);
 };
 
-window.enhancedDashboard = enhancedDashboard;
 window.initEnhancedDashboard = initEnhancedDashboard;
