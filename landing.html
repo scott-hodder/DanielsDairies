@@ -46,17 +46,6 @@
         </div>
     </header>
 
-    <!-- Streak Celebration Modal -->
-    <div id="streakCelebrationModal" class="streak-celebration-modal hidden" style="display: none;">
-        <div class="streak-celebration-content">
-            <div class="streak-celebration-emoji">🔥</div>
-            <h2 class="streak-celebration-title">Well Done!</h2>
-            <p class="streak-celebration-message" id="streakMessage">Your streak is <span id="streakCount">2</span> days!</p>
-            <div class="streak-celebration-confetti" id="confetti"></div>
-            <button class="streak-celebration-btn" onclick="closeStreakCelebration()">Keep it going! 💪</button>
-        </div>
-    </div>
-
     <!-- Main Content -->
     <main class="main-content">
         <!-- Loading State -->
@@ -132,53 +121,6 @@
         </div>
 
     </main>
-
-    <script>
-        // Global functions for streak celebration (outside module scope)
-        function closeStreakCelebration() {
-            const modal = document.getElementById('streakCelebrationModal')
-            modal.classList.add('hidden')
-            modal.style.display = 'none'
-        }
-
-        function showStreakCelebration(streakDays) {
-            const modal = document.getElementById('streakCelebrationModal')
-            const streakCount = document.getElementById('streakCount')
-            const confettiContainer = document.getElementById('confetti')
-            
-            streakCount.textContent = streakDays
-            modal.classList.remove('hidden')
-            modal.style.display = 'flex'
-            
-            // Generate confetti
-            generateConfetti(confettiContainer)
-            
-            // Auto-close after 5 seconds
-            setTimeout(() => {
-                closeStreakCelebration()
-            }, 5000)
-        }
-
-        function generateConfetti(container) {
-            container.innerHTML = ''
-            const pieceCount = 30
-            
-            for (let i = 0; i < pieceCount; i++) {
-                const piece = document.createElement('div')
-                piece.className = 'confetti-piece'
-                
-                const randomX = Math.random() * 200 - 100
-                const randomDelay = Math.random() * 0.2
-                
-                piece.style.left = Math.random() * 100 + '%'
-                piece.style.top = Math.random() * 50 + '%'
-                piece.style.setProperty('--tx', randomX + 'px')
-                piece.style.animationDelay = randomDelay + 's'
-                
-                container.appendChild(piece)
-            }
-        }
-    </script>
 
     <script type="module">
         import { checkAuth, signOut } from './src/auth.js'
@@ -269,25 +211,6 @@
                     const emailName = currentUser.email.split('@')[0]
                     const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1)
                     welcomeGreeting.textContent = `Welcome back, ${displayName}`
-                }
-
-                // Check and show streak celebration if streak > 1
-                try {
-                    const { data: streakData } = await supabase
-                        .from('login_streaks')
-                        .select('current_streak')
-                        .eq('user_id', currentUser.id)
-                        .single()
-                    
-                    if (streakData && streakData.current_streak > 1 && !streakShown) {
-                        streakShown = true
-                        // Show celebration after a brief delay to let page load
-                        setTimeout(() => {
-                            showStreakCelebration(streakData.current_streak)
-                        }, 500)
-                    }
-                } catch (error) {
-                    console.log('Could not fetch streak:', error)
                 }
 
                 await setupAdminAccess(currentUser.id)

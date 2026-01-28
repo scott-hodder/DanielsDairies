@@ -34,6 +34,20 @@ let allModulesFilters = {
   series: 'all'
 }
 
+// Helper function to check if streak popup was shown today (per child)
+function hasStreakPopupBeenShownToday(childId) {
+  const today = new Date().toISOString().split('T')[0]
+  const key = `streakPopup_child_${childId}_${today}`
+  return localStorage.getItem(key) === 'true'
+}
+
+// Helper function to mark streak popup as shown for today (per child)
+function markStreakPopupAsShown(childId) {
+  const today = new Date().toISOString().split('T')[0]
+  const key = `streakPopup_child_${childId}_${today}`
+  localStorage.setItem(key, 'true')
+}
+
 // DOM Elements
 const loadingState = document.getElementById('loadingState')
 const childrenView = document.getElementById('childrenView')
@@ -1022,8 +1036,7 @@ async function init() {
       parentModulesResult,
       categoryColorsResult,
       childrenResult,
-      adminResult,
-      streakResult
+      adminResult
     ] = await Promise.allSettled([
       // Load modules
       getModules(),
@@ -1039,9 +1052,7 @@ async function init() {
       // Load children
       getChildren(currentUser.id),
       // Check admin status (non-blocking)
-      isUserAdmin(currentUser.id),
-      // Update and get login streak (non-blocking)
-      updateLoginStreak(currentUser.id).then(() => getLoginStreak(currentUser.id))
+      isUserAdmin(currentUser.id)
     ])
     
     // Process modules
@@ -1083,15 +1094,9 @@ async function init() {
     // Process admin status (non-critical)
     if (adminResult.status === 'fulfilled' && adminResult.value) {
       const adminButton = document.getElementById('adminButton')
+      const adminButtonDesktop = document.getElementById('adminButtonDesktop')
       if (adminButton) adminButton.style.display = 'block'
-    }
-    
-    // Process streak (non-critical)
-    if (streakResult.status === 'fulfilled') {
-      const dayStreakEl = document.getElementById('dayStreak')
-      if (dayStreakEl) {
-        dayStreakEl.textContent = streakResult.value?.current_streak ?? 0
-      }
+      if (adminButtonDesktop) adminButtonDesktop.classList.remove('hidden')
     }
     
     // Update global variables for enhanced dashboard
@@ -1246,40 +1251,20 @@ function createChildCard(child) {
     promptEditChild(child)
   })
   
-  // Add click handler for card (to select child)
-  card.addEventListener('click', () => promptChildPassword(child))
+  card.addEventListener('click', async () => {
+    // Show loading state
+    showLoadingScreen()
+    
+    try {
+      await selectChild(child)
+    } catch (error) {
+      console.error('Error selecting child:', error)
+      hideLoadingScreen()
+      alert('Failed to load child dashboard. Please try again.')
+    }
+  })
   
   return card
-}
-
-// Password management functions
-function promptChildPassword(child) {
-  pendingChildSelection = child
-  
-  // Check if password exists in database (child.password field)
-  if (child.password) {
-    // Password exists, prompt for it
-    childPasswordModalTitle.textContent = `Enter Password for ${child.name}`
-    childPasswordInput.placeholder = 'Enter password'
-  } else {
-    // First time, set password
-    childPasswordModalTitle.textContent = `Set Password for ${child.name}`
-    childPasswordInput.placeholder = 'Create a password'
-  }
-  
-  childPasswordModal.classList.remove('hidden')
-  passwordModalError.classList.add('hidden')
-  childPasswordForm.reset()
-  
-  // Focus the password input
-  setTimeout(() => childPasswordInput.focus(), 100)
-}
-
-function closePasswordModal() {
-  childPasswordModal.classList.add('hidden')
-  pendingChildSelection = null
-  childPasswordForm.reset()
-  passwordModalError.classList.add('hidden')
 }
 
 // Render avatar picker
@@ -1296,15 +1281,14 @@ function renderAvatarPicker(selectedAvatar, pickerElement, hiddenInputElement) {
       button.classList.add('selected')
     }
     button.textContent = emoji
-    button.addEventListener('click', (e) => {
-      e.preventDefault()
-      // Remove selected class from all buttons in this picker
-      pickerElement.querySelectorAll('.avatar-option').forEach(btn => {
-        btn.classList.remove('selected')
-      })
-      // Add selected class to clicked button
-      button.classList.add('selected')
-      // Store the selected avatar
+    button.addEventListener('click', () => {
+      if (selectedTriggers.has(emoji)) {
+        selectedTriggers.delete(emoji)
+        button.classList.remove('selected')
+      } else {
+        selectedTriggers.add(emoji)
+        button.classList.add('selected')
+      }
       if (hiddenInputElement) {
         hiddenInputElement.value = emoji
       }
@@ -1464,81 +1448,6 @@ function getEnhancedAddModalHTML() {
     `;
 }
 
-// Render avatar picker for a specific category
-function renderAvatarCategory(containerId, avatars, selectedAvatar, hiddenInput, previewCircle) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    avatars.forEach(emoji => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'avatar-option-fun' + (selectedAvatar === emoji ? ' selected' : '');
-        button.innerHTML = `<span class="avatar-character">${emoji}</span>`;
-        
-        button.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Remove selected from all in this modal
-            const modal = button.closest('.modal');
-            modal.querySelectorAll('.avatar-option-fun').forEach(btn => btn.classList.remove('selected'));
-            button.classList.add('selected');
-            if (hiddenInput) hiddenInput.value = emoji;
-            
-            if (previewCircle) {
-                previewCircle.style.transform = 'scale(0.8)';
-                setTimeout(() => {
-                    previewCircle.textContent = emoji;
-                    previewCircle.style.transform = 'scale(1.15)';
-                    setTimeout(() => previewCircle.style.transform = 'scale(1)', 150);
-                }, 100);
-            }
-        });
-        
-        container.appendChild(button);
-    });
-}
-
-// Render enhanced avatar picker for EDIT modal
-function renderEnhancedAvatarPicker(selectedAvatar) {
-    const hiddenInput = document.getElementById('editChildAvatar');
-    const previewCircle = document.getElementById('avatarPreviewCircle');
-    
-    if (hiddenInput) hiddenInput.value = selectedAvatar;
-    if (previewCircle) previewCircle.textContent = selectedAvatar;
-    
-    renderAvatarCategory('avatarPickerAnimals', avatarCategories.animals, selectedAvatar, hiddenInput, previewCircle);
-    renderAvatarCategory('avatarPickerMagical', avatarCategories.magical, selectedAvatar, hiddenInput, previewCircle);
-    renderAvatarCategory('avatarPickerHeroes', avatarCategories.heroes, selectedAvatar, hiddenInput, previewCircle);
-    renderAvatarCategory('avatarPickerSpace', avatarCategories.space, selectedAvatar, hiddenInput, previewCircle);
-    
-    if (previewCircle) {
-        previewCircle.onclick = () => {
-            document.getElementById('avatarSectionFun')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
-    }
-}
-
-// Render enhanced avatar picker for ADD modal
-function renderEnhancedAddAvatarPicker(selectedAvatar) {
-    const hiddenInput = document.getElementById('addChildAvatar');
-    const previewCircle = document.getElementById('addAvatarPreviewCircle');
-    
-    if (hiddenInput) hiddenInput.value = selectedAvatar;
-    if (previewCircle) previewCircle.textContent = selectedAvatar;
-    
-    renderAvatarCategory('addAvatarPickerAnimals', avatarCategories.animals, selectedAvatar, hiddenInput, previewCircle);
-    renderAvatarCategory('addAvatarPickerMagical', avatarCategories.magical, selectedAvatar, hiddenInput, previewCircle);
-    renderAvatarCategory('addAvatarPickerHeroes', avatarCategories.heroes, selectedAvatar, hiddenInput, previewCircle);
-    renderAvatarCategory('addAvatarPickerSpace', avatarCategories.space, selectedAvatar, hiddenInput, previewCircle);
-    
-    if (previewCircle) {
-        previewCircle.onclick = () => {
-            document.getElementById('addAvatarSectionFun')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
-    }
-}
-
 // Confetti celebration
 function createConfettiCelebration() {
     const colors = ['#7c3aed', '#ec4899', '#fbbf24', '#14b8a6', '#3b82f6', '#f97316', '#22c55e'];
@@ -1677,6 +1586,37 @@ function promptEditChild(child) {
     setTimeout(() => document.getElementById('editChildName')?.focus(), 100);
 }
 
+function renderEnhancedAvatarPicker(selectedAvatar) {
+  const categories = ['animals', 'magical', 'heroes', 'space']
+  
+  categories.forEach(category => {
+    const pickerElement = document.getElementById(`avatarPicker${category.charAt(0).toUpperCase() + category.slice(1)}`)
+    if (!pickerElement) return
+    
+    pickerElement.innerHTML = ''
+    avatarCategories[category].forEach(emoji => {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'avatar-option-fun'
+      if (selectedAvatar === emoji) {
+        button.classList.add('selected')
+      }
+      button.textContent = emoji
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.avatar-option-fun').forEach(btn => btn.classList.remove('selected'))
+        button.classList.add('selected')
+        const editChildAvatar = document.getElementById('editChildAvatar')
+        const avatarPreviewCircle = document.getElementById('avatarPreviewCircle')
+        if (editChildAvatar) editChildAvatar.value = emoji
+        if (avatarPreviewCircle) avatarPreviewCircle.textContent = emoji
+      })
+      pickerElement.appendChild(button)
+    })
+  })
+  
+  const avatarPreviewCircle = document.getElementById('avatarPreviewCircle')
+  if (avatarPreviewCircle) avatarPreviewCircle.textContent = selectedAvatar || '🦊'
+}
 
 function closeEditChildModal() {
   editChildModal.classList.add('hidden')
@@ -1688,6 +1628,7 @@ function closeEditChildModal() {
 // Select child
 async function selectChild(child) {
   
+  // ... (rest of the code remains the same)
   
   if (!child) {
     console.error('selectChild called with null/undefined child')
@@ -1697,11 +1638,13 @@ async function selectChild(child) {
   selectedChild = child
   
   try {
-    // PARALLEL LOADING - Load child modules and weekly plan together
-    const [childModulesResult, weeklyPlanResult, focusPlanResult] = await Promise.allSettled([
+    // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
+    const [childModulesResult, weeklyPlanResult, focusPlanResult, streakResult] = await Promise.allSettled([
       getChildModules(child.id),
       loadLatestWeeklyPlanData(child.id), // New optimized function
-      checkFocusPlan(child.id)
+      checkFocusPlan(child.id),
+      // Update login streak for this child (using parent's user_id + child_id)
+      currentUser ? updateLoginStreak(currentUser.id, child.id).then(() => getLoginStreak(currentUser.id, child.id)) : Promise.reject('No parent user')
     ])
     
     // Process child modules
@@ -1724,8 +1667,30 @@ async function selectChild(child) {
       currentFocusPlan = null
     }
 
+    // Process and display login streak
+    if (streakResult.status === 'fulfilled') {
+      const streakData = streakResult.value
+      if (streakData) {
+        console.log(`[Child Selection] ${child.name} streak: ${streakData.current_streak}`)
+        // Update the day streak display
+        const dayStreakEl = document.getElementById('dayStreak')
+        if (dayStreakEl) {
+          dayStreakEl.textContent = streakData.current_streak ?? 0
+        }
+        // Show streak popup if streak is 3 or more AND hasn't been shown today for this child
+        if (streakData.current_streak >= 3 && !hasStreakPopupBeenShownToday(child.id)) {
+          markStreakPopupAsShown(child.id)
+          showStreakPopup(child.name, streakData.current_streak)
+        }
+      }
+    } else if (streakResult.status === 'rejected') {
+      console.log('[Child Selection] Streak update skipped (non-critical)')
+    }
+
     // Setup rewards event listeners for this child (non-blocking)
     setupRewardsEventListeners(child)
+    
+    // ... (rest of the code remains the same)
     
     if (!currentFocusPlan) {
       // No active focus plan - show onboarding
@@ -2084,6 +2049,9 @@ function showChildDetailView(child) {
       renderWeeklyPlan(currentWeeklyPlan)
     }, 100)
   }
+  
+  // Hide loading screen now that child detail view is shown
+  hideLoadingScreen()
 }
 
 // Apply focus plan to adventure map
@@ -2590,6 +2558,40 @@ if (cancelPasswordButton) {
   })
 }
 
+// Child Forgot Password button
+const childForgotPasswordBtn = document.getElementById('childForgotPasswordBtn')
+if (childForgotPasswordBtn) {
+  childForgotPasswordBtn.addEventListener('click', async () => {
+    if (!pendingChildSelection) return
+    
+    // Clear the password for this child so they can set a new one
+    try {
+      await setChildPassword(pendingChildSelection.id, null)
+      
+      // Update local child object
+      pendingChildSelection.password = null
+      const childIndex = children.findIndex(c => c.id === pendingChildSelection.id)
+      if (childIndex !== -1) {
+        children[childIndex].password = null
+      }
+      
+      // Update modal to show password creation mode
+      childPasswordModalTitle.textContent = `Set New Password for ${pendingChildSelection.name}`
+      childPasswordInput.placeholder = 'Create a new password'
+      childPasswordInput.value = ''
+      passwordModalError.textContent = 'Password reset! Please create a new password.'
+      passwordModalError.style.color = '#4caf50'
+      passwordModalError.classList.remove('hidden')
+      childPasswordInput.focus()
+    } catch (error) {
+      console.error('Error resetting password:', error)
+      passwordModalError.textContent = 'Failed to reset password. Please try again.'
+      passwordModalError.style.color = '#c02626'
+      passwordModalError.classList.remove('hidden')
+    }
+  })
+}
+
 // Edit child form handler
 /*if (editChildForm) {
   editChildForm.addEventListener('submit', async (e) => {
@@ -2819,37 +2821,43 @@ if (backButton) {
   })
 }
 
-// Dashboard button
-if (dashboardButton) {
-  dashboardButton.addEventListener('click', () => {
-    selectedChild = null
-    showChildrenView()
-  })
-}
+// Desktop Navigation Buttons (same functionality as mobile)
+const dashboardHomeButtonDesktop = document.getElementById('dashboardHomeButtonDesktop')
+const profileButtonDesktop = document.getElementById('profileButtonDesktop')
+const logoutButtonDesktop = document.getElementById('logoutButtonDesktop')
+const adminButtonDesktop = document.getElementById('adminButtonDesktop')
 
-// Dashboard Home Button - goes to child's dashboard view
-if (dashboardHomeButton) {
-  dashboardHomeButton.addEventListener('click', () => {
+if (dashboardHomeButtonDesktop) {
+  dashboardHomeButtonDesktop.addEventListener('click', () => {
     if (selectedChild) {
-      // If a child is selected, go to their dashboard
       window.location.href = `/dashboard.html?childId=${selectedChild.id}`
     } else {
-      // If no child selected, go to children selection
       window.location.href = '/dashboard.html'
     }
   })
 }
 
-// Profile Button - goes to children selection view (same as dashboard for now)
-if (profileButton) {
-  profileButton.addEventListener('click', () => {
+if (profileButtonDesktop) {
+  profileButtonDesktop.addEventListener('click', () => {
     window.location.href = '/dashboard.html'
   })
 }
 
-if (moreModulesButton) {
-  moreModulesButton.addEventListener('click', () => {
-    openMoreModulesModal()
+if (logoutButtonDesktop) {
+  logoutButtonDesktop.addEventListener('click', async () => {
+    try {
+      await signOut()
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Logout error:', error)
+      alert('Failed to logout. Please try again.')
+    }
+  })
+}
+
+if (adminButtonDesktop) {
+  adminButtonDesktop.addEventListener('click', () => {
+    window.location.href = '/admin.html'
   })
 }
 
@@ -2922,6 +2930,35 @@ if (logoutButton) {
       console.error('Logout error:', error)
       alert('Failed to logout. Please try again.')
     }
+  })
+}
+
+// Hamburger Menu Toggle
+const hamburgerMenu = document.getElementById('hamburgerMenu')
+const dropdownMenu = document.getElementById('dropdownMenu')
+
+if (hamburgerMenu && dropdownMenu) {
+  hamburgerMenu.addEventListener('click', (e) => {
+    e.stopPropagation()
+    hamburgerMenu.classList.toggle('active')
+    dropdownMenu.classList.toggle('active')
+  })
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!hamburgerMenu.contains(e.target) && !dropdownMenu.contains(e.target)) {
+      hamburgerMenu.classList.remove('active')
+      dropdownMenu.classList.remove('active')
+    }
+  })
+
+  // Close dropdown when clicking a menu item
+  const dropdownItems = dropdownMenu.querySelectorAll('.dropdown-item')
+  dropdownItems.forEach(item => {
+    item.addEventListener('click', () => {
+      hamburgerMenu.classList.remove('active')
+      dropdownMenu.classList.remove('active')
+    })
   })
 }
 
@@ -3342,8 +3379,12 @@ async function checkAdminStatus() {
     
     if (isAdmin) {
       const adminButton = document.getElementById('adminButton')
+      const adminButtonDesktop = document.getElementById('adminButtonDesktop')
       if (adminButton) {
-        adminButton.style.display = 'block'
+        adminButton.classList.remove('hidden')
+      }
+      if (adminButtonDesktop) {
+        adminButtonDesktop.classList.remove('hidden')
       }
     }
   } catch (error) {
@@ -3384,31 +3425,571 @@ function getStreakMessage(streak) {
   return "Keep it going!"
 }
 
-// Admin button click handler
-const adminButton = document.getElementById('adminButton')
-if (adminButton) {
-  adminButton.addEventListener('click', () => {
-    window.location.href = '/admin.html'
-  })
+// ================================================
+// MODULE GALLERY
+// A warm, card-based display for children's workbooks
+// ================================================
+
+class ModuleGallery {
+    constructor(containerId, options) {
+        this.containerId = containerId;
+        this.container = null;
+        this.modules = [];
+        this.filteredModules = [];
+        this.currentCategory = 'all';
+        this.currentSeries = 'all';
+        this.showActiveOnly = true;
+        this.modalElement = null;
+        this.options = options || {};
+        
+        this.categoryEmojis = {
+            anger: '🔥',
+            anxiety: '🌧️',
+            depression: '🌙',
+            emotions: '💭',
+            social: '👫',
+            body: '💪',
+            cognitive: '🧠',
+            general: '📚'
+        };
+        
+        this.categoryNames = {
+            anger: 'Anger',
+            anxiety: 'Anxiety',
+            depression: 'Mood',
+            emotions: 'Emotions',
+            social: 'Social',
+            body: 'Body',
+            cognitive: 'Thinking',
+            general: 'General'
+        };
+    }
+    
+    init(modules, parentModules, childModules) {
+        this.container = document.getElementById(this.containerId);
+        if (!this.container) {
+            console.warn('Module gallery container not found:', this.containerId);
+            return;
+        }
+        
+        parentModules = parentModules || [];
+        childModules = childModules || [];
+        
+        this.modules = this.processModules(modules, parentModules, childModules);
+        this.applyFilters();
+        this.render();
+        this.createModal();
+    }
+    
+    processModules(modules, parentModules, childModules) {
+        var parentModuleIds = {};
+        parentModules.forEach(function(pm) {
+            parentModuleIds[pm.module_id] = true;
+        });
+        
+        var childModuleMap = {};
+        childModules.forEach(function(cm) {
+            childModuleMap[cm.module_id] = cm;
+        });
+        
+        return modules.map(function(module) {
+            var isActive = !!parentModuleIds[module.id];
+            var childProgress = childModuleMap[module.id];
+            var isCompleted = childProgress && childProgress.status === 'completed';
+            
+            return Object.assign({}, module, {
+                isActive: isActive,
+                isCompleted: isCompleted,
+                childProgress: childProgress
+            });
+        });
+    }
+    
+    applyFilters() {
+        var self = this;
+        this.filteredModules = this.modules.filter(function(module) {
+            if (self.currentCategory !== 'all') {
+                var moduleCategory = (module.category || 'general').toLowerCase();
+                if (moduleCategory !== self.currentCategory.toLowerCase()) {
+                    return false;
+                }
+            }
+            
+            if (self.currentSeries !== 'all') {
+                var moduleSeries = (module.series || '').toLowerCase();
+                if (moduleSeries !== self.currentSeries.toLowerCase()) {
+                    return false;
+                }
+            }
+            
+            if (self.showActiveOnly && !module.isActive) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        this.filteredModules.sort(function(a, b) {
+            if (a.isActive && !b.isActive) return -1;
+            if (!a.isActive && b.isActive) return 1;
+            return (a.title || '').localeCompare(b.title || '');
+        });
+    }
+    
+    getUniqueCategories() {
+        var categories = {};
+        this.modules.forEach(function(m) {
+            if (m.category) categories[m.category.toLowerCase()] = true;
+        });
+        return Object.keys(categories).sort();
+    }
+    
+    getUniqueSeries() {
+        var series = {};
+        this.modules.forEach(function(m) {
+            if (m.series) series[m.series] = true;
+        });
+        return Object.keys(series).sort();
+    }
+    
+    render() {
+        if (!this.container) return;
+        
+        var self = this;
+        var categories = this.getUniqueCategories();
+        var seriesList = this.getUniqueSeries();
+        
+        var categoryOptions = categories.map(function(cat) {
+            var selected = self.currentCategory === cat ? 'selected' : '';
+            var emoji = self.categoryEmojis[cat] || '📖';
+            var name = self.categoryNames[cat] || self.capitalizeFirst(cat);
+            return '<option value="' + cat + '" ' + selected + '>' + emoji + ' ' + name + '</option>';
+        }).join('');
+        
+        var seriesOptions = seriesList.map(function(series) {
+            var selected = self.currentSeries === series.toLowerCase() ? 'selected' : '';
+            return '<option value="' + series.toLowerCase() + '" ' + selected + '>' + series + '</option>';
+        }).join('');
+        
+        var activeCount = this.filteredModules.filter(function(m) { return m.isActive; }).length;
+        
+        this.container.innerHTML = 
+            '<div class="module-gallery">' +
+                '<div class="gallery-header">' +
+                    '<h2 class="gallery-title">' +
+                        '<span class="gallery-title-icon">📚</span>' +
+                        'Your Workbook Library' +
+                    '</h2>' +
+                    '<p class="gallery-subtitle">' +
+                        'Explore your collection of learning adventures' +
+                    '</p>' +
+                '</div>' +
+                
+                '<div class="gallery-filters">' +
+                    '<div class="gallery-filter-group">' +
+                        '<span class="gallery-filter-label">Category</span>' +
+                        '<select class="gallery-filter-select" id="galleryCategoryFilter">' +
+                            '<option value="all">All Categories</option>' +
+                            categoryOptions +
+                        '</select>' +
+                    '</div>' +
+                    
+                    '<div class="gallery-filter-group">' +
+                        '<span class="gallery-filter-label">Series</span>' +
+                        '<select class="gallery-filter-select" id="gallerySeriesFilter">' +
+                            '<option value="all">All Series</option>' +
+                            seriesOptions +
+                        '</select>' +
+                    '</div>' +
+                    
+                    '<label class="gallery-toggle">' +
+                        '<input type="checkbox" id="galleryActiveOnly" ' + (this.showActiveOnly ? 'checked' : '') + '>' +
+                        '<span>Active Only</span>' +
+                    '</label>' +
+                    
+                    '<div class="gallery-count">' +
+                        '<span>📖</span> ' + this.filteredModules.length + ' workbook' + (this.filteredModules.length !== 1 ? 's' : '') +
+                    '</div>' +
+                '</div>' +
+                
+                '<div class="gallery-grid" id="galleryGrid">' +
+                    this.renderCards() +
+                '</div>' +
+            '</div>';
+        
+        this.attachEventListeners();
+    }
+    
+    renderCards() {
+        if (this.filteredModules.length === 0) {
+            return '<div class="gallery-empty">' +
+                '<div class="gallery-empty-icon">📭</div>' +
+                '<h3 class="gallery-empty-title">No workbooks found</h3>' +
+                '<p class="gallery-empty-text">Try adjusting your filters to see more workbooks.</p>' +
+            '</div>';
+        }
+        
+        var self = this;
+        return this.filteredModules.map(function(module) {
+            return self.renderCard(module);
+        }).join('');
+    }
+    
+    renderCard(module) {
+        var category = (module.category || 'general').toLowerCase();
+        var emoji = this.categoryEmojis[category] || '📖';
+        var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
+        var title = module.title || module.name || 'Untitled';
+        var shortDesc = module.short_description || module.description || '';
+        var ageRange = module.age_range || '';
+        
+        var statusClass = 'active';
+        var statusText = 'Ready to start';
+        var statusIcon = '●';
+        
+        if (!module.isActive) {
+            statusClass = 'locked';
+            statusText = 'Locked';
+            statusIcon = '🔒';
+        } else if (module.isCompleted) {
+            statusClass = 'completed';
+            statusText = 'Completed';
+            statusIcon = '✓';
+        }
+        
+        var actionText = module.isActive ? 'View Details →' : 'Learn More';
+        
+        return '<div class="module-card ' + (!module.isActive ? 'locked' : '') + '" ' +
+                    'data-category="' + category + '" ' +
+                    'data-module-id="' + module.id + '">' +
+                '<div class="card-stripe"></div>' +
+                '<div class="card-content">' +
+                    '<div class="card-header">' +
+                        '<div class="card-emoji">' + emoji + '</div>' +
+                        '<div class="card-badges">' +
+                            '<span class="card-category">' + categoryName + '</span>' +
+                            (ageRange ? '<span class="card-age">Ages ' + ageRange + '</span>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    '<h3 class="card-title">' + this.escapeHtml(title) + '</h3>' +
+                    '<p class="card-description">' + this.escapeHtml(shortDesc) + '</p>' +
+                    '<div class="card-footer">' +
+                        '<span class="card-status ' + statusClass + '">' +
+                            '<span class="card-status-dot"></span>' +
+                            statusText +
+                        '</span>' +
+                        '<span class="card-action ' + (module.isActive ? '' : 'locked') + '">' +
+                            actionText +
+                        '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+    }
+    
+    createModal() {
+        var existingModal = document.getElementById('moduleDetailModal');
+        if (existingModal) existingModal.remove();
+        
+        var modal = document.createElement('div');
+        modal.id = 'moduleDetailModal';
+        modal.className = 'module-modal-overlay';
+        modal.innerHTML = 
+            '<div class="module-modal" id="moduleModalContent">' +
+                '<div class="modal-header">' +
+                    '<button class="modal-close" id="modalCloseBtn">✕</button>' +
+                    '<div class="modal-emoji" id="modalEmoji">📚</div>' +
+                    '<h2 class="modal-title" id="modalTitle">Module Title</h2>' +
+                    '<div class="modal-meta">' +
+                        '<span class="modal-meta-badge" id="modalCategory">📖 Category</span>' +
+                        '<span class="modal-meta-badge" id="modalAge">👶 Ages 7-12</span>' +
+                        '<span class="modal-meta-badge" id="modalStatus">✨ Active</span>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<div class="modal-body">' +
+                    '<p class="modal-short-desc" id="modalShortDesc">Short description...</p>' +
+                    
+                    '<div class="modal-section">' +
+                        '<h4 class="modal-section-title"><span>📖</span> About This Workbook</h4>' +
+                        '<p class="modal-description" id="modalDescription">Full description...</p>' +
+                    '</div>' +
+                    
+                    '<div class="modal-section" id="modalEmotionsSection">' +
+                        '<h4 class="modal-section-title"><span>💭</span> Emotions Explored</h4>' +
+                        '<div class="modal-tags" id="modalEmotions"></div>' +
+                    '</div>' +
+                    
+                    '<div class="modal-section" id="modalSkillsSection">' +
+                        '<h4 class="modal-section-title"><span>🎯</span> Skills You\'ll Learn</h4>' +
+                        '<div class="modal-tags" id="modalSkills"></div>' +
+                    '</div>' +
+                    
+                    '<div class="modal-section" id="modalPathwaySection">' +
+                        '<div class="modal-pathway">' +
+                            '<div class="modal-pathway-label">Learning Pathway</div>' +
+                            '<div class="modal-pathway-name" id="modalPathway">🗺️ Pathway Name</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<div class="modal-footer">' +
+                    '<button class="modal-btn secondary" id="modalCancelBtn">Close</button>' +
+                    '<button class="modal-btn primary" id="modalStartBtn">🚀 Start Learning</button>' +
+                '</div>' +
+            '</div>';
+        
+        document.body.appendChild(modal);
+        this.modalElement = modal;
+        
+        var self = this;
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) self.closeModal();
+        });
+        
+        document.getElementById('modalCloseBtn').addEventListener('click', function() {
+            self.closeModal();
+        });
+        
+        document.getElementById('modalCancelBtn').addEventListener('click', function() {
+            self.closeModal();
+        });
+        
+        document.getElementById('modalStartBtn').addEventListener('click', function() {
+            var moduleId = modal.dataset.moduleId;
+            var code = modal.dataset.code;
+            var isLocked = modal.dataset.locked === 'true';
+            
+            if (!isLocked) {
+                self.startModule(moduleId, code);
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && self.modalElement && self.modalElement.classList.contains('active')) {
+                self.closeModal();
+            }
+        });
+    }
+    
+    openModal(module) {
+        if (!this.modalElement) return;
+        
+        var category = (module.category || 'general').toLowerCase();
+        var emoji = this.categoryEmojis[category] || '📖';
+        var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
+        
+        var title = module.title || module.name || 'Untitled';
+        var shortDesc = module.short_description || '';
+        var description = module.description || 'No description available.';
+        var ageRange = module.age_range || 'All ages';
+        var code = module.code || '';
+        var pathway = module.pathway || '';
+        var emotions = module.emotions || [];
+        var skills = module.skills || [];
+        
+        this.modalElement.dataset.moduleId = module.id;
+        this.modalElement.dataset.code = code;
+        this.modalElement.dataset.locked = !module.isActive;
+        
+        var modalContent = document.getElementById('moduleModalContent');
+        modalContent.setAttribute('data-category', category);
+        
+        document.getElementById('modalEmoji').textContent = emoji;
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalCategory').innerHTML = emoji + ' ' + categoryName;
+        document.getElementById('modalAge').textContent = '👶 Ages ' + ageRange;
+        
+        var statusBadge = document.getElementById('modalStatus');
+        if (!module.isActive) {
+            statusBadge.textContent = '🔒 Locked';
+        } else if (module.isCompleted) {
+            statusBadge.textContent = '✅ Completed';
+        } else {
+            statusBadge.textContent = '✨ Active';
+        }
+        
+        document.getElementById('modalShortDesc').textContent = shortDesc || 'An interactive learning workbook designed to help children develop emotional skills.';
+        document.getElementById('modalDescription').textContent = description;
+        
+        var pathwaySection = document.getElementById('modalPathwaySection');
+        var pathwayName = document.getElementById('modalPathway');
+        if (pathway) {
+            pathwaySection.style.display = 'block';
+            pathwayName.textContent = '🗺️ ' + pathway;
+        } else {
+            pathwaySection.style.display = 'none';
+        }
+        
+        var emotionsSection = document.getElementById('modalEmotionsSection');
+        var emotionsContainer = document.getElementById('modalEmotions');
+        if (emotions && emotions.length > 0) {
+            emotionsSection.style.display = 'block';
+            var self = this;
+            emotionsContainer.innerHTML = emotions.map(function(e) {
+                return '<span class="modal-tag emotion">' + self.escapeHtml(e) + '</span>';
+            }).join('');
+        } else {
+            emotionsSection.style.display = 'none';
+        }
+        
+        var skillsSection = document.getElementById('modalSkillsSection');
+        var skillsContainer = document.getElementById('modalSkills');
+        if (skills && skills.length > 0) {
+            skillsSection.style.display = 'block';
+            var self = this;
+            skillsContainer.innerHTML = skills.map(function(s) {
+                return '<span class="modal-tag skill">' + self.escapeHtml(s) + '</span>';
+            }).join('');
+        } else {
+            skillsSection.style.display = 'none';
+        }
+        
+        var startBtn = document.getElementById('modalStartBtn');
+        if (!module.isActive) {
+            startBtn.disabled = true;
+            startBtn.textContent = '🔒 Locked';
+        } else {
+            startBtn.disabled = false;
+            startBtn.innerHTML = '🚀 Start Learning';
+        }
+        
+        this.modalElement.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    closeModal() {
+        if (this.modalElement) {
+            this.modalElement.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+    
+    attachEventListeners() {
+        var self = this;
+        
+        var categoryFilter = document.getElementById('galleryCategoryFilter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', function(e) {
+                self.currentCategory = e.target.value;
+                self.applyFilters();
+                self.updateGrid();
+            });
+        }
+        
+        var seriesFilter = document.getElementById('gallerySeriesFilter');
+        if (seriesFilter) {
+            seriesFilter.addEventListener('change', function(e) {
+                self.currentSeries = e.target.value;
+                self.applyFilters();
+                self.updateGrid();
+            });
+        }
+        
+        var activeToggle = document.getElementById('galleryActiveOnly');
+        if (activeToggle) {
+            activeToggle.addEventListener('change', function(e) {
+                self.showActiveOnly = e.target.checked;
+                self.applyFilters();
+                self.updateGrid();
+            });
+        }
+        
+        this.attachCardClickHandlers();
+    }
+    
+    attachCardClickHandlers() {
+        var self = this;
+        var cards = this.container.querySelectorAll('.module-card');
+        
+        cards.forEach(function(card) {
+            card.addEventListener('click', function() {
+                var moduleId = card.dataset.moduleId;
+                var module = self.modules.find(function(m) {
+                    return m.id == moduleId;
+                });
+                
+                if (module) {
+                    self.openModal(module);
+                }
+            });
+        });
+    }
+    
+    updateGrid() {
+        var grid = document.getElementById('galleryGrid');
+        if (grid) {
+            grid.innerHTML = this.renderCards();
+            this.attachCardClickHandlers();
+        }
+        
+        // Update count
+        var countEl = this.container.querySelector('.gallery-count');
+        if (countEl) {
+            countEl.innerHTML = '<span>📖</span> ' + this.filteredModules.length + ' workbook' + (this.filteredModules.length !== 1 ? 's' : '');
+        }
+    }
+    
+    startModule(moduleId, code) {
+        var child = window.selectedChild;
+        if (!child) {
+            alert('Please select a child first.');
+            return;
+        }
+        
+        this.closeModal();
+        
+        var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + moduleId + '&code=' + code + '&childName=' + encodeURIComponent(child.name || '');
+        window.location.href = moduleUrl;
+    }
+    
+    capitalizeFirst(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+    
+    escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
 }
 
-// Export global variables for enhanced dashboard
-window.modules = modules
-window.childModules = childModules
-window.selectedChild = selectedChild
-window.children = children
+// Initialize and export
+window.ModuleGallery = ModuleGallery;
 
-// Function to get child rank from leaderboard
-window.getChildRank = function(childId) {
-  if (!children || children.length === 0) return null
-  
-  const sortedChildren = children
-    .filter(child => child.total_stars !== undefined)
-    .sort((a, b) => (b.total_stars || 0) - (a.total_stars || 0))
-  
-  const rank = sortedChildren.findIndex(child => child.id === childId) + 1
-  return rank > 0 ? rank : null
-}
+// Auto-initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    var checkAndInit = function() {
+        var container = document.getElementById('moduleGalleryContainer');
+        if (container && window.modules && window.parentModules) {
+            var gallery = new ModuleGallery('moduleGalleryContainer');
+            gallery.init(
+                window.modules || [],
+                window.parentModules || [],
+                window.childModules || []
+            );
+            window.moduleGallery = gallery;
+            return true;
+        }
+        return false;
+    };
+    
+    if (!checkAndInit()) {
+        window.addEventListener('dashboardDataReady', checkAndInit);
+    }
+});
 
+// Export refresh function
+window.refreshModuleGallery = function() {
+    if (window.moduleGallery) {
+        window.moduleGallery.init(
+            window.modules || [],
+            window.parentModules || [],
+            window.childModules || []
+        );
+    }
+};
 // Initialize app
 init()

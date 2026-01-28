@@ -1324,10 +1324,24 @@ class DailyQuestManager {
   setupReleaseActivity() {
     const box = document.getElementById('worryBox');
     const text = document.getElementById('releaseText');
+    const input = document.getElementById('worryInput');
     let released = false;
 
     box.addEventListener('click', () => {
       if (released) return;
+      
+      // Check if there's text in the textarea
+      const worryText = input.value.trim();
+      if (!worryText) {
+        text.textContent = 'Please write your worry first!';
+        text.style.color = '#e74c3c';
+        setTimeout(() => {
+          text.textContent = 'Tap the box to release your worry';
+          text.style.color = '#6d86a8';
+        }, 2000);
+        return;
+      }
+      
       released = true;
       box.style.transform = 'scale(1.2)';
       box.textContent = '✨';

@@ -15,7 +15,8 @@ export default defineConfig({
         landing: resolve(__dirname, 'landing.html'),
         dashboard: resolve(__dirname, 'dashboard.html'),
         admin: resolve(__dirname, 'admin.html'),
-        module: resolve(__dirname, 'module.html')
+        module: resolve(__dirname, 'module.html'),
+        parentInsights: resolve(__dirname, 'parent-insights.html')
       }
     }
   },

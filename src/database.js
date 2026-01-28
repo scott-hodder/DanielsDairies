@@ -515,17 +515,25 @@ export async function createMissingParentProfiles() {
 
 // Login Streak Functions
 
-// Update user's login streak
-export async function updateLoginStreak(userId) {
+// Update login streak (supports both parent and child streaks)
+export async function updateLoginStreak(userId, childId = null) {
   try {
     const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
     
     // Get current streak record
-    const { data: streakRecord, error: fetchError } = await supabase
+    let query = supabase
       .from('login_streaks')
       .select('*')
       .eq('user_id', userId)
-      .single()
+    
+    // Add child_id filter if provided
+    if (childId) {
+      query = query.eq('child_id', childId)
+    } else {
+      query = query.is('child_id', null)
+    }
+    
+    const { data: streakRecord, error: fetchError } = await query.single()
     
     if (fetchError && fetchError.code !== 'PGRST116') { // Not found error
       throw fetchError
@@ -533,14 +541,21 @@ export async function updateLoginStreak(userId) {
     
     if (!streakRecord) {
       // First time login - create streak record
+      const insertData = {
+        user_id: userId,
+        current_streak: 1,
+        longest_streak: 1,
+        last_login_date: today
+      }
+      
+      // Add child_id if provided
+      if (childId) {
+        insertData.child_id = childId
+      }
+      
       const { data: newRecord, error: createError } = await supabase
         .from('login_streaks')
-        .insert({
-          user_id: userId,
-          current_streak: 1,
-          longest_streak: 1,
-          last_login_date: today
-        })
+        .insert(insertData)
         .select()
         .single()
       
@@ -571,7 +586,7 @@ export async function updateLoginStreak(userId) {
     }
     
     // Update streak record
-    const { data: updatedRecord, error: updateError } = await supabase
+    let updateQuery = supabase
       .from('login_streaks')
       .update({
         current_streak: newStreak,
@@ -580,6 +595,15 @@ export async function updateLoginStreak(userId) {
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId)
+    
+    // Add child_id filter if provided
+    if (childId) {
+      updateQuery = updateQuery.eq('child_id', childId)
+    } else {
+      updateQuery = updateQuery.is('child_id', null)
+    }
+    
+    const { data: updatedRecord, error: updateError } = await updateQuery
       .select()
       .single()
     
@@ -592,14 +616,22 @@ export async function updateLoginStreak(userId) {
   }
 }
 
-// Get user's current streak
-export async function getLoginStreak(userId) {
+// Get user's current streak (supports both parent and child streaks)
+export async function getLoginStreak(userId, childId = null) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('login_streaks')
       .select('current_streak, longest_streak, last_login_date')
       .eq('user_id', userId)
-      .single()
+    
+    // Add child_id filter if provided
+    if (childId) {
+      query = query.eq('child_id', childId)
+    } else {
+      query = query.is('child_id', null)
+    }
+    
+    const { data, error } = await query.single()
     
     if (error && error.code !== 'PGRST116') { // Not found error
       throw error

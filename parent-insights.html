@@ -408,6 +408,70 @@
         // Trigger options for check-in
         const triggerOptions = ['Anger', 'Overwhelm', 'Worry/Anxiety', 'Sadness', 'Frustration'];
 
+        // Intensity labels for plan generation
+        const intensityLabels = {
+            1: 'Mostly calm',
+            2: 'A little wobbly',
+            3: 'A few hard moments',
+            4: 'Bumpy',
+            5: 'Really tough week'
+        };
+
+        // Trigger to skills mapping
+        const triggerToSkills = {
+            Anger: ['Calming Strategies', 'Emotional Identification'],
+            Overwhelm: ['Calming Strategies', 'Problem Solving'],
+            'Worry/Anxiety': ['Calming Strategies', 'Confidence / Self-belief', 'Problem Solving'],
+            Sadness: ['Emotional Identification', 'Problem Solving'],
+            Frustration: ['Problem Solving', 'Calming Strategies']
+        };
+
+        // Tools library for weekly plans
+        const planToolsLibrary = [
+            {
+                id: 'volcano_scale',
+                label: 'Volcano Scale (1–5)',
+                description: 'Rate the feeling, then choose one action to lower it by one point.',
+                triggers: ['Anger', 'Frustration'],
+                skills: ['Calming Strategies', 'Emotional Identification']
+            },
+            {
+                id: 'belly_breathing',
+                label: 'Belly Breathing (3 breaths)',
+                description: 'Hands on belly, slow breaths to calm body signals.',
+                triggers: ['Overwhelm', 'Worry/Anxiety'],
+                skills: ['Calming Strategies']
+            },
+            {
+                id: 'grounding_54321',
+                label: '5-4-3-2-1 Grounding',
+                description: 'Use senses to anchor back into the present moment.',
+                triggers: ['Overwhelm', 'Worry/Anxiety'],
+                skills: ['Calming Strategies']
+            },
+            {
+                id: 'thought_bubble',
+                label: 'Thought Bubble',
+                description: 'Name what the brain is saying so you can respond to it.',
+                triggers: ['Worry/Anxiety', 'Sadness'],
+                skills: ['Problem Solving', 'Emotional Identification']
+            },
+            {
+                id: 'brave_ladder',
+                label: 'Brave Ladder',
+                description: 'Break big scary things into tiny brave steps.',
+                triggers: ['Worry/Anxiety'],
+                skills: ['Confidence / Self-belief']
+            },
+            {
+                id: 'fix_accept',
+                label: 'Fix-It / Accept-It Choices',
+                description: 'Decide if this problem can be fixed or if we ride it out.',
+                triggers: ['Frustration', 'Overwhelm'],
+                skills: ['Problem Solving']
+            }
+        ];
+
         // Parent scripts library
         const parentScripts = [
             {
@@ -580,7 +644,11 @@
         // Load weekly plan from database
         async function loadWeeklyPlan(childId) {
             try {
-                const plan = await getLatestWeeklyPlan(childId);
+                if (!currentUser || !currentUser.id) {
+                    console.warn('No current user for loading weekly plan');
+                    return null;
+                }
+                const plan = await getLatestWeeklyPlan(currentUser.id, childId);
                 return plan;
             } catch (error) {
                 console.error('Error loading weekly plan:', error);
@@ -689,10 +757,12 @@
                 if (sorted.length >= 2) {
                     const first = sorted[0].total_score;
                     const last = sorted[sorted.length - 1].total_score;
-                    // For negative pathways (anger, anxiety, depression), lower is better
+                    const change = last - first;
                     const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(pathway);
-                    if (lowerIsBetter && last < first) return true;
-                    if (!lowerIsBetter && last > first) return true;
+                    const improved = lowerIsBetter ? change < 0 : change > 0;
+                    const changeClass = improved ? 'positive' : (change === 0 ? '' : 'negative');
+                    const arrow = improved ? '↓' : (change === 0 ? '→' : '↑');
+                    return true;
                 }
             }
             return false;
@@ -868,7 +938,21 @@
                 return;
             }
 
-            container.innerHTML = Object.keys(journeys).map(category => {
+            // Sort journeys: ones with completed modules first, then by total modules
+            const sortedCategories = Object.keys(journeys).sort((a, b) => {
+                const journeyA = journeys[a];
+                const journeyB = journeys[b];
+                const completedA = journeyA.modules.filter(m => m.is_completed).length;
+                const completedB = journeyB.modules.filter(m => m.is_completed).length;
+                
+                // Sort by completed count (descending), then by total modules (descending)
+                if (completedB !== completedA) {
+                    return completedB - completedA;
+                }
+                return journeyB.modules.length - journeyA.modules.length;
+            });
+
+            container.innerHTML = sortedCategories.map(category => {
                 const theme = PATHWAY_THEMES[category] || PATHWAY_THEMES.general;
                 const journey = journeys[category];
                 const completed = journey.modules.filter(m => m.is_completed).length;
@@ -1157,6 +1241,47 @@
             }
         }
 
+        // Generate weekly plan based on check-in data
+        function generateWeeklyPlan({ intensity, challenge, triggers, goal, notes }) {
+            const uniqueTriggers = Array.from(new Set(triggers));
+            const skillSet = new Set();
+            
+            // Map triggers to skills
+            uniqueTriggers.forEach(trigger => {
+                (triggerToSkills[trigger] || []).forEach(skill => skillSet.add(skill));
+            });
+            
+            if (skillSet.size === 0) {
+                skillSet.add('Emotional Identification');
+            }
+
+            // Find relevant tools based on triggers
+            const tools = planToolsLibrary.filter(tool =>
+                tool.triggers.some(trigger => uniqueTriggers.includes(trigger))
+            );
+
+            const planTools = tools.length > 0 ? tools.slice(0, 3) : planToolsLibrary.slice(0, 2);
+
+            // Find a relevant parent script
+            const script = parentScripts.find(item =>
+                item.feelings.some(feeling => uniqueTriggers.includes(feeling))
+            );
+
+            const summary = `This week felt ${intensityLabels[intensity] || 'mixed'} during ${challenge.toLowerCase()}. Focus on ${goal || 'one calm habit'} while supporting ${uniqueTriggers.join(', ')}.`;
+
+            return {
+                intensity,
+                challenge,
+                triggers: uniqueTriggers,
+                goal: goal || null,
+                notes: notes || null,
+                focus_skills: Array.from(skillSet),
+                tools: planTools.map(t => t.label),
+                script: script ? script.script : null,
+                summary
+            };
+        }
+
         // Handle check-in form submission
         async function handleCheckinSubmit(e) {
             e.preventDefault();
@@ -1188,12 +1313,24 @@
             submitSpinner.classList.remove('hidden');
 
             try {
-                const result = await saveWeeklyCheckin(selectedChild.id, {
+                // Generate the weekly plan based on check-in data
+                const generatedPlan = generateWeeklyPlan({
                     intensity: parseInt(intensity),
                     challenge,
                     triggers,
                     goal,
                     notes
+                });
+                
+                const result = await saveWeeklyCheckin({
+                    parentUserId: currentUser.id,
+                    childId: selectedChild.id,
+                    intensity: parseInt(intensity),
+                    challenge,
+                    triggers,
+                    goal,
+                    notes,
+                    generatedPlan
                 });
 
                 if (result) {
@@ -1239,8 +1376,8 @@
                 return;
             }
 
-            // Summary
-            const plan = currentWeeklyPlan;
+            // Access the generated_plan if it exists, otherwise use the top-level data
+            const plan = currentWeeklyPlan.generated_plan || currentWeeklyPlan;
             const intensityText = ['', 'mostly calm', 'fairly calm', 'some hard moments', 'quite challenging', 'really tough'][plan.intensity] || '';
             summaryEl.innerHTML = `
                 <p class="plan-summary-text">

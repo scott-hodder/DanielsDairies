@@ -14,6 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="/styles/dashboard.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/styles/module-gallery.css" rel="stylesheet">
 
     <style>
     /* ADVENTURE_MAP_V2 */
@@ -233,16 +234,45 @@
                 </a>
             </div>
             <div class="header-right">
-                <button class="btn-header" id="dashboardHomeButton">
-                    Dashboard
+                <!-- Desktop Navigation Buttons -->
+                <div class="desktop-nav">
+                    <button class="btn-header" id="dashboardHomeButtonDesktop">
+                        Dashboard
+                    </button>
+                    <button class="btn-header" id="profileButtonDesktop">
+                        Profile
+                    </button>
+                    <button class="btn-header" id="logoutButtonDesktop">Logout</button>
+                    <button class="btn-header settings hidden" id="adminButtonDesktop" style="margin-left: 12px;">
+                        Admin Centre
+                    </button>
+                </div>
+                
+                <!-- Mobile Hamburger Menu -->
+                <button class="hamburger-menu" id="hamburgerMenu" aria-label="Menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
                 </button>
-                <button class="btn-header" id="profileButton">
-                    Profile
-                </button>
-                <button class="btn-header" id="logoutButton">Logout</button>
-                <button class="btn-header settings" id="adminButton" style="display: none; margin-left: 12px;">
-                    Admin Centre
-                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <button class="dropdown-item" id="dashboardHomeButton">
+                        <span class="dropdown-icon">🏠</span>
+                        Dashboard
+                    </button>
+                    <button class="dropdown-item" id="profileButton">
+                        <span class="dropdown-icon">👤</span>
+                        Profile
+                    </button>
+                    <button class="dropdown-item" id="adminButton" style="display: none;">
+                        <span class="dropdown-icon">⚙️</span>
+                        Admin Centre
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item logout" id="logoutButton">
+                        <span class="dropdown-icon">🚪</span>
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -273,51 +303,38 @@
                 <div class="children-grid" id="childrenGrid"></div>
             </div>
 
-            <!-- All Modules Section -->
-            <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                    <span style="font-size: 28px;">📚</span>
-                    <h2 style="font-size: 24px; color: #405878; font-weight: 700; margin: 0;">All Workbooks</h2>
-                </div>
-                <p style="color: #4c6c96; font-size: 15px; margin-bottom: 24px;">Explore our complete library of workbooks - active ones are ready to use, locked ones can be unlocked</p>
-                
-                <!-- Filters -->
-                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
-                    <div>
-                        <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Category:</label>
-                        <select id="allWorkbooksCategoryFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                            <option value="all">All Categories</option>
-                        </select>
+            <!-- Module Gallery for All Modules -->
+            <div id="moduleGalleryContainer">
+                <!-- Gallery will be rendered here by JavaScript -->
+                <div class="module-gallery">
+                    <div class="gallery-header">
+                        <h2 class="gallery-title">
+                            <span class="gallery-title-icon">📚</span>
+                            Your Workbook Library
+                        </h2>
+                        <p class="gallery-subtitle">Loading your collection...</p>
                     </div>
-                    <div>
-                        <label style="display: block; font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 8px;">Filter by Series:</label>
-                        <select id="allWorkbooksSeriesFilter" style="width: 200px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                            <option value="all">All Series</option>
-                        </select>
+                    <div class="gallery-grid">
+                        <div class="gallery-empty">
+                            <div class="gallery-empty-icon">⏳</div>
+                            <p class="gallery-empty-text">Loading workbooks...</p>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Active Modules -->
+            </div>
+            
+            <!-- Hidden containers for backward compatibility -->
+            <div style="display: none;">
                 <div id="activeModulesSection">
-                    <h3 style="font-size: 18px; color: #405878; font-weight: 600; margin-bottom: 16px;">✅ Active Workbooks</h3>
                     <div class="modules-grid" id="parentUnlockedModulesGrid"></div>
                 </div>
-                
-                <!-- Inactive Modules -->
-                <div id="inactiveModulesSection" style="margin-top: 32px;">
-                    <h3 style="font-size: 18px; color: #888; font-weight: 600; margin-bottom: 16px;">🔒 Locked Workbooks</h3>
+                <div id="inactiveModulesSection">
                     <div class="modules-grid" id="parentLockedModulesGrid"></div>
-                    
-                    <!-- Show More/Less Button -->
-                    <div style="text-align: center; margin-top: 24px;">
-                        <button type="button" id="showMoreModulesBtn" class="btn-secondary" style="display: none;">
-                            Show More
-                        </button>
-                        <button type="button" id="showLessModulesBtn" class="btn-secondary" style="display: none;">
-                            Show Less
-                        </button>
-                    </div>
                 </div>
+                <select id="allWorkbooksCategoryFilter"><option value="all">All Categories</option></select>
+                <select id="allWorkbooksSeriesFilter"><option value="all">All Series</option></select>
+                <button type="button" id="showMoreModulesBtn" style="display: none;"></button>
+                <button type="button" id="showLessModulesBtn" style="display: none;"></button>
             </div>
         </div>
 
@@ -1010,6 +1027,7 @@
 
     <script type="module" src="./src/dashboard.js"></script>
     <script type="module" src="./src/dashboard-enhanced.js"></script>
+    <script type="module" src="./src/module-gallery.js"></script>
     <script type ="module" src="./src/daily-quest-system.js"></script>
     <script>
 // Initialize daily quest when child is loaded
@@ -1032,6 +1050,37 @@ window.addEventListener('childSelected', (e) => {
         window.initDailyQuest(e.detail.childId);
     }
 });
+
+// Initialize Module Gallery
+function initModuleGallery() {
+    if (window.ModuleGallery && window.modules) {
+        const gallery = new window.ModuleGallery('moduleGalleryContainer');
+        gallery.init(
+            window.modules || [],
+            window.parentModules || [],
+            window.childModules || []
+        );
+        window.moduleGallery = gallery;
+    }
+}
+
+// Try to init gallery when data is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Check periodically for data availability
+    let galleryCheckCount = 0;
+    const galleryCheck = setInterval(() => {
+        galleryCheckCount++;
+        if (window.modules && window.modules.length > 0) {
+            clearInterval(galleryCheck);
+            setTimeout(initModuleGallery, 100);
+        } else if (galleryCheckCount > 50) {
+            clearInterval(galleryCheck);
+        }
+    }, 200);
+});
+
+// Refresh gallery when modules change
+window.addEventListener('modulesLoaded', initModuleGallery);
 
 // Load progress assessment data for Parent Insights
 async function loadProgressAssessments() {

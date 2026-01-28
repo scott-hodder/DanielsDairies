@@ -551,6 +551,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label required-label">Emotions Targeted</label>
+                        <input type="text" class="form-input" id="emotionsSearchInput" placeholder="🔍 Search emotions..." style="margin-bottom: 8px; padding: 8px 12px; font-size: 13px;">
                         <select class="form-select" id="newModuleEmotions" multiple required style="height: 120px;">
                         </select>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
@@ -561,6 +562,7 @@
 
                     <div class="form-group">
                         <label class="form-label required-label">Skills Developed</label>
+                        <input type="text" class="form-input" id="skillsSearchInput" placeholder="🔍 Search skills..." style="margin-bottom: 8px; padding: 8px 12px; font-size: 13px;">
                         <select class="form-select" id="newModuleSkills" multiple required style="height: 120px;">
                         </select>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
@@ -607,46 +609,14 @@
                     </p>
 
                                         <!-- ✨ NEW: Generation Pipeline -->
-                    <div id="generationPipeline" class="generation-pipeline">
-                        <div class="pipeline-steps">
-                            <div class="pipeline-step" data-step="initializing">
-                                <div class="step-circle">1</div>
-                                <span class="step-label">Initializing</span>
+                    <!-- Generation Loading Modal -->
+                    <div id="generationLoadingModal" class="generation-loading-modal">
+                        <div class="generation-loading-content">
+                            <div class="spinner-container">
+                                <div class="spinner"></div>
                             </div>
-                            <div class="pipeline-step" data-step="skeleton">
-                                <div class="step-circle">2</div>
-                                <span class="step-label">Structure</span>
-                            </div>
-                            <div class="pipeline-step" data-step="expansion">
-                                <div class="step-circle">3</div>
-                                <span class="step-label">Content</span>
-                            </div>
-                            <div class="pipeline-step" data-step="validation">
-                                <div class="step-circle">4</div>
-                                <span class="step-label">Quality Check</span>
-                            </div>
-                            <div class="pipeline-step" data-step="rendering">
-                                <div class="step-circle">5</div>
-                                <span class="step-label">Rendering</span>
-                            </div>
-                        </div>
-
-                        <div class="time-stats">
-                            <div class="time-stat">
-                                <span class="time-stat-value" id="elapsedTime">0:00</span>
-                                <span class="time-stat-label">Elapsed</span>
-                            </div>
-                            <div class="time-stat">
-                                <span class="time-stat-value" id="estimatedRemaining">~2m</span>
-                                <span class="time-stat-label">Remaining</span>
-                            </div>
-                        </div>
-
-                        <div class="generation-log" id="generationLog">
-                            <div class="log-entry info">
-                                <span class="log-time">00:00</span>
-                                <span>Starting module generation...</span>
-                            </div>
+                            <h3 style="margin: 24px 0 8px; color: #1f2937; font-size: 20px;">Generating Module...</h3>
+                            <p style="margin: 0; color: #6b7280; font-size: 14px;">This may take a few minutes. Please don't close this window.</p>
                         </div>
                     </div>
 
@@ -854,6 +824,45 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        /* Generation Loading Modal */
+        .generation-loading-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        
+        .generation-loading-content {
+            background: white;
+            border-radius: 16px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+        
+        .spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #e5e7eb;
+            border-top-color: #7b3ff2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
     </style>
 
@@ -1990,19 +1999,19 @@ function resumeGeneration(jobId) {
 
 // ========== PIPELINE UI ==========
 function showGenerationPipeline() {
-    const pipeline = document.getElementById('generationPipeline');
-    pipeline.classList.add('active');
-    generationStartTime = Date.now();
-    startElapsedTimer();
-    clearLog();
-    addLog('Starting module generation...', 'info');
+    const modal = document.getElementById('generationLoadingModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function hideGenerationPipeline() {
-    const pipeline = document.getElementById('generationPipeline');
-    pipeline.classList.remove('active');
-    stopElapsedTimer();
-    resetPipelineSteps();
+    const modal = document.getElementById('generationLoadingModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
 }
 
 function resetPipelineSteps() {
@@ -2283,7 +2292,7 @@ function classifyGenerationError(error) {
             return;
         }
 
-        // ✨ Show pipeline
+        // Show loading modal
         showGenerationPipeline();
 
         generateBtn.disabled = true;
@@ -2291,19 +2300,11 @@ function classifyGenerationError(error) {
         statusEl.textContent = 'Starting AI generation...';
         statusEl.style.color = '#7b3ff2';
 
-
-
-
-        // ✨ Start generation with progress tracking
-        updatePipelineStep('initializing');
-        addLog('Calling AI generation service...', 'info');
+        // Start generation
         
         const jobId = await startGenerationJob(enrichedBrief, seriesId, category);
         currentJobId = jobId;
         saveGenerationSession(jobId, contentBrief);
-        
-
-        addLog(`Job started: ${jobId}`, 'success');
         
         // Poll for results
         const result = await pollForJobResult(jobId);
@@ -2337,9 +2338,6 @@ function classifyGenerationError(error) {
         `;
         previewContainer.style.display = 'block';
         saveBtn.disabled = false;
-
-
-        addLog('✓ Module generation complete!', 'success');
         
         statusEl.textContent = '✅ Generated! Review and save when ready.';
         statusEl.style.color = '#10b981';
@@ -4359,6 +4357,44 @@ if (data.status === "running") {
             } catch (error) {
                 console.error('Error loading skills:', error);
             }
+            
+            // Setup search functionality for emotions and skills
+            setupSearchFilters();
+        }
+        
+        // Setup live search filters for emotions and skills
+        function setupSearchFilters() {
+            const emotionsSearchInput = document.getElementById('emotionsSearchInput');
+            const skillsSearchInput = document.getElementById('skillsSearchInput');
+            const emotionsSelect = document.getElementById('newModuleEmotions');
+            const skillsSelect = document.getElementById('newModuleSkills');
+            
+            if (emotionsSearchInput && emotionsSelect) {
+                emotionsSearchInput.addEventListener('input', function() {
+                    filterSelectOptions(emotionsSelect, this.value);
+                });
+            }
+            
+            if (skillsSearchInput && skillsSelect) {
+                skillsSearchInput.addEventListener('input', function() {
+                    filterSelectOptions(skillsSelect, this.value);
+                });
+            }
+        }
+        
+        // Filter select options based on search query
+        function filterSelectOptions(selectElement, searchQuery) {
+            const query = searchQuery.toLowerCase().trim();
+            const options = Array.from(selectElement.options);
+            
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
         }
 
         // Generate next module code (MODULE10, MODULE11, etc.)
