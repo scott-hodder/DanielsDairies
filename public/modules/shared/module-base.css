@@ -197,7 +197,6 @@ h1.font-title::after {
    ============================================ */
 p.font-body,
 .text-lg.font-body {
-  color: var(--cream);
   opacity: 0.9;
   font-size: 1.1rem;
   line-height: 1.8;

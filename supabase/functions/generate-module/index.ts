@@ -53,6 +53,23 @@ import {
   type EmotionMazeContent,
   type StrengthShieldContent,
   type FeelingVolcanoContent,
+  type SpinTheWheelContent,
+  type StickerCollectorContent,
+  type MindfulAdventureContent,
+  type EmotionDetectiveContent,
+  type BalloonPopContent,
+  type TreasureHuntContent,
+  type MonsterTamerContent,
+  type GardenGrowerContent,
+  type SuperheroCreatorContent,
+  type FeelingsOrchestraContent,
+  type CalmAquariumContent,
+  type RocketLauncherContent,
+  type MagicPotionContent,
+  type FeelingsBingoContent,
+  type AgeRangeData,
+  type CoreTheoryData,
+  buildEnhancedContentBrief,
   
   // Configuration
   corsHeaders,
@@ -62,6 +79,7 @@ import {
   jsonResponse,
   escapeHtml,
   escapeForTemplate,
+  escapeForOnclick,
   
   // Claude API
   getSettings,
@@ -92,16 +110,85 @@ const DEFAULT_PALETTE: CategoryPalette = {
   softYellow: '#FFE8A3', // Soft yellow
 };
 
+// Hand-crafted palettes for each super skill based on their theme_color
+// These are designed to be visually appealing and child-friendly
+const SUPER_SKILL_PALETTES: Record<string, CategoryPalette> = {
+  // Body Boss - Green (#10B981)
+  '#10B981': {
+    primary: '#10B981',    // Emerald green
+    secondary: '#0D9488',  // Teal
+    accent: '#34D399',     // Light emerald
+    cream: '#ECFDF5',      // Mint cream
+    softYellow: '#A7F3D0', // Light mint
+  },
+  // Emotion Navigator - Pink (#EC4899)
+  '#EC4899': {
+    primary: '#EC4899',    // Pink
+    secondary: '#8B5CF6',  // Purple
+    accent: '#F472B6',     // Light pink
+    cream: '#FDF2F8',      // Pink cream
+    softYellow: '#FBCFE8', // Soft pink
+  },
+  // Brain Builder - Indigo (#6366F1)
+  '#6366F1': {
+    primary: '#6366F1',    // Indigo
+    secondary: '#8B5CF6',  // Purple
+    accent: '#818CF8',     // Light indigo
+    cream: '#EEF2FF',      // Indigo cream
+    softYellow: '#C7D2FE', // Soft indigo
+  },
+  // Calm Controller - Cyan (#06B6D4)
+  '#06B6D4': {
+    primary: '#06B6D4',    // Cyan
+    secondary: '#0891B2',  // Dark cyan
+    accent: '#22D3EE',     // Light cyan
+    cream: '#ECFEFF',      // Cyan cream
+    softYellow: '#A5F3FC', // Soft cyan
+  },
+  // Resilience Ranger - Red (#EF4444)
+  '#EF4444': {
+    primary: '#EF4444',    // Red
+    secondary: '#DC2626',  // Dark red
+    accent: '#F87171',     // Light red
+    cream: '#FEF2F2',      // Red cream
+    softYellow: '#FECACA', // Soft red/coral
+  },
+  // Connection Captain - Amber (#F59E0B)
+  '#F59E0B': {
+    primary: '#F59E0B',    // Amber
+    secondary: '#D97706',  // Dark amber
+    accent: '#FBBF24',     // Light amber
+    cream: '#FFFBEB',      // Amber cream
+    softYellow: '#FDE68A', // Soft yellow
+  },
+  // Thought Driver - Purple (#8B5CF6)
+  '#8B5CF6': {
+    primary: '#8B5CF6',    // Purple
+    secondary: '#7C3AED',  // Dark purple
+    accent: '#A78BFA',     // Light purple
+    cream: '#F5F3FF',      // Purple cream
+    softYellow: '#DDD6FE', // Soft purple
+  },
+};
+
 // Generate a palette from a base color (the category's color from DB)
 function generatePaletteFromColor(baseColor: string | null | undefined): CategoryPalette {
   if (!baseColor) return DEFAULT_PALETTE;
   
   // Normalize hex color
-  let hex = baseColor.trim();
+  let hex = baseColor.trim().toUpperCase();
   if (!hex.startsWith('#')) hex = '#' + hex;
-  if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return DEFAULT_PALETTE;
+  if (!/^#[0-9A-Fa-f]{6}$/i.test(hex)) return DEFAULT_PALETTE;
   
-  // Parse RGB
+  // Check if we have a predefined palette for this exact color
+  const normalizedHex = hex.toUpperCase();
+  for (const [colorKey, palette] of Object.entries(SUPER_SKILL_PALETTES)) {
+    if (colorKey.toUpperCase() === normalizedHex) {
+      return palette;
+    }
+  }
+  
+  // Parse RGB for dynamic palette generation
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -147,23 +234,21 @@ function generatePaletteFromColor(baseColor: string | null | undefined): Categor
     return '#' + toHex(rOut) + toHex(gOut) + toHex(bOut);
   };
   
-  // Generate palette colors based on the base color
-  // Primary: The base color itself (slightly adjusted for better visibility)
-  const primary = hslToHex(h, Math.min(s * 0.9, 0.7), Math.max(l, 0.45));
+  // For unknown colors, generate a harmonious palette
+  // Primary: Use the exact input color for brand consistency
+  const primary = hex;
   
-  // Secondary: Complementary or triadic color
-  const secondaryHue = (h + 0.5) % 1; // Complementary
-  const secondary = hslToHex(secondaryHue, Math.min(s * 0.8, 0.6), 0.45);
+  // Secondary: Slightly darker and more saturated version
+  const secondary = hslToHex(h, Math.min(s * 1.1, 0.85), Math.max(l - 0.12, 0.35));
   
-  // Accent: Analogous color (30 degrees away)
-  const accentHue = (h + 0.083) % 1; 
-  const accent = hslToHex(accentHue, Math.min(s * 0.85, 0.65), Math.max(l - 0.1, 0.4));
+  // Accent: Lighter, slightly shifted hue for visual interest
+  const accent = hslToHex(h, Math.min(s * 0.9, 0.75), Math.min(l + 0.15, 0.65));
   
-  // Cream: Very light tint of the primary
-  const cream = hslToHex(h, Math.min(s * 0.3, 0.2), 0.97);
+  // Cream: Very light tint of the primary (keeps the hue feel)
+  const cream = hslToHex(h, Math.min(s * 0.25, 0.15), 0.97);
   
-  // Soft yellow: Light warm accent
-  const softYellow = hslToHex((h + 0.15) % 1, 0.5, 0.9);
+  // Soft accent: Light pastel version for backgrounds
+  const softYellow = hslToHex(h, Math.min(s * 0.5, 0.4), 0.88);
   
   return { primary, secondary, accent, cream, softYellow };
 }
@@ -171,10 +256,17 @@ function generatePaletteFromColor(baseColor: string | null | undefined): Categor
 // ====================
 // HTML RENDERER
 
-function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null): string {
+function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): string {
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
   
+  // Helper function to render character (image or emoji)
+  const renderCharacter = (size: string = 'text-6xl') => {
+    if (seriesInfo?.character_image_url) {
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto" style="max-height: 8rem; max-width: 8rem; display: block;">`;
+    }
+    return `<span class="${size}">${escapeForTemplate(metadata.characterEmoji)}</span>`;
+  };
   
   // Track indices for each content type
   const indices = {
@@ -210,6 +302,20 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     emotionMaze: 0,
     strengthShield: 0,
     feelingVolcano: 0,
+    balloonPop: 0,
+    treasureHunt: 0,
+    monsterTamer: 0,
+    gardenGrower: 0,
+    superheroCreator: 0,
+    feelingsOrchestra: 0,
+    calmAquarium: 0,
+    rocketLauncher: 0,
+    magicPotion: 0,
+    feelingsBingo: 0,
+    spinTheWheel: 0,
+    stickerCollector: 0,
+    mindfulAdventure: 0,
+    emotionDetective: 0,
     star: 0,
   };
   
@@ -222,10 +328,10 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     
     switch (template.type) {
       case "cover":
-        pageHtml = renderCoverPage(content);
+        pageHtml = renderCoverPage(content, seriesInfo);
         break;
       case "welcome":
-        pageHtml = renderWelcomePage(content);
+        pageHtml = renderWelcomePage(content, seriesInfo);
         break;
       case "chapter-divider":
         pageHtml = renderChapterDivider(content.chapters[indices.chapter] || content.chapters[0]);
@@ -381,12 +487,87 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         indices.feelingVolcano++;
         indices.star++;
         break;
+      
+        // v6 ACTIVITY TYPES
+      case "spin-the-wheel":
+        pageHtml = renderSpinTheWheelPage(content.spinTheWheels[indices.spinTheWheel] || content.spinTheWheels[0], indices.star, metadata);
+        indices.spinTheWheel++;
+        indices.star++;
+        break;
+      case "sticker-collector":
+        pageHtml = renderStickerCollectorPage(content.stickerCollectors[indices.stickerCollector] || content.stickerCollectors[0], indices.star, metadata);
+        indices.stickerCollector++;
+        indices.star++;
+        break;
+      case "mindful-adventure":
+        pageHtml = renderMindfulAdventurePage(content.mindfulAdventures[indices.mindfulAdventure] || content.mindfulAdventures[0], indices.star, metadata);
+        indices.mindfulAdventure++;
+        indices.star++;
+        break;
+      case "emotion-detective":
+        pageHtml = renderEmotionDetectivePage(content.emotionDetectives[indices.emotionDetective] || content.emotionDetectives[0], indices.star, metadata);
+        indices.emotionDetective++;
+        indices.star++;
+        break;
+
+       // v7 NEW GAME PAGE TYPES
+      case "balloon-pop":
+        pageHtml = renderBalloonPopPage(content.balloonPops[indices.balloonPop] || content.balloonPops[0], indices.star, metadata);
+        indices.balloonPop++;
+        indices.star++;
+        break;
+      case "treasure-hunt":
+        pageHtml = renderTreasureHuntPage(content.treasureHunts[indices.treasureHunt] || content.treasureHunts[0], indices.star, metadata);
+        indices.treasureHunt++;
+        indices.star++;
+        break;
+      case "monster-tamer":
+        pageHtml = renderMonsterTamerPage(content.monsterTamers[indices.monsterTamer] || content.monsterTamers[0], indices.star, metadata);
+        indices.monsterTamer++;
+        indices.star++;
+        break;
+      case "garden-grower":
+        pageHtml = renderGardenGrowerPage(content.gardenGrowers[indices.gardenGrower] || content.gardenGrowers[0], indices.star, metadata);
+        indices.gardenGrower++;
+        indices.star++;
+        break;
+      case "superhero-creator":
+        pageHtml = renderSuperheroCreatorPage(content.superheroCreators[indices.superheroCreator] || content.superheroCreators[0], indices.star, metadata);
+        indices.superheroCreator++;
+        indices.star++;
+        break;
+      case "feelings-orchestra":
+        pageHtml = renderFeelingsOrchestraPage(content.feelingsOrchestras[indices.feelingsOrchestra] || content.feelingsOrchestras[0], indices.star, metadata);
+        indices.feelingsOrchestra++;
+        indices.star++;
+        break;
+      case "calm-aquarium":
+        pageHtml = renderCalmAquariumPage(content.calmAquariums[indices.calmAquarium] || content.calmAquariums[0], indices.star, metadata);
+        indices.calmAquarium++;
+        indices.star++;
+        break;
+      case "rocket-launcher":
+        pageHtml = renderRocketLauncherPage(content.rocketLaunchers[indices.rocketLauncher] || content.rocketLaunchers[0], indices.star, metadata);
+        indices.rocketLauncher++;
+        indices.star++;
+        break;
+      case "magic-potion":
+        pageHtml = renderMagicPotionPage(content.magicPotions[indices.magicPotion] || content.magicPotions[0], indices.star, metadata);
+        indices.magicPotion++;
+        indices.star++;
+        break;
+      case "feelings-bingo":
+        pageHtml = renderFeelingsBingoPage(content.feelingsBingos[indices.feelingsBingo] || content.feelingsBingos[0], indices.star, metadata);
+        indices.feelingsBingo++;
+        indices.star++;
+        break;
       case "summary":
         pageHtml = renderSummaryPage(content.summary, metadata);
         break;
       case "completion":
         pageHtml = renderCompletionPage(content.completion, metadata);
         break;
+       
     }
     
     // Escape backticks in the HTML content but preserve ${} for runtime evaluation
@@ -1225,16 +1406,8 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       // Save this blank's value
       saveFormData('fillblank_' + starIndex + '_' + blankIndex, input.value);
       
-      // Check if all blanks are filled
-      const allBlanks = page.querySelectorAll('input[data-blank-index]');
-      const allFilled = Array.from(allBlanks).every(b => b.value.trim().length > 0);
-      
-      if (allFilled) {
-        const ffEl = page.querySelector('.followup-feedback');
-        const mfEl = page.querySelector('.mascot-feedback');
-        if (ffEl) ffEl.style.display = 'block';
-        if (mfEl) mfEl.style.display = 'flex';
-      }
+      // Only show feedback when user explicitly confirms (blur event or Enter key)
+      // Don't validate on every keystroke
     };
     
     // Sorting activity functions
@@ -1282,12 +1455,26 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     // v5 CHALLENGE HANDLERS
     let weatherCalmLevel = 0;
     let weatherCooldown = false;
+    let weatherClickedButtons = new Set();
     window.handleWeatherAction = function(btn, activityId, points) {
       if (weatherCooldown || completedActivities[activityId]) return;
+      
+      // Get total number of action buttons to calculate percentage
+      const allButtons = btn.parentElement.querySelectorAll('.weather-action');
+      const totalButtons = allButtons.length;
+      const pointsPerButton = Math.floor(100 / totalButtons);
+      
+      // Only add points if this button hasn't been clicked yet
+      const buttonId = btn.dataset.actionId;
+      if (weatherClickedButtons.has(buttonId)) return;
+      
       weatherCooldown = true;
       btn.classList.add('cooldown');
       setTimeout(() => { weatherCooldown = false; btn.classList.remove('cooldown'); }, 800);
-      weatherCalmLevel = Math.min(100, weatherCalmLevel + points);
+      
+      weatherClickedButtons.add(buttonId);
+      weatherCalmLevel = Math.min(100, weatherCalmLevel + pointsPerButton);
+      
       const meterEl = document.getElementById('calmMeter');
       const percentEl = document.getElementById('calmPercent');
       const feedbackEl = document.getElementById('weatherFeedback');
@@ -1300,7 +1487,16 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       if (overlayEl) overlayEl.style.opacity = 1 - (weatherCalmLevel / 100);
       if (clearEl) clearEl.style.opacity = weatherCalmLevel / 100;
       btn.classList.add('used');
-      if (weatherCalmLevel >= 100) { document.getElementById('weatherWin').style.display = 'block'; document.getElementById('weatherComplete').style.display = 'flex'; }
+      btn.disabled = true;
+      
+      // Check if all buttons clicked
+      if (weatherClickedButtons.size >= totalButtons) { 
+        weatherCalmLevel = 100;
+        if (meterEl) meterEl.style.width = '100%';
+        if (percentEl) percentEl.textContent = '100';
+        document.getElementById('weatherWin').style.display = 'block'; 
+        document.getElementById('weatherComplete').style.display = 'flex'; 
+      }
       saveFormData('weather_' + activityId, weatherCalmLevel);
     };
     
@@ -1409,26 +1605,362 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; }
       saveFormData('volcano_' + activityId, volcanoTemp);
     };
+
+    // ===== v7 GAME ACTIVITY HANDLERS =====
+    const balloonState = {};
+    window.useCalmingTool = function(toolId, power, toolName) {
+      const page = document.querySelector('[data-page="balloon-pop"]');
+      if (!page) return;
+      const activityId = page.dataset.activity;
+      const starIndex = activityId.split('_')[1];
+      
+      if (!balloonState[starIndex]) balloonState[starIndex] = { power: 0, popped: [] };
+      balloonState[starIndex].power = Math.min(100, balloonState[starIndex].power + power);
+      
+      document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
+      document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
+  
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '+' + power + ' calming power!');
+    };
+
+    window.popBalloon = function(balloonId, activityId, total) {
+      const starIndex = activityId.split('_')[1];
+      if (!balloonState[starIndex] || balloonState[starIndex].power < 25) {
+        window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, 'Need more calming power first!');
+        return;
+      }
+      
+      const balloon = document.getElementById('balloon_' + balloonId);
+      if (balloon.classList.contains('popped')) return;
+      
+      balloon.classList.add('popped');
+      balloonState[starIndex].power -= 25;
+      balloonState[starIndex].popped.push(balloonId);
+      
+      document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
+      document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
+      
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, balloon.dataset.response);
+      
+      if (balloonState[starIndex].popped.length >= total) {
+        document.getElementById('balloonVictory_' + starIndex).style.display = 'block';
+        document.getElementById('balloonComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== TREASURE HUNT =====
+    const treasureState = {};
+    window.exploreTreasure = function(starIndex, locId, total) {
+      const loc = document.getElementById('loc_' + starIndex + '_' + locId);
+      if (loc.classList.contains('explored')) return;
+      
+      loc.classList.add('explored');
+      document.getElementById('tc_' + starIndex + '_' + locId).style.display = 'block';
+      
+      if (!treasureState[starIndex]) treasureState[starIndex] = [];
+      treasureState[starIndex].push(locId);
+      document.getElementById('treasureCount_' + starIndex).textContent = treasureState[starIndex].length;
+      
+      if (treasureState[starIndex].length >= total) {
+        document.getElementById('treasureVictory_' + starIndex).style.display = 'block';
+        document.getElementById('treasureComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== MONSTER TAMER =====
+    const monsterState = {};
+    window.tameMonster = function(starIndex, shrinkPower, message) {
+      if (!monsterState[starIndex]) monsterState[starIndex] = 100;
+      monsterState[starIndex] = Math.max(0, monsterState[starIndex] - shrinkPower);
+      
+      const visual = document.getElementById('monsterVisual_' + starIndex);
+      visual.style.fontSize = (8 * Math.max(0.3, monsterState[starIndex] / 100)) + 'rem';
+      
+      document.getElementById('monsterSize_' + starIndex).textContent = monsterState[starIndex] + '%';
+      document.getElementById('monsterBar_' + starIndex).style.width = monsterState[starIndex] + '%';
+      
+      window.showFeedback('monsterFeedback_' + starIndex, 'monsterFeedbackText_' + starIndex, message);
+      
+      // Update stages
+      const stage = monsterState[starIndex] > 75 ? 4 : monsterState[starIndex] > 50 ? 3 : monsterState[starIndex] > 25 ? 2 : 1;
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('stage_' + starIndex + '_' + i);
+        if (el) el.style.backgroundColor = i === stage ? 'var(--primary)' : 'var(--cream)';
+      }
+      
+      if (monsterState[starIndex] <= 0) {
+        visual.textContent = '😊';
+        document.getElementById('monsterFriend_' + starIndex).style.display = 'block';
+        document.getElementById('monsterComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== GARDEN GROWER =====
+    const gardenState = {};
+    window.waterPlant = function(starIndex, plantId, stages, total) {
+      if (!gardenState[starIndex]) gardenState[starIndex] = {};
+      if (!gardenState[starIndex][plantId]) gardenState[starIndex][plantId] = 0;
+      if (gardenState[starIndex][plantId] >= stages.length - 1) return;
+      
+      gardenState[starIndex][plantId]++;
+      const currentStage = gardenState[starIndex][plantId];
+      
+      document.getElementById('plantEmoji_' + starIndex + '_' + plantId).textContent = stages[currentStage];
+      
+      for (let i = 0; i <= currentStage; i++) {
+        const dot = document.getElementById('growth_' + starIndex + '_' + plantId + '_' + i);
+        if (dot) dot.style.backgroundColor = 'var(--primary)';
+      }
+      
+      if (currentStage >= stages.length - 1) {
+        document.getElementById('plant_' + starIndex + '_' + plantId).classList.add('grown');
+      }
+      
+      const fullyGrown = Object.values(gardenState[starIndex]).filter(g => g >= stages.length - 1).length;
+      document.getElementById('gardenProgress_' + starIndex).textContent = fullyGrown;
+      
+      if (fullyGrown >= total) {
+        document.getElementById('gardenHarvest_' + starIndex).style.display = 'block';
+        document.getElementById('gardenComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== SUPERHERO CREATOR =====
+    const heroState = {};
+    window.selectHero = function(starIndex, type, emoji) {
+      if (!heroState[starIndex]) heroState[starIndex] = {};
+      heroState[starIndex][type] = emoji;
+      document.getElementById('hero_' + starIndex + '_' + type).textContent = emoji;
+      window.checkHeroComplete(starIndex);
+    };
+
+    window.checkHeroComplete = function(starIndex) {
+      const state = heroState[starIndex] || {};
+      if (state.power && state.costume && state.sidekick) {
+        document.getElementById('heroDone_' + starIndex).style.display = 'block';
+        document.getElementById('heroComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== FEELINGS ORCHESTRA =====
+    window.playInstrument = function(starIndex, emoji, sound, feeling) {
+      const display = document.getElementById('soundDisplay_' + starIndex);
+      display.innerHTML = '<p class="text-5xl">' + emoji + '</p><p class="font-title text-2xl">' + sound + '</p><p class="font-body">' + feeling + '</p>';
+    };
+
+    // ===== CALM AQUARIUM =====
+    window.addToAquarium = function(starIndex, type, emoji, trait) {
+      const tank = document.getElementById('tank_' + starIndex);
+      const item = document.createElement('span');
+      item.className = 'text-4xl';
+      item.textContent = emoji;
+      item.style.animation = 'float 3s ease-in-out infinite';
+      tank.appendChild(item);
+    };
+
+    // ===== ROCKET LAUNCHER =====
+    const rocketState = {};
+    window.addFuel = function(starIndex, amount) {
+      if (!rocketState[starIndex]) rocketState[starIndex] = 0;
+      rocketState[starIndex] = Math.min(100, rocketState[starIndex] + amount);
+      document.getElementById('fuelDisplay_' + starIndex).textContent = rocketState[starIndex] + '%';
+      document.getElementById('fuelBar_' + starIndex).style.width = rocketState[starIndex] + '%';
+    };
+
+    window.launchRocket = function(starIndex) {
+      if (!rocketState[starIndex] || rocketState[starIndex] < 100) {
+        alert('Need 100% fuel to launch!');
+        return;
+      }
+      document.getElementById('planets_' + starIndex).style.display = 'block';
+      document.getElementById('rocketReturn_' + starIndex).style.display = 'block';
+      document.getElementById('rocketComplete_' + starIndex).style.display = 'flex';
+    };
+
+    // ===== MAGIC POTION =====
+    const potionState = {};
+    window.addIngredient = function(starIndex, id, emoji, name) {
+      if (!potionState[starIndex]) potionState[starIndex] = [];
+      if (potionState[starIndex].length >= 3) return;
+      potionState[starIndex].push({ id, emoji, name });
+      const cauldron = document.getElementById('cauldron_' + starIndex);
+      cauldron.innerHTML = potionState[starIndex].map(i => '<span class="text-4xl">' + i.emoji + '</span>').join('');
+    };
+
+    window.brewPotion = function(starIndex) {
+      if (!potionState[starIndex] || potionState[starIndex].length < 2) {
+        alert('Add at least 2 ingredients!');
+        return;
+      }
+      document.getElementById('potionResult_' + starIndex).style.display = 'block';
+    };
+
+    // ===== FEELINGS BINGO =====
+    window.markBingoSquare = function(starIndex, squareId) {
+      const square = document.getElementById('bingo_' + starIndex + '_' + squareId);
+      square.classList.toggle('marked');
+    };
+
+    // ===== HELPER =====
+    window.showFeedback = function(containerId, textId, message) {
+      const container = document.getElementById(containerId);
+      const text = document.getElementById(textId);
+      if (container && text) {
+        text.textContent = message;
+        container.style.display = 'block';
+        setTimeout(() => { container.style.display = 'none'; }, 3000);
+      }
+    };
+
+// =====================================================
+    // v6 ACTIVITY HANDLERS
+    // =====================================================
+    
+    // Spin the Wheel
+    window.spinWheel = function(starIndex, segmentCount) {
+      const wheel = document.querySelector('.wheel-container');
+      if (!wheel) return;
+      
+      const randomDeg = Math.floor(Math.random() * 360) + 720; // At least 2 full spins
+      wheel.style.transition = 'transform 3s ease-out';
+      wheel.style.transform = 'rotate(' + randomDeg + 'deg)';
+      
+      setTimeout(() => {
+        const finalAngle = randomDeg % 360;
+        const segmentAngle = 360 / segmentCount;
+        const selectedIdx = Math.floor((360 - finalAngle + segmentAngle/2) % 360 / segmentAngle);
+        
+        document.getElementById('wheelCelebration_' + starIndex).style.display = 'block';
+        document.getElementById('wheelComplete_' + starIndex).style.display = 'flex';
+      }, 3000);
+    };
+    
+    window.selectWheelSegment = function(starIndex, segId, response) {
+      // Show result
+      document.getElementById('wheelResult_' + starIndex).style.display = 'block';
+      document.getElementById('wheelResultText_' + starIndex).textContent = response;
+      document.getElementById('wheelCelebration_' + starIndex).style.display = 'block';
+      document.getElementById('wheelComplete_' + starIndex).style.display = 'flex';
+      
+      // Highlight selected segment
+      document.querySelectorAll('[id^="seg_' + starIndex + '_"]').forEach(seg => {
+        seg.style.opacity = seg.id === 'seg_' + starIndex + '_' + segId ? '1' : '0.5';
+      });
+      
+      saveFormData('wheel_' + starIndex, segId);
+    };
+    
+    // Sticker Collector
+    const collectedStickers = {};
+    window.collectSticker = function(starIndex, challengeId, emoji, total) {
+      const challenge = document.getElementById('challenge_' + starIndex + '_' + challengeId);
+      if (challenge.classList.contains('collected')) return;
+      
+      challenge.classList.add('collected');
+      
+      if (!collectedStickers[starIndex]) collectedStickers[starIndex] = [];
+      collectedStickers[starIndex].push(emoji);
+      
+      // Update collection display
+      const collection = document.getElementById('stickerCollection_' + starIndex);
+      if (collectedStickers[starIndex].length === 1) collection.innerHTML = '';
+      
+      const stickerSpan = document.createElement('span');
+      stickerSpan.className = 'text-3xl animate-bounce-slow';
+      stickerSpan.textContent = emoji;
+      collection.appendChild(stickerSpan);
+      
+      document.getElementById('stickerCount_' + starIndex).textContent = collectedStickers[starIndex].length;
+      
+      if (collectedStickers[starIndex].length >= total) {
+        document.getElementById('stickerComplete_' + starIndex).style.display = 'block';
+        document.getElementById('stickerDone_' + starIndex).style.display = 'flex';
+      }
+      
+      saveFormData('stickers_' + starIndex, collectedStickers[starIndex].join(','));
+    };
+    
+    // Mindful Adventure
+    const adventureProgress = {};
+    window.checkAdventureComplete = function(starIndex, totalScenes) {
+      if (!adventureProgress[starIndex]) adventureProgress[starIndex] = new Set();
+      
+      // Check all textareas in scenes
+      document.querySelectorAll('[id^="scene_' + starIndex + '_"] textarea').forEach(textarea => {
+        if (textarea.value.trim().length > 0) {
+          const sceneId = textarea.closest('[id^="scene_"]').id.split('_').pop();
+          adventureProgress[starIndex].add(sceneId);
+        }
+      });
+      
+      document.getElementById('adventureProgress_' + starIndex).textContent = adventureProgress[starIndex].size;
+      
+      if (adventureProgress[starIndex].size >= totalScenes) {
+        document.getElementById('adventureClosing_' + starIndex).style.display = 'block';
+        document.getElementById('adventureDone_' + starIndex).style.display = 'flex';
+      }
+    };
+    
+    // Emotion Detective
+    window.solveCase = function(starIndex, optionIdx, isCorrect, explanation) {
+      const feedbackEl = document.getElementById('detectiveFeedback_' + starIndex);
+      const feedbackText = document.getElementById('detectiveFeedbackText_' + starIndex);
+      
+      // Reset all options
+      document.querySelectorAll('.detective-option').forEach(opt => {
+        opt.classList.remove('correct', 'wrong');
+      });
+      
+      // Mark selected option
+      const selectedBtn = document.querySelectorAll('.detective-option')[optionIdx];
+      selectedBtn.classList.add(isCorrect ? 'correct' : 'wrong');
+      
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca';
+      feedbackText.textContent = explanation;
+      
+      if (isCorrect) {
+        document.getElementById('detectiveReveal_' + starIndex).style.display = 'block';
+        document.getElementById('detectiveDone_' + starIndex).style.display = 'flex';
+      }
+      
+      saveFormData('detective_' + starIndex, isCorrect ? 'solved' : 'attempted');
+    };
   </script>
 </body>
 </html>`;
 }
-
-// ====================
 // PAGE RENDERERS
 // ====================
 
-function renderCoverPage(content: GeneratedContent): string {
+function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | null): string {
   const { metadata } = content;
+  
+  // Helper function to render character (image or emoji) - made bigger for cover
+  const renderCharacter = () => {
+    if (seriesInfo?.character_image_url) {
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto drop-shadow-2xl" style="height: 280px; width: 280px; display: block;">`;
+    }
+    return `<span style="font-size: 180px; line-height: 1; display: block;">${escapeForTemplate(metadata.characterEmoji)}</span>`;
+  };
+  
   return `
-    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream));" data-page="cover">
-      <div class="text-center max-w-4xl">
-        <div class="mb-6 animate-bounce-slow text-8xl">${escapeForTemplate(metadata.characterEmoji)}</div>
-        <h1 class="text-5xl md:text-6xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(metadata.title)}</h1>
-        <h2 class="text-2xl md:text-3xl mb-8 font-title" style="color: var(--primary);">${escapeForTemplate(metadata.subtitle)}</h2>
-        <div class="text-xl mb-8 font-body" style="color: var(--secondary);">
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream)); padding-top: 20px;" data-page="cover">
+      <div class="text-center max-w-4xl" style="margin-top: -80px;">
+        <!-- Big Character Front and Center -->
+        <div class="mb-4 animate-bounce-slow">
+          ${renderCharacter()}
+        </div>
+        
+        <!-- Character Name Badge -->
+        <div class="inline-block px-6 py-2 rounded-full mb-4" style="background-color: var(--primary);">
+          <span class="text-white font-title text-xl">Meet ${escapeForTemplate(metadata.characterName)}!</span>
+        </div>
+        
+        <h1 class="text-5xl md:text-6xl mb-3 font-title" style="color: var(--dark);">${escapeForTemplate(metadata.title)}</h1>
+        <h2 class="text-2xl md:text-3xl mb-6 font-title" style="color: var(--primary);">${escapeForTemplate(metadata.subtitle)}</h2>
+        <div class="text-xl mb-6 font-body" style="color: var(--secondary);">
           <p class="mb-2">An Interactive Adventure for Ages ${escapeForTemplate(metadata.targetAge)}</p>
-          <p class="italic">Learn with ${escapeForTemplate(metadata.characterName)}! ${escapeForTemplate(metadata.characterEmoji)}</p>
         </div>
         <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
           <p class="font-semibold mb-2 font-body text-lg" style="color: var(--dark);">This adventure belongs to:</p>
@@ -1436,20 +1968,29 @@ function renderCoverPage(content: GeneratedContent): string {
             \${getChildName()}
           </div>
         </div>
-        <div class="mt-8">
-          <p class="text-lg font-body" style="color: var(--secondary);">⭐Earn stars by completing activities! ⭐</p>
+        <div class="mt-6">
+          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
         </div>
       </div>
     </div>`;
 }
 
-function renderWelcomePage(content: GeneratedContent): string {
+function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | null): string {
   const { metadata, welcome } = content;
+  
+  // Helper function to render character (image or emoji) - bigger for welcome title
+  const renderCharacter = () => {
+    if (seriesInfo?.character_image_url) {
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain" style="height: 20rem; width: 20rem;">`;
+    }
+    return `<span class="text-7xl">${escapeForTemplate(metadata.characterEmoji)}</span>`;
+  };
+  
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="welcome">
       <div class="max-w-4xl mx-auto">
-        <div class="flex items-center gap-4 mb-6">
-          <span class="text-6xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+        <div class="flex items-center gap-4 mb-8">
+          ${renderCharacter()}
           <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">${escapeForTemplate(welcome.heading)}</h1>
         </div>
         
@@ -1457,8 +1998,7 @@ function renderWelcomePage(content: GeneratedContent): string {
           ${welcome.paragraphs.map(p => `<p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">${escapeForTemplate(p)}</p>`).join("")}
         </div>
         
-        <div class="rounded-xl p-6 text-center flex items-center justify-center gap-3" style="background-color: var(--soft-yellow);">
-          <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+        <div class="rounded-xl p-6 text-center" style="background-color: var(--soft-yellow);">
           <p class="text-xl font-semibold font-body" style="color: var(--dark);">
             "All feelings are okay—even the big ones!" 💛
           </p>
@@ -1691,7 +2231,7 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
           <div class="text-center mb-6">
             <div id="${breathingId}" class="breathing-circle mx-auto rounded-full flex items-center justify-center cursor-pointer"
                  style="width: 160px; height: 160px; background: linear-gradient(135deg, var(--light-green), var(--secondary)); transition: transform 4s ease-in-out, box-shadow 4s ease-in-out;"
-                 onclick="toggleBreathing('${breathingId}')">
+                 onclick="window.toggleBreathing('${breathingId}')">
               <div class="text-center">
                 <div class="breathing-emoji text-5xl mb-1">🌬️</div>
                 <div class="breathing-text font-title text-lg" style="color: var(--dark);">Tap to Start</div>
@@ -1961,6 +2501,775 @@ function renderWarningSignsPage(warningSigns: WarningSingsContent, starIndex: nu
     </div>`;
 }
 
+function renderBalloonPopPage(balloon: BalloonPopContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `balloon_${starIndex}`;
+  
+  const balloonsHtml = balloon.balloons.map(b => `
+    <div class="balloon-item flex flex-col items-center p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105"
+         id="balloon_${b.id}"
+         style="background-color: ${b.color}20; border-color: ${b.color};"
+         data-response="${escapeForTemplate(b.popResponse)}"
+         onclick="window.popBalloon('${b.id}', '${activityId}', ${balloon.balloons.length})">
+      <span class="text-5xl mb-2 animate-bounce-slow">🎈</span>
+      <span class="text-2xl mb-1">${b.emoji}</span>
+      <p class="font-body text-sm text-center" style="color: var(--dark);">"${escapeForTemplate(b.worryText)}"</p>
+    </div>
+  `).join("");
+  
+  const toolsHtml = balloon.calmingTools.map(t => `
+    <button class="calming-tool p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2"
+            style="background-color: var(--light-green); border-color: var(--secondary);"
+            onclick="window.useCalmingTool('${t.id}', ${t.power}, '${escapeForOnclick(t.tool)}')">
+      <span class="text-3xl">${t.emoji}</span>
+      <span class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(t.tool)}</span>
+      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+${t.power}</span>
+    </button>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="balloon-pop" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(balloon.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(balloon.instructions)}</p>
+          
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center" style="color: var(--dark);">${escapeForTemplate(balloon.scenario)}</p>
+          </div>
+          
+          <div class="mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+            <div class="flex justify-between mb-2">
+              <span class="font-title" style="color: var(--dark);">Calming Power:</span>
+              <span class="font-title text-xl" id="balloonPower_${starIndex}" style="color: var(--primary);">0%</span>
+            </div>
+            <div class="h-6 rounded-full overflow-hidden" style="background-color: #e5e7eb;">
+              <div class="h-full rounded-full transition-all duration-500" id="balloonPowerBar_${starIndex}" style="width: 0%; background: linear-gradient(90deg, var(--light-green), var(--primary));"></div>
+            </div>
+          </div>
+          
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Your Calming Tools 🧰</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${toolsHtml}</div>
+          
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Worry Balloons 🎈</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="balloons_${starIndex}">${balloonsHtml}</div>
+          
+          <div class="p-4 rounded-xl text-center mb-4" id="balloonFeedback_${starIndex}" style="display: none; background-color: var(--light-green);">
+            <p class="font-body text-lg" id="balloonFeedbackText_${starIndex}"></p>
+          </div>
+          
+          <div class="p-6 rounded-2xl text-center" id="balloonVictory_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🎉</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(balloon.victoryMessage)}</p>
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="balloonComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I popped all my worries! ⭐</label>
+          </div>
+        </div>
+      </div>
+      <style>.balloon-item.popped { opacity: 0.3; pointer-events: none; transform: scale(0.8); }</style>
+    </div>`;
+}
+
+// ====================
+// 2. TREASURE HUNT RENDERER
+// ====================
+
+function renderTreasureHuntPage(hunt: TreasureHuntContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `treasure_${starIndex}`;
+  
+  const locationsHtml = hunt.locations.map(loc => `
+    <div class="treasure-location p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105" id="loc_${starIndex}_${loc.id}" style="background-color: white; border-color: var(--secondary);" onclick="window.exploreTreasure('${starIndex}', '${loc.id}', ${hunt.locations.length})">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-4xl">${loc.emoji}</span>
+        <div>
+          <h3 class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(loc.name)}</h3>
+          <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(loc.description)}</p>
+        </div>
+      </div>
+      <div class="treasure-content" id="tc_${starIndex}_${loc.id}" style="display: none;">
+        <div class="p-3 rounded-xl my-3" style="background-color: var(--soft-yellow);">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-2xl">${loc.treasure.emoji}</span>
+            <span class="font-title" style="color: var(--dark);">Found: ${escapeForTemplate(loc.treasure.name)}!</span>
+          </div>
+          <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(loc.treasure.lesson)}</p>
+        </div>
+        <p class="font-body text-sm mb-2" style="color: var(--dark);">${escapeForTemplate(loc.question)}</p>
+        <textarea class="w-full p-2 rounded-lg border-2 font-body text-sm" style="border-color: var(--primary); min-height: 60px;" placeholder="${escapeForTemplate(loc.placeholder)}" onchange="saveFormData('treasure_${starIndex}_${loc.id}', this.value)"></textarea>
+      </div>
+      <div class="explore-btn mt-2 text-center"><span class="font-body text-sm px-4 py-2 rounded-full" style="background-color: var(--primary); color: white;">🔍 Explore</span></div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="treasure-hunt" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(hunt.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <span class="text-4xl">${hunt.mapEmoji}</span>
+            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(hunt.storyIntro)}</p>
+          </div>
+          <p class="text-center mb-6 font-body" style="color: var(--secondary);">${escapeForTemplate(hunt.instructions)}</p>
+          <div class="mb-6 p-3 rounded-xl text-center" style="background-color: var(--cream);">
+            <p class="font-title" style="color: var(--dark);">Treasures: <span id="treasureCount_${starIndex}">0</span>/${hunt.locations.length}</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">${locationsHtml}</div>
+          <div class="p-6 rounded-2xl text-center" id="treasureVictory_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🏆</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(hunt.completionMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="treasureComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I found all treasures! ⭐</label>
+          </div>
+        </div>
+      </div>
+      <style>.treasure-location.explored { border-color: var(--light-green) !important; background-color: var(--light-green)20 !important; } .treasure-location.explored .explore-btn { display: none; }</style>
+    </div>`;
+}
+
+// ====================
+// 3. MONSTER TAMER RENDERER
+// ====================
+
+function renderMonsterTamerPage(tamer: MonsterTamerContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `monster_${starIndex}`;
+  
+  const actionsHtml = tamer.tamingActions.map(a => `
+    <button class="taming-action p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2" style="background-color: white; border-color: var(--secondary);" onclick="window.tameMonster('${starIndex}', ${a.shrinkPower}, '${escapeForOnclick(a.message)}')">
+      <span class="text-3xl">${a.emoji}</span>
+      <span class="font-body text-sm text-center" style="color: var(--dark);">${escapeForTemplate(a.action)}</span>
+      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--light-green);">-${a.shrinkPower}</span>
+    </button>
+  `).join("");
+
+  const stagesHtml = tamer.stages.map((s, i) => `
+    <div class="p-2 rounded-lg text-center transition-all" id="stage_${starIndex}_${s.level}" style="background-color: ${i === 0 ? 'var(--accent)' : 'var(--cream)'};">
+      <span class="text-2xl">${s.emoji}</span>
+      <p class="font-body text-xs">${escapeForTemplate(s.description)}</p>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="monster-tamer" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(tamer.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(tamer.instructions)}</p>
+          <div class="flex flex-col items-center mb-6 p-6 rounded-2xl" style="background-color: var(--cream);">
+            <div class="transition-all duration-500" id="monsterVisual_${starIndex}" style="font-size: 8rem;">${tamer.monster.emoji}</div>
+            <h3 class="font-title text-xl mt-2" style="color: var(--dark);">${escapeForTemplate(tamer.monster.name)}</h3>
+            <p class="font-body text-sm text-center" style="color: var(--secondary);">${escapeForTemplate(tamer.monster.description)}</p>
+            <div class="mt-4 w-full">
+              <div class="flex justify-between mb-1">
+                <span class="font-body text-sm">Monster Size:</span>
+                <span class="font-title" id="monsterSize_${starIndex}" style="color: var(--accent);">100%</span>
+              </div>
+              <div class="h-4 rounded-full overflow-hidden" style="background-color: #e5e7eb;">
+                <div class="h-full rounded-full transition-all duration-500" id="monsterBar_${starIndex}" style="width: 100%; background: linear-gradient(90deg, var(--accent), #ef4444);"></div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-center gap-2 mb-6">${stagesHtml}</div>
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Taming Powers 💫</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${actionsHtml}</div>
+          <div class="p-4 rounded-xl text-center mb-4" id="monsterFeedback_${starIndex}" style="display: none; background-color: var(--soft-yellow);">
+            <p class="font-body text-lg" id="monsterFeedbackText_${starIndex}"></p>
+          </div>
+          <div class="p-6 rounded-2xl text-center" id="monsterFriend_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">😊🤝👾</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(tamer.friendMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="monsterComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I tamed the monster! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ====================
+// 4. GARDEN GROWER RENDERER
+// ====================
+
+function renderGardenGrowerPage(garden: GardenGrowerContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `garden_${starIndex}`;
+  
+  const plantsHtml = garden.plants.map(p => {
+    const stagesJson = JSON.stringify(p.growthStages).replace(/"/g, '&quot;');
+    return `
+    <div class="garden-plant p-4 rounded-2xl border-2 transition-all" id="plant_${starIndex}_${p.id}" style="background-color: white; border-color: var(--secondary);">
+      <div class="text-center mb-2"><span class="text-5xl" id="plantEmoji_${starIndex}_${p.id}">${p.growthStages[0]}</span></div>
+      <h3 class="font-title text-center mb-1" style="color: var(--dark);">${escapeForTemplate(p.name)}</h3>
+      <p class="font-body text-xs text-center mb-2" style="color: var(--secondary);">${escapeForTemplate(p.feeling)}</p>
+      <p class="font-body text-sm text-center mb-3 p-2 rounded-lg" style="background-color: var(--cream);">${escapeForTemplate(p.nurturingAction)}</p>
+      <div class="flex justify-center gap-1 mb-2">
+        ${p.growthStages.map((_, i) => `<div class="w-3 h-3 rounded-full" id="growth_${starIndex}_${p.id}_${i}" style="background-color: ${i === 0 ? 'var(--primary)' : '#e5e7eb'};"></div>`).join("")}
+      </div>
+      <button class="w-full py-2 rounded-lg font-title cursor-pointer hover:scale-105 transition-all" style="background-color: var(--light-green);" onclick="window.waterPlant('${starIndex}', '${p.id}', ${stagesJson}, ${garden.plants.length})">💧 Water!</button>
+    </div>`;
+  }).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="garden-grower" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(garden.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(garden.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center" style="color: var(--dark);">${escapeForTemplate(garden.gardenStory)}</p>
+          </div>
+          <div class="text-center mb-4"><span class="text-6xl animate-bounce-slow">${garden.wateringCan.emoji}</span></div>
+          <div class="mb-6 p-3 rounded-xl text-center" style="background-color: var(--cream);">
+            <p class="font-title">Plants Grown: <span id="gardenProgress_${starIndex}">0</span>/${garden.plants.length}</p>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">${plantsHtml}</div>
+          <div class="p-6 rounded-2xl text-center" id="gardenHarvest_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🌸🌻🌹🌷</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(garden.harvestMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="gardenComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">My garden blooms! ⭐</label>
+          </div>
+        </div>
+      </div>
+      <style>.garden-plant.grown { border-color: var(--light-green) !important; background-color: var(--light-green)20 !important; }</style>
+    </div>`;
+}
+
+// ====================
+// 5. SUPERHERO CREATOR RENDERER
+// ====================
+
+function renderSuperheroCreatorPage(hero: SuperheroCreatorContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `superhero_${starIndex}`;
+  
+  const powersHtml = hero.heroElements.powers.map(p => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('${starIndex}', 'power', '${p.emoji}')"><span class="text-2xl">${p.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(p.name)}</p></button>`).join("");
+  const costumesHtml = hero.heroElements.costumes.map(c => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: ${c.color}20; border-color: transparent;" onclick="window.selectHero('${starIndex}', 'costume', '${c.emoji}')"><span class="text-2xl">${c.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(c.name)}</p></button>`).join("");
+  const sidekicksHtml = hero.heroElements.sidekicks.map(s => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('${starIndex}', 'sidekick', '${s.emoji}')"><span class="text-2xl">${s.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(s.name)}</p></button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="superhero-creator" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(hero.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(hero.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">${escapeForTemplate(hero.storyIntro)}</p>
+          </div>
+          <div class="p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(135deg, var(--cream), var(--soft-yellow));">
+            <p class="font-title mb-2">Your Superhero:</p>
+            <div class="flex justify-center items-center gap-4 text-6xl">
+              <span id="hero_${starIndex}_costume">❓</span>
+              <span id="hero_${starIndex}_power">❓</span>
+              <span id="hero_${starIndex}_sidekick">❓</span>
+            </div>
+            <input type="text" class="mt-4 p-2 rounded-lg border-2 font-title text-center text-xl w-full max-w-xs" style="border-color: var(--primary);" placeholder="Hero name..." onchange="saveFormData('hero_name_${starIndex}', this.value); checkHeroComplete('${starIndex}')">
+          </div>
+          <div class="mb-4"><p class="font-title mb-2">⚡ Power:</p><div class="flex flex-wrap gap-2">${powersHtml}</div></div>
+          <div class="mb-4"><p class="font-title mb-2">🦸 Costume:</p><div class="flex flex-wrap gap-2">${costumesHtml}</div></div>
+          <div class="mb-4"><p class="font-title mb-2">🐾 Sidekick:</p><div class="flex flex-wrap gap-2">${sidekicksHtml}</div></div>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
+            <p class="font-title mb-2">${escapeForTemplate(hero.missionPrompt)}</p>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My hero will..." onchange="saveFormData('hero_mission_${starIndex}', this.value); checkHeroComplete('${starIndex}')"></textarea>
+          </div>
+          <div class="p-6 rounded-2xl text-center" id="heroDone_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🦸‍♂️✨🦸‍♀️</p>
+            <p class="font-title text-2xl">${escapeForTemplate(hero.completionMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="heroComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">My superhero is ready! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ====================
+// 6. FEELINGS ORCHESTRA RENDERER
+// ====================
+
+function renderFeelingsOrchestraPage(orchestra: FeelingsOrchestraContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `orchestra_${starIndex}`;
+  
+  const instrumentsHtml = orchestra.instruments.map(i => `
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: ${i.color}20; border-color: ${i.color};" onclick="window.playInstrument('${starIndex}', '${i.emoji}', '${escapeForOnclick(i.sound)}', '${escapeForOnclick(i.feeling)}')">
+      <span class="text-5xl">${i.emoji}</span>
+      <p class="font-title text-sm mt-2">${escapeForTemplate(i.name)}</p>
+      <p class="font-body text-xs" style="color: var(--secondary);">${escapeForTemplate(i.feeling)}</p>
+    </button>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feelings-orchestra" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(orchestra.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(orchestra.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">${escapeForTemplate(orchestra.orchestraStory)}</p>
+          </div>
+          <div class="p-4 rounded-xl mb-6 text-center" id="soundDisplay_${starIndex}" style="background-color: var(--cream); min-height: 80px;">
+            <p class="font-body">🎵 Tap an instrument to play!</p>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${instrumentsHtml}</div>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
+            <p class="font-title mb-2">${escapeForTemplate(orchestra.compositionPrompt)}</p>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My feelings music is..." onchange="saveFormData('orchestra_${starIndex}', this.value)"></textarea>
+          </div>
+          <div class="p-6 rounded-2xl text-center" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🎶</p>
+            <p class="font-title text-xl">${escapeForTemplate(orchestra.performanceMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I made music! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ====================
+// 7. CALM AQUARIUM RENDERER
+// ====================
+
+function renderCalmAquariumPage(aquarium: CalmAquariumContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `aquarium_${starIndex}`;
+  
+  const creaturesHtml = aquarium.creatures.map(c => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addToAquarium('${starIndex}', 'creature', '${c.emoji}', '${escapeForOnclick(c.calmingTrait)}')"><span class="text-3xl">${c.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(c.name)}</p></button>`).join("");
+  const decorationsHtml = aquarium.decorations.map(d => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addToAquarium('${starIndex}', 'decor', '${d.emoji}', '${escapeForOnclick(d.calmingEffect)}')"><span class="text-3xl">${d.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(d.name)}</p></button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="calm-aquarium" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(aquarium.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(aquarium.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">${escapeForTemplate(aquarium.aquariumStory)}</p>
+          </div>
+          <div class="aquarium-tank p-6 rounded-2xl mb-6 min-h-48 flex flex-wrap items-center justify-center gap-2" id="tank_${starIndex}" style="background: linear-gradient(180deg, #a8d8ea, #3b82f6);">
+            <p class="font-body text-white">🌊 Your peaceful aquarium 🌊</p>
+          </div>
+          <div class="p-4 rounded-xl mb-4 text-center" style="background-color: var(--light-green);">
+            <p class="font-title mb-2">${escapeForTemplate(aquarium.breathingBubbles.message)}</p>
+            <div class="flex justify-center gap-4">
+              <span>Breathe in: ${aquarium.breathingBubbles.inhaleTime}s 🫧</span>
+              <span>Breathe out: ${aquarium.breathingBubbles.exhaleTime}s 💨</span>
+            </div>
+          </div>
+          <div class="mb-4"><p class="font-title mb-2">🐠 Add Creatures:</p><div class="flex flex-wrap gap-2">${creaturesHtml}</div></div>
+          <div class="mb-4"><p class="font-title mb-2">🪸 Add Decorations:</p><div class="flex flex-wrap gap-2">${decorationsHtml}</div></div>
+          <div class="p-6 rounded-2xl text-center" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🌊</p>
+            <p class="font-title text-xl">${escapeForTemplate(aquarium.peaceMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">My aquarium is peaceful! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ====================
+// 8. ROCKET LAUNCHER RENDERER
+// ====================
+
+function renderRocketLauncherPage(rocket: RocketLauncherContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `rocket_${starIndex}`;
+  
+  const fuelHtml = rocket.fuelActions.map(f => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('${starIndex}', ${f.fuelAmount})"><span class="text-2xl">${f.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(f.action)}</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+${f.fuelAmount}%</span></button>`).join("");
+  const planetsHtml = rocket.planets.map(p => `<div class="p-4 rounded-2xl border-2" id="planet_${starIndex}_${p.id}" style="background-color: ${p.color}20; border-color: ${p.color};"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">${p.emoji}</span><span class="font-title">${escapeForTemplate(p.name)}</span></div><p class="font-body text-sm mb-2">${escapeForTemplate(p.activity)}</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: ${escapeForTemplate(p.reward)}</p></div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="rocket-launcher" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(rocket.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(rocket.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">${escapeForTemplate(rocket.missionBriefing)}</p>
+          </div>
+          <div class="text-center mb-4"><span class="text-8xl" id="rocketEmoji_${starIndex}">🚀</span></div>
+          <div class="mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+            <div class="flex justify-between mb-2"><span class="font-title">Fuel:</span><span class="font-title text-xl" id="fuelDisplay_${starIndex}" style="color: var(--primary);">0%</span></div>
+            <div class="h-6 rounded-full overflow-hidden" style="background-color: #e5e7eb;"><div class="h-full rounded-full transition-all duration-500" id="fuelBar_${starIndex}" style="width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));"></div></div>
+          </div>
+          <p class="font-title text-lg text-center mb-3">Fuel Actions ⚡</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${fuelHtml}</div>
+          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105" id="launchBtn_${starIndex}" style="background-color: var(--primary); color: white;" onclick="window.launchRocket('${starIndex}')">🚀 LAUNCH!</button>
+          <div class="mt-6" id="planets_${starIndex}" style="display: none;">
+            <p class="font-title text-lg text-center mb-3">Feeling Planets 🪐</p>
+            <div class="grid grid-cols-2 gap-4">${planetsHtml}</div>
+          </div>
+          <div class="p-6 rounded-2xl text-center mt-4" id="rocketReturn_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🏠🚀</p>
+            <p class="font-title text-2xl">${escapeForTemplate(rocket.returnMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="rocketComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">Space explorer! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ====================
+// 9. MAGIC POTION RENDERER
+// ====================
+
+function renderMagicPotionPage(potion: MagicPotionContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `potion_${starIndex}`;
+  
+  const ingredientsHtml = potion.ingredients.map(i => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addIngredient('${starIndex}', '${i.id}', '${i.emoji}', '${escapeForOnclick(i.name)}')"><span class="text-3xl">${i.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(i.name)}</p><p class="font-body text-xs" style="color: var(--secondary);">${escapeForTemplate(i.feeling)}</p></button>`).join("");
+  const recipesHtml = potion.recipes.map(r => `<div class="p-3 rounded-xl" style="background-color: ${r.color}20; border: 2px solid ${r.color};"><div class="flex items-center gap-2 mb-1"><span class="text-2xl">${r.emoji}</span><span class="font-title text-sm">${escapeForTemplate(r.potionName)}</span></div><p class="font-body text-xs">${escapeForTemplate(r.effect)}</p></div>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="magic-potion" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(potion.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(potion.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">${escapeForTemplate(potion.cauldronStory)}</p>
+          </div>
+          <div class="cauldron p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(180deg, #4a1d96, #7c3aed);">
+            <span class="text-8xl">🧙‍♂️</span>
+            <div class="cauldron-contents mt-4 flex justify-center gap-2 flex-wrap" id="cauldron_${starIndex}">
+              <span class="font-body text-white">Add ingredients...</span>
+            </div>
+          </div>
+          <button class="w-full py-3 rounded-xl font-title text-lg cursor-pointer mb-6" style="background-color: var(--primary); color: white;" onclick="window.brewPotion('${starIndex}')">✨ Brew Potion!</button>
+          <p class="font-title text-lg text-center mb-3">Magical Ingredients ✨</p>
+          <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">${ingredientsHtml}</div>
+          <p class="font-title text-lg text-center mb-3">Recipe Book 📖</p>
+          <div class="grid grid-cols-2 gap-3 mb-6">${recipesHtml}</div>
+          <div class="p-6 rounded-2xl text-center" id="potionResult_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2" id="potionEmoji_${starIndex}">✨</p>
+            <p class="font-title text-2xl" id="potionMessage_${starIndex}">${escapeForTemplate(potion.magicMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I'm a potion master! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ====================
+// 10. FEELINGS BINGO RENDERER
+// ====================
+
+function renderFeelingsBingoPage(bingo: FeelingsBingoContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `bingo_${starIndex}`;
+  
+  // Create 3x3 grid (8 squares + 1 free space in middle)
+  const squaresHtml = bingo.squares.slice(0, 4).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" style="background-color: white; border-color: var(--secondary);" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("") +
+    `<div class="bingo-square p-3 rounded-xl border-2 flex flex-col items-center justify-center" style="background-color: var(--soft-yellow); border-color: var(--primary);"><span class="text-3xl">${bingo.freeSpace.emoji}</span><p class="font-title text-sm">FREE!</p><p class="font-body text-xs text-center">${escapeForTemplate(bingo.freeSpace.message)}</p></div>` +
+    bingo.squares.slice(4, 8).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" style="background-color: white; border-color: var(--secondary);" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feelings-bingo" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(bingo.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(bingo.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">${escapeForTemplate(bingo.bingoStory)}</p>
+          </div>
+          <div class="grid grid-cols-3 gap-3 mb-6 max-w-md mx-auto">${squaresHtml}</div>
+          <div class="p-4 rounded-xl mb-6 text-center" style="background-color: var(--cream);">
+            <p class="font-title mb-2">Win Patterns:</p>
+            <p class="font-body text-sm">${bingo.bingoPatterns.join(' • ')}</p>
+          </div>
+          <div class="p-6 rounded-2xl text-center" id="bingoWin_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🎉</p>
+            <p class="font-title text-2xl">${escapeForTemplate(bingo.winMessage)}</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">Bingo champion! ⭐</label>
+          </div>
+        </div>
+      </div>
+      <style>.bingo-square.marked { background-color: var(--light-green) !important; border-color: var(--secondary) !important; }</style>
+    </div>`;
+}
+
+function renderSpinTheWheelPage(wheel: SpinTheWheelContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `wheel_${starIndex}`;
+  
+  const segmentsHtml = wheel.segments.map((seg, idx) => `
+    <div class="wheel-segment p-3 rounded-xl border-2 cursor-pointer transition-all hover:scale-105"
+         id="seg_${starIndex}_${seg.id}"
+         style="background-color: ${seg.color}20; border-color: ${seg.color};"
+         data-response="${escapeForTemplate(seg.response)}"
+         onclick="window.selectWheelSegment('${starIndex}', '${seg.id}', '${escapeForOnclick(seg.response)}')">
+      <div class="flex items-center gap-2">
+        <span class="text-3xl">${seg.emoji}</span>
+        <span class="font-body" style="color: var(--dark);">${escapeForTemplate(seg.label)}</span>
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="spin-the-wheel" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(wheel.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(wheel.instructions)}</p>
+          
+          <div class="p-4 rounded-xl mb-6 text-center" style="background-color: var(--soft-yellow);">
+            <p class="font-title text-xl" style="color: var(--dark);">🎯 ${escapeForTemplate(wheel.wheelQuestion)}</p>
+          </div>
+          
+          <!-- Wheel Display -->
+          <div class="flex justify-center mb-6">
+            <div class="wheel-container relative w-64 h-64 rounded-full border-4 flex items-center justify-center" style="border-color: var(--primary); background: conic-gradient(${wheel.segments.map((s, i) => `${s.color} ${i * (360/wheel.segments.length)}deg ${(i+1) * (360/wheel.segments.length)}deg`).join(', ')});">
+              <div class="absolute w-12 h-12 rounded-full flex items-center justify-center text-2xl" style="background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+                🎡
+              </div>
+              <div class="absolute -top-4 text-3xl">▼</div>
+            </div>
+          </div>
+          
+          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105 mb-6" 
+                  id="spinBtn_${starIndex}"
+                  style="background-color: var(--primary); color: white;"
+                  onclick="window.spinWheel('${starIndex}', ${wheel.segments.length})">
+            🎡 SPIN THE WHEEL!
+          </button>
+          
+          <!-- Segment Options -->
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Or tap to choose:</p>
+          <div class="grid grid-cols-2 gap-3 mb-6">
+            ${segmentsHtml}
+          </div>
+          
+          <!-- Result Display -->
+          <div class="p-4 rounded-xl text-center mb-4" id="wheelResult_${starIndex}" style="display: none; background-color: var(--light-green);">
+            <p class="text-4xl mb-2" id="wheelResultEmoji_${starIndex}"></p>
+            <p class="font-body text-lg" id="wheelResultText_${starIndex}"></p>
+          </div>
+          
+          <!-- Celebration -->
+          <div class="p-6 rounded-2xl text-center" id="wheelCelebration_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🎉</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(wheel.celebrationMessage)}</p>
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="wheelComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I spun the wheel! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderStickerCollectorPage(sticker: StickerCollectorContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `sticker_${starIndex}`;
+  
+  const challengesHtml = sticker.challenges.map(ch => `
+    <div class="sticker-challenge p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105"
+         id="challenge_${starIndex}_${ch.id}"
+         style="background-color: white; border-color: var(--secondary);"
+         onclick="window.collectSticker('${starIndex}', '${ch.id}', '${ch.emoji}', ${sticker.challenges.length})">
+      <div class="flex items-center gap-3">
+        <span class="text-4xl sticker-emoji" id="stickerEmoji_${starIndex}_${ch.id}">${ch.emoji}</span>
+        <div>
+          <h3 class="font-title" style="color: var(--dark);">${escapeForTemplate(ch.title)}</h3>
+          <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(ch.description)}</p>
+        </div>
+      </div>
+      <div class="collect-btn mt-2 text-center">
+        <span class="font-body text-sm px-4 py-1 rounded-full" style="background-color: var(--soft-yellow);">Tap to collect!</span>
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sticker-collector" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(sticker.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body" style="color: var(--dark);">${escapeForTemplate(sticker.storyText)}</p>
+          <p class="text-center mb-6 font-body" style="color: var(--secondary);">${escapeForTemplate(sticker.instructions)}</p>
+          
+          <!-- Sticker Collection Display -->
+          <div class="mb-6 p-4 rounded-xl text-center" style="background-color: var(--soft-yellow);">
+            <p class="font-title mb-2" style="color: var(--dark);">Your Sticker Collection:</p>
+            <div class="flex justify-center gap-2 flex-wrap min-h-12" id="stickerCollection_${starIndex}">
+              <span class="font-body text-sm" style="color: var(--secondary);">Tap challenges to collect stickers!</span>
+            </div>
+            <p class="font-title mt-2" style="color: var(--primary);"><span id="stickerCount_${starIndex}">0</span> / ${sticker.totalStickers}</p>
+          </div>
+          
+          <!-- Challenges Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            ${challengesHtml}
+          </div>
+          
+          <!-- Completion Message -->
+          <div class="p-6 rounded-2xl text-center" id="stickerComplete_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🏆</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(sticker.completionMessage)}</p>
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="stickerDone_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I collected all stickers! ⭐</label>
+          </div>
+        </div>
+      </div>
+      <style>
+        .sticker-challenge.collected { border-color: var(--light-green) !important; background-color: var(--light-green)20 !important; }
+        .sticker-challenge.collected .collect-btn { display: none; }
+      </style>
+    </div>`;
+}
+
+function renderMindfulAdventurePage(adventure: MindfulAdventureContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `adventure_${starIndex}`;
+  
+  const scenesHtml = adventure.scenes.map((scene, idx) => `
+    <div class="adventure-scene p-4 rounded-2xl border-2 mb-4" 
+         id="scene_${starIndex}_${scene.id}"
+         style="background-color: white; border-color: var(--secondary);">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-4xl">${scene.emoji}</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(scene.sceneName)}</h3>
+      </div>
+      <p class="font-body mb-3" style="color: var(--dark);">${escapeForTemplate(scene.description)}</p>
+      <div class="p-3 rounded-lg mb-3" style="background-color: var(--soft-yellow);">
+        <p class="font-body text-sm" style="color: var(--dark);">🧘 ${escapeForTemplate(scene.mindfulPrompt)}</p>
+      </div>
+      <textarea class="w-full p-2 rounded-lg border-2 font-body text-sm" 
+                style="border-color: var(--primary); min-height: 60px;" 
+                placeholder="${escapeForTemplate(scene.placeholder)}"
+                onchange="saveFormData('adventure_${starIndex}_${scene.id}', this.value); window.checkAdventureComplete('${starIndex}', ${adventure.scenes.length})"></textarea>
+    </div>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="mindful-adventure" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(adventure.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center" style="color: var(--dark);">${escapeForTemplate(adventure.introText)}</p>
+          </div>
+          
+          <!-- Progress -->
+          <div class="mb-6 p-3 rounded-xl text-center" style="background-color: var(--cream);">
+            <p class="font-title" style="color: var(--dark);">Scenes Explored: <span id="adventureProgress_${starIndex}">0</span> / ${adventure.scenes.length}</p>
+          </div>
+          
+          <!-- Scenes -->
+          ${scenesHtml}
+          
+          <!-- Closing Message -->
+          <div class="p-6 rounded-2xl text-center" id="adventureClosing_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🌟</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(adventure.closingMessage)}</p>
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="adventureDone_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">Adventure complete! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderEmotionDetectivePage(detective: EmotionDetectiveContent, starIndex: number, metadata: ModuleMetadata): string {
+  const activityId = `detective_${starIndex}`;
+  
+  const cluesHtml = detective.clues.map(clue => `
+    <div class="clue-card p-3 rounded-xl border-2" style="background-color: white; border-color: var(--secondary);">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">${clue.clueEmoji}</span>
+        <p class="font-body" style="color: var(--dark);">${escapeForTemplate(clue.clueText)}</p>
+      </div>
+    </div>
+  `).join("");
+  
+  const optionsHtml = detective.emotionOptions.map((opt, idx) => `
+    <button class="detective-option p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-105 flex items-center gap-3"
+            style="background-color: white; border-color: var(--secondary);"
+            data-correct="${opt.isCorrect}"
+            data-explanation="${escapeForTemplate(opt.explanation)}"
+            onclick="window.solveCase('${starIndex}', ${idx}, ${opt.isCorrect}, '${escapeForOnclick(opt.explanation)}')">
+      <span class="text-3xl">${opt.emoji}</span>
+      <span class="font-title" style="color: var(--dark);">${escapeForTemplate(opt.emotion)}</span>
+    </button>
+  `).join("");
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emotion-detective" data-activity="${activityId}">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(detective.heading)}</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-5xl">🔍</span>
+            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(detective.caseDescription)}</p>
+          </div>
+          
+          <p class="text-center mb-6 font-body" style="color: var(--secondary);">${escapeForTemplate(detective.instructions)}</p>
+          
+          <!-- Clues -->
+          <p class="font-title text-lg mb-3" style="color: var(--dark);">🔎 The Clues:</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+            ${cluesHtml}
+          </div>
+          
+          <!-- Emotion Options -->
+          <p class="font-title text-lg mb-3" style="color: var(--dark);">🎯 What emotion is this person feeling?</p>
+          <div class="grid grid-cols-2 gap-3 mb-6">
+            ${optionsHtml}
+          </div>
+          
+          <!-- Feedback -->
+          <div class="p-4 rounded-xl text-center mb-4" id="detectiveFeedback_${starIndex}" style="display: none;">
+            <p class="font-body text-lg" id="detectiveFeedbackText_${starIndex}"></p>
+          </div>
+          
+          <!-- Revelation -->
+          <div class="p-6 rounded-2xl text-center" id="detectiveReveal_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🎉</p>
+            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(detective.revelationMessage)}</p>
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="detectiveDone_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">Case solved! ⭐</label>
+          </div>
+        </div>
+      </div>
+      <style>
+        .detective-option.correct { border-color: var(--light-green) !important; background-color: var(--light-green)20 !important; }
+        .detective-option.wrong { border-color: #fecaca !important; background-color: #fecaca !important; }
+      </style>
+    </div>`;
+}
+
 function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex: number): string {
   const activityId = `matching_${starIndex}`;
   const pairsHtml = matching.pairs.map((pair, i) => `
@@ -2004,6 +3313,8 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
       </div>
     </div>`;
 }
+
+
 
 function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): string {
   const takeawaysHtml = summary.takeaways.map(t => `
@@ -3041,7 +4352,7 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
                   </linearGradient>
                 </defs>
               </svg>
-              <div class="shield-decorations absolute inset-0 flex items-center justify-center text-4xl flex-wrap" id="shieldDecorations">
+              <div class="shield-decorations absolute inset-0 flex items-center justify-center text-3xl flex-wrap gap-1 p-8" id="shieldDecorations" style="pointer-events: none;">
                 🛡️
               </div>
             </div>
@@ -3236,7 +4547,7 @@ async function generateModule(
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
   
   await updateProgress("rendering", "Building interactive HTML...");
-  const html = renderHtml(content, pageStructure, moduleCode, categoryColor);
+  const html = renderHtml(content, pageStructure, moduleCode, categoryColor, seriesInfo);
   
   const pageCount = pageStructure.length;
   const characterCount = html.length;
@@ -3321,7 +4632,7 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
   
-  // GET /status/:id
+  // GET /status/:id - Check job status (EXISTING - keep as is)
   if (req.method === "GET" && req.url.includes("/status/")) {
     const url = new URL(req.url);
     const parts = url.pathname.split("/");
@@ -3348,25 +4659,193 @@ serve(async (req) => {
     });
   }
   
+  // NEW: GET /age-ranges - List all active age ranges for dropdown
+  if (req.method === "GET" && req.url.includes("/age-ranges")) {
+    try {
+      const { data, error } = await supabaseClient
+        .from("age_ranges")
+        .select("id, age_range, display_name, age_min, age_max")
+        .eq("is_active", true)
+        .order("age_min", { ascending: true });
+      
+      if (error) {
+        console.error("[API] Age ranges error:", error);
+        return jsonResponse({ error: "Failed to fetch age ranges" }, 500);
+      }
+      
+      return jsonResponse({ ageRanges: data || [] });
+    } catch (e) {
+      console.error("[API] Error fetching age ranges:", e);
+      return jsonResponse({ error: "Internal server error" }, 500);
+    }
+  }
+  
+  // NEW: GET /core-theories - List all active theories for dropdown
+  if (req.method === "GET" && req.url.includes("/core-theories")) {
+    try {
+      const { data, error } = await supabaseClient
+        .from("core_theories")
+        .select("id, theory_name, theory_code, description, category")
+        .eq("is_active", true)
+        .order("category", { ascending: true })
+        .order("theory_name", { ascending: true });
+      
+      if (error) {
+        console.error("[API] Core theories error:", error);
+        return jsonResponse({ error: "Failed to fetch core theories" }, 500);
+      }
+      
+      return jsonResponse({ coreTheories: data || [] });
+    } catch (e) {
+      console.error("[API] Error fetching core theories:", e);
+      return jsonResponse({ error: "Internal server error" }, 500);
+    }
+  }
+  
   if (req.method !== "POST") {
     return jsonResponse({ error: "Use POST" }, 405);
   }
   
   try {
     const body = await req.json().catch(() => ({}));
-    const contentBrief = body?.contentBrief;
     const asyncMode = body?.async === true;
     const seriesId = body?.seriesId;
     const category = body?.category;
+    const superSkillId = body?.superSkillId;
     
+    // NEW: Check if this is enhanced mode or legacy mode
+    const isEnhancedMode = body?.ageRangeId && body?.coreTheoryId;
     
-    if (!contentBrief) {
-      return jsonResponse({ error: "contentBrief is required" }, 400);
+    let contentBrief: string;
+    
+    if (isEnhancedMode) {
+      // =====================
+      // ENHANCED MODE (NEW)
+      // =====================
+      const { ageRangeId, coreTheoryId, brainTownAnalogy, additionalContext, title } = body;
+      
+      if (!brainTownAnalogy) {
+        return jsonResponse({ 
+          error: "Enhanced mode requires: ageRangeId, coreTheoryId, brainTownAnalogy" 
+        }, 400);
+      }
+      
+      // Fetch age range data
+      const { data: ageData, error: ageError } = await supabaseClient
+        .from("age_ranges")
+        .select("*")
+        .eq("id", ageRangeId)
+        .eq("is_active", true)
+        .single();
+      
+      if (ageError || !ageData) {
+        console.error("[API] Age range lookup failed:", ageError);
+        return jsonResponse({ error: "Invalid or inactive age range" }, 400);
+      }
+      
+      // Fetch core theory data
+      const { data: theoryData, error: theoryError } = await supabaseClient
+        .from("core_theories")
+        .select("*")
+        .eq("id", coreTheoryId)
+        .eq("is_active", true)
+        .single();
+      
+      if (theoryError || !theoryData) {
+        console.error("[API] Core theory lookup failed:", theoryError);
+        return jsonResponse({ error: "Invalid or inactive core theory" }, 400);
+      }
+      
+      // Build the enhanced content brief
+      contentBrief = buildEnhancedContentBrief({
+        title: title || "My Feelings Adventure",
+        ageRange: ageData.age_range,
+        ageData,
+        theoryData,
+        brainTownAnalogy,
+        additionalContext: additionalContext || "",
+      });
+      
+      console.log("[AI] Using enhanced psychology-based content brief");
+      
+    } else {
+      // =====================
+      // LEGACY MODE (existing behavior)
+      // =====================
+      contentBrief = body?.contentBrief;
+      
+      if (!contentBrief) {
+        return jsonResponse({ 
+          error: "contentBrief is required (or use enhanced mode with ageRangeId + coreTheoryId + brainTownAnalogy)" 
+        }, 400);
+      }
     }
     
-    // Look up category color if category provided
-    let categoryColor: string | null = null;
-    if (category) {
+    // =====================
+    // REST OF EXISTING CODE (keep everything below as-is)
+    // =====================
+    
+    // Look up theme color and character info from super_skills table if superSkillId provided
+    let themeColor: string | null = null;
+    let seriesInfo: SeriesInfo | null = null;
+    if (superSkillId) {
+      const { data: superSkillData, error: superSkillError } = await supabaseClient
+        .from("super_skills")
+        .select("theme_color, character_name, character_image_url")
+        .eq("id", superSkillId)
+        .single();
+      
+      if (!superSkillError && superSkillData) {
+        themeColor = superSkillData.theme_color;
+        
+        if (superSkillData.character_name) {
+          let cleanName = superSkillData.character_name;
+          if (cleanName.includes(' the ')) {
+            cleanName = cleanName.split(' the ')[0];
+          }
+          
+          seriesInfo = {
+            label: cleanName,
+            character_type: cleanName.toLowerCase().replace(/\s+/g, '_'),
+            emoji: '',
+            character_image_url: superSkillData.character_image_url || null,
+          };
+          
+          if (superSkillData.character_image_url && seriesInfo) {
+            const urlParts = superSkillData.character_image_url.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            const emojiMatch = fileName.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u);
+            if (emojiMatch) {
+              seriesInfo.emoji = emojiMatch[0];
+            }
+          }
+          
+          if (seriesInfo && !seriesInfo.emoji) {
+            const characterTypeToEmoji: Record<string, string> = {
+              'bear': '🐻', 'dog': '🐕', 'cat': '🐱', 'rabbit': '🐰',
+              'fox': '🦊', 'owl': '🦉', 'penguin': '🐧', 'lion': '🦁',
+              'elephant': '🐘', 'monkey': '🐵', 'panda': '🐼', 'professor': '🎓',
+            };
+            
+            const characterLower = cleanName.toLowerCase();
+            for (const [type, emoji] of Object.entries(characterTypeToEmoji)) {
+              if (characterLower.includes(type)) {
+                seriesInfo.emoji = emoji;
+                break;
+              }
+            }
+            
+            if (!seriesInfo.emoji) {
+              seriesInfo.emoji = '🌟';
+            }
+          }
+        }
+      }
+    }
+    
+    // Fallback to category color
+    let categoryColor: string | null = themeColor;
+    if (!categoryColor && category) {
       const { data: categoryData, error: categoryError } = await supabaseClient
         .from("category_colors")
         .select("color")
@@ -3379,17 +4858,13 @@ serve(async (req) => {
     }
     
     // Fetch series info if seriesId provided
-    let seriesInfo: SeriesInfo | null = null;
-    if (seriesId) {
-      
-      // Check if seriesId looks like a UUID (contains dashes and is ~36 chars)
+    if (seriesId && !seriesInfo) {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seriesId);
       
       let series = null;
       let seriesError = null;
       
       if (isUUID) {
-        // Lookup by UUID
         const result = await supabaseClient
           .from("series")
           .select("label, character_type, emoji")
@@ -3398,7 +4873,6 @@ serve(async (req) => {
         series = result.data;
         seriesError = result.error;
       } else {
-        // Lookup by label name (case-insensitive)
         const result = await supabaseClient
           .from("series")
           .select("label, character_type, emoji")
@@ -3407,7 +4881,6 @@ serve(async (req) => {
         series = result.data;
         seriesError = result.error;
         
-        // If not found by exact label, try partial match
         if (seriesError && seriesError.code === 'PGRST116') {
           const partialResult = await supabaseClient
             .from("series")
@@ -3421,28 +4894,12 @@ serve(async (req) => {
       }
       
       if (!seriesError && series) {
-        // Map character_type to emoji if emoji column doesn't exist
         const characterTypeToEmoji: Record<string, string> = {
-          'dog': '🐕',
-          'Dog': '🐕',
-          'cat': '🐱',
-          'Cat': '🐱',
-          'rabbit': '🐰',
-          'Rabbit': '🐰',
-          'bear': '🐻',
-          'Bear': '🐻',
-          'fox': '🦊',
-          'Fox': '🦊',
-          'owl': '🦉',
-          'Owl': '🦉',
-          'penguin': '🐧',
-          'Penguin': '🐧',
-          'lion': '🦁',
-          'Lion': '🦁',
-          'elephant': '🐘',
-          'Elephant': '🐘',
-          'monkey': '🐵',
-          'Monkey': '🐵',
+          'dog': '🐕', 'Dog': '🐕', 'cat': '🐱', 'Cat': '🐱',
+          'rabbit': '🐰', 'Rabbit': '🐰', 'bear': '🐻', 'Bear': '🐻',
+          'fox': '🦊', 'Fox': '🦊', 'owl': '🦉', 'Owl': '🦉',
+          'penguin': '🐧', 'Penguin': '🐧', 'lion': '🦁', 'Lion': '🦁',
+          'elephant': '🐘', 'Elephant': '🐘', 'monkey': '🐵', 'Monkey': '🐵',
         };
         
         const emoji = series.emoji || characterTypeToEmoji[series.character_type] || '🐾';
@@ -3452,7 +4909,6 @@ serve(async (req) => {
           character_type: series.character_type,
           emoji: emoji
         };
-      } else {
       }
     }
     

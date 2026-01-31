@@ -13,6 +13,33 @@
 const PROGRESS_TRACKING_VERSION = '1.0.0';
 
 // ================================================
+// SUPER SKILL TO ASSESSMENT MAPPING
+// ================================================
+// Maps new Super Skill slugs to their corresponding assessments
+
+const SUPERSKILL_TO_ASSESSMENT = {
+  'brain-builder': 'cognitive',
+  'thought-driver': 'cognitive',
+  'emotion-navigator': 'emotions',
+  'body-boss': 'body',
+  'connection-captain': 'social',
+  'calm-controller': 'anxiety',
+  'resilience-ranger': 'depression'
+};
+
+// Reverse mapping - category to super skill (for backward compatibility)
+const CATEGORY_TO_SUPERSKILL = {
+  'anger': 'emotion-navigator',
+  'anxiety': 'calm-controller',
+  'depression': 'resilience-ranger',
+  'emotions': 'emotion-navigator',
+  'body': 'body-boss',
+  'cognitive': 'brain-builder',
+  'social': 'connection-captain',
+  'general': 'brain-builder'
+};
+
+// ================================================
 // ASSESSMENT CONFIGURATIONS BY PATHWAY/CATEGORY
 // ================================================
 
@@ -1307,14 +1334,19 @@ class ProgressTrackingSystem {
   }
 
   // Check if an assessment is needed before starting a module
-  async checkAssessmentNeeded(childId, pathwayCategory, completedModules, totalModules) {
+  async checkAssessmentNeeded(childId, pathwayOrSuperSkill, completedModules, totalModules) {
     if (!this.supabaseClient) {
       console.warn('Supabase client not initialized');
       return null;
     }
 
     this.childId = childId;
-    const pathway = pathwayCategory.toLowerCase();
+    
+    // Handle both super skill slugs and old category names
+    let pathway = pathwayOrSuperSkill.toLowerCase();
+    if (SUPERSKILL_TO_ASSESSMENT[pathway]) {
+      pathway = SUPERSKILL_TO_ASSESSMENT[pathway];
+    }
 
     // Check for existing assessments
     const { data: assessments, error } = await this.supabaseClient
@@ -1357,9 +1389,18 @@ class ProgressTrackingSystem {
   }
 
   // Show assessment modal
-  async showAssessment(childId, pathwayCategory, assessmentType, onComplete, onSkip) {
+  async showAssessment(childId, pathwayOrSuperSkill, assessmentType, onComplete, onSkip) {
     this.childId = childId;
-    this.pathwayId = pathwayCategory.toLowerCase();
+    
+    // Handle both super skill slugs and old category names
+    let assessmentKey = pathwayOrSuperSkill.toLowerCase();
+    
+    // If it's a super skill slug, map it to the assessment category
+    if (SUPERSKILL_TO_ASSESSMENT[assessmentKey]) {
+      assessmentKey = SUPERSKILL_TO_ASSESSMENT[assessmentKey];
+    }
+    
+    this.pathwayId = assessmentKey;
     this.assessmentType = assessmentType;
     this.currentQuestionIndex = 0;
     this.responses = {};
@@ -1691,14 +1732,20 @@ class ProgressTrackingSystem {
   }
 
   // Get assessment data for parent insights
-  async getProgressData(childId, pathwayCategory) {
+  async getProgressData(childId, pathwayOrSuperSkill) {
     if (!this.supabaseClient) return null;
+
+    // Handle both super skill slugs and old category names
+    let pathway = pathwayOrSuperSkill.toLowerCase();
+    if (SUPERSKILL_TO_ASSESSMENT[pathway]) {
+      pathway = SUPERSKILL_TO_ASSESSMENT[pathway];
+    }
 
     const { data, error } = await this.supabaseClient
       .from('pathway_assessments')
       .select('*')
       .eq('child_id', childId)
-      .eq('pathway_category', pathwayCategory.toLowerCase())
+      .eq('pathway_category', pathway)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -1754,13 +1801,17 @@ class ProgressTrackingSystem {
 window.progressTrackingSystem = new ProgressTrackingSystem();
 window.PATHWAY_ASSESSMENTS = PATHWAY_ASSESSMENTS;
 window.ASSESSMENT_TIMING = ASSESSMENT_TIMING;
+window.SUPERSKILL_TO_ASSESSMENT = SUPERSKILL_TO_ASSESSMENT;
+window.CATEGORY_TO_SUPERSKILL_PROGRESS = CATEGORY_TO_SUPERSKILL;
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     ProgressTrackingSystem,
     PATHWAY_ASSESSMENTS,
-    ASSESSMENT_TIMING
+    ASSESSMENT_TIMING,
+    SUPERSKILL_TO_ASSESSMENT,
+    CATEGORY_TO_SUPERSKILL
   };
 }
 

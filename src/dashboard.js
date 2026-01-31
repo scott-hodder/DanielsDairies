@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from './auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan } from './database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills } from './database.js'
 import { redirectToPaymentLink } from './stripe.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-rewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
@@ -33,6 +33,7 @@ let allModulesFilters = {
   category: 'all',
   series: 'all'
 }
+let isCurrentUserAdmin = false
 
 // Helper function to check if streak popup was shown today (per child)
 function hasStreakPopupBeenShownToday(childId) {
@@ -1092,11 +1093,14 @@ async function init() {
     }
     
     // Process admin status (non-critical)
-    if (adminResult.status === 'fulfilled' && adminResult.value) {
-      const adminButton = document.getElementById('adminButton')
-      const adminButtonDesktop = document.getElementById('adminButtonDesktop')
-      if (adminButton) adminButton.style.display = 'block'
-      if (adminButtonDesktop) adminButtonDesktop.classList.remove('hidden')
+    if (adminResult.status === 'fulfilled') {
+      isCurrentUserAdmin = adminResult.value || false
+      if (isCurrentUserAdmin) {
+        const adminButton = document.getElementById('adminButton')
+        const adminButtonDesktop = document.getElementById('adminButtonDesktop')
+        if (adminButton) adminButton.style.display = 'block'
+        if (adminButtonDesktop) adminButtonDesktop.classList.remove('hidden')
+      }
     }
     
     // Update global variables for enhanced dashboard
@@ -1694,13 +1698,13 @@ async function selectChild(child) {
     
     if (!currentFocusPlan) {
       // No active focus plan - show onboarding
-      showFocusPlanOnboarding(child.id, (plan, pathway) => {
+      showFocusPlanOnboarding(child.id, (plan, superSkillOrPathway) => {
         currentFocusPlan = plan
-        // Update the adventure map with the default pathway
-        if (pathway && window.adventureMap) {
-          window.adventureMap.currentCategory = pathway.name?.toLowerCase().replace(/\s+journey$/i, '') || 'all'
-          window.adventureMap.render()
-        }
+        window.currentFocusPlan = plan
+        
+        // Apply the focus plan to the map (handles both super skills and legacy pathways)
+        applyFocusPlanToMap(plan)
+        
         // Now show the child detail view
         showChildDetailView(child)
       })
@@ -2017,8 +2021,8 @@ function showChildDetailView(child) {
     updateDashboardStats()
   })
   
-  // Apply focus plan's default pathway to adventure map
-  if (currentFocusPlan && currentFocusPlan.default_pathway_id) {
+  // Apply focus plan's default super skill or pathway to adventure map
+  if (currentFocusPlan && (currentFocusPlan.super_skill_id || currentFocusPlan.default_pathway_id)) {
     applyFocusPlanToMap(currentFocusPlan)
   }
   
@@ -2054,23 +2058,52 @@ function showChildDetailView(child) {
   hideLoadingScreen()
 }
 
-// Apply focus plan to adventure map
+// Apply focus plan to adventure map - now uses Super Skills
 async function applyFocusPlanToMap(focusPlan) {
-  if (!focusPlan || !focusPlan.default_pathway_id) return
+  if (!focusPlan) return
   
   try {
-    // Look up the pathway to get its name/category
-    const { data: pathway } = await supabase
-      .from('pathways')
-      .select('id, name, category')
-      .eq('id', focusPlan.default_pathway_id)
-      .single()
+    let superSkillSlug = 'all'
     
-    if (!pathway) return
+    // First check if focus plan has a super_skill_id (new system)
+    if (focusPlan.super_skill_id) {
+      const { data: superSkill } = await supabase
+        .from('super_skills')
+        .select('id, slug, name')
+        .eq('id', focusPlan.super_skill_id)
+        .single()
+      
+      if (superSkill && superSkill.slug) {
+        superSkillSlug = superSkill.slug
+      }
+    }
+    // Fall back to pathway if no super_skill_id (backward compatibility)
+    else if (focusPlan.default_pathway_id) {
+      const { data: pathway } = await supabase
+        .from('pathways')
+        .select('id, name, category')
+        .eq('id', focusPlan.default_pathway_id)
+        .single()
+      
+      if (pathway) {
+        // Map old category to super skill
+        const categoryName = (pathway.category || pathway.name || '').toLowerCase()
+        const categoryToSuperSkill = {
+          'anger': 'emotion-navigator',
+          'anxiety': 'calm-controller',
+          'depression': 'resilience-ranger',
+          'emotions': 'emotion-navigator',
+          'body': 'body-boss',
+          'cognitive': 'brain-builder',
+          'social': 'connection-captain',
+          'general': 'all'
+        }
+        superSkillSlug = categoryToSuperSkill[categoryName] || 'all'
+      }
+    }
     
-    // Get the category name from the pathway
-    let categoryName = pathway.category || pathway.name || 'all'
-    categoryName = categoryName.toLowerCase()
+    // Store the super skill for the enhanced dashboard to use
+    window.currentFocusSuperSkill = superSkillSlug
     
     // Update the adventure map category filter dropdown
     const categoryFilter = document.getElementById('categoryFilter')
@@ -2078,8 +2111,8 @@ async function applyFocusPlanToMap(focusPlan) {
       // Find the matching option in the dropdown
       const options = Array.from(categoryFilter.options)
       const matchingOption = options.find(opt => 
-        opt.value.toLowerCase() === categoryName.toLowerCase() ||
-        opt.textContent.toLowerCase().includes(categoryName.toLowerCase())
+        opt.value === superSkillSlug ||
+        opt.value.toLowerCase() === superSkillSlug.toLowerCase()
       )
       
       if (matchingOption) {
@@ -2091,8 +2124,14 @@ async function applyFocusPlanToMap(focusPlan) {
     
     // Also update window.adventureMap if it exists
     if (window.adventureMap) {
-      window.adventureMap.currentCategory = categoryName
+      window.adventureMap.currentCategory = superSkillSlug
       window.adventureMap.render()
+    }
+    
+    // Update enhanced dashboard if exists
+    if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
+      window.enhancedDashboard.adventureMap.currentCategory = superSkillSlug
+      window.enhancedDashboard.adventureMap.render()
     }
   } catch (error) {
     console.error('Error applying focus plan to map:', error)
@@ -2114,16 +2153,12 @@ function setupFocusPlanSettingsButton() {
     
     newBtn.addEventListener('click', () => {
       if (selectedChild && currentFocusPlan) {
-        showFocusPlanSettings(selectedChild.id, currentFocusPlan, (updatedPlan, pathway) => {
+        showFocusPlanSettings(selectedChild.id, currentFocusPlan, (updatedPlan, superSkillOrPathway) => {
           currentFocusPlan = updatedPlan
           window.currentFocusPlan = updatedPlan
           
-          // Refresh the adventure map with new pathway
-          if (pathway && window.adventureMap) {
-            const categoryName = pathway.name?.toLowerCase().replace(/\s+journey$/i, '') || 'all'
-            window.adventureMap.currentCategory = categoryName
-            window.adventureMap.render()
-          }
+          // Apply the updated focus plan to the map
+          applyFocusPlanToMap(updatedPlan)
         })
       }
     })
@@ -2390,10 +2425,8 @@ function createModuleCard(module) {
 // Start module
 async function startModule(module) {
   try {
-    // Update module status to in_progress
-    await updateChildModuleStatus(selectedChild.id, module.id, 'in_progress')
-    
     // Load module through the module player
+    // Note: child_modules record will be created when module is completed
     const moduleUrl = `/module.html?code=${module.code}&childId=${selectedChild.id}&moduleId=${module.id}&parentUserId=${currentUser.id}`
     window.location.href = moduleUrl
     
@@ -3436,8 +3469,9 @@ class ModuleGallery {
         this.container = null;
         this.modules = [];
         this.filteredModules = [];
+        this.superSkills = [];
         this.currentCategory = 'all';
-        this.currentSeries = 'all';
+        this.currentSuperSkill = 'all';
         this.showActiveOnly = true;
         this.modalElement = null;
         this.options = options || {};
@@ -3465,7 +3499,7 @@ class ModuleGallery {
         };
     }
     
-    init(modules, parentModules, childModules) {
+    init(modules, parentModules, childModules, superSkills) {
         this.container = document.getElementById(this.containerId);
         if (!this.container) {
             console.warn('Module gallery container not found:', this.containerId);
@@ -3474,6 +3508,7 @@ class ModuleGallery {
         
         parentModules = parentModules || [];
         childModules = childModules || [];
+        this.superSkills = superSkills || [];
         
         this.modules = this.processModules(modules, parentModules, childModules);
         this.applyFilters();
@@ -3484,7 +3519,10 @@ class ModuleGallery {
     processModules(modules, parentModules, childModules) {
         var parentModuleIds = {};
         parentModules.forEach(function(pm) {
-            parentModuleIds[pm.module_id] = true;
+            // Only mark module as active if parent assignment is active
+            if (pm.is_active === true) {
+                parentModuleIds[pm.module_id] = true;
+            }
         });
         
         var childModuleMap = {};
@@ -3515,9 +3553,8 @@ class ModuleGallery {
                 }
             }
             
-            if (self.currentSeries !== 'all') {
-                var moduleSeries = (module.series || '').toLowerCase();
-                if (moduleSeries !== self.currentSeries.toLowerCase()) {
+            if (self.currentSuperSkill !== 'all') {
+                if (module.super_skill_id !== self.currentSuperSkill) {
                     return false;
                 }
             }
@@ -3544,20 +3581,24 @@ class ModuleGallery {
         return Object.keys(categories).sort();
     }
     
-    getUniqueSeries() {
-        var series = {};
-        this.modules.forEach(function(m) {
-            if (m.series) series[m.series] = true;
-        });
-        return Object.keys(series).sort();
-    }
+getUniqueSuperSkills() {
+    // Return all Super Skills (sorted by name), independent of module usage
+    var list = this.superSkills.map(function(s) {
+        return {
+            id: s.id,
+            name: s.name,
+            emoji: s.emoji || '🎯'
+        };
+    });
+    return list.sort(function(a, b) { return a.name.localeCompare(b.name); });
+}
     
     render() {
         if (!this.container) return;
         
         var self = this;
         var categories = this.getUniqueCategories();
-        var seriesList = this.getUniqueSeries();
+        var superSkillsList = this.getUniqueSuperSkills();
         
         var categoryOptions = categories.map(function(cat) {
             var selected = self.currentCategory === cat ? 'selected' : '';
@@ -3566,9 +3607,9 @@ class ModuleGallery {
             return '<option value="' + cat + '" ' + selected + '>' + emoji + ' ' + name + '</option>';
         }).join('');
         
-        var seriesOptions = seriesList.map(function(series) {
-            var selected = self.currentSeries === series.toLowerCase() ? 'selected' : '';
-            return '<option value="' + series.toLowerCase() + '" ' + selected + '>' + series + '</option>';
+        var superSkillsOptions = superSkillsList.map(function(superSkill) {
+            var selected = self.currentSuperSkill === superSkill.id ? 'selected' : '';
+            return '<option value="' + superSkill.id + '" ' + selected + '>' + superSkill.emoji + ' ' + superSkill.name + '</option>';
         }).join('');
         
         var activeCount = this.filteredModules.filter(function(m) { return m.isActive; }).length;
@@ -3595,10 +3636,10 @@ class ModuleGallery {
                     '</div>' +
                     
                     '<div class="gallery-filter-group">' +
-                        '<span class="gallery-filter-label">Series</span>' +
-                        '<select class="gallery-filter-select" id="gallerySeriesFilter">' +
-                            '<option value="all">All Series</option>' +
-                            seriesOptions +
+                        '<span class="gallery-filter-label">Super Skill</span>' +
+                        '<select class="gallery-filter-select" id="gallerySuperSkillFilter">' +
+                            '<option value="all">All Super Skills</option>' +
+                            superSkillsOptions +
                         '</select>' +
                     '</div>' +
                     
@@ -3877,10 +3918,10 @@ class ModuleGallery {
             });
         }
         
-        var seriesFilter = document.getElementById('gallerySeriesFilter');
-        if (seriesFilter) {
-            seriesFilter.addEventListener('change', function(e) {
-                self.currentSeries = e.target.value;
+        var superSkillFilter = document.getElementById('gallerySuperSkillFilter');
+        if (superSkillFilter) {
+            superSkillFilter.addEventListener('change', function(e) {
+                self.currentSuperSkill = e.target.value;
                 self.applyFilters();
                 self.updateGrid();
             });
@@ -3960,36 +4001,35 @@ class ModuleGallery {
 window.ModuleGallery = ModuleGallery;
 
 // Auto-initialize when DOM is ready
+// Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    var checkAndInit = function() {
+    var checkAndInit = async function() {
         var container = document.getElementById('moduleGalleryContainer');
         if (container && window.modules && window.parentModules) {
+            try {
+                var superSkills = await getSuperSkills();
+                window.superSkills = superSkills || [];
+            } catch {
+                window.superSkills = [];
+            }
+
             var gallery = new ModuleGallery('moduleGalleryContainer');
             gallery.init(
                 window.modules || [],
                 window.parentModules || [],
-                window.childModules || []
+                window.childModules || [],
+                window.superSkills || []
             );
             window.moduleGallery = gallery;
             return true;
         }
         return false;
     };
-    
-    if (!checkAndInit()) {
-        window.addEventListener('dashboardDataReady', checkAndInit);
-    }
+
+    // Always listen for the data-ready event, and also try once immediately
+    window.addEventListener('dashboardDataReady', checkAndInit);
+    checkAndInit();
 });
 
-// Export refresh function
-window.refreshModuleGallery = function() {
-    if (window.moduleGallery) {
-        window.moduleGallery.init(
-            window.modules || [],
-            window.parentModules || [],
-            window.childModules || []
-        );
-    }
-};
 // Initialize app
-init()
+init();

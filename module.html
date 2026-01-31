@@ -428,41 +428,52 @@
     // MARK MODULE AS COMPLETED IN DATABASE
     // =========================================
     window.completeModuleDB = async function(modCode) {
-      const code = modCode || moduleCode;
-      
       if (!_state.childId) {
         throw new Error('No child ID');
       }
-      if (!code) {
-        throw new Error('No module code');
+      
+      // Use moduleId from URL params if available, otherwise try to look up by code
+      const params = new URLSearchParams(window.location.search);
+      const moduleId = params.get('moduleId');
+      
+      if (!moduleId && !modCode && !moduleCode) {
+        throw new Error('No module ID or code provided');
       }
       
       try {
-        const { data: mod, error: modError } = await supabase
-          .from('modules')
-          .select('id')
-          .eq('code', code)
-          .single();
+        let modId = moduleId;
         
-        if (modError) {
-          throw new Error(`Module not found for code: ${code}`);
+        // If we don't have moduleId, try to look it up by code
+        if (!modId) {
+          const code = modCode || moduleCode;
+          const { data: mod, error: modError } = await supabase
+            .from('modules')
+            .select('id')
+            .eq('code', code)
+            .single();
+          
+          if (modError || !mod) {
+            throw new Error(`Module not found for code: ${code}`);
+          }
+          modId = mod.id;
         }
-        if (!mod) {
-          throw new Error(`Module not found for code: ${code}`);
-        }
+        
+        console.log('[completeModuleDB] Marking module as complete:', { childId: _state.childId, moduleId: modId });
         
         const { data: existingRecord, error: checkError } = await supabase
           .from('child_modules')
           .select('id')
           .eq('child_id', _state.childId)
-          .eq('module_id', mod.id)
+          .eq('module_id', modId)
           .maybeSingle();
         
         if (checkError) {
+          console.error('[completeModuleDB] Error checking existing record:', checkError);
           throw checkError;
         }
         
         if (existingRecord) {
+          console.log('[completeModuleDB] Updating existing record:', existingRecord.id);
           const { error: updateError } = await supabase
             .from('child_modules')
             .update({
@@ -472,25 +483,32 @@
             .eq('id', existingRecord.id);
           
           if (updateError) {
+            console.error('[completeModuleDB] Error updating:', updateError);
             throw updateError;
           }
+          console.log('[completeModuleDB] Successfully marked as complete');
         } else {
+          console.log('[completeModuleDB] Creating new record');
           const { error: insertError } = await supabase
             .from('child_modules')
             .insert({
               child_id: _state.childId,
-              module_id: mod.id,
+              module_id: modId,
               is_completed: true,
-              completed_at: new Date().toISOString()
+              completed_at: new Date().toISOString(),
+              is_active: true
             });
           
           if (insertError) {
+            console.error('[completeModuleDB] Error inserting:', insertError);
             throw insertError;
           }
+          console.log('[completeModuleDB] Successfully created completion record');
         }
         
         return true;
       } catch (e) {
+        console.error('[completeModuleDB] Failed:', e);
         throw e;
       }
     };
@@ -502,7 +520,22 @@
 
     // Global completeModule function for buttons in generated HTML
     window.completeModule = async function(childIdParam, moduleIdParam) {
-      window.handleModuleCompletion();
+      console.log('[completeModule] Button clicked');
+      
+      // If module not already completed, complete it and show celebration
+      if (!moduleCompletionHandled) {
+        window.handleModuleCompletion();
+      } else {
+        // Already completed, just go home
+        console.log('[completeModule] Already completed, going home');
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        if (childId) {
+          window.location.href = '/dashboard.html?childId=' + childId;
+        } else {
+          window.location.href = '/dashboard.html';
+        }
+      }
     };
 
     window.handleModuleCompletion = function() {
@@ -603,6 +636,40 @@
             window.location.href = '/dashboard.html';
           }
         }, 300);
+      }
+    };
+
+    // Home button handler - complete module if not already completed, then return home
+    window.handleHomeButtonClick = async function() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        const moduleCode = params.get('code');
+        
+        // If we have module code and child ID, try to complete the module
+        if (childId && moduleCode && !moduleCompletionHandled) {
+          try {
+            await window.completeModuleDB();
+          } catch (e) {
+            // Module already completed or error - just continue
+          }
+        }
+        
+        // Return to dashboard
+        if (childId) {
+          window.location.href = '/dashboard.html?childId=' + childId;
+        } else {
+          window.location.href = '/dashboard.html';
+        }
+      } catch (e) {
+        // Fallback: just go home
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        if (childId) {
+          window.location.href = '/dashboard.html?childId=' + childId;
+        } else {
+          window.location.href = '/dashboard.html';
+        }
       }
     };
 
@@ -817,17 +884,49 @@
     }
     
     async function loadModule() {
-      if (!moduleCode) { showError('No Module', 'No module code in URL'); return; }
+      // Use moduleId instead of moduleCode since new modules have empty code fields
+      if (!moduleId) { 
+        // Fallback to moduleCode for backward compatibility
+        if (!moduleCode) { 
+          showError('No Module', 'No module ID or code in URL'); 
+          return; 
+        }
+      }
       
       try {
-        const { data: mod, error } = await supabase
-          .from('modules')
-          .select('html_content, title, code, id')
-          .eq('code', moduleCode)
-          .single();
+        let mod;
         
-        if (error) throw new Error(error.message);
-        if (!mod?.html_content) throw new Error('Module not found');
+        if (moduleId) {
+          // Try to get module by ID first (preferred method for new modules)
+          const { data: modData, error: fetchError } = await supabase
+            .from('modules')
+            .select('html_content, title, code, id')
+            .eq('id', moduleId)
+            .single();
+          
+          if (fetchError) throw new Error(fetchError.message);
+          if (!modData?.html_content) throw new Error('Module not found or has no content');
+          mod = modData;
+        } else {
+          // Fallback to code for backward compatibility
+          const { data: mods, error: fetchError } = await supabase
+            .from('modules')
+            .select('html_content, title, code, id')
+            .eq('code', moduleCode);
+          
+          if (fetchError) throw new Error(fetchError.message);
+          
+          if (!mods || mods.length === 0) {
+            throw new Error(`No module found with code: ${moduleCode}`);
+          }
+          
+          if (mods.length > 1) {
+            console.warn(`Multiple modules found with code ${moduleCode}, using first one`);
+          }
+          
+          mod = mods[0];
+          if (!mod?.html_content) throw new Error('Module has no content');
+        }
         
         _state.moduleDbId = mod.id;
         document.title = mod.title || 'Module';
@@ -941,22 +1040,22 @@
     // Watch for page changes to trigger completion on last page
     // =========================================
     function setupPageObserver() {
-      // Watch for changes to page display elements
+      // Watch for changes to the module header page display ONLY
       const observer = new MutationObserver((mutations) => {
-        // Look for page display updates
-        const pageDisplays = document.querySelectorAll('.module-header__page, [class*="page"]');
-        pageDisplays.forEach(el => {
-          const text = el.textContent || '';
-          // Match patterns like "Page 21 of 21" or "21/21"
-          const match = text.match(/(?:Page\s+)?(\d+)\s*(?:of|\/)\s*(\d+)/i);
-          if (match) {
-            const current = parseInt(match[1], 10);
-            const total = parseInt(match[2], 10);
-            if (current === total && total > 1 && !moduleCompletionHandled) {
-              window.handleModuleCompletion();
-            }
+        // Only look at the specific module header page display element
+        const pageDisplay = document.querySelector('.module-header__page');
+        if (!pageDisplay) return;
+        
+        const text = pageDisplay.textContent || '';
+        // Match patterns like "Page 21 of 21" or "21 of 21"
+        const match = text.match(/(?:Page\s+)?(\d+)\s+of\s+(\d+)/i);
+        if (match) {
+          const current = parseInt(match[1], 10);
+          const total = parseInt(match[2], 10);
+          if (current === total && total > 1 && !moduleCompletionHandled) {
+            window.handleModuleCompletion();
           }
-        });
+        }
       });
       
       // Observe the entire body for changes

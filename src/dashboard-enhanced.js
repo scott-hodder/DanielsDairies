@@ -1,6 +1,6 @@
 // ================================================
-// ADVENTURE MAP V4 - Category-Themed Interactive Maps
-// Enhanced Dashboard Features with Draggable Map & Category Filters
+// ADVENTURE MAP V4 - Super Skills Themed Interactive Maps
+// Enhanced Dashboard Features with Draggable Map & Super Skill Filters
 // ================================================
 
 // Import existing dashboard state and functions
@@ -18,16 +18,18 @@ function getDashboardData() {
 }
 
 // ================================================
-// CATEGORY THEME CONFIGURATIONS
+// SUPER SKILL THEME CONFIGURATIONS
 // ================================================
 
-const CATEGORY_THEMES = {
+// Super Skills data loaded from database (will be populated on init)
+let superSkillsFromDB = [];
+
+const SUPER_SKILL_THEMES = {
   all: {
     name: 'All Adventures',
     emoji: '🗺️',
     color: '#405878',
-    description: 'View all your adventures',
-    // Progress-based sky: starts neutral, ends peaceful
+    description: 'View all your skill adventures',
     skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
     skyGradientEnd: ['#87CEEB', '#98D8C8', '#7CCD7C', '#90EE90', '#98FB98'],
     decorationsStart: ['🌲', '🌳', '🍂', '🍃'],
@@ -40,89 +42,67 @@ const CATEGORY_THEMES = {
     danielExpressions: { start: 'focused', middle: 'happy', end: 'proud' }
   },
   
-  anger: {
-    name: 'Anger Journey',
-    emoji: '🔥',
-    color: '#8B0000',
-    description: 'From fiery feelings to peaceful calm',
-    // Progress-based sky: harsh reds → orange warmth → calm blues/greens
-    skyGradientStart: ['#8B0000', '#A52A2A', '#CD5C5C', '#DC143C', '#FF6347'],
-    skyGradientEnd: ['#87CEEB', '#98D8C8', '#90EE90', '#98FB98', '#E0FFFF'],
-    decorationsStart: ['🔥', '💨', '💢', '⚡', '🌪️'],
-    decorationsEnd: ['🌸', '🌼', '🦋', '🐦', '☀️', '🌈', '🌿'],
-    pathColor: { main: '#8B4513', light: '#A0522D', shadow: 'rgba(139, 0, 0, 0.3)' },
-    startMarker: '🔥',
-    endMarker: '🌸',
-    destination: { name: 'Calm Meadow', emoji: '🏕️' },
-    nodeEmojis: { incomplete: '😠', complete: '😊' },
-    danielExpressions: { start: 'stressed', middle: 'focused', end: 'calm' }
+  'brain-builder': {
+    name: 'Brain Builder',
+    emoji: '🧠',
+    color: '#6366F1',
+    description: 'Master your mind through understanding how your brain works',
+    skyGradientStart: ['#778899', '#8899AA', '#99AABB', '#AABBCC', '#BBCCDD'],
+    skyGradientEnd: ['#00CED1', '#48D1CC', '#40E0D0', '#7FFFD4', '#AFEEEE'],
+    decorationsStart: ['💭', '🌫️', '❓', '🤔'],
+    decorationsEnd: ['💡', '⭐', '🌟', '✨', '🎯', '🏆'],
+    pathColor: { main: '#6366F1', light: '#818CF8', shadow: 'rgba(99, 102, 241, 0.3)' },
+    startMarker: '💭',
+    endMarker: '💡',
+    destination: { name: 'Clarity Peak', emoji: '💡' },
+    nodeEmojis: { incomplete: '🤔', complete: '🧠' },
+    danielExpressions: { start: 'curious', middle: 'thinking', end: 'enlightened' }
   },
   
-  anxiety: {
-    name: 'Anxiety Journey',
-    emoji: '🌧️',
-    color: '#ab47bc',
-    description: 'From stormy skies to sunshine',
-    // Progress-based sky: dark stormy → clearing → bright sunny
-    skyGradientStart: ['#4A5568', '#5A6578', '#6B7B8C', '#7C8B9C', '#8D9BAC'],
-    skyGradientEnd: ['#87CEEB', '#FFE4B5', '#FFFACD', '#FFF8DC', '#FFFFF0'],
-    decorationsStart: ['🌧️', '💨', '☁️', '🌫️', '⛈️'],
-    decorationsEnd: ['☀️', '🌈', '🌻', '🦋', '🐦', '🌸'],
-    pathColor: { main: '#9370DB', light: '#BA55D3', shadow: 'rgba(171, 71, 188, 0.3)' },
-    startMarker: '🌧️',
-    endMarker: '☀️',
-    destination: { name: 'Sunny Clearing', emoji: '🌅' },
-    nodeEmojis: { incomplete: '😰', complete: '😌' },
-    danielExpressions: { start: 'worried', middle: 'hopeful', end: 'peaceful' }
-  },
-  
-  depression: {
-    name: 'Depression Journey',
-    emoji: '🌙',
-    color: '#002657',
-    description: 'From darkness to bright garden',
-    // Progress-based sky: dark night → dawn → bright day
-    skyGradientStart: ['#1a1a2e', '#16213e', '#1f3460', '#2C3E50', '#34495E'],
-    skyGradientEnd: ['#87CEEB', '#FFB347', '#FFCC33', '#FFD700', '#FFF8DC'],
-    decorationsStart: ['🌙', '✨', '🌑', '💫'],
-    decorationsEnd: ['🌻', '🌷', '🌸', '🦋', '🐦', '☀️', '🌈'],
-    pathColor: { main: '#4682B4', light: '#5F9EA0', shadow: 'rgba(0, 38, 87, 0.3)' },
-    startMarker: '🌙',
-    endMarker: '🌻',
-    destination: { name: 'Bright Garden', emoji: '🌻' },
-    nodeEmojis: { incomplete: '😔', complete: '😊' },
-    danielExpressions: { start: 'sad', middle: 'hopeful', end: 'joyful' }
-  },
-  
-  emotions: {
-    name: 'Emotions Journey',
+  'thought-driver': {
+    name: 'Thought Driver',
     emoji: '💭',
-    color: '#f46b6b',
-    description: 'Understanding all feelings',
-    // Progress-based sky: mixed/confused → balanced → harmonious
+    color: '#8B5CF6',
+    description: 'Take control of your thoughts and steer them positively',
+    skyGradientStart: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2'],
+    skyGradientEnd: ['#E0FFFF', '#B0E0E6', '#ADD8E6', '#87CEEB', '#87CEFA'],
+    decorationsStart: ['💭', '🌀', '❓', '💫'],
+    decorationsEnd: ['💡', '🎯', '⭐', '✨', '🌈', '🦋'],
+    pathColor: { main: '#8B5CF6', light: '#A78BFA', shadow: 'rgba(139, 92, 246, 0.3)' },
+    startMarker: '💭',
+    endMarker: '🎯',
+    destination: { name: 'Focus Point', emoji: '🎯' },
+    nodeEmojis: { incomplete: '🤔', complete: '💡' },
+    danielExpressions: { start: 'confused', middle: 'focused', end: 'clear' }
+  },
+  
+  'emotion-navigator': {
+    name: 'Emotion Navigator',
+    emoji: '🧭',
+    color: '#EC4899',
+    description: 'Navigate through all emotions with confidence',
     skyGradientStart: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2'],
     skyGradientEnd: ['#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFF0F5', '#FFFAFA'],
     decorationsStart: ['💭', '❓', '🌀', '💫'],
     decorationsEnd: ['💖', '😊', '🌈', '✨', '🦋', '🌸'],
-    pathColor: { main: '#FF6B6B', light: '#FF8E8E', shadow: 'rgba(244, 107, 107, 0.3)' },
-    startMarker: '💭',
+    pathColor: { main: '#EC4899', light: '#F472B6', shadow: 'rgba(236, 72, 153, 0.3)' },
+    startMarker: '🧭',
     endMarker: '💖',
     destination: { name: 'Heart Haven', emoji: '💖' },
     nodeEmojis: { incomplete: '🤔', complete: '😊' },
     danielExpressions: { start: 'curious', middle: 'understanding', end: 'loving' }
   },
   
-  body: {
-    name: 'Body Awareness',
+  'body-boss': {
+    name: 'Body Boss',
     emoji: '💪',
-    color: '#f4a73b',
-    description: 'Connect with your body',
-    // Progress-based sky: tense energy → flowing → calm
+    color: '#10B981',
+    description: 'Understand and control your body signals',
     skyGradientStart: ['#FF8C00', '#FFA500', '#FFB347', '#FFCC00', '#FFD700'],
     skyGradientEnd: ['#87CEEB', '#B0E0E6', '#ADD8E6', '#E0FFFF', '#F0FFFF'],
     decorationsStart: ['⚡', '💨', '🔥', '💪'],
     decorationsEnd: ['🧘', '🌊', '🍃', '🦋', '🌸', '☀️'],
-    pathColor: { main: '#F4A73B', light: '#FFB84D', shadow: 'rgba(244, 167, 59, 0.3)' },
+    pathColor: { main: '#10B981', light: '#34D399', shadow: 'rgba(16, 185, 129, 0.3)' },
     startMarker: '⚡',
     endMarker: '🧘',
     destination: { name: 'Zen Garden', emoji: '🧘' },
@@ -130,35 +110,16 @@ const CATEGORY_THEMES = {
     danielExpressions: { start: 'tense', middle: 'relaxing', end: 'zen' }
   },
   
-  cognitive: {
-    name: 'Thinking Skills',
-    emoji: '🧠',
-    color: '#35a4d4',
-    description: 'Train your brain',
-    // Progress-based sky: foggy → clearing → crystal clear
-    skyGradientStart: ['#778899', '#8899AA', '#99AABB', '#AABBCC', '#BBCCDD'],
-    skyGradientEnd: ['#00CED1', '#48D1CC', '#40E0D0', '#7FFFD4', '#AFEEEE'],
-    decorationsStart: ['💭', '🌫️', '❓', '🤔'],
-    decorationsEnd: ['💡', '⭐', '🌟', '✨', '🎯', '🏆'],
-    pathColor: { main: '#35A4D4', light: '#5BB8DE', shadow: 'rgba(53, 164, 212, 0.3)' },
-    startMarker: '💭',
-    endMarker: '💡',
-    destination: { name: 'Clarity Peak', emoji: '💡' },
-    nodeEmojis: { incomplete: '🤔', complete: '🧠' },
-    danielExpressions: { start: 'confused', middle: 'thinking', end: 'enlightened' }
-  },
-  
-  social: {
-    name: 'Social Skills',
-    emoji: '👫',
-    color: '#4caf50',
-    description: 'Connect with others',
-    // Progress-based sky: isolated → connecting → together
+  'connection-captain': {
+    name: 'Connection Captain',
+    emoji: '🤝',
+    color: '#F59E0B',
+    description: 'Build strong relationships and communicate well',
     skyGradientStart: ['#90A4AE', '#A5B5BF', '#B0BEC5', '#CFD8DC', '#ECEFF1'],
     skyGradientEnd: ['#98FB98', '#90EE90', '#7CCD7C', '#66CDAA', '#3CB371'],
     decorationsStart: ['🏠', '🚪', '🌲'],
     decorationsEnd: ['👫', '🤝', '❤️', '🎉', '🎊', '🦋', '🌈'],
-    pathColor: { main: '#4CAF50', light: '#66BB6A', shadow: 'rgba(76, 175, 80, 0.3)' },
+    pathColor: { main: '#F59E0B', light: '#FBBF24', shadow: 'rgba(245, 158, 11, 0.3)' },
     startMarker: '🏠',
     endMarker: '🎉',
     destination: { name: 'Friendship Circle', emoji: '🎉' },
@@ -166,24 +127,55 @@ const CATEGORY_THEMES = {
     danielExpressions: { start: 'shy', middle: 'friendly', end: 'celebrating' }
   },
   
-  general: {
-    name: 'General Skills',
-    emoji: '📚',
-    color: '#4c6c96',
-    description: 'Life skills and more',
-    // Progress-based sky: learning → growing → mastering
-    skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
-    skyGradientEnd: ['#87CEEB', '#98D8F0', '#ADD8E6', '#B0E0E6', '#E0FFFF'],
-    decorationsStart: ['📚', '📖', '✏️'],
-    decorationsEnd: ['🎓', '🏆', '⭐', '🌟', '✨', '🎯'],
-    pathColor: { main: '#4C6C96', light: '#6080A8', shadow: 'rgba(76, 108, 150, 0.3)' },
-    startMarker: '📚',
-    endMarker: '🏆',
-    destination: { name: 'Achievement Hall', emoji: '🏆' },
-    nodeEmojis: { incomplete: '📖', complete: '🎓' },
-    danielExpressions: { start: 'curious', middle: 'learning', end: 'proud' }
+  'calm-controller': {
+    name: 'Calm Controller',
+    emoji: '🧘',
+    color: '#06B6D4',
+    description: 'Master techniques to find peace and stay centered',
+    skyGradientStart: ['#4A5568', '#5A6578', '#6B7B8C', '#7C8B9C', '#8D9BAC'],
+    skyGradientEnd: ['#87CEEB', '#FFE4B5', '#FFFACD', '#FFF8DC', '#FFFFF0'],
+    decorationsStart: ['🌧️', '💨', '☁️', '🌫️', '⛈️'],
+    decorationsEnd: ['☀️', '🌈', '🌻', '🦋', '🐦', '🌸'],
+    pathColor: { main: '#06B6D4', light: '#22D3EE', shadow: 'rgba(6, 182, 212, 0.3)' },
+    startMarker: '🌧️',
+    endMarker: '☀️',
+    destination: { name: 'Sunny Clearing', emoji: '🌅' },
+    nodeEmojis: { incomplete: '😰', complete: '😌' },
+    danielExpressions: { start: 'worried', middle: 'hopeful', end: 'peaceful' }
+  },
+  
+  'resilience-ranger': {
+    name: 'Resilience Ranger',
+    emoji: '🏔️',
+    color: '#EF4444',
+    description: 'Bounce back from challenges and grow stronger',
+    skyGradientStart: ['#1a1a2e', '#16213e', '#1f3460', '#2C3E50', '#34495E'],
+    skyGradientEnd: ['#87CEEB', '#FFB347', '#FFCC33', '#FFD700', '#FFF8DC'],
+    decorationsStart: ['🌙', '✨', '🌑', '💫'],
+    decorationsEnd: ['🌻', '🌷', '🌸', '🦋', '🐦', '☀️', '🌈'],
+    pathColor: { main: '#EF4444', light: '#F87171', shadow: 'rgba(239, 68, 68, 0.3)' },
+    startMarker: '🌙',
+    endMarker: '🌻',
+    destination: { name: 'Bright Garden', emoji: '🌻' },
+    nodeEmojis: { incomplete: '😔', complete: '😊' },
+    danielExpressions: { start: 'sad', middle: 'hopeful', end: 'joyful' }
   }
 };
+
+// Mapping from old category names to super skill slugs (for backward compatibility)
+const CATEGORY_TO_SUPERSKILL = {
+  'anger': 'emotion-navigator',
+  'anxiety': 'calm-controller', 
+  'depression': 'resilience-ranger',
+  'emotions': 'emotion-navigator',
+  'body': 'body-boss',
+  'cognitive': 'brain-builder',
+  'social': 'connection-captain',
+  'general': 'all'
+};
+
+// For backward compatibility, CATEGORY_THEMES points to SUPER_SKILL_THEMES
+const CATEGORY_THEMES = SUPER_SKILL_THEMES;
 
 // Daniel expression images mapping
 const DANIEL_EXPRESSIONS = {
@@ -230,7 +222,7 @@ class AdventureMapV4 {
     this.lastTranslateX = 0;
     this.lastTranslateY = 0;
     this.hasUserInteracted = false;
-    this.currentCategory = 'all';
+    this.currentCategory = null;
     this.boundHandlers = {};
     
     this.updateMobileConfig();
@@ -264,8 +256,48 @@ class AdventureMapV4 {
   }
 
   init() {
+    var self = this;
     this.injectStyles();
-    this.render();
+    
+    // Check if there's a focus plan super skill already set
+    if (window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
+      this.currentCategory = window.currentFocusSuperSkill;
+    }
+    
+    // Load super skills from database if supabase is available
+    if (window.supabase) {
+      window.supabase
+        .from('super_skills')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .then(function(result) {
+          if (result.data) {
+            superSkillsFromDB = result.data;
+            // Update SUPER_SKILL_THEMES with database values
+            result.data.forEach(function(skill) {
+              if (SUPER_SKILL_THEMES[skill.slug]) {
+                SUPER_SKILL_THEMES[skill.slug].name = skill.name;
+                SUPER_SKILL_THEMES[skill.slug].emoji = skill.emoji || SUPER_SKILL_THEMES[skill.slug].emoji;
+                SUPER_SKILL_THEMES[skill.slug].color = skill.theme_color || SUPER_SKILL_THEMES[skill.slug].color;
+              }
+            });
+          }
+          
+          // Check again for focus plan after loading (in case it was set while loading)
+          if (window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
+            self.currentCategory = window.currentFocusSuperSkill;
+          }
+          
+          self.render();
+        })
+        .catch(function(err) {
+          console.log('Could not load super skills from database:', err);
+          self.render();
+        });
+    } else {
+      this.render();
+    }
   }
 
   injectStyles() {
@@ -426,6 +458,7 @@ class AdventureMapV4 {
         requestAnimationFrame(function() {
           self.renderDecorations();
           self.renderNodes();
+          self.renderRoadblocks(); // NEW: Render roadblocks on the map
           self.updateProgress();
           self.centerOnCurrentModule();
         });
@@ -433,6 +466,42 @@ class AdventureMapV4 {
       
       self.setupEventListeners();
     });
+  }
+  
+  // NEW: Initialize and render roadblocks on the adventure map
+  async renderRoadblocks() {
+    var self = this;
+    var nodesContainer = document.getElementById('adventureNodes');
+    if (!nodesContainer || this.modules.length < 2) return;
+    
+    // Initialize roadblock system if not already done
+    if (window.roadblockSystem && !window.roadblockSystem.initialized) {
+      var child = window.selectedChild || dashboardSelectedChild;
+      if (child && child.id && window.supabase) {
+        try {
+          await window.roadblockSystem.init(window.supabase, child.id);
+        } catch (error) {
+          console.log('Could not initialize roadblock system:', error);
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+    
+    if (!window.roadblockSystem || !window.roadblockSystem.initialized) return;
+    
+    // Calculate node positions for roadblock spawning
+    var positions = this.calculateNodePositions();
+    
+    // Calculate roadblock spawn positions
+    var spawns = window.roadblockSystem.calculateSpawnPositions(this.modules, positions);
+    
+    // Render roadblocks on the map
+    if (spawns.length > 0) {
+      window.roadblockSystem.renderRoadblocks(nodesContainer);
+      console.log('Rendered', spawns.length, 'roadblocks on the map');
+    }
   }
 
   buildModuleList() {
@@ -442,7 +511,10 @@ class AdventureMapV4 {
     if (dashMods.length > 0) {
       var seriesOrder = { 'luna': 1, 'Luna': 1, 'daniel': 2, 'Daniel': 2 };
 
-      var sorted = dashMods.slice().sort(function(a, b) {
+      // Filter to only active modules
+      var activeMods = dashMods.filter(function(m) { return m.is_active !== false; });
+
+      var sorted = activeMods.slice().sort(function(a, b) {
         var seriesA = (a.series && a.series.label) || a.series_name || a.series || '';
         var seriesB = (b.series && b.series.label) || b.series_name || b.series || '';
         var seriesOrderA = seriesOrder[seriesA] || seriesOrder[seriesA.toLowerCase ? seriesA.toLowerCase() : ''] || 100;
@@ -459,41 +531,61 @@ class AdventureMapV4 {
         var completed = !!(childModule && childModule.is_completed);
         var status = completed ? 'completed' : 'available';
         var seriesName = (m.series && m.series.label) || m.series_name || m.series || '';
-        var category = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || 'general').toLowerCase();
-        var pathwayOrder = (m.pathway_order !== undefined && m.pathway_order !== null) ? Number(m.pathway_order) : null;
+        
+        // Get super skill slug - prioritize super_skill_id, fallback to category mapping
+        var superSkillSlug = 'all';
+        if (m.super_skill_id) {
+          // Look up super skill slug from loaded data
+          var superSkill = superSkillsFromDB.find(function(s) { return s.id === m.super_skill_id; });
+          if (superSkill && superSkill.slug) {
+            superSkillSlug = superSkill.slug;
+          }
+        } else {
+          // Fallback: map old category to super skill
+          var oldCategory = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || '').toLowerCase();
+          if (oldCategory && CATEGORY_TO_SUPERSKILL[oldCategory]) {
+            superSkillSlug = CATEGORY_TO_SUPERSKILL[oldCategory];
+          }
+        }
+        
+        var pathwayOrder = (m.pathway_order !== undefined && m.pathway_order !== null) ? Number(m.pathway_order) : 
+                          (m.week_number !== undefined && m.week_number !== null) ? Number(m.week_number) : null;
 
         return {
           id: m.id,
           code: m.module_code || m.code || m.id,
           name: m.title || 'Module ' + (index + 1),
           series: seriesName,
-          category: category,
+          category: superSkillSlug, // Use super skill slug as "category" for theme lookup
+          superSkillSlug: superSkillSlug,
           status: status,
           completed: completed,
           pathwayOrder: pathwayOrder,
-          emoji: self.getModuleEmoji(m, category),
+          emoji: self.getModuleEmoji(m, superSkillSlug),
           module: m,
           childModule: childModule
         };
       });
     }
 
+    // No placeholder modules - if no modules exist, show empty state
+    // Previously there were hardcoded demo modules here that caused confusion
     if (this.allModules.length === 0) {
-      this.allModules = [
-        { id: 'm1', name: 'Understanding Feelings', category: 'emotions', status: 'completed', emoji: '💭' },
-        { id: 'm2', name: 'Calming Down', category: 'anxiety', status: 'available', emoji: '🧘' },
-        { id: 'm3', name: 'Making Friends', category: 'social', status: 'available', emoji: '👫' }
-      ];
+      console.log('No modules loaded - will show empty state');
     }
   }
 
   filterModulesByCategory() {
     var self = this;
-    if (this.currentCategory === 'all') {
-      this.modules = this.allModules.slice();
-    } else {
-      this.modules = this.allModules.filter(function(m) { return m.category === self.currentCategory; });
+    if (!this.currentCategory) {
+      // If no category selected, use the first available one
+      var availableCategories = this.getAvailableCategories();
+      this.currentCategory = availableCategories.length > 0 ? availableCategories[0] : 'all';
     }
+    
+    this.modules = this.allModules.filter(function(m) { 
+      return (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory); 
+    });
 
     // Pathway ordering: if modules have pathway_order, sort ascending (1,2,3...).
     // Fallback keeps original order for items without pathway_order.
@@ -529,32 +621,34 @@ class AdventureMapV4 {
   }
 
   getAvailableCategories() {
-    var categories = ['all'];
-    var seen = { all: true };
+    var categories = [];
+    var seen = {};
     this.allModules.forEach(function(m) {
-      if (m.category && !seen[m.category]) {
-        seen[m.category] = true;
-        categories.push(m.category);
+      var slug = m.superSkillSlug || m.category;
+      if (slug && !seen[slug] && SUPER_SKILL_THEMES[slug]) {
+        seen[slug] = true;
+        categories.push(slug);
       }
     });
     return categories;
   }
 
-  getModuleEmoji(module, category) {
+  getModuleEmoji(module, superSkillSlug) {
     if (!module) return '📘';
     var title = (module.title || '').toLowerCase();
     
-    var categoryEmojis = {
-      anger: ['😤', '😠', '💢', '🔥', '❄️'],
-      anxiety: ['😰', '😨', '😟', '🧘', '☀️'],
-      depression: ['😢', '😔', '🌙', '🌈', '🌻'],
-      emotions: ['💭', '😊', '😢', '💖', '🌈'],
-      body: ['💪', '🏃', '🧘', '✋', '🌊'],
-      cognitive: ['🧠', '💡', '🎯', '📚', '💭'],
-      social: ['👫', '🤝', '💬', '❤️', '🎉'],
-      general: ['📘', '⭐', '🌟', '📖', '🎓']
+    var superSkillEmojis = {
+      'brain-builder': ['🧠', '💡', '🎯', '📚', '💭'],
+      'thought-driver': ['💭', '🎯', '💡', '🤔', '✨'],
+      'emotion-navigator': ['🧭', '💖', '😊', '🌈', '💭'],
+      'body-boss': ['💪', '🧘', '🏃', '✋', '🌊'],
+      'connection-captain': ['🤝', '👫', '💬', '❤️', '🎉'],
+      'calm-controller': ['🧘', '☀️', '🌈', '😌', '🌸'],
+      'resilience-ranger': ['🏔️', '🌻', '💪', '⭐', '🌈'],
+      'all': ['📘', '⭐', '🌟', '📖', '🎓']
     };
 
+    // Title-based emoji detection
     if (title.indexOf('brain') >= 0 || title.indexOf('understand') >= 0) return '🧠';
     if (title.indexOf('worry') >= 0 || title.indexOf('anxious') >= 0) return '😰';
     if (title.indexOf('calm') >= 0 || title.indexOf('relax') >= 0) return '🧘';
@@ -566,7 +660,7 @@ class AdventureMapV4 {
     if (title.indexOf('think') >= 0) return '💭';
     if (title.indexOf('feel') >= 0) return '💖';
     
-    var emojis = categoryEmojis[category] || categoryEmojis.general;
+    var emojis = superSkillEmojis[superSkillSlug] || superSkillEmojis.all;
     return emojis[0];
   }
 
@@ -582,7 +676,7 @@ class AdventureMapV4 {
     var self = this;
     var categoryOptions = availableCategories.map(function(cat) {
       var catTheme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
-      var count = cat === 'all' ? self.allModules.length : self.allModules.filter(function(m) { return m.category === cat; }).length;
+      var count = self.allModules.filter(function(m) { return m.category === cat; }).length;
       return '<option value="' + cat + '"' + (cat === self.currentCategory ? ' selected' : '') + '>' + catTheme.emoji + ' ' + catTheme.name + ' (' + count + ')</option>';
     }).join('');
 
@@ -591,7 +685,7 @@ class AdventureMapV4 {
       '<p class="adventure-subtitle">' + theme.description + '</p>' +
       '</div>' +
       '<div class="category-filter-container">' +
-      '<label class="category-filter-label">Choose your path:</label>' +
+      '<label class="category-filter-label">Choose your skill:</label>' +
       '<select class="category-filter-select" id="categoryFilter">' + categoryOptions + '</select>' +
       '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + this.modules.length + ' module' + (this.modules.length !== 1 ? 's' : '') + '</span>' +
       '</div>';
@@ -1629,7 +1723,7 @@ function initEnhancedDashboard() {
     return;
   }
   
-  console.log('Initializing enhanced dashboard with Adventure Map V4 (Category Themed)...');
+  console.log('Initializing enhanced dashboard with Adventure Map V4 (Super Skills Themed)...');
   enhancedDashboard = new EnhancedDashboard();
   enhancedDashboardInitialized = true;
   window.enhancedDashboard = enhancedDashboard;
@@ -1681,3 +1775,20 @@ window.refreshEnhancedDashboard = function() {
 };
 
 window.initEnhancedDashboard = initEnhancedDashboard;
+
+// Function to set super skill from focus plan (called by dashboard.js)
+window.setAdventureMapSuperSkill = function(superSkillSlug) {
+  if (!superSkillSlug) return;
+  
+  // Store globally
+  window.currentFocusSuperSkill = superSkillSlug;
+  
+  // Update the adventure map if it exists
+  if (enhancedDashboard && enhancedDashboard.adventureMap) {
+    enhancedDashboard.adventureMap.currentCategory = superSkillSlug;
+    enhancedDashboard.adventureMap.render();
+  }
+};
+
+// Export the category to super skill mapping for use by focus-plan.js
+window.CATEGORY_TO_SUPERSKILL = CATEGORY_TO_SUPERSKILL;

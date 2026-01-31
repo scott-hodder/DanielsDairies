@@ -4750,3 +4750,882 @@ box-shadow: 0 8px 20px rgba(0,0,0,0.25);
 .module-card:nth-child(5) { animation-delay: 0.25s; }
 .module-card:nth-child(6) { animation-delay: 0.3s; }
 .module-card:nth-child(n+7) { animation-delay: 0.35s; }
+
+/* ========================================
+   DANIEL'S DIARIES - ADVENTURE UI OVERHAUL
+   Transforming corporate dashboard → kids game
+   ======================================== */
+
+/* ========================================
+   1. IMMERSIVE WORLD BACKGROUND
+   The entire page becomes the adventure world
+   ======================================== */
+
+body {
+    background: 
+        /* Sky gradient - warm and inviting */
+        linear-gradient(180deg, 
+            #87CEEB 0%,           /* Light sky blue */
+            #B4E4FF 30%,          /* Softer blue */
+            #E8F4F8 60%,          /* Pale horizon */
+            #FFF8E7 85%,          /* Warm glow */
+            #FFE4B5 100%          /* Golden earth */
+        );
+    background-attachment: fixed;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Floating clouds animation - realistic fluffy clouds */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 90%;
+    background-image: 
+        /* Cloud 1 - large fluffy */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80'%3E%3Cdefs%3E%3Cfilter id='shadow1' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='3' flood-opacity='0.1'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23shadow1)'%3E%3Cellipse cx='60' cy='50' rx='35' ry='25' fill='white'/%3E%3Cellipse cx='95' cy='45' rx='40' ry='30' fill='white'/%3E%3Cellipse cx='135' cy='50' rx='35' ry='25' fill='white'/%3E%3Cellipse cx='80' cy='35' rx='25' ry='20' fill='white'/%3E%3Cellipse cx='115' cy='32' rx='28' ry='22' fill='white'/%3E%3C/g%3E%3C/svg%3E"),
+        /* Cloud 2 - medium */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 60'%3E%3Cdefs%3E%3Cfilter id='shadow2' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='2' flood-opacity='0.08'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23shadow2)'%3E%3Cellipse cx='45' cy='38' rx='28' ry='18' fill='white'/%3E%3Cellipse cx='75' cy='32' rx='32' ry='22' fill='white'/%3E%3Cellipse cx='105' cy='38' rx='28' ry='18' fill='white'/%3E%3Cellipse cx='75' cy='22' rx='20' ry='15' fill='white'/%3E%3C/g%3E%3C/svg%3E"),
+        /* Cloud 3 - small */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 50'%3E%3Cdefs%3E%3Cfilter id='shadow3' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='1' stdDeviation='2' flood-opacity='0.06'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23shadow3)'%3E%3Cellipse cx='30' cy='30' rx='20' ry='14' fill='white'/%3E%3Cellipse cx='50' cy='26' rx='24' ry='16' fill='white'/%3E%3Cellipse cx='70' cy='30' rx='20' ry='14' fill='white'/%3E%3Cellipse cx='50' cy='18' rx='15' ry='12' fill='white'/%3E%3C/g%3E%3C/svg%3E"),
+        /* Cloud 4 - another large */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 70'%3E%3Cdefs%3E%3Cfilter id='shadow4' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='3' flood-opacity='0.1'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23shadow4)'%3E%3Cellipse cx='50' cy='45' rx='30' ry='20' fill='white'/%3E%3Cellipse cx='85' cy='40' rx='38' ry='26' fill='white'/%3E%3Cellipse cx='125' cy='45' rx='32' ry='22' fill='white'/%3E%3Cellipse cx='70' cy='28' rx='22' ry='18' fill='white'/%3E%3Cellipse cx='100' cy='25' rx='25' ry='18' fill='white'/%3E%3C/g%3E%3C/svg%3E"),
+        /* Cloud 5 - medium (starts left) */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 60'%3E%3Cdefs%3E%3Cfilter id='shadow5' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='2' flood-opacity='0.08'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23shadow5)'%3E%3Cellipse cx='45' cy='38' rx='28' ry='18' fill='white'/%3E%3Cellipse cx='75' cy='32' rx='32' ry='22' fill='white'/%3E%3Cellipse cx='105' cy='38' rx='28' ry='18' fill='white'/%3E%3Cellipse cx='75' cy='22' rx='20' ry='15' fill='white'/%3E%3C/g%3E%3C/svg%3E"),
+        /* Cloud 6 - large (starts left) */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80'%3E%3Cdefs%3E%3Cfilter id='shadow6' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='3' flood-opacity='0.1'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23shadow6)'%3E%3Cellipse cx='60' cy='50' rx='35' ry='25' fill='white'/%3E%3Cellipse cx='95' cy='45' rx='40' ry='30' fill='white'/%3E%3Cellipse cx='135' cy='50' rx='35' ry='25' fill='white'/%3E%3Cellipse cx='80' cy='35' rx='25' ry='20' fill='white'/%3E%3Cellipse cx='115' cy='32' rx='28' ry='22' fill='white'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 280px 100px, 200px 80px, 140px 60px, 250px 90px, 200px 80px, 280px 100px;
+    background-position: 5% 15%, 55% 8%, 85% 25%, 30% 35%, -25% 45%, -35% 60%;
+    background-repeat: no-repeat;
+    animation: floatClouds 80s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.75;
+}
+
+@keyframes floatClouds {
+    from { background-position: 5% 15%, 55% 8%, 85% 25%, 30% 35%; }
+    to { background-position: 105% 15%, 155% 8%, 185% 25%, 130% 35%; }
+}
+
+/* Sparkle particles overlay */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+        radial-gradient(2px 2px at 20% 30%, rgba(255,215,0,0.4) 50%, transparent 50%),
+        radial-gradient(2px 2px at 40% 70%, rgba(255,215,0,0.3) 50%, transparent 50%),
+        radial-gradient(1.5px 1.5px at 60% 20%, rgba(255,215,0,0.5) 50%, transparent 50%),
+        radial-gradient(2px 2px at 80% 50%, rgba(255,215,0,0.35) 50%, transparent 50%);
+    background-size: 200px 200px;
+    animation: sparkle 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.7;
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.9; }
+}
+
+/* ========================================
+   2. HEADER - Floating Game HUD Style
+   ======================================== */
+
+.header {
+    background: linear-gradient(135deg, 
+        rgba(64, 88, 120, 0.95) 0%, 
+        rgba(76, 108, 150, 0.95) 100%
+    );
+    backdrop-filter: blur(10px);
+    border-bottom: 3px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 
+        0 4px 20px rgba(64, 88, 120, 0.3),
+        inset 0 -2px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 100;
+}
+
+/* Add subtle glow to header */
+.header::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 10%;
+    right: 10%;
+    height: 10px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 215, 0, 0.2) 50%, 
+        transparent 100%
+    );
+    border-radius: 50%;
+    filter: blur(4px);
+}
+
+/* ========================================
+   3. MAIN CONTAINER - Floating Above World
+   ======================================== */
+
+.main-container {
+    position: relative;
+    z-index: 10;
+    padding-top: 20px;
+    padding-bottom: 40px;
+}
+
+/* ========================================
+   4. NAVIGATION TABS - Game Menu Style
+   ======================================== */
+
+.nav-tabs {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.95) 0%, 
+        rgba(255, 252, 245, 0.95) 100%
+    );
+    border-radius: 50px;
+    padding: 6px;
+    box-shadow: 
+        0 8px 32px rgba(64, 88, 120, 0.15),
+        0 2px 8px rgba(0, 0, 0, 0.05),
+        inset 0 2px 0 rgba(255, 255, 255, 0.8);
+    border: 2px solid rgba(255, 215, 0, 0.2);
+    margin: 0 auto 24px;
+    max-width: fit-content;
+}
+
+.nav-tabs-content {
+    display: flex;
+    gap: 4px;
+}
+
+.nav-tab {
+    background: transparent;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #5f6b85;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-tab::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #f4a261 0%, #e9c46a 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 50px;
+}
+
+.nav-tab:hover {
+    color: #405878;
+    transform: translateY(-2px);
+}
+
+.nav-tab:hover::before {
+    opacity: 0.1;
+}
+
+.nav-tab.active {
+    background: linear-gradient(135deg, #405878 0%, #4c6c96 100%);
+    color: white;
+    box-shadow: 
+        0 4px 15px rgba(64, 88, 120, 0.4),
+        inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    transform: scale(1.02);
+}
+
+.nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 4px;
+    background: #f6b700;
+    border-radius: 2px;
+}
+
+/* ========================================
+   5. DASHBOARD TOP ROW - Compact HUD Elements
+   ======================================== */
+
+.dashboard-top-row {
+    display: grid;
+    grid-template-columns: minmax(200px, 280px) minmax(240px, 1fr) minmax(200px, 320px);
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: stretch;
+}
+
+/* ========================================
+   6. DANIEL HUB - Completely Redesigned
+   ======================================== */
+
+.daniel-hub {
+    background: linear-gradient(145deg, 
+        #4c6c96 0%, 
+        #405878 50%,
+        #364f66 100%
+    );
+    border-radius: 24px;
+    padding: 24px;
+    position: relative;
+    overflow: visible;
+    box-shadow: 
+        0 10px 40px rgba(64, 88, 120, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.15);
+    border: 3px solid rgba(255, 215, 0, 0.2);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    min-width: 280px;
+}
+
+/* Decorative background pattern */
+.daniel-hub::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 30%);
+    pointer-events: none;
+    border-radius: 21px;
+}
+
+.daniel-character {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.daniel-avatar {
+    width: 140px;
+    height: 180px;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    animation: danielBounce 3s ease-in-out infinite;
+    object-fit: cover;
+    background: transparent;
+}
+
+@keyframes danielBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-4px) scale(1.02); }
+}
+
+/* Speech bubble - positioned above Daniel's head */
+.mood-bubble {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 14px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #405878;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    z-index: 10;
+    animation: bubblePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mood-bubble::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+}
+
+@keyframes bubblePop {
+    0% { transform: translateX(-50%) scale(0); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+.daniel-info {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    min-width: 0;
+}
+
+.daniel-name {
+    font-family: 'Fredoka', 'League Spartan', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 4px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.daniel-status {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ========================================
+   7. DAILY QUEST CARD - Urgent & Exciting
+   ======================================== */
+
+.daily-quest-card {
+    background: linear-gradient(135deg, 
+        #FF6B6B 0%,     /* Vibrant coral */
+        #FF8E53 50%,    /* Warm orange */
+        #FFA726 100%    /* Golden orange */
+    ) !important;
+    border-radius: 24px !important;
+    padding: 20px 24px !important;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 
+        0 10px 40px rgba(255, 107, 107, 0.35),
+        inset 0 2px 0 rgba(255, 255, 255, 0.25) !important;
+    border: 3px solid rgba(255, 255, 255, 0.2) !important;
+    animation: questPulse 2s ease-in-out infinite;
+}
+
+@keyframes questPulse {
+    0%, 100% { box-shadow: 0 10px 40px rgba(255, 107, 107, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.25); }
+    50% { box-shadow: 0 15px 50px rgba(255, 107, 107, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.25); }
+}
+
+/* Starburst decoration */
+.daily-quest-card::before {
+    content: '✨';
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    animation: starSpin 3s linear infinite;
+}
+
+@keyframes starSpin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+.daily-quest-card .quest-icon {
+    font-size: 40px !important;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
+}
+
+.daily-quest-card h3 {
+    font-family: 'Fredoka', sans-serif !important;
+    font-size: 20px !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.daily-quest-btn {
+    background: white !important;
+    color: #FF6B6B !important;
+    border: none !important;
+    padding: 12px 24px !important;
+    border-radius: 50px !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+.daily-quest-btn:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ========================================
+   8. STATS BOX - Trophy Board Style
+   ======================================== */
+
+.dashboard-top-row > div:last-child {
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.98) 0%, 
+        rgba(255, 252, 245, 0.98) 100%
+    ) !important;
+    border-radius: 24px !important;
+    border: 2px solid rgba(255, 215, 0, 0.3) !important;
+    box-shadow: 
+        0 8px 32px rgba(64, 88, 120, 0.1),
+        inset 0 2px 0 rgba(255, 255, 255, 0.8) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decorative corner badge */
+.dashboard-top-row > div:last-child::before {
+    content: '🏅';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 32px;
+    transform: rotate(15deg);
+    opacity: 0.3;
+}
+
+/* Stats icons bigger and more playful */
+.dashboard-top-row > div:last-child > div:first-child > div {
+    transition: transform 0.3s ease;
+}
+
+.dashboard-top-row > div:last-child > div:first-child > div:hover {
+    transform: scale(1.05);
+}
+
+/* ========================================
+   9. ADVENTURE MAP - THE HERO SECTION
+   Make it IMMERSIVE and FULL-WIDTH
+   ======================================== */
+
+.adventure-map-section {
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 -40px !important;
+    width: calc(100% + 80px) !important;
+}
+
+.adventure-header {
+    padding: 20px 40px !important;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.9) 0%, 
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.adventure-title {
+    font-size: 36px !important;
+    color: #405878 !important;
+    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8);
+}
+
+/* Emotional color coding for journey titles */
+.adventure-title[data-journey="anger"],
+.adventure-title:has(+ .adventure-subtitle:contains("anger")) {
+    color: #e63946 !important;
+}
+
+.adventure-map-container {
+    height: clamp(450px, 60vh, 650px) !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background:
+        /* Vibrant sky gradient */
+        linear-gradient(180deg, 
+            #7EC8E3 0%,       /* Bright sky */
+            #B8E4F0 25%,      /* Light sky */
+            #D4F1F9 45%,      /* Pale sky */
+            #9CD67A 50%,      /* Horizon green */
+            #7CB860 65%,      /* Mid green */
+            #5FAD56 80%,      /* Deeper green */
+            #4A9B47 100%      /* Forest green */
+        ) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Remove the dot pattern, add fluffy clouds */
+.adventure-map-container::before {
+    background-image: none !important;
+    background: 
+        /* Fluffy cloud shapes using multiple layered radial gradients */
+        /* Cloud 1 */
+        radial-gradient(ellipse 50px 35px at 12% 18%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 70px 45px at 18% 20%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 55px 38px at 25% 18%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 40px 30px at 15% 12%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 45px 32px at 22% 12%, white 0%, white 60%, transparent 61%),
+        /* Cloud 2 */
+        radial-gradient(ellipse 60px 40px at 70% 15%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 80px 50px at 78% 18%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 65px 42px at 86% 15%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 50px 35px at 75% 10%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 55px 38px at 82% 10%, white 0%, white 60%, transparent 61%),
+        /* Cloud 3 - smaller */
+        radial-gradient(ellipse 40px 28px at 45% 12%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 55px 35px at 52% 14%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 45px 30px at 58% 12%, white 0%, white 60%, transparent 61%),
+        radial-gradient(ellipse 35px 25px at 50% 8%, white 0%, white 60%, transparent 61%) !important;
+    opacity: 0.92 !important;
+    animation: cloudDrift 40s ease-in-out infinite !important;
+}
+
+@keyframes cloudDrift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(20px); }
+}
+
+/* Add distant mountains/hills */
+.adventure-map-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background:
+        /* Rolling hills */
+        radial-gradient(ellipse 400px 150px at 20% 100%, #5FAD56 0%, transparent 70%),
+        radial-gradient(ellipse 500px 180px at 50% 105%, #4A9B47 0%, transparent 70%),
+        radial-gradient(ellipse 450px 160px at 80% 100%, #6BBF59 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Adventure nodes - more depth and drama */
+.adventure-node {
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.25),
+        0 2px 8px rgba(0, 0, 0, 0.15),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3) !important;
+    border: 4px solid rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.adventure-node:hover {
+    transform: translate(-50%, -50%) scale(1.15) !important;
+    box-shadow: 
+        0 12px 35px rgba(0, 0, 0, 0.3),
+        0 4px 12px rgba(0, 0, 0, 0.2),
+        0 0 25px rgba(255, 215, 0, 0.4),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Completed nodes glow */
+.adventure-node.completed {
+    animation: completedGlow 2s ease-in-out infinite !important;
+}
+
+@keyframes completedGlow {
+    0%, 100% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 0 15px rgba(76, 175, 80, 0.4); }
+    50% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 0 30px rgba(76, 175, 80, 0.6); }
+}
+
+/* Active/current node - strong highlight */
+.adventure-node.current,
+.adventure-node.active {
+    animation: currentPulse 1.5s ease-in-out infinite !important;
+    border-color: #FFD700 !important;
+}
+
+@keyframes currentPulse {
+    0%, 100% { 
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    50% { 
+        transform: translate(-50%, -50%) scale(1.08);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(255, 215, 0, 0.7);
+    }
+}
+
+/* Path styling - more organic */
+svg.adventure-path path {
+    stroke-width: 8px !important;
+    stroke-linecap: round !important;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2)) !important;
+}
+
+/* ========================================
+   10. PROGRESS INDICATORS - Game HUD Style
+   ======================================== */
+
+/* Journey selector dropdown */
+.adventure-header select,
+.pathway-select {
+    background: linear-gradient(135deg, #405878 0%, #4c6c96 100%) !important;
+    color: white !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 50px !important;
+    padding: 10px 40px 10px 20px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(64, 88, 120, 0.3) !important;
+}
+
+/* Module count badge */
+.module-count-badge,
+.adventure-header .badge {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+    color: white !important;
+    padding: 8px 16px !important;
+    border-radius: 50px !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.35) !important;
+}
+
+/* ========================================
+   11. GENERAL CARD OVERHAUL
+   Less corporate, more playful
+   ======================================== */
+
+.stat-card {
+    border-radius: 20px !important;
+    border: 2px solid rgba(64, 88, 120, 0.08) !important;
+    box-shadow: 
+        0 8px 30px rgba(64, 88, 120, 0.1),
+        inset 0 2px 0 rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.3s ease !important;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 
+        0 15px 40px rgba(64, 88, 120, 0.15),
+        inset 0 2px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ========================================
+   12. ANIMATIONS & MICRO-INTERACTIONS
+   Adding the "wow factor"
+   ======================================== */
+
+/* Staggered entrance animations */
+@keyframes slideUpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-top-row > * {
+    animation: slideUpFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.dashboard-top-row > *:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-top-row > *:nth-child(2) { animation-delay: 0.2s; }
+.dashboard-top-row > *:nth-child(3) { animation-delay: 0.3s; }
+
+.adventure-map-section {
+    animation: slideUpFadeIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s backwards;
+}
+
+/* Star collection animation (for when stars are earned) */
+@keyframes starCollect {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.3) rotate(-10deg); }
+    50% { transform: scale(1.5) rotate(10deg); }
+    75% { transform: scale(1.2) rotate(-5deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+.star-collected {
+    animation: starCollect 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Button hover states - more playful */
+button, .btn {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+button:hover, .btn:hover {
+    transform: translateY(-2px) scale(1.02);
+}
+
+button:active, .btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* ========================================
+   13. MOBILE RESPONSIVE OVERRIDES
+   ======================================== */
+
+@media (max-width: 1024px) {
+    .dashboard-top-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .dashboard-top-row > *:first-child {
+        grid-column: 1 / -1;
+    }
+    
+    .adventure-map-section {
+        margin: 0 -20px !important;
+        width: calc(100% + 40px) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-top-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .daniel-hub {
+        flex-direction: row;
+        text-align: left;
+        gap: 16px;
+    }
+    
+    .daniel-avatar {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .mood-bubble {
+        position: static;
+        margin-top: 8px;
+    }
+    
+    .mood-bubble::before {
+        display: none;
+    }
+    
+    .adventure-map-container {
+        height: clamp(350px, 50vh, 450px) !important;
+    }
+    
+    .nav-tabs {
+        border-radius: 20px;
+        padding: 4px;
+    }
+    
+    .nav-tabs-content {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .nav-tab {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+}
+
+/* ========================================
+   14. JOURNEY-SPECIFIC THEMING
+   Emotional color system
+   ======================================== */
+
+/* Anger Journey - warm reds/oranges */
+[data-journey="anger"] .adventure-map-container,
+.anger-theme .adventure-map-container {
+    background:
+        linear-gradient(180deg, 
+            #FFB5A7 0%,
+            #FFCDB2 25%,
+            #FFE5D9 45%,
+            #C9E4CA 55%,
+            #87BBA2 75%,
+            #679B6A 100%
+        ) !important;
+}
+
+/* Calm/Anxiety Journey - cool blues */
+[data-journey="anxiety"] .adventure-map-container,
+.calm-theme .adventure-map-container {
+    background:
+        linear-gradient(180deg, 
+            #A0D2DB 0%,
+            #BEE5EB 25%,
+            #D8F3F6 45%,
+            #B5D8B8 55%,
+            #8BC48A 75%,
+            #6BAF6B 100%
+        ) !important;
+}
+
+/* Depression/Mood Journey - gentle purples to greens */
+[data-journey="depression"] .adventure-map-container,
+.mood-theme .adventure-map-container {
+    background:
+        linear-gradient(180deg, 
+            #C9B1FF 0%,
+            #DDD1FF 25%,
+            #EFE8FF 45%,
+            #B8E0C8 55%,
+            #8ECF9A 75%,
+            #6BBF6B 100%
+        ) !important;
+}
+
+/* ========================================
+   15. LOADING STATES - Transparent background
+   ======================================== */
+
+/* Loading screen - transparent so clouds show through */
+.loading {
+    background: transparent !important;
+}
+
+/* Loading content card - frosted glass effect */
+.loading .loading-content,
+.loading-content {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-radius: 28px !important;
+    padding: 48px !important;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.1),
+        0 8px 25px rgba(0, 0, 0, 0.06),
+        inset 0 2px 0 rgba(255, 255, 255, 0.8) !important;
+    border: 2px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Daniel character in loading */
+.loading-character {
+    background: linear-gradient(145deg, #f8f9ff 0%, #eef1f8 100%) !important;
+    border-radius: 24px !important;
+    padding: 10px !important;
+    box-shadow: 
+        0 8px 25px rgba(64, 88, 120, 0.1),
+        inset 0 2px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.loading-spinner {
+    border-color: rgba(64, 88, 120, 0.15) !important;
+    border-top-color: #f6b700 !important;
+}
+
+.loading-quote blockquote {
+    color: #405878 !important;
+    font-weight: 500 !important;
+}
+
+/* Skeleton loading shimmer */
+.skeleton {
+    background: linear-gradient(90deg, 
+        #f0f0f0 25%, 
+        #e0e0e0 50%, 
+        #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 12px;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}

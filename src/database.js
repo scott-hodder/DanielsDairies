@@ -220,6 +220,26 @@ export async function getModules() {
   return data
 }
 
+// Get all Super Skills for dropdowns
+export async function getSuperSkills() {
+  console.log('[Database] Fetching Super Skills...');
+  const { data, error } = await supabase
+    .from('super_skills')
+    .select('*')
+    // .eq('is_active', true)  // Temporarily removed - show all skills
+    .order('sort_order', { ascending: true })
+  
+  console.log('[Database] Super Skills query result:', { data, error });
+  
+  if (error) {
+    console.error('[Database] Super Skills query error:', error);
+    throw error
+  }
+  
+  console.log('[Database] Returning Super Skills:', data);
+  return data
+}
+
 // Get modules a parent has access to
 export async function getParentModules(parentUserId) {
   const { data, error } = await supabase

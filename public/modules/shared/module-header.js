@@ -179,6 +179,8 @@ window.initModuleHeader = (function() {
     homeButton.addEventListener('click', function() {
       if (typeof onHome === 'function') {
         onHome();
+      } else if (typeof window.handleHomeButtonClick === 'function') {
+        window.handleHomeButtonClick();
       } else {
         var params = new URLSearchParams(window.location.search);
         var childId = params.get('childId');

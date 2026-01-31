@@ -299,7 +299,6 @@
    HOME BUTTON
    ============================================ */
 .module-header__home {
-  width: var(--btn-height);
   height: var(--btn-height);
   padding: 0;
   background: var(--header-btn-dark);

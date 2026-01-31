@@ -76,17 +76,25 @@ type PageType =
   | "agree-disagree"
   | "comic-strip"
   | "affirmation-builder"
-  // v5 NEW INTERACTIVE CHALLENGE TYPES
   | "weather-controller"
   | "power-up-collector"
   | "emotion-maze"
   | "strength-shield"
   | "feeling-volcano"
-  // v6 NEW FUN INTERACTIVE LESSONS
   | "spin-the-wheel"
   | "sticker-collector"
   | "mindful-adventure"
   | "emotion-detective"
+  | "balloon-pop"
+  | "treasure-hunt"
+  | "monster-tamer"
+  | "garden-grower"
+  | "superhero-creator"
+  | "feelings-orchestra"
+  | "calm-aquarium"
+  | "rocket-launcher"
+  | "magic-potion"
+  | "feelings-bingo"
   | "summary"
   | "completion";
 
@@ -106,11 +114,51 @@ interface ModuleMetadata {
   characterType?: string;
 }
 
+interface AgeRangeData {
+  id: string;
+  age_range: string;
+  age_min: number;
+  age_max: number;
+  display_name: string;
+  language_guidelines: string;
+  developmental_stage: string;
+  cognitive_abilities: string;
+  emotional_capacity: string;
+  attention_span: string | null;
+  vocabulary_level: string;
+  sentence_complexity: string;
+  abstract_thinking: string;
+  neurodivergent_adaptations: string | null;
+  trauma_sensitive_notes: string | null;
+}
+
+/**
+ * Core theory data from the database
+ */
+interface CoreTheoryData {
+  id: string;
+  theory_name: string;
+  theory_code: string;
+  description: string;
+  key_mechanism: string;
+  how_to_apply: string;
+  age_adaptations: string | null;
+  allowed_claims: string;
+  avoid_claims: string;
+  contraindications: string | null;
+  suggested_activities: string | null;
+  suggested_measures: string | null;
+  example_scenarios: string | null;
+  category: string | null;
+  primary_researchers: string | null;
+}
+
 // Series data from the database
 interface SeriesInfo {
   label: string;
   character_type: string;
   emoji: string;
+  character_image_url?: string | null;
 }
 
 interface LessonContent {
@@ -534,6 +582,229 @@ interface EmotionDetectiveContent {
   revelationMessage: string;
 }
 
+// ====================
+// v7 NEW HIGHLY INTERACTIVE GAME INTERFACES
+// ====================
+
+interface BalloonPopContent {
+  heading: string;
+  instructions: string;
+  scenario: string;
+  balloons: Array<{
+    id: string;
+    worryText: string;
+    emoji: string;
+    color: string;
+    popResponse: string;
+  }>;
+  calmingTools: Array<{
+    id: string;
+    tool: string;
+    emoji: string;
+    power: number;
+  }>;
+  victoryMessage: string;
+}
+
+interface TreasureHuntContent {
+  heading: string;
+  storyIntro: string;
+  instructions: string;
+  locations: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    description: string;
+    treasure: {
+      name: string;
+      emoji: string;
+      lesson: string;
+    };
+    question: string;
+    placeholder: string;
+  }>;
+  mapEmoji: string;
+  completionMessage: string;
+}
+
+interface MonsterTamerContent {
+  heading: string;
+  instructions: string;
+  monster: {
+    name: string;
+    emotion: string;
+    emoji: string;
+    startingSize: number;
+    description: string;
+  };
+  tamingActions: Array<{
+    id: string;
+    action: string;
+    emoji: string;
+    shrinkPower: number;
+    message: string;
+  }>;
+  stages: Array<{
+    level: number;
+    emoji: string;
+    description: string;
+  }>;
+  friendMessage: string;
+}
+
+interface GardenGrowerContent {
+  heading: string;
+  instructions: string;
+  gardenStory: string;
+  plants: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    feeling: string;
+    growthStages: string[];
+    nurturingAction: string;
+  }>;
+  wateringCan: {
+    emoji: string;
+    actions: string[];
+  };
+  harvestMessage: string;
+}
+
+interface SuperheroCreatorContent {
+  heading: string;
+  instructions: string;
+  storyIntro: string;
+  heroElements: {
+    powers: Array<{
+      id: string;
+      name: string;
+      emoji: string;
+      description: string;
+    }>;
+    costumes: Array<{
+      id: string;
+      name: string;
+      emoji: string;
+      color: string;
+    }>;
+    sidekicks: Array<{
+      id: string;
+      name: string;
+      emoji: string;
+      ability: string;
+    }>;
+  };
+  missionPrompt: string;
+  heroNamePrompt: string;
+  completionMessage: string;
+}
+
+interface FeelingsOrchestraContent {
+  heading: string;
+  instructions: string;
+  orchestraStory: string;
+  instruments: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    feeling: string;
+    sound: string;
+    color: string;
+  }>;
+  compositionPrompt: string;
+  performanceMessage: string;
+}
+
+interface CalmAquariumContent {
+  heading: string;
+  instructions: string;
+  aquariumStory: string;
+  creatures: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    calmingTrait: string;
+    movement: string;
+  }>;
+  decorations: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    calmingEffect: string;
+  }>;
+  breathingBubbles: {
+    inhaleTime: number;
+    exhaleTime: number;
+    message: string;
+  };
+  peaceMessage: string;
+}
+
+interface RocketLauncherContent {
+  heading: string;
+  instructions: string;
+  missionBriefing: string;
+  planets: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    feeling: string;
+    color: string;
+    activity: string;
+    reward: string;
+  }>;
+  fuelActions: Array<{
+    id: string;
+    action: string;
+    emoji: string;
+    fuelAmount: number;
+  }>;
+  launchSequence: string[];
+  returnMessage: string;
+}
+
+interface MagicPotionContent {
+  heading: string;
+  instructions: string;
+  cauldronStory: string;
+  ingredients: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    feeling: string;
+    sparkle: string;
+    description: string;
+  }>;
+  recipes: Array<{
+    potionName: string;
+    emoji: string;
+    requiredIngredients: string[];
+    effect: string;
+    color: string;
+  }>;
+  brewingSteps: string[];
+  magicMessage: string;
+}
+
+interface FeelingsBingoContent {
+  heading: string;
+  instructions: string;
+  bingoStory: string;
+  squares: Array<{
+    id: string;
+    emoji: string;
+    feeling: string;
+    challenge: string;
+  }>;
+  freeSpace: {
+    emoji: string;
+    message: string;
+  };
+  bingoPatterns: string[];
+  winMessage: string;
+}
+
 interface GeneratedContent {
   metadata: ModuleMetadata;
   welcome: { heading: string; paragraphs: string[] };
@@ -575,6 +846,16 @@ interface GeneratedContent {
   stickerCollectors: StickerCollectorContent[];
   mindfulAdventures: MindfulAdventureContent[];
   emotionDetectives: EmotionDetectiveContent[];
+  balloonPops: BalloonPopContent[];
+  treasureHunts: TreasureHuntContent[];
+  monsterTamers: MonsterTamerContent[];
+  gardenGrowers: GardenGrowerContent[];
+  superheroCreators: SuperheroCreatorContent[];
+  feelingsOrchestras: FeelingsOrchestraContent[];
+  calmAquariums: CalmAquariumContent[];
+  rocketLaunchers: RocketLauncherContent[];
+  magicPotions: MagicPotionContent[];
+  feelingsBingos: FeelingsBingoContent[];
   summary: SummaryContent;
   completion: CompletionContent;
 }
@@ -604,7 +885,18 @@ function escapeForTemplate(s: string): string {
   return escapeHtml(s)
     .replace(/\\/g, "\\\\")  // Escape backslashes first
     .replace(/`/g, "\\`")    // Escape backticks
-    .replace(/\$/g, "\\$");  // Escape dollar signs to prevent ${} interpretation
+    .replace(/\$/g, "\\$")   // Escape dollar signs to prevent ${} interpretation
+    .replace(/'/g, "\\'");   // Escape single quotes for onclick handlers
+}
+
+// For use in onclick handlers where single quotes wrap the string
+function escapeForOnclick(s: string): string {
+  return (s ?? "")
+    .replace(/\\/g, "\\\\")  // Escape backslashes first
+    .replace(/'/g, "\\'")    // Escape single quotes
+    .replace(/"/g, "&quot;") // Escape double quotes for HTML attribute
+    .replace(/</g, "&lt;")   // Escape < for HTML safety
+    .replace(/>/g, "&gt;");  // Escape > for HTML safety
 }
 
 function cleanJsonResponse(text: string): string {
@@ -630,6 +922,90 @@ function safeJsonParse<T>(raw: string): T | null {
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Builds an enhanced, psychology-informed content brief
+ */
+function buildEnhancedContentBrief(resolved: {
+  title: string;
+  ageRange: string;
+  ageData: AgeRangeData;
+  theoryData: CoreTheoryData;
+  brainTownAnalogy: string;
+  additionalContext: string;
+}): string {
+  const { ageData, theoryData, brainTownAnalogy, additionalContext, title, ageRange } = resolved;
+  
+  return `
+=== MODULE BRIEF ===
+Title: ${title}
+Target Age: ${ageRange} (${ageData.display_name})
+
+=== PSYCHOLOGICAL FOUNDATION ===
+CORE THEORY: ${theoryData.theory_name}
+${theoryData.description}
+
+KEY MECHANISM:
+${theoryData.key_mechanism}
+
+HOW TO APPLY THIS THEORY:
+${theoryData.how_to_apply}
+
+CLAIMS YOU CAN MAKE:
+${theoryData.allowed_claims}
+
+⚠️ CLAIMS TO AVOID (do not make these statements):
+${theoryData.avoid_claims}
+
+${theoryData.contraindications ? `CAUTION/CONTRAINDICATIONS:\n${theoryData.contraindications}\n` : ''}
+${theoryData.suggested_activities ? `SUGGESTED ACTIVITY TYPES:\n${theoryData.suggested_activities}\n` : ''}
+
+=== AGE-APPROPRIATE LANGUAGE GUIDELINES ===
+For children ages ${ageRange}:
+
+DEVELOPMENTAL STAGE:
+${ageData.developmental_stage}
+
+COGNITIVE ABILITIES:
+${ageData.cognitive_abilities}
+
+EMOTIONAL CAPACITY:
+${ageData.emotional_capacity}
+
+${ageData.attention_span ? `ATTENTION SPAN:\n${ageData.attention_span}\n` : ''}
+
+LANGUAGE GUIDELINES:
+${ageData.language_guidelines}
+
+VOCABULARY LEVEL:
+${ageData.vocabulary_level}
+
+SENTENCE COMPLEXITY:
+${ageData.sentence_complexity}
+
+ABSTRACT THINKING:
+${ageData.abstract_thinking}
+
+${ageData.neurodivergent_adaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${ageData.neurodivergent_adaptations}\n` : ''}
+${ageData.trauma_sensitive_notes ? `TRAUMA-SENSITIVE NOTES:\n${ageData.trauma_sensitive_notes}\n` : ''}
+
+=== BRAIN TOWN ANALOGY ===
+Use this analogy/metaphor consistently throughout the module:
+${brainTownAnalogy}
+
+Weave this analogy into lessons, activities, character dialogue, and encouragement messages.
+
+${additionalContext ? `=== ADDITIONAL CONTEXT ===\n${additionalContext}\n` : ''}
+
+=== GENERATION INSTRUCTIONS ===
+1. Use the EXACT language complexity appropriate for ${ageRange} year olds
+2. Apply the ${theoryData.theory_name} theory correctly throughout
+3. Only make claims that are listed as "allowed"
+4. Use the Brain Town analogy to explain concepts
+5. Keep activities within the child's developmental capacity
+6. Include trauma-sensitive and neurodivergent-affirming language
+`.trim();
 }
 
 // ====================
@@ -705,6 +1081,20 @@ function generatePageStructure(): PageTemplate[] {
     { type: "strength-shield",     starReward: true },
     { type: "feeling-volcano",     starReward: true },
   ];
+
+  // v7 NEW HIGHLY INTERACTIVE GAME activities (the fun, engaging ones!)
+  const gameActivities: PageTemplate[] = [
+    { type: "balloon-pop",         starReward: true },
+    { type: "treasure-hunt",       starReward: true },
+    { type: "monster-tamer",       starReward: true },
+    { type: "garden-grower",       starReward: true },
+    { type: "superhero-creator",   starReward: true },
+    { type: "feelings-orchestra",  starReward: true },
+    { type: "calm-aquarium",       starReward: true },
+    { type: "rocket-launcher",     starReward: true },
+    { type: "magic-potion",        starReward: true },
+    { type: "feelings-bingo",      starReward: true },
+  ];
   
   // Select activities from each category for guaranteed diversity
   const selectedActivities: PageTemplate[] = [];
@@ -728,6 +1118,10 @@ function generatePageStructure(): PageTemplate[] {
   // v5: Always include 1-2 challenge activities for engagement
   const shuffledChallenge = shuffleArray(challengeActivities);
   selectedActivities.push(...shuffledChallenge.slice(0, randomInt(1, 2)));
+
+  // v7: ALWAYS include 2-3 highly interactive game activities - these are the engaging ones!
+  const shuffledGames = shuffleArray(gameActivities);
+  selectedActivities.push(...shuffledGames.slice(0, randomInt(2, 3)));
   
   // Shuffle all selected activities for random placement
   const activities = shuffleArray(selectedActivities);
@@ -865,16 +1259,30 @@ async function generateMetadata(
   contentBrief: string,
   seriesInfo?: SeriesInfo | null
 ): Promise<ModuleMetadata> {
+  const cleanLabel = seriesInfo?.label 
+    ? seriesInfo.label.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    : null;
+  
+  // Clean up character_type - should be just the animal type like "dog", "jaguar", etc.
+  const cleanCharacterType = seriesInfo?.character_type
+    ? seriesInfo.character_type.replace(/_/g, ' ').toLowerCase()
+    : null;
+  
   // Build full character name like "Daniel the Dog" if series info available
+  // If label already contains the character type, just use the label
+  const labelLower = cleanLabel?.toLowerCase() || '';
+  const typeLower = cleanCharacterType || '';
   const fullCharacterName = seriesInfo 
-    ? `${seriesInfo.label} the ${seriesInfo.character_type.charAt(0).toUpperCase() + seriesInfo.character_type.slice(1)}`
+    ? (labelLower.includes(typeLower) || typeLower.includes(labelLower.split(' ')[0]?.toLowerCase() || '')
+        ? cleanLabel
+        : `${cleanLabel} the ${cleanCharacterType!.charAt(0).toUpperCase() + cleanCharacterType!.slice(1)}`)
     : null;
 
   // If we have series info, include it in the prompt to guide the AI
   const seriesContext = seriesInfo 
     ? `\n\nIMPORTANT - SERIES CHARACTER INFO:
-This module belongs to the "${seriesInfo.label}" series.
-The mascot is "${fullCharacterName}" - a friendly ${seriesInfo.character_type}.
+This module belongs to the "${cleanLabel}" series.
+The mascot is "${fullCharacterName}" - a friendly ${cleanCharacterType}.
 The mascot emoji MUST be: ${seriesInfo.emoji}
 The character name MUST be "${fullCharacterName}".
 Always refer to the mascot as "${fullCharacterName}" throughout the module.
@@ -890,7 +1298,7 @@ Respond with ONLY this JSON structure:
 {
   "title": "Main module title (catchy, child-friendly)",
   "subtitle": "Brief tagline (10 words max)",
-  "series": "${seriesInfo?.label || 'custom'}",
+  "series": "${cleanLabel || 'custom'}",
   "targetAge": "Age range like '5-8' or '8-12'",
   "theme": "Core psychological theme (e.g., 'anxiety management', 'emotional regulation')",
   "characterName": "${fullCharacterName || 'Friendly mascot name (animal preferred)'}",
@@ -903,21 +1311,21 @@ Respond with ONLY this JSON structure:
   // If we have series info, ALWAYS enforce the character type and emoji (override AI response)
   if (seriesInfo && parsed) {
     parsed.characterEmoji = seriesInfo.emoji;
-    parsed.characterName = fullCharacterName || seriesInfo.label;
-    parsed.characterType = seriesInfo.character_type;
-    parsed.series = seriesInfo.label;
+    parsed.characterName = fullCharacterName || cleanLabel || seriesInfo.label;
+    parsed.characterType = cleanCharacterType || seriesInfo.character_type;
+    parsed.series = cleanLabel || seriesInfo.label;
   }
   
   if (!parsed || !parsed.title) {
     return {
       title: "My Feelings Adventure",
       subtitle: "Learning about emotions together",
-      series: seriesInfo?.label || "custom",
+      series: cleanLabel || seriesInfo?.label || "custom",
       targetAge: "5-10",
       theme: "emotional awareness",
       characterName: fullCharacterName || "Buddy",
       characterEmoji: seriesInfo?.emoji || "🐕",
-      characterType: seriesInfo?.character_type
+      characterType: cleanCharacterType || seriesInfo?.character_type
     };
   }
   
@@ -1398,7 +1806,7 @@ Respond with ONLY this JSON:
       "feelings": [
         { "name": "Happy", "emoji": "😊", "color": "#FFE8A3" },
         { "name": "Sad", "emoji": "😢", "color": "#a8d8ea" },
-        { "name": "Angry", "emoji": "😀 ", "color": "#fecaca" },
+        { "name": "Angry", "emoji": "😀", "color": "#fecaca" },
         { "name": "Scared", "emoji": "😨", "color": "#d4a5ff" },
         { "name": "Calm", "emoji": "😌", "color": "#A8E6CF" },
         { "name": "Excited", "emoji": "🤩", "color": "#F4A261" }
@@ -1419,7 +1827,7 @@ Respond with ONLY this JSON:
       feelings: [
         { name: "Happy", emoji: "😊", color: "#FFE8A3" },
         { name: "Sad", emoji: "😢", color: "#a8d8ea" },
-        { name: "Angry", emoji: "😀 ", color: "#fecaca" },
+        { name: "Angry", emoji: "😀", color: "#fecaca" },
         { name: "Scared", emoji: "😨", color: "#d4a5ff" },
         { name: "Calm", emoji: "😌", color: "#A8E6CF" },
         { name: "Excited", emoji: "🤩", color: "#F4A261" }
@@ -2816,6 +3224,763 @@ Make it fun, like a real mystery game, and appropriate for children.`;
   
   return detectives.slice(0, count);
 }
+
+async function generateBalloonPops(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<BalloonPopContent[]> {
+  const prompt = `Create ${count} "Balloon Pop" activities for children about "${metadata.theme}".
+
+This is an interactive game where children pop worry balloons using calming tools. Each balloon contains a worry, and using calming techniques makes them disappear!
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "balloonPops": [
+    {
+      "heading": "Activity title with balloon emoji 🎈",
+      "instructions": "Instructions explaining the game (2 sentences)",
+      "scenario": "A relatable scenario where a child might feel worried (2-3 sentences)",
+      "balloons": [
+        { "id": "b1", "worryText": "What if I make a mistake?", "emoji": "😰", "color": "#ef4444", "popResponse": "It's okay to make mistakes - that's how we learn!" },
+        { "id": "b2", "worryText": "What if people laugh at me?", "emoji": "😟", "color": "#f97316", "popResponse": "You are brave for trying new things!" },
+        { "id": "b3", "worryText": "What if I can't do it?", "emoji": "😥", "color": "#eab308", "popResponse": "You can do hard things - one step at a time!" },
+        { "id": "b4", "worryText": "What if something goes wrong?", "emoji": "😨", "color": "#a855f7", "popResponse": "You can handle whatever comes your way!" }
+      ],
+      "calmingTools": [
+        { "id": "t1", "tool": "Deep Breath", "emoji": "🌬️", "power": 25 },
+        { "id": "t2", "tool": "Positive Thought", "emoji": "💭", "power": 30 },
+        { "id": "t3", "tool": "Grounding", "emoji": "🌳", "power": 25 },
+        { "id": "t4", "tool": "Self-Kindness", "emoji": "💗", "power": 20 }
+      ],
+      "victoryMessage": "You popped all the worry balloons! You have the power to calm your worries!"
+    }
+  ]
+}
+
+Make the worries relatable to children and the pop responses encouraging.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ balloonPops: BalloonPopContent[] }>(response);
+  
+  const activities = parsed?.balloonPops || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🎈 Pop the Worry Balloons!",
+      instructions: "Worry balloons are floating around! Use your calming tools to pop them and release the worries. Each tool has special popping power!",
+      scenario: "You have a big test tomorrow and your mind is filled with worried thoughts. Let's pop those worry balloons and feel calmer!",
+      balloons: [
+        { id: "b1", worryText: "What if I forget everything?", emoji: "😰", color: "#ef4444", popResponse: "Your brain is amazing - it remembers more than you think!" },
+        { id: "b2", worryText: "What if it's too hard?", emoji: "😟", color: "#f97316", popResponse: "You can do hard things! Just take it one question at a time." },
+        { id: "b3", worryText: "What if I fail?", emoji: "😥", color: "#eab308", popResponse: "Mistakes help us learn and grow stronger!" },
+        { id: "b4", worryText: "What if everyone else does better?", emoji: "😨", color: "#a855f7", popResponse: "You only need to do YOUR best - that's enough!" }
+      ],
+      calmingTools: [
+        { id: "t1", tool: "Deep Breath", emoji: "🌬️", power: 25 },
+        { id: "t2", tool: "Positive Thought", emoji: "💭", power: 30 },
+        { id: "t3", tool: "5-4-3-2-1 Grounding", emoji: "🌳", power: 25 },
+        { id: "t4", tool: "Self-Hug", emoji: "🤗", power: 20 }
+      ],
+      victoryMessage: `🎉 Amazing! You popped all the worry balloons! ${metadata.characterName} is so proud of you! Remember, you can use these tools anytime worries float up.`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateTreasureHunts(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<TreasureHuntContent[]> {
+  const prompt = `Create ${count} "Treasure Hunt" activities for children about "${metadata.theme}".
+
+This is an adventure game where children explore different locations and discover emotional treasures (coping skills, insights, strengths).
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "treasureHunts": [
+    {
+      "heading": "Activity title with treasure emoji 🗺️",
+      "storyIntro": "Adventure story introduction (2-3 sentences)",
+      "instructions": "How to play the treasure hunt (1-2 sentences)",
+      "locations": [
+        {
+          "id": "loc1",
+          "name": "Peaceful Beach",
+          "emoji": "🏖️",
+          "description": "A calm beach with gentle waves",
+          "treasure": {
+            "name": "Calm Breath",
+            "emoji": "🌊",
+            "lesson": "Like waves, our feelings come and go naturally"
+          },
+          "question": "What helps you feel as calm as the ocean?",
+          "placeholder": "Write what calms you..."
+        }
+      ],
+      "mapEmoji": "🗺️",
+      "completionMessage": "You found all the treasures! These are tools you can use forever!"
+    }
+  ]
+}
+
+Include 4 diverse locations with unique emotional treasures.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ treasureHunts: TreasureHuntContent[] }>(response);
+  
+  const activities = parsed?.treasureHunts || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🗺️ Feelings Treasure Hunt!",
+      storyIntro: `${metadata.characterName} has hidden special treasures around the world! Each treasure contains a powerful feeling tool. Join the adventure and discover them all!`,
+      instructions: "Tap on each location to explore it. Find the hidden treasure and answer the question to collect it!",
+      locations: [
+        {
+          id: "loc1",
+          name: "Peaceful Beach",
+          emoji: "🏖️",
+          description: "Gentle waves lap against the shore as seagulls call overhead.",
+          treasure: { name: "Calm Waves Breath", emoji: "🌊", lesson: "Like ocean waves, feelings rise and fall - and that's natural!" },
+          question: "What makes you feel as peaceful as the ocean?",
+          placeholder: "I feel calm when..."
+        },
+        {
+          id: "loc2",
+          name: "Brave Mountain",
+          emoji: "🏔️",
+          description: "A tall mountain reaching up to the clouds, strong and steady.",
+          treasure: { name: "Inner Strength", emoji: "💪", lesson: "You have the strength to face challenges, just like a mountain!" },
+          question: "When were you brave like a mountain?",
+          placeholder: "I was brave when..."
+        },
+        {
+          id: "loc3",
+          name: "Friendly Forest",
+          emoji: "🌲",
+          description: "A magical forest where animals help each other and trees whisper encouragement.",
+          treasure: { name: "Connection Power", emoji: "🤝", lesson: "Asking for help shows wisdom, not weakness!" },
+          question: "Who can you talk to when you need support?",
+          placeholder: "I can talk to..."
+        },
+        {
+          id: "loc4",
+          name: "Rainbow Garden",
+          emoji: "🌈",
+          description: "A colorful garden where every flower represents a different feeling.",
+          treasure: { name: "All Feelings Welcome", emoji: "🌸", lesson: "Every feeling has a place in your garden - even the tricky ones!" },
+          question: "What feeling would you like to grow more of?",
+          placeholder: "I want to feel more..."
+        }
+      ],
+      mapEmoji: "🗺️",
+      completionMessage: `🎉 Congratulations, treasure hunter! You found all the emotional treasures! ${metadata.characterName} is amazed by your adventure! Keep these treasures in your heart forever.`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateMonsterTamers(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<MonsterTamerContent[]> {
+  const prompt = `Create ${count} "Monster Tamer" activities for children about "${metadata.theme}".
+
+This is a game where children tame emotion monsters using kindness and coping strategies. The monster starts big and scary but becomes a friendly helper!
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "monsterTamers": [
+    {
+      "heading": "Activity title with monster emoji 👾",
+      "instructions": "Instructions for taming the monster (2 sentences)",
+      "monster": {
+        "name": "Worry Monster",
+        "emotion": "anxiety",
+        "emoji": "👾",
+        "startingSize": 100,
+        "description": "This monster grows when worries pile up, but kindness makes it smaller!"
+      },
+      "tamingActions": [
+        { "id": "a1", "action": "Take a deep breath", "emoji": "🌬️", "shrinkPower": 20, "message": "The monster is calming down..." },
+        { "id": "a2", "action": "Say something kind to yourself", "emoji": "💗", "shrinkPower": 25, "message": "Kindness is working!" },
+        { "id": "a3", "action": "Name the feeling", "emoji": "🏷️", "shrinkPower": 20, "message": "When we name it, we tame it!" },
+        { "id": "a4", "action": "Give it a hug", "emoji": "🤗", "shrinkPower": 35, "message": "Even monsters need love!" }
+      ],
+      "stages": [
+        { "level": 4, "emoji": "👹", "description": "Big and scary!" },
+        { "level": 3, "emoji": "👾", "description": "Still upset..." },
+        { "level": 2, "emoji": "🙁", "description": "Calming down..." },
+        { "level": 1, "emoji": "😊", "description": "Friendly helper!" }
+      ],
+      "friendMessage": "You tamed the monster! Now it's your helper, not your enemy!"
+    }
+  ]
+}
+
+Make the monster relatable and the taming process empowering.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ monsterTamers: MonsterTamerContent[] }>(response);
+  
+  const activities = parsed?.monsterTamers || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "👾 Tame the Feeling Monster!",
+      instructions: "Oh no! A feeling monster has appeared! Don't worry - you can tame it with kindness and coping skills. Use your powers to shrink the monster and make a new friend!",
+      monster: {
+        name: "Worry Wumble",
+        emotion: "worry",
+        emoji: "👾",
+        startingSize: 100,
+        description: "Worry Wumble grows bigger when we ignore it, but shrinks when we show it kindness and understanding!"
+      },
+      tamingActions: [
+        { id: "a1", action: "Take 3 slow breaths", emoji: "🌬️", shrinkPower: 20, message: "The monster is slowing down..." },
+        { id: "a2", action: "Say 'I can handle this'", emoji: "💪", shrinkPower: 25, message: "Your confidence is working!" },
+        { id: "a3", action: "Name what you're worried about", emoji: "🏷️", shrinkPower: 20, message: "Naming feelings takes away their power!" },
+        { id: "a4", action: "Give the monster a friendly wave", emoji: "👋", shrinkPower: 15, message: "The monster feels understood!" },
+        { id: "a5", action: "Imagine the monster getting smaller", emoji: "✨", shrinkPower: 20, message: "Your imagination is powerful!" }
+      ],
+      stages: [
+        { level: 4, emoji: "👹", description: "HUGE and overwhelming!" },
+        { level: 3, emoji: "👾", description: "Big but manageable" },
+        { level: 2, emoji: "🙂", description: "Getting smaller!" },
+        { level: 1, emoji: "😊", description: "Tiny and friendly!" }
+      ],
+      friendMessage: `🎉 You did it! You tamed Worry Wumble! ${metadata.characterName} is so proud! Now the monster is your little helper who reminds you to take care of yourself.`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateGardenGrowers(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<GardenGrowerContent[]> {
+  const prompt = `Create ${count} "Garden Grower" activities for children about "${metadata.theme}".
+
+This is a nurturing game where children grow emotional plants by practicing positive actions. Each plant represents a positive feeling/skill.
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "gardenGrowers": [
+    {
+      "heading": "Activity title with garden emoji 🌱",
+      "instructions": "Instructions for growing the garden (2 sentences)",
+      "gardenStory": "Story about the magical feeling garden (2-3 sentences)",
+      "plants": [
+        {
+          "id": "p1",
+          "name": "Confidence Flower",
+          "emoji": "🌻",
+          "feeling": "confidence",
+          "growthStages": ["🌱", "🌿", "🌷", "🌻"],
+          "nurturingAction": "Say something you're proud of"
+        },
+        {
+          "id": "p2",
+          "name": "Calm Tree",
+          "emoji": "🌳",
+          "feeling": "calmness",
+          "growthStages": ["🌱", "🪴", "🌲", "🌳"],
+          "nurturingAction": "Take 3 deep breaths"
+        }
+      ],
+      "wateringCan": {
+        "emoji": "🚿",
+        "actions": ["Deep breathing", "Kind thoughts", "Gratitude", "Movement"]
+      },
+      "harvestMessage": "Your garden is blooming! These feelings live in your heart!"
+    }
+  ]
+}
+
+Include 4 different plants representing positive emotions/skills.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ gardenGrowers: GardenGrowerContent[] }>(response);
+  
+  const activities = parsed?.gardenGrowers || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🌱 Grow Your Feelings Garden!",
+      instructions: "Welcome to your magical feelings garden! Water your plants with positive actions and watch them grow. The more you nurture them, the bigger they bloom!",
+      gardenStory: `${metadata.characterName} has given you special seeds to plant in your garden. Each plant grows when you practice positive actions. Let's see what beautiful things you can grow!`,
+      plants: [
+        {
+          id: "p1",
+          name: "Confidence Sunflower",
+          emoji: "🌻",
+          feeling: "confidence",
+          growthStages: ["🌱", "🌿", "🌷", "🌻"],
+          nurturingAction: "Name one thing you're good at"
+        },
+        {
+          id: "p2",
+          name: "Peaceful Pine",
+          emoji: "🌲",
+          feeling: "peace",
+          growthStages: ["🌱", "🪴", "🌿", "🌲"],
+          nurturingAction: "Take 5 slow, deep breaths"
+        },
+        {
+          id: "p3",
+          name: "Kindness Rose",
+          emoji: "🌹",
+          feeling: "kindness",
+          growthStages: ["🌱", "🌿", "🌸", "🌹"],
+          nurturingAction: "Think of something kind you could do for someone"
+        },
+        {
+          id: "p4",
+          name: "Gratitude Tulip",
+          emoji: "🌷",
+          feeling: "gratitude",
+          growthStages: ["🌱", "🌿", "🌼", "🌷"],
+          nurturingAction: "Name 3 things you're thankful for"
+        }
+      ],
+      wateringCan: {
+        emoji: "💧",
+        actions: ["Deep breathing", "Kind self-talk", "Saying thanks", "Being helpful"]
+      },
+      harvestMessage: `🌸 Your garden is beautiful! ${metadata.characterName} is amazed! These feelings now live in your heart and will keep growing every time you practice!`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateSuperheroCreators(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<SuperheroCreatorContent[]> {
+  const prompt = `Create ${count} "Superhero Creator" activities for children about "${metadata.theme}".
+
+This is a creative game where children build their own emotional superhero with powers, costume, and sidekick.
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "superheroCreators": [
+    {
+      "heading": "Activity title with superhero emoji 🦸",
+      "instructions": "Instructions for creating the superhero (2 sentences)",
+      "storyIntro": "Exciting story about needing a new hero (2-3 sentences)",
+      "heroElements": {
+        "powers": [
+          { "id": "pow1", "name": "Calm Force", "emoji": "🌊", "description": "Brings peace to any situation" },
+          { "id": "pow2", "name": "Courage Beam", "emoji": "💪", "description": "Makes fear disappear" },
+          { "id": "pow3", "name": "Kindness Shield", "emoji": "💗", "description": "Protects with love" },
+          { "id": "pow4", "name": "Focus Vision", "emoji": "👁️", "description": "Sees solutions clearly" }
+        ],
+        "costumes": [
+          { "id": "cos1", "name": "Brave Cape", "emoji": "🦸", "color": "#ef4444" },
+          { "id": "cos2", "name": "Calm Suit", "emoji": "🦹", "color": "#3b82f6" },
+          { "id": "cos3", "name": "Joy Outfit", "emoji": "⭐", "color": "#fbbf24" }
+        ],
+        "sidekicks": [
+          { "id": "sid1", "name": "Worry-Away Puppy", "emoji": "🐕", "ability": "Cuddles away worries" },
+          { "id": "sid2", "name": "Brave Bear", "emoji": "🐻", "ability": "Gives courage hugs" }
+        ]
+      },
+      "missionPrompt": "What feeling challenge will your hero help with?",
+      "heroNamePrompt": "What is your superhero's name?",
+      "completionMessage": "Your superhero is ready to save the day!"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ superheroCreators: SuperheroCreatorContent[] }>(response);
+  
+  const activities = parsed?.superheroCreators || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🦸 Create Your Feelings Superhero!",
+      instructions: "Design your very own feelings superhero! Pick a power, costume, and sidekick. Your hero will help you handle any emotion!",
+      storyIntro: `The world needs a new superhero - and only YOU can create them! ${metadata.characterName} has gathered special powers, costumes, and sidekicks. Build your hero and give them a mission!`,
+      heroElements: {
+        powers: [
+          { id: "pow1", name: "Calm Wave", emoji: "🌊", description: "Washes away stress and brings peace" },
+          { id: "pow2", name: "Courage Spark", emoji: "⚡", description: "Ignites bravery in scary moments" },
+          { id: "pow3", name: "Kindness Glow", emoji: "💗", description: "Spreads warmth and understanding" },
+          { id: "pow4", name: "Focus Laser", emoji: "🎯", description: "Cuts through confusion to find answers" },
+          { id: "pow5", name: "Joy Burst", emoji: "🌟", description: "Creates happiness wherever it goes" },
+          { id: "pow6", name: "Patience Shield", emoji: "🛡️", description: "Protects against frustration" }
+        ],
+        costumes: [
+          { id: "cos1", name: "Brave Red Cape", emoji: "🦸‍♂️", color: "#ef4444" },
+          { id: "cos2", name: "Calm Blue Suit", emoji: "🦸‍♀️", color: "#3b82f6" },
+          { id: "cos3", name: "Joyful Yellow Armor", emoji: "⭐", color: "#fbbf24" },
+          { id: "cos4", name: "Peaceful Green Cloak", emoji: "🌿", color: "#22c55e" },
+          { id: "cos5", name: "Wise Purple Robe", emoji: "🔮", color: "#a855f7" }
+        ],
+        sidekicks: [
+          { id: "sid1", name: "Comfort Puppy", emoji: "🐕", ability: "Gives warm, worry-melting cuddles" },
+          { id: "sid2", name: "Brave Bear", emoji: "🐻", ability: "Stands beside you in scary times" },
+          { id: "sid3", name: "Wise Owl", emoji: "🦉", ability: "Whispers helpful advice" },
+          { id: "sid4", name: "Happy Bunny", emoji: "🐰", ability: "Hops around spreading joy" },
+          { id: "sid5", name: "Calm Cat", emoji: "🐱", ability: "Purrs away tension and stress" }
+        ]
+      },
+      missionPrompt: "What feeling challenge will your superhero help kids with?",
+      heroNamePrompt: "What is your superhero's name?",
+      completionMessage: `🦸 Your superhero is AMAZING! ${metadata.characterName} says your hero is ready to save the day! Remember - this superhero lives inside YOU!`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateFeelingsOrchestras(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingsOrchestraContent[]> {
+  const prompt = `Create ${count} "Feelings Orchestra" activities for children about "${metadata.theme}".
+
+This is a creative game where each instrument represents a different emotion, and children compose their own emotional music.
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "feelingsOrchestras": [
+    {
+      "heading": "Activity title with music emoji 🎵",
+      "instructions": "Instructions for the orchestra activity (2 sentences)",
+      "orchestraStory": "Story about the magical feelings orchestra (2-3 sentences)",
+      "instruments": [
+        { "id": "i1", "name": "Happy Drums", "emoji": "🥁", "feeling": "joy", "sound": "Boom boom!", "color": "#fbbf24" },
+        { "id": "i2", "name": "Calm Flute", "emoji": "🎶", "feeling": "peace", "sound": "Whooo...", "color": "#22c55e" },
+        { "id": "i3", "name": "Brave Trumpet", "emoji": "🎺", "feeling": "courage", "sound": "Ta-da!", "color": "#ef4444" },
+        { "id": "i4", "name": "Sad Violin", "emoji": "🎻", "feeling": "sadness", "sound": "Hmmm...", "color": "#3b82f6" }
+      ],
+      "compositionPrompt": "What feeling song will you create today?",
+      "performanceMessage": "Beautiful music! Every feeling has its own song!"
+    }
+  ]
+}
+
+Include 5-6 instruments representing different emotions.`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ feelingsOrchestras: FeelingsOrchestraContent[] }>(response);
+  
+  const activities = parsed?.feelingsOrchestras || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🎵 The Feelings Orchestra!",
+      instructions: "Welcome to the feelings orchestra! Each instrument plays a different emotion. Tap the instruments to create your own emotional music!",
+      orchestraStory: `${metadata.characterName} discovered that every feeling has its own special sound! When we listen to our feelings, they create beautiful music. Let's compose a song together!`,
+      instruments: [
+        { id: "i1", name: "Joy Drums", emoji: "🥁", feeling: "happiness", sound: "Boom boom boom!", color: "#fbbf24" },
+        { id: "i2", name: "Calm Harp", emoji: "🎵", feeling: "peace", sound: "Ting... ting...", color: "#22c55e" },
+        { id: "i3", name: "Courage Trumpet", emoji: "🎺", feeling: "bravery", sound: "Ta-da-daaa!", color: "#ef4444" },
+        { id: "i4", name: "Gentle Violin", emoji: "🎻", feeling: "tenderness", sound: "Hmmmm...", color: "#3b82f6" },
+        { id: "i5", name: "Energy Maracas", emoji: "🎸", feeling: "excitement", sound: "Shake shake!", color: "#f97316" },
+        { id: "i6", name: "Thoughtful Piano", emoji: "🎹", feeling: "reflection", sound: "Plink plonk...", color: "#a855f7" }
+      ],
+      compositionPrompt: "Tap the instruments to create music that shows how you're feeling right now!",
+      performanceMessage: `🎶 What beautiful music! ${metadata.characterName} loved your composition! Remember - all your feelings make beautiful music, even the quiet ones!`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateCalmAquariums(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<CalmAquariumContent[]> {
+  const prompt = `Create ${count} "Calm Aquarium" activities for children about "${metadata.theme}".
+
+This is a relaxing, mindful activity where children build a peaceful underwater world and practice calm breathing with bubbles.
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "calmAquariums": [
+    {
+      "heading": "Activity title with aquarium emoji 🐠",
+      "instructions": "Instructions for building the aquarium (2 sentences)",
+      "aquariumStory": "Story about the peaceful underwater world (2-3 sentences)",
+      "creatures": [
+        { "id": "c1", "name": "Slow Turtle", "emoji": "🐢", "calmingTrait": "Takes life slow and steady", "movement": "glide" },
+        { "id": "c2", "name": "Peaceful Fish", "emoji": "🐠", "calmingTrait": "Flows with the water", "movement": "swim" },
+        { "id": "c3", "name": "Gentle Jellyfish", "emoji": "🪼", "calmingTrait": "Floats without worry", "movement": "float" }
+      ],
+      "decorations": [
+        { "id": "d1", "name": "Swaying Seaweed", "emoji": "🌿", "calmingEffect": "Moves gently like deep breaths" },
+        { "id": "d2", "name": "Shiny Shell", "emoji": "🐚", "calmingEffect": "Holds peaceful thoughts" }
+      ],
+      "breathingBubbles": {
+        "inhaleTime": 4,
+        "exhaleTime": 4,
+        "message": "Breathe with the bubbles..."
+      },
+      "peaceMessage": "Your aquarium is so peaceful! Visit it whenever you need calm."
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ calmAquariums: CalmAquariumContent[] }>(response);
+  
+  const activities = parsed?.calmAquariums || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🐠 Build Your Calm Aquarium!",
+      instructions: "Create your own peaceful underwater world! Add calm creatures and decorations, then watch them swim while you breathe with the bubbles.",
+      aquariumStory: `${metadata.characterName} found the most peaceful place - a magical aquarium where everything moves slowly and calmly. Let's build one together and practice being as peaceful as the ocean!`,
+      creatures: [
+        { id: "c1", name: "Serene Sea Turtle", emoji: "🐢", calmingTrait: "Takes everything slow and steady - no rush!", movement: "glide" },
+        { id: "c2", name: "Flowing Fish", emoji: "🐠", calmingTrait: "Goes with the flow, never fights the current", movement: "swim" },
+        { id: "c3", name: "Dreamy Jellyfish", emoji: "🪼", calmingTrait: "Floats peacefully, letting go of worries", movement: "float" },
+        { id: "c4", name: "Friendly Dolphin", emoji: "🐬", calmingTrait: "Brings joy and playfulness everywhere", movement: "leap" },
+        { id: "c5", name: "Wise Octopus", emoji: "🐙", calmingTrait: "Thinks carefully before acting", movement: "wave" }
+      ],
+      decorations: [
+        { id: "d1", name: "Dancing Seaweed", emoji: "🌿", calmingEffect: "Sways gently like deep breaths" },
+        { id: "d2", name: "Treasure Shell", emoji: "🐚", calmingEffect: "Holds your peaceful wishes" },
+        { id: "d3", name: "Glowing Coral", emoji: "🪸", calmingEffect: "Shines with gentle light" },
+        { id: "d4", name: "Smooth Stones", emoji: "🪨", calmingEffect: "Stays steady and grounded" }
+      ],
+      breathingBubbles: {
+        inhaleTime: 4,
+        exhaleTime: 4,
+        message: "Breathe in as bubbles rise... breathe out as they pop..."
+      },
+      peaceMessage: `🌊 Your aquarium is beautiful and calm! ${metadata.characterName} loves it! Whenever you feel stressed, close your eyes and imagine swimming in your peaceful aquarium.`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateRocketLaunchers(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<RocketLauncherContent[]> {
+  const prompt = `Create ${count} "Rocket Launcher" activities for children about "${metadata.theme}".
+
+This is an adventure game where children fuel up a rocket with positive actions and visit different feeling planets.
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "rocketLaunchers": [
+    {
+      "heading": "Activity title with rocket emoji 🚀",
+      "instructions": "Instructions for the space adventure (2 sentences)",
+      "missionBriefing": "Exciting mission introduction (2-3 sentences)",
+      "planets": [
+        { "id": "pl1", "name": "Joy Planet", "emoji": "🌟", "feeling": "happiness", "color": "#fbbf24", "activity": "Think of 3 things that make you smile", "reward": "Happiness Star" },
+        { "id": "pl2", "name": "Calm Moon", "emoji": "🌙", "feeling": "peace", "color": "#a8d8ea", "activity": "Take 5 slow breaths", "reward": "Peace Crystal" },
+        { "id": "pl3", "name": "Brave Mars", "emoji": "🔴", "feeling": "courage", "color": "#ef4444", "activity": "Name something you're brave about", "reward": "Courage Badge" }
+      ],
+      "fuelActions": [
+        { "id": "f1", "action": "Deep breath", "emoji": "🌬️", "fuelAmount": 25 },
+        { "id": "f2", "action": "Positive thought", "emoji": "💭", "fuelAmount": 25 },
+        { "id": "f3", "action": "Smile", "emoji": "😊", "fuelAmount": 25 },
+        { "id": "f4", "action": "Stretch", "emoji": "🙆", "fuelAmount": 25 }
+      ],
+      "launchSequence": ["3...", "2...", "1...", "BLAST OFF! 🚀"],
+      "returnMessage": "Welcome home, space explorer! You collected amazing feeling treasures!"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ rocketLaunchers: RocketLauncherContent[] }>(response);
+  
+  const activities = parsed?.rocketLaunchers || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🚀 Launch to Feelings Space!",
+      instructions: "Fuel up your rocket with positive actions, then blast off to visit different feeling planets! Complete each planet's mission to collect rewards!",
+      missionBriefing: `Mission Control calling! ${metadata.characterName} needs brave space explorers to visit the Feeling Planets and collect special treasures. Fuel up your rocket and let's go!`,
+      planets: [
+        { id: "pl1", name: "Joy Jupiter", emoji: "🌟", feeling: "happiness", color: "#fbbf24", activity: "Name 3 things that make you happy!", reward: "Golden Joy Star" },
+        { id: "pl2", name: "Calm Moon", emoji: "🌙", feeling: "peace", color: "#94a3b8", activity: "Take 5 slow, deep breaths", reward: "Silver Peace Crystal" },
+        { id: "pl3", name: "Brave Mars", emoji: "🔴", feeling: "courage", color: "#ef4444", activity: "Share a time you were brave", reward: "Courage Medal" },
+        { id: "pl4", name: "Kind Venus", emoji: "💗", feeling: "kindness", color: "#ec4899", activity: "Think of something kind you could do", reward: "Heart of Kindness" }
+      ],
+      fuelActions: [
+        { id: "f1", action: "Take a deep breath", emoji: "🌬️", fuelAmount: 25 },
+        { id: "f2", action: "Think a happy thought", emoji: "💭", fuelAmount: 25 },
+        { id: "f3", action: "Smile really big", emoji: "😊", fuelAmount: 25 },
+        { id: "f4", action: "Do a quick stretch", emoji: "🙆", fuelAmount: 25 }
+      ],
+      launchSequence: ["Systems check... ✅", "Engines ready... 🔥", "3... 2... 1...", "🚀 BLAST OFF!"],
+      returnMessage: `🎉 Welcome home, Space Explorer! ${metadata.characterName} is amazed by all the treasures you collected! These feeling powers are now yours forever!`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateMagicPotions(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<MagicPotionContent[]> {
+  const prompt = `Create ${count} "Magic Potion" activities for children about "${metadata.theme}".
+
+This is a creative activity where children mix emotional ingredients to create magical feeling potions.
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "magicPotions": [
+    {
+      "heading": "Activity title with potion emoji 🧪",
+      "instructions": "Instructions for brewing potions (2 sentences)",
+      "cauldronStory": "Magical story about the potion lab (2-3 sentences)",
+      "ingredients": [
+        { "id": "ing1", "name": "Smile Sparkles", "emoji": "✨", "feeling": "joy", "sparkle": "gold", "description": "Makes everything brighter" },
+        { "id": "ing2", "name": "Calm Crystals", "emoji": "💎", "feeling": "peace", "sparkle": "blue", "description": "Brings inner peace" },
+        { "id": "ing3", "name": "Brave Berries", "emoji": "🫐", "feeling": "courage", "sparkle": "red", "description": "Adds courage to any mix" },
+        { "id": "ing4", "name": "Kind Kisses", "emoji": "💋", "feeling": "kindness", "sparkle": "pink", "description": "Sweetens everything" }
+      ],
+      "recipes": [
+        { "potionName": "Confidence Boost", "emoji": "💪", "requiredIngredients": ["ing1", "ing3"], "effect": "Feel ready for anything!", "color": "#fbbf24" },
+        { "potionName": "Calm Down Elixir", "emoji": "🌊", "requiredIngredients": ["ing2", "ing4"], "effect": "Feel peaceful and relaxed", "color": "#3b82f6" }
+      ],
+      "brewingSteps": ["Add ingredients", "Stir 3 times", "Say the magic words", "Drink up!"],
+      "magicMessage": "Your potion is ready! The magic is inside YOU!"
+    }
+  ]
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ magicPotions: MagicPotionContent[] }>(response);
+  
+  const activities = parsed?.magicPotions || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🧪 Magical Feelings Potions!",
+      instructions: "Welcome to the potion lab! Mix different feeling ingredients to create powerful potions. Each potion gives you special emotional powers!",
+      cauldronStory: `${metadata.characterName} has discovered ancient recipes for magical feeling potions! By mixing the right ingredients, you can brew potions that help you feel any way you want. Let's get brewing!`,
+      ingredients: [
+        { id: "ing1", name: "Joy Juice", emoji: "✨", feeling: "happiness", sparkle: "gold", description: "Extracted from pure laughter" },
+        { id: "ing2", name: "Calm Crystals", emoji: "💎", feeling: "peace", sparkle: "blue", description: "Found in deep, slow breaths" },
+        { id: "ing3", name: "Brave Beans", emoji: "🫘", feeling: "courage", sparkle: "red", description: "Grown in the garden of bravery" },
+        { id: "ing4", name: "Kind Kisses", emoji: "💗", feeling: "kindness", sparkle: "pink", description: "Made from loving thoughts" },
+        { id: "ing5", name: "Focus Flakes", emoji: "🎯", feeling: "concentration", sparkle: "purple", description: "Helps you think clearly" },
+        { id: "ing6", name: "Energy Essence", emoji: "⚡", feeling: "motivation", sparkle: "orange", description: "Gets you ready to go!" }
+      ],
+      recipes: [
+        { potionName: "Super Confidence Potion", emoji: "💪", requiredIngredients: ["ing1", "ing3"], effect: "Feel ready to try anything new!", color: "#f97316" },
+        { potionName: "Deep Calm Elixir", emoji: "🌊", requiredIngredients: ["ing2", "ing4"], effect: "Feel peaceful inside and out", color: "#3b82f6" },
+        { potionName: "Focus Formula", emoji: "🎯", requiredIngredients: ["ing5", "ing2"], effect: "Think clearly and stay on track", color: "#8b5cf6" },
+        { potionName: "Joy Juice Supreme", emoji: "🌟", requiredIngredients: ["ing1", "ing6"], effect: "Feel happy and energized!", color: "#fbbf24" }
+      ],
+      brewingSteps: ["Pick your ingredients", "Drop them in the cauldron", "Stir three times clockwise", "Say 'I am powerful!'", "Watch the magic happen!"],
+      magicMessage: `✨ Your potion is complete! ${metadata.characterName} is amazed by your brewing skills! Remember - the real magic was inside you all along!`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
+
+async function generateFeelingsBingos(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  count: number
+): Promise<FeelingsBingoContent[]> {
+  const prompt = `Create ${count} "Feelings Bingo" activities for children about "${metadata.theme}".
+
+This is an interactive bingo game where each square has a feeling challenge to complete.
+
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+Respond with ONLY this JSON:
+{
+  "feelingsBingos": [
+    {
+      "heading": "Activity title with bingo emoji 🎯",
+      "instructions": "Instructions for playing bingo (2 sentences)",
+      "bingoStory": "Fun story about the bingo game (2-3 sentences)",
+      "squares": [
+        { "id": "sq1", "emoji": "😊", "feeling": "Happy", "challenge": "Name something that made you smile today" },
+        { "id": "sq2", "emoji": "💪", "feeling": "Brave", "challenge": "Share a time you were brave" },
+        { "id": "sq3", "emoji": "🙏", "feeling": "Grateful", "challenge": "Name 3 things you're thankful for" }
+      ],
+      "freeSpace": {
+        "emoji": "⭐",
+        "message": "FREE! You're doing great!"
+      },
+      "bingoPatterns": ["Row", "Column", "Diagonal", "Full Board"],
+      "winMessage": "BINGO! You're a feelings champion!"
+    }
+  ]
+}
+
+Include 8 unique squares (plus free space = 9 total for 3x3 grid).`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const parsed = safeJsonParse<{ feelingsBingos: FeelingsBingoContent[] }>(response);
+  
+  const activities = parsed?.feelingsBingos || [];
+  while (activities.length < count) {
+    activities.push({
+      heading: "🎯 Feelings Bingo!",
+      instructions: "Complete challenges to mark off squares! Get a row, column, or diagonal to win BINGO! Can you complete the whole board?",
+      bingoStory: `${metadata.characterName} invented a special feelings bingo game! Each square has a challenge that helps you practice emotional skills. How many can you complete?`,
+      squares: [
+        { id: "sq1", emoji: "😊", feeling: "Happy", challenge: "Name 3 things that make you smile" },
+        { id: "sq2", emoji: "💪", feeling: "Brave", challenge: "Share a time you did something scary" },
+        { id: "sq3", emoji: "🙏", feeling: "Grateful", challenge: "Thank someone for something they did" },
+        { id: "sq4", emoji: "🌬️", feeling: "Calm", challenge: "Take 5 slow, deep breaths" },
+        { id: "sq5", emoji: "💗", feeling: "Kind", challenge: "Do something nice for someone" },
+        { id: "sq6", emoji: "🤔", feeling: "Thoughtful", challenge: "Think before reacting to something" },
+        { id: "sq7", emoji: "🎨", feeling: "Creative", challenge: "Draw or write about a feeling" },
+        { id: "sq8", emoji: "🤗", feeling: "Connected", challenge: "Share a feeling with someone you trust" }
+      ],
+      freeSpace: {
+        emoji: "⭐",
+        message: "FREE SPACE! You're amazing just as you are!"
+      },
+      bingoPatterns: ["Horizontal Row", "Vertical Column", "Diagonal", "Four Corners", "FULL BOARD!"],
+      winMessage: `🎉 BINGO! You did it! ${metadata.characterName} is cheering for you! You're a true feelings champion!`
+    });
+  }
+  
+  return activities.slice(0, count);
+}
 // ORCHESTRATOR
 // ====================
 
@@ -2866,6 +4031,16 @@ async function generateAllContent(
     stickerCollectors: pageStructure.filter(p => p.type === "sticker-collector").length,
     mindfulAdventures: pageStructure.filter(p => p.type === "mindful-adventure").length,
     emotionDetectives: pageStructure.filter(p => p.type === "emotion-detective").length,
+    balloonPops: pageStructure.filter(p => p.type === "balloon-pop").length,
+    treasureHunts: pageStructure.filter(p => p.type === "treasure-hunt").length,
+    monsterTamers: pageStructure.filter(p => p.type === "monster-tamer").length,
+    gardenGrowers: pageStructure.filter(p => p.type === "garden-grower").length,
+    superheroCreators: pageStructure.filter(p => p.type === "superhero-creator").length,
+    feelingsOrchestras: pageStructure.filter(p => p.type === "feelings-orchestra").length,
+    calmAquariums: pageStructure.filter(p => p.type === "calm-aquarium").length,
+    rocketLaunchers: pageStructure.filter(p => p.type === "rocket-launcher").length,
+    magicPotions: pageStructure.filter(p => p.type === "magic-potion").length,
+    feelingsBingos: pageStructure.filter(p => p.type === "feelings-bingo").length,
   };
   
   await updateProgress("metadata", "Creating module theme and character...");
@@ -2938,6 +4113,23 @@ async function generateAllContent(
     counts.mindfulAdventures > 0 ? generateMindfulAdventures(apiKey, metadata, contentBrief, counts.mindfulAdventures) : Promise.resolve([]),
     counts.emotionDetectives > 0 ? generateEmotionDetectives(apiKey, metadata, contentBrief, counts.emotionDetectives) : Promise.resolve([]),
   ]);
+
+  await updateProgress("games", "Creating interactive games...");
+  const [balloonPops, treasureHunts, monsterTamers, gardenGrowers, superheroCreators] = await Promise.all([
+    counts.balloonPops > 0 ? generateBalloonPops(apiKey, metadata, contentBrief, counts.balloonPops) : Promise.resolve([]),
+    counts.treasureHunts > 0 ? generateTreasureHunts(apiKey, metadata, contentBrief, counts.treasureHunts) : Promise.resolve([]),
+    counts.monsterTamers > 0 ? generateMonsterTamers(apiKey, metadata, contentBrief, counts.monsterTamers) : Promise.resolve([]),
+    counts.gardenGrowers > 0 ? generateGardenGrowers(apiKey, metadata, contentBrief, counts.gardenGrowers) : Promise.resolve([]),
+    counts.superheroCreators > 0 ? generateSuperheroCreators(apiKey, metadata, contentBrief, counts.superheroCreators) : Promise.resolve([]),
+  ]);
+
+  const [feelingsOrchestras, calmAquariums, rocketLaunchers, magicPotions, feelingsBingos] = await Promise.all([
+    counts.feelingsOrchestras > 0 ? generateFeelingsOrchestras(apiKey, metadata, contentBrief, counts.feelingsOrchestras) : Promise.resolve([]),
+    counts.calmAquariums > 0 ? generateCalmAquariums(apiKey, metadata, contentBrief, counts.calmAquariums) : Promise.resolve([]),
+    counts.rocketLaunchers > 0 ? generateRocketLaunchers(apiKey, metadata, contentBrief, counts.rocketLaunchers) : Promise.resolve([]),
+    counts.magicPotions > 0 ? generateMagicPotions(apiKey, metadata, contentBrief, counts.magicPotions) : Promise.resolve([]),
+    counts.feelingsBingos > 0 ? generateFeelingsBingos(apiKey, metadata, contentBrief, counts.feelingsBingos) : Promise.resolve([]),
+  ]);
   
   await updateProgress("summary", "Wrapping up...");
   const [summary, completion] = await Promise.all([
@@ -2986,6 +4178,16 @@ async function generateAllContent(
     stickerCollectors,
     mindfulAdventures,
     emotionDetectives,
+    balloonPops,
+    treasureHunts,
+    monsterTamers,
+    gardenGrowers,
+    superheroCreators,
+    feelingsOrchestras,
+    calmAquariums,
+    rocketLaunchers,
+    magicPotions,
+    feelingsBingos,
     summary,
     completion,
   };
@@ -3039,6 +4241,19 @@ export {
   type StickerCollectorContent,
   type MindfulAdventureContent,
   type EmotionDetectiveContent,
+  type BalloonPopContent,
+  type TreasureHuntContent,
+  type MonsterTamerContent,
+  type GardenGrowerContent,
+  type SuperheroCreatorContent,
+  type FeelingsOrchestraContent,
+  type CalmAquariumContent,
+  type RocketLauncherContent,
+  type MagicPotionContent,
+  type FeelingsBingoContent,
+  type AgeRangeData,
+  type CoreTheoryData,
+  buildEnhancedContentBrief,
   
   // Configuration
   corsHeaders,
@@ -3056,6 +4271,7 @@ export {
   jsonResponse,
   escapeHtml,
   escapeForTemplate,
+  escapeForOnclick,
   cleanJsonResponse,
   safeJsonParse,
   randomInt,
