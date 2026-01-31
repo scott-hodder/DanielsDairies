@@ -209,25 +209,6 @@ resetPasswordForm.addEventListener('submit', async (e) => {
   }
 })
 
-if (forgotPasswordLink) {
-  forgotPasswordLink.addEventListener('click', (e) => {
-    e.preventDefault()
-    showForgotPasswordForm()
-  })
-}
-
-if (forgotBackToLogin) {
-  forgotBackToLogin.addEventListener('click', () => {
-    showLoginForm()
-  })
-}
-
-if (resetBackToLogin) {
-  resetBackToLogin.addEventListener('click', () => {
-    showLoginForm()
-  })
-}
-
 // Handle login
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault()
