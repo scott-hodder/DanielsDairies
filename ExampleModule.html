@@ -1,0 +1,2604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building Your Amazing Brain Town</title>
+  <!-- DEBUG: 
+  Series Info Debug:
+  - characterName: Professor Panda
+  - characterEmoji: 🐼
+  - characterType: professor panda
+  - series: Professor Panda
+   -->
+  <!-- CATEGORY_COLOR: #6366F1 -->
+  <!-- PALETTE: primary=#6366F1 secondary=#8B5CF6 accent=#818CF8 -->
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Module Stylesheets -->
+  <link rel="stylesheet" href="./modules/shared/module-theme.css">
+  <link rel="stylesheet" href="./modules/shared/module-header.css">
+  <link rel="stylesheet" href="./modules/shared/module-base.css">
+  
+  <style>
+    /* Brand Colors - Dynamic based on category */
+    :root {
+      --primary: #6366F1;
+      --secondary: #8B5CF6;
+      --accent: #818CF8;
+      --dark: #264653;
+      --cream: #EEF2FF;
+      --light-green: #A8E6CF;
+      --soft-yellow: #C7D2FE;
+      --success: #A8E6CF;
+    }
+    
+    /* Typography */
+    .font-title { font-family: 'Fredoka One', cursive; }
+    .font-body { font-family: 'Nunito', sans-serif; }
+    body { font-family: 'Nunito', sans-serif; background: var(--cream); }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Fredoka One', cursive; }
+    
+    /* Page Layout */
+    .page { min-height: 100vh; padding-top: 80px; padding-bottom: 100px; }
+    
+    /* Animations */
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(244, 162, 97, 0.3); }
+      50% { box-shadow: 0 0 35px rgba(244, 162, 97, 0.6); }
+    }
+    .animate-glow { animation: pulse-glow 3s ease-in-out infinite; }
+    
+    /* Form Elements */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 30px;
+      border-radius: 15px;
+      background: linear-gradient(to right, var(--secondary), var(--soft-yellow), var(--primary), var(--accent));
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid var(--dark);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    /* Quiz Styles */
+    .quiz-answer.selected.correct { background-color: var(--success) !important; border-color: var(--secondary) !important; }
+    .quiz-answer.selected.incorrect { background-color: #fecaca !important; border-color: var(--accent) !important; }
+    
+    /* Scenario Styles */
+    .scenario-option.selected.good { background-color: var(--success) !important; }
+    .scenario-option.selected.not-good { background-color: #fef3c7 !important; }
+    
+    /* Interactive Option Styles */
+    .interactive-option { background-color: white; }
+    .interactive-option.option-selected { background-color: var(--success) !important; }
+    .interactive-option.option-incorrect { background-color: #fecaca !important; }
+    
+    /* Print Styles */
+    @media print {
+      .no-print { display: none !important; }
+      .page { page-break-after: always; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body class="module-theme" data-series="Professor Panda">
+  <div id="moduleHeaderRoot"></div>
+  
+  <main class="module-content">
+    <section id="pageContainer"></section>
+  </main>
+  
+  <script type="module">
+    // Import external module header component
+    import { initModuleHeader } from './modules/shared/module-header.js';
+    
+    // Embedded module functions (no external dependencies)
+    
+    // Module database functions - stub implementation for local preview
+    async function initializeModule() {
+      return true;
+    }
+
+    async function loadStarsFromDB() {
+      const saved = localStorage.getItem('moduleStars');
+      return saved ? parseInt(saved, 10) : 0;
+    }
+
+    async function saveStarsToDB(stars) {
+      localStorage.setItem('moduleStars', String(stars));
+      return stars;
+    }
+
+    async function awardSingleStar(currentStars) {
+      const newStars = currentStars + 1;
+      await saveStarsToDB(newStars);
+      return newStars;
+    }
+
+    async function resolveChildDisplayName() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childName') || 'Friend';
+    }
+
+    async function getChildId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childId') || 'unknown';
+    }
+
+    async function completeModuleDB() {
+      // Stub implementation - just mark as completed
+      localStorage.setItem('moduleCompleted', 'true');
+      return true;
+    }
+    
+    // Module completion handling
+    let moduleCompletionHandled = false;
+
+    function handleModuleCompletion() {
+      // Prevent multiple completions
+      if (moduleCompletionHandled) {
+        return;
+      }
+      moduleCompletionHandled = true;
+
+
+      // Get module parameters from URL
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        const moduleId = params.get('moduleId');
+        
+        
+        if (childId && moduleId) {
+          // Mark module as completed
+          completeModule(childId, moduleId);
+        } else {
+          console.error('[ModuleHeader] Missing childId or moduleId in URL');
+        }
+      } catch (error) {
+        console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+      }
+    }
+
+    async function completeModule(childId, moduleId) {
+      try {
+        // Use the completeModuleDB function for generated modules
+        if (typeof window.completeModuleDB === 'function') {
+          await window.completeModuleDB();
+        }
+        
+        
+        // Navigate back to dashboard
+        goHome();
+      } catch (error) {
+        console.error('[ModuleHeader] Error completing module:', error);
+      }
+    }
+
+    function showCompletionCelebration() {
+      try {
+        // Create celebration modal
+        const celebrationModal = document.createElement('div');
+        celebrationModal.className = 'module-completion-modal';
+        celebrationModal.innerHTML = '<div class="module-completion-content"><div class="completion-emoji">🎉</div><h2 class="completion-title">Module Complete!</h2><p class="completion-message">Congratulations! You have finished this module and learned valuable emotional skills.</p><div class="completion-confetti" id="completionConfetti"></div><button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button></div>';
+        
+        document.body.appendChild(celebrationModal);
+        
+        // Generate confetti
+        if (typeof generateCompletionConfetti === 'function') {
+          generateCompletionConfetti();
+        }
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          closeCompletionModal();
+        }, 5000);
+      } catch (e) {
+        console.error('Error showing completion celebration:', e);
+      }
+    }
+
+    function generateCompletionConfetti() {
+      const container = document.getElementById('completionConfetti');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const pieceCount = 40;
+      
+      for (let i = 0; i < pieceCount; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'completion-confetti-piece';
+        
+        const randomX = Math.random() * 300 - 150;
+        const randomDelay = Math.random() * 0.3;
+        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.top = Math.random() * 50 + '%';
+        piece.style.setProperty('--tx', randomX + 'px');
+        piece.style.animationDelay = randomDelay + 's';
+        piece.style.backgroundColor = randomColor;
+        
+        container.appendChild(piece);
+      }
+    }
+
+    // Make close function globally accessible
+    window.closeCompletionModal = function() {
+      const modal = document.querySelector('.module-completion-modal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+    
+    const WORKBOOK_ID = "MOD_ML2VD8S8";
+    const MODULE_CODE = "MOD_ML2VD8S8";
+    const MAX_STARS = 16;
+    const TOTAL_PAGES = 26;
+    
+    let currentPage = 0;
+    let totalStars = 0;
+    let completedActivities = {};
+    let formData = {};
+    let header;
+    let childDisplayName = 'Friend';
+    
+    // Load saved data
+    function loadProgress() {
+      const saved = localStorage.getItem('cbtProgress_' + WORKBOOK_ID);
+      if (saved) {
+        try { completedActivities = JSON.parse(saved); } catch (e) {}
+      }
+    }
+    
+    function saveProgress() {
+      localStorage.setItem('cbtProgress_' + WORKBOOK_ID, JSON.stringify(completedActivities));
+    }
+    
+    function loadFormData() {
+      const saved = localStorage.getItem('cbtData_' + WORKBOOK_ID);
+      if (saved) {
+        try { formData = JSON.parse(saved); } catch (e) {}
+      }
+    }
+    
+    function saveFormData(key, value) {
+      formData[key] = value;
+      localStorage.setItem('cbtData_' + WORKBOOK_ID, JSON.stringify(formData));
+    }
+    
+    // Child name helper - this is called from page templates
+    function getChildName() {
+      return childDisplayName || formData.userName || 'Friend';
+    }
+    
+    // Page generators
+    function generatePage0() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream)); padding-top: 20px;" data-page="cover">
+      <div class="text-center max-w-4xl" style="margin-top: -80px;">
+        <!-- Big Character Front and Center -->
+        <div class="mb-4 animate-bounce-slow">
+          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/PongThePanda.png" alt="Professor Panda" class="object-contain mx-auto drop-shadow-2xl" style="height: 280px; width: 280px; display: block;">
+        </div>
+        
+        <!-- Character Name Badge -->
+        <div class="inline-block px-6 py-2 rounded-full mb-4" style="background-color: var(--primary);">
+          <span class="text-white font-title text-xl">Meet Professor Panda!</span>
+        </div>
+        
+        <h1 class="text-5xl md:text-6xl mb-3 font-title" style="color: var(--dark);">Building Your Amazing Brain Town</h1>
+        <h2 class="text-2xl md:text-3xl mb-6 font-title" style="color: var(--primary);">Discover how your brain grows and changes!</h2>
+        <div class="text-xl mb-6 font-body" style="color: var(--secondary);">
+          <p class="mb-2">An Interactive Adventure for Ages 8-12</p>
+        </div>
+        <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
+          <p class="font-semibold mb-2 font-body text-lg" style="color: var(--dark);">This adventure belongs to:</p>
+          <div class="text-3xl font-title" style="color: var(--primary);">
+            ${getChildName()}
+          </div>
+        </div>
+        <div class="mt-6">
+          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage1() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="welcome">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-4 mb-8">
+          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/PongThePanda.png" alt="Professor Panda" class="object-contain" style="height: 20rem; width: 20rem;">
+          <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">Welcome to Your Amazing Brain Town Adventure with Professor Panda! 🐼</h1>
+        </div>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white; border-left: 6px solid var(--primary);">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hi there, amazing brain builder! I&#039;m Professor Panda, and I&#039;m SO excited to be your guide on this incredible journey. I love exploring how our brains work and grow, and I can&#039;t wait to share all the cool secrets with you!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Together, we&#039;re going to discover how your brain is like a magical town that&#039;s always growing and changing. You&#039;ll learn how every time you try something new, practice, or even make mistakes, you&#039;re actually building new roads and pathways in your brain town - how awesome is that?</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Whether you&#039;re feeling curious, nervous, excited, or maybe a little bit of everything all at once, that&#039;s totally okay! All feelings are welcome here, and every brain learns in its own special way. You&#039;re going to do amazing things, and I&#039;ll be right here cheering you on every step of the way!</p>
+        </div>
+        
+        <div class="rounded-xl p-6 text-center" style="background-color: var(--soft-yellow);">
+          <p class="text-xl font-semibold font-body" style="color: var(--dark);">
+            "All feelings are okay—even the big ones!" 💛
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage2() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 1</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Welcome to Brain Town!</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          Discovering your amazing brain with Daniel the Dog
+        </p>
+      </div>
+    </div>`;
+}
+
+    function generatePage3() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Welcome to Brain Town! 🧠🏘️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Hi there! I&#039;m Professor Panda, and I&#039;m here to show you something amazing - your brain is like a bustling town that&#039;s always growing and changing! Every time you learn something new, you&#039;re building new roads and houses in your Brain Town.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">What do you think happens when you practice something new?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Nothing changes
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Your brain grows stronger connections
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                You get tired
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                It becomes harder
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Exactly! When you practice, your brain builds stronger pathways, just like adding more roads to connect different parts of Brain Town.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">You&#039;re already thinking like a brain scientist! 🐼✨</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_0"
+            onchange="markActivityComplete('interactive_0')"
+            ${completedActivities['interactive_0'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage4() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Welcome to Your Amazing Brain Town! 🏘️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hi there, brain builder! I&#039;m Professor Panda 🐼, and I&#039;m SO excited to show you something incredible about your brain. Did you know that your brain is like a magical town that&#039;s always growing and changing? It&#039;s true! Every time you learn something new, practice a skill, or even make a mistake, your brain builds new roads and pathways.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Right now, imagine your brain town is like a brand new neighborhood with just a few dirt paths. When you were a baby, you only had basic roads for things like breathing and sleeping. But as you&#039;ve grown, you&#039;ve built amazing highways for walking, talking, reading, and so much more! Your brain has been busy constructing new streets every single day.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">The best part is that your brain town never stops growing! Scientists have discovered that our brains can build new pathways throughout our entire lives. This amazing ability is called neuroplasticity - which is just a fancy way of saying your brain is like super flexible Play-Doh that can reshape itself whenever you learn or practice something new.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Brain Power Fact! 🧠</h3>
+      <p class="font-body" style="color: var(--dark);">Your brain creates new connections every time you learn something, even when you sleep!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐼</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: &#039;Think of your brain as the world&#039;s most amazing construction site - and YOU are the head builder!&#039;</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage5() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="gratitude-jar">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Growing Brain Gratitude Jar ⭐</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Our brains are amazing and can grow stronger every day when we practice new things! Let&#039;s fill our gratitude jar with all the ways our brain has grown and learned.</p>
+          
+          
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🧠</span>
+        <span class="font-title text-lg" style="color: var(--dark);">Learning Wins</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">Something new I learned this week...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_0', this.value)">
+    </div>
+  
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">💪</span>
+        <span class="font-title text-lg" style="color: var(--dark);">Challenges I Faced</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">A hard thing I tried and didn&#039;t give up on...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_1', this.value)">
+    </div>
+  
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">👥</span>
+        <span class="font-title text-lg" style="color: var(--dark);">Growth Helpers</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">Someone who helped me learn something...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_2', this.value)">
+    </div>
+  
+    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">✨</span>
+        <span class="font-title text-lg" style="color: var(--dark);">Brain Power</span>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">A time I felt proud of my thinking...</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_3', this.value)">
+    </div>
+  
+          
+          <div class="mt-6 p-4 rounded-xl text-center" style="background-color: var(--light-green);">
+            <p class="font-body font-semibold" style="color: var(--dark);">Every time you learn something new or try again after making a mistake, you&#039;re making your brain stronger! Your gratitude jar shows how much you&#039;ve grown.</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="gratitude_1"
+            onchange="markActivityComplete('gratitude_1')"
+            ${completedActivities['gratitude_1'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I filled my gratitude jar!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage6() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">The Magic Word: YET! ✨</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">In Brain Town, we have a magic word that changes everything - YET! When you say &#039;I can&#039;t do this YET,&#039; you&#039;re telling your brain to keep building and growing.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">Complete this sentence: &#039;I can&#039;t ride a bike without training wheels <input type="text" 
+                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
+                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
+                  placeholder="..."
+                  data-blank-index="1"
+                  oninput="handleFillBlankInput(this, 2)">.&#039;</p>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Perfect! Adding &#039;YET&#039; reminds your brain that you&#039;re still learning and growing. Every expert was once a beginner!</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">That little word &#039;YET&#039; is like a construction sign in Brain Town - it means &#039;still building!&#039; 🐼🚧</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_2"
+            onchange="markActivityComplete('interactive_2')"
+            ${completedActivities['interactive_2'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage7() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="drawing">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🧠 My Growing Brain Garden</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Draw your brain as a beautiful garden with different sections for things you&#039;re learning (like math flowers, reading trees, or friendship bushes). Show some plants just starting to grow and others that are big and strong!</p>
+          
+          <div class="border-4 rounded-xl mb-4 overflow-hidden" style="border-color: var(--primary); background-color: white;">
+            <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" style="touch-action: none; display: block;"></canvas>
+          </div>
+          
+          <div class="flex flex-wrap gap-2 mb-6">
+            <button class="clear-canvas-btn px-4 py-2 rounded-lg text-white font-bold font-body" style="background-color: var(--accent);">
+              Clear
+            </button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#264653" style="background-color: #264653;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#F4A261" style="background-color: #F4A261;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#E76F51" style="background-color: #E76F51;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#2A9D8F" style="background-color: #2A9D8F;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#9b59b6" style="background-color: #9b59b6;"></button>
+          </div>
+          
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What new skill would you like to plant in your brain garden, and how will you help it grow?</label>
+            <input 
+              type="text" 
+              class="w-full rounded-xl p-3 font-body text-lg" 
+              style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);"
+              placeholder="Type your answer here..."
+              onchange="saveFormData('drawing_answer_3', this.value)"
+              value="${formData['drawing_answer_3'] || ''}"
+            >
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="drawing_3"
+              onchange="markActivityComplete('drawing_3')"
+              ${completedActivities['drawing_3'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage8() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 2</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Building Brain Roads</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          How your brain grows stronger every day
+        </p>
+      </div>
+    </div>`;
+}
+
+    function generatePage9() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Building New Brain Roads Through Practice 🛤️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Let me tell you about my friend Maya who wanted to learn skateboarding. At first, her brain town had no skateboard roads at all! When she stepped on the board, she wobbled and fell because her brain didn&#039;t know which muscles to use or how to balance. But Maya didn&#039;t give up - she kept practicing every day.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Something magical happened in Maya&#039;s brain town as she practiced. Each time she tried skateboarding, her brain built tiny new pathways connecting her balance center to her leg muscles. At first, these paths were like narrow dirt trails - bumpy and hard to use. But with each practice session, the trails got wider and smoother, turning into proper roads!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">After weeks of practice, Maya&#039;s brain had built a superhighway for skateboarding! Now she could cruise around the park with confidence. The same thing happens when you practice math, learn to play piano, or even work on being kind to others. Your brain builds stronger and faster roads for whatever you practice most.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Practice Makes Pathways! 🛣️</h3>
+      <p class="font-body" style="color: var(--dark);">The more you practice something, the stronger and faster your brain roads become for that skill.</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐼</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: &#039;Every mistake is just your brain figuring out which roads to build next - so celebrate your wobbles!&#039;</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage10() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="power-up-collector" data-activity="powerup_4">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Brain Power Collector Game! ✨</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Help your brain grow stronger by collecting helpful growth mindset tools! Avoid the brain blockers that stop you from learning and growing.</p>
+          
+          <!-- Collection Progress -->
+          <div class="flex justify-center items-center gap-4 mb-6">
+            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl" style="background-color: var(--soft-yellow);">
+              <span class="text-3xl">🎒</span>
+              <span class="font-title text-2xl" style="color: var(--dark);"><span id="collectedCount">0</span> / 5</span>
+            </div>
+          </div>
+          
+          <!-- Collected Items Display -->
+          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl" style="background-color: var(--cream);" id="collectedDisplay">
+            <p class="font-body text-sm self-center" style="color: var(--secondary);">Your collected power-ups will appear here!</p>
+          </div>
+          
+          <!-- Power-Up Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
+            
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="I Can Learn This"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">🧠</div>
+      <p class="font-title text-lg" style="color: var(--dark);">I Can Learn This</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Grows your brain power</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Practice Makes Progress"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">💪</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Practice Makes Progress</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Builds brain muscles</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="I&#039;m Not Good at This"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">❌</div>
+      <p class="font-title text-lg" style="color: var(--dark);">I&#039;m Not Good at This</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Blocks brain growth</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Mistakes Help Me Learn"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">🌱</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Mistakes Help Me Learn</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Feeds your growing brain</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Ask for Help"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">🤝</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Ask for Help</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Opens new brain pathways</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="I Give Up"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">🛑</div>
+      <p class="font-title text-lg" style="color: var(--dark);">I Give Up</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Stops brain connections</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Try Different Ways"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">🔄</div>
+      <p class="font-title text-lg" style="color: var(--dark);">Try Different Ways</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Creates new brain paths</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="It&#039;s Too Hard"
+            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
+      <div class="text-4xl mb-2">😞</div>
+      <p class="font-title text-lg" style="color: var(--dark);">It&#039;s Too Hard</p>
+      <p class="font-body text-sm" style="color: var(--secondary);">Shrinks possibilities</p>
+    </button>
+  
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" style="display: none;">
+            <p class="font-body text-lg" id="powerupFeedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🎉</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Amazing! You collected all the brain-growing power-ups!</p>
+            <p class="font-body" style="color: var(--secondary);">Your brain grows stronger every time you use these growth mindset tools!</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);" id="powerupComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="powerup_4"
+              onchange="markActivityComplete('powerup_4')"
+              ${completedActivities['powerup_4'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .power-up-item:active { transform: scale(0.95); }
+        .power-up-item.collected { opacity: 0.5; pointer-events: none; border-color: var(--light-green) !important; }
+        .power-up-item.wrong { animation: shake 0.5s; background-color: #fecaca !important; }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+      </style>
+    </div>`;
+}
+
+    function generatePage11() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Mistakes Are Brain Builders! 🔨</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">In Brain Town, mistakes aren&#039;t problems - they&#039;re construction tools! Every mistake helps your brain build stronger, smarter pathways.</p>
+          
+          
+        <div class="interactive-group">
+          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
+            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"Making mistakes means you&#039;re not smart enough."</p>
+          </div>
+          <div class="flex gap-4 justify-center">
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--secondary); color: var(--dark);"
+                    data-correct="false"
+                    data-index="0"
+                    onclick="handleInteractiveChoice(this, 5, true, 1)">
+              I Agree
+            </button>
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--accent); color: var(--dark);"
+                    data-correct="true"
+                    data-index="1"
+                    onclick="handleInteractiveChoice(this, 5, true, 1)">
+              I Disagree
+            </button>
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">That&#039;s right! Mistakes are proof that you&#039;re trying new things and your brain is working hard to learn and grow.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">I love mistakes - they&#039;re like blueprints that help us build better! 🐼📐</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_5"
+            onchange="markActivityComplete('interactive_5')"
+            ${completedActivities['interactive_5'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage12() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="fill-in-story">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Professor Panda&#039;s Brain Growth Adventure 📖</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Fill in the blanks to complete Professor Panda&#039;s story about how our brains can grow and learn!</p>
+          
+          <div class="p-6 rounded-2xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="text-xl leading-loose font-body" style="color: var(--dark);">Professor Panda 🐼 was feeling <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 10rem; min-width: 6rem;" placeholder="a feeling word" onchange="saveFormData('story_6_0', this.value)"> because he couldn&#039;t solve a tricky math problem. But then he remembered that his brain is like a muscle that gets stronger when he practices! So Professor Panda decided to <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 14rem; min-width: 6rem;" placeholder="something you can do to practice" onchange="saveFormData('story_6_1', this.value)"> every day to help his brain grow new connections. His friend <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 14rem; min-width: 6rem;" placeholder="a person who helps you" onchange="saveFormData('story_6_2', this.value)"> encouraged him by saying, &#039;Your brain is amazing and can learn anything with practice!&#039; Soon, Professor Panda discovered that making mistakes was actually helping his brain create new pathways. Now he says, &#039;I can&#039;t do this... YET!&#039; whenever he faces a challenge.</p>
+          </div>
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">How does your completed story show that Professor Panda&#039;s brain can grow and change when he practices?</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 80px;" placeholder="Write your thoughts..." onchange="saveFormData('story_reflection_6', this.value)"></textarea>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="fillin_6"
+            onchange="markActivityComplete('fillin_6')"
+            ${completedActivities['fillin_6'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I completed my story!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage13() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Your Growth Mindset Construction Crew 🏗️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">In your brain town, you have an amazing construction crew that I like to call your Growth Mindset Team! This team includes words and thoughts that help build new brain roads faster. When you say &#039;I can&#039;t do this YET&#039; instead of &#039;I can&#039;t do this,&#039; your construction crew gets excited and starts planning new pathways.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Your Growth Mindset Team loves challenges because they see them as blueprints for new roads! When you face something difficult, like a tricky math problem or learning to tie your shoes, your team doesn&#039;t panic. Instead, they roll up their sleeves and say, &#039;What an awesome opportunity to build something new in brain town!&#039; They know that struggle means your brain is growing stronger.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">The coolest part is that you&#039;re the boss of your construction crew! You can choose thoughts that help them work better, like &#039;This is hard, but I&#039;m learning&#039; or &#039;My brain loves a good challenge.&#039; When you think this way, your Growth Mindset Team works faster and builds stronger roads than ever before.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Mindset Magic! ✨</h3>
+      <p class="font-body" style="color: var(--dark);">Saying &#039;I can&#039;t do this YET&#039; tells your brain to start building new pathways right away!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐼</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: &#039;Your thoughts are like instructions for your brain&#039;s construction crew - make them encouraging ones!&#039;</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage14() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 3</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">The Growth Mindset Adventure</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          Learning to love challenges and mistakes
+        </p>
+      </div>
+    </div>`;
+}
+
+    function generatePage15() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Your Brain&#039;s Construction Crew 👷‍♀️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Your brain has tiny workers called neurons that are always busy connecting and building. The more you use your brain, the busier and stronger these workers become!</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Which activity would make your brain&#039;s construction crew work the hardest?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 7, true, 1)">
+                Watching TV all day
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 7, true, 1)">
+                Learning to play piano
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 7, true, 1)">
+                Sleeping
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 7, true, 1)">
+                Eating candy
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Yes! Learning new skills like piano gives your brain&#039;s construction crew lots of important work to do, making your Brain Town bigger and better.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">Those brain workers love a good challenge - it keeps them strong and happy! 🐼💪</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_7"
+            onchange="markActivityComplete('interactive_7')"
+            ${completedActivities['interactive_7'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage16() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="rocket-launcher" data-activity="rocket_8">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">Brain Power Rocket Mission 🚀</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Join Professor Panda on an amazing space adventure to discover how your brain grows stronger with practice! Fuel up your rocket with growth mindset actions and explore planets where learning happens.</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">Hello, brave space explorer! Professor Panda here with exciting news - your brain is like a muscle that gets stronger every time you try something new or practice a skill. Today we&#039;re blasting off to visit special planets where you&#039;ll discover the amazing power of your growing brain!</p>
+          </div>
+          <div class="text-center mb-4"><span class="text-8xl" id="rocketEmoji_8">🚀</span></div>
+          <div class="mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+            <div class="flex justify-between mb-2"><span class="font-title">Fuel:</span><span class="font-title text-xl" id="fuelDisplay_8" style="color: var(--primary);">0%</span></div>
+            <div class="h-6 rounded-full overflow-hidden" style="background-color: #e5e7eb;"><div class="h-full rounded-full transition-all duration-500" id="fuelBar_8" style="width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));"></div></div>
+          </div>
+          <p class="font-title text-lg text-center mb-3">Fuel Actions ⚡</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">🧠</span><p class="font-body text-xs mt-1">Say &#039;I can learn this!&#039;</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">💪</span><p class="font-body text-xs mt-1">Think of effort as brain exercise</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">🎉</span><p class="font-body text-xs mt-1">Celebrate trying something new</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">🌱</span><p class="font-body text-xs mt-1">Remember: mistakes help me grow</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button></div>
+          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105" id="launchBtn_8" style="background-color: var(--primary); color: white;" onclick="window.launchRocket('8')">🚀 LAUNCH!</button>
+          <div class="mt-6" id="planets_8" style="display: none;">
+            <p class="font-title text-lg text-center mb-3">Feeling Planets 🪐</p>
+            <div class="grid grid-cols-2 gap-4"><div class="p-4 rounded-2xl border-2" id="planet_8_pl1" style="background-color: #fbbf2420; border-color: #fbbf24;"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">🌟</span><span class="font-title">Try-Again Planet</span></div><p class="font-body text-sm mb-2">Think of something you&#039;re learning and say &#039;My brain grows when I practice!&#039;</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: Growth Star</p></div><div class="p-4 rounded-2xl border-2" id="planet_8_pl2" style="background-color: #a8d8ea20; border-color: #a8d8ea;"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">🌙</span><span class="font-title">Mistake Moon</span></div><p class="font-body text-sm mb-2">Share a mistake you made that helped you learn something new</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: Learning Crystal</p></div><div class="p-4 rounded-2xl border-2" id="planet_8_pl3" style="background-color: #ef444420; border-color: #ef4444;"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">🔴</span><span class="font-title">Challenge Mars</span></div><p class="font-body text-sm mb-2">Name something challenging you want to keep practicing</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: Persistence Badge</p></div></div>
+          </div>
+          <div class="p-6 rounded-2xl text-center mt-4" id="rocketReturn_8" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🏠🚀</p>
+            <p class="font-title text-2xl">Welcome home, brilliant space explorer! Professor Panda is so proud - you&#039;ve discovered that your amazing brain grows stronger every day!</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="rocketComplete_8">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="rocket_8" onchange="markActivityComplete('rocket_8')" ${completedActivities['rocket_8'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">Space explorer! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage17() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Growth Mindset vs. Fixed Mindset 🌱⚡</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">In Brain Town, you can choose between two different mindsets. A growth mindset says &#039;I can learn and improve!&#039; A fixed mindset says &#039;I&#039;m stuck the way I am.&#039;</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">How much do you believe your brain can grow and change? Rate from 1 (not at all) to 5 (completely)!</p>
+          <div class="flex justify-between gap-2 mb-4">
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '1'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                1
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '2'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                2
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '3'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                3
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '4'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                4
+              </button>
+            
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); color: var(--dark);"
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '5'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                5
+              </button>
+            
+          </div>
+          <div class="flex justify-between text-sm font-body" style="color: var(--secondary);">
+            <span>Not at all</span>
+            <span>Very much!</span>
+          </div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Whatever you rated, remember that believing in your brain&#039;s power to grow actually helps it grow even more!</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">The more you believe in your amazing brain, the more amazing it becomes! 🐼🌟</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_9"
+            onchange="markActivityComplete('interactive_9')"
+            ${completedActivities['interactive_9'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage18() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="superhero-creator" data-activity="superhero_10">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">Brain-Growing Superhero Creator 🦸</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Design your own amazing superhero who helps kids grow their brains and believe in themselves! Choose their special powers, awesome costume, and helpful sidekick.</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">Professor Panda 🐼 has discovered that children&#039;s brains need special superheroes to help them grow stronger every day! These heroes teach kids that making mistakes helps their brains grow, and that practice makes everything possible. Will you create the next great Brain-Growing Superhero?</p>
+          </div>
+          <div class="p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(135deg, var(--cream), var(--soft-yellow));">
+            <p class="font-title mb-2">Your Superhero:</p>
+            <div class="flex justify-center items-center gap-4 text-6xl">
+              <span id="hero_10_costume">❓</span>
+              <span id="hero_10_power">❓</span>
+              <span id="hero_10_sidekick">❓</span>
+            </div>
+            <input type="text" class="mt-4 p-2 rounded-lg border-2 font-title text-center text-xl w-full max-w-xs" style="border-color: var(--primary);" placeholder="Hero name..." onchange="saveFormData('hero_name_10', this.value); checkHeroComplete('10')">
+          </div>
+          <div class="mb-4"><p class="font-title mb-2">⚡ Power:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '✨')"><span class="text-2xl">✨</span><p class="font-body text-xs mt-1">Mistake Magic</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '🌱')"><span class="text-2xl">🌱</span><p class="font-body text-xs mt-1">Growth Rays</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '💪')"><span class="text-2xl">💪</span><p class="font-body text-xs mt-1">Yet Power</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '👁️')"><span class="text-2xl">👁️</span><p class="font-body text-xs mt-1">Challenge Vision</p></button></div></div>
+          <div class="mb-4"><p class="font-title mb-2">🦸 Costume:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #10b98120; border-color: transparent;" onclick="window.selectHero('10', 'costume', '🦸')"><span class="text-2xl">🦸</span><p class="font-body text-xs mt-1">Growth Cape</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #8b5cf620; border-color: transparent;" onclick="window.selectHero('10', 'costume', '🦹')"><span class="text-2xl">🦹</span><p class="font-body text-xs mt-1">Brain Suit</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #f59e0b20; border-color: transparent;" onclick="window.selectHero('10', 'costume', '⭐')"><span class="text-2xl">⭐</span><p class="font-body text-xs mt-1">Learning Outfit</p></button></div></div>
+          <div class="mb-4"><p class="font-title mb-2">🐾 Sidekick:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'sidekick', '🐧')"><span class="text-2xl">🐧</span><p class="font-body text-xs mt-1">Practice Penguin</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'sidekick', '🐘')"><span class="text-2xl">🐘</span><p class="font-body text-xs mt-1">Effort Elephant</p></button></div></div>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
+            <p class="font-title mb-2">What brain-growing challenge will your hero help kids with?</p>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My hero will..." onchange="saveFormData('hero_mission_10', this.value); checkHeroComplete('10')"></textarea>
+          </div>
+          <div class="p-6 rounded-2xl text-center" id="heroDone_10" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🦸‍♂️✨🦸‍♀️</p>
+            <p class="font-title text-2xl">Your superhero is ready to help brains grow stronger! Professor Panda 🐼 is so proud of your amazing creation!</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="heroComplete_10">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="superhero_10" onchange="markActivityComplete('superhero_10')" ${completedActivities['superhero_10'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">My superhero is ready! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage19() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Your Brain Town Blueprint 📋</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Now you know the secret - your Brain Town is always under construction! You&#039;re the architect, and every day you get to decide what new skills and knowledge to build.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">One new thing I want to build in my Brain Town is: <input type="text" 
+                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
+                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
+                  placeholder="..."
+                  data-blank-index="1"
+                  oninput="handleFillBlankInput(this, 11)"></p>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">What an exciting addition to your Brain Town! Remember, with practice and the magic word &#039;YET,&#039; you can build anything you set your mind to.</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">I can&#039;t wait to see all the amazing things you&#039;ll build in your Brain Town! Keep growing, young architect! 🐼🏗️</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_11"
+            onchange="markActivityComplete('interactive_11')"
+            ${completedActivities['interactive_11'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage20() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">How Do You Feel About Learning New Things? 🧠</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Think about when you try something new or challenging. Click on the feeling that matches how you feel most of the time.</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #F4A261; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#F4A261' : 'white';">
+      <span class="text-4xl">🤩</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Excited</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #d4a5ff; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#d4a5ff' : 'white';">
+      <span class="text-4xl">😰</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Nervous</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #FFE8A3; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#FFE8A3' : 'white';">
+      <span class="text-4xl">🤔</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Curious</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #fecaca; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#fecaca' : 'white';">
+      <span class="text-4xl">😤</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Frustrated</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #A8E6CF; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#A8E6CF' : 'white';">
+      <span class="text-4xl">😊</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Confident</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #a8d8ea; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#a8d8ea' : 'white';">
+      <span class="text-4xl">😟</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Worried</span>
+    </button></div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What&#039;s one new thing you&#039;d like to learn or get better at, and how can you practice growing your brain in that area?</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_12', this.value)">${formData['feeling_followup_12'] || ''}</textarea>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="feeling_12" onchange="markActivityComplete('feeling_12')" ${completedActivities['feeling_12'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage21() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="shield_13">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Growing Brain Shield 🛡️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Build your special shield by filling each section with your amazing growing powers! Remember, your brain gets stronger every time you practice and learn something new.</p>
+          
+          <!-- Shield Visual -->
+          <div class="flex justify-center mb-6">
+            <div class="shield-container relative w-64 h-72">
+              <svg viewBox="0 0 200 220" class="w-full h-full">
+                <path d="M100 10 L180 50 L180 130 Q180 200 100 210 Q20 200 20 130 L20 50 Z" 
+                      fill="url(#shieldGradient)" stroke="var(--dark)" stroke-width="4"/>
+                <defs>
+                  <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--soft-yellow)"/>
+                    <stop offset="100%" style="stop-color:var(--light-green)"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="shield-decorations absolute inset-0 flex items-center justify-center text-3xl flex-wrap gap-1 p-8" id="shieldDecorations" style="pointer-events: none;">
+                🛡️
+              </div>
+            </div>
+          </div>
+          
+          <!-- Decoration Buttons -->
+          <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
+            <span class="font-body text-sm self-center mr-2" style="color: var(--dark);">Add decorations:</span>
+            
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🌟')">🌟</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🧠')">🧠</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('💪')">💪</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🛡️')">🛡️</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🌱')">🌱</button>
+  
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('⚡')">⚡</button>
+  
+          </div>
+          
+          <!-- Shield Sections -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--light-green);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🧠</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Learning Power</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">What&#039;s something you&#039;ve gotten better at by practicing?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="I got better at..."
+             data-section="s1"
+             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s1', this.value)"
+             value="${formData['shield_13_s1'] || ''}">
+    </div>
+  
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">💭</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Growth Words</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">What do you say to yourself when something is hard?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="I tell myself..."
+             data-section="s2"
+             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s2', this.value)"
+             value="${formData['shield_13_s2'] || ''}">
+    </div>
+  
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--primary);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">✨</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Mistake Magic</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">How do mistakes help you learn and grow?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="Mistakes help me..."
+             data-section="s3"
+             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s3', this.value)"
+             value="${formData['shield_13_s3'] || ''}">
+    </div>
+  
+    <div class="shield-section p-4 rounded-xl transition-all" style="background-color: #a8d8ea;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🌱</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Yet Power</h3>
+      </div>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">What&#039;s something you can&#039;t do YET but are working on?</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
+             style="border-color: var(--secondary); background-color: white;"
+             placeholder="I can&#039;t _____ yet, but..."
+             data-section="s4"
+             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s4', this.value)"
+             value="${formData['shield_13_s4'] || ''}">
+    </div>
+  
+          </div>
+          
+          <!-- Progress Indicator -->
+          <div class="text-center mb-4">
+            <p class="font-body" style="color: var(--secondary);">Sections filled: <span id="shieldProgress">0</span> / 4</p>
+          </div>
+          
+          <!-- Win Message -->
+          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🛡️</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Your shield is complete! Your brain grows stronger every day, and you have the power to learn anything!</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="shieldComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="shield_13"
+              onchange="markActivityComplete('shield_13')"
+              ${completedActivities['shield_13'] ? 'checked disabled' : ''}
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage22() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sorting-activity">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Growth Mindset Thoughts 🧠</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Sort these thoughts into Growth Mindset (helps your brain grow) or Fixed Mindset (stops your brain from growing).</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #A8E6CF; border-color: var(--dark);" data-category="Growth Mindset" data-category-index="0" onclick="sortSelectedItem(this, 'Growth Mindset', 14)">
+      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">🌱 Growth Mindset</h3>
+      <div class="dropped-items space-y-2"></div>
+    </div>
+  
+    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #fecaca; border-color: var(--dark);" data-category="Fixed Mindset" data-category-index="1" onclick="sortSelectedItem(this, 'Fixed Mindset', 14)">
+      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">🚫 Fixed Mindset</h3>
+      <div class="dropped-items space-y-2"></div>
+    </div>
+  
+          </div>
+          
+          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
+            <div class="sort-items-list space-y-2">
+              
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_0" data-correct-category="Growth Mindset" data-explanation="This shows you believe your brain can grow stronger with effort!" onclick="selectSortItem(this)">
+      I can learn this with practice
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_1" data-correct-category="Fixed Mindset" data-explanation="This thought stops you from trying - add &#039;yet&#039; to make it growth mindset!" onclick="selectSortItem(this)">
+      I&#039;m not good at math
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_2" data-correct-category="Growth Mindset" data-explanation="Mistakes are how our brain builds new connections!" onclick="selectSortItem(this)">
+      Mistakes help me learn
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_3" data-correct-category="Fixed Mindset" data-explanation="Giving up stops your brain from growing stronger" onclick="selectSortItem(this)">
+      I give up when things are hard
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_4" data-correct-category="Growth Mindset" data-explanation="Effort is like exercise for your brain - it makes it stronger!" onclick="selectSortItem(this)">
+      I can get better with effort
+    </div>
+  
+    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_5" data-correct-category="Fixed Mindset" data-explanation="Everyone can grow their intelligence with practice and learning!" onclick="selectSortItem(this)">
+      I&#039;m either smart or I&#039;m not
+    </div>
+  
+            </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="sorting_14"
+            onchange="markActivityComplete('sorting_14')"
+            ${completedActivities['sorting_14'] ? 'checked disabled' : ''}
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage23() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="scenario">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">The Tricky Math Problem 🧮</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);"><p class="text-lg font-body" style="color: var(--dark);">Emma sits down to do her math homework and sees a really hard word problem. She reads it three times but still doesn&#039;t understand it. Her first thought is &#039;I&#039;m just not good at math.&#039; What should Emma do next?</p></div>
+          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">What would you do?</p>
+          <div class="space-y-3 mb-6">
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="true" data-feedback="Great thinking! This helps because you&#039;re using a growth mindset. Your brain is like a muscle that gets stronger with practice. Adding &#039;yet&#039; reminds you that learning takes time!">Take a deep breath and think &#039;I can&#039;t solve this YET, but I can learn how&#039;</button>
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="false" data-feedback="This could work, but there might be a better way. While it&#039;s okay to take breaks, avoiding challenges means missing chances to grow your brain&#039;s math muscles!">Skip the problem and move on to easier ones</button>
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="false" data-feedback="Let&#039;s think about why this might not help. When we say &#039;never,&#039; we forget that our brains can actually grow and change. Every time you practice, you&#039;re building new brain connections!">Give up and say &#039;I&#039;ll never be good at math&#039;</button></div>
+          <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="scenario_15" onchange="markActivityComplete('scenario_15')" ${completedActivities['scenario_15'] ? 'checked disabled' : ''}>
+            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage24() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="summary">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🧠 Your Amazing Growing Brain Summary! ✨</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <div class="space-y-4 mb-8">
+            
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Your brain is like a muscle that gets stronger every time you practice and learn new things!</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Making mistakes is actually GOOD for your brain - it&#039;s how you grow smarter and stronger!</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">When something feels hard, that means your brain is building new pathways and getting more powerful!</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">You can always learn new skills and get better at things with practice, patience, and a growth mindset!</span>
+    </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-6 flex items-center gap-4" style="background-color: var(--soft-yellow);">
+          <span class="text-5xl">🐼</span>
+          <p class="font-body text-lg font-semibold" style="color: var(--dark);">🐕 Wow! You&#039;ve learned so much about your incredible brain! Remember, every time you say &#039;I can&#039;t do this YET,&#039; you&#039;re showing your growth mindset. Keep practicing, keep trying, and watch your amazing brain grow stronger every single day. I&#039;m so proud of you for being a brain-growing superstar! Woof woof! 🌟</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage25() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
+      <div class="text-center max-w-2xl">
+        <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
+        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">🎉 Congratulations! You Did It! 🎉</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
+          <p class="text-xl mb-4 font-body" style="color: var(--dark);">Wow! Professor Panda 🐼 is so proud of you for completing this workbook! You&#039;ve learned so many amazing skills and shown how brave and thoughtful you can be.</p>
+          <p class="text-lg font-body" style="color: var(--secondary);">Keep practicing what you&#039;ve learned every day, and remember that Professor Panda 🐼 believes in you! You&#039;re ready to use these new skills to make every day a little brighter.</p>
+        </div>
+        
+        <div class="flex flex-col gap-4">
+          <button 
+            onclick="const params = new URLSearchParams(window.location.search); const childId = params.get('childId'); const moduleId = params.get('moduleId'); if (childId && moduleId) completeModule(childId, moduleId);"
+            class="w-full py-4 px-8 rounded-xl text-white font-bold text-xl font-title shadow-lg hover:shadow-xl transition-all cursor-pointer"
+            style="background: linear-gradient(135deg, var(--secondary), #1ABC9C);"
+          >
+            ✅ Complete Module & Return Home
+          </button>
+          
+          <button 
+            onclick="jumpToPage(0)"
+            class="w-full py-3 px-6 rounded-xl font-semibold font-body cursor-pointer"
+            style="background-color: white; color: var(--dark); border: 2px solid var(--secondary);"
+          >
+            📖 Review This Module
+          </button>
+        </div>
+        
+        <div class="mt-8 flex items-center justify-center gap-2">
+          <span class="text-4xl">🐼</span>
+          <p class="font-body text-lg" style="color: var(--dark);">
+            Professor Panda is proud of you!
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
+    
+    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17, generatePage18, generatePage19, generatePage20, generatePage21, generatePage22, generatePage23, generatePage24, generatePage25];
+    
+    // Navigation
+    function nextPage() {
+      if (currentPage < pages.length - 1) {
+        currentPage++;
+        renderPage();
+      }
+    }
+    
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        renderPage();
+      }
+    }
+    
+    function jumpToPage(pageNum) {
+      if (pageNum >= 0 && pageNum < pages.length) {
+        currentPage = pageNum;
+        renderPage();
+      }
+    }
+    
+    function renderPage() {
+      const container = document.getElementById('pageContainer');
+      if (!container) return;
+      container.innerHTML = pages[currentPage]();
+      
+      if (header && typeof header.updatePage === 'function') {
+        header.updatePage(currentPage + 1, pages.length, {
+          canPrev: currentPage > 0,
+          canNext: currentPage < pages.length - 1
+        });
+      }
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      bindPageInteractions();
+      restoreFormState();
+    }
+    
+    // Restore form values from localStorage
+    function restoreFormState() {
+      // Restore all text inputs
+      document.querySelectorAll('input[type="text"]').forEach(input => {
+        const onchange = input.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          input.value = formData[match[1]];
+        }
+      });
+      
+      // Restore all textareas
+      document.querySelectorAll('textarea').forEach(textarea => {
+        const onchange = textarea.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          textarea.value = formData[match[1]];
+        }
+      });
+      
+      // Restore range sliders
+      document.querySelectorAll('input[type="range"]').forEach(range => {
+        const oninput = range.getAttribute('oninput') || '';
+        const match = oninput.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          range.value = formData[match[1]];
+          const valueDisplay = range.parentElement.querySelector('.thermometer-value');
+          if (valueDisplay) valueDisplay.textContent = formData[match[1]];
+        }
+      });
+      
+      // Restore button selections (rate-scale only - not polls, as those should be re-answered)
+      Object.keys(formData).forEach(key => {
+        if (key.startsWith('rate_')) {
+          const buttons = document.querySelectorAll('.interactive-option');
+          buttons.forEach(btn => {
+            if (btn.textContent.trim() === String(formData[key])) {
+              btn.classList.add('option-selected');
+            }
+          });
+        }
+        if (key.startsWith('tf_')) {
+          const page = document.querySelector('[data-page="interactive-lesson"]');
+          if (page) {
+            const ff = page.querySelector('.followup-feedback');
+            const mf = page.querySelector('.mascot-feedback');
+            if (ff) ff.style.display = 'block';
+            if (mf) mf.style.display = 'flex';
+            const btns = page.querySelectorAll('.interactive-option');
+            if (formData[key] === 'agree' && btns[0]) btns[0].classList.add('option-selected');
+            if (formData[key] === 'disagree' && btns[1]) btns[1].classList.add('option-incorrect');
+          }
+        }
+      });
+    }
+    
+    // Stars
+    async function loadStarData() {
+      try {
+        totalStars = await loadStarsFromDB();
+      } catch (e) {
+        totalStars = 0;
+      }
+      if (header) header.updateStars(totalStars);
+    }
+    
+    async function saveStarData() {
+      try {
+        await saveStarsToDB(totalStars);
+      } catch (e) {
+        console.error('Failed to save stars:', e);
+      }
+      if (header) header.updateStars(totalStars);
+    }
+    
+    async function markActivityComplete(activityId) {
+      if (completedActivities[activityId]) return;
+      
+      completedActivities[activityId] = true;
+      try {
+        totalStars = await awardSingleStar(totalStars);
+      } catch (e) {
+        totalStars++;
+      }
+      await saveStarData();
+      saveProgress();
+      
+      // Star celebration animation
+      const star = document.createElement('div');
+      star.innerHTML = '⭐';
+      star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
+      document.body.appendChild(star);
+      star.animate([
+        { transform: 'translate(-50%,-50%) scale(0.5)', opacity: 1 },
+        { transform: 'translate(-50%,-150%) scale(2)', opacity: 0 }
+      ], { duration: 1200, easing: 'ease-out' }).onfinish = () => star.remove();
+      
+      renderPage();
+    }
+    
+    function bindPageInteractions() {
+      // Quiz answers
+      document.querySelectorAll('.quiz-answer').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const isCorrect = this.dataset.correct === 'true';
+          const feedback = this.dataset.feedback;
+          document.querySelectorAll('.quiz-answer').forEach(b => b.classList.remove('selected', 'correct', 'incorrect'));
+          this.classList.add('selected', isCorrect ? 'correct' : 'incorrect');
+          
+          const feedbackEl = document.querySelector('.quiz-feedback');
+          if (feedbackEl) {
+            feedbackEl.textContent = feedback;
+            feedbackEl.style.display = 'block';
+          }
+          
+          const completeBox = document.querySelector('[data-activity^="quiz"]');
+          if (completeBox && isCorrect) {
+            completeBox.disabled = false;
+          }
+        });
+      });
+      
+      // Scenario options
+      document.querySelectorAll('.scenario-option').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const isGood = this.dataset.good === 'true';
+          const feedback = this.dataset.feedback;
+          document.querySelectorAll('.scenario-option').forEach(b => b.classList.remove('selected', 'good', 'not-good'));
+          this.classList.add('selected', isGood ? 'good' : 'not-good');
+          
+          const feedbackEl = document.querySelector('.scenario-feedback');
+          if (feedbackEl) {
+            feedbackEl.textContent = feedback;
+            feedbackEl.style.display = 'block';
+          }
+          
+          const completeBox = document.querySelector('[data-activity^="scenario"]');
+          if (completeBox) {
+            completeBox.disabled = false;
+          }
+        });
+      });
+      
+      // Checklists
+      const checklistItems = document.querySelectorAll('.checklist-item');
+      const checklistComplete = document.querySelector('[data-activity^="checklist"]');
+      if (checklistComplete && checklistItems.length) {
+        const updateChecklist = () => {
+          const allChecked = Array.from(checklistItems).every(item => item.checked);
+          checklistComplete.disabled = !allChecked;
+        };
+        checklistItems.forEach(item => item.addEventListener('change', updateChecklist));
+        updateChecklist();
+      }
+      
+      // Reflection
+      const reflectionInput = document.querySelector('.reflection-input');
+      const reflectionComplete = document.querySelector('[data-activity^="reflection"]');
+      if (reflectionComplete && reflectionInput) {
+        const updateReflection = () => {
+          reflectionComplete.disabled = reflectionInput.value.trim().length < 20;
+        };
+        reflectionInput.addEventListener('input', updateReflection);
+        updateReflection();
+      }
+      
+      // Drawing canvas
+      const canvas = document.querySelector('.drawing-canvas');
+      if (canvas) initDrawingCanvas(canvas);
+      
+      // Comic strip canvases
+      document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
+        initDrawingCanvas(canvas);
+      });
+    }
+    
+    function initDrawingCanvas(canvas) {
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+      let currentColor = '#264653';
+      
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const touch = e.touches?.[0];
+        return {
+          x: ((touch?.clientX || e.clientX) - rect.left) * scaleX,
+          y: ((touch?.clientY || e.clientY) - rect.top) * scaleY
+        };
+      };
+      
+      const start = (e) => {
+        drawing = true;
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      };
+      
+      const move = (e) => {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = getPos(e);
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = currentColor;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      };
+      
+      const end = () => { drawing = false; };
+      
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      canvas.addEventListener('mouseup', end);
+      canvas.addEventListener('mouseleave', end);
+      canvas.addEventListener('touchstart', start, { passive: false });
+      canvas.addEventListener('touchmove', move, { passive: false });
+      canvas.addEventListener('touchend', end);
+      
+      // Color buttons
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentColor = btn.dataset.color;
+        });
+      });
+      
+      // Clear button
+      const clearBtn = document.querySelector('.clear-canvas-btn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+      }
+    }
+    
+    function goHome() {
+      saveStarData().then(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const childId = urlParams.get('childId');
+        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
+      }).catch(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const childId = urlParams.get('childId');
+        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
+      });
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadProgress();
+      loadFormData();
+      
+      try {
+        await initializeModule(WORKBOOK_ID);
+        const childId = getChildId();
+        childDisplayName = await resolveChildDisplayName(childId) || 'Friend';
+      } catch (e) {
+        console.warn('Module DB init failed, using local storage only:', e);
+        childDisplayName = formData.userName || 'Friend';
+      }
+      
+      try {
+        header = initModuleHeader({
+          title: "Building Your Amazing Brain Town",
+          childName: childDisplayName,
+          onNext: nextPage,
+          onPrev: prevPage,
+          onGoToPage: jumpToPage,
+          onShowStars: () => {},
+          onPrint: () => window.print(),
+          initialPage: { current: 1, total: pages.length }
+        });
+        await loadStarData();
+      } catch (e) {
+        console.warn('Header init failed:', e);
+      }
+      
+      renderPage();
+    });
+    
+    // Global exports for onclick handlers
+    window.nextPage = nextPage;
+    window.prevPage = prevPage;
+    window.jumpToPage = jumpToPage;
+    window.saveFormData = saveFormData;
+    window.markActivityComplete = markActivityComplete;
+    window.goHome = goHome;
+    window.completeModule = completeModule;
+    window.getChildName = getChildName;
+    window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
+    
+    // Interactive lesson choice handler
+    window.handleInteractiveChoice = function(btn, starIndex, hasCorrectAnswer, correctIdx) {
+      const page = btn.closest('.page');
+      const buttons = btn.parentElement.querySelectorAll('.interactive-option');
+      const feedbackEl = page.querySelector('.interactive-feedback');
+      const ffEl = page.querySelector('.followup-feedback');
+      const mfEl = page.querySelector('.mascot-feedback');
+      const selectedIdx = parseInt(btn.dataset.index);
+      
+      // Reset all buttons - remove selection classes
+      buttons.forEach(b => {
+        b.classList.remove('option-selected', 'option-incorrect');
+        b.style.borderColor = 'var(--secondary)';
+      });
+      
+      if (hasCorrectAnswer) {
+        // Has a correct answer - show feedback
+        const isCorrect = selectedIdx === correctIdx;
+        btn.classList.add(isCorrect ? 'option-selected' : 'option-incorrect');
+        btn.style.borderColor = isCorrect ? 'var(--secondary)' : 'var(--accent)';
+        
+        if (feedbackEl) {
+          feedbackEl.style.display = 'block';
+          feedbackEl.style.backgroundColor = isCorrect ? 'var(--success)' : '#fecaca';
+          feedbackEl.innerHTML = isCorrect 
+            ? '<span class="font-body" style="color: var(--dark);">✓ Great choice! That is right!</span>'
+            : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
+        }
+        
+        // Only show followup and mascot feedback on correct answer
+        if (isCorrect) {
+          if (ffEl) ffEl.style.display = 'block';
+          if (mfEl) mfEl.style.display = 'flex';
+        }
+      } else {
+        // Opinion-based - all answers valid
+        btn.classList.add('option-selected');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+      }
+      
+      saveFormData('poll_' + starIndex, btn.textContent.trim());
+    };
+    
+    // Breathing exercise animation
+    const breathingStates = {};
+    window.toggleBreathing = function(breathingId) {
+      if (breathingStates[breathingId]?.running) {
+        stopBreathing(breathingId);
+      } else {
+        startBreathing(breathingId);
+      }
+    };
+    
+    function startBreathing(breathingId) {
+      const circle = document.getElementById(breathingId);
+      const inhaleCard = document.getElementById(breathingId + '_inhale');
+      const holdCard = document.getElementById(breathingId + '_hold');
+      const exhaleCard = document.getElementById(breathingId + '_exhale');
+      const countEl = document.getElementById(breathingId + '_count');
+      
+      if (!circle) return;
+      
+      breathingStates[breathingId] = { running: true, count: 0, phase: 'ready' };
+      
+      const textEl = circle.querySelector('.breathing-text');
+      const emojiEl = circle.querySelector('.breathing-emoji');
+      
+      function resetCards() {
+        [inhaleCard, holdCard, exhaleCard].forEach(card => {
+          if (card) {
+            card.style.opacity = '0.5';
+            card.style.transform = 'scale(0.95)';
+            const timer = card.querySelector('.breathing-timer');
+            if (timer) timer.style.display = 'none';
+          }
+        });
+      }
+      
+      function activateCard(card, duration) {
+        resetCards();
+        if (card) {
+          card.style.opacity = '1';
+          card.style.transform = 'scale(1.02)';
+          const timer = card.querySelector('.breathing-timer');
+          if (timer) {
+            timer.style.display = 'block';
+            let remaining = duration;
+            timer.textContent = remaining;
+            const interval = setInterval(() => {
+              remaining--;
+              if (remaining > 0 && breathingStates[breathingId]?.running) {
+                timer.textContent = remaining;
+              } else {
+                clearInterval(interval);
+              }
+            }, 1000);
+          }
+        }
+      }
+      
+      function runBreathCycle() {
+        if (!breathingStates[breathingId]?.running) return;
+        
+        // INHALE - 4 seconds
+        breathingStates[breathingId].phase = 'inhale';
+        circle.style.transform = 'scale(1.3)';
+        circle.style.boxShadow = '0 0 40px rgba(168, 230, 207, 0.6)';
+        if (textEl) textEl.textContent = 'Breathe In...';
+        if (emojiEl) emojiEl.textContent = '😤';
+        activateCard(inhaleCard, 4);
+        
+        setTimeout(() => {
+          if (!breathingStates[breathingId]?.running) return;
+          
+          // HOLD - 4 seconds
+          breathingStates[breathingId].phase = 'hold';
+          circle.style.transform = 'scale(1.3)';
+          circle.style.boxShadow = '0 0 30px rgba(255, 232, 163, 0.6)';
+          if (textEl) textEl.textContent = 'Hold...';
+          if (emojiEl) emojiEl.textContent = '😊';
+          activateCard(holdCard, 4);
+          
+          setTimeout(() => {
+            if (!breathingStates[breathingId]?.running) return;
+            
+            // EXHALE - 4 seconds
+            breathingStates[breathingId].phase = 'exhale';
+            circle.style.transform = 'scale(1)';
+            circle.style.boxShadow = '0 0 20px rgba(125, 44, 52, 0.3)';
+            if (textEl) textEl.textContent = 'Breathe Out...';
+            if (emojiEl) emojiEl.textContent = '😌';
+            activateCard(exhaleCard, 4);
+            
+            setTimeout(() => {
+              if (!breathingStates[breathingId]?.running) return;
+              
+              // Increment breath count
+              breathingStates[breathingId].count++;
+              if (countEl) countEl.textContent = breathingStates[breathingId].count;
+              
+              // Check if completed 3 breaths
+              if (breathingStates[breathingId].count >= 3) {
+                stopBreathing(breathingId);
+                if (textEl) textEl.textContent = 'Great job! 🎉';
+                if (emojiEl) emojiEl.textContent = '⭐';
+                resetCards();
+                // Auto-check the checkbox
+                const checkbox = document.getElementById('breathing_' + breathingId.split('_')[1] + '_checkbox');
+                if (checkbox && !checkbox.checked) {
+                  checkbox.checked = true;
+                  checkbox.dispatchEvent(new Event('change'));
+                }
+              } else {
+                // Continue to next breath
+                runBreathCycle();
+              }
+            }, 4000);
+          }, 4000);
+        }, 4000);
+      }
+      
+      runBreathCycle();
+    }
+    
+    function stopBreathing(breathingId) {
+      const circle = document.getElementById(breathingId);
+      if (breathingStates[breathingId]) {
+        breathingStates[breathingId].running = false;
+      }
+      if (circle) {
+        circle.style.transform = 'scale(1)';
+        circle.style.boxShadow = 'none';
+        const textEl = circle.querySelector('.breathing-text');
+        if (textEl) textEl.textContent = 'Tap to Start';
+        const emojiEl = circle.querySelector('.breathing-emoji');
+        if (emojiEl) emojiEl.textContent = '🌬️';
+      }
+    }
+    
+    // Fill-blank input handler for inline text fields
+    window.handleFillBlankInput = function(input, starIndex) {
+      const page = input.closest('.page');
+      const blankIndex = input.dataset.blankIndex;
+      
+      // Save this blank's value
+      saveFormData('fillblank_' + starIndex + '_' + blankIndex, input.value);
+      
+      // Only show feedback when user explicitly confirms (blur event or Enter key)
+      // Don't validate on every keystroke
+    };
+    
+    // Sorting activity functions
+    let selectedSortItem = null;
+    window.selectSortItem = function(item) {
+      // Deselect previous
+      document.querySelectorAll('.sort-item.selected').forEach(el => {
+        el.classList.remove('selected');
+        el.style.backgroundColor = 'white';
+        el.style.borderColor = 'var(--primary)';
+      });
+      // Select this one
+      item.classList.add('selected');
+      item.style.backgroundColor = 'var(--soft-yellow)';
+      item.style.borderColor = 'var(--dark)';
+      selectedSortItem = item;
+    };
+    
+    window.sortSelectedItem = function(category, categoryName, starIndex) {
+      if (!selectedSortItem) return;
+      
+      const droppedArea = category.querySelector('.dropped-items');
+      const itemText = selectedSortItem.textContent.trim();
+      const correctCategory = selectedSortItem.dataset.correctCategory;
+      const explanation = selectedSortItem.dataset.explanation;
+      const isCorrect = correctCategory === categoryName;
+      
+      // Create sorted item display
+      const sortedItem = document.createElement('div');
+      sortedItem.className = 'p-2 rounded-lg font-body text-sm mb-1';
+      sortedItem.style.backgroundColor = isCorrect ? 'white' : '#fecaca';
+      sortedItem.style.border = isCorrect ? '2px solid var(--secondary)' : '2px solid var(--accent)';
+      sortedItem.innerHTML = (isCorrect ? '✓ ' : '✗ ') + itemText;
+      sortedItem.title = explanation;
+      droppedArea.appendChild(sortedItem);
+      
+      // Remove from items list
+      selectedSortItem.remove();
+      selectedSortItem = null;
+      
+      // Save to form data
+      saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName);
+    };
+    
+    // v5 CHALLENGE HANDLERS
+    let weatherCalmLevel = 0;
+    let weatherCooldown = false;
+    let weatherClickedButtons = new Set();
+    window.handleWeatherAction = function(btn, activityId, points) {
+      if (weatherCooldown || completedActivities[activityId]) return;
+      
+      // Get total number of action buttons to calculate percentage
+      const allButtons = btn.parentElement.querySelectorAll('.weather-action');
+      const totalButtons = allButtons.length;
+      const pointsPerButton = Math.floor(100 / totalButtons);
+      
+      // Only add points if this button hasn't been clicked yet
+      const buttonId = btn.dataset.actionId;
+      if (weatherClickedButtons.has(buttonId)) return;
+      
+      weatherCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { weatherCooldown = false; btn.classList.remove('cooldown'); }, 800);
+      
+      weatherClickedButtons.add(buttonId);
+      weatherCalmLevel = Math.min(100, weatherCalmLevel + pointsPerButton);
+      
+      const meterEl = document.getElementById('calmMeter');
+      const percentEl = document.getElementById('calmPercent');
+      const feedbackEl = document.getElementById('weatherFeedback');
+      const feedbackText = document.getElementById('feedbackText');
+      if (meterEl) meterEl.style.width = weatherCalmLevel + '%';
+      if (percentEl) percentEl.textContent = weatherCalmLevel;
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackText.textContent = btn.dataset.feedback; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      const overlayEl = document.getElementById('weatherOverlay');
+      const clearEl = document.getElementById('weatherClear');
+      if (overlayEl) overlayEl.style.opacity = 1 - (weatherCalmLevel / 100);
+      if (clearEl) clearEl.style.opacity = weatherCalmLevel / 100;
+      btn.classList.add('used');
+      btn.disabled = true;
+      
+      // Check if all buttons clicked
+      if (weatherClickedButtons.size >= totalButtons) { 
+        weatherCalmLevel = 100;
+        if (meterEl) meterEl.style.width = '100%';
+        if (percentEl) percentEl.textContent = '100';
+        document.getElementById('weatherWin').style.display = 'block'; 
+        document.getElementById('weatherComplete').style.display = 'flex'; 
+      }
+      saveFormData('weather_' + activityId, weatherCalmLevel);
+    };
+    
+    let collectedPowerUps = [];
+    window.handlePowerUpClick = function(btn, activityId, targetCount) {
+      if (btn.classList.contains('collected') || completedActivities[activityId]) return;
+      const isPositive = btn.dataset.positive === 'true';
+      const feedbackEl = document.getElementById('powerupFeedback');
+      const feedbackText = document.getElementById('powerupFeedbackText');
+      const displayEl = document.getElementById('collectedDisplay');
+      const countEl = document.getElementById('collectedCount');
+      if (isPositive) {
+        btn.classList.add('collected');
+        collectedPowerUps.push(btn.dataset.name);
+        if (collectedPowerUps.length === 1 && displayEl) displayEl.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'inline-block px-3 py-1 m-1 rounded-full font-body text-sm';
+        badge.style.backgroundColor = 'var(--light-green)';
+        badge.textContent = btn.querySelector('.text-4xl').textContent + ' ' + btn.dataset.name;
+        if (displayEl) displayEl.appendChild(badge);
+        if (countEl) countEl.textContent = collectedPowerUps.length;
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '✓ Great choice!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+        if (collectedPowerUps.length >= targetCount) { 
+          document.getElementById('powerupWin').style.display = 'block'; 
+          // Don't automatically show completion checkbox - user must manually check it
+        }
+      } else {
+        btn.classList.add('wrong');
+        setTimeout(() => btn.classList.remove('wrong'), 500);
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = '#fecaca'; feedbackText.textContent = '✗ That one might not help - try another!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      }
+      saveFormData('powerup_' + activityId, collectedPowerUps.join(','));
+    };
+    
+    let mazeStep = 0;
+    window.handleMazeChoice = function(btn, stepIdx, totalSteps, activityId) {
+      if (btn.classList.contains('disabled') || completedActivities[activityId]) return;
+      const isCorrect = btn.dataset.correct === 'true';
+      const feedback = btn.dataset.feedback;
+      const feedbackEl = document.getElementById('mazeFeedback' + stepIdx);
+      btn.parentElement.querySelectorAll('.maze-option').forEach(b => b.classList.add('disabled'));
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+      if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca'; feedbackEl.innerHTML = '<p class="font-body">' + feedback + '</p>'; }
+      if (isCorrect) {
+        mazeStep++;
+        const progress = (mazeStep / totalSteps) * 100;
+        const progressEl = document.getElementById('mazeProgress');
+        const markerEl = document.getElementById('mazeMarker');
+        if (progressEl) progressEl.style.width = progress + '%';
+        if (markerEl) markerEl.style.left = progress + '%';
+        setTimeout(() => {
+          if (mazeStep < totalSteps) {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeStep' + (stepIdx + 1)).style.display = 'block';
+          } else {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeWin').style.display = 'block';
+            document.getElementById('mazeComplete').style.display = 'flex';
+          }
+        }, 1500);
+      }
+      saveFormData('maze_' + activityId + '_step' + stepIdx, isCorrect ? 'correct' : 'wrong');
+    };
+    
+    window.handleShieldInput = function(activityId, totalSections) {
+      const inputs = document.querySelectorAll('.shield-input');
+      let filled = 0;
+      inputs.forEach(input => { if (input.value.trim().length > 0) filled++; });
+      const progressEl = document.getElementById('shieldProgress');
+      if (progressEl) progressEl.textContent = filled;
+      if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; }
+    };
+    
+    window.addShieldDecoration = function(emoji) {
+      const display = document.getElementById('shieldDecorations');
+      if (display) {
+        // Create a span for each decoration to allow proper wrapping and display
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.style.display = 'inline-block';
+        span.style.margin = '2px';
+        display.appendChild(span);
+      }
+    };
+    
+    let volcanoTemp = 100;
+    let volcanoCooldown = false;
+    window.handleVolcanoCool = function(btn, activityId, coolingPower) {
+      if (volcanoCooldown || volcanoTemp <= 0 || completedActivities[activityId]) return;
+      volcanoCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { volcanoCooldown = false; btn.classList.remove('cooldown'); }, 600);
+      volcanoTemp = Math.max(0, volcanoTemp - coolingPower);
+      const tempEl = document.getElementById('volcanoTemp');
+      const lavaEl = document.getElementById('volcanoLava');
+      const indicatorEl = document.getElementById('volcanoIndicator');
+      const feedbackEl = document.getElementById('volcanoFeedback');
+      const feedbackText = document.getElementById('volcanoFeedbackText');
+      if (tempEl) tempEl.textContent = volcanoTemp;
+      if (lavaEl) lavaEl.style.opacity = volcanoTemp / 100;
+      const emojis = ['😌', '😊', '😤', '🔥', '🌋'];
+      const level = Math.ceil(volcanoTemp / 25);
+      if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
+      for (let i = 1; i <= 5; i++) { const lvl = document.getElementById('volcanoLevel' + i); if (lvl) lvl.classList.toggle('active', i === level); }
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '❄️ ' + btn.dataset.action + ' - Cooling down!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+      if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; }
+      saveFormData('volcano_' + activityId, volcanoTemp);
+    };
+
+    // ===== v7 GAME ACTIVITY HANDLERS =====
+    const balloonState = {};
+    window.useCalmingTool = function(toolId, power, toolName) {
+      const page = document.querySelector('[data-page="balloon-pop"]');
+      if (!page) return;
+      const activityId = page.dataset.activity;
+      const starIndex = activityId.split('_')[1];
+      
+      if (!balloonState[starIndex]) balloonState[starIndex] = { power: 0, popped: [] };
+      balloonState[starIndex].power = Math.min(100, balloonState[starIndex].power + power);
+      
+      document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
+      document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
+  
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '+' + power + ' calming power!');
+    };
+
+    window.popBalloon = function(balloonId, activityId, total) {
+      const starIndex = activityId.split('_')[1];
+      if (!balloonState[starIndex] || balloonState[starIndex].power < 25) {
+        window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, 'Need more calming power first!');
+        return;
+      }
+      
+      const balloon = document.getElementById('balloon_' + balloonId);
+      if (balloon.classList.contains('popped')) return;
+      
+      balloon.classList.add('popped');
+      balloonState[starIndex].power -= 25;
+      balloonState[starIndex].popped.push(balloonId);
+      
+      document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
+      document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
+      
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, balloon.dataset.response);
+      
+      if (balloonState[starIndex].popped.length >= total) {
+        document.getElementById('balloonVictory_' + starIndex).style.display = 'block';
+        document.getElementById('balloonComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== TREASURE HUNT =====
+    const treasureState = {};
+    window.exploreTreasure = function(starIndex, locId, total) {
+      const loc = document.getElementById('loc_' + starIndex + '_' + locId);
+      if (loc.classList.contains('explored')) return;
+      
+      loc.classList.add('explored');
+      document.getElementById('tc_' + starIndex + '_' + locId).style.display = 'block';
+      
+      if (!treasureState[starIndex]) treasureState[starIndex] = [];
+      treasureState[starIndex].push(locId);
+      document.getElementById('treasureCount_' + starIndex).textContent = treasureState[starIndex].length;
+      
+      if (treasureState[starIndex].length >= total) {
+        document.getElementById('treasureVictory_' + starIndex).style.display = 'block';
+        document.getElementById('treasureComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== MONSTER TAMER =====
+    const monsterState = {};
+    window.tameMonster = function(starIndex, shrinkPower, message) {
+      if (!monsterState[starIndex]) monsterState[starIndex] = 100;
+      monsterState[starIndex] = Math.max(0, monsterState[starIndex] - shrinkPower);
+      
+      const visual = document.getElementById('monsterVisual_' + starIndex);
+      visual.style.fontSize = (8 * Math.max(0.3, monsterState[starIndex] / 100)) + 'rem';
+      
+      document.getElementById('monsterSize_' + starIndex).textContent = monsterState[starIndex] + '%';
+      document.getElementById('monsterBar_' + starIndex).style.width = monsterState[starIndex] + '%';
+      
+      window.showFeedback('monsterFeedback_' + starIndex, 'monsterFeedbackText_' + starIndex, message);
+      
+      // Update stages
+      const stage = monsterState[starIndex] > 75 ? 4 : monsterState[starIndex] > 50 ? 3 : monsterState[starIndex] > 25 ? 2 : 1;
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('stage_' + starIndex + '_' + i);
+        if (el) el.style.backgroundColor = i === stage ? 'var(--primary)' : 'var(--cream)';
+      }
+      
+      if (monsterState[starIndex] <= 0) {
+        visual.textContent = '😊';
+        document.getElementById('monsterFriend_' + starIndex).style.display = 'block';
+        document.getElementById('monsterComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== GARDEN GROWER =====
+    const gardenState = {};
+    window.waterPlant = function(starIndex, plantId, stages, total) {
+      if (!gardenState[starIndex]) gardenState[starIndex] = {};
+      if (!gardenState[starIndex][plantId]) gardenState[starIndex][plantId] = 0;
+      if (gardenState[starIndex][plantId] >= stages.length - 1) return;
+      
+      gardenState[starIndex][plantId]++;
+      const currentStage = gardenState[starIndex][plantId];
+      
+      document.getElementById('plantEmoji_' + starIndex + '_' + plantId).textContent = stages[currentStage];
+      
+      for (let i = 0; i <= currentStage; i++) {
+        const dot = document.getElementById('growth_' + starIndex + '_' + plantId + '_' + i);
+        if (dot) dot.style.backgroundColor = 'var(--primary)';
+      }
+      
+      if (currentStage >= stages.length - 1) {
+        document.getElementById('plant_' + starIndex + '_' + plantId).classList.add('grown');
+      }
+      
+      const fullyGrown = Object.values(gardenState[starIndex]).filter(g => g >= stages.length - 1).length;
+      document.getElementById('gardenProgress_' + starIndex).textContent = fullyGrown;
+      
+      if (fullyGrown >= total) {
+        document.getElementById('gardenHarvest_' + starIndex).style.display = 'block';
+        document.getElementById('gardenComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== SUPERHERO CREATOR =====
+    const heroState = {};
+    window.selectHero = function(starIndex, type, emoji) {
+      if (!heroState[starIndex]) heroState[starIndex] = {};
+      heroState[starIndex][type] = emoji;
+      document.getElementById('hero_' + starIndex + '_' + type).textContent = emoji;
+      window.checkHeroComplete(starIndex);
+    };
+
+    window.checkHeroComplete = function(starIndex) {
+      const state = heroState[starIndex] || {};
+      if (state.power && state.costume && state.sidekick) {
+        document.getElementById('heroDone_' + starIndex).style.display = 'block';
+        document.getElementById('heroComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== FEELINGS ORCHESTRA =====
+    window.playInstrument = function(starIndex, emoji, sound, feeling) {
+      const display = document.getElementById('soundDisplay_' + starIndex);
+      display.innerHTML = '<p class="text-5xl">' + emoji + '</p><p class="font-title text-2xl">' + sound + '</p><p class="font-body">' + feeling + '</p>';
+    };
+
+    // ===== CALM AQUARIUM =====
+    window.addToAquarium = function(starIndex, type, emoji, trait) {
+      const tank = document.getElementById('tank_' + starIndex);
+      const item = document.createElement('span');
+      item.className = 'text-4xl';
+      item.textContent = emoji;
+      item.style.animation = 'float 3s ease-in-out infinite';
+      tank.appendChild(item);
+    };
+
+    // ===== ROCKET LAUNCHER =====
+    const rocketState = {};
+    window.addFuel = function(starIndex, amount) {
+      if (!rocketState[starIndex]) rocketState[starIndex] = 0;
+      rocketState[starIndex] = Math.min(100, rocketState[starIndex] + amount);
+      document.getElementById('fuelDisplay_' + starIndex).textContent = rocketState[starIndex] + '%';
+      document.getElementById('fuelBar_' + starIndex).style.width = rocketState[starIndex] + '%';
+    };
+
+    window.launchRocket = function(starIndex) {
+      if (!rocketState[starIndex] || rocketState[starIndex] < 100) {
+        alert('Need 100% fuel to launch!');
+        return;
+      }
+      document.getElementById('planets_' + starIndex).style.display = 'block';
+      document.getElementById('rocketReturn_' + starIndex).style.display = 'block';
+      document.getElementById('rocketComplete_' + starIndex).style.display = 'flex';
+    };
+
+    // ===== MAGIC POTION =====
+    const potionState = {};
+    window.addIngredient = function(starIndex, id, emoji, name) {
+      if (!potionState[starIndex]) potionState[starIndex] = [];
+      if (potionState[starIndex].length >= 3) return;
+      potionState[starIndex].push({ id, emoji, name });
+      const cauldron = document.getElementById('cauldron_' + starIndex);
+      cauldron.innerHTML = potionState[starIndex].map(i => '<span class="text-4xl">' + i.emoji + '</span>').join('');
+    };
+
+    window.brewPotion = function(starIndex) {
+      if (!potionState[starIndex] || potionState[starIndex].length < 2) {
+        alert('Add at least 2 ingredients!');
+        return;
+      }
+      document.getElementById('potionResult_' + starIndex).style.display = 'block';
+    };
+
+    // ===== FEELINGS BINGO =====
+    window.markBingoSquare = function(starIndex, squareId) {
+      const square = document.getElementById('bingo_' + starIndex + '_' + squareId);
+      square.classList.toggle('marked');
+    };
+
+    // ===== HELPER =====
+    window.showFeedback = function(containerId, textId, message) {
+      const container = document.getElementById(containerId);
+      const text = document.getElementById(textId);
+      if (container && text) {
+        text.textContent = message;
+        container.style.display = 'block';
+        setTimeout(() => { container.style.display = 'none'; }, 3000);
+      }
+    };
+
+// =====================================================
+    // v6 ACTIVITY HANDLERS
+    // =====================================================
+    
+    // Spin the Wheel
+    window.spinWheel = function(starIndex, segmentCount) {
+      const wheel = document.querySelector('.wheel-container');
+      if (!wheel) return;
+      
+      const randomDeg = Math.floor(Math.random() * 360) + 720; // At least 2 full spins
+      wheel.style.transition = 'transform 3s ease-out';
+      wheel.style.transform = 'rotate(' + randomDeg + 'deg)';
+      
+      setTimeout(() => {
+        const finalAngle = randomDeg % 360;
+        const segmentAngle = 360 / segmentCount;
+        const selectedIdx = Math.floor((360 - finalAngle + segmentAngle/2) % 360 / segmentAngle);
+        
+        document.getElementById('wheelCelebration_' + starIndex).style.display = 'block';
+        document.getElementById('wheelComplete_' + starIndex).style.display = 'flex';
+      }, 3000);
+    };
+    
+    window.selectWheelSegment = function(starIndex, segId, response) {
+      // Show result
+      document.getElementById('wheelResult_' + starIndex).style.display = 'block';
+      document.getElementById('wheelResultText_' + starIndex).textContent = response;
+      document.getElementById('wheelCelebration_' + starIndex).style.display = 'block';
+      document.getElementById('wheelComplete_' + starIndex).style.display = 'flex';
+      
+      // Highlight selected segment
+      document.querySelectorAll('[id^="seg_' + starIndex + '_"]').forEach(seg => {
+        seg.style.opacity = seg.id === 'seg_' + starIndex + '_' + segId ? '1' : '0.5';
+      });
+      
+      saveFormData('wheel_' + starIndex, segId);
+    };
+    
+    // Sticker Collector
+    const collectedStickers = {};
+    window.collectSticker = function(starIndex, challengeId, emoji, total) {
+      const challenge = document.getElementById('challenge_' + starIndex + '_' + challengeId);
+      if (challenge.classList.contains('collected')) return;
+      
+      challenge.classList.add('collected');
+      
+      if (!collectedStickers[starIndex]) collectedStickers[starIndex] = [];
+      collectedStickers[starIndex].push(emoji);
+      
+      // Update collection display
+      const collection = document.getElementById('stickerCollection_' + starIndex);
+      if (collectedStickers[starIndex].length === 1) collection.innerHTML = '';
+      
+      const stickerSpan = document.createElement('span');
+      stickerSpan.className = 'text-3xl animate-bounce-slow';
+      stickerSpan.textContent = emoji;
+      collection.appendChild(stickerSpan);
+      
+      document.getElementById('stickerCount_' + starIndex).textContent = collectedStickers[starIndex].length;
+      
+      if (collectedStickers[starIndex].length >= total) {
+        document.getElementById('stickerComplete_' + starIndex).style.display = 'block';
+        document.getElementById('stickerDone_' + starIndex).style.display = 'flex';
+      }
+      
+      saveFormData('stickers_' + starIndex, collectedStickers[starIndex].join(','));
+    };
+    
+    // Mindful Adventure
+    const adventureProgress = {};
+    window.checkAdventureComplete = function(starIndex, totalScenes) {
+      if (!adventureProgress[starIndex]) adventureProgress[starIndex] = new Set();
+      
+      // Check all textareas in scenes
+      document.querySelectorAll('[id^="scene_' + starIndex + '_"] textarea').forEach(textarea => {
+        if (textarea.value.trim().length > 0) {
+          const sceneId = textarea.closest('[id^="scene_"]').id.split('_').pop();
+          adventureProgress[starIndex].add(sceneId);
+        }
+      });
+      
+      document.getElementById('adventureProgress_' + starIndex).textContent = adventureProgress[starIndex].size;
+      
+      if (adventureProgress[starIndex].size >= totalScenes) {
+        document.getElementById('adventureClosing_' + starIndex).style.display = 'block';
+        document.getElementById('adventureDone_' + starIndex).style.display = 'flex';
+      }
+    };
+    
+    // Emotion Detective
+    window.solveCase = function(starIndex, optionIdx, isCorrect, explanation) {
+      const feedbackEl = document.getElementById('detectiveFeedback_' + starIndex);
+      const feedbackText = document.getElementById('detectiveFeedbackText_' + starIndex);
+      
+      // Reset all options
+      document.querySelectorAll('.detective-option').forEach(opt => {
+        opt.classList.remove('correct', 'wrong');
+      });
+      
+      // Mark selected option
+      const selectedBtn = document.querySelectorAll('.detective-option')[optionIdx];
+      selectedBtn.classList.add(isCorrect ? 'correct' : 'wrong');
+      
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca';
+      feedbackText.textContent = explanation;
+      
+      if (isCorrect) {
+        document.getElementById('detectiveReveal_' + starIndex).style.display = 'block';
+        document.getElementById('detectiveDone_' + starIndex).style.display = 'flex';
+      }
+      
+      saveFormData('detective_' + starIndex, isCorrect ? 'solved' : 'attempted');
+    };
+  </script>
+</body>
+</html>
