@@ -878,6 +878,10 @@ canvas:hover,
 .match-item {
   border-radius: var(--radius-lg) !important;
   transition: all var(--duration-normal) var(--ease-bounce) !important;
+  background: #fff;
+  border: 2px solid var(--secondary);
+  color: var(--dark);
+  cursor: pointer;
 }
 
 .match-item:hover {
@@ -886,11 +890,40 @@ canvas:hover,
 
 .match-item.selected {
   box-shadow: 0 0 0 3px var(--primary), var(--shadow-medium) !important;
+  border-color: var(--primary);
 }
 
 .match-item.matched {
   opacity: 0.6 !important;
   transform: scale(0.95) !important;
+}
+
+.matching-board {
+  position: relative;
+}
+
+.matching-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.matching-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.matching-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.matching-status {
+  min-height: 1.5rem;
 }
 
 /* ============================================

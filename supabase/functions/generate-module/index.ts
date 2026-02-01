@@ -1091,6 +1091,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         reflectionInput.addEventListener('input', updateReflection);
         updateReflection();
       }
+
+      // Matching activity
+      document.querySelectorAll('.matching-activity').forEach(activity => {
+        initMatchingActivity(activity);
+      });
       
       // Drawing canvas
       const canvas = document.querySelector('.drawing-canvas');
@@ -1100,6 +1105,127 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
         initDrawingCanvas(canvas);
       });
+    }
+
+    function initMatchingActivity(activity) {
+      const board = activity.querySelector('.matching-board');
+      const svg = activity.querySelector('.matching-lines');
+      const leftItems = Array.from(activity.querySelectorAll('.match-item-left'));
+      const rightColumn = activity.querySelector('.match-column-right');
+      const status = activity.querySelector('.matching-status');
+      const completeBox = activity.closest('.rounded-3xl')?.querySelector('[data-activity^="matching_"]');
+
+      if (!board || !svg || !rightColumn) return;
+
+      const shuffle = (arr) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
+      const rightItems = shuffle(Array.from(rightColumn.querySelectorAll('.match-item-right')));
+      rightItems.forEach(item => rightColumn.appendChild(item));
+
+      let selectedLeft = null;
+      const connections = new Map();
+
+      const updateStatus = () => {
+        if (!status) return;
+        if (connections.size === 0) {
+          status.textContent = 'Tap a left item, then a right item to draw a line.';
+          return;
+        }
+        const allMatched = connections.size === leftItems.length;
+        const allCorrect = Array.from(connections.entries()).every(([leftId, rightId]) => leftId === rightId);
+        if (allMatched && allCorrect) {
+          status.textContent = 'All matched correctly! 🎉';
+        } else if (allMatched) {
+          status.textContent = 'Nice try! Some lines need adjusting.';
+        } else {
+          status.textContent = 'Keep going! Connect all the pairs.';
+        }
+      };
+
+      const updateCompleteBox = () => {
+        if (!completeBox) return;
+        const allMatched = connections.size === leftItems.length;
+        const allCorrect = Array.from(connections.entries()).every(([leftId, rightId]) => leftId === rightId);
+        completeBox.disabled = !(allMatched && allCorrect);
+      };
+
+      const drawLines = () => {
+        if (!document.body.contains(activity)) return;
+        const rect = board.getBoundingClientRect();
+        svg.setAttribute('width', rect.width);
+        svg.setAttribute('height', rect.height);
+        svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+        svg.innerHTML = '';
+        connections.forEach((rightId, leftId) => {
+          const leftEl = activity.querySelector(`.match-item-left[data-match-id="${leftId}"]`);
+          const rightEl = activity.querySelector(`.match-item-right[data-match-id="${rightId}"]`);
+          if (!leftEl || !rightEl) return;
+          const leftRect = leftEl.getBoundingClientRect();
+          const rightRect = rightEl.getBoundingClientRect();
+          const x1 = leftRect.right - rect.left;
+          const y1 = leftRect.top + leftRect.height / 2 - rect.top;
+          const x2 = rightRect.left - rect.left;
+          const y2 = rightRect.top + rightRect.height / 2 - rect.top;
+          const correct = leftId === rightId;
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke', correct ? 'var(--primary)' : 'var(--accent)');
+          line.setAttribute('stroke-width', '4');
+          line.setAttribute('stroke-linecap', 'round');
+          svg.appendChild(line);
+        });
+      };
+
+      const handleLeftClick = (item) => {
+        leftItems.forEach(el => el.classList.remove('selected'));
+        if (selectedLeft === item) {
+          selectedLeft = null;
+        } else {
+          selectedLeft = item;
+          item.classList.add('selected');
+        }
+      };
+
+      const handleRightClick = (item) => {
+        if (!selectedLeft) return;
+        const leftId = selectedLeft.dataset.matchId;
+        const rightId = item.dataset.matchId;
+        connections.forEach((value, key) => {
+          if (value === rightId) connections.delete(key);
+        });
+        connections.delete(leftId);
+        connections.set(leftId, rightId);
+        selectedLeft.classList.remove('selected');
+        selectedLeft = null;
+        updateStatus();
+        updateCompleteBox();
+        drawLines();
+      };
+
+      leftItems.forEach(item => item.addEventListener('click', () => handleLeftClick(item)));
+      rightItems.forEach(item => item.addEventListener('click', () => handleRightClick(item)));
+
+      const resizeHandler = () => {
+        if (!document.body.contains(activity)) {
+          window.removeEventListener('resize', resizeHandler);
+          return;
+        }
+        drawLines();
+      };
+      window.addEventListener('resize', resizeHandler);
+
+      updateStatus();
+      updateCompleteBox();
+      drawLines();
     }
     
     function initDrawingCanvas(canvas) {
@@ -2077,7 +2203,7 @@ function renderChecklistPage(checklist: ChecklistContent, starIndex: number): st
               data-activity="${activityId}"
               disabled
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
             >
             <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
           </div>
@@ -2207,7 +2333,7 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
             >
             <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
           </div>
@@ -2492,7 +2618,7 @@ function renderWarningSignsPage(warningSigns: WarningSingsContent, starIndex: nu
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
             >
             <label class="font-title text-xl" style="color: var(--dark);">I identified my warning signs! ⭐</label>
           </div>
@@ -3272,21 +3398,19 @@ function renderEmotionDetectivePage(detective: EmotionDetectiveContent, starInde
 
 function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex: number): string {
   const activityId = `matching_${starIndex}`;
-  const pairsHtml = matching.pairs.map((pair, i) => `
-    <div class="matching-pair rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <p class="font-body mb-3" style="color: var(--dark);">${escapeForTemplate(pair.situation)}</p>
-      <div class="flex flex-wrap gap-2">
-        <button 
-          class="matching-choice px-4 py-2 rounded-lg font-body transition-all cursor-pointer"
-          style="background-color: white; border: 2px solid var(--secondary); color: var(--dark);"
-          data-correct="${pair.feeling}"
-          data-pair="${i}"
-          onclick="this.style.backgroundColor = 'var(--light-green)'; this.style.borderColor = 'var(--secondary)';"
-        >
-          ${escapeForTemplate(pair.emoji)} ${escapeForTemplate(pair.feeling)}
-        </button>
-      </div>
-    </div>`).join("");
+  const leftHtml = matching.pairs.map((pair, i) => `
+    <button class="match-item match-item-left w-full text-left px-4 py-3 rounded-xl font-body"
+      data-match-id="${i}">
+      ${escapeForTemplate(pair.situation)}
+    </button>
+  `).join("");
+
+  const rightHtml = matching.pairs.map((pair, i) => `
+    <button class="match-item match-item-right w-full text-left px-4 py-3 rounded-xl font-body"
+      data-match-id="${i}">
+      ${escapeForTemplate(pair.emoji)} ${escapeForTemplate(pair.feeling)}
+    </button>
+  `).join("");
 
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="matching-activity">
@@ -3295,8 +3419,20 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
           <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(matching.instructions)}</p>
-          
-          ${pairsHtml}
+          <div class="matching-activity" data-activity-id="${activityId}">
+            <div class="matching-board rounded-2xl p-4" style="background-color: var(--soft-yellow);">
+              <svg class="matching-lines" aria-hidden="true"></svg>
+              <div class="matching-columns">
+                <div class="matching-column match-column-left">
+                  ${leftHtml}
+                </div>
+                <div class="matching-column match-column-right">
+                  ${rightHtml}
+                </div>
+              </div>
+            </div>
+            <p class="matching-status mt-4 font-body text-center" style="color: var(--secondary);">Tap a left item, then a right item to draw a line.</p>
+          </div>
           
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input 
@@ -3305,7 +3441,7 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
             >
             <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
           </div>
@@ -3529,12 +3665,12 @@ function renderFillInStoryPage(story: FillInStoryContent, starIndex: number, met
   
   let storyHtml = escapeForTemplate(story.storyTemplate);
   story.blanks.forEach((blank, i) => {
-    // Calculate width based on placeholder length (min 6rem, max 14rem)
+    // Calculate width based on placeholder length (min 8rem, max 22rem)
     const hintLength = blank.hint.length;
-    const widthRem = Math.min(14, Math.max(6, Math.ceil(hintLength * 0.65)));
+    const widthRem = Math.min(22, Math.max(8, Math.ceil(hintLength * 0.8)));
     storyHtml = storyHtml.replace(
       `[${blank.id}]`,
-      `<input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: ${widthRem}rem; min-width: 6rem;" placeholder="${escapeForTemplate(blank.hint)}" onchange="saveFormData('story_${starIndex}_${i}', this.value)">`
+      `<input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: ${widthRem}rem; min-width: 8rem; max-width: 100%; padding: 0 0.35rem;" placeholder="${escapeForTemplate(blank.hint)}" onchange="saveFormData('story_${starIndex}_${i}', this.value)">`
     );
   });
 
