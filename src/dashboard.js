@@ -6,6 +6,8 @@ import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-re
 import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focus-plan.js'
 
+const LEVEL_XP = 100
+
 // Make supabase available to non-module scripts and inline dashboard.html code
 window.supabase = supabase
 
@@ -3078,6 +3080,17 @@ async function updateDashboardStats() {
   if (totalStarsEl) totalStarsEl.textContent = selectedChild.stars || 0
   if (completedModulesEl) completedModulesEl.textContent = completedCount
   if (totalModulesEl) totalModulesEl.textContent = totalCount
+
+  const totalXp = selectedChild.total_xp || 0
+  const currentLevel = selectedChild.level || Math.floor(totalXp / LEVEL_XP) + 1
+  const levelProgress = totalXp % LEVEL_XP
+  const levelPercent = Math.min(100, Math.round((levelProgress / LEVEL_XP) * 100))
+  const levelValueEl = document.getElementById('childLevel')
+  const levelProgressBarEl = document.getElementById('levelProgressBar')
+  const levelProgressTextEl = document.getElementById('levelProgressText')
+  if (levelValueEl) levelValueEl.textContent = currentLevel
+  if (levelProgressBarEl) levelProgressBarEl.style.width = `${levelPercent}%`
+  if (levelProgressTextEl) levelProgressTextEl.textContent = `${levelProgress} / ${LEVEL_XP} XP`
   
   // Get rank from leaderboard
   try {
