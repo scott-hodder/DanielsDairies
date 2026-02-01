@@ -215,6 +215,7 @@
     const childId = params.get('childId');
     const moduleId = params.get('moduleId');
     const parentUserId = params.get('parentUserId');
+    const LEVEL_XP = 100;
     
     window.supabase = supabase;
     window.childId = childId;
@@ -442,13 +443,14 @@
       
       try {
         let modId = moduleId;
+        let xpReward = 0;
         
         // If we don't have moduleId, try to look it up by code
         if (!modId) {
           const code = modCode || moduleCode;
           const { data: mod, error: modError } = await supabase
             .from('modules')
-            .select('id')
+            .select('id, xp_reward')
             .eq('code', code)
             .single();
           
@@ -456,13 +458,25 @@
             throw new Error(`Module not found for code: ${code}`);
           }
           modId = mod.id;
+          xpReward = mod.xp_reward || 0;
+        } else {
+          const { data: mod, error: modError } = await supabase
+            .from('modules')
+            .select('xp_reward')
+            .eq('id', modId)
+            .single();
+          
+          if (modError) {
+            throw modError;
+          }
+          xpReward = mod?.xp_reward || 0;
         }
         
         console.log('[completeModuleDB] Marking module as complete:', { childId: _state.childId, moduleId: modId });
         
         const { data: existingRecord, error: checkError } = await supabase
           .from('child_modules')
-          .select('id')
+          .select('id, is_completed')
           .eq('child_id', _state.childId)
           .eq('module_id', modId)
           .maybeSingle();
@@ -472,21 +486,26 @@
           throw checkError;
         }
         
+        let completionRecorded = false;
+        
         if (existingRecord) {
           console.log('[completeModuleDB] Updating existing record:', existingRecord.id);
-          const { error: updateError } = await supabase
-            .from('child_modules')
-            .update({
-              is_completed: true,
-              completed_at: new Date().toISOString()
-            })
-            .eq('id', existingRecord.id);
-          
-          if (updateError) {
-            console.error('[completeModuleDB] Error updating:', updateError);
-            throw updateError;
+          if (!existingRecord.is_completed) {
+            const { error: updateError } = await supabase
+              .from('child_modules')
+              .update({
+                is_completed: true,
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', existingRecord.id);
+            
+            if (updateError) {
+              console.error('[completeModuleDB] Error updating:', updateError);
+              throw updateError;
+            }
+            completionRecorded = true;
+            console.log('[completeModuleDB] Successfully marked as complete');
           }
-          console.log('[completeModuleDB] Successfully marked as complete');
         } else {
           console.log('[completeModuleDB] Creating new record');
           const { error: insertError } = await supabase
@@ -503,7 +522,12 @@
             console.error('[completeModuleDB] Error inserting:', insertError);
             throw insertError;
           }
+          completionRecorded = true;
           console.log('[completeModuleDB] Successfully created completion record');
+        }
+
+        if (completionRecorded && xpReward > 0) {
+          await awardModuleXp(_state.childId, xpReward);
         }
         
         return true;
@@ -512,6 +536,46 @@
         throw e;
       }
     };
+
+    async function awardModuleXp(childIdValue, xpReward) {
+      try {
+        const { error: rpcError } = await supabase.rpc('increment_child_rewards', {
+          p_child_id: childIdValue,
+          p_stars: 0,
+          p_xp: xpReward
+        });
+        
+        if (!rpcError) {
+          return;
+        }
+        console.warn('[awardModuleXp] RPC failed, falling back to direct update:', rpcError);
+      } catch (rpcError) {
+        console.warn('[awardModuleXp] RPC error, falling back to direct update:', rpcError);
+      }
+      
+      const { data: child, error: childError } = await supabase
+        .from('children')
+        .select('total_xp, level')
+        .eq('id', childIdValue)
+        .single();
+      
+      if (childError) {
+        throw childError;
+      }
+      
+      const currentXp = child?.total_xp || 0;
+      const newTotalXp = currentXp + xpReward;
+      const newLevel = Math.max(1, Math.floor(newTotalXp / LEVEL_XP) + 1);
+      
+      const { error: updateError } = await supabase
+        .from('children')
+        .update({ total_xp: newTotalXp, level: newLevel })
+        .eq('id', childIdValue);
+      
+      if (updateError) {
+        throw updateError;
+      }
+    }
     
     // =========================================
     // MODULE COMPLETION HANDLING
