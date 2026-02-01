@@ -1123,8 +1123,59 @@ function generatePageStructure(): PageTemplate[] {
   const shuffledGames = shuffleArray(gameActivities);
   selectedActivities.push(...shuffledGames.slice(0, randomInt(2, 3)));
   
-  // Shuffle all selected activities for random placement
-  const activities = shuffleArray(selectedActivities);
+  type ActivityStage = "intro" | "practice" | "apply";
+  const activityStages: Partial<Record<PageType, ActivityStage>> = {
+    "feeling-thermometer": "intro",
+    "body-map": "intro",
+    "feeling-selector": "intro",
+    "emoji-check-in": "intro",
+    "reflection": "intro",
+    "breathing": "intro",
+    "checklist": "practice",
+    "quiz": "practice",
+    "drawing": "practice",
+    "scenario": "practice",
+    "fill-in-story": "practice",
+    "coping-cards": "practice",
+    "gratitude-jar": "practice",
+    "sorting-activity": "practice",
+    "thought-bubbles": "practice",
+    "word-scramble": "practice",
+    "agree-disagree": "practice",
+    "comic-strip": "practice",
+    "affirmation-builder": "practice",
+    "matching-activity": "practice",
+    "calm-den-builder": "practice",
+    "action-plan": "apply",
+    "warning-signs": "apply",
+    "weather-controller": "apply",
+    "power-up-collector": "apply",
+    "emotion-maze": "apply",
+    "strength-shield": "apply",
+    "feeling-volcano": "apply",
+    "spin-the-wheel": "apply",
+    "sticker-collector": "apply",
+    "mindful-adventure": "apply",
+    "emotion-detective": "apply",
+    "balloon-pop": "apply",
+    "treasure-hunt": "apply",
+    "monster-tamer": "apply",
+    "garden-grower": "apply",
+    "superhero-creator": "apply",
+    "feelings-orchestra": "apply",
+    "calm-aquarium": "apply",
+    "rocket-launcher": "apply",
+    "magic-potion": "apply",
+    "feelings-bingo": "apply",
+  };
+
+  const stageOrder: ActivityStage[] = ["intro", "practice", "apply"];
+  const stagedActivities = stageOrder.flatMap((stage) =>
+    shuffleArray(selectedActivities.filter((activity) => (activityStages[activity.type] ?? "practice") === stage))
+  );
+
+  // Keep a light shuffle within each stage but preserve overall progression order
+  const activities = stagedActivities.length > 0 ? stagedActivities : shuffleArray(selectedActivities);
   
   // Build structure with interactive lessons interspersed
   const structure: PageTemplate[] = [
@@ -1252,7 +1303,8 @@ CRITICAL RULES:
 1. Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.
 2. If a specific character/mascot is mentioned (like "Daniel the Dog"), you MUST use EXACTLY that character name and type throughout.
 3. Never substitute a different animal or character name - if told to use "Daniel the Dog", every reference must be to "Daniel" and a dog, not a fox, bear, or any other animal.
-4. The mascot emoji must match the character type exactly.`;
+4. The mascot emoji must match the character type exactly.
+5. When asked to create multiple items, sequence them as a learning journey: start with simple awareness, then practice skills, then apply them in real-life or challenge scenarios. Each item should build on the previous one and avoid repeating earlier points.`;
 
 async function generateMetadata(
   apiKey: string,
@@ -1438,7 +1490,7 @@ Respond with ONLY this JSON:
   ]
 }
 
-Create exactly ${count} unique lessons. Make each lesson focus on a different aspect of ${metadata.theme}.`;
+Create exactly ${count} unique lessons. Make each lesson focus on a different aspect of ${metadata.theme}, and order them so they build from simple awareness to practice and real-life application without repeating earlier ideas.`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
   const parsed = safeJsonParse<{ lessons: LessonContent[] }>(response);
@@ -2126,7 +2178,8 @@ IMPORTANT:
 - For "rate-scale": prompt asks to rate something 1-5
 - For "true-false": the prompt is a statement to agree/disagree with. IMPORTANT: Set "correctAnswerIndex" to 0 if the correct answer is "I Agree", or 1 if the correct answer is "I Disagree". For example, "Only bad kids feel angry" is FALSE (a myth), so correctAnswerIndex should be 1 (I Disagree). "It's okay to feel scared sometimes" is TRUE, so correctAnswerIndex should be 0 (I Agree).
 - Vary the interaction types across lessons
-- Keep text SHORT - focus on the interaction`;
+- Keep text SHORT - focus on the interaction
+- Order the lessons so they build from simple awareness to practice and real-life application without repeating earlier ideas`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
   const parsed = safeJsonParse<{ interactiveLessons: InteractiveLessonContent[] }>(response);
