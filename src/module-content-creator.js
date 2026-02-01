@@ -82,14 +82,14 @@ function renderModulesToGenerateList() {
             <div style="text-align: center; padding: 40px; color: #6b7c8f;">
                 <p style="font-size: 48px; margin-bottom: 12px;">📝</p>
                 <p>No module blueprints yet.</p>
-                <p style="font-size: 13px;">Add one using the form or upload an Excel file.</p>
+                <p style="font-size: 13px;">Upload an Excel file to create module blueprints in bulk.</p>
             </div>
         `;
         return;
     }
     
     container.innerHTML = modulesToGenerate.map(mtg => `
-        <div class="mtg-card" data-id="${mtg.id}" style="background: white; border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 4px solid ${mtg.has_been_generated ? '#10B981' : '#6366F1'}; cursor: pointer; transition: all 0.2s;" onclick="selectModuleToGenerate('${mtg.id}')">
+        <div class="mtg-card" data-id="${mtg.id}" style="background: white; border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 4px solid ${mtg.has_been_generated ? '#10B981' : '#6366F1'}; transition: all 0.2s;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
                     <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 4px 0; color: #1f2937;">${escapeHtmlMtg(mtg.module_title)}</h4>
@@ -132,6 +132,7 @@ function escapeHtmlMtg(text) {
 function selectModuleToGenerate(id) {
     const mtg = modulesToGenerate.find(m => m.id === id);
     if (!mtg) return;
+    if (!document.getElementById('moduleContentCreatorForm')) return;
     
     // Highlight selected card
     document.querySelectorAll('.mtg-card').forEach(card => {

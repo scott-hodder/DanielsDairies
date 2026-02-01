@@ -41,6 +41,8 @@ let categoryColors = {};
 let rewards = [];
 let ageRanges = [];
 let coreTheories = [];
+let theoriesData = [];
+let selectedTheoryId = null;
 
 // Delegate checkbox changes so we don't add hundreds of listeners on every re-render
 document.addEventListener('change', (e) => {
@@ -507,7 +509,8 @@ document.addEventListener('change', (e) => {
 // ================================================================================
 async function loadAgeRanges() {
     const select = document.getElementById('ageRangeSelect');
-    if (!select) {
+    const editSelect = document.getElementById('editAgeRange');
+    if (!select && !editSelect) {
         console.warn('[Psychology] Age range select not found');
         return;
     }
@@ -536,25 +539,40 @@ async function loadAgeRanges() {
         
         if (data.ageRanges && data.ageRanges.length > 0) {
             ageRanges = data.ageRanges;
-            select.innerHTML = '<option value="">Select age range...</option>';
-            
-            ageRanges.forEach(range => {
-                const option = document.createElement('option');
-                option.value = range.id;
-                option.textContent = range.display_name;
-                option.dataset.ageRange = range.age_range;
-                select.appendChild(option);
+            const selects = [select, editSelect].filter(Boolean);
+            selects.forEach(targetSelect => {
+                targetSelect.innerHTML = '<option value="">Select age range...</option>';
+                ageRanges.forEach(range => {
+                    const option = document.createElement('option');
+                    option.value = range.id;
+                    option.textContent = range.display_name;
+                    option.dataset.ageRange = range.age_range;
+                    targetSelect.appendChild(option);
+                });
             });
             
             console.log(`[Psychology] Loaded ${ageRanges.length} age ranges`);
+            renderAllModulesList();
         } else {
             console.warn('[Psychology] No age ranges returned');
-            select.innerHTML = '<option value="">No age ranges found</option>';
+            if (select) select.innerHTML = '<option value="">No age ranges found</option>';
+            if (editSelect) editSelect.innerHTML = '<option value="">No age ranges found</option>';
         }
     } catch (error) {
         console.error('[Psychology] Failed to load age ranges:', error);
-        select.innerHTML = '<option value="">Error loading age ranges</option>';
+        if (select) select.innerHTML = '<option value="">Error loading age ranges</option>';
+        if (editSelect) editSelect.innerHTML = '<option value="">Error loading age ranges</option>';
     }
+}
+
+function getAgeRangeLabel(ageRangeValue) {
+    if (!ageRangeValue) return '';
+    const match = ageRanges.find(range =>
+        range.id === ageRangeValue ||
+        range.age_range === ageRangeValue ||
+        range.display_name === ageRangeValue
+    );
+    return match ? (match.age_range || match.display_name) : ageRangeValue;
 }
 
 // ================================================================================
@@ -562,7 +580,8 @@ async function loadAgeRanges() {
 // ================================================================================
 async function loadCoreTheories() {
     const select = document.getElementById('coreTheorySelect');
-    if (!select) {
+    const editSelect = document.getElementById('editCoreTheorySelect');
+    if (!select && !editSelect) {
         console.warn('[Psychology] Core theory select not found');
         return;
     }
@@ -591,61 +610,67 @@ async function loadCoreTheories() {
         
         if (data.coreTheories && data.coreTheories.length > 0) {
             coreTheories = data.coreTheories;
-            select.innerHTML = '<option value="">Select psychological theory...</option>';
-            
-            // Group by category
-            const grouped = {};
-            coreTheories.forEach(theory => {
-                const cat = theory.category || 'Other';
-                if (!grouped[cat]) grouped[cat] = [];
-                grouped[cat].push(theory);
-            });
-            
-            // Add optgroups and options
-            Object.keys(grouped).sort().forEach(category => {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = category;
-                
-                grouped[category].forEach(theory => {
-                    const option = document.createElement('option');
-                    option.value = theory.id;
-                    option.textContent = theory.theory_name;
-                    option.dataset.description = theory.description || '';
-                    optgroup.appendChild(option);
+            const selects = [select, editSelect].filter(Boolean);
+            selects.forEach(targetSelect => {
+                targetSelect.innerHTML = '<option value="">Select psychological theory...</option>';
+
+                // Group by category
+                const grouped = {};
+                coreTheories.forEach(theory => {
+                    const cat = theory.category || 'Other';
+                    if (!grouped[cat]) grouped[cat] = [];
+                    grouped[cat].push(theory);
                 });
-                
-                select.appendChild(optgroup);
+
+                // Add optgroups and options
+                Object.keys(grouped).sort().forEach(category => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = category;
+
+                    grouped[category].forEach(theory => {
+                        const option = document.createElement('option');
+                        option.value = theory.id;
+                        option.textContent = theory.theory_name;
+                        option.dataset.description = theory.description || '';
+                        optgroup.appendChild(option);
+                    });
+
+                    targetSelect.appendChild(optgroup);
+                });
             });
-            
+
             console.log(`[Psychology] Loaded ${coreTheories.length} core theories`);
         } else {
             console.warn('[Psychology] No core theories returned');
-            select.innerHTML = '<option value="">No theories found</option>';
+            if (select) select.innerHTML = '<option value="">No theories found</option>';
+            if (editSelect) editSelect.innerHTML = '<option value="">No theories found</option>';
         }
     } catch (error) {
         console.error('[Psychology] Failed to load core theories:', error);
-        select.innerHTML = '<option value="">Error loading theories</option>';
+        if (select) select.innerHTML = '<option value="">Error loading theories</option>';
+        if (editSelect) editSelect.innerHTML = '<option value="">Error loading theories</option>';
     }
 }
 
 // ================================================================================
 // HANDLE THEORY SELECTION - SHOW PREVIEW
 // ================================================================================
-function handleTheorySelect() {
-    const select = document.getElementById('coreTheorySelect');
-    const preview = document.getElementById('theoryPreview');
+function updateTheoryPreview({ selectId, previewId, nameId, descriptionId }) {
+    const select = document.getElementById(selectId);
+    const preview = document.getElementById(previewId);
     const selectedId = select?.value;
-    
+
     if (!selectedId || !preview) {
         if (preview) preview.style.display = 'none';
         return;
     }
-    
+
     const theory = coreTheories.find(t => t.id === selectedId);
     if (theory) {
-        document.getElementById('theoryPreviewName').textContent = theory.theory_name;
-        document.getElementById('theoryPreviewDescription').textContent = 
-            theory.description || 'No description available.';
+        const nameEl = document.getElementById(nameId);
+        const descEl = document.getElementById(descriptionId);
+        if (nameEl) nameEl.textContent = theory.theory_name;
+        if (descEl) descEl.textContent = theory.description || 'No description available.';
         preview.style.display = 'block';
     } else {
         preview.style.display = 'none';
@@ -664,8 +689,22 @@ function initPsychologyDropdowns() {
     // Add change listener for theory preview
     const theorySelect = document.getElementById('coreTheorySelect');
     if (theorySelect) {
-        theorySelect.removeEventListener('change', handleTheorySelect); // Prevent duplicates
-        theorySelect.addEventListener('change', handleTheorySelect);
+        theorySelect.onchange = () => updateTheoryPreview({
+            selectId: 'coreTheorySelect',
+            previewId: 'theoryPreview',
+            nameId: 'theoryPreviewName',
+            descriptionId: 'theoryPreviewDescription'
+        });
+    }
+
+    const editTheorySelect = document.getElementById('editCoreTheorySelect');
+    if (editTheorySelect) {
+        editTheorySelect.onchange = () => updateTheoryPreview({
+            selectId: 'editCoreTheorySelect',
+            previewId: 'editTheoryPreview',
+            nameId: 'editTheoryPreviewName',
+            descriptionId: 'editTheoryPreviewDescription'
+        });
     }
 }
 
@@ -899,6 +938,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('moduleContentCreatorTab').classList.add('active');
                 loadModulesToGenerate();
                 populateMtgSuperSkillDropdown();
+            } else if (tabName === 'theories') {
+                document.getElementById('theoriesTab').classList.add('active');
+                loadTheories();
             } else if (tabName === 'rewards') {
                 document.getElementById('rewardsTab').classList.add('active');
                 if (!rewards || rewards.length === 0) {
@@ -3910,7 +3952,7 @@ if (data.status === "running") {
                         <div class="module-meta">
                             ${module.series ? `<strong>Series:</strong> ${module.series}` : '<strong>Series:</strong> Not set'}
                             ${module.category ? ` • <strong>Category:</strong> ${module.category}` : ''}
-                            ${module.age_range ? ` • <strong>Age:</strong> ${module.age_range}` : ''}
+                            ${module.age_range ? ` • <strong>Age:</strong> ${getAgeRangeLabel(module.age_range)}` : ''}
                         </div>
                     </div>
                 `;
@@ -4083,48 +4125,72 @@ if (data.status === "running") {
 
             // Populate form
             document.getElementById('editTitle').value = selectedModule.title || '';
-            document.getElementById('editShortDescription').value = selectedModule.short_description || '';
-            document.getElementById('editDescription').value = selectedModule.description || '';
-            document.getElementById('editSeries').value = selectedModule.series || '';
-            document.getElementById('editAgeRange').value = selectedModule.age_range || '';
-            
-            // Populate category dropdown
-            populateEditCategoryDropdown();
-            document.getElementById('editCategory').value = selectedModule.category || '';
-            
-            // Populate pathway dropdown
-            document.getElementById('editPathway').value = selectedModule.pathway || '';
-            
-            // Populate order field
-            document.getElementById('editOrder').value = selectedModule.pathway_order || '';
-            
-            // Update category color
-            updateCategoryColorDisplay();
+            const editAgeRangeSelect = document.getElementById('editAgeRange');
+            if (editAgeRangeSelect) {
+                const ageValue = selectedModule.age_range || '';
+                editAgeRangeSelect.value = ageValue;
+                if (ageValue && !Array.from(editAgeRangeSelect.options).some(option => option.value === ageValue)) {
+                    const option = document.createElement('option');
+                    option.value = ageValue;
+                    option.textContent = getAgeRangeLabel(ageValue) || ageValue;
+                    editAgeRangeSelect.appendChild(option);
+                    editAgeRangeSelect.value = ageValue;
+                }
+            }
+            document.getElementById('editOrder').value = selectedModule.week_number || '';
+            document.getElementById('editXPReward').value = selectedModule.xp_reward ?? 100;
+            document.getElementById('editStarsReward').value = selectedModule.stars_reward ?? 10;
+            document.getElementById('editCharacter').value = selectedModule.character_name || '';
+            document.getElementById('editBrainTownAnalogy').value = selectedModule.brain_town_analogy || '';
+            document.getElementById('editContentBrief').value = selectedModule.additional_context || selectedModule.content_brief || '';
 
-            // Update color preview on change
-            document.getElementById('editCategoryColor').oninput = function() {
-                document.getElementById('categoryColorPreview').textContent = this.value;
-            };
-            
-            // Update category color when category changes
-            document.getElementById('editCategory').onchange = function() {
-                updateCategoryColorDisplay();
-            };
+            const editSuperSkill = document.getElementById('editSuperSkill');
+            if (editSuperSkill) {
+                editSuperSkill.value = selectedModule.super_skill_id || '';
+                onEditSuperSkillChange();
+            }
+
+            const editSubSkill = document.getElementById('editSubSkill');
+            if (editSubSkill) {
+                editSubSkill.value = selectedModule.sub_skill_id || '';
+            }
+
+            const editCycle = document.getElementById('editCycle');
+            if (editCycle) {
+                editCycle.value = selectedModule.cycle_id || '';
+            }
+
+            const editCoreTheory = document.getElementById('editCoreTheorySelect');
+            if (editCoreTheory && selectedModule.core_theory_id) {
+                editCoreTheory.value = selectedModule.core_theory_id;
+                updateTheoryPreview({
+                    selectId: 'editCoreTheorySelect',
+                    previewId: 'editTheoryPreview',
+                    nameId: 'editTheoryPreviewName',
+                    descriptionId: 'editTheoryPreviewDescription'
+                });
+            }
         }
 
         // Update category color display
         function updateCategoryColorDisplay() {
-            const category = document.getElementById('editCategory').value;
+            const categorySelect = document.getElementById('editCategory');
+            if (!categorySelect) return;
+            const category = categorySelect.value;
             const categoryColor = categoryColors[category] || '#4c6c96';
-            
-            document.getElementById('editCategoryColor').value = categoryColor;
-            document.getElementById('categoryColorPreview').textContent = categoryColor;
-            document.getElementById('categoryColorLabel').textContent = category || 'selected';
+
+            const colorPicker = document.getElementById('editCategoryColor');
+            const preview = document.getElementById('categoryColorPreview');
+            const label = document.getElementById('categoryColorLabel');
+            if (colorPicker) colorPicker.value = categoryColor;
+            if (preview) preview.textContent = categoryColor;
+            if (label) label.textContent = category || 'selected';
         }
 
         // Populate category dropdown for editing
         function populateEditCategoryDropdown() {
             const categorySelect = document.getElementById('editCategory');
+            if (!categorySelect) return;
             availableCategories = Array.from(new Set(
                 allModules.map(m => m.category).filter(Boolean)
             )).sort();
@@ -4221,8 +4287,11 @@ if (data.status === "running") {
             categoryColors[categoryLower] = normalizedColor;
             availableCategories.push(categoryLower);
             populateEditCategoryDropdown();
-            document.getElementById('editCategory').value = categoryLower;
-            updateCategoryColorDisplay();
+            const editCategory = document.getElementById('editCategory');
+            if (editCategory) {
+                editCategory.value = categoryLower;
+                updateCategoryColorDisplay();
+            }
 
             // Update add-module dropdown options too
             const newModuleCategory = document.getElementById('newModuleCategory');
@@ -4240,19 +4309,40 @@ if (data.status === "running") {
         window.saveModuleChanges = async function() {
             if (!selectedModule) return;
 
-            const category = document.getElementById('editCategory').value;
-            const categoryColor = document.getElementById('editCategoryColor').value;
+            const superSkillId = document.getElementById('editSuperSkill')?.value || null;
+            const subSkillId = document.getElementById('editSubSkill')?.value || null;
+            const cycleId = document.getElementById('editCycle')?.value || null;
+            const selectedSkill = superSkillsData.find(skill => skill.id === superSkillId);
 
             const updates = {
                 title: document.getElementById('editTitle').value,
-                short_description: document.getElementById('editShortDescription').value,
-                description: document.getElementById('editDescription').value,
-                category: category,
-                series: document.getElementById('editSeries').value,
-                pathway: document.getElementById('editPathway').value,
-                pathway_order: document.getElementById('editOrder').value ? parseInt(document.getElementById('editOrder').value) : null,
-                age_range: document.getElementById('editAgeRange').value
+                age_range: document.getElementById('editAgeRange').value || null,
+                week_number: document.getElementById('editOrder').value ? parseInt(document.getElementById('editOrder').value) : null,
+                xp_reward: document.getElementById('editXPReward').value ? parseInt(document.getElementById('editXPReward').value) : null,
+                stars_reward: document.getElementById('editStarsReward').value ? parseInt(document.getElementById('editStarsReward').value) : null,
+                character_name: document.getElementById('editCharacter').value || null,
+                super_skill_id: superSkillId,
+                sub_skill_id: subSkillId,
+                cycle_id: cycleId,
+                category: selectedSkill?.slug || selectedModule.category || null,
+                series: selectedSkill?.character_name || selectedModule.series || null
             };
+
+            if ('core_theory_id' in selectedModule) {
+                updates.core_theory_id = document.getElementById('editCoreTheorySelect')?.value || null;
+            }
+
+            if ('brain_town_analogy' in selectedModule) {
+                updates.brain_town_analogy = document.getElementById('editBrainTownAnalogy')?.value || null;
+            }
+
+            if ('additional_context' in selectedModule) {
+                updates.additional_context = document.getElementById('editContentBrief')?.value || null;
+            }
+
+            if ('content_brief' in selectedModule) {
+                updates.content_brief = document.getElementById('editContentBrief')?.value || null;
+            }
 
             // Update module
             const { error: moduleError } = await supabase
@@ -4264,27 +4354,6 @@ if (data.status === "running") {
                 console.error('Error updating module:', moduleError);
                 alert('Failed to save module changes');
                 return;
-            }
-
-            // Update category color (upsert)
-            if (category) {
-                const { error: colorError } = await supabase
-                    .from('category_colors')
-                    .upsert({
-                        category: category,
-                        color: categoryColor
-                    }, {
-                        onConflict: 'category'
-                    });
-
-                if (colorError) {
-                    console.error('Error updating category color:', colorError);
-                    alert('Module saved but failed to update category color');
-                    return;
-                }
-
-                // Update local category colors
-                categoryColors[category] = categoryColor;
             }
 
             // Update local data
@@ -4321,6 +4390,166 @@ if (data.status === "running") {
                 }
             });
         }
+
+        // ========== THEORIES MANAGEMENT ==========
+        function buildTheoryCode(name) {
+            const base = name
+                .trim()
+                .toUpperCase()
+                .replace(/[^A-Z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '') || 'THEORY';
+            let code = base;
+            let counter = 1;
+            const existingCodes = new Set((theoriesData || []).map(t => t.theory_code));
+            while (existingCodes.has(code)) {
+                counter += 1;
+                code = `${base}_${counter}`;
+            }
+            return code;
+        }
+
+        async function loadTheories() {
+            const { data, error } = await supabase
+                .from('core_theories')
+                .select('*')
+                .order('theory_name');
+
+            if (error) {
+                console.error('[Admin] Error loading theories:', error);
+                return;
+            }
+
+            theoriesData = data || [];
+            const select = document.getElementById('theorySelect');
+            if (select) {
+                select.innerHTML = '<option value="">Select a theory...</option>';
+                theoriesData.forEach(theory => {
+                    const option = document.createElement('option');
+                    option.value = theory.id;
+                    option.textContent = theory.theory_name;
+                    select.appendChild(option);
+                });
+                if (selectedTheoryId) {
+                    select.value = selectedTheoryId;
+                }
+            }
+
+            if (selectedTheoryId) {
+                selectTheory(selectedTheoryId);
+            }
+        }
+
+        window.selectTheory = function(theoryId) {
+            selectedTheoryId = theoryId;
+            const theory = theoriesData.find(t => t.id === theoryId);
+            const editor = document.getElementById('theoryEditor');
+            const placeholder = document.getElementById('theoryEditorPlaceholder');
+
+            if (!theory) {
+                if (editor) editor.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            if (editor) editor.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+
+            document.getElementById('theoryName').value = theory.theory_name || '';
+            document.getElementById('theoryCode').value = theory.theory_code || '';
+            document.getElementById('theoryCategory').value = theory.category || '';
+            document.getElementById('theoryIsActive').checked = theory.is_active !== false;
+            document.getElementById('theoryDescription').value = theory.description || '';
+            document.getElementById('theoryKeyMechanism').value = theory.key_mechanism || '';
+            document.getElementById('theoryHowToApply').value = theory.how_to_apply || '';
+            document.getElementById('theoryAgeAdaptations').value = theory.age_adaptations || '';
+            document.getElementById('theoryAllowedClaims').value = theory.allowed_claims || '';
+            document.getElementById('theoryAvoidClaims').value = theory.avoid_claims || '';
+            document.getElementById('theoryContraindications').value = theory.contraindications || '';
+            document.getElementById('theorySuggestedActivities').value = theory.suggested_activities || '';
+            document.getElementById('theorySuggestedMeasures').value = theory.suggested_measures || '';
+            document.getElementById('theoryExampleScenarios').value = theory.example_scenarios || '';
+            document.getElementById('theoryRelatedTheories').value = theory.related_theories || '';
+            document.getElementById('theoryPrimaryResearchers').value = theory.primary_researchers || '';
+            document.getElementById('theoryKeyReferences').value = theory.key_references || '';
+        }
+
+        window.addNewTheory = async function() {
+            const name = prompt('Enter the theory name:');
+            if (!name) return;
+            const trimmedName = name.trim();
+            if (!trimmedName) return;
+
+            const theoryCode = buildTheoryCode(trimmedName);
+            const { data, error } = await supabase
+                .from('core_theories')
+                .insert({
+                    theory_name: trimmedName,
+                    theory_code: theoryCode,
+                    description: '',
+                    key_mechanism: '',
+                    how_to_apply: '',
+                    allowed_claims: '',
+                    avoid_claims: '',
+                    is_active: true
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('[Admin] Error adding theory:', error);
+                alert('Failed to add theory. Please try again.');
+                return;
+            }
+
+            selectedTheoryId = data?.id || null;
+            await loadTheories();
+            if (selectedTheoryId) {
+                selectTheory(selectedTheoryId);
+            }
+        }
+
+        window.saveTheoryChanges = async function() {
+            if (!selectedTheoryId) return;
+
+            const updates = {
+                theory_name: document.getElementById('theoryName').value.trim(),
+                theory_code: document.getElementById('theoryCode').value.trim(),
+                category: document.getElementById('theoryCategory').value.trim() || null,
+                is_active: document.getElementById('theoryIsActive').checked,
+                description: document.getElementById('theoryDescription').value.trim(),
+                key_mechanism: document.getElementById('theoryKeyMechanism').value.trim(),
+                how_to_apply: document.getElementById('theoryHowToApply').value.trim(),
+                age_adaptations: document.getElementById('theoryAgeAdaptations').value.trim() || null,
+                allowed_claims: document.getElementById('theoryAllowedClaims').value.trim(),
+                avoid_claims: document.getElementById('theoryAvoidClaims').value.trim(),
+                contraindications: document.getElementById('theoryContraindications').value.trim() || null,
+                suggested_activities: document.getElementById('theorySuggestedActivities').value.trim() || null,
+                suggested_measures: document.getElementById('theorySuggestedMeasures').value.trim() || null,
+                example_scenarios: document.getElementById('theoryExampleScenarios').value.trim() || null,
+                related_theories: document.getElementById('theoryRelatedTheories').value.trim() || null,
+                primary_researchers: document.getElementById('theoryPrimaryResearchers').value.trim() || null,
+                key_references: document.getElementById('theoryKeyReferences').value.trim() || null
+            };
+
+            if (!updates.theory_name || !updates.theory_code) {
+                alert('Theory name and code are required.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('core_theories')
+                .update(updates)
+                .eq('id', selectedTheoryId);
+
+            if (error) {
+                console.error('[Admin] Error saving theory:', error);
+                alert('Failed to save theory changes.');
+                return;
+            }
+
+            await loadTheories();
+        }
+
         // ========== SUPER SKILLS FUNCTIONS ==========
         
         // Store SuperSkills data for dropdown cascading
@@ -4342,21 +4571,25 @@ if (data.status === "running") {
                 superSkillsData = data || [];
                 
                 const superSkillSelect = document.getElementById('newModuleSuperSkill');
+                const editSuperSkillSelect = document.getElementById('editSuperSkill');
                 
-                if (!superSkillSelect) {
+                if (!superSkillSelect && !editSuperSkillSelect) {
                     console.error('[Admin] Super Skill select element not found!');
                     return;
                 }
-                
-                superSkillSelect.innerHTML = '<option value="">Select Super Skill...</option>';
-                
-                superSkillsData.forEach(skill => {
-                    const option = document.createElement('option');
-                    option.value = skill.id;
-                    option.textContent = `${skill.emoji || ''} ${skill.name}`;
-                    option.dataset.characterName = skill.character_name || '';
-                    option.dataset.themeColor = skill.theme_color || '#405878';
-                    superSkillSelect.appendChild(option);
+
+                const selects = [superSkillSelect, editSuperSkillSelect].filter(Boolean);
+                selects.forEach(targetSelect => {
+                    targetSelect.innerHTML = '<option value="">Select Super Skill...</option>';
+
+                    superSkillsData.forEach(skill => {
+                        const option = document.createElement('option');
+                        option.value = skill.id;
+                        option.textContent = `${skill.emoji || ''} ${skill.name}`;
+                        option.dataset.characterName = skill.character_name || '';
+                        option.dataset.themeColor = skill.theme_color || '#405878';
+                        targetSelect.appendChild(option);
+                    });
                 });
                 
                 
@@ -4417,6 +4650,40 @@ if (data.status === "running") {
             });
             
             // Filter cycles for this super skill
+            cycleSelect.innerHTML = '<option value="">Select cycle...</option>';
+            const filteredCycles = cyclesData.filter(c => c.super_skill_id === superSkillId);
+            filteredCycles.forEach(cycle => {
+                const option = document.createElement('option');
+                option.value = cycle.id;
+                option.textContent = `Cycle ${cycle.cycle_number}: ${cycle.name}`;
+                cycleSelect.appendChild(option);
+            });
+        }
+
+        window.onEditSuperSkillChange = function() {
+            const superSkillSelect = document.getElementById('editSuperSkill');
+            const characterInput = document.getElementById('editCharacter');
+            const subSkillSelect = document.getElementById('editSubSkill');
+            const cycleSelect = document.getElementById('editCycle');
+
+            if (!superSkillSelect || !subSkillSelect || !cycleSelect) return;
+
+            const selectedOption = superSkillSelect.options[superSkillSelect.selectedIndex];
+            const superSkillId = superSkillSelect.value;
+
+            if (characterInput) {
+                characterInput.value = selectedOption?.dataset?.characterName || '';
+            }
+
+            subSkillSelect.innerHTML = '<option value="">Select sub-skill...</option>';
+            const filteredSubSkills = subSkillsData.filter(ss => ss.super_skill_id === superSkillId);
+            filteredSubSkills.forEach(subSkill => {
+                const option = document.createElement('option');
+                option.value = subSkill.id;
+                option.textContent = subSkill.name;
+                subSkillSelect.appendChild(option);
+            });
+
             cycleSelect.innerHTML = '<option value="">Select cycle...</option>';
             const filteredCycles = cyclesData.filter(c => c.super_skill_id === superSkillId);
             filteredCycles.forEach(cycle => {

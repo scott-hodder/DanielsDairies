@@ -49,6 +49,7 @@
             <button class="tab active" onclick="switchTab(event, 'moduleCustomisation')">Module Customisation</button>
             <button class="tab" onclick="switchTab(event, 'moduleContentCreator')">Module Content Creator</button>
             <button class="tab" onclick="switchTab(event, 'childModules')">Parent's Modules</button>
+            <button class="tab" onclick="switchTab(event, 'theories')">Theories</button>
             <button class="tab" onclick="switchTab(event, 'rewards')">Rewards</button>
             <button class="tab" onclick="switchTab(event, 'parentToolkit')">Parent Toolkit</button>
             <button class="tab" onclick="switchTab(event, 'generalSettings')">General Settings</button>
@@ -70,97 +71,15 @@
                 <!-- Two Column Layout -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                     
-                    <!-- Left Column: Add/Edit Form -->
+                    <!-- Left Column: Bulk Upload -->
                     <div>
-                        <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-                            <h3 style="font-size: 16px; margin: 0 0 16px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                                ➕ Add Module Blueprint
-                            </h3>
-                            
-                            <form id="moduleContentCreatorForm" onsubmit="saveModuleToGenerate(event); return false;">
-                                <!-- Row 1: Cycle & Week & Age Range -->
-                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                                    <div>
-                                        <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Cycle</label>
-                                        <select class="form-select" id="mtgCycle" style="width: 100%;">
-                                            <option value="">Select cycle...</option>
-                                            <option value="Cycle 1">Cycle 1</option>
-                                            <option value="Cycle 2">Cycle 2</option>
-                                            <option value="Cycle 3">Cycle 3</option>
-                                            <option value="Cycle 4">Cycle 4</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Week Number</label>
-                                        <input type="number" class="form-input" id="mtgWeekNumber" min="1" max="12" placeholder="1-12" style="width: 100%;">
-                                    </div>
-                                    <div>
-                                        <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Age Range</label>
-                                        <input type="text" class="form-input" id="mtgAgeRange" placeholder="e.g., 7-11" style="width: 100%;">
-                                    </div>
-                                </div>
-
-                                <!-- Module Title -->
-                                <div style="margin-bottom: 12px;">
-                                    <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Module Title *</label>
-                                    <input type="text" class="form-input" id="mtgModuleTitle" required placeholder="e.g., Social Mapper Foundation Week 1" style="width: 100%;">
-                                </div>
-
-                                <!-- Super Skill & Sub-Skill -->
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                                    <div>
-                                        <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Super Skill</label>
-                                        <select class="form-select" id="mtgSuperSkill" style="width: 100%;" onchange="onMtgSuperSkillChange()">
-                                            <option value="">Select Super Skill...</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Sub-Skill</label>
-                                        <select class="form-select" id="mtgSubSkill" style="width: 100%;">
-                                            <option value="">Select sub-skill...</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Core Theory -->
-                                <div style="margin-bottom: 12px;">
-                                    <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Core Neuroscience/Psychology Theory</label>
-                                    <textarea class="form-textarea" id="mtgCoreTheory" rows="3" placeholder="e.g., Theory of Mind (Premack & Woodruff) & Social Cognition - specific to Social Mapper" style="width: 100%; font-size: 13px;"></textarea>
-                                </div>
-
-                                <!-- Brain Town Analogy -->
-                                <div style="margin-bottom: 12px;">
-                                    <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">Brain Town Analogy</label>
-                                    <textarea class="form-textarea" id="mtgBrainTownAnalogy" rows="2" placeholder="e.g., Brain town analogy for Social Mapper concept" style="width: 100%; font-size: 13px;"></textarea>
-                                </div>
-
-                                <!-- AI Content Prompt -->
-                                <div style="margin-bottom: 16px;">
-                                    <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">AI Content Prompt (with Theory Integration)</label>
-                                    <textarea class="form-textarea" id="mtgAIContentPrompt" rows="10" placeholder="Full AI content prompt including:
-- Theory integration
-- Age-specific adaptations
-- Character voice
-- Activity types
-- Duration guidelines
-- Example scenarios" style="width: 100%; font-size: 12px; font-family: monospace;"></textarea>
-                                </div>
-
-                                <!-- Action Buttons -->
-                                <div style="display: flex; gap: 10px;">
-                                    <button type="submit" class="btn-save" style="flex: 1;">💾 Save Module Blueprint</button>
-                                    <button type="button" class="btn" onclick="clearMtgForm()" style="background: #6b7c8f; color: white;">Clear</button>
-                                </div>
-                            </form>
-                        </div>
-
                         <!-- Excel Upload Section -->
                         <div style="background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border-radius: 12px; padding: 20px; border: 2px dashed #6366F1;">
                             <h3 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #4338CA;">
                                 📊 Bulk Upload from Excel
                             </h3>
                             <p style="font-size: 13px; color: #6366F1; margin-bottom: 16px;">
-                                Upload an Excel file (.xlsx) with columns matching the form fields above. Each row will create a module blueprint.
+                                Upload an Excel file (.xlsx) using the template below. Each row will create a module blueprint.
                             </p>
                             
                             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -380,54 +299,77 @@
                             <input type="text" class="form-input" id="editTitle" placeholder="e.g., Daniel's Diaries: Screen Time">
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Short Description</label>
-                            <textarea class="form-textarea" id="editShortDescription" placeholder="Enter a brief description..." rows="2"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-textarea" id="editDescription" placeholder="Enter a detailed description..." rows="4"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Category</label>
-                            <select class="form-select" id="editCategory">
-                                <option value="">Select category...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Series</label>
-                            <input type="text" class="form-input" id="editSeries" placeholder="e.g., Luna, Daniel">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Pathway</label>
-                            <select class="form-select" id="editPathway">
-                                <option value="">Select pathway...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Order in Pathway</label>
-                            <input type="number" class="form-input" id="editOrder" min="1" placeholder="e.g., 1, 2, 3...">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Age Range</label>
-                            <input type="text" class="form-input" id="editAgeRange" placeholder="e.g., 5-8, 8-12">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Category Color</label>
-                            <p style="font-size: 13px; color: #6b7c8f; margin-bottom: 8px;">
-                                This color applies to all modules in the "<span id="categoryColorLabel">selected</span>" category
-                            </p>
-                            <div class="color-picker-wrapper">
-                                <input type="color" class="color-picker" id="editCategoryColor" value="#4caf50">
-                                <div class="color-preview" id="categoryColorPreview">#4caf50</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Super Skill</label>
+                                <select class="form-select" id="editSuperSkill" style="width: 100%;" onchange="onEditSuperSkillChange()">
+                                    <option value="">Select Super Skill...</option>
+                                </select>
                             </div>
+                            <div class="form-group">
+                                <label class="form-label">Age Range</label>
+                                <select class="form-select" id="editAgeRange" style="width: 100%;">
+                                    <option value="">Select age range...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Character</label>
+                                <input type="text" class="form-input" id="editCharacter" readonly style="background: #f8f9fa; cursor: not-allowed;" placeholder="Auto-populated from Super Skill">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sub-Skill</label>
+                                <select class="form-select" id="editSubSkill">
+                                    <option value="">Select sub-skill...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Cycle</label>
+                                <select class="form-select" id="editCycle">
+                                    <option value="">Select cycle...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Order (Week Number)</label>
+                                <input type="number" class="form-input" id="editOrder" min="1" max="12" placeholder="e.g., 1, 2, 3... (1-12)">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">XP Reward</label>
+                                <input type="number" class="form-input" id="editXPReward" min="0" placeholder="100">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Stars Reward</label>
+                                <input type="number" class="form-input" id="editStarsReward" min="0" placeholder="10">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Core Theory</label>
+                            <select id="editCoreTheorySelect" class="form-select" style="width: 100%;">
+                                <option value="">Select psychological theory...</option>
+                            </select>
+                            <div id="editTheoryPreview" style="display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-left: 3px solid #6366F1; border-radius: 8px;">
+                                <p id="editTheoryPreviewName" style="margin: 0 0 6px; font-weight: 600; color: #4338CA;"></p>
+                                <p id="editTheoryPreviewDescription" style="margin: 0; font-size: 13px; color: #4b5563; line-height: 1.5;"></p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Brain Town Analogy</label>
+                            <textarea class="form-textarea" id="editBrainTownAnalogy" rows="3" placeholder="e.g., In Brain Town, your feelings are like weather..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Additional Context (Optional)</label>
+                            <textarea class="form-textarea" id="editContentBrief" rows="4" style="font-family: monospace; font-size: 13px;"></textarea>
                         </div>
 
                         <div class="form-group" style="display: flex; gap: 12px; justify-content: space-between;">
@@ -520,6 +462,117 @@
         </div>
         </div>
         <!-- End Parent's Modules Tab -->
+
+        <!-- Tab Content: Theories -->
+        <div id="theoriesTab" class="tab-content">
+            <div class="rewards-panel" style="max-width: 1400px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 class="panel-title" style="margin-bottom: 4px;">🧩 Theories</h2>
+                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Manage core theories used in module generation</p>
+                    </div>
+                    <button class="btn-save" onclick="addNewTheory()">+ Add New Theory</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
+                    <div style="background: #f8f9fa; border-radius: 12px; padding: 16px;">
+                        <label class="form-label" style="margin-bottom: 8px;">Theory Drop Down</label>
+                        <select id="theorySelect" class="form-select" style="width: 100%;" onchange="selectTheory(this.value)">
+                            <option value="">Select a theory...</option>
+                        </select>
+                        <p style="font-size: 12px; color: #6b7c8f; margin-top: 10px;">
+                            Choose a theory to edit, or add a new one.
+                        </p>
+                    </div>
+
+                    <div style="background: #f8f9fa; border-radius: 12px; padding: 20px;">
+                        <div id="theoryEditor" style="display: none;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                                <div>
+                                    <label class="form-label">Theory Name</label>
+                                    <input type="text" class="form-input" id="theoryName">
+                                </div>
+                                <div>
+                                    <label class="form-label">Theory Code</label>
+                                    <input type="text" class="form-input" id="theoryCode">
+                                </div>
+                                <div>
+                                    <label class="form-label">Category</label>
+                                    <input type="text" class="form-input" id="theoryCategory">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding-top: 28px;">
+                                    <input type="checkbox" id="theoryIsActive">
+                                    <label for="theoryIsActive" class="form-label" style="margin: 0;">Active</label>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+                                <div>
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-textarea" id="theoryDescription" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Key Mechanism</label>
+                                    <textarea class="form-textarea" id="theoryKeyMechanism" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">How to Apply</label>
+                                    <textarea class="form-textarea" id="theoryHowToApply" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Age Adaptations</label>
+                                    <textarea class="form-textarea" id="theoryAgeAdaptations" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Allowed Claims</label>
+                                    <textarea class="form-textarea" id="theoryAllowedClaims" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Avoid Claims</label>
+                                    <textarea class="form-textarea" id="theoryAvoidClaims" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Contraindications</label>
+                                    <textarea class="form-textarea" id="theoryContraindications" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Suggested Activities</label>
+                                    <textarea class="form-textarea" id="theorySuggestedActivities" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Suggested Measures</label>
+                                    <textarea class="form-textarea" id="theorySuggestedMeasures" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Example Scenarios</label>
+                                    <textarea class="form-textarea" id="theoryExampleScenarios" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Related Theories</label>
+                                    <textarea class="form-textarea" id="theoryRelatedTheories" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Primary Researchers</label>
+                                    <textarea class="form-textarea" id="theoryPrimaryResearchers" rows="3"></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Key References</label>
+                                    <textarea class="form-textarea" id="theoryKeyReferences" rows="3"></textarea>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                <button class="btn-save" onclick="saveTheoryChanges()">💾 Save Theory</button>
+                            </div>
+                        </div>
+                        <div id="theoryEditorPlaceholder" style="text-align: center; padding: 60px 20px; color: #6b7c8f;">
+                            <p style="font-size: 18px;">👈 Select a theory to edit</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Theories Tab -->
 
         <!-- Tab Content: Rewards -->
         <div id="rewardsTab" class="tab-content">
