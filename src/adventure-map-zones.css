@@ -1,0 +1,209 @@
+.adventure-viewport .map-zone-layers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.adventure-viewport .map-zone-layers::before,
+.adventure-viewport .map-zone-layers::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.adventure-viewport .map-zone-layers::before {
+  opacity: 0.7;
+  mix-blend-mode: multiply;
+}
+
+.adventure-viewport .map-zone-layers::after {
+  opacity: 0.9;
+}
+
+.adventure-viewport[data-road="dirt"] .path-shadow {
+  stroke-width: 30;
+}
+
+.adventure-viewport[data-road="dirt"] .path-main {
+  stroke-width: 24;
+}
+
+.adventure-viewport[data-road="dirt"] .path-light {
+  stroke-width: 18;
+}
+
+.adventure-viewport[data-road="packed"] .path-shadow {
+  stroke-width: 34;
+}
+
+.adventure-viewport[data-road="packed"] .path-main {
+  stroke-width: 28;
+}
+
+.adventure-viewport[data-road="packed"] .path-light {
+  stroke-width: 20;
+}
+
+.adventure-viewport[data-road="paved"] .path-shadow {
+  stroke-width: 38;
+}
+
+.adventure-viewport[data-road="paved"] .path-main {
+  stroke-width: 32;
+}
+
+.adventure-viewport[data-road="paved"] .path-light {
+  stroke-width: 24;
+}
+
+.adventure-viewport[data-road="multi_lane"] .path-shadow {
+  stroke-width: 42;
+}
+
+.adventure-viewport[data-road="multi_lane"] .path-main {
+  stroke-width: 36;
+}
+
+.adventure-viewport[data-road="multi_lane"] .path-light {
+  stroke-width: 26;
+}
+
+.adventure-viewport[data-zone="1"] .map-zone-layers::before {
+  background-image:
+    radial-gradient(circle at 25% 40%, rgba(138, 106, 74, 0.35), transparent 55%),
+    radial-gradient(circle at 70% 65%, rgba(138, 106, 74, 0.3), transparent 60%),
+    repeating-linear-gradient(
+      110deg,
+      rgba(160, 136, 104, 0.2),
+      rgba(160, 136, 104, 0.2) 8px,
+      rgba(140, 115, 84, 0.25) 8px,
+      rgba(140, 115, 84, 0.25) 16px
+    );
+  opacity: 0.45;
+}
+
+.adventure-viewport[data-zone="1"] .map-zone-layers::after {
+  background-image:
+    radial-gradient(circle at 12% 70%, rgba(76, 139, 92, 0.28), transparent 45%),
+    radial-gradient(circle at 86% 78%, rgba(82, 156, 98, 0.25), transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(78, 148, 96, 0.25) 60%, rgba(60, 120, 78, 0.3) 100%);
+  background-position: 0 0, 0 0, center;
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  opacity: 0.75;
+}
+
+.adventure-viewport[data-zone="2"] .map-zone-layers::before {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      rgba(128, 110, 86, 0.2),
+      rgba(128, 110, 86, 0.2) 10px,
+      rgba(150, 128, 96, 0.25) 10px,
+      rgba(150, 128, 96, 0.25) 20px
+    ),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 45%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.08) 55%);
+  opacity: 0.55;
+}
+
+.adventure-viewport[data-zone="2"] .map-zone-layers::after {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(114, 164, 110, 0.2) 60%, rgba(82, 138, 98, 0.35) 100%),
+    linear-gradient(0deg, rgba(90, 90, 90, 0.2) 0%, rgba(90, 90, 90, 0.2) 8%, rgba(255, 255, 255, 0) 8%),
+    linear-gradient(90deg, rgba(120, 120, 120, 0.25) 0%, rgba(120, 120, 120, 0.25) 12%, rgba(255, 255, 255, 0) 12%, rgba(255, 255, 255, 0) 24%);
+  background-position: bottom left, bottom 14% left, bottom 20% left;
+  background-size: 100% 100%, 220px 80px, 260px 120px;
+  opacity: 0.85;
+}
+
+.adventure-viewport[data-zone="3"] .map-zone-layers::before {
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.2) 48%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0.2) 52%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.12),
+      rgba(255, 255, 255, 0.12) 6px,
+      rgba(200, 200, 200, 0.2) 6px,
+      rgba(200, 200, 200, 0.2) 12px
+    );
+  opacity: 0.6;
+}
+
+.adventure-viewport[data-zone="3"] .map-zone-layers::after {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(104, 136, 168, 0.2) 55%, rgba(72, 98, 128, 0.35) 100%),
+    linear-gradient(0deg, rgba(72, 82, 102, 0.35) 0%, rgba(72, 82, 102, 0.35) 12%, rgba(255, 255, 255, 0) 12%),
+    linear-gradient(90deg, rgba(84, 94, 118, 0.3) 0%, rgba(84, 94, 118, 0.3) 16%, rgba(255, 255, 255, 0) 16%, rgba(255, 255, 255, 0) 32%);
+  background-position: bottom left, bottom 18% left, bottom 30% left;
+  background-size: 100% 100%, 280px 110px, 340px 140px;
+  opacity: 0.9;
+}
+
+.adventure-viewport[data-zone="4"] .map-zone-layers::before {
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.25) 46%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0.25) 54%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.18) 5px,
+      rgba(210, 210, 210, 0.25) 5px,
+      rgba(210, 210, 210, 0.25) 10px
+    );
+  opacity: 0.65;
+}
+
+.adventure-viewport[data-zone="4"] .map-zone-layers::after {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(88, 120, 156, 0.2) 50%, rgba(56, 78, 110, 0.35) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 220'%3E%3Cpath fill='%232b374a' fill-opacity='0.6' d='M0 220V140l40-24 40 28 40-20 40 18 40-36 40 26 40-30 40 24 40-40 40 30 40-20 40 26 40-48 40 34 40-22 40 28 40-36 40 22 40-20 40 30 40-18 40 24 40-28 40 18 40-14v128z'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 20% 65%, rgba(255, 230, 180, 0.18), transparent 35%),
+    radial-gradient(circle at 80% 55%, rgba(255, 236, 200, 0.2), transparent 30%);
+  background-position: bottom left, bottom center, 0 0, 0 0;
+  background-size: 100% 100%, 120% 60%, 100% 100%, 100% 100%;
+  opacity: 0.95;
+}
+
+.adventure-viewport.zone-upgrade .map-zone-layers {
+  animation: zoneGlow 0.9s ease-out;
+}
+
+@keyframes zoneGlow {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+    opacity: 0.7;
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.35));
+    opacity: 1;
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+    opacity: 0.9;
+  }
+}
+
+@media (max-width: 768px) {
+  .adventure-viewport[data-road="dirt"] .path-shadow,
+  .adventure-viewport[data-road="packed"] .path-shadow,
+  .adventure-viewport[data-road="paved"] .path-shadow,
+  .adventure-viewport[data-road="multi_lane"] .path-shadow {
+    stroke-width: 24;
+  }
+
+  .adventure-viewport[data-road="dirt"] .path-main,
+  .adventure-viewport[data-road="packed"] .path-main,
+  .adventure-viewport[data-road="paved"] .path-main,
+  .adventure-viewport[data-road="multi_lane"] .path-main {
+    stroke-width: 20;
+  }
+
+  .adventure-viewport[data-road="dirt"] .path-light,
+  .adventure-viewport[data-road="packed"] .path-light,
+  .adventure-viewport[data-road="paved"] .path-light,
+  .adventure-viewport[data-road="multi_lane"] .path-light {
+    stroke-width: 14;
+  }
+}
