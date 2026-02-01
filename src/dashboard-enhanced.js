@@ -1181,6 +1181,7 @@ class AdventureMapV4 {
       }
 
       if (index === currentIndex && currentIndex !== -1) {
+        node.classList.add('is-current');
         var character = document.createElement('div');
         character.className = 'current-indicator';
         var dogImage = document.createElement('img');
