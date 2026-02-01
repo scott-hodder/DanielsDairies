@@ -3,6 +3,8 @@
 // Enhanced Dashboard Features with Draggable Map & Super Skill Filters
 // ================================================
 
+import { getZoneState } from './adventure-map-zones.js';
+
 // Import existing dashboard state and functions
 let dashboardModules = [];
 let dashboardChildModules = [];
@@ -278,6 +280,8 @@ class AdventureMapV4 {
     this.lastTranslateY = 0;
     this.hasUserInteracted = false;
     this.currentCategory = null;
+    this.currentZone = null;
+    this.zoneUpgradeTimeout = null;
     this.boundHandlers = {};
     
     this.updateMobileConfig();
@@ -499,6 +503,15 @@ class AdventureMapV4 {
     styles.id = 'adventure-map-v4-styles';
     styles.textContent = css.join('\n');
     document.head.appendChild(styles);
+  }
+
+  ensureZoneStyles() {
+    if (document.getElementById('adventure-map-zones-css')) return;
+    var link = document.createElement('link');
+    link.id = 'adventure-map-zones-css';
+    link.rel = 'stylesheet';
+    link.href = './src/adventure-map-zones.css';
+    document.head.appendChild(link);
   }
 
   render() {
@@ -732,6 +745,8 @@ class AdventureMapV4 {
     var section = document.querySelector('.adventure-map-section');
     if (!section) return;
 
+    this.ensureZoneStyles();
+
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
     var availableCategories = this.getAvailableCategories();
     var numModules = this.modules.length;
@@ -757,6 +772,7 @@ class AdventureMapV4 {
     if (this.modules.length > 0) {
       html += '<div class="adventure-viewport" id="adventureViewport">' +
         '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
+        '<div class="map-zone-layers" aria-hidden="true"></div>' +
         '<div class="map-bg-stack">' +
         '<div class="map-bg-layer map-bg-sky" id="mapBgSky"></div>' +
         '<div class="map-bg-layer map-bg-hills"></div>' +
@@ -790,6 +806,29 @@ class AdventureMapV4 {
     section.innerHTML = html;
     this.viewport = document.getElementById('adventureViewport');
     this.canvas = document.getElementById('adventureCanvas');
+    this.applyZoneState();
+  }
+
+  applyZoneState() {
+    if (!this.viewport) return;
+    var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var zoneState = getZoneState(completedCount);
+    if (!zoneState) return;
+
+    this.viewport.dataset.zone = zoneState.zone;
+    this.viewport.dataset.env = zoneState.envStyle;
+    this.viewport.dataset.road = zoneState.roadStyle;
+
+    if (this.currentZone && this.currentZone !== zoneState.zone) {
+      var viewport = this.viewport;
+      viewport.classList.add('zone-upgrade');
+      clearTimeout(this.zoneUpgradeTimeout);
+      this.zoneUpgradeTimeout = setTimeout(function() {
+        viewport.classList.remove('zone-upgrade');
+      }, 900);
+    }
+
+    this.currentZone = zoneState.zone;
   }
 
   applyThemeToBackground() {
