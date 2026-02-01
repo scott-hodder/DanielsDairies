@@ -359,8 +359,11 @@ class AdventureMapV4 {
     css.push('.tooltip-status { font-size: 12px; opacity: 0.85; }');
     css.push('.tooltip-status.ready { color: #FBBF24; }');
     css.push('.tooltip-status.done { color: #4ADE80; }');
-    css.push('.current-indicator { position: absolute; top: -58px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; padding: 4px; border-radius: 50%; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25)); animation: characterBounce 1s ease-in-out infinite; z-index: 15; }');
-    css.push('.current-indicator img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; pointer-events: none; }');
+    css.push('.current-indicator { position: absolute; top: -140px; left: 50%; transform: translateX(-50%); width: 112px; height: 112px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 14px 16px rgba(15, 23, 42, 0.4)); animation: characterBounce 1.2s ease-in-out infinite; z-index: 15; }');
+    css.push('.current-indicator img { width: 100%; height: 100%; object-fit: contain; border-radius: 0; pointer-events: none; }');
+    css.push('.current-indicator-label { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.95); color: #1e3a8a; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; box-shadow: 0 6px 14px rgba(30, 64, 175, 0.2); white-space: nowrap; }');
+    css.push('.adventure-node.is-current::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.25), 0 12px 24px rgba(30, 64, 175, 0.25); animation: currentRing 2.2s ease-in-out infinite; }');
+    css.push('@keyframes currentRing { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.06); opacity: 0.6; } }');
     css.push('@keyframes characterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }');
     css.push('.map-progress { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); border: 1px solid rgba(64,88,120,0.1); font-family: "Fredoka", sans-serif; z-index: 50; }');
     css.push('.progress-icon { font-size: 20px; }');
@@ -432,7 +435,7 @@ class AdventureMapV4 {
     // Cracked ground effect for start zone
     css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
     
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 48px; height: 48px; top: -48px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
+    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 86px; height: 86px; top: -110px; } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
     
     var styles = document.createElement('style');
     styles.id = 'adventure-map-v4-styles';
@@ -1188,6 +1191,10 @@ class AdventureMapV4 {
         dogImage.src = '/images/characters/DanielTheDog.png';
         dogImage.alt = 'Daniel the dog';
         character.appendChild(dogImage);
+        var indicatorLabel = document.createElement('div');
+        indicatorLabel.className = 'current-indicator-label';
+        indicatorLabel.textContent = 'You are here';
+        character.appendChild(indicatorLabel);
         node.appendChild(character);
       }
 
