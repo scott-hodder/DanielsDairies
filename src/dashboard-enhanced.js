@@ -177,6 +177,61 @@ const CATEGORY_TO_SUPERSKILL = {
 // For backward compatibility, CATEGORY_THEMES points to SUPER_SKILL_THEMES
 const CATEGORY_THEMES = SUPER_SKILL_THEMES;
 
+// ================================================
+// MAP ZONE PROGRESSION SYSTEM (4-ZONE)
+// ================================================
+// Zones unlock after completing a set number of modules.
+const MAP_ZONE_PROGRESSION = [
+  {
+    range: '1–3',
+    label: 'Zone 1: Foundations',
+    unlocksAfterModules: 0,
+    conceptualPurpose: 'Introduce the journey, establish routines, and build comfort with the map flow.',
+    emotionalShift: 'From uncertainty to cautious curiosity.',
+    progressFeelsLike: 'Small wins, steady practice, and growing confidence with the basics.',
+    roadChanges: 'The road is narrow and slightly uneven, with a basic path line and minimal structure. Edges are soft and forgiving, with no intersections or traffic guidance yet.',
+    townChanges: 'A handful of small, low structures appear at a distance from the road, spaced apart with open gaps. Details are minimal, suggesting a quiet start rather than a fully formed neighborhood.',
+    zoneCompletionTransition: 'Freeze input for a beat as the scene holds. The path line brightens and steadies, smoothing out as it widens slightly. The ground around the road subtly aligns into more orderly edges, signaling that thoughts have formed a stronger route. Interaction resumes once the upgraded path settles.',
+    visualChangesAllowed: 'Subtle increases in clarity and contrast, gentle emphasis on completed modules, and minimal motion cues.'
+  },
+  {
+    range: '4–6',
+    label: 'Zone 2: Momentum',
+    unlocksAfterModules: 3,
+    conceptualPurpose: 'Reinforce skills through repetition and start connecting ideas across modules.',
+    emotionalShift: 'From curiosity to determination.',
+    progressFeelsLike: 'A rhythm of achievement, with progress feeling more consistent and predictable.',
+    roadChanges: 'The road widens and smooths, with clearer borders and a consistent lane-like structure. The first intersections appear, along with simple directional signs.',
+    townChanges: 'More buildings begin to line the road, still simple in form but closer together. A few paths and shared edges hint at connections forming between structures.',
+    zoneCompletionTransition: 'Pause interaction briefly as the road surface tightens and becomes more uniform. Lane structure resolves into crisp lines, and a new intersection fades in, underscoring that thoughts now move along a clearer route. Resume interaction as the new junction locks into place.',
+    visualChangesAllowed: 'Slightly richer color saturation, clearer path highlighting, and more noticeable progress markers.'
+  },
+  {
+    range: '7–9',
+    label: 'Zone 3: Mastery Building',
+    unlocksAfterModules: 6,
+    conceptualPurpose: 'Deepen understanding and encourage independent application of skills.',
+    emotionalShift: 'From determination to self-assurance.',
+    progressFeelsLike: 'Confident strides, with progress feeling earned and meaningful.',
+    roadChanges: 'The road becomes broader and more structured, with well-defined lanes and smoother transitions. Intersections are more frequent, with clearer signage and the first guidance lights.',
+    townChanges: 'Buildings grow taller and denser, with clearer clusters that feel like small blocks. Walkways and shared boundaries make the town feel cohesive rather than scattered.',
+    zoneCompletionTransition: 'Hold input as the road expands to a wider, steadier corridor. Guidance lights pulse on in sequence along the path, and intersections clarify into a clean grid, reinforcing that thoughts now travel with strength and direction. Interaction returns after the lights settle.',
+    visualChangesAllowed: 'Stronger emphasis on completed sections, increased depth through layering, and more prominent milestone cues.'
+  },
+  {
+    range: '10–12',
+    label: 'Zone 4: Celebration',
+    unlocksAfterModules: 9,
+    conceptualPurpose: 'Celebrate growth and reinforce the child’s sense of accomplishment.',
+    emotionalShift: 'From self-assurance to pride.',
+    progressFeelsLike: 'A satisfying finish, with a clear sense of achievement and closure.',
+    roadChanges: 'The road is at its widest and smoothest, fully structured with clear lanes. Intersections are well organized, with prominent signs and steady guidance lights marking the final stretch.',
+    townChanges: 'The town becomes an active center with taller structures, tighter spacing, and connected streets that wrap around the road. The environment feels established and complete, reinforcing a sense of arrival.',
+    zoneCompletionTransition: 'Briefly pause interaction as the path locks into its final, strongest form. The surface polishes to a consistent, confident flow, intersections align with clear guidance, and the full route glows subtly to show thoughts becoming their strongest path. Resume control once the glow fades to steady.',
+    visualChangesAllowed: 'Highest brightness within the palette, enhanced polish on key elements, and celebratory emphasis on completion.'
+  }
+];
+
 // Daniel expression images mapping
 const DANIEL_EXPRESSIONS = {
   stressed: '/images/characters/DanielTheDog.png',
@@ -314,6 +369,12 @@ class AdventureMapV4 {
     css.push('.category-filter-select:hover { border-color: rgba(64,88,120,0.25); }');
     css.push('.category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }');
     css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 20px; overflow: hidden; cursor: grab; border: 4px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 120px rgba(135,206,235,0.25), 0 12px 28px rgba(15, 23, 42, 0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%); }');
+    css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
+    css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone-1.png"); }');
+    css.push('.adventure-viewport[data-zone="2"] { background-image: url("/images/zones/zone-2.png"); }');
+    css.push('.adventure-viewport[data-zone="3"] { background-image: url("/images/zones/zone-3.png"); }');
+    css.push('.adventure-viewport[data-zone="4"] { background-image: url("/images/zones/zone-4.png"); }');
+    css.push('.adventure-viewport[data-zone] .map-bg-stack { opacity: 0; }');
     css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 20px; pointer-events: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), inset 0 -40px 60px rgba(15, 23, 42, 0.08); }');
     css.push('.adventure-viewport:active, .adventure-viewport.dragging { cursor: grabbing; }');
     css.push('.map-bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }');
@@ -381,9 +442,9 @@ class AdventureMapV4 {
     css.push('.map-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }');
     css.push('.map-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid rgba(64,88,120,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }');
     css.push('.map-btn:hover { background: #fff; transform: scale(1.08); }');
-    css.push('.map-marker { position: absolute; font-size: 34px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; }');
-    css.push('.map-marker.start { animation: markerPop 0.5s ease-out; }');
-    css.push('.map-marker.finish { animation: flagWave 1.5s ease-in-out infinite; }');
+    css.push('.map-marker { position: absolute; width: 46px; height: 46px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; background-repeat: no-repeat; background-position: center; background-size: contain; }');
+    css.push('.map-marker.start { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%23ffffff\' d=\'M32 6c-9 0-16 7-16 16 0 12 16 32 16 32s16-20 16-32c0-9-7-16-16-16z\'/%3E%3Cpath fill=\'%234f6b8f\' d=\'M32 10c-6.6 0-12 5.4-12 12 0 8.8 12 26 12 26s12-17.2 12-26c0-6.6-5.4-12-12-12z\'/%3E%3Ccircle cx=\'32\' cy=\'22\' r=\'6\' fill=\'%23f8fafc\'/%3E%3C/svg%3E"); animation: markerPop 0.5s ease-out; }');
+    css.push('.map-marker.finish { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%2340597a\' d=\'M16 10h4v44h-4z\'/%3E%3Cpath fill=\'%23ffffff\' d=\'M20 14l28 6-12 6 12 6-28 6z\'/%3E%3Cpath fill=\'%23e2e8f0\' d=\'M20 14l20 4-10 5 10 5-20 4z\'/%3E%3C/svg%3E"); animation: flagWave 1.5s ease-in-out infinite; }');
     css.push('@keyframes markerPop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }');
     css.push('@keyframes flagWave { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }');
     css.push('.floating-cloud { position: absolute; font-size: 40px; opacity: 0.6; z-index: 0; animation: cloudFloat 20s linear infinite; pointer-events: none; }');
@@ -735,6 +796,7 @@ class AdventureMapV4 {
     section.innerHTML = html;
     this.viewport = document.getElementById('adventureViewport');
     this.canvas = document.getElementById('adventureCanvas');
+    this.applyZoneBackground();
   }
 
   applyThemeToBackground() {
@@ -756,6 +818,19 @@ class AdventureMapV4 {
       }
       bgSky.style.background = 'linear-gradient(180deg, ' + interpolatedGradient[0] + ' 0%, ' + interpolatedGradient[1] + ' 25%, ' + interpolatedGradient[2] + ' 50%, ' + interpolatedGradient[3] + ' 75%, ' + interpolatedGradient[4] + ' 100%)';
     }
+  }
+
+  getZoneForCompletedCount(completedCount) {
+    if (completedCount >= 9) return 4;
+    if (completedCount >= 6) return 3;
+    if (completedCount >= 3) return 2;
+    return 1;
+  }
+
+  applyZoneBackground() {
+    if (!this.viewport) return;
+    var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    this.viewport.dataset.zone = this.getZoneForCompletedCount(completedCount);
   }
   
   interpolateColor(color1, color2, factor) {
@@ -847,7 +922,6 @@ class AdventureMapV4 {
 
     var startMarker = document.createElement('div');
     startMarker.className = 'map-marker start';
-    startMarker.textContent = theme.startMarker || '🏠';
     startMarker.style.left = (positions[0].x - 50) + 'px';
     startMarker.style.top = (positions[0].y - 20) + 'px';
     this.canvas.appendChild(startMarker);
@@ -855,7 +929,6 @@ class AdventureMapV4 {
     var lastPos = positions[positions.length - 1];
     var finishMarker = document.createElement('div');
     finishMarker.className = 'map-marker finish';
-    finishMarker.textContent = theme.endMarker || '🏁';
     finishMarker.style.left = (lastPos.x + 50) + 'px';
     finishMarker.style.top = (lastPos.y - 20) + 'px';
     this.canvas.appendChild(finishMarker);
@@ -865,110 +938,7 @@ class AdventureMapV4 {
     var container = document.getElementById('mapDecorations');
     if (!container) return;
 
-    var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
     var positions = this.calculateNodePositions();
-    var viewportWidth = this.viewport ? this.viewport.offsetWidth : 400;
-    var progressLevel = this.getProgressLevel();
-    var self = this;
-
-    // Clouds - fewer as progress increases
-    var numClouds = Math.max(1, 3 - progressLevel);
-    for (var i = 0; i < numClouds; i++) {
-      var cloud = document.createElement('div');
-      cloud.className = 'floating-cloud';
-      cloud.textContent = '☁️';
-      cloud.style.top = (20 + Math.random() * 60) + 'px';
-      cloud.style.animationDelay = (i * 7) + 's';
-      cloud.style.animationDuration = (18 + Math.random() * 10) + 's';
-      cloud.style.opacity = (0.4 + (1 - progressLevel * 0.3) * 0.3).toString();
-      container.appendChild(cloud);
-    }
-
-    this.renderTownBuildout(container, positions, viewportWidth);
-
-    // Get progress-based decorations
-    var decorationsStart = theme.decorationsStart || ['🌲', '🌳'];
-    var decorationsEnd = theme.decorationsEnd || ['🌸', '🌻', '🦋'];
-    
-    positions.forEach(function(pos, index) {
-      var module = self.modules[index];
-      var isCompleted = module && module.status === 'completed';
-      var nodeProgress = self.modules.length > 0 ? index / self.modules.length : 0;
-      
-      // Choose decorations based on position in journey
-      var decorations = nodeProgress < 0.5 ? decorationsStart : decorationsEnd;
-      var shouldDecorate = index % 2 === 0 || isCompleted;
-      if (!shouldDecorate && Math.random() > 0.35) return;
-      var numDecorations = isCompleted ? 2 : 1;
-      
-      for (var d = 0; d < numDecorations; d++) {
-        var decoIndex = (index + d) % decorations.length;
-        var deco = decorations[decoIndex];
-        var angle = (d / numDecorations) * Math.PI * 2 + Math.random() * 0.5;
-        var distance = 85 + Math.random() * 90;
-        var decoX = pos.x + Math.cos(angle) * distance;
-        var decoY = pos.y + Math.sin(angle) * distance * 0.6;
-
-        if (decoX < 20 || decoX > viewportWidth - 20) continue;
-
-        var el = document.createElement('div');
-        el.className = 'map-decoration';
-        el.textContent = deco;
-        el.style.left = decoX + 'px';
-        el.style.top = decoY + 'px';
-        el.style.fontSize = (22 + Math.random() * 10) + 'px';
-        el.style.opacity = (0.6 + Math.random() * 0.3).toString();
-        
-        if (Math.random() > 0.7) {
-          el.classList.add('animate');
-          el.style.animationDelay = (Math.random() * 2) + 's';
-        }
-        container.appendChild(el);
-      }
-      
-      // Add environmental feedback near completed nodes
-      if (isCompleted) {
-        // Add flowers blooming near completed nodes
-        var flowerEmojis = ['🌸', '🌼', '🌻', '🌷'];
-        for (var f = 0; f < 1; f++) {
-          var flower = document.createElement('div');
-          flower.className = 'env-element bloom';
-          flower.textContent = flowerEmojis[Math.floor(Math.random() * flowerEmojis.length)];
-          flower.style.left = (pos.x + (Math.random() - 0.5) * 100) + 'px';
-          flower.style.top = (pos.y + 30 + Math.random() * 40) + 'px';
-          flower.style.fontSize = '20px';
-          flower.style.animationDelay = (Math.random() * 0.5) + 's';
-          container.appendChild(flower);
-        }
-        
-        // Add butterflies/birds near completed nodes
-        if (Math.random() > 0.5) {
-          var creature = document.createElement('div');
-          creature.className = 'env-element ' + (Math.random() > 0.5 ? 'env-butterfly' : 'env-bird');
-          creature.textContent = Math.random() > 0.5 ? '🦋' : '🐦';
-          creature.style.left = (pos.x + (Math.random() - 0.5) * 80) + 'px';
-          creature.style.top = (pos.y - 20 - Math.random() * 30) + 'px';
-          creature.style.fontSize = '18px';
-          creature.style.animationDelay = (Math.random() * 2) + 's';
-          container.appendChild(creature);
-        }
-        
-        // Add sparkles
-        if (Math.random() > 0.4) {
-          var sparkle = document.createElement('div');
-          sparkle.className = 'env-element env-sparkle';
-          sparkle.textContent = '✨';
-          sparkle.style.left = (pos.x + 35) + 'px';
-          sparkle.style.top = (pos.y - 25) + 'px';
-          sparkle.style.fontSize = '16px';
-          sparkle.style.animationDelay = (Math.random() * 1.5) + 's';
-          container.appendChild(sparkle);
-        }
-      }
-    });
-
-    // Add mini-moments on path (signposts, campfires)
-    this.renderPathMoments(container, positions);
 
     // Add zone labels
     var zones = this.getZoneLabels();
@@ -987,9 +957,6 @@ class AdventureMapV4 {
       });
     }
 
-    // Add destination marker at the end
-    this.renderDestination(container, positions);
-    
     // Add Daniel companion on the path
     this.renderDanielCompanion(container, positions);
   }
@@ -1146,18 +1113,9 @@ class AdventureMapV4 {
   }
   
   getZoneLabels() {
-    var zonesByCategory = {
-      anger: ['🔥 Hot Start', '❄️ Cooling Down', '🌸 Finding Peace'],
-      anxiety: ['🌧️ Stormy Skies', '🌤️ Clearing Up', '☀️ Sunny Days'],
-      depression: ['🌙 Dark Night', '🌅 Dawn Breaking', '🌻 Bright Garden'],
-      emotions: ['💭 Mixed Feelings', '💪 Understanding', '💖 Harmony'],
-      body: ['⚡ Tense Energy', '🌊 Finding Flow', '🧘 Inner Calm'],
-      cognitive: ['💭 Foggy Mind', '🎯 Getting Clear', '💡 Sharp Focus'],
-      social: ['🏠 Starting Out', '👫 Making Connections', '🎉 Together'],
-      general: ['🌱 Getting Started', '🌿 Growing Stronger', '🌳 Mastering Skills'],
-      all: ['🌱 Getting Started', '🌿 Growing Stronger', '🌳 Mastering Skills']
-    };
-    return zonesByCategory[this.currentCategory] || zonesByCategory.all;
+    return MAP_ZONE_PROGRESSION.map(function(zone) {
+      return zone.label + ' (' + zone.range + ')';
+    });
   }
 
   renderNodes() {
