@@ -232,13 +232,13 @@ class AdventureMapV4 {
     this.isMobile = window.innerWidth <= 768;
     
     this.config = {
-      nodeSize: this.isMobile ? 50 : 68,
-      nodeSpacingY: this.isMobile ? 75 : 115,
-      pathAmplitude: this.isMobile ? 50 : 120,
+      nodeSize: this.isMobile ? 50 : 72,
+      nodeSpacingY: this.isMobile ? 85 : 140,
+      pathAmplitude: this.isMobile ? 55 : 140,
       zigzagFrequency: this.isMobile ? 0.8 : 1.2,
-      topPadding: this.isMobile ? 50 : 100,
-      bottomPadding: this.isMobile ? 70 : 140,
-      sidePadding: this.isMobile ? 30 : 80,
+      topPadding: this.isMobile ? 60 : 120,
+      bottomPadding: this.isMobile ? 80 : 160,
+      sidePadding: this.isMobile ? 36 : 100,
       minCanvasHeight: this.isMobile ? 400 : 500
     };
     
@@ -313,7 +313,8 @@ class AdventureMapV4 {
     css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 500; padding: 10px 36px 10px 16px; border-radius: 12px; border: 2px solid rgba(64,88,120,0.15); background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%); color: #405878; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23405878\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 200px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }');
     css.push('.category-filter-select:hover { border-color: rgba(64,88,120,0.25); }');
     css.push('.category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }');
-    css.push('.adventure-viewport { position: relative; width: 100%; height: 480px; border-radius: 16px; overflow: hidden; cursor: grab; border: 3px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 80px rgba(135,206,235,0.2), 0 4px 20px rgba(0,0,0,0.1); user-select: none; -webkit-user-select: none; touch-action: none; }');
+    css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 20px; overflow: hidden; cursor: grab; border: 4px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 120px rgba(135,206,235,0.25), 0 12px 28px rgba(15, 23, 42, 0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%); }');
+    css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 20px; pointer-events: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), inset 0 -40px 60px rgba(15, 23, 42, 0.08); }');
     css.push('.adventure-viewport:active, .adventure-viewport.dragging { cursor: grabbing; }');
     css.push('.map-bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }');
     css.push('.map-bg-sky { transition: background 0.8s ease; }');
@@ -322,20 +323,22 @@ class AdventureMapV4 {
     css.push('.map-bg-clouds { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 500 120\'%3E%3Cellipse cx=\'70\' cy=\'50\' rx=\'40\' ry=\'24\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'100\' cy=\'42\' rx=\'30\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'50\' cy=\'48\' rx=\'25\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'85\' cy=\'55\' rx=\'28\' ry=\'15\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'350\' cy=\'60\' rx=\'45\' ry=\'26\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'385\' cy=\'52\' rx=\'32\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'330\' cy=\'58\' rx=\'28\' ry=\'18\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'365\' cy=\'65\' rx=\'30\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3C/svg%3E"); background-size: 600px 120px; background-repeat: repeat-x; background-position: 0 15px; animation: cloudsDrift 90s linear infinite; }');
     css.push('@keyframes cloudsDrift { from { background-position-x: 0; } to { background-position-x: 600px; } }');
     css.push('.map-bg-trees { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 70\'%3E%3Cpath d=\'M10,70 L20,35 L15,40 L25,18 L20,23 L30,0 L40,23 L35,18 L45,40 L40,35 L50,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M55,70 L63,42 L59,46 L67,28 L63,32 L71,14 L79,32 L75,28 L83,46 L79,42 L87,70 Z\' fill=\'%231B5E20\'/%3E%3Cpath d=\'M95,70 L107,32 L101,38 L113,10 L125,38 L119,32 L131,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M140,70 L148,45 L144,49 L152,32 L148,36 L156,20 L164,36 L160,32 L168,49 L164,45 L172,70 Z\' fill=\'%231B5E20\'/%3E%3C/svg%3E"); background-size: 250px 90px; background-repeat: repeat-x; background-position: 0 bottom; }');
-    css.push('.adventure-canvas { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; transition: transform 0.05s linear; background: linear-gradient(180deg, transparent 0%, rgba(92, 184, 92, 0.15) 30%, rgba(76, 175, 80, 0.25) 60%, rgba(67, 160, 71, 0.3) 100%); }');
+    css.push('.adventure-canvas { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; transition: transform 0.05s linear; }');
     css.push('.adventure-viewport.dragging .adventure-canvas { transition: none; }');
-    css.push('.map-decorations { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }');
-    css.push('.map-decoration { position: absolute; font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); opacity: 0.9; }');
+    css.push('.map-bg-stack { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }');
+    css.push('.map-bg-layer { z-index: 0; }');
+    css.push('.map-decorations { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }');
+    css.push('.map-decoration { position: absolute; font-size: 26px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)); opacity: 0.85; }');
     css.push('.map-decoration.animate { animation: decorSway 4s ease-in-out infinite; }');
     css.push('@keyframes decorSway { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.05); } }');
-    css.push('.adventure-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }');
+    css.push('.adventure-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }');
     css.push('.path-shadow { fill: none; stroke-width: 36; stroke-linecap: round; stroke-linejoin: round; }');
     css.push('.path-main { fill: none; stroke-width: 30; stroke-linecap: round; stroke-linejoin: round; }');
     css.push('.path-light { fill: none; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }');
     css.push('.path-dashes { fill: none; stroke: rgba(255,255,255,0.5); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 18; animation: dashMove 1s linear infinite; }');
     css.push('@keyframes dashMove { to { stroke-dashoffset: -36; } }');
     css.push('.adventure-nodes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }');
-    css.push('.adventure-node { position: absolute; width: 66px; height: 66px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translate(-50%, -50%); transition: transform 0.2s ease, box-shadow 0.2s ease; z-index: 10; }');
+    css.push('.adventure-node { position: absolute; width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translate(-50%, -50%); transition: transform 0.2s ease, box-shadow 0.2s ease; z-index: 10; }');
     css.push('.adventure-node:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 20; }');
     css.push('.adventure-node .node-emoji { font-size: 28px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2)); }');
     css.push('.adventure-node.completed { background: linear-gradient(145deg, #4ADE80 0%, #22C55E 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), 0 0 0 4px rgba(34, 197, 94, 0.2); }');
@@ -356,7 +359,7 @@ class AdventureMapV4 {
     css.push('.tooltip-status { font-size: 12px; opacity: 0.85; }');
     css.push('.tooltip-status.ready { color: #FBBF24; }');
     css.push('.tooltip-status.done { color: #4ADE80; }');
-    css.push('.current-indicator { position: absolute; top: -54px; left: 50%; transform: translateX(-50%); width: 56px; height: 56px; padding: 4px; border-radius: 50%; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); animation: characterBounce 1s ease-in-out infinite; z-index: 15; }');
+    css.push('.current-indicator { position: absolute; top: -58px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; padding: 4px; border-radius: 50%; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25)); animation: characterBounce 1s ease-in-out infinite; z-index: 15; }');
     css.push('.current-indicator img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; pointer-events: none; }');
     css.push('@keyframes characterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }');
     css.push('.map-progress { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); border: 1px solid rgba(64,88,120,0.1); font-family: "Fredoka", sans-serif; z-index: 50; }');
@@ -372,21 +375,21 @@ class AdventureMapV4 {
     css.push('.map-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }');
     css.push('.map-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid rgba(64,88,120,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }');
     css.push('.map-btn:hover { background: #fff; transform: scale(1.08); }');
-    css.push('.map-marker { position: absolute; font-size: 32px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; }');
+    css.push('.map-marker { position: absolute; font-size: 34px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; }');
     css.push('.map-marker.start { animation: markerPop 0.5s ease-out; }');
     css.push('.map-marker.finish { animation: flagWave 1.5s ease-in-out infinite; }');
     css.push('@keyframes markerPop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }');
     css.push('@keyframes flagWave { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }');
     css.push('.floating-cloud { position: absolute; font-size: 40px; opacity: 0.6; z-index: 0; animation: cloudFloat 20s linear infinite; pointer-events: none; }');
     css.push('@keyframes cloudFloat { 0% { transform: translateX(-100px); } 100% { transform: translateX(calc(100% + 100px)); } }');
-    css.push('.zone-label { position: absolute; font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.9); text-transform: uppercase; letter-spacing: 1.5px; pointer-events: none; z-index: 4; text-shadow: 0 2px 4px rgba(0,0,0,0.4); background: rgba(0,0,0,0.2); padding: 4px 12px; border-radius: 12px; }');
+    css.push('.zone-label { position: absolute; font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; letter-spacing: 1.3px; pointer-events: none; z-index: 4; text-shadow: 0 2px 6px rgba(0,0,0,0.4); background: rgba(15, 23, 42, 0.35); padding: 6px 14px; border-radius: 16px; }');
     css.push('.map-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; text-align: center; color: #6d86a8; }');
     css.push('.map-empty-emoji { font-size: 64px; margin-bottom: 16px; opacity: 0.6; }');
     css.push('.map-empty-title { font-family: "Fredoka", sans-serif; font-size: 20px; font-weight: 600; color: #405878; margin-bottom: 8px; }');
     css.push('.map-empty-text { font-size: 14px; max-width: 300px; }');
     
     // Enhanced "next" node styles - bigger, pulsing, dramatic
-    css.push('.adventure-node.available { width: 76px; height: 76px; background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%); animation: nextNodePulse 2s ease-in-out infinite, nextNodeGlow 1.5s ease-in-out infinite alternate; }');
+    css.push('.adventure-node.available { width: 82px; height: 82px; background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%); animation: nextNodePulse 2s ease-in-out infinite, nextNodeGlow 1.5s ease-in-out infinite alternate; }');
     css.push('.adventure-node.available .node-emoji { font-size: 32px; animation: emojiShake 0.5s ease-in-out infinite; }');
     css.push('@keyframes nextNodePulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }');
     css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
@@ -401,7 +404,7 @@ class AdventureMapV4 {
     
     // Destination marker styles
     css.push('.destination-marker { position: absolute; z-index: 6; text-align: center; pointer-events: none; animation: destinationFloat 3s ease-in-out infinite; }');
-    css.push('.destination-icon { font-size: 48px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }');
+    css.push('.destination-icon { font-size: 52px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }');
     css.push('.destination-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #fff; background: linear-gradient(135deg, rgba(34,197,94,0.9), rgba(22,163,74,0.9)); padding: 6px 14px; border-radius: 20px; margin-top: 8px; display: inline-block; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }');
     css.push('@keyframes destinationFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }');
     
@@ -429,7 +432,7 @@ class AdventureMapV4 {
     // Cracked ground effect for start zone
     css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
     
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 400px; } .adventure-node { width: 56px; height: 56px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .zone-label { font-size: 12px; padding: 2px 8px; } .current-indicator { width: 48px; height: 48px; top: -48px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
+    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 48px; height: 48px; top: -48px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
     
     var styles = document.createElement('style');
     styles.id = 'adventure-map-v4-styles';
@@ -692,12 +695,14 @@ class AdventureMapV4 {
 
     if (this.modules.length > 0) {
       html += '<div class="adventure-viewport" id="adventureViewport">' +
+        '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
+        '<div class="map-bg-stack">' +
         '<div class="map-bg-layer map-bg-sky" id="mapBgSky"></div>' +
         '<div class="map-bg-layer map-bg-hills"></div>' +
         '<div class="map-bg-layer map-bg-grass"></div>' +
         '<div class="map-bg-layer map-bg-clouds"></div>' +
         '<div class="map-bg-layer map-bg-trees"></div>' +
-        '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
+        '</div>' +
         '<div class="map-decorations" id="mapDecorations"></div>' +
         '<svg class="adventure-path-svg" id="adventurePathSvg"></svg>' +
         '<div class="adventure-nodes" id="adventureNodes"></div>' +
@@ -868,13 +873,15 @@ class AdventureMapV4 {
       
       // Choose decorations based on position in journey
       var decorations = nodeProgress < 0.5 ? decorationsStart : decorationsEnd;
-      var numDecorations = 2 + Math.floor(Math.random() * 2);
+      var shouldDecorate = index % 2 === 0 || isCompleted;
+      if (!shouldDecorate && Math.random() > 0.35) return;
+      var numDecorations = isCompleted ? 2 : 1;
       
       for (var d = 0; d < numDecorations; d++) {
         var decoIndex = (index + d) % decorations.length;
         var deco = decorations[decoIndex];
         var angle = (d / numDecorations) * Math.PI * 2 + Math.random() * 0.5;
-        var distance = 60 + Math.random() * 80;
+        var distance = 85 + Math.random() * 90;
         var decoX = pos.x + Math.cos(angle) * distance;
         var decoY = pos.y + Math.sin(angle) * distance * 0.6;
 
@@ -885,8 +892,8 @@ class AdventureMapV4 {
         el.textContent = deco;
         el.style.left = decoX + 'px';
         el.style.top = decoY + 'px';
-        el.style.fontSize = (24 + Math.random() * 12) + 'px';
-        el.style.opacity = (0.7 + Math.random() * 0.3).toString();
+        el.style.fontSize = (22 + Math.random() * 10) + 'px';
+        el.style.opacity = (0.6 + Math.random() * 0.3).toString();
         
         if (Math.random() > 0.7) {
           el.classList.add('animate');
@@ -899,7 +906,7 @@ class AdventureMapV4 {
       if (isCompleted) {
         // Add flowers blooming near completed nodes
         var flowerEmojis = ['🌸', '🌼', '🌻', '🌷'];
-        for (var f = 0; f < 2; f++) {
+        for (var f = 0; f < 1; f++) {
           var flower = document.createElement('div');
           flower.className = 'env-element bloom';
           flower.textContent = flowerEmojis[Math.floor(Math.random() * flowerEmojis.length)];
@@ -923,14 +930,16 @@ class AdventureMapV4 {
         }
         
         // Add sparkles
-        var sparkle = document.createElement('div');
-        sparkle.className = 'env-element env-sparkle';
-        sparkle.textContent = '✨';
-        sparkle.style.left = (pos.x + 35) + 'px';
-        sparkle.style.top = (pos.y - 25) + 'px';
-        sparkle.style.fontSize = '16px';
-        sparkle.style.animationDelay = (Math.random() * 1.5) + 's';
-        container.appendChild(sparkle);
+        if (Math.random() > 0.4) {
+          var sparkle = document.createElement('div');
+          sparkle.className = 'env-element env-sparkle';
+          sparkle.textContent = '✨';
+          sparkle.style.left = (pos.x + 35) + 'px';
+          sparkle.style.top = (pos.y - 25) + 'px';
+          sparkle.style.fontSize = '16px';
+          sparkle.style.animationDelay = (Math.random() * 1.5) + 's';
+          container.appendChild(sparkle);
+        }
       }
     });
 
