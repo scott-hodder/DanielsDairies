@@ -632,10 +632,28 @@ async function loadModuleBlueprintIntoForm() {
         // Store the blueprint ID for later (to mark as generated)
         document.getElementById('addModuleForm').dataset.blueprintId = blueprintId;
         
+        const setSelectByName = (selectEl, lookupName) => {
+            if (!selectEl || !lookupName) return false;
+            const target = lookupName.trim().toLowerCase();
+            for (let opt of selectEl.options) {
+                if (opt.text.trim().toLowerCase() === target) {
+                    selectEl.value = opt.value;
+                    return true;
+                }
+            }
+            return false;
+        };
+        
         // Populate form fields
         document.getElementById('newModuleTitle').value = blueprint.module_title || '';
-        document.getElementById('newModuleAgeRange').value = blueprint.age_range || '';
-        document.getElementById('newModuleCoreTheory').value = blueprint.core_theory || '';
+        const ageRangeEl = document.getElementById('newModuleAgeRange');
+        if (!setSelectByName(ageRangeEl, blueprint.age_range || '')) {
+            if (ageRangeEl) ageRangeEl.value = blueprint.age_range || '';
+        }
+        const coreTheoryEl = document.getElementById('newModuleCoreTheory');
+        if (!setSelectByName(coreTheoryEl, blueprint.core_theory || '')) {
+            if (coreTheoryEl) coreTheoryEl.value = blueprint.core_theory || '';
+        }
         document.getElementById('newModuleBrainTownAnalogy').value = blueprint.brain_town_analogy || '';
         
         console.log(' Blueprint loaded in module-content-creator.js');
