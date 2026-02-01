@@ -2002,8 +2002,6 @@ function classifyGenerationError(error) {
             
             const shortDescEl = document.getElementById('newModuleShortDescription');
             const descEl = document.getElementById('newModuleDescription');
-            const emotionsSelect = document.getElementById('newModuleEmotions');
-            const skillsSelect = document.getElementById('newModuleSkills');
             
             if (shortDescEl && !shortDescEl.value.trim() && metadata.shortDescription) {
                 shortDescEl.value = metadata.shortDescription;
@@ -2011,17 +2009,6 @@ function classifyGenerationError(error) {
             
             if (descEl && !descEl.value.trim() && metadata.description) {
                 descEl.value = metadata.description;
-            }
-            
-            const hasEmotionsSelected = emotionsSelect ? emotionsSelect.selectedOptions.length > 0 : false;
-            const hasSkillsSelected = skillsSelect ? skillsSelect.selectedOptions.length > 0 : false;
-            
-            if (emotionsSelect && !hasEmotionsSelected && Array.isArray(metadata.emotions)) {
-                metadata.emotions.forEach(emotion => addOptionToMultiSelect('newModuleEmotions', emotion, true));
-            }
-            
-            if (skillsSelect && !hasSkillsSelected && Array.isArray(metadata.skills)) {
-                metadata.skills.forEach(skill => addOptionToMultiSelect('newModuleSkills', skill, true));
             }
         }
 
@@ -2330,14 +2317,6 @@ if (data.status === "running") {
                 const description = document.getElementById('newModuleDescription')?.value?.trim()
                     || currentGenerationSpec?.metadata?.description
                     || null;
-                const emotions = Array.from(document.getElementById('newModuleEmotions')?.selectedOptions || [])
-                    .map(option => option.value.trim())
-                    .filter(Boolean);
-                const skills = Array.from(document.getElementById('newModuleSkills')?.selectedOptions || [])
-                    .map(option => option.value.trim())
-                    .filter(Boolean);
-                const resolvedEmotions = emotions.length > 0 ? emotions : (currentGenerationSpec?.metadata?.emotions || null);
-                const resolvedSkills = skills.length > 0 ? skills : (currentGenerationSpec?.metadata?.skills || null);
 
                 // Insert module into database (no code field)
                 const { data: newModule, error: insertError } = await supabase
@@ -2348,8 +2327,6 @@ if (data.status === "running") {
                         series: series,
                         age_range: ageRange,
                         // Emotions and skills fields removed - no longer required
-                        emotions: resolvedEmotions,
-                        skills: resolvedSkills,
                         short_description: shortDescription,
                         description: description,
                         html_content: generatedModuleHTML,
