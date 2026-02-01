@@ -330,6 +330,9 @@ class AdventureMapV4 {
     css.push('.map-decorations { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }');
     css.push('.map-decoration { position: absolute; font-size: 26px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)); opacity: 0.85; }');
     css.push('.map-decoration.animate { animation: decorSway 4s ease-in-out infinite; }');
+    css.push('.map-town { position: absolute; display: flex; align-items: flex-end; gap: 6px; z-index: 2; pointer-events: none; }');
+    css.push('.map-town-item { font-size: 26px; filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.25)); }');
+    css.push('.map-town-label { margin-left: 8px; padding: 4px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.9); color: #1e293b; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18); }');
     css.push('@keyframes decorSway { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.05); } }');
     css.push('.adventure-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }');
     css.push('.path-shadow { fill: none; stroke-width: 36; stroke-linecap: round; stroke-linejoin: round; }');
@@ -435,6 +438,7 @@ class AdventureMapV4 {
     // Cracked ground effect for start zone
     css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
     
+    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
     css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
     
     var styles = document.createElement('style');
@@ -779,6 +783,14 @@ class AdventureMapV4 {
     if (progress < 0.66) return 1;
     return 2;
   }
+
+  getTownStage() {
+    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    if (completed <= 2) return 0;
+    if (completed <= 5) return 1;
+    if (completed <= 8) return 2;
+    return 3;
+  }
   
   getDanielExpression() {
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
@@ -812,6 +824,14 @@ class AdventureMapV4 {
     if (positions.length < 2) return;
 
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
+    var townStage = this.getTownStage();
+    var townPathPalettes = [
+      { main: '#A8754F', light: '#C89B6C', shadow: 'rgba(109, 71, 41, 0.35)' },
+      { main: '#B38C5C', light: '#D5B489', shadow: 'rgba(120, 86, 52, 0.35)' },
+      { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)' },
+      { main: '#4F46E5', light: '#93C5FD', shadow: 'rgba(30, 64, 175, 0.35)' }
+    ];
+    var pathColors = townPathPalettes[townStage] || theme.pathColor;
     var pathD = 'M ' + positions[0].x + ' ' + positions[0].y;
     
     for (var i = 1; i < positions.length; i++) {
@@ -821,9 +841,9 @@ class AdventureMapV4 {
       pathD += ' C ' + prev.x + ' ' + midY + ', ' + curr.x + ' ' + midY + ', ' + curr.x + ' ' + curr.y;
     }
 
-    svg.innerHTML = '<path class="path-shadow" d="' + pathD + '" style="stroke: ' + theme.pathColor.shadow + '" />' +
-      '<path class="path-main" d="' + pathD + '" style="stroke: ' + theme.pathColor.main + '" />' +
-      '<path class="path-light" d="' + pathD + '" style="stroke: ' + theme.pathColor.light + '" />' +
+    svg.innerHTML = '<path class="path-shadow" d="' + pathD + '" style="stroke: ' + pathColors.shadow + '" />' +
+      '<path class="path-main" d="' + pathD + '" style="stroke: ' + pathColors.main + '" />' +
+      '<path class="path-light" d="' + pathD + '" style="stroke: ' + pathColors.light + '" />' +
       '<path class="path-dashes" d="' + pathD + '" />';
 
     var startMarker = document.createElement('div');
@@ -864,6 +884,8 @@ class AdventureMapV4 {
       cloud.style.opacity = (0.4 + (1 - progressLevel * 0.3) * 0.3).toString();
       container.appendChild(cloud);
     }
+
+    this.renderTownBuildout(container, positions, viewportWidth);
 
     // Get progress-based decorations
     var decorationsStart = theme.decorationsStart || ['🌲', '🌳'];
@@ -971,6 +993,44 @@ class AdventureMapV4 {
     
     // Add Daniel companion on the path
     this.renderDanielCompanion(container, positions);
+  }
+
+  renderTownBuildout(container, positions, viewportWidth) {
+    if (positions.length === 0) return;
+
+    var townStage = this.getTownStage();
+    var anchorIndex = Math.min(positions.length - 1, Math.max(0, townStage * 3 + 2));
+    var anchor = positions[anchorIndex];
+    if (!anchor) return;
+
+    var townStages = [
+      { label: 'Wild Woods', buildings: ['🌲', '🌳', '⛺'] },
+      { label: 'Little Village', buildings: ['🏠', '🏡', '🏘️'] },
+      { label: 'Growing Town', buildings: ['🏫', '🏬', '🏪', '🏠'] },
+      { label: 'Big City', buildings: ['🏢', '🏦', '🏙️', '🏬'] }
+    ];
+
+    var stageData = townStages[townStage];
+    if (!stageData) return;
+
+    var town = document.createElement('div');
+    town.className = 'map-town';
+    town.style.left = Math.min(viewportWidth - 140, anchor.x + 110) + 'px';
+    town.style.top = (anchor.y + 30) + 'px';
+
+    stageData.buildings.forEach(function(building) {
+      var item = document.createElement('div');
+      item.className = 'map-town-item';
+      item.textContent = building;
+      town.appendChild(item);
+    });
+
+    var label = document.createElement('div');
+    label.className = 'map-town-label';
+    label.textContent = stageData.label;
+    town.appendChild(label);
+
+    container.appendChild(town);
   }
   
   renderPathMoments(container, positions) {
