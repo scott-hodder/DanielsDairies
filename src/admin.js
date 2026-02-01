@@ -1613,10 +1613,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     brainTownField: !!brainTownField
                 });
                 
+                const setSelectByName = (selectEl, lookupName) => {
+                    if (!selectEl || !lookupName) return false;
+                    const target = lookupName.trim().toLowerCase();
+                    for (let opt of selectEl.options) {
+                        if (opt.text.trim().toLowerCase() === target) {
+                            selectEl.value = opt.value;
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                
                 if (titleField) titleField.value = blueprint.module_title || '';
-                if (ageRangeField) ageRangeField.value = blueprint.age_range || '';
+                if (ageRangeField) {
+                    if (!setSelectByName(ageRangeField, blueprint.age_range || '')) {
+                        ageRangeField.value = blueprint.age_range || '';
+                    }
+                }
                 if (coreTheoryField) {
-                    coreTheoryField.value = blueprint.core_theory || '';
+                    if (!setSelectByName(coreTheoryField, blueprint.core_theory || '')) {
+                        coreTheoryField.value = blueprint.core_theory || '';
+                    }
                     console.log('Set Core Theory field to:', blueprint.core_theory);
                     console.log('Core Theory field value after setting:', coreTheoryField.value);
                     
