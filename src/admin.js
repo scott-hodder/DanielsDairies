@@ -1996,6 +1996,22 @@ function classifyGenerationError(error) {
                 document.getElementById('generateModuleBtn').click();
             }
         }
+
+        function applyGeneratedMetadataToForm(metadata) {
+            if (!metadata) return;
+            
+            const shortDescEl = document.getElementById('newModuleShortDescription');
+            const descEl = document.getElementById('newModuleDescription');
+            
+            if (shortDescEl && !shortDescEl.value.trim() && metadata.shortDescription) {
+                shortDescEl.value = metadata.shortDescription;
+            }
+            
+            if (descEl && !descEl.value.trim() && metadata.description) {
+                descEl.value = metadata.description;
+            }
+        }
+
         window.generateModuleWithAI = async function() {
     const statusEl = document.getElementById('aiGenerationStatus');
     const generateBtn = document.getElementById('generateModuleBtn');
@@ -2079,6 +2095,8 @@ function classifyGenerationError(error) {
         generatedModuleHTML = window.generatedModuleHTML;
         window.currentGenerationSpec = result.spec;
         currentGenerationSpec = window.currentGenerationSpec;
+
+        applyGeneratedMetadataToForm(currentGenerationSpec?.metadata);
         
         if (moduleCode && window.generatedModuleHTML.includes('__MODULE_CODE__')) {
             window.generatedModuleHTML = window.generatedModuleHTML.replace(/__MODULE_CODE__/g, moduleCode);
@@ -2293,6 +2311,12 @@ if (data.status === "running") {
                 const superSkillId = document.getElementById('newModuleSuperSkill')?.value || null;
                 const subSkillId = document.getElementById('newModuleSubSkill')?.value || null;
                 const cycleId = document.getElementById('newModuleCycle')?.value || null;
+                const shortDescription = document.getElementById('newModuleShortDescription')?.value?.trim()
+                    || currentGenerationSpec?.metadata?.shortDescription
+                    || null;
+                const description = document.getElementById('newModuleDescription')?.value?.trim()
+                    || currentGenerationSpec?.metadata?.description
+                    || null;
 
                 // Insert module into database (no code field)
                 const { data: newModule, error: insertError } = await supabase
@@ -2303,6 +2327,8 @@ if (data.status === "running") {
                         series: series,
                         age_range: ageRange,
                         // Emotions and skills fields removed - no longer required
+                        short_description: shortDescription,
+                        description: description,
                         html_content: generatedModuleHTML,
                         is_active: true,
                         super_skill_id: superSkillId || null,
