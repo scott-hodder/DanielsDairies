@@ -645,7 +645,8 @@ async function loadModuleBlueprintIntoForm() {
         };
         
         // Populate form fields
-        document.getElementById('newModuleTitle').value = blueprint.module_title || '';
+        const titleEl = document.getElementById('newModuleTitle');
+        if (titleEl) titleEl.value = blueprint.module_title || '';
         const ageRangeEl = document.getElementById('newModuleAgeRange');
         if (!setSelectByName(ageRangeEl, blueprint.age_range || '')) {
             if (ageRangeEl) ageRangeEl.value = blueprint.age_range || '';
@@ -654,7 +655,8 @@ async function loadModuleBlueprintIntoForm() {
         if (!setSelectByName(coreTheoryEl, blueprint.core_theory || '')) {
             if (coreTheoryEl) coreTheoryEl.value = blueprint.core_theory || '';
         }
-        document.getElementById('newModuleBrainTownAnalogy').value = blueprint.brain_town_analogy || '';
+        const brainTownEl = document.getElementById('newModuleBrainTownAnalogy');
+        if (brainTownEl) brainTownEl.value = blueprint.brain_town_analogy || '';
         
         console.log(' Blueprint loaded in module-content-creator.js');
         console.log('Core Theory:', blueprint.core_theory);
