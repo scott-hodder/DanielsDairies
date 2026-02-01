@@ -1602,9 +1602,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Populate form fields
                 const titleField = document.getElementById('newModuleTitle');
-                const ageRangeField = document.getElementById('newModuleAgeRange');
-                const coreTheoryField = document.getElementById('newModuleCoreTheory');
-                const brainTownField = document.getElementById('newModuleBrainTownAnalogy');
+                const ageRangeField = document.getElementById('ageRangeSelect');
+                const coreTheoryField = document.getElementById('coreTheorySelect');
+                const brainTownField = document.getElementById('brainTownAnalogy');
+                const superSkillField = document.getElementById('newModuleSuperSkill');
+                const subSkillField = document.getElementById('newModuleSubSkill');
+                const cycleSelect = document.getElementById('newModuleCycle');
+                const orderField = document.getElementById('newModuleOrder');
                 
                 console.log('Form elements found:', {
                     titleField: !!titleField,
@@ -1613,12 +1617,58 @@ document.addEventListener('DOMContentLoaded', function() {
                     brainTownField: !!brainTownField
                 });
                 
+                const normalizeLookup = (value) => (value || '')
+                    .toString()
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, '')
+                    .replace(/[-–—]/g, '');
+                
+                const setSelectByName = (selectEl, lookupName) => {
+                    if (!selectEl || !lookupName) return false;
+                    const target = normalizeLookup(lookupName);
+                    for (let opt of selectEl.options) {
+                        const optionText = normalizeLookup(opt.text);
+                        const optionValue = normalizeLookup(opt.value);
+                        const optionData = normalizeLookup(opt.dataset?.ageRange || '');
+                        if (optionText === target || optionValue === target || optionData === target) {
+                            selectEl.value = opt.value;
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+
+                const waitForSelectOptions = async (selectEl, timeoutMs = 2000) => {
+                    if (!selectEl) return;
+                    const start = Date.now();
+                    while (selectEl.options.length <= 1 && Date.now() - start < timeoutMs) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                };
+                
                 if (titleField) titleField.value = blueprint.module_title || '';
-                if (ageRangeField) ageRangeField.value = blueprint.age_range || '';
+                await loadAgeRanges();
+                await loadCoreTheories();
+                await waitForSelectOptions(ageRangeField);
+                await waitForSelectOptions(coreTheoryField);
+                if (ageRangeField) {
+                    if (!setSelectByName(ageRangeField, blueprint.age_range || '')) {
+                        ageRangeField.value = blueprint.age_range || '';
+                    }
+                }
                 if (coreTheoryField) {
-                    coreTheoryField.value = blueprint.core_theory || '';
+                    if (!setSelectByName(coreTheoryField, blueprint.core_theory || '')) {
+                        coreTheoryField.value = blueprint.core_theory || '';
+                    }
                     console.log('Set Core Theory field to:', blueprint.core_theory);
                     console.log('Core Theory field value after setting:', coreTheoryField.value);
+                    updateTheoryPreview({
+                        selectId: 'coreTheorySelect',
+                        previewId: 'theoryPreview',
+                        nameId: 'theoryPreviewName',
+                        descriptionId: 'theoryPreviewDescription'
+                    });
                     
                     // Simple visual test - change background color
                     if (blueprint.core_theory) {
@@ -1641,23 +1691,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         }, 3000);
                     }
                 }
+
+                const xpRewardField = document.getElementById('newModuleXPReward');
+                const starsRewardField = document.getElementById('newModuleStarsReward');
+                if (xpRewardField && blueprint.xp_reward) xpRewardField.value = blueprint.xp_reward;
+                if (starsRewardField && blueprint.stars_reward) starsRewardField.value = blueprint.stars_reward;
                 
                 // Set Super Skill and trigger change
-                if (blueprint.super_skill_id) {
-                    document.getElementById('newModuleSuperSkill').value = blueprint.super_skill_id;
-                    await onSuperSkillChange();
+                if (superSkillField && blueprint.super_skill_id) {
+                    superSkillField.value = blueprint.super_skill_id;
+                    if (typeof onSuperSkillChange === 'function') {
+                        await onSuperSkillChange();
+                    }
                     
                     // Set Sub-Skill after dropdown is populated
                     setTimeout(() => {
-                        if (blueprint.sub_skill_id) {
-                            document.getElementById('newModuleSubSkill').value = blueprint.sub_skill_id;
+                        if (subSkillField && blueprint.sub_skill_id) {
+                            subSkillField.value = blueprint.sub_skill_id;
                         }
                     }, 100);
                 }
                 
                 // Set Cycle
-                if (blueprint.cycle) {
-                    const cycleSelect = document.getElementById('newModuleCycle');
+                if (cycleSelect && blueprint.cycle) {
                     // Try to find matching option
                     for (let opt of cycleSelect.options) {
                         if (opt.text.toLowerCase().includes(blueprint.cycle.toLowerCase()) || 
@@ -1669,8 +1725,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Set Week Number
-                if (blueprint.week_number) {
-                    document.getElementById('newModuleOrder').value = blueprint.week_number;
+                if (orderField && blueprint.week_number) {
+                    orderField.value = blueprint.week_number;
                 }
                 
                 // Build the AI Content Brief from blueprint data
