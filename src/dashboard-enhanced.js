@@ -177,6 +177,61 @@ const CATEGORY_TO_SUPERSKILL = {
 // For backward compatibility, CATEGORY_THEMES points to SUPER_SKILL_THEMES
 const CATEGORY_THEMES = SUPER_SKILL_THEMES;
 
+// ================================================
+// MAP ZONE PROGRESSION SYSTEM (4-ZONE)
+// ================================================
+// Zones unlock after completing a set number of modules.
+const MAP_ZONE_PROGRESSION = [
+  {
+    range: '1–3',
+    label: 'Zone 1: Foundations',
+    unlocksAfterModules: 0,
+    conceptualPurpose: 'Introduce the journey, establish routines, and build comfort with the map flow.',
+    emotionalShift: 'From uncertainty to cautious curiosity.',
+    progressFeelsLike: 'Small wins, steady practice, and growing confidence with the basics.',
+    roadChanges: 'The road is narrow and slightly uneven, with a basic path line and minimal structure. Edges are soft and forgiving, with no intersections or traffic guidance yet.',
+    townChanges: 'A handful of small, low structures appear at a distance from the road, spaced apart with open gaps. Details are minimal, suggesting a quiet start rather than a fully formed neighborhood.',
+    zoneCompletionTransition: 'Freeze input for a beat as the scene holds. The path line brightens and steadies, smoothing out as it widens slightly. The ground around the road subtly aligns into more orderly edges, signaling that thoughts have formed a stronger route. Interaction resumes once the upgraded path settles.',
+    visualChangesAllowed: 'Subtle increases in clarity and contrast, gentle emphasis on completed modules, and minimal motion cues.'
+  },
+  {
+    range: '4–6',
+    label: 'Zone 2: Momentum',
+    unlocksAfterModules: 3,
+    conceptualPurpose: 'Reinforce skills through repetition and start connecting ideas across modules.',
+    emotionalShift: 'From curiosity to determination.',
+    progressFeelsLike: 'A rhythm of achievement, with progress feeling more consistent and predictable.',
+    roadChanges: 'The road widens and smooths, with clearer borders and a consistent lane-like structure. The first intersections appear, along with simple directional signs.',
+    townChanges: 'More buildings begin to line the road, still simple in form but closer together. A few paths and shared edges hint at connections forming between structures.',
+    zoneCompletionTransition: 'Pause interaction briefly as the road surface tightens and becomes more uniform. Lane structure resolves into crisp lines, and a new intersection fades in, underscoring that thoughts now move along a clearer route. Resume interaction as the new junction locks into place.',
+    visualChangesAllowed: 'Slightly richer color saturation, clearer path highlighting, and more noticeable progress markers.'
+  },
+  {
+    range: '7–9',
+    label: 'Zone 3: Mastery Building',
+    unlocksAfterModules: 6,
+    conceptualPurpose: 'Deepen understanding and encourage independent application of skills.',
+    emotionalShift: 'From determination to self-assurance.',
+    progressFeelsLike: 'Confident strides, with progress feeling earned and meaningful.',
+    roadChanges: 'The road becomes broader and more structured, with well-defined lanes and smoother transitions. Intersections are more frequent, with clearer signage and the first guidance lights.',
+    townChanges: 'Buildings grow taller and denser, with clearer clusters that feel like small blocks. Walkways and shared boundaries make the town feel cohesive rather than scattered.',
+    zoneCompletionTransition: 'Hold input as the road expands to a wider, steadier corridor. Guidance lights pulse on in sequence along the path, and intersections clarify into a clean grid, reinforcing that thoughts now travel with strength and direction. Interaction returns after the lights settle.',
+    visualChangesAllowed: 'Stronger emphasis on completed sections, increased depth through layering, and more prominent milestone cues.'
+  },
+  {
+    range: '10–12',
+    label: 'Zone 4: Celebration',
+    unlocksAfterModules: 9,
+    conceptualPurpose: 'Celebrate growth and reinforce the child’s sense of accomplishment.',
+    emotionalShift: 'From self-assurance to pride.',
+    progressFeelsLike: 'A satisfying finish, with a clear sense of achievement and closure.',
+    roadChanges: 'The road is at its widest and smoothest, fully structured with clear lanes. Intersections are well organized, with prominent signs and steady guidance lights marking the final stretch.',
+    townChanges: 'The town becomes an active center with taller structures, tighter spacing, and connected streets that wrap around the road. The environment feels established and complete, reinforcing a sense of arrival.',
+    zoneCompletionTransition: 'Briefly pause interaction as the path locks into its final, strongest form. The surface polishes to a consistent, confident flow, intersections align with clear guidance, and the full route glows subtly to show thoughts becoming their strongest path. Resume control once the glow fades to steady.',
+    visualChangesAllowed: 'Highest brightness within the palette, enhanced polish on key elements, and celebratory emphasis on completion.'
+  }
+];
+
 // Daniel expression images mapping
 const DANIEL_EXPRESSIONS = {
   stressed: '/images/characters/DanielTheDog.png',
@@ -1146,18 +1201,9 @@ class AdventureMapV4 {
   }
   
   getZoneLabels() {
-    var zonesByCategory = {
-      anger: ['🔥 Hot Start', '❄️ Cooling Down', '🌸 Finding Peace'],
-      anxiety: ['🌧️ Stormy Skies', '🌤️ Clearing Up', '☀️ Sunny Days'],
-      depression: ['🌙 Dark Night', '🌅 Dawn Breaking', '🌻 Bright Garden'],
-      emotions: ['💭 Mixed Feelings', '💪 Understanding', '💖 Harmony'],
-      body: ['⚡ Tense Energy', '🌊 Finding Flow', '🧘 Inner Calm'],
-      cognitive: ['💭 Foggy Mind', '🎯 Getting Clear', '💡 Sharp Focus'],
-      social: ['🏠 Starting Out', '👫 Making Connections', '🎉 Together'],
-      general: ['🌱 Getting Started', '🌿 Growing Stronger', '🌳 Mastering Skills'],
-      all: ['🌱 Getting Started', '🌿 Growing Stronger', '🌳 Mastering Skills']
-    };
-    return zonesByCategory[this.currentCategory] || zonesByCategory.all;
+    return MAP_ZONE_PROGRESSION.map(function(zone) {
+      return zone.label + ' (' + zone.range + ')';
+    });
   }
 
   renderNodes() {
