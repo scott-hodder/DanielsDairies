@@ -106,6 +106,10 @@ interface PageTemplate {
 interface ModuleMetadata {
   title: string;
   subtitle: string;
+  shortDescription: string;
+  description: string;
+  emotions: string[];
+  skills: string[];
   series: string;
   targetAge: string;
   theme: string;
@@ -1350,6 +1354,10 @@ Respond with ONLY this JSON structure:
 {
   "title": "Main module title (catchy, child-friendly)",
   "subtitle": "Brief tagline (10 words max)",
+  "shortDescription": "Short description (1-2 sentences, 120 characters max)",
+  "description": "Full description (2-4 sentences, parent-facing, 300 characters max)",
+  "emotions": ["1-2 emotions the child will explore (e.g., Calm, Worry, Joy)"],
+  "skills": ["1-2 skills the child will practice (e.g., Deep Breathing, Naming Feelings)"],
   "series": "${cleanLabel || 'custom'}",
   "targetAge": "Age range like '5-8' or '8-12'",
   "theme": "Core psychological theme (e.g., 'anxiety management', 'emotional regulation')",
@@ -1372,6 +1380,10 @@ Respond with ONLY this JSON structure:
     return {
       title: "My Feelings Adventure",
       subtitle: "Learning about emotions together",
+      shortDescription: "Build emotional awareness with playful activities and stories.",
+      description: "This module helps kids explore their feelings through stories, games, and reflection. It includes simple tools they can practice with caregivers to build emotional confidence.",
+      emotions: ["Calm", "Curiosity"],
+      skills: ["Naming Feelings", "Deep Breathing"],
       series: cleanLabel || seriesInfo?.label || "custom",
       targetAge: "5-10",
       theme: "emotional awareness",
@@ -1379,6 +1391,19 @@ Respond with ONLY this JSON structure:
       characterEmoji: seriesInfo?.emoji || "🐕",
       characterType: cleanCharacterType || seriesInfo?.character_type
     };
+  }
+  
+  if (!parsed.shortDescription) {
+    parsed.shortDescription = `Build emotional skills with ${parsed.title}.`;
+  }
+  if (!parsed.description) {
+    parsed.description = `${parsed.title} helps children explore feelings through stories, games, and simple tools they can practice at home.`;
+  }
+  if (!parsed.emotions || parsed.emotions.length === 0) {
+    parsed.emotions = ["Calm", "Curiosity"];
+  }
+  if (!parsed.skills || parsed.skills.length === 0) {
+    parsed.skills = ["Naming Feelings", "Deep Breathing"];
   }
   
   return parsed;
