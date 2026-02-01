@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient.js'
 import bcrypt from 'bcryptjs'
 
+const LEVEL_XP = 100
+
 // Get all children for a parent
 export async function getChildren(parentUserId) {
   const { data, error } = await supabase
@@ -342,24 +344,32 @@ export async function completeModule(childId, moduleId) {
     .eq('module_id', moduleId)
     .single()
   
+  const wasCompleted = existing?.is_completed === true
+
   if (existing) {
     // Update existing record
-    const { data, error } = await supabase
-      .from('child_modules')
-      .update({ 
-        is_completed: true,
-        completed_at: new Date().toISOString()
-      })
-      .eq('child_id', childId)
-      .eq('module_id', moduleId)
-      .select()
-      .single()
-    
-    if (error) {
-      throw error
+    if (!wasCompleted) {
+      const { data, error } = await supabase
+        .from('child_modules')
+        .update({ 
+          is_completed: true,
+          completed_at: new Date().toISOString()
+        })
+        .eq('child_id', childId)
+        .eq('module_id', moduleId)
+        .select()
+        .single()
+      
+      if (error) {
+        throw error
+      }
+      
+      await awardModuleXp(childId, moduleId)
+      
+      return data
     }
-    
-    return data
+
+    return existing
   } else {
     // Create new record with completed status
     const { data, error } = await supabase
@@ -378,8 +388,61 @@ export async function completeModule(childId, moduleId) {
     if (error) {
       throw error
     }
+
+    await awardModuleXp(childId, moduleId)
     
     return data
+  }
+}
+
+async function awardModuleXp(childId, moduleId) {
+  const { data: moduleData, error: moduleError } = await supabase
+    .from('modules')
+    .select('xp_reward')
+    .eq('id', moduleId)
+    .single()
+
+  if (moduleError) {
+    throw moduleError
+  }
+
+  const xpReward = moduleData?.xp_reward || 0
+  if (!xpReward) return
+
+  try {
+    const { error: rpcError } = await supabase.rpc('increment_child_rewards', {
+      p_child_id: childId,
+      p_stars: 0,
+      p_xp: xpReward
+    })
+
+    if (!rpcError) return
+    console.warn('increment_child_rewards RPC failed, falling back to direct update:', rpcError)
+  } catch (rpcError) {
+    console.warn('increment_child_rewards RPC error, falling back to direct update:', rpcError)
+  }
+
+  const { data: child, error: childError } = await supabase
+    .from('children')
+    .select('total_xp, level')
+    .eq('id', childId)
+    .single()
+
+  if (childError) {
+    throw childError
+  }
+
+  const currentXp = child?.total_xp || 0
+  const newTotalXp = currentXp + xpReward
+  const newLevel = Math.max(1, Math.floor(newTotalXp / LEVEL_XP) + 1)
+
+  const { error: updateError } = await supabase
+    .from('children')
+    .update({ total_xp: newTotalXp, level: newLevel })
+    .eq('id', childId)
+
+  if (updateError) {
+    throw updateError
   }
 }
 
