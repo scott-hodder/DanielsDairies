@@ -116,11 +116,13 @@ interface ModuleMetadata {
   characterType?: string;
 }
 
+/**
+ * Age range data from the database
+ * Simplified: Only display_name, language_guidelines, and developmental_stage are sent to AI
+ */
 interface AgeRangeData {
   id: string;
   age_range: string;
-  age_min: number;
-  age_max: number;
   display_name: string;
   language_guidelines: string;
   developmental_stage: string;
@@ -150,22 +152,12 @@ interface AgeRangeData {
 
 /**
  * Core theory data from the database
+ * Simplified: Only description and primary_researchers (key theorists) are sent to AI
  */
 interface CoreTheoryData {
   id: string;
   theory_name: string;
-  theory_code: string;
   description: string;
-  key_mechanism: string;
-  how_to_apply: string;
-  age_adaptations: string | null;
-  allowed_claims: string;
-  avoid_claims: string;
-  contraindications: string | null;
-  suggested_activities: string | null;
-  suggested_measures: string | null;
-  example_scenarios: string | null;
-  category: string | null;
   primary_researchers: string | null;
 }
 
@@ -1032,6 +1024,9 @@ function getAgeDataOptionalText(
 
 /**
  * Builds an enhanced, psychology-informed content brief
+ * Simplified to only send: 
+ * - Theory: description, key_theorists (primary_researchers)
+ * - Age Range: display_name, language_guidelines, developmental_stage
  */
 function buildEnhancedContentBrief(resolved: {
   title: string;
@@ -1072,23 +1067,10 @@ Target Age: ${ageRange} (${displayName})
 CORE THEORY: ${theoryData.theory_name}
 ${theoryData.description}
 
-KEY MECHANISM:
-${theoryData.key_mechanism}
-
-HOW TO APPLY THIS THEORY:
-${theoryData.how_to_apply}
-
-CLAIMS YOU CAN MAKE:
-${theoryData.allowed_claims}
-
-⚠️ CLAIMS TO AVOID (do not make these statements):
-${theoryData.avoid_claims}
-
-${theoryData.contraindications ? `CAUTION/CONTRAINDICATIONS:\n${theoryData.contraindications}\n` : ''}
-${theoryData.suggested_activities ? `SUGGESTED ACTIVITY TYPES:\n${theoryData.suggested_activities}\n` : ''}
+${theoryData.primary_researchers ? `KEY THEORISTS:\n${theoryData.primary_researchers}\n` : ''}
 
 === AGE-APPROPRIATE LANGUAGE GUIDELINES ===
-For children ages ${ageRange}:
+For children ages ${ageRange} (${ageData.display_name}):
 
 DEVELOPMENTAL STAGE:
 ${developmentalStage}
@@ -1115,6 +1097,9 @@ ${abstractThinking}
 
 ${neurodivergentAdaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${neurodivergentAdaptations}\n` : ''}
 ${traumaSensitiveNotes ? `TRAUMA-SENSITIVE NOTES:\n${traumaSensitiveNotes}\n` : ''}
+
+=== AGE RANGE DIFFERENTIATION PROFILE ===
+${ageStyleGuide}
 
 === AGE RANGE DIFFERENTIATION PROFILE ===
 ${ageStyleGuide}

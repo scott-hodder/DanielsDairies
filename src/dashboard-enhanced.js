@@ -374,10 +374,10 @@ class AdventureMapV4 {
     css.push('.category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }');
     css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 20px; overflow: hidden; cursor: grab; border: 4px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 120px rgba(135,206,235,0.25), 0 12px 28px rgba(15, 23, 42, 0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%); }');
     css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
-    css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone-1.png"); }');
-    css.push('.adventure-viewport[data-zone="2"] { background-image: url("/images/zones/zone-2.png"); }');
-    css.push('.adventure-viewport[data-zone="3"] { background-image: url("/images/zones/zone-3.png"); }');
-    css.push('.adventure-viewport[data-zone="4"] { background-image: url("/images/zones/zone-4.png"); }');
+    css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');
+    css.push('.adventure-viewport[data-zone="2"] { background-image: url("/images/zones/zone2.png"); }');
+    css.push('.adventure-viewport[data-zone="3"] { background-image: url("/images/zones/zone3.png"); }');
+    css.push('.adventure-viewport[data-zone="4"] { background-image: url("/images/zones/zone4.png"); }');
     css.push('.adventure-viewport[data-zone] .map-bg-stack { opacity: 0; }');
     css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 20px; pointer-events: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), inset 0 -40px 60px rgba(15, 23, 42, 0.08); }');
     css.push('.adventure-viewport:active, .adventure-viewport.dragging { cursor: grabbing; }');
@@ -388,7 +388,7 @@ class AdventureMapV4 {
     css.push('.map-bg-clouds { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 500 120\'%3E%3Cellipse cx=\'70\' cy=\'50\' rx=\'40\' ry=\'24\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'100\' cy=\'42\' rx=\'30\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'50\' cy=\'48\' rx=\'25\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'85\' cy=\'55\' rx=\'28\' ry=\'15\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'350\' cy=\'60\' rx=\'45\' ry=\'26\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'385\' cy=\'52\' rx=\'32\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'330\' cy=\'58\' rx=\'28\' ry=\'18\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'365\' cy=\'65\' rx=\'30\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3C/svg%3E"); background-size: 600px 120px; background-repeat: repeat-x; background-position: 0 15px; animation: cloudsDrift 90s linear infinite; }');
     css.push('@keyframes cloudsDrift { from { background-position-x: 0; } to { background-position-x: 600px; } }');
     css.push('.map-bg-trees { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 70\'%3E%3Cpath d=\'M10,70 L20,35 L15,40 L25,18 L20,23 L30,0 L40,23 L35,18 L45,40 L40,35 L50,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M55,70 L63,42 L59,46 L67,28 L63,32 L71,14 L79,32 L75,28 L83,46 L79,42 L87,70 Z\' fill=\'%231B5E20\'/%3E%3Cpath d=\'M95,70 L107,32 L101,38 L113,10 L125,38 L119,32 L131,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M140,70 L148,45 L144,49 L152,32 L148,36 L156,20 L164,36 L160,32 L168,49 L164,45 L172,70 Z\' fill=\'%231B5E20\'/%3E%3C/svg%3E"); background-size: 250px 90px; background-repeat: repeat-x; background-position: 0 bottom; }');
-    css.push('.adventure-canvas { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; transition: transform 0.05s linear; }');
+    css.push('.adventure-canvas { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; transition: transform 0.05s linear; z-index: 5; }');
     css.push('.adventure-viewport.dragging .adventure-canvas { transition: none; }');
     css.push('.map-bg-stack { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }');
     css.push('.map-bg-layer { z-index: 0; }');
@@ -399,7 +399,7 @@ class AdventureMapV4 {
     css.push('.map-town-item { font-size: 26px; filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.25)); }');
     css.push('.map-town-label { margin-left: 8px; padding: 4px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.9); color: #1e293b; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18); }');
     css.push('@keyframes decorSway { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.05); } }');
-    css.push('.adventure-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }');
+    css.push('.adventure-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; }');
     css.push('.path-shadow { fill: none; stroke-width: 36; stroke-linecap: round; stroke-linejoin: round; }');
     css.push('.path-main { fill: none; stroke-width: 30; stroke-linecap: round; stroke-linejoin: round; }');
     css.push('.path-light { fill: none; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }');
@@ -543,7 +543,11 @@ class AdventureMapV4 {
           self.renderNodes();
           self.renderRoadblocks(); // NEW: Render roadblocks on the map
           self.updateProgress();
-          self.centerOnCurrentModule();
+          
+          // Add a small delay to ensure module data is fully processed before centering
+          setTimeout(function() {
+            self.centerOnCurrentModule();
+          }, 100);
         });
       }
       
@@ -956,25 +960,8 @@ class AdventureMapV4 {
 
     var positions = this.calculateNodePositions();
 
-    // Add zone labels
-    var zones = this.getZoneLabels();
-    if (positions.length >= 3) {
-      var zoneSpacing = Math.floor(positions.length / zones.length);
-      zones.forEach(function(zone, i) {
-        var nodeIndex = Math.min(i * zoneSpacing, positions.length - 1);
-        var pos = positions[nodeIndex];
-        if (!pos) return;
-        var label = document.createElement('div');
-        label.className = 'zone-label';
-        label.textContent = zone;
-        label.style.left = '16px';
-        label.style.top = (pos.y - 35) + 'px';
-        container.appendChild(label);
-      });
-    }
-
-    // Add Daniel companion on the path
-    this.renderDanielCompanion(container, positions);
+    // Zone labels removed as requested
+    // Daniel companion removed as requested
   }
 
   renderTownBuildout(container, positions, viewportWidth) {
@@ -1083,55 +1070,8 @@ class AdventureMapV4 {
     container.appendChild(destMarker);
   }
   
-  renderDanielCompanion(container, positions) {
-    if (positions.length === 0) return;
-    
-    // Find Daniel's position - he should be at the furthest completed module
-    var danielIndex = -1;
-    for (var i = 0; i < this.modules.length; i++) {
-      if (this.modules[i].status === 'completed') {
-        danielIndex = i;
-      } else if (this.modules[i].status === 'available') {
-        // Daniel is just before the current available module
-        break;
-      }
-    }
-    
-    // If no modules completed, Daniel is at the start
-    if (danielIndex < 0) danielIndex = 0;
-    
-    var pos = positions[danielIndex];
-    if (!pos) return;
-    
-    var expression = this.getDanielExpression();
-    var expressionImage = DANIEL_EXPRESSIONS[expression] || DANIEL_EXPRESSIONS.focused;
-    
-    var daniel = document.createElement('div');
-    daniel.className = 'daniel-companion';
-    daniel.style.left = (pos.x - 32) + 'px';
-    daniel.style.top = (pos.y - 80) + 'px';
-    
-    var danielInner = document.createElement('div');
-    danielInner.className = 'daniel-companion-inner';
-    
-    var danielImg = document.createElement('img');
-    danielImg.src = expressionImage;
-    danielImg.alt = 'Daniel - ' + expression;
-    danielInner.appendChild(danielImg);
-    daniel.appendChild(danielInner);
-    
-    var expressionLabel = document.createElement('div');
-    expressionLabel.className = 'daniel-expression-label';
-    expressionLabel.textContent = expression.charAt(0).toUpperCase() + expression.slice(1);
-    daniel.appendChild(expressionLabel);
-    
-    container.appendChild(daniel);
-  }
-  
   getZoneLabels() {
-    return MAP_ZONE_PROGRESSION.map(function(zone) {
-      return zone.label + ' (' + zone.range + ')';
-    });
+    return []; // Remove zone headings as requested
   }
 
   renderNodes() {
@@ -1408,12 +1348,37 @@ class AdventureMapV4 {
 
     var positions = this.calculateNodePositions();
     var currentIndex = -1;
+    
+    // First, try to find an available module
     for (var i = 0; i < this.modules.length; i++) {
       if (this.modules[i].status === 'available') {
         currentIndex = i;
         break;
       }
     }
+    
+    // If no available module found, check if all are completed
+    if (currentIndex === -1) {
+      var allCompleted = true;
+      for (var j = 0; j < this.modules.length; j++) {
+        if (this.modules[j].status !== 'completed') {
+          allCompleted = false;
+          break;
+        }
+      }
+      
+      // If all modules are completed, center on the last completed module
+      if (allCompleted) {
+        for (var k = this.modules.length - 1; k >= 0; k--) {
+          if (this.modules[k].status === 'completed') {
+            currentIndex = k;
+            break;
+          }
+        }
+      }
+    }
+    
+    // Fallback to index 0 if still no valid position found
     var targetIndex = currentIndex !== -1 ? currentIndex : 0;
     
     if (positions[targetIndex]) {

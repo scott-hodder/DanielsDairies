@@ -928,7 +928,15 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     
     // Restore form values from localStorage
     function restoreFormState() {
-      // Restore all text inputs
+      // Restore all text inputs with data-form-key
+      document.querySelectorAll('input[type="text"][data-form-key]').forEach(input => {
+        const key = input.getAttribute('data-form-key');
+        if (key && formData[key]) {
+          input.value = formData[key];
+        }
+      });
+      
+      // Restore all text inputs by parsing onchange
       document.querySelectorAll('input[type="text"]').forEach(input => {
         const onchange = input.getAttribute('onchange') || '';
         const match = onchange.match(/saveFormData\\(['"]([^'"]+)['"]/);
@@ -937,7 +945,15 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         }
       });
       
-      // Restore all textareas
+      // Restore all textareas with data-form-key
+      document.querySelectorAll('textarea[data-form-key]').forEach(textarea => {
+        const key = textarea.getAttribute('data-form-key');
+        if (key && formData[key]) {
+          textarea.value = formData[key];
+        }
+      });
+      
+      // Restore all textareas by parsing onchange
       document.querySelectorAll('textarea').forEach(textarea => {
         const onchange = textarea.getAttribute('onchange') || '';
         const match = onchange.match(/saveFormData\\(['"]([^'"]+)['"]/);
@@ -956,6 +972,21 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
           if (valueDisplay) valueDisplay.textContent = formData[match[1]];
         }
       });
+      
+      // Restore completed activity checkboxes
+      document.querySelectorAll('input[type="checkbox"][data-activity]').forEach(checkbox => {
+        const activityId = checkbox.getAttribute('data-activity');
+        if (activityId && completedActivities[activityId]) {
+          checkbox.checked = true;
+          checkbox.disabled = true;
+        }
+      });
+      
+      // Update child name display
+      const childNameEl = document.getElementById('childNameDisplay');
+      if (childNameEl) {
+        childNameEl.textContent = getChildName();
+      }
       
       // Restore button selections (rate-scale only - not polls, as those should be re-answered)
       Object.keys(formData).forEach(key => {
@@ -1160,11 +1191,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         const rect = board.getBoundingClientRect();
         svg.setAttribute('width', rect.width);
         svg.setAttribute('height', rect.height);
-        svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+        svg.setAttribute('viewBox', '0 0 ' + rect.width + ' ' + rect.height);
         svg.innerHTML = '';
         connections.forEach((rightId, leftId) => {
-          const leftEl = activity.querySelector(`.match-item-left[data-match-id="${leftId}"]`);
-          const rightEl = activity.querySelector(`.match-item-right[data-match-id="${rightId}"]`);
+          const leftEl = activity.querySelector('.match-item-left[data-match-id="' + leftId + '"]');
+          const rightEl = activity.querySelector('.match-item-right[data-match-id="' + rightId + '"]');
           if (!leftEl || !rightEl) return;
           const leftRect = leftEl.getBoundingClientRect();
           const rightRect = rightEl.getBoundingClientRect();
@@ -2090,8 +2121,8 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
         </div>
         <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
           <p class="font-semibold mb-2 font-body text-lg" style="color: var(--dark);">This adventure belongs to:</p>
-          <div class="text-3xl font-title" style="color: var(--primary);">
-            \${getChildName()}
+          <div class="text-3xl font-title" style="color: var(--primary);" id="childNameDisplay">
+            Friend
           </div>
         </div>
         <div class="mt-6">
@@ -2203,7 +2234,7 @@ function renderChecklistPage(checklist: ChecklistContent, starIndex: number): st
               data-activity="${activityId}"
               disabled
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
           </div>
@@ -2226,8 +2257,9 @@ function renderReflectionPage(reflection: ReflectionContent, starIndex: number):
             class="reflection-input w-full rounded-xl p-4 border-3 font-body text-lg mb-6" 
             style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 150px;"
             placeholder="${escapeForTemplate(reflection.placeholder)}"
+            data-form-key="reflection_${starIndex}"
             onchange="saveFormData('reflection_${starIndex}', this.value)"
-          >\${formData['reflection_${starIndex}'] || ''}</textarea>
+          ></textarea>
           
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input 
@@ -2237,7 +2269,7 @@ function renderReflectionPage(reflection: ReflectionContent, starIndex: number):
               data-activity="${activityId}"
               disabled
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
           </div>
@@ -2280,7 +2312,7 @@ function renderQuizPage(quiz: QuizContent, starIndex: number): string {
               data-activity="${activityId}"
               disabled
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! ⭐</label>
           </div>
@@ -2321,8 +2353,8 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
               class="w-full rounded-xl p-3 font-body text-lg" 
               style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);"
               placeholder="Type your answer here..."
+              data-form-key="drawing_answer_${starIndex}"
               onchange="saveFormData('drawing_answer_${starIndex}', this.value)"
-              value="\${formData['drawing_answer_${starIndex}'] || ''}"
             >
           </div>
           
@@ -2333,7 +2365,7 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
           </div>
@@ -2403,7 +2435,7 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             />
             <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! ⭐</label>
           </div>
@@ -2427,7 +2459,7 @@ function renderScenarioPage(scenario: ScenarioContent, starIndex: number): strin
           <div class="space-y-3 mb-6">${optionsHtml}</div>
           <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
           </div>
         </div>
@@ -2453,10 +2485,10 @@ function renderFeelingThermometerPage(thermometer: FeelingThermometerContent, st
           </div>
           <div class="mb-6">
             <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(thermometer.followUpQuestion)}</label>
-            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('thermometer_followup_${starIndex}', this.value)">\${formData['thermometer_followup_${starIndex}'] || ''}</textarea>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="thermometer_followup_${starIndex}" onchange="saveFormData('thermometer_followup_${starIndex}', this.value)"></textarea>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! ⭐</label>
           </div>
         </div>
@@ -2484,7 +2516,7 @@ function renderBodyMapPage(bodyMap: BodyMapContent, starIndex: number): string {
           <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(bodyMap.instructions)}</p>
           <div class="grid gap-3 mb-6">${partsHtml}</div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I explored my body map! ⭐</label>
           </div>
         </div>
@@ -2510,10 +2542,10 @@ function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: 
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${feelingsHtml}</div>
           <div class="mb-6">
             <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(selector.followUpQuestion)}</label>
-            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_${starIndex}', this.value)">\${formData['feeling_followup_${starIndex}'] || ''}</textarea>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="feeling_followup_${starIndex}" onchange="saveFormData('feeling_followup_${starIndex}', this.value)"></textarea>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
           </div>
         </div>
@@ -2543,10 +2575,10 @@ function renderCalmDenBuilderPage(denBuilder: CalmDenBuilderContent, starIndex: 
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${itemsHtml}</div>
           <div class="mb-6">
             <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(denBuilder.locationQuestion)}</label>
-            <input type="text" class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);" placeholder="e.g., My bedroom, under my blanket..." onchange="saveFormData('calmden_location_${starIndex}', this.value)" value="\${formData['calmden_location_${starIndex}'] || ''}">
+            <input type="text" class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);" placeholder="e.g., My bedroom, under my blanket..." data-form-key="calmden_location_${starIndex}" onchange="saveFormData('calmden_location_${starIndex}', this.value)">
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I built my calm-down den! ⭐</label>
           </div>
         </div>
@@ -2563,7 +2595,7 @@ function renderActionPlanPage(actionPlan: ActionPlanContent, starIndex: number):
         <h3 class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(step.title)}</h3>
       </div>
       <p class="font-body mb-2" style="color: var(--dark);">${escapeForTemplate(step.prompt)}</p>
-      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="${escapeForTemplate(step.placeholder)}" onchange="saveFormData('actionplan_step${step.stepNumber}_${starIndex}', this.value)" value="\${formData['actionplan_step${step.stepNumber}_${starIndex}'] || ''}">
+      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="${escapeForTemplate(step.placeholder)}" data-form-key="actionplan_step${step.stepNumber}_${starIndex}" onchange="saveFormData('actionplan_step${step.stepNumber}_${starIndex}', this.value)">
     </div>`).join("");
 
   return `
@@ -2575,7 +2607,7 @@ function renderActionPlanPage(actionPlan: ActionPlanContent, starIndex: number):
           <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(actionPlan.instructions)}</p>
           ${stepsHtml}
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I created my action plan! ⭐</label>
           </div>
         </div>
@@ -2618,7 +2650,7 @@ function renderWarningSignsPage(warningSigns: WarningSingsContent, starIndex: nu
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I identified my warning signs! ⭐</label>
           </div>
@@ -2690,7 +2722,7 @@ function renderBalloonPopPage(balloon: BalloonPopContent, starIndex: number, met
           </div>
           
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="balloonComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I popped all my worries! ⭐</label>
           </div>
         </div>
@@ -2749,7 +2781,7 @@ function renderTreasureHuntPage(hunt: TreasureHuntContent, starIndex: number, me
             <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(hunt.completionMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="treasureComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I found all treasures! ⭐</label>
           </div>
         </div>
@@ -2811,7 +2843,7 @@ function renderMonsterTamerPage(tamer: MonsterTamerContent, starIndex: number, m
             <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(tamer.friendMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="monsterComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I tamed the monster! ⭐</label>
           </div>
         </div>
@@ -2860,7 +2892,7 @@ function renderGardenGrowerPage(garden: GardenGrowerContent, starIndex: number, 
             <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(garden.harvestMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="gardenComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">My garden blooms! ⭐</label>
           </div>
         </div>
@@ -2910,7 +2942,7 @@ function renderSuperheroCreatorPage(hero: SuperheroCreatorContent, starIndex: nu
             <p class="font-title text-2xl">${escapeForTemplate(hero.completionMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="heroComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">My superhero is ready! ⭐</label>
           </div>
         </div>
@@ -2955,7 +2987,7 @@ function renderFeelingsOrchestraPage(orchestra: FeelingsOrchestraContent, starIn
             <p class="font-title text-xl">${escapeForTemplate(orchestra.performanceMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I made music! ⭐</label>
           </div>
         </div>
@@ -2999,7 +3031,7 @@ function renderCalmAquariumPage(aquarium: CalmAquariumContent, starIndex: number
             <p class="font-title text-xl">${escapeForTemplate(aquarium.peaceMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">My aquarium is peaceful! ⭐</label>
           </div>
         </div>
@@ -3043,7 +3075,7 @@ function renderRocketLauncherPage(rocket: RocketLauncherContent, starIndex: numb
             <p class="font-title text-2xl">${escapeForTemplate(rocket.returnMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="rocketComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">Space explorer! ⭐</label>
           </div>
         </div>
@@ -3086,7 +3118,7 @@ function renderMagicPotionPage(potion: MagicPotionContent, starIndex: number, me
             <p class="font-title text-2xl" id="potionMessage_${starIndex}">${escapeForTemplate(potion.magicMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I'm a potion master! ⭐</label>
           </div>
         </div>
@@ -3125,7 +3157,7 @@ function renderFeelingsBingoPage(bingo: FeelingsBingoContent, starIndex: number,
             <p class="font-title text-2xl">${escapeForTemplate(bingo.winMessage)}</p>
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">Bingo champion! ⭐</label>
           </div>
         </div>
@@ -3198,7 +3230,7 @@ function renderSpinTheWheelPage(wheel: SpinTheWheelContent, starIndex: number, m
           </div>
           
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="wheelComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I spun the wheel! ⭐</label>
           </div>
         </div>
@@ -3257,7 +3289,7 @@ function renderStickerCollectorPage(sticker: StickerCollectorContent, starIndex:
           </div>
           
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="stickerDone_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I collected all stickers! ⭐</label>
           </div>
         </div>
@@ -3316,7 +3348,7 @@ function renderMindfulAdventurePage(adventure: MindfulAdventureContent, starInde
           </div>
           
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="adventureDone_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">Adventure complete! ⭐</label>
           </div>
         </div>
@@ -3384,7 +3416,7 @@ function renderEmotionDetectivePage(detective: EmotionDetectiveContent, starInde
           </div>
           
           <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="detectiveDone_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" \${completedActivities['${activityId}'] ? 'checked disabled' : ''}>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">Case solved! ⭐</label>
           </div>
         </div>
@@ -3441,7 +3473,7 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : 'disabled'}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
           </div>
@@ -3652,7 +3684,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
         </div>
@@ -3699,7 +3731,7 @@ function renderFillInStoryPage(story: FillInStoryContent, starIndex: number, met
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I completed my story!</label>
         </div>
@@ -3748,7 +3780,7 @@ function renderCopingCardsPage(cards: CopingCardsContent, starIndex: number): st
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I built my coping cards!</label>
         </div>
@@ -3792,7 +3824,7 @@ function renderGratitudeJarPage(jar: GratitudeJarContent, starIndex: number): st
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I filled my gratitude jar!</label>
         </div>
@@ -3843,7 +3875,7 @@ function renderSortingActivityPage(sorting: SortingActivityContent, starIndex: n
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
         </div>
@@ -3892,7 +3924,7 @@ function renderThoughtBubblesPage(thought: ThoughtBubblesContent, starIndex: num
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I challenged my thoughts!</label>
         </div>
@@ -3953,7 +3985,7 @@ function renderEmojiCheckInPage(checkIn: EmojiCheckInContent, starIndex: number)
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I tracked my moods!</label>
         </div>
@@ -3998,7 +4030,7 @@ function renderWordScramblePage(scramble: WordScrambleContent, starIndex: number
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I solved all the scrambles!</label>
         </div>
@@ -4053,7 +4085,7 @@ function renderAgreeDisagreePage(activity: AgreeDisagreeContent, starIndex: numb
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I shared my opinions!</label>
         </div>
@@ -4103,7 +4135,7 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I created my comic!</label>
         </div>
@@ -4164,7 +4196,7 @@ function renderAffirmationBuilderPage(builder: AffirmationBuilderContent, starIn
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I built my power phrase!</label>
         </div>
@@ -4257,7 +4289,7 @@ function renderWeatherControllerPage(weather: WeatherControllerContent, starInde
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I calmed the storm! ⭐</label>
           </div>
@@ -4339,7 +4371,7 @@ function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starInde
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
           </div>
@@ -4428,7 +4460,7 @@ function renderEmotionMazePage(maze: EmotionMazeContent, starIndex: number, meta
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I navigated the maze! ⭐</label>
           </div>
@@ -4458,8 +4490,8 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
              style="border-color: var(--secondary); background-color: white;"
              placeholder="${escapeForTemplate(section.placeholder)}"
              data-section="${section.id}"
-             onchange="handleShieldInput('${activityId}', ${shield.shieldSections.length}); saveFormData('shield_${starIndex}_${section.id}', this.value)"
-             value="\${formData['shield_${starIndex}_${section.id}'] || ''}">
+             data-form-key="shield_${starIndex}_${section.id}"
+             onchange="handleShieldInput('${activityId}', ${shield.shieldSections.length}); saveFormData('shield_${starIndex}_${section.id}', this.value)">
     </div>
   `).join("");
 
@@ -4524,7 +4556,7 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
           </div>
@@ -4627,7 +4659,7 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
               style="accent-color: var(--primary);"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              \${completedActivities['${activityId}'] ? 'checked disabled' : ''}
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I cooled the volcano! ⭐</label>
           </div>
@@ -4866,10 +4898,10 @@ serve(async (req) => {
         }, 400);
       }
       
-      // Fetch age range data
+      // Fetch age range data - only fetch simplified fields sent to AI
       const { data: ageData, error: ageError } = await supabaseClient
         .from("age_ranges")
-        .select("*")
+        .select("id, age_range, display_name, language_guidelines, developmental_stage")
         .eq("id", ageRangeId)
         .eq("is_active", true)
         .single();
@@ -4879,10 +4911,10 @@ serve(async (req) => {
         return jsonResponse({ error: "Invalid or inactive age range" }, 400);
       }
       
-      // Fetch core theory data
+      // Fetch core theory data - only fetch simplified fields sent to AI
       const { data: theoryData, error: theoryError } = await supabaseClient
         .from("core_theories")
-        .select("*")
+        .select("id, theory_name, description, primary_researchers")
         .eq("id", coreTheoryId)
         .eq("is_active", true)
         .single();

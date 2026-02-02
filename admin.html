@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,39 +141,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
                         <h2 class="panel-title" style="margin-bottom: 4px;">General Settings</h2>
-                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Configure super skills, sub-skills, categories, series, emotions, and skills</p>
-                    </div>
-                </div>
-
-                <!-- Super Skills Section - Full Width -->
-                <div style= "background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-                    <h3 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🧠 Super Skills</h3>
-                    <p style="font-size: 13px; opacity: 0.9; margin: 0 0 16px 0;">Core skill areas that children work towards mastering</p>
-                    <div id="superSkillsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px;">
-                        <div style="display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 8px; align-items: center;">
-                            <input type="text" id="newSuperSkillEmoji" placeholder="🎯" style="width: 50px; padding: 8px; border-radius: 6px; border: none; font-size: 18px; text-align: center;">
-                            <input type="text" class="form-input" id="newSuperSkillName" placeholder="Super Skill name" style="padding: 8px 12px; border-radius: 6px; border: none;">
-                            <input type="text" class="form-input" id="newSuperSkillCharacter" placeholder="Character name" style="padding: 8px 12px; border-radius: 6px; border: none;">
-                            <input type="color" id="newSuperSkillColor" value="#6366F1" style="width: 40px; height: 36px; border: none; border-radius: 6px; cursor: pointer;">
-                            <button class="btn-save" onclick="addSuperSkill()" style="padding: 8px 16px; background: white; color: #6366F1; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">+ Add</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sub-Skills Section - Full Width -->
-                <div style="background: #f8f9fa;border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-                    <h3 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">📚 Sub-Skills</h3>
-                    <p style="font-size: 13px; opacity: 0.9; margin: 0 0 16px 0;">Specific skills within each Super Skill category</p>
-                    <div id="subSkillsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;">
-                            <select class="form-select" id="newSubSkillParent" style="padding: 8px 12px; border-radius: 6px; border: none;">
-                                <option value="">Select Super Skill...</option>
-                            </select>
-                            <input type="text" class="form-input" id="newSubSkillName" placeholder="Sub-skill name" style="padding: 8px 12px; border-radius: 6px; border: none;">
-                            <button class="btn-save" onclick="addSubSkill()" style="padding: 8px 16px; background: white; color: #10B981; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">+ Add</button>
-                        </div>
+                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Configure categories, series, emotions, and skills</p>
                     </div>
                 </div>
 
@@ -468,108 +435,211 @@
             <div class="rewards-panel" style="max-width: 1400px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
-                        <h2 class="panel-title" style="margin-bottom: 4px;">🧩 Theories</h2>
-                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Manage core theories used in module generation</p>
+                        <h2 class="panel-title" style="margin-bottom: 4px;">🧩 AI Module Configuration</h2>
+                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Manage theories, age ranges, super skills, and sub-skills sent to AI for module generation</p>
                     </div>
-                    <button class="btn-save" onclick="addNewTheory()">+ Add New Theory</button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
-                    <div style="background: #f8f9fa; border-radius: 12px; padding: 16px;">
-                        <label class="form-label" style="margin-bottom: 8px;">Theory Drop Down</label>
-                        <select id="theorySelect" class="form-select" style="width: 100%;" onchange="selectTheory(this.value)">
-                            <option value="">Select a theory...</option>
-                        </select>
-                        <p style="font-size: 12px; color: #6b7c8f; margin-top: 10px;">
-                            Choose a theory to edit, or add a new one.
-                        </p>
+                <!-- Theories Section -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">📖 Core Theories</h3>
+                            <p style="font-size: 12px; color: #6b7c8f; margin: 4px 0 0 0;">Description and Key Theorists are sent to AI</p>
+                        </div>
+                        <button class="btn-save" onclick="addNewTheory()">+ Add New Theory</button>
                     </div>
 
-                    <div style="background: #f8f9fa; border-radius: 12px; padding: 20px;">
+                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 8px;">Select Theory</label>
+                            <select id="theorySelect" class="form-select" style="width: 100%;" onchange="selectTheory(this.value)">
+                                <option value="">Select a theory...</option>
+                            </select>
+                        </div>
+
                         <div id="theoryEditor" style="display: none;">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                                 <div>
                                     <label class="form-label">Theory Name</label>
                                     <input type="text" class="form-input" id="theoryName">
-                                </div>
-                                <div>
-                                    <label class="form-label">Theory Code</label>
-                                    <input type="text" class="form-input" id="theoryCode">
-                                </div>
-                                <div>
-                                    <label class="form-label">Category</label>
-                                    <input type="text" class="form-input" id="theoryCategory">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 8px; padding-top: 28px;">
                                     <input type="checkbox" id="theoryIsActive">
                                     <label for="theoryIsActive" class="form-label" style="margin: 0;">Active</label>
                                 </div>
                             </div>
-
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
                                 <div>
-                                    <label class="form-label">Description</label>
-                                    <textarea class="form-textarea" id="theoryDescription" rows="3"></textarea>
+                                    <label class="form-label">Description <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <textarea class="form-textarea" id="theoryDescription" rows="4" placeholder="Describe the theory and its key principles..."></textarea>
                                 </div>
                                 <div>
-                                    <label class="form-label">Key Mechanism</label>
-                                    <textarea class="form-textarea" id="theoryKeyMechanism" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">How to Apply</label>
-                                    <textarea class="form-textarea" id="theoryHowToApply" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Age Adaptations</label>
-                                    <textarea class="form-textarea" id="theoryAgeAdaptations" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Allowed Claims</label>
-                                    <textarea class="form-textarea" id="theoryAllowedClaims" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Avoid Claims</label>
-                                    <textarea class="form-textarea" id="theoryAvoidClaims" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Contraindications</label>
-                                    <textarea class="form-textarea" id="theoryContraindications" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Suggested Activities</label>
-                                    <textarea class="form-textarea" id="theorySuggestedActivities" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Suggested Measures</label>
-                                    <textarea class="form-textarea" id="theorySuggestedMeasures" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Example Scenarios</label>
-                                    <textarea class="form-textarea" id="theoryExampleScenarios" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Related Theories</label>
-                                    <textarea class="form-textarea" id="theoryRelatedTheories" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Primary Researchers</label>
-                                    <textarea class="form-textarea" id="theoryPrimaryResearchers" rows="3"></textarea>
-                                </div>
-                                <div>
-                                    <label class="form-label">Key References</label>
-                                    <textarea class="form-textarea" id="theoryKeyReferences" rows="3"></textarea>
+                                    <label class="form-label">Key Theorists <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <textarea class="form-textarea" id="theoryPrimaryResearchers" rows="4" placeholder="e.g., John Bowlby, Mary Ainsworth..."></textarea>
                                 </div>
                             </div>
-
                             <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
                                 <button class="btn-save" onclick="saveTheoryChanges()">💾 Save Theory</button>
                             </div>
                         </div>
-                        <div id="theoryEditorPlaceholder" style="text-align: center; padding: 60px 20px; color: #6b7c8f;">
-                            <p style="font-size: 18px;">👈 Select a theory to edit</p>
+                        <div id="theoryEditorPlaceholder" style="text-align: center; padding: 40px 20px; color: #6b7c8f; grid-column: span 1;">
+                            <p style="font-size: 14px;">👈 Select a theory to edit</p>
                         </div>
                     </div>
                 </div>
+
+                <!-- Age Ranges Section -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">👶 Age Ranges</h3>
+                            <p style="font-size: 12px; color: #6b7c8f; margin: 4px 0 0 0;">Display Name, Language Guidelines, and Developmental Stage are sent to AI</p>
+                        </div>
+                        <button class="btn-save" onclick="addNewAgeRange()">+ Add Age Range</button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 8px;">Select Age Range</label>
+                            <select id="ageRangeSelectTheories" class="form-select" style="width: 100%;" onchange="selectAgeRange(this.value)">
+                                <option value="">Select an age range...</option>
+                            </select>
+                        </div>
+
+                        <div id="ageRangeEditor" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 100px; gap: 16px;">
+                                <div>
+                                    <label class="form-label">Display Name <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <input type="text" class="form-input" id="ageRangeDisplayName" placeholder="e.g., Early Childhood">
+                                </div>
+                                <div>
+                                    <label class="form-label">Age Range Code</label>
+                                    <input type="text" class="form-input" id="ageRangeCode" placeholder="e.g., 5-7">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding-top: 28px;">
+                                    <input type="checkbox" id="ageRangeIsActive">
+                                    <label for="ageRangeIsActive" class="form-label" style="margin: 0;">Active</label>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+                                <div>
+                                    <label class="form-label">Language Guidelines <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <textarea class="form-textarea" id="ageRangeLanguageGuidelines" rows="4" placeholder="Describe appropriate language complexity..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Developmental Stage <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <textarea class="form-textarea" id="ageRangeDevelopmentalStage" rows="4" placeholder="Describe cognitive and emotional development..."></textarea>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                <button class="btn-save" onclick="saveAgeRangeChanges()">💾 Save Age Range</button>
+                            </div>
+                        </div>
+                        <div id="ageRangeEditorPlaceholder" style="text-align: center; padding: 40px 20px; color: #6b7c8f; grid-column: span 1;">
+                            <p style="font-size: 14px;">👈 Select an age range to edit</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Super Skills Section -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🧠 Super Skills</h3>
+                            <p style="font-size: 12px; color: #6b7c8f; margin: 4px 0 0 0;">Name, Description, and Relevant Theories are sent to AI</p>
+                        </div>
+                        <button class="btn-save" onclick="addNewSuperSkillTheories()">+ Add Super Skill</button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 8px;">Select Super Skill</label>
+                            <select id="superSkillSelectTheories" class="form-select" style="width: 100%;" onchange="selectSuperSkillTheories(this.value)">
+                                <option value="">Select a super skill...</option>
+                            </select>
+                        </div>
+
+                        <div id="superSkillEditorTheories" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 1fr 100px; gap: 16px;">
+                                <div>
+                                    <label class="form-label">Name <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <input type="text" class="form-input" id="superSkillNameTheories" placeholder="e.g., Emotional Regulation">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding-top: 28px;">
+                                    <input type="checkbox" id="superSkillIsActiveTheories">
+                                    <label for="superSkillIsActiveTheories" class="form-label" style="margin: 0;">Active</label>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+                                <div>
+                                    <label class="form-label">Description <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <textarea class="form-textarea" id="superSkillDescriptionTheories" rows="4" placeholder="Describe what this super skill covers..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label">Relevant Theories <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <textarea class="form-textarea" id="superSkillRelevantTheories" rows="4" placeholder="e.g., CBT, Mindfulness, Attachment Theory..."></textarea>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                <button class="btn-save" onclick="saveSuperSkillTheoriesChanges()">💾 Save Super Skill</button>
+                            </div>
+                        </div>
+                        <div id="superSkillEditorPlaceholderTheories" style="text-align: center; padding: 40px 20px; color: #6b7c8f; grid-column: span 1;">
+                            <p style="font-size: 14px;">👈 Select a super skill to edit</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub Skills Section -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">📚 Sub-Skills</h3>
+                            <p style="font-size: 12px; color: #6b7c8f; margin: 4px 0 0 0;">Name, Parent Super Skill, and Description are sent to AI</p>
+                        </div>
+                        <button class="btn-save" onclick="addNewSubSkillTheories()">+ Add Sub-Skill</button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 8px;">Select Sub-Skill</label>
+                            <select id="subSkillSelectTheories" class="form-select" style="width: 100%;" onchange="selectSubSkillTheories(this.value)">
+                                <option value="">Select a sub-skill...</option>
+                            </select>
+                        </div>
+
+                        <div id="subSkillEditorTheories" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 100px; gap: 16px;">
+                                <div>
+                                    <label class="form-label">Name <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <input type="text" class="form-input" id="subSkillNameTheories" placeholder="e.g., Deep Breathing">
+                                </div>
+                                <div>
+                                    <label class="form-label">Parent Super Skill <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                    <select class="form-select" id="subSkillParentTheories" style="width: 100%;">
+                                        <option value="">Select Super Skill...</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding-top: 28px;">
+                                    <input type="checkbox" id="subSkillIsActiveTheories">
+                                    <label for="subSkillIsActiveTheories" class="form-label" style="margin: 0;">Active</label>
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <label class="form-label">Description <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                                <textarea class="form-textarea" id="subSkillDescriptionTheories" rows="4" placeholder="Describe what this sub-skill covers..."></textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                <button class="btn-save" onclick="saveSubSkillTheoriesChanges()">💾 Save Sub-Skill</button>
+                            </div>
+                        </div>
+                        <div id="subSkillEditorPlaceholderTheories" style="text-align: center; padding: 40px 20px; color: #6b7c8f; grid-column: span 1;">
+                            <p style="font-size: 14px;">👈 Select a sub-skill to edit</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
         <!-- End Theories Tab -->
@@ -1179,6 +1249,143 @@ This fixes:
             animation: spin 1s linear infinite;
         }
     </style>
+
+    <!-- Add New Theory Modal -->
+    <div class="modal" id="addTheoryModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">📖 Add New Theory</h2>
+                <button class="modal-close" onclick="closeAddTheoryModal()">×</button>
+            </div>
+
+            <form id="addTheoryForm" onsubmit="saveNewTheory(event); return false;">
+                <div class="form-group">
+                    <label class="form-label required-label">Theory Name</label>
+                    <input type="text" class="form-input" id="newTheoryName" required placeholder="e.g., Attachment Theory">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <textarea class="form-textarea" id="newTheoryDescription" rows="4" placeholder="Describe the theory and its key principles..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Key Theorists <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <textarea class="form-textarea" id="newTheoryPrimaryResearchers" rows="3" placeholder="e.g., John Bowlby, Mary Ainsworth..."></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 0;">
+                    <button type="button" class="btn" onclick="closeAddTheoryModal()" style="background: #6b7c8f; color: white;">Cancel</button>
+                    <button type="submit" class="btn-save">Add Theory</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New Age Range Modal -->
+    <div class="modal" id="addAgeRangeModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">👶 Add New Age Range</h2>
+                <button class="modal-close" onclick="closeAddAgeRangeModal()">×</button>
+            </div>
+
+            <form id="addAgeRangeForm" onsubmit="saveNewAgeRange(event); return false;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label required-label">Display Name <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                        <input type="text" class="form-input" id="newAgeRangeDisplayName" required placeholder="e.g., Early Childhood">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required-label">Age Range Code</label>
+                        <input type="text" class="form-input" id="newAgeRangeCode" required placeholder="e.g., 5-7">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Language Guidelines <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <textarea class="form-textarea" id="newAgeRangeLanguageGuidelines" rows="4" placeholder="Describe appropriate language complexity..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Developmental Stage <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <textarea class="form-textarea" id="newAgeRangeDevelopmentalStage" rows="4" placeholder="Describe cognitive and emotional development..."></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 0;">
+                    <button type="button" class="btn" onclick="closeAddAgeRangeModal()" style="background: #6b7c8f; color: white;">Cancel</button>
+                    <button type="submit" class="btn-save">Add Age Range</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New Super Skill Modal -->
+    <div class="modal" id="addSuperSkillTheoriesModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🧠 Add New Super Skill</h2>
+                <button class="modal-close" onclick="closeAddSuperSkillTheoriesModal()">×</button>
+            </div>
+
+            <form id="addSuperSkillTheoriesForm" onsubmit="saveNewSuperSkillTheories(event); return false;">
+                <div class="form-group">
+                    <label class="form-label required-label">Name <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <input type="text" class="form-input" id="newSuperSkillTheoriesName" required placeholder="e.g., Emotional Regulation">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <textarea class="form-textarea" id="newSuperSkillTheoriesDescription" rows="4" placeholder="Describe what this super skill covers..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Relevant Theories <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <textarea class="form-textarea" id="newSuperSkillTheoriesRelevantTheories" rows="3" placeholder="e.g., CBT, Mindfulness, Attachment Theory..."></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 0;">
+                    <button type="button" class="btn" onclick="closeAddSuperSkillTheoriesModal()" style="background: #6b7c8f; color: white;">Cancel</button>
+                    <button type="submit" class="btn-save">Add Super Skill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New Sub-Skill Modal -->
+    <div class="modal" id="addSubSkillTheoriesModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">📚 Add New Sub-Skill</h2>
+                <button class="modal-close" onclick="closeAddSubSkillTheoriesModal()">×</button>
+            </div>
+
+            <form id="addSubSkillTheoriesForm" onsubmit="saveNewSubSkillTheories(event); return false;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label required-label">Name <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                        <input type="text" class="form-input" id="newSubSkillTheoriesName" required placeholder="e.g., Deep Breathing">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Parent Super Skill <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                        <select class="form-select" id="newSubSkillTheoriesParent" style="width: 100%;">
+                            <option value="">Select Super Skill...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
+                    <textarea class="form-textarea" id="newSubSkillTheoriesDescription" rows="4" placeholder="Describe what this sub-skill covers..."></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 0;">
+                    <button type="button" class="btn" onclick="closeAddSubSkillTheoriesModal()" style="background: #6b7c8f; color: white;">Cancel</button>
+                    <button type="submit" class="btn-save">Add Sub-Skill</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
 
     
