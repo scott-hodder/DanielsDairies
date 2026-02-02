@@ -126,6 +126,28 @@ interface AgeRangeData {
   display_name: string;
   language_guidelines: string;
   developmental_stage: string;
+  cognitive_abilities: string;
+  emotional_capacity: string;
+  attention_span: string | null;
+  vocabulary_level: string;
+  sentence_complexity: string;
+  abstract_thinking: string;
+  neurodivergent_adaptations: string | null;
+  trauma_sensitive_notes: string | null;
+  ageRange?: string;
+  ageMin?: number;
+  ageMax?: number;
+  displayName?: string;
+  languageGuidelines?: string;
+  developmentalStage?: string;
+  cognitiveAbilities?: string;
+  emotionalCapacity?: string;
+  attentionSpan?: string | null;
+  vocabularyLevel?: string;
+  sentenceComplexity?: string;
+  abstractThinking?: string;
+  neurodivergentAdaptations?: string | null;
+  traumaSensitiveNotes?: string | null;
 }
 
 /**
@@ -910,13 +932,29 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function buildAgeRangeStyleGuide(ageRange: string): string {
-  const normalized = (ageRange || "").trim();
+function getAgeRangeKey(ageRange: string, ageData?: AgeRangeData): string {
+  const min = ageData?.age_min ?? ageData?.ageMin;
+  const max = ageData?.age_max ?? ageData?.ageMax;
+  if (min != null && max != null) {
+    return `${min}-${max}`;
+  }
+
+  const normalized = (ageRange || "").replace(/[–—]/g, "-").trim();
+  const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}`;
+  }
+
+  return normalized;
+}
+
+function buildAgeRangeStyleGuide(ageRange: string, ageData?: AgeRangeData): string {
+  const normalized = getAgeRangeKey(ageRange, ageData);
   switch (normalized) {
     case "6-8":
       return `
 EARLY CHILDHOOD (6-8) — Concrete Learners
-- Very short text blocks (1-2 sentences max per paragraph).
+- Very short text blocks (1-2 sentences max per paragraph) with lots of line breaks.
 - Simple, friendly words; avoid abstract terms unless explained with a concrete example.
 - Use playful, reassuring tone with lots of encouragement.
 - Activities should be highly guided with clear, single-step instructions.
@@ -962,6 +1000,28 @@ AGE-SPECIFIC DIFFERENTIATION
   }
 }
 
+function getAgeDataText(
+  ageData: AgeRangeData,
+  snakeKey: keyof AgeRangeData,
+  camelKey: keyof AgeRangeData
+): string {
+  const record = ageData as Record<string, unknown>;
+  return String(record[snakeKey] ?? record[camelKey] ?? "");
+}
+
+function getAgeDataOptionalText(
+  ageData: AgeRangeData,
+  snakeKey: keyof AgeRangeData,
+  camelKey: keyof AgeRangeData
+): string | null {
+  const record = ageData as Record<string, unknown>;
+  const value = record[snakeKey] ?? record[camelKey];
+  if (value == null) {
+    return null;
+  }
+  return String(value);
+}
+
 /**
  * Builds an enhanced, psychology-informed content brief
  * Simplified to only send: 
@@ -977,12 +1037,31 @@ function buildEnhancedContentBrief(resolved: {
   additionalContext: string;
 }): string {
   const { ageData, theoryData, brainTownAnalogy, additionalContext, title, ageRange } = resolved;
-  const ageStyleGuide = buildAgeRangeStyleGuide(ageRange);
+  const ageStyleGuide = buildAgeRangeStyleGuide(ageRange, ageData);
+  const displayName = getAgeDataText(ageData, "display_name", "displayName");
+  const developmentalStage = getAgeDataText(ageData, "developmental_stage", "developmentalStage");
+  const cognitiveAbilities = getAgeDataText(ageData, "cognitive_abilities", "cognitiveAbilities");
+  const emotionalCapacity = getAgeDataText(ageData, "emotional_capacity", "emotionalCapacity");
+  const attentionSpan = getAgeDataOptionalText(ageData, "attention_span", "attentionSpan");
+  const languageGuidelines = getAgeDataText(ageData, "language_guidelines", "languageGuidelines");
+  const vocabularyLevel = getAgeDataText(ageData, "vocabulary_level", "vocabularyLevel");
+  const sentenceComplexity = getAgeDataText(ageData, "sentence_complexity", "sentenceComplexity");
+  const abstractThinking = getAgeDataText(ageData, "abstract_thinking", "abstractThinking");
+  const neurodivergentAdaptations = getAgeDataOptionalText(
+    ageData,
+    "neurodivergent_adaptations",
+    "neurodivergentAdaptations"
+  );
+  const traumaSensitiveNotes = getAgeDataOptionalText(
+    ageData,
+    "trauma_sensitive_notes",
+    "traumaSensitiveNotes"
+  );
   
   return `
 === MODULE BRIEF ===
 Title: ${title}
-Target Age: ${ageRange} (${ageData.display_name})
+Target Age: ${ageRange} (${displayName})
 
 === PSYCHOLOGICAL FOUNDATION ===
 CORE THEORY: ${theoryData.theory_name}
@@ -994,22 +1073,33 @@ ${theoryData.primary_researchers ? `KEY THEORISTS:\n${theoryData.primary_researc
 For children ages ${ageRange} (${ageData.display_name}):
 
 DEVELOPMENTAL STAGE:
-${ageData.developmental_stage}
+${developmentalStage}
+
+COGNITIVE ABILITIES:
+${cognitiveAbilities}
+
+EMOTIONAL CAPACITY:
+${emotionalCapacity}
+
+${attentionSpan ? `ATTENTION SPAN:\n${attentionSpan}\n` : ''}
 
 LANGUAGE GUIDELINES:
-${ageData.language_guidelines}
+${languageGuidelines}
 
 VOCABULARY LEVEL:
-${ageData.vocabulary_level}
+${vocabularyLevel}
 
 SENTENCE COMPLEXITY:
-${ageData.sentence_complexity}
+${sentenceComplexity}
 
 ABSTRACT THINKING:
-${ageData.abstract_thinking}
+${abstractThinking}
 
-${ageData.neurodivergent_adaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${ageData.neurodivergent_adaptations}\n` : ''}
-${ageData.trauma_sensitive_notes ? `TRAUMA-SENSITIVE NOTES:\n${ageData.trauma_sensitive_notes}\n` : ''}
+${neurodivergentAdaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${neurodivergentAdaptations}\n` : ''}
+${traumaSensitiveNotes ? `TRAUMA-SENSITIVE NOTES:\n${traumaSensitiveNotes}\n` : ''}
+
+=== AGE RANGE DIFFERENTIATION PROFILE ===
+${ageStyleGuide}
 
 === AGE RANGE DIFFERENTIATION PROFILE ===
 ${ageStyleGuide}
