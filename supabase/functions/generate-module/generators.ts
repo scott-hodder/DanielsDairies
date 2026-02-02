@@ -116,42 +116,26 @@ interface ModuleMetadata {
   characterType?: string;
 }
 
+/**
+ * Age range data from the database
+ * Simplified: Only display_name, language_guidelines, and developmental_stage are sent to AI
+ */
 interface AgeRangeData {
   id: string;
   age_range: string;
-  age_min: number;
-  age_max: number;
   display_name: string;
   language_guidelines: string;
   developmental_stage: string;
-  cognitive_abilities: string;
-  emotional_capacity: string;
-  attention_span: string | null;
-  vocabulary_level: string;
-  sentence_complexity: string;
-  abstract_thinking: string;
-  neurodivergent_adaptations: string | null;
-  trauma_sensitive_notes: string | null;
 }
 
 /**
  * Core theory data from the database
+ * Simplified: Only description and primary_researchers (key theorists) are sent to AI
  */
 interface CoreTheoryData {
   id: string;
   theory_name: string;
-  theory_code: string;
   description: string;
-  key_mechanism: string;
-  how_to_apply: string;
-  age_adaptations: string | null;
-  allowed_claims: string;
-  avoid_claims: string;
-  contraindications: string | null;
-  suggested_activities: string | null;
-  suggested_measures: string | null;
-  example_scenarios: string | null;
-  category: string | null;
   primary_researchers: string | null;
 }
 
@@ -928,6 +912,9 @@ function randomInt(min: number, max: number): number {
 
 /**
  * Builds an enhanced, psychology-informed content brief
+ * Simplified to only send: 
+ * - Theory: description, key_theorists (primary_researchers)
+ * - Age Range: display_name, language_guidelines, developmental_stage
  */
 function buildEnhancedContentBrief(resolved: {
   title: string;
@@ -948,49 +935,16 @@ Target Age: ${ageRange} (${ageData.display_name})
 CORE THEORY: ${theoryData.theory_name}
 ${theoryData.description}
 
-KEY MECHANISM:
-${theoryData.key_mechanism}
-
-HOW TO APPLY THIS THEORY:
-${theoryData.how_to_apply}
-
-CLAIMS YOU CAN MAKE:
-${theoryData.allowed_claims}
-
-⚠️ CLAIMS TO AVOID (do not make these statements):
-${theoryData.avoid_claims}
-
-${theoryData.contraindications ? `CAUTION/CONTRAINDICATIONS:\n${theoryData.contraindications}\n` : ''}
-${theoryData.suggested_activities ? `SUGGESTED ACTIVITY TYPES:\n${theoryData.suggested_activities}\n` : ''}
+${theoryData.primary_researchers ? `KEY THEORISTS:\n${theoryData.primary_researchers}\n` : ''}
 
 === AGE-APPROPRIATE LANGUAGE GUIDELINES ===
-For children ages ${ageRange}:
+For children ages ${ageRange} (${ageData.display_name}):
 
 DEVELOPMENTAL STAGE:
 ${ageData.developmental_stage}
 
-COGNITIVE ABILITIES:
-${ageData.cognitive_abilities}
-
-EMOTIONAL CAPACITY:
-${ageData.emotional_capacity}
-
-${ageData.attention_span ? `ATTENTION SPAN:\n${ageData.attention_span}\n` : ''}
-
 LANGUAGE GUIDELINES:
 ${ageData.language_guidelines}
-
-VOCABULARY LEVEL:
-${ageData.vocabulary_level}
-
-SENTENCE COMPLEXITY:
-${ageData.sentence_complexity}
-
-ABSTRACT THINKING:
-${ageData.abstract_thinking}
-
-${ageData.neurodivergent_adaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${ageData.neurodivergent_adaptations}\n` : ''}
-${ageData.trauma_sensitive_notes ? `TRAUMA-SENSITIVE NOTES:\n${ageData.trauma_sensitive_notes}\n` : ''}
 
 === BRAIN TOWN ANALOGY ===
 Use this analogy/metaphor consistently throughout the module:
@@ -1003,10 +957,8 @@ ${additionalContext ? `=== ADDITIONAL CONTEXT ===\n${additionalContext}\n` : ''}
 === GENERATION INSTRUCTIONS ===
 1. Use the EXACT language complexity appropriate for ${ageRange} year olds
 2. Apply the ${theoryData.theory_name} theory correctly throughout
-3. Only make claims that are listed as "allowed"
-4. Use the Brain Town analogy to explain concepts
-5. Keep activities within the child's developmental capacity
-6. Include trauma-sensitive and neurodivergent-affirming language
+3. Use the Brain Town analogy to explain concepts
+4. Keep activities within the child's developmental capacity
 `.trim();
 }
 
