@@ -966,6 +966,11 @@ class ProgressTrackingSystem {
         color: #f57c00;
       }
 
+      .assessment-timing-badge.checkin {
+        background: #f3e5f5;
+        color: #7b1fa2;
+      }
+
       .assessment-timing-badge.endpoint {
         background: #e8f5e9;
         color: #388e3c;
@@ -1367,11 +1372,30 @@ class ProgressTrackingSystem {
 
     const progressPercent = totalModules > 0 ? (completedModules / totalModules) * 100 : 0;
 
+    // Check-ins after every 3 modules
+    const checkInModuleCount = 3;
+    const nextCheckInTarget = Math.floor(completedModules / checkInModuleCount) * checkInModuleCount + checkInModuleCount;
+    
+    // Count how many check-ins have been completed
+    const completedCheckIns = assessments?.filter(a => 
+      a.assessment_type !== 'baseline' && 
+      a.assessment_type !== 'midpoint' && 
+      a.assessment_type !== 'endpoint'
+    ).length || 0;
+    
+    const expectedCheckIns = Math.floor(completedModules / checkInModuleCount);
+
     // Determine which assessment is needed
     if (!hasBaseline && completedModules === 0) {
       return ASSESSMENT_TIMING.BASELINE;
     }
 
+    // Check if we need a check-in after every 3 modules
+    if (completedModules > 0 && completedModules % checkInModuleCount === 0 && completedCheckIns < expectedCheckIns) {
+      return 'checkin';
+    }
+
+    // Keep midpoint and endpoint for overall progress
     if (hasBaseline && !hasMidpoint && progressPercent >= 40 && progressPercent < 90) {
       return ASSESSMENT_TIMING.MIDPOINT;
     }
@@ -1415,13 +1439,15 @@ class ProgressTrackingSystem {
     const timingLabels = {
       baseline: 'Starting Point Check-In',
       midpoint: 'Halfway Progress Check',
-      endpoint: 'Journey Complete Check-In'
+      endpoint: 'Journey Complete Check-In',
+      checkin: 'Progress Check-In'
     };
 
     const timingDescriptions = {
       baseline: 'Let\'s see how you\'re doing before we start. This helps us track your progress!',
       midpoint: 'You\'re halfway there! Let\'s check in and see how you\'re progressing.',
-      endpoint: 'Amazing work completing your journey! Let\'s see how much you\'ve grown.'
+      endpoint: 'Amazing work completing your journey! Let\'s see how much you\'ve grown.',
+      checkin: 'Great progress! Let\'s check in and see how you\'re doing.'
     };
 
     overlay.innerHTML = `
@@ -1678,7 +1704,8 @@ class ProgressTrackingSystem {
     const messages = {
       baseline: 'Great job completing your check-in! This helps us understand where you\'re starting from.',
       midpoint: 'Awesome work! You\'re making great progress on your journey.',
-      endpoint: 'Congratulations on completing your journey! Let\'s see how much you\'ve grown!'
+      endpoint: 'Congratulations on completing your journey! Let\'s see how much you\'ve grown!',
+      checkin: 'Great progress! Keep up the amazing work on your journey!'
     };
 
     modal.innerHTML = `

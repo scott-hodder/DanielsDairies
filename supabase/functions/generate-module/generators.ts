@@ -116,42 +116,26 @@ interface ModuleMetadata {
   characterType?: string;
 }
 
+/**
+ * Age range data from the database
+ * Simplified: Only display_name, language_guidelines, and developmental_stage are sent to AI
+ */
 interface AgeRangeData {
   id: string;
   age_range: string;
-  age_min: number;
-  age_max: number;
   display_name: string;
   language_guidelines: string;
   developmental_stage: string;
-  cognitive_abilities: string;
-  emotional_capacity: string;
-  attention_span: string | null;
-  vocabulary_level: string;
-  sentence_complexity: string;
-  abstract_thinking: string;
-  neurodivergent_adaptations: string | null;
-  trauma_sensitive_notes: string | null;
 }
 
 /**
  * Core theory data from the database
+ * Simplified: Only description and primary_researchers (key theorists) are sent to AI
  */
 interface CoreTheoryData {
   id: string;
   theory_name: string;
-  theory_code: string;
   description: string;
-  key_mechanism: string;
-  how_to_apply: string;
-  age_adaptations: string | null;
-  allowed_claims: string;
-  avoid_claims: string;
-  contraindications: string | null;
-  suggested_activities: string | null;
-  suggested_measures: string | null;
-  example_scenarios: string | null;
-  category: string | null;
   primary_researchers: string | null;
 }
 
@@ -926,27 +910,13 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function getAgeRangeKey(ageRange: string, ageData?: AgeRangeData): string {
-  if (ageData?.age_min != null && ageData?.age_max != null) {
-    return `${ageData.age_min}-${ageData.age_max}`;
-  }
-
-  const normalized = (ageRange || "").replace(/[–—]/g, "-").trim();
-  const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
-  if (match) {
-    return `${match[1]}-${match[2]}`;
-  }
-
-  return normalized;
-}
-
-function buildAgeRangeStyleGuide(ageRange: string, ageData?: AgeRangeData): string {
-  const normalized = getAgeRangeKey(ageRange, ageData);
+function buildAgeRangeStyleGuide(ageRange: string): string {
+  const normalized = (ageRange || "").trim();
   switch (normalized) {
     case "6-8":
       return `
 EARLY CHILDHOOD (6-8) — Concrete Learners
-- Very short text blocks (1-2 sentences max per paragraph) with lots of line breaks.
+- Very short text blocks (1-2 sentences max per paragraph).
 - Simple, friendly words; avoid abstract terms unless explained with a concrete example.
 - Use playful, reassuring tone with lots of encouragement.
 - Activities should be highly guided with clear, single-step instructions.
@@ -994,6 +964,9 @@ AGE-SPECIFIC DIFFERENTIATION
 
 /**
  * Builds an enhanced, psychology-informed content brief
+ * Simplified to only send: 
+ * - Theory: description, key_theorists (primary_researchers)
+ * - Age Range: display_name, language_guidelines, developmental_stage
  */
 function buildEnhancedContentBrief(resolved: {
   title: string;
@@ -1004,7 +977,7 @@ function buildEnhancedContentBrief(resolved: {
   additionalContext: string;
 }): string {
   const { ageData, theoryData, brainTownAnalogy, additionalContext, title, ageRange } = resolved;
-  const ageStyleGuide = buildAgeRangeStyleGuide(ageRange, ageData);
+  const ageStyleGuide = buildAgeRangeStyleGuide(ageRange);
   
   return `
 === MODULE BRIEF ===
@@ -1015,34 +988,13 @@ Target Age: ${ageRange} (${ageData.display_name})
 CORE THEORY: ${theoryData.theory_name}
 ${theoryData.description}
 
-KEY MECHANISM:
-${theoryData.key_mechanism}
-
-HOW TO APPLY THIS THEORY:
-${theoryData.how_to_apply}
-
-CLAIMS YOU CAN MAKE:
-${theoryData.allowed_claims}
-
-⚠️ CLAIMS TO AVOID (do not make these statements):
-${theoryData.avoid_claims}
-
-${theoryData.contraindications ? `CAUTION/CONTRAINDICATIONS:\n${theoryData.contraindications}\n` : ''}
-${theoryData.suggested_activities ? `SUGGESTED ACTIVITY TYPES:\n${theoryData.suggested_activities}\n` : ''}
+${theoryData.primary_researchers ? `KEY THEORISTS:\n${theoryData.primary_researchers}\n` : ''}
 
 === AGE-APPROPRIATE LANGUAGE GUIDELINES ===
-For children ages ${ageRange}:
+For children ages ${ageRange} (${ageData.display_name}):
 
 DEVELOPMENTAL STAGE:
 ${ageData.developmental_stage}
-
-COGNITIVE ABILITIES:
-${ageData.cognitive_abilities}
-
-EMOTIONAL CAPACITY:
-${ageData.emotional_capacity}
-
-${ageData.attention_span ? `ATTENTION SPAN:\n${ageData.attention_span}\n` : ''}
 
 LANGUAGE GUIDELINES:
 ${ageData.language_guidelines}

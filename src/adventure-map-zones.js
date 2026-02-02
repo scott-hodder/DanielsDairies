@@ -17,6 +17,7 @@ export function getZoneState(completedCount) {
       roadStyle: 'dirt',
       envStyle: 'nature',
       density: 0.1,
+      backgroundImage: '/images/zones/zone1.png',
       unlockedLayers: {
         trees: true,
         fences: false,
@@ -35,6 +36,7 @@ export function getZoneState(completedCount) {
       roadStyle: 'packed',
       envStyle: 'village',
       density: 0.35,
+      backgroundImage: '/images/zones/zone2.png',
       unlockedLayers: {
         trees: true,
         fences: true,
@@ -53,6 +55,7 @@ export function getZoneState(completedCount) {
       roadStyle: 'paved',
       envStyle: 'city',
       density: 0.65,
+      backgroundImage: '/images/zones/zone3.png',
       unlockedLayers: {
         trees: true,
         fences: true,
@@ -70,6 +73,7 @@ export function getZoneState(completedCount) {
     roadStyle: 'multi_lane',
     envStyle: 'metropolis',
     density: 1.0,
+    backgroundImage: '/images/zones/zone4.png',
     unlockedLayers: {
       trees: true,
       fences: true,
