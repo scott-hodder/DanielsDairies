@@ -1316,7 +1316,7 @@ async function callClaude(
 // CONTENT GENERATION
 // ====================
 
-const SYSTEM_PROMPT = `You are an expert child psychologist and educational content creator specializing in social-emotional learning (SEL) workbooks for children ages 5-12.
+const SYSTEM_PROMPT = `You are an expert child psychologist and educational content creator specializing in social-emotional learning (SEL) workbooks for children and teens ages 6-18.
 
 Your content must be:
 - Age-appropriate, warm, and encouraging
