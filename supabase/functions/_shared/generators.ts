@@ -11,6 +11,7 @@
  * - All content generators (lessons, activities, challenges)
  * 
  * The HTML rendering is in a separate file: renderers.ts
+ * NOTE: This module is stored under supabase/functions/_shared for edge bundling.
  */
 
 
