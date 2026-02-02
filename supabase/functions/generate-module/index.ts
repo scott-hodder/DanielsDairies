@@ -87,7 +87,7 @@ import {
   // Page Structure & Content Generation
   generatePageStructure,
   generateAllContent,
-} from "./generators.ts";
+} from "../_shared/generators.ts";
 
 // ====================
 // CATEGORY COLOR PALETTES
