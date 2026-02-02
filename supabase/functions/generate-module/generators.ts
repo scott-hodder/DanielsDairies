@@ -926,6 +926,72 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function getAgeRangeKey(ageRange: string, ageData?: AgeRangeData): string {
+  if (ageData?.age_min != null && ageData?.age_max != null) {
+    return `${ageData.age_min}-${ageData.age_max}`;
+  }
+
+  const normalized = (ageRange || "").replace(/[–—]/g, "-").trim();
+  const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}`;
+  }
+
+  return normalized;
+}
+
+function buildAgeRangeStyleGuide(ageRange: string, ageData?: AgeRangeData): string {
+  const normalized = getAgeRangeKey(ageRange, ageData);
+  switch (normalized) {
+    case "6-8":
+      return `
+EARLY CHILDHOOD (6-8) — Concrete Learners
+- Very short text blocks (1-2 sentences max per paragraph) with lots of line breaks.
+- Simple, friendly words; avoid abstract terms unless explained with a concrete example.
+- Use playful, reassuring tone with lots of encouragement.
+- Activities should be highly guided with clear, single-step instructions.
+- Prefer visuals, emojis, and imaginative play; minimal reading required.
+- Limit concepts to "here and now" experiences (feelings, body cues, simple choices).
+`.trim();
+    case "9-11":
+      return `
+LATE CHILDHOOD (9-11) — Bridge Thinkers
+- Short to medium text blocks (2-4 sentences).
+- Introduce new vocabulary with quick definitions or examples.
+- Balance playful tone with growing independence and responsibility.
+- Activities can be 2-3 steps with light reflection.
+- Encourage perspective-taking and cause-and-effect reasoning.
+- Use relatable school/friend scenarios and simple problem-solving.
+`.trim();
+    case "12-14":
+      return `
+EARLY ADOLESCENCE (12-14) — Transition Thinkers
+- Medium-length text blocks (3-5 sentences) with clear structure.
+- Use more sophisticated vocabulary, but keep it approachable.
+- Respect autonomy; avoid babyish phrasing.
+- Activities can be multi-step with choice and self-directed reflection.
+- Introduce abstract ideas (values, identity, beliefs) with concrete examples.
+- Use peer/social dynamics and "real-life" challenges.
+`.trim();
+    case "15-18":
+      return `
+MID-LATE ADOLESCENCE (15-18) — Abstract Integrators
+- Longer, structured text blocks (4-7 sentences) allowed when needed.
+- Use mature, nuanced language; avoid oversimplification.
+- Encourage metacognition, goal-setting, and personal agency.
+- Activities can be multi-part with deeper reflection and planning.
+- Emphasize abstract reasoning, systems thinking, and long-term consequences.
+- Use authentic, teen-relevant contexts (relationships, stress, future planning).
+`.trim();
+    default:
+      return `
+AGE-SPECIFIC DIFFERENTIATION
+- Match text length, vocabulary, and activity complexity to the stated age range.
+- Ensure a clearly distinct tone and depth between age groups.
+`.trim();
+  }
+}
+
 /**
  * Builds an enhanced, psychology-informed content brief
  */
@@ -938,6 +1004,7 @@ function buildEnhancedContentBrief(resolved: {
   additionalContext: string;
 }): string {
   const { ageData, theoryData, brainTownAnalogy, additionalContext, title, ageRange } = resolved;
+  const ageStyleGuide = buildAgeRangeStyleGuide(ageRange, ageData);
   
   return `
 === MODULE BRIEF ===
@@ -992,6 +1059,9 @@ ${ageData.abstract_thinking}
 ${ageData.neurodivergent_adaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${ageData.neurodivergent_adaptations}\n` : ''}
 ${ageData.trauma_sensitive_notes ? `TRAUMA-SENSITIVE NOTES:\n${ageData.trauma_sensitive_notes}\n` : ''}
 
+=== AGE RANGE DIFFERENTIATION PROFILE ===
+${ageStyleGuide}
+
 === BRAIN TOWN ANALOGY ===
 Use this analogy/metaphor consistently throughout the module:
 ${brainTownAnalogy}
@@ -1007,6 +1077,7 @@ ${additionalContext ? `=== ADDITIONAL CONTEXT ===\n${additionalContext}\n` : ''}
 4. Use the Brain Town analogy to explain concepts
 5. Keep activities within the child's developmental capacity
 6. Include trauma-sensitive and neurodivergent-affirming language
+7. Ensure the module feels distinctly tailored to the target age range using the differentiation profile above
 `.trim();
 }
 
@@ -1293,7 +1364,7 @@ async function callClaude(
 // CONTENT GENERATION
 // ====================
 
-const SYSTEM_PROMPT = `You are an expert child psychologist and educational content creator specializing in social-emotional learning (SEL) workbooks for children ages 5-12.
+const SYSTEM_PROMPT = `You are an expert child psychologist and educational content creator specializing in social-emotional learning (SEL) workbooks for children and teens ages 6-18.
 
 Your content must be:
 - Age-appropriate, warm, and encouraging
@@ -1306,7 +1377,8 @@ CRITICAL RULES:
 2. If a specific character/mascot is mentioned (like "Daniel the Dog"), you MUST use EXACTLY that character name and type throughout.
 3. Never substitute a different animal or character name - if told to use "Daniel the Dog", every reference must be to "Daniel" and a dog, not a fox, bear, or any other animal.
 4. The mascot emoji must match the character type exactly.
-5. When asked to create multiple items, sequence them as a learning journey: start with simple awareness, then practice skills, then apply them in real-life or challenge scenarios. Each item should build on the previous one and avoid repeating earlier points.`;
+5. When asked to create multiple items, sequence them as a learning journey: start with simple awareness, then practice skills, then apply them in real-life or challenge scenarios. Each item should build on the previous one and avoid repeating earlier points.
+6. Treat the age range guidance and language guidelines in the content brief as hard requirements, and make the output clearly distinct across age ranges.`;
 
 async function generateMetadata(
   apiKey: string,
