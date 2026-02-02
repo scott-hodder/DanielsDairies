@@ -1070,7 +1070,7 @@ ${theoryData.description}
 ${theoryData.primary_researchers ? `KEY THEORISTS:\n${theoryData.primary_researchers}\n` : ''}
 
 === AGE-APPROPRIATE LANGUAGE GUIDELINES ===
-For children ages ${ageRange} (${ageData.display_name}):
+For children ages ${ageRange} (${displayName}):
 
 DEVELOPMENTAL STAGE:
 ${developmentalStage}
@@ -1097,9 +1097,6 @@ ${abstractThinking}
 
 ${neurodivergentAdaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${neurodivergentAdaptations}\n` : ''}
 ${traumaSensitiveNotes ? `TRAUMA-SENSITIVE NOTES:\n${traumaSensitiveNotes}\n` : ''}
-
-=== AGE RANGE DIFFERENTIATION PROFILE ===
-${ageStyleGuide}
 
 === AGE RANGE DIFFERENTIATION PROFILE ===
 ${ageStyleGuide}

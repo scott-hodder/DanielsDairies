@@ -5629,3 +5629,394 @@ button:active, .btn:active {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
 }
+
+    /* ADVENTURE_MAP_V2 */
+    /* Adventure Map v2 - self-contained */
+    .adventure-map-section {
+        background: #fff;
+        border-radius: 18px;
+        padding: 18px 18px 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        border: 1px solid rgba(64,88,120,0.10);
+        margin-top: 18px;
+    }
+    .adventure-header {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:4px;
+        padding: 6px 6px 14px;
+    }
+    .adventure-title {
+        font-family: 'Fredoka','League Spartan',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+        font-size: 28px;
+        letter-spacing: .2px;
+        margin: 0;
+        color: #405878;
+        display:flex;
+        align-items:center;
+        gap:10px;
+    }
+    .adventure-subtitle {
+        margin:0;
+        color:#6d86a8;
+        font-size:14px;
+        text-align:center;
+    }
+    .adventure-map-container {
+        position: relative;
+        width: 100%;
+        height: clamp(380px, 52vh, 560px);
+        border-radius: 18px;
+        background:
+            radial-gradient(900px 420px at 30% 10%, rgba(255,196,140,.35), rgba(255,255,255,0) 55%),
+            radial-gradient(760px 420px at 70% 15%, rgba(176,227,255,.28), rgba(255,255,255,0) 55%),
+            linear-gradient(180deg, #fbfdff 0%, #f7f9fc 60%, #f2f6fb 100%);
+        border: 1px solid rgba(64,88,120,0.10);
+        overflow:hidden;
+        padding: 18px;
+    }
+    .adventure-map-container::before {
+        content:"";
+        position:absolute;
+        inset:0;
+        background-image:
+            radial-gradient(circle at 18px 18px, rgba(64,88,120,.06) 1.2px, transparent 1.3px);
+        background-size: 22px 22px;
+        opacity:.55;
+        pointer-events:none;
+    }
+    svg.adventure-path {
+        position:absolute;
+        inset: 0;
+        width:100%;
+        height:100%;
+        pointer-events:none;
+        filter: drop-shadow(0 1px 0 rgba(255,255,255,0.7));
+    }
+    .adventure-nodes {
+        position:absolute;
+        inset: 0;
+        z-index: 2;
+    }
+    .adventure-node {
+        position:absolute;
+        width: 64px;
+        height: 64px;
+        border-radius: 999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 30px;
+        user-select:none;
+        cursor:pointer;
+        transform: translate(-50%, -50%);
+        transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+        box-shadow: 0 10px 22px rgba(17,24,39,.10);
+        border: 2px solid rgba(255,255,255,.75);
+        backdrop-filter: blur(4px);
+    }
+    .adventure-node:hover {
+        transform: translate(-50%, -50%) scale(1.04);
+        box-shadow: 0 14px 28px rgba(17,24,39,.14);
+    }
+    .adventure-node .node-number {
+        position:absolute;
+        top: -8px;
+        right: -8px;
+        width: 26px;
+        height: 26px;
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 12px;
+        font-weight: 800;
+        color: #1f2f46;
+        background: rgba(255,255,255,.95);
+        border: 1px solid rgba(64,88,120,.18);
+        box-shadow: 0 6px 14px rgba(17,24,39,.12);
+    }
+    .adventure-node .node-badge {
+        position:absolute;
+        bottom: -8px;
+        right: -8px;
+        width: 26px;
+        height: 26px;
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 14px;
+        font-weight: 900;
+        color: white;
+        background: linear-gradient(180deg, #2dd4bf 0%, #10b981 100%);
+        border: 2px solid rgba(255,255,255,.9);
+        box-shadow: 0 8px 18px rgba(16,185,129,.28);
+    }
+    .adventure-node.available {
+        background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.75) 100%);
+        outline: 0;
+    }
+    .adventure-node.available::after {
+        content:"";
+        position:absolute;
+        inset:-6px;
+        border-radius:999px;
+        background: radial-gradient(circle, rgba(255,165,80,.55), rgba(255,255,255,0) 60%);
+        filter: blur(1px);
+        opacity:.9;
+        animation: nodePulse 2.2s ease-in-out infinite;
+        z-index:-1;
+    }
+    @keyframes nodePulse {
+        0%,100% { transform: scale(0.92); opacity:.55; }
+        50% { transform: scale(1.08); opacity: .95; }
+    }
+    .adventure-node.completed {
+        background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.78) 100%);
+        box-shadow: 0 14px 30px rgba(16,185,129,.18);
+    }
+    .adventure-node.completed::after {
+        content:"";
+        position:absolute;
+        inset:-8px;
+        border-radius:999px;
+        background: radial-gradient(circle, rgba(16,185,129,.35), rgba(255,255,255,0) 62%);
+        opacity:.95;
+        z-index:-1;
+    }
+    .adventure-node.locked {
+        cursor:not-allowed;
+        background: linear-gradient(180deg, rgba(203,213,225,.75) 0%, rgba(148,163,184,.55) 100%);
+        filter: grayscale(.25) saturate(.6);
+        box-shadow: 0 10px 22px rgba(17,24,39,.08);
+    }
+    .adventure-node.locked::before {
+        content:"🔒";
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 20px;
+        opacity:.9;
+    }
+    .adventure-node.locked > span.emoji {
+        opacity:.28;
+    }
+    .adventure-tooltip {
+        position:absolute;
+        left:50%;
+        bottom: 78px;
+        transform: translateX(-50%);
+        background: rgba(17,24,39,.92);
+        color: #fff;
+        padding: 8px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.2;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events:none;
+        transition: opacity .12s ease, transform .12s ease;
+        box-shadow: 0 14px 34px rgba(0,0,0,.18);
+    }
+    .adventure-tooltip .tt-title {
+        font-weight: 800;
+    }
+    .adventure-node:hover .adventure-tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-2px);
+    }
+    
+    /* ========================================
+       DANIEL RELATIONSHIP ENHANCED STYLES
+       Making Daniel central to the experience
+       ======================================== */
+    
+    /* Enhanced Daniel Hub - Complete Redesign */
+    .daniel-hub {
+        position: relative;
+        background: linear-gradient(135deg, #FEF9E7 0%, #FEF3C7 40%, #FDE68A 100%);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 
+            0 4px 20px rgba(251, 191, 36, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        overflow: visible;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 280px;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+    
+    .daniel-hub::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        right: 20px;
+        width: 20px;
+        height: 20px;
+        background: #FBBF24;
+        border-radius: 50%;
+        opacity: 0.6;
+        animation: sparkleFloat 3s ease-in-out infinite;
+    }
+    
+    .daniel-hub::after {
+        content: '✨';
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        font-size: 16px;
+        animation: sparkleFloat 3s ease-in-out infinite 0.5s;
+        opacity: 0.7;
+    }
+    
+    @keyframes sparkleFloat {
+        0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; }
+        50% { transform: translateY(-4px) scale(1.1); opacity: 0.9; }
+    }
+    
+    .daniel-hub:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 8px 30px rgba(251, 191, 36, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    
+    .daniel-character {
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+    }
+    
+    .daniel-avatar {
+        width: 160px;
+        height: 190px;
+        border-radius: 50%;
+        object-fit: contain;
+        background: transparent;
+        padding: 6px;
+        box-shadow: 
+            0 4px 12px rgba(251,191,36,0.25),
+            0 0 0 3px rgba(255,255,255,0.9);
+        transition: all 0.3s ease;
+    }
+    
+    .daniel-character:hover .daniel-avatar {
+        transform: scale(1.08);
+        box-shadow: 
+            0 6px 20px rgba(251,191,36,0.35),
+            0 0 0 4px rgba(255,255,255,1);
+    }
+    
+    /* Speech bubble positioned below the status */
+    .mood-bubble {
+        position: relative;
+        top: auto;
+        left: auto;
+        background: white;
+        padding: 8px 12px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        max-width: 180px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #475569;
+        line-height: 1.4;
+        margin-top: 8px;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .mood-bubble::before {
+        display: none;
+    }
+    
+    .daniel-info {
+        flex: 1;
+        min-width: 0;
+        padding-right: 8px;
+        position: relative;
+    }
+    
+    .daniel-name {
+        font-family: 'Fredoka', 'League Spartan', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #92400E;
+        margin: 0 0 4px 0;
+    }
+    
+    .daniel-status {
+        font-size: 13px;
+        color: #A16207;
+        margin: 0;
+        font-weight: 500;
+        line-height: 1.3;
+    }
+    
+    /* Growth indicator badge */
+    .daniel-growth-indicator {
+        position: absolute !important;
+        bottom: -10px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        right: auto !important;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+        padding: 5px 12px !important;
+        border-radius: 20px !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        color: #78350F !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+        border: 1px solid rgba(251,191,36,0.3) !important;
+        white-space: nowrap !important;
+    }
+    
+    /* Interactive pulse on Daniel when there's a new activity available */
+    .daniel-hub.has-activity .daniel-avatar {
+        animation: danielPulse 2.5s ease-in-out infinite;
+    }
+    
+    @keyframes danielPulse {
+        0%, 100% { 
+            box-shadow: 0 4px 12px rgba(251,191,36,0.25), 0 0 0 3px rgba(255,255,255,0.9); 
+        }
+        50% { 
+            box-shadow: 0 4px 12px rgba(251,191,36,0.25), 0 0 0 6px rgba(251,191,36,0.2), 0 0 15px rgba(251,191,36,0.15); 
+        }
+    }
+    
+    /* Daniel speech bubble variations for emotions */
+    .mood-bubble.emotion-nervous { background: linear-gradient(145deg, #FEF3C7, #FDE68A); border-color: rgba(251,191,36,0.2); }
+    .mood-bubble.emotion-hopeful { background: linear-gradient(145deg, #D1FAE5, #A7F3D0); border-color: rgba(16,185,129,0.2); }
+    .mood-bubble.emotion-proud { background: linear-gradient(145deg, #FCE7F3, #FBCFE8); border-color: rgba(236,72,153,0.2); }
+    .mood-bubble.emotion-curious { background: linear-gradient(145deg, #E0E7FF, #C7D2FE); border-color: rgba(99,102,241,0.2); }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .daniel-hub {
+            padding: 16px;
+            gap: 12px;
+        }
+        .daniel-avatar {
+            width: 60px;
+            height: 60px;
+        }
+        .mood-bubble {
+            display: none;
+        }
+        .daniel-name {
+            font-size: 16px;
+        }
+        .daniel-status {
+            font-size: 12px;
+        }
+    }
