@@ -5,6 +5,7 @@ import { redirectToPaymentLink } from './stripe.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-rewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focus-plan.js'
+import { showElement, hideElement, setLoadingState } from './utils/dom.js'
 
 const LEVEL_XP = 100
 
@@ -562,19 +563,19 @@ function openAllModulesModal() {
   if (!allModulesModal) return
   populateAllModulesFilters()
   renderAllModulesGrid()
-  allModulesModal.classList.remove('hidden')
+  showElement(allModulesModal)
   document.body.style.overflow = 'hidden'
 }
 
 function closeAllModulesModal() {
   if (!allModulesModal) return
-  allModulesModal.classList.add('hidden')
+  hideElement(allModulesModal)
   document.body.style.overflow = ''
 }
 
 function openMoreModulesModal() {
   if (!moreModulesModal) return
-  moreModulesModal.classList.remove('hidden')
+  showElement(moreModulesModal)
   document.body.style.overflow = 'hidden'
   setMoreModulesActiveSlide(moreModulesCurrentIndex)
   startMoreModulesRotation()
@@ -582,7 +583,7 @@ function openMoreModulesModal() {
 
 function closeMoreModulesModal() {
   if (!moreModulesModal) return
-  moreModulesModal.classList.add('hidden')
+  hideElement(moreModulesModal)
   document.body.style.overflow = ''
   stopMoreModulesRotation()
 }
@@ -618,8 +619,13 @@ function setParentInsightsSubtab(target) {
 
   insightsOverviewTab.classList.toggle('active', showOverview)
   weeklyCheckinTab.classList.toggle('active', !showOverview)
-  insightsOverviewPanel.classList.toggle('hidden', !showOverview)
-  weeklyCheckinPanel.classList.toggle('hidden', showOverview)
+  if (showOverview) {
+    showElement(insightsOverviewPanel)
+    hideElement(weeklyCheckinPanel)
+  } else {
+    hideElement(insightsOverviewPanel)
+    showElement(weeklyCheckinPanel)
+  }
 }
 
 async function checkWeeklyCheckinSettings() {
@@ -905,16 +911,7 @@ function showCheckinMessage(message, type = 'success') {
 
 function setCheckinLoading(isLoading) {
   if (!checkinSubmitButton) return
-  checkinSubmitButton.disabled = isLoading
-  if (checkinSubmitText && checkinSubmitSpinner) {
-    if (isLoading) {
-      checkinSubmitText.classList.add('hidden')
-      checkinSubmitSpinner.classList.remove('hidden')
-    } else {
-      checkinSubmitText.classList.remove('hidden')
-      checkinSubmitSpinner.classList.add('hidden')
-    }
-  }
+  setLoadingState(checkinSubmitButton, checkinSubmitText, checkinSubmitSpinner, isLoading)
 }
 
 const triggerToSkills = {
@@ -1011,9 +1008,7 @@ async function init() {
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout reached - forcing UI to show')
     hideLoadingScreen()
-    if (childrenView) {
-      childrenView.classList.remove('hidden')
-    }
+    showElement(childrenView)
   }, 6000)
   
   try {
@@ -1101,7 +1096,7 @@ async function init() {
         const adminButton = document.getElementById('adminButton')
         const adminButtonDesktop = document.getElementById('adminButtonDesktop')
         if (adminButton) adminButton.style.display = 'block'
-        if (adminButtonDesktop) adminButtonDesktop.classList.remove('hidden')
+        if (adminButtonDesktop) showElement(adminButtonDesktop)
       }
     }
     
@@ -1159,7 +1154,7 @@ async function init() {
       // Force hide loading state
       hideLoadingScreen()
       if (childrenView) {
-        childrenView.classList.remove('hidden')
+        showElement(childrenView)
       }
     }
     alert('Some data failed to load. You can still add children and use the app.')
@@ -1185,13 +1180,13 @@ function openPurchaseModal(module) {
 
   purchaseModalCost.textContent = `Price: ${priceLabel}`
 
-  purchaseModal.classList.remove('hidden')
+  showElement(purchaseModal)
 }
 
 function closePurchaseModal() {
   if (!purchaseModal) return
   currentPurchaseModule = null
-  purchaseModal.classList.add('hidden')
+  hideElement(purchaseModal)
 }
 
 // Load children
@@ -1211,7 +1206,7 @@ async function loadChildren() {
 function renderChildren() {
   const loadingState = document.getElementById('loadingState')
   
-  if (loadingState) loadingState.classList.add('hidden')
+  if (loadingState) hideElement(loadingState)
   
   childrenGrid.innerHTML = ''
   
@@ -1491,7 +1486,7 @@ async function handleEditFormSubmit(e) {
         
         if (!newName) {
             editModalError.textContent = 'Name is required.';
-            editModalError.classList.remove('hidden');
+            showElement(editModalError);
             return;
         }
         
@@ -1509,7 +1504,7 @@ async function handleEditFormSubmit(e) {
     } catch (error) {
         console.error('Error updating child:', error);
         editModalError.textContent = 'Failed to save changes. Please try again.';
-        editModalError.classList.remove('hidden');
+        showElement(editModalError);
     }
 }
 
@@ -1526,11 +1521,11 @@ async function handleAddFormSubmit(e) {
         
         if (!name || !dob) {
             modalError.textContent = 'Please fill in all fields.';
-            modalError.classList.remove('hidden');
+            showElement(modalError);
             return;
         }
         
-        modalError.classList.add('hidden');
+        hideElement(modalError);
         
         const newChild = await createChild(currentUser.id, name, dob, avatar);
         children.push(newChild);
@@ -1541,7 +1536,7 @@ async function handleAddFormSubmit(e) {
     } catch (error) {
         console.error('Error creating child:', error);
         modalError.textContent = error.message || 'Failed to add child';
-        modalError.classList.remove('hidden');
+        showElement(modalError);
     }
 }
 
@@ -1553,13 +1548,13 @@ function setupEditModalListeners() {
     document.getElementById('forgetPasswordBtn')?.addEventListener('click', (e) => {
         e.preventDefault();
         closeEditChildModal();
-        parentPasswordModal.classList.remove('hidden');
+        showElement(parentPasswordModal);
     });
     
     document.getElementById('removeChildBtn')?.addEventListener('click', () => {
         if (editingChild) {
             removeChildName.textContent = editingChild.name;
-            removeChildModal.classList.remove('hidden');
+            showElement(removeChildModal);
         }
     });
     
@@ -1584,11 +1579,11 @@ function promptEditChild(child) {
     }
     
     document.getElementById('editChildName').value = child.name;
-    document.getElementById('editModalError')?.classList.add('hidden');
+    hideElement(document.getElementById('editModalError'))
     
     renderEnhancedAvatarPicker(child.avatar || '🦊');
     
-    editChildModal.classList.remove('hidden');
+    showElement(editChildModal);
     setTimeout(() => document.getElementById('editChildName')?.focus(), 100);
 }
 
@@ -1625,10 +1620,10 @@ function renderEnhancedAvatarPicker(selectedAvatar) {
 }
 
 function closeEditChildModal() {
-  editChildModal.classList.add('hidden')
+  hideElement(editChildModal)
   editingChild = null
   editChildForm.reset()
-  editModalError.classList.add('hidden')
+  hideElement(editModalError)
 }
 
 // Select child
@@ -1762,19 +1757,19 @@ function showChildrenView() {
   const welcomeLandingPage = document.getElementById('welcomeLandingPage')
   
   if (loadingState) {
-    loadingState.classList.add('hidden')
+    hideElement(loadingState)
   }
 
   if (welcomeLandingPage) {
     if (!children || children.length === 0) {
-      welcomeLandingPage.classList.remove('hidden')
+      showElement(welcomeLandingPage)
     } else {
-      welcomeLandingPage.classList.add('hidden')
+      hideElement(welcomeLandingPage)
     }
   }
   
-  childrenView.classList.remove('hidden')
-  childDetailView.classList.add('hidden')
+  showElement(childrenView)
+  hideElement(childDetailView)
   
   if (children && children.length > 0) {
     renderParentModulesOverview()
@@ -1964,7 +1959,7 @@ function renderParentModulesOverview() {
     // Hide the rest
     for (let i = showingCount; i < locked.length; i++) {
       const card = makeStaticCard(locked[i], { locked: true })
-      card.classList.add('hidden')
+      hideElement(card)
       parentLockedModulesGrid.appendChild(card)
     }
     
@@ -1980,7 +1975,7 @@ function renderParentModulesOverview() {
         const hiddenCards = parentLockedModulesGrid.querySelectorAll('.module-card.hidden')
         const toShow = Array.from(hiddenCards).slice(0, 3)
         
-        toShow.forEach(card => card.classList.remove('hidden'))
+        toShow.forEach(card => showElement(card))
         
         const remainingHidden = parentLockedModulesGrid.querySelectorAll('.module-card.hidden').length
         if (remainingHidden === 0) {
@@ -1995,7 +1990,7 @@ function renderParentModulesOverview() {
         
         if (visibleLockedCards.length > initialCount) {
           const toHide = visibleLockedCards.slice(-3)
-          toHide.forEach(card => card.classList.add('hidden'))
+          toHide.forEach(card => hideElement(card))
           
           showMoreBtn.style.display = 'inline-block'
           if (visibleLockedCards.length - 3 <= initialCount) {
@@ -2021,8 +2016,8 @@ function showChildDetailView(child) {
     headerSubtitle.textContent = `Welcome back, ${child.name}!`
     
     // Show child detail view
-    childrenView.classList.add('hidden')
-    childDetailView.classList.remove('hidden')
+    hideElement(childrenView)
+    showElement(childDetailView)
     
     // Show dashboard tab by default
     showTab('dashboard')
@@ -2480,17 +2475,17 @@ function showAddChildModal() {
     // Reset form
     document.getElementById('childName').value = '';
     document.getElementById('childDob').value = '';
-    document.getElementById('modalError')?.classList.add('hidden');
+    hideElement(document.getElementById('modalError'))
     
     renderEnhancedAddAvatarPicker('🦊');
     
-    addChildModal.classList.remove('hidden');
+    showElement(addChildModal);
     setTimeout(() => document.getElementById('childName')?.focus(), 100);
 }
 
 // Hide add child modal
 function hideAddChildModal() {
-  addChildModal.classList.add('hidden')
+  hideElement(addChildModal)
 }
 
 // Handle add child form submission
@@ -2504,7 +2499,7 @@ function hideAddChildModal() {
     
     try {
       if (modalError) {
-        modalError.classList.add('hidden')
+        hideElement(modalError)
       }
       
       // Create child with avatar
@@ -2523,7 +2518,7 @@ function hideAddChildModal() {
       console.error('Error creating child:', error)
       if (modalError) {
         modalError.textContent = error.message || 'Failed to add child'
-        modalError.classList.remove('hidden')
+        showElement(modalError)
       }
     }
   })
@@ -2587,7 +2582,7 @@ if (childPasswordForm) {
           await selectChild(childToSelect)
         } else {
           passwordModalError.textContent = 'Incorrect password. Please try again.'
-          passwordModalError.classList.remove('hidden')
+          showElement(passwordModalError)
           childPasswordInput.value = ''
           childPasswordInput.focus()
         }
@@ -2595,7 +2590,7 @@ if (childPasswordForm) {
         // Set new password in database
         if (enteredPassword.length < 3) {
           passwordModalError.textContent = 'Password must be at least 3 characters.'
-          passwordModalError.classList.remove('hidden')
+          showElement(passwordModalError)
           return
         }
         
@@ -2613,7 +2608,7 @@ if (childPasswordForm) {
     } catch (error) {
       console.error('Password error:', error)
       passwordModalError.textContent = 'An error occurred. Please try again.'
-      passwordModalError.classList.remove('hidden')
+      showElement(passwordModalError)
     }
   })
 }
@@ -2647,13 +2642,13 @@ if (childForgotPasswordBtn) {
       childPasswordInput.value = ''
       passwordModalError.textContent = 'Password reset! Please create a new password.'
       passwordModalError.style.color = '#4caf50'
-      passwordModalError.classList.remove('hidden')
+      showElement(passwordModalError)
       childPasswordInput.focus()
     } catch (error) {
       console.error('Error resetting password:', error)
       passwordModalError.textContent = 'Failed to reset password. Please try again.'
       passwordModalError.style.color = '#c02626'
-      passwordModalError.classList.remove('hidden')
+      showElement(passwordModalError)
     }
   })
 }
@@ -2672,7 +2667,7 @@ if (childForgotPasswordBtn) {
       // Validate name
       if (!newName) {
         editModalError.textContent = 'Name is required.'
-        editModalError.classList.remove('hidden')
+        showElement(editModalError)
         return
       }
       
@@ -2707,7 +2702,7 @@ if (childForgotPasswordBtn) {
     } catch (error) {
       console.error('Error updating child:', error)
       editModalError.textContent = 'Failed to save changes. Please try again.'
-      editModalError.classList.remove('hidden')
+      showElement(editModalError)
     }
   })
 } */
@@ -2723,8 +2718,8 @@ if (forgetPasswordBtn) {
   forgetPasswordBtn.addEventListener('click', (e) => {
     e.preventDefault()
     // Show parent password verification modal
-    parentPasswordModal.classList.remove('hidden')
-    parentPasswordError.classList.add('hidden')
+    showElement(parentPasswordModal)
+    hideElement(parentPasswordError)
     parentPasswordForm.reset()
     setTimeout(() => parentPassword.focus(), 100)
   })
@@ -2737,7 +2732,7 @@ if (parentPasswordForm) {
     
     if (!currentUser) {
       parentPasswordError.textContent = 'User not authenticated.'
-      parentPasswordError.classList.remove('hidden')
+      showElement(parentPasswordError)
       return
     }
     
@@ -2753,7 +2748,7 @@ if (parentPasswordForm) {
       
       if (error || !data.user) {
         parentPasswordError.textContent = 'Incorrect parent password.'
-        parentPasswordError.classList.remove('hidden')
+        showElement(parentPasswordError)
         parentPassword.value = ''
         parentPassword.focus()
         return
@@ -2764,7 +2759,7 @@ if (parentPasswordForm) {
         // Validate new password if provided
         if (newChildPassword && newChildPassword.length < 6) {
           parentPasswordError.textContent = 'New password must be at least 6 characters.'
-          parentPasswordError.classList.remove('hidden')
+          showElement(parentPasswordError)
           return
         }
         
@@ -2785,16 +2780,16 @@ if (parentPasswordForm) {
           : 'Password cleared! The child will set a new password on next login.'
         editModalError.textContent = successMsg
         editModalError.style.color = '#4caf50'
-        editModalError.classList.remove('hidden')
+        showElement(editModalError)
         
         // Close parent password modal
-        parentPasswordModal.classList.add('hidden')
+        hideElement(parentPasswordModal)
         parentPasswordForm.reset()
       }
     } catch (error) {
       console.error('Error verifying parent password:', error)
       parentPasswordError.textContent = 'An error occurred. Please try again.'
-      parentPasswordError.classList.remove('hidden')
+      showElement(parentPasswordError)
     }
   })
 }
@@ -2802,9 +2797,9 @@ if (parentPasswordForm) {
 // Cancel parent password modal
 if (cancelParentPasswordButton) {
   cancelParentPasswordButton.addEventListener('click', () => {
-    parentPasswordModal.classList.add('hidden')
+    hideElement(parentPasswordModal)
     parentPasswordForm.reset()
-    parentPasswordError.classList.add('hidden')
+    hideElement(parentPasswordError)
     if (editChildPassword) {
       editChildPassword.value = ''
     }
@@ -2818,15 +2813,15 @@ if (removeChildBtn) {
     
     // Show confirmation modal
     removeChildName.textContent = editingChild.name
-    removeChildError.classList.add('hidden')
-    removeChildModal.classList.remove('hidden')
+    hideElement(removeChildError)
+    showElement(removeChildModal)
   })
 }
 
 // Cancel remove child
 if (cancelRemoveChildButton) {
   cancelRemoveChildButton.addEventListener('click', () => {
-    removeChildModal.classList.add('hidden')
+    hideElement(removeChildModal)
   })
 }
 
@@ -2836,7 +2831,7 @@ if (confirmRemoveChildButton) {
     if (!editingChild) return
     
     try {
-      removeChildError.classList.add('hidden')
+      hideElement(removeChildError)
       
       // Delete child from database
       await deleteChild(editingChild.id)
@@ -2848,7 +2843,7 @@ if (confirmRemoveChildButton) {
       renderChildren()
       
       // Close both modals
-      removeChildModal.classList.add('hidden')
+      hideElement(removeChildModal)
       closeEditChildModal()
       
       // Show success message (optional)
@@ -2857,7 +2852,7 @@ if (confirmRemoveChildButton) {
     } catch (error) {
       console.error('Error removing child:', error)
       removeChildError.textContent = 'Failed to remove child. Please try again.'
-      removeChildError.classList.remove('hidden')
+      showElement(removeChildError)
     }
   })
 }
@@ -3040,30 +3035,30 @@ function showTab(tabName) {
   tabParentInsights.classList.remove('active')
   
   // Hide all tab content
-  if (dashboardTabContent) dashboardTabContent.classList.add('hidden')
-  if (modulesTabContent) modulesTabContent.classList.add('hidden')
-  if (leaderboardTabContent) leaderboardTabContent.classList.add('hidden')
-  if (spendStarsTabContent) spendStarsTabContent.classList.add('hidden')
-  if (parentInsightsTabContent) parentInsightsTabContent.classList.add('hidden')
+  hideElement(dashboardTabContent)
+  hideElement(modulesTabContent)
+  hideElement(leaderboardTabContent)
+  hideElement(spendStarsTabContent)
+  hideElement(parentInsightsTabContent)
   
   // Show selected tab
   if (tabName === 'dashboard') {
     tabDashboard.classList.add('active')
-    if (dashboardTabContent) dashboardTabContent.classList.remove('hidden')
+    showElement(dashboardTabContent)
   } else if (tabName === 'modules') {
     tabModules.classList.add('active')
-    if (modulesTabContent) modulesTabContent.classList.remove('hidden')
+    showElement(modulesTabContent)
   } else if (tabName === 'leaderboard') {
     tabLeaderboard.classList.add('active')
-    if (leaderboardTabContent) leaderboardTabContent.classList.remove('hidden')
+    showElement(leaderboardTabContent)
   } else if (tabName === 'spendStars') {
     tabSpendStars.classList.add('active')
-    if (spendStarsTabContent) spendStarsTabContent.classList.remove('hidden')
+    showElement(spendStarsTabContent)
     // Initialize rewards tab when shown
     initializeRewardsTab(selectedChild)
   } else if (tabName === 'parentInsights') {
     tabParentInsights.classList.add('active')
-    if (parentInsightsTabContent) parentInsightsTabContent.classList.remove('hidden')
+    showElement(parentInsightsTabContent)
     setParentInsightsSubtab(currentInsightsSubtab)
     // Update insights when tab is shown
     updateParentInsights()
@@ -3458,10 +3453,10 @@ async function checkAdminStatus() {
       const adminButton = document.getElementById('adminButton')
       const adminButtonDesktop = document.getElementById('adminButtonDesktop')
       if (adminButton) {
-        adminButton.classList.remove('hidden')
+        showElement(adminButton)
       }
       if (adminButtonDesktop) {
-        adminButtonDesktop.classList.remove('hidden')
+        showElement(adminButtonDesktop)
       }
     }
   } catch (error) {
