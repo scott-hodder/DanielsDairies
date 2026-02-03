@@ -1,4 +1,5 @@
 import { checkAuth, signIn, signUp, resetPassword, updatePassword } from './auth.js'
+import { showElement, hideElement, setLoadingState, setMessage, clearMessages as clearMessagesUI } from './utils/dom.js'
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm')
@@ -61,49 +62,49 @@ async function init() {
 
 // Show login form
 function showLoginForm() {
-  loginForm.classList.remove('hidden')
-  signupForm.classList.add('hidden')
-  forgotPasswordForm.classList.add('hidden')
-  resetPasswordForm.classList.add('hidden')
+  showElement(loginForm)
+  hideElement(signupForm)
+  hideElement(forgotPasswordForm)
+  hideElement(resetPasswordForm)
   toggleText.textContent = "Don't have an account?"
   toggleLink.textContent = 'Sign up'
   isLoginMode = true
-  clearMessages()
+  clearMessagesUI(errorMessage, successMessage)
 }
 
 // Show signup form
 function showSignupForm() {
-  loginForm.classList.add('hidden')
-  signupForm.classList.remove('hidden')
-  forgotPasswordForm.classList.add('hidden')
-  resetPasswordForm.classList.add('hidden')
+  hideElement(loginForm)
+  showElement(signupForm)
+  hideElement(forgotPasswordForm)
+  hideElement(resetPasswordForm)
   toggleText.textContent = 'Already have an account?'
   toggleLink.textContent = 'Sign in'
   isLoginMode = false
-  clearMessages()
+  clearMessagesUI(errorMessage, successMessage)
 }
 
 // Show forgot password form
 function showForgotPasswordForm() {
-  loginForm.classList.add('hidden')
-  signupForm.classList.add('hidden')
-  forgotPasswordForm.classList.remove('hidden')
-  resetPasswordForm.classList.add('hidden')
+  hideElement(loginForm)
+  hideElement(signupForm)
+  showElement(forgotPasswordForm)
+  hideElement(resetPasswordForm)
   toggleText.textContent = 'Remembered your password?'
   toggleLink.textContent = 'Sign in'
   isLoginMode = false
-  clearMessages()
+  clearMessagesUI(errorMessage, successMessage)
 }
 
 // Show reset password form
 function showResetPasswordForm() {
-  loginForm.classList.add('hidden')
-  signupForm.classList.add('hidden')
-  forgotPasswordForm.classList.add('hidden')
-  resetPasswordForm.classList.remove('hidden')
+  hideElement(loginForm)
+  hideElement(signupForm)
+  hideElement(forgotPasswordForm)
+  showElement(resetPasswordForm)
   toggleText.textContent = ''
   toggleLink.textContent = ''
-  clearMessages()
+  clearMessagesUI(errorMessage, successMessage)
 }
 
 // Toggle between login and signup
@@ -148,10 +149,8 @@ forgotPasswordForm.addEventListener('submit', async (e) => {
   const forgotSpinner = document.getElementById('forgotPasswordSpinner')
 
   try {
-    forgotButton.disabled = true
-    forgotButtonText.classList.add('hidden')
-    forgotSpinner.classList.remove('hidden')
-    clearMessages()
+    setLoadingState(forgotButton, forgotButtonText, forgotSpinner, true)
+    clearMessagesUI(errorMessage, successMessage)
 
     await resetPassword(email)
 
@@ -161,9 +160,7 @@ forgotPasswordForm.addEventListener('submit', async (e) => {
     console.error('Forgot password error:', error)
     showError(error.message || 'Failed to send reset email.')
   } finally {
-    forgotButton.disabled = false
-    forgotButtonText.classList.remove('hidden')
-    forgotSpinner.classList.add('hidden')
+    setLoadingState(forgotButton, forgotButtonText, forgotSpinner, false)
   }
 })
 
@@ -187,10 +184,8 @@ resetPasswordForm.addEventListener('submit', async (e) => {
   }
 
   try {
-    resetButton.disabled = true
-    resetButtonText.classList.add('hidden')
-    resetSpinner.classList.remove('hidden')
-    clearMessages()
+    setLoadingState(resetButton, resetButtonText, resetSpinner, true)
+    clearMessagesUI(errorMessage, successMessage)
 
     await updatePassword(newPassword)
     showSuccess('Password updated! Please sign in with your new password.')
@@ -203,9 +198,7 @@ resetPasswordForm.addEventListener('submit', async (e) => {
     console.error('Reset password error:', error)
     showError(error.message || 'Failed to update password.')
   } finally {
-    resetButton.disabled = false
-    resetButtonText.classList.remove('hidden')
-    resetSpinner.classList.add('hidden')
+    setLoadingState(resetButton, resetButtonText, resetSpinner, false)
   }
 })
 
@@ -222,10 +215,8 @@ loginForm.addEventListener('submit', async (e) => {
   
   try {
     // Show loading state
-    loginButton.disabled = true
-    loginButtonText.classList.add('hidden')
-    loginSpinner.classList.remove('hidden')
-    clearMessages()
+    setLoadingState(loginButton, loginButtonText, loginSpinner, true)
+    clearMessagesUI(errorMessage, successMessage)
     
     // Sign in
     await signIn(email, password)
@@ -256,9 +247,7 @@ loginForm.addEventListener('submit', async (e) => {
     showError(errorMsg)
     
     // Reset button state
-    loginButton.disabled = false
-    loginButtonText.classList.remove('hidden')
-    loginSpinner.classList.add('hidden')
+    setLoadingState(loginButton, loginButtonText, loginSpinner, false)
   }
 })
 
@@ -288,10 +277,8 @@ signupForm.addEventListener('submit', async (e) => {
   
   try {
     // Show loading state
-    signupButton.disabled = true
-    signupButtonText.classList.add('hidden')
-    signupSpinner.classList.remove('hidden')
-    clearMessages()
+    setLoadingState(signupButton, signupButtonText, signupSpinner, true)
+    clearMessagesUI(errorMessage, successMessage)
     
     // Sign up
     await signUp(email, password)
@@ -312,37 +299,27 @@ signupForm.addEventListener('submit', async (e) => {
     showError(error.message || 'Failed to create account')
   } finally {
     // Reset button state
-    signupButton.disabled = false
-    signupButtonText.classList.remove('hidden')
-    signupSpinner.classList.add('hidden')
+    setLoadingState(signupButton, signupButtonText, signupSpinner, false)
   }
 })
 
 // Show error message
 function showError(message) {
   console.log('Showing error:', message)
-  if (errorMessage) {
-    errorMessage.textContent = message
-    errorMessage.classList.remove('hidden')
-  } else {
+  if (!errorMessage) {
     console.error('Error message element not found')
   }
-  if (successMessage) {
-    successMessage.classList.add('hidden')
-  }
+  setMessage(errorMessage, successMessage, 'error', message)
 }
 
 // Show success message
 function showSuccess(message) {
-  successMessage.textContent = message
-  successMessage.classList.remove('hidden')
-  errorMessage.classList.add('hidden')
+  setMessage(errorMessage, successMessage, 'success', message)
 }
 
 // Clear messages
 function clearMessages() {
-  errorMessage.classList.add('hidden')
-  successMessage.classList.add('hidden')
+  clearMessagesUI(errorMessage, successMessage)
 }
 
 // Initialize app
