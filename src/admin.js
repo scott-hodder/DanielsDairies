@@ -526,24 +526,38 @@ async function loadAgeRanges() {
     try {
         console.log('[Psychology] Loading age ranges...');
         
-        const response = await fetch(
-            `${requireSupabaseEnv().url}/functions/v1/generate-module/age-ranges`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${requireSupabaseEnv().key}`,
-                    'apikey': requireSupabaseEnv().key
-                }
+        // First, let's test direct database access to see what's available
+        console.log('[Psychology] Testing direct database access...');
+        try {
+            const { data: testData, error: testError } = await supabase
+                .from('age_ranges')
+                .select('*')
+                .limit(1);
+            
+            console.log('[Psychology] Direct DB test result:', { testData, testError });
+            
+            if (testError) {
+                console.error('[Psychology] Direct DB access failed:', testError);
+                // Try to list available tables
+                const { data: tables } = await supabase.rpc('get_table_names') || {};
+                console.log('[Psychology] Available tables:', tables);
             }
-        );
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+        } catch (dbTestError) {
+            console.error('[Psychology] Database test failed:', dbTestError);
         }
         
-        const data = await response.json();
-        console.log('[Psychology] Age ranges response:', data);
+        const { data: ageRangesData, error: ageRangesError } = await supabase
+            .from('age_ranges')
+            .select('id, age_range, display_name')
+            .eq('is_active', true);
+        
+        if (ageRangesError) {
+            console.error('[Psychology] Direct age ranges query failed:', ageRangesError);
+            throw new Error(`Database query failed: ${ageRangesError.message}`);
+        }
+        
+        const data = { ageRanges: ageRangesData || [] };
+        console.log('[Psychology] Age ranges loaded directly:', data);
         
         if (data.ageRanges && data.ageRanges.length > 0) {
             ageRanges = data.ageRanges;
@@ -4522,6 +4536,7 @@ if (data.status === "running") {
             if (placeholder) placeholder.style.display = 'none';
 
             // Simplified fields - only description and primary_researchers (key theorists) sent to AI
+            // Simplified fields - only description and primary_researchers (key theorists) sent to AI
             document.getElementById('theoryName').value = theory.theory_name || '';
             document.getElementById('theoryIsActive').checked = theory.is_active !== false;
             document.getElementById('theoryDescription').value = theory.description || '';
@@ -4570,17 +4585,20 @@ if (data.status === "running") {
             }
 
             closeAddTheoryModal();
+            closeAddTheoryModal();
             selectedTheoryId = data?.id || null;
             await loadTheories();
             if (selectedTheoryId) {
                 selectTheory(selectedTheoryId);
             }
             alert('✅ Theory added successfully!');
+            alert('✅ Theory added successfully!');
         }
 
         window.saveTheoryChanges = async function() {
             if (!selectedTheoryId) return;
 
+            // Simplified updates - only description and primary_researchers (key theorists) sent to AI
             // Simplified updates - only description and primary_researchers (key theorists) sent to AI
             const updates = {
                 theory_name: document.getElementById('theoryName').value.trim(),
@@ -4608,13 +4626,331 @@ if (data.status === "running") {
             alert('✅ Theory saved successfully!');
         }
 
-        // ========== AGE RANGES FUNCTIONS (Theories Tab) ==========
+        
+        window.selectAgeRange = function(ageRangeId) {
+            selectedAgeRangeId = ageRangeId;
+            const ageRange = ageRangesTheoriesData.find(ar => ar.id === ageRangeId);
+            const editor = document.getElementById('ageRangeEditor');
+            const placeholder = document.getElementById('ageRangeEditorPlaceholder');
 
+            if (!ageRange) {
+                if (editor) editor.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            if (editor) editor.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+
+            document.getElementById('ageRangeDisplayName').value = ageRange.display_name || '';
+            document.getElementById('ageRangeCode').value = ageRange.age_range || '';
+            document.getElementById('ageRangeIsActive').checked = ageRange.is_active !== false;
+            document.getElementById('ageRangeLanguageGuidelines').value = ageRange.language_guidelines || '';
+            document.getElementById('ageRangeDevelopmentalStage').value = ageRange.developmental_stage || '';
+        }
+
+        window.addNewAgeRange = function() {
+            // Open the modal instead of using prompt
+            document.getElementById('addAgeRangeModal').classList.add('active');
+            document.getElementById('newAgeRangeDisplayName').value = '';
+            document.getElementById('newAgeRangeCode').value = '';
+            document.getElementById('newAgeRangeLanguageGuidelines').value = '';
+            document.getElementById('newAgeRangeDevelopmentalStage').value = '';
+            document.getElementById('newAgeRangeDisplayName').focus();
+        }
+
+        window.closeAddAgeRangeModal = function() {
+            document.getElementById('addAgeRangeModal').classList.remove('active');
+        }
+
+        window.saveNewAgeRange = async function(event) {
+            event.preventDefault();
+            
+            const displayName = document.getElementById('newAgeRangeDisplayName').value.trim();
+            const ageRangeCode = document.getElementById('newAgeRangeCode').value.trim();
+            
+            if (!displayName || !ageRangeCode) {
+                alert('Display name and age range code are required.');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('age_ranges')
+                .insert({
+                    age_range: ageRangeCode,
+                    display_name: displayName,
+                    language_guidelines: document.getElementById('newAgeRangeLanguageGuidelines').value.trim() || '',
+                    developmental_stage: document.getElementById('newAgeRangeDevelopmentalStage').value.trim() || '',
+                    is_active: true
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('[Admin] Error adding age range:', error);
+                alert('Failed to add age range. Please try again.');
+                return;
+            }
+
+            closeAddAgeRangeModal();
+            selectedAgeRangeId = data?.id || null;
+            await loadAgeRangesTheories();
+            if (selectedAgeRangeId) {
+                selectAgeRange(selectedAgeRangeId);
+            }
+            alert('✅ Age range added successfully!');
+        }
+
+        window.saveAgeRangeChanges = async function() {
+            if (!selectedAgeRangeId) return;
+
+            const updates = {
+                display_name: document.getElementById('ageRangeDisplayName').value.trim(),
+                age_range: document.getElementById('ageRangeCode').value.trim(),
+                is_active: document.getElementById('ageRangeIsActive').checked,
+                language_guidelines: document.getElementById('ageRangeLanguageGuidelines').value.trim() || null,
+                developmental_stage: document.getElementById('ageRangeDevelopmentalStage').value.trim() || null
+            };
+
+            if (!updates.display_name || !updates.age_range) {
+                alert('Display name and age range code are required.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('age_ranges')
+                .update(updates)
+                .eq('id', selectedAgeRangeId);
+
+            if (error) {
+                console.error('[Admin] Error saving age range:', error);
+                alert('Failed to save age range changes.');
+                return;
+            }
+
+            alert('✅ Age range saved successfully!');
+            await loadAgeRangesTheories();
+        }
+
+        // ========== SUPER SKILLS FUNCTIONS (Theories Tab) ==========
+
+        window.selectSuperSkillTheories = function(superSkillId) {
+            selectedSuperSkillTheoriesId = superSkillId;
+            const superSkill = superSkillsTheoriesData.find(ss => ss.id === superSkillId);
+            const editor = document.getElementById('superSkillEditorTheories');
+            const placeholder = document.getElementById('superSkillEditorPlaceholderTheories');
+
+            if (!superSkill) {
+                if (editor) editor.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            if (editor) editor.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+
+            document.getElementById('superSkillNameTheories').value = superSkill.name || '';
+            document.getElementById('superSkillIsActiveTheories').checked = superSkill.is_active !== false;
+            document.getElementById('superSkillDescriptionTheories').value = superSkill.description || '';
+            document.getElementById('superSkillRelevantTheories').value = superSkill.relevant_theories || '';
+        }
+
+        window.addNewSuperSkillTheories = function() {
+            // Open the modal instead of using prompt
+            document.getElementById('addSuperSkillTheoriesModal').classList.add('active');
+            document.getElementById('newSuperSkillTheoriesName').value = '';
+            document.getElementById('newSuperSkillTheoriesDescription').value = '';
+            document.getElementById('newSuperSkillTheoriesRelevantTheories').value = '';
+            document.getElementById('newSuperSkillTheoriesName').focus();
+        }
+
+        window.closeAddSuperSkillTheoriesModal = function() {
+            document.getElementById('addSuperSkillTheoriesModal').classList.remove('active');
+        }
+
+        window.saveNewSuperSkillTheories = async function(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('newSuperSkillTheoriesName').value.trim();
+            if (!name) {
+                alert('Super skill name is required.');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('super_skills')
+                .insert({
+                    name: name,
+                    description: document.getElementById('newSuperSkillTheoriesDescription').value.trim() || '',
+                    relevant_theories: document.getElementById('newSuperSkillTheoriesRelevantTheories').value.trim() || '',
+                    is_active: true
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('[Admin] Error adding super skill:', error);
+                alert('Failed to add super skill. Please try again.');
+                return;
+            }
+
+            closeAddSuperSkillTheoriesModal();
+            selectedSuperSkillTheoriesId = data?.id || null;
+            await loadSuperSkillsTheories();
+            if (selectedSuperSkillTheoriesId) {
+                selectSuperSkillTheories(selectedSuperSkillTheoriesId);
+            }
+            alert('✅ Super skill added successfully!');
+        }
+
+        window.saveSuperSkillTheoriesChanges = async function() {
+            if (!selectedSuperSkillTheoriesId) return;
+
+            const updates = {
+                name: document.getElementById('superSkillNameTheories').value.trim(),
+                is_active: document.getElementById('superSkillIsActiveTheories').checked,
+                description: document.getElementById('superSkillDescriptionTheories').value.trim() || null,
+                relevant_theories: document.getElementById('superSkillRelevantTheories').value.trim() || null
+            };
+
+            if (!updates.name) {
+                alert('Super skill name is required.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('super_skills')
+                .update(updates)
+                .eq('id', selectedSuperSkillTheoriesId);
+
+            if (error) {
+                console.error('[Admin] Error saving super skill:', error);
+                alert('Failed to save super skill changes.');
+                return;
+            }
+
+            alert('✅ Super skill saved successfully!');
+            await loadSuperSkillsTheories();
+        }
+
+        window.selectSubSkillTheories = function(subSkillId) {
+            selectedSubSkillTheoriesId = subSkillId;
+            const subSkill = subSkillsTheoriesData.find(ss => ss.id === subSkillId);
+            const editor = document.getElementById('subSkillEditorTheories');
+            const placeholder = document.getElementById('subSkillEditorPlaceholderTheories');
+
+            if (!subSkill) {
+                if (editor) editor.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            if (editor) editor.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+
+            document.getElementById('subSkillNameTheories').value = subSkill.name || '';
+            document.getElementById('subSkillParentTheories').value = subSkill.super_skill_id || '';
+            document.getElementById('subSkillIsActiveTheories').checked = subSkill.is_active !== false;
+            document.getElementById('subSkillDescriptionTheories').value = subSkill.description || '';
+        }
+
+        window.addNewSubSkillTheories = function() {
+            // Open the modal instead of using prompt
+            document.getElementById('addSubSkillTheoriesModal').classList.add('active');
+            document.getElementById('newSubSkillTheoriesName').value = '';
+            document.getElementById('newSubSkillTheoriesDescription').value = '';
+            
+            // Populate the parent super skill dropdown
+            const parentSelect = document.getElementById('newSubSkillTheoriesParent');
+            parentSelect.innerHTML = '<option value="">Select Super Skill...</option>';
+            superSkillsTheoriesData.forEach(ss => {
+                const option = document.createElement('option');
+                option.value = ss.id;
+                option.textContent = ss.name;
+                parentSelect.appendChild(option);
+            });
+            
+            document.getElementById('newSubSkillTheoriesName').focus();
+        }
+
+        window.closeAddSubSkillTheoriesModal = function() {
+            document.getElementById('addSubSkillTheoriesModal').classList.remove('active');
+        }
+
+        window.saveNewSubSkillTheories = async function(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('newSubSkillTheoriesName').value.trim();
+            if (!name) {
+                alert('Sub-skill name is required.');
+                return;
+            }
+
+            const parentId = document.getElementById('newSubSkillTheoriesParent').value || null;
+
+            const { data, error } = await supabase
+                .from('sub_skills')
+                .insert({
+                    name: name,
+                    super_skill_id: parentId,
+                    description: document.getElementById('newSubSkillTheoriesDescription').value.trim() || '',
+                    is_active: true
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('[Admin] Error adding sub-skill:', error);
+                alert('Failed to add sub-skill. Please try again.');
+                return;
+            }
+
+            closeAddSubSkillTheoriesModal();
+            selectedSubSkillTheoriesId = data?.id || null;
+            await loadSubSkillsTheories();
+            if (selectedSubSkillTheoriesId) {
+                selectSubSkillTheories(selectedSubSkillTheoriesId);
+            }
+            alert('✅ Sub-skill added successfully!');
+        }
+
+        window.saveSubSkillTheoriesChanges = async function() {
+            if (!selectedSubSkillTheoriesId) return;
+
+            const updates = {
+                name: document.getElementById('subSkillNameTheories').value.trim(),
+                super_skill_id: document.getElementById('subSkillParentTheories').value || null,
+                is_active: document.getElementById('subSkillIsActiveTheories').checked,
+                description: document.getElementById('subSkillDescriptionTheories').value.trim() || null
+            };
+
+            if (!updates.name) {
+                alert('Sub-skill name is required.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('sub_skills')
+                .update(updates)
+                .eq('id', selectedSubSkillTheoriesId);
+
+            if (error) {
+                console.error('[Admin] Error saving sub-skill:', error);
+                alert('Failed to save sub-skill changes.');
+                return;
+            }
+
+            alert('✅ Sub-skill saved successfully!');
+            await loadSubSkillsTheories();
+        }
+
+        // ========== AGE RANGES FUNCTIONS (Theories Tab) ==========
+        
         async function loadAgeRangesTheories() {
             const { data, error } = await supabase
                 .from('age_ranges')
                 .select('*')
-                .order('display_name');
+                .order('age_min');
 
             if (error) {
                 console.error('[Admin] Error loading age ranges:', error);

@@ -1634,10 +1634,17 @@ function closeEditChildModal() {
 // Select child
 async function selectChild(child) {
   
-  // ... (rest of the code remains the same)
+  // Prevent multiple simultaneous selections
+  if (window.selectingChild) {
+    console.log('Child selection already in progress, ignoring duplicate call')
+    return
+  }
+  
+  window.selectingChild = true
   
   if (!child) {
     console.error('selectChild called with null/undefined child')
+    window.selectingChild = false
     return
   }
   
@@ -1709,12 +1716,18 @@ async function selectChild(child) {
         
         // Now show the child detail view
         showChildDetailView(child)
+        
+        // Render modules after onboarding is complete
+        renderModules()
       })
       return // Don't show detail view yet - wait for onboarding
     }
     
-    // Show child detail view
+    // Show child detail view AFTER all data is loaded
     showChildDetailView(child)
+    
+    // Render modules immediately after showing the view
+    renderModules()
     
   } catch (error) {
     console.error('Error loading child modules:', error)
@@ -1722,6 +1735,11 @@ async function selectChild(child) {
     // Still show the view even if modules fail to load
     childModules = []
     showChildDetailView(child)
+    // Still try to render modules even with empty data
+    renderModules()
+  } finally {
+    // Always reset the selecting flag
+    window.selectingChild = false
   }
 }
 
@@ -2037,9 +2055,6 @@ function showChildDetailView(child) {
     if (typeof window.refreshEnhancedDashboard === 'function') {
       window.refreshEnhancedDashboard()
     }
-    
-    // Render modules (can be deferred)
-    renderModules()
   })
   
   // Defer leaderboard and weekly plan to idle callback or setTimeout
@@ -2172,6 +2187,22 @@ function setupFocusPlanSettingsButton() {
 // Render modules
 function renderModules() {
   if (!modulesGrid) return
+  
+  // Add safeguard: if childModules is not loaded yet, show loading state and retry
+  if (selectedChild && (!childModules || childModules.length === 0) && modules && modules.length > 0) {
+    modulesGrid.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #4c6c96;">
+        <div style="font-size: 18px; margin-bottom: 12px;">Loading modules...</div>
+        <div style="font-size: 14px;">Just getting your progress ready...</div>
+      </div>
+    `
+    
+    // Retry after a short delay
+    setTimeout(() => {
+      renderModules()
+    }, 100)
+    return
+  }
   
   modulesGrid.innerHTML = ''
   modulesGrid.style.display = 'block'
@@ -4013,7 +4044,6 @@ getUniqueSuperSkills() {
 // Initialize and export
 window.ModuleGallery = ModuleGallery;
 
-// Auto-initialize when DOM is ready
 // Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     var checkAndInit = async function() {

@@ -934,12 +934,12 @@ function randomInt(min: number, max: number): number {
 }
 
 function getAgeRangeKey(ageRange: string, ageData?: AgeRangeData): string {
-  const min = ageData?.age_min ?? ageData?.ageMin;
-  const max = ageData?.age_max ?? ageData?.ageMax;
-  if (min != null && max != null) {
-    return `${min}-${max}`;
+  // Use age_range from database if available
+  if (ageData?.age_range) {
+    return ageData.age_range;
   }
 
+  // Fall back to parsing the provided ageRange string
   const normalized = (ageRange || "").replace(/[–—]/g, "-").trim();
   const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
   if (match) {
@@ -1001,12 +1001,93 @@ AGE-SPECIFIC DIFFERENTIATION
   }
 }
 
+/**
+ * Returns age-specific formatting instructions for content generators.
+ * These provide concrete, measurable requirements that differ by age group.
+ */
+function getAgeSpecificFormatting(ageRange: string, ageData?: AgeRangeData): {
+  paragraphLength: string;
+  sentenceCount: string;
+  vocabularyLevel: string;
+  toneDescription: string;
+  instructionStyle: string;
+  contentComplexity: string;
+  welcomeParagraphs: string;
+  lessonParagraphs: string;
+  itemCount: string;
+} {
+  const normalized = getAgeRangeKey(ageRange, ageData);
+  
+  switch (normalized) {
+    case "6-8":
+      return {
+        paragraphLength: "1-2 short sentences maximum per paragraph",
+        sentenceCount: "Keep each sentence under 10 words when possible",
+        vocabularyLevel: "Use only simple, everyday words a 6-year-old knows",
+        toneDescription: "Super friendly, warm, and playful - like talking to a young friend",
+        instructionStyle: "One simple step at a time, use 'Let's...' and 'Can you...'",
+        contentComplexity: "Focus on feelings they can see/feel RIGHT NOW, use lots of emojis",
+        welcomeParagraphs: "2 very short paragraphs (1-2 sentences each), big friendly energy",
+        lessonParagraphs: "2 short paragraphs max (1-2 sentences each), use simple story examples",
+        itemCount: "3-4 items maximum, each very short"
+      };
+    case "9-11":
+      return {
+        paragraphLength: "2-3 sentences per paragraph",
+        sentenceCount: "Sentences can be 10-15 words",
+        vocabularyLevel: "Simple vocabulary with occasional new words explained briefly",
+        toneDescription: "Friendly and encouraging, treats them as capable learners",
+        instructionStyle: "Clear 2-3 step instructions, can include 'why' briefly",
+        contentComplexity: "Can introduce cause-and-effect, simple reflection questions",
+        welcomeParagraphs: "2-3 paragraphs (2-3 sentences each)",
+        lessonParagraphs: "2-3 paragraphs (2-3 sentences each), include relatable examples",
+        itemCount: "4-5 items"
+      };
+    case "12-14":
+      return {
+        paragraphLength: "3-4 sentences per paragraph",
+        sentenceCount: "Varied sentence length for natural flow",
+        vocabularyLevel: "More sophisticated vocabulary, respecting their intelligence",
+        toneDescription: "Supportive but not babyish, peer-like and respectful",
+        instructionStyle: "Multi-step with some autonomy and choice",
+        contentComplexity: "Can discuss abstract concepts with concrete examples, deeper reflection",
+        welcomeParagraphs: "2-3 paragraphs (3-4 sentences each)",
+        lessonParagraphs: "3 paragraphs (3-4 sentences each), more nuanced discussion",
+        itemCount: "5-6 items"
+      };
+    case "15-18":
+      return {
+        paragraphLength: "4-5 sentences per paragraph when needed",
+        sentenceCount: "Natural, mature sentence structures",
+        vocabularyLevel: "Mature vocabulary, nuanced language",
+        toneDescription: "Respectful, empowering, treats them as near-adults",
+        instructionStyle: "Self-directed with meaningful choices and deeper exploration",
+        contentComplexity: "Abstract reasoning, metacognition, long-term planning",
+        welcomeParagraphs: "2-3 substantive paragraphs",
+        lessonParagraphs: "3-4 paragraphs with depth and nuance",
+        itemCount: "5-7 items with depth"
+      };
+    default:
+      return {
+        paragraphLength: "2-3 sentences per paragraph",
+        sentenceCount: "Age-appropriate sentence length",
+        vocabularyLevel: "Match vocabulary to stated age range",
+        toneDescription: "Warm and encouraging",
+        instructionStyle: "Clear and supportive",
+        contentComplexity: "Appropriate for the age range",
+        welcomeParagraphs: "2-3 paragraphs",
+        lessonParagraphs: "2-3 paragraphs",
+        itemCount: "4-5 items"
+      };
+  }
+}
+
 function getAgeDataText(
   ageData: AgeRangeData,
   snakeKey: keyof AgeRangeData,
   camelKey: keyof AgeRangeData
 ): string {
-  const record = ageData as Record<string, unknown>;
+  const record = ageData as unknown as Record<string, unknown>;
   return String(record[snakeKey] ?? record[camelKey] ?? "");
 }
 
@@ -1015,7 +1096,7 @@ function getAgeDataOptionalText(
   snakeKey: keyof AgeRangeData,
   camelKey: keyof AgeRangeData
 ): string | null {
-  const record = ageData as Record<string, unknown>;
+  const record = ageData as unknown as Record<string, unknown>;
   const value = record[snakeKey] ?? record[camelKey];
   if (value == null) {
     return null;
@@ -1418,7 +1499,22 @@ CRITICAL RULES:
 3. Never substitute a different animal or character name - if told to use "Daniel the Dog", every reference must be to "Daniel" and a dog, not a fox, bear, or any other animal.
 4. The mascot emoji must match the character type exactly.
 5. When asked to create multiple items, sequence them as a learning journey: start with simple awareness, then practice skills, then apply them in real-life or challenge scenarios. Each item should build on the previous one and avoid repeating earlier points.
-6. Treat the age range guidance and language guidelines in the content brief as hard requirements, and make the output clearly distinct across age ranges.`;
+6. Treat the age range guidance and language guidelines in the content brief as hard requirements, and make the output clearly distinct across age ranges.
+
+CRITICAL AGE DIFFERENTIATION - THIS IS MANDATORY:
+- For ages 6-8: Use VERY SHORT text (1-2 sentences max per paragraph). Simple words only. Big friendly energy. Lots of emojis. Like talking to a young child.
+- For ages 9-11: Short-medium text (2-3 sentences). Friendly but more grown-up. Some new vocabulary with quick explanations.
+- For ages 12-14: Medium text (3-4 sentences). Respectful tone, not babyish. More sophisticated vocabulary and concepts.
+- For ages 15-18: Fuller text (4-5 sentences when needed). Mature, nuanced language. Treats them as near-adults.
+
+A module for 6-8 year olds MUST look dramatically different from one for 15-18 year olds. The text length, vocabulary, and complexity must be clearly distinct.`;
+
+// Helper to extract age range from metadata for formatting decisions
+function extractAgeRange(metadata: ModuleMetadata): string {
+  const match = metadata.targetAge?.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
+  if (match) return `${match[1]}-${match[2]}`;
+  return metadata.targetAge || "6-8";
+}
 
 async function generateMetadata(
   apiKey: string,
@@ -1514,6 +1610,9 @@ async function generateWelcome(
   metadata: ModuleMetadata,
   contentBrief: string
 ): Promise<{ heading: string; paragraphs: string[] }> {
+  const ageRange = extractAgeRange(metadata);
+  const formatting = getAgeSpecificFormatting(ageRange);
+  
   const prompt = `Create a warm welcome page for a child's workbook.
 
 Module: "${metadata.title}"
@@ -1523,15 +1622,22 @@ Age: ${metadata.targetAge}
 
 Brief: ${contentBrief}
 
+CRITICAL AGE-SPECIFIC FORMATTING FOR ${metadata.targetAge} YEAR OLDS:
+- Paragraph style: ${formatting.welcomeParagraphs}
+- Sentence length: ${formatting.sentenceCount}
+- Vocabulary: ${formatting.vocabularyLevel}
+- Tone: ${formatting.toneDescription}
+
 Respond with ONLY this JSON:
 {
-  "heading": "Welcoming heading with mascot name",
+  "heading": "Welcoming heading with mascot name and emoji",
   "paragraphs": [
-    "Warm greeting from mascot introducing themselves (2-3 sentences)",
-    "What we'll learn in this adventure (2-3 sentences)",
-    "Encouraging message about feelings being okay (2-3 sentences)"
+    "Greeting from mascot - MUST match age formatting above",
+    "What we'll learn - MUST match age formatting above"
   ]
-}`;
+}
+
+REMEMBER: For ages 6-8, paragraphs must be VERY SHORT (1-2 sentences each, simple words). For older ages, can be longer.`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<{ heading: string; paragraphs: string[] }>(response);
@@ -1590,6 +1696,36 @@ async function generateLessons(
   contentBrief: string,
   count: number
 ): Promise<LessonContent[]> {
+  const ageRange = extractAgeRange(metadata);
+  const formatting = getAgeSpecificFormatting(ageRange);
+  
+  // Build age-specific paragraph instructions
+  let paragraphInstructions: string;
+  if (ageRange === "6-8") {
+    paragraphInstructions = `"paragraphs": [
+        "Very short intro (1-2 simple sentences only)",
+        "Brief example or story bit (1-2 simple sentences only)"
+      ]`;
+  } else if (ageRange === "9-11") {
+    paragraphInstructions = `"paragraphs": [
+        "Introduction to the concept (2-3 sentences)",
+        "Example or story element (2-3 sentences)",
+        "Brief practical explanation (2-3 sentences)"
+      ]`;
+  } else if (ageRange === "12-14") {
+    paragraphInstructions = `"paragraphs": [
+        "Introduction to the concept (3-4 sentences)",
+        "Examples or story element (3-4 sentences)",
+        "Practical explanation (3-4 sentences)"
+      ]`;
+  } else {
+    paragraphInstructions = `"paragraphs": [
+        "Introduction to the concept (4-5 sentences)",
+        "Examples or discussion (4-5 sentences)",
+        "Deeper practical application (4-5 sentences)"
+      ]`;
+  }
+
   const prompt = `Create ${count} lessons for a child's workbook about "${metadata.theme}".
 
 Module: "${metadata.title}"
@@ -1598,22 +1734,27 @@ Age: ${metadata.targetAge}
 
 Brief: ${contentBrief}
 
+CRITICAL AGE-SPECIFIC FORMATTING FOR ${metadata.targetAge} YEAR OLDS:
+- Paragraph length: ${formatting.lessonParagraphs}
+- Sentence style: ${formatting.sentenceCount}
+- Vocabulary: ${formatting.vocabularyLevel}
+- Tone: ${formatting.toneDescription}
+- Complexity: ${formatting.contentComplexity}
+
 Respond with ONLY this JSON:
 {
   "lessons": [
     {
       "heading": "Engaging lesson title with emoji",
-      "paragraphs": [
-        "First paragraph introducing the concept (3-4 sentences)",
-        "Second paragraph with examples or story element (3-4 sentences)",
-        "Third paragraph with practical explanation (3-4 sentences)"
-      ],
+      ${paragraphInstructions},
       "calloutTitle": "Key Point",
-      "calloutText": "Important takeaway (1-2 sentences)",
-      "tipText": "Fun tip from the mascot"
+      "calloutText": "Important takeaway (1 short sentence for young kids, 1-2 for older)",
+      "tipText": "Fun tip from the mascot (keep short for young kids)"
     }
   ]
 }
+
+IMPORTANT: For ages 6-8, lessons must be VERY SHORT with simple words. Only 2 short paragraphs of 1-2 sentences each. Use words a 6-year-old knows!
 
 Create exactly ${count} unique lessons. Make each lesson focus on a different aspect of ${metadata.theme}, and order them so they build from simple awareness to practice and real-life application without repeating earlier ideas.`;
 
@@ -4454,6 +4595,8 @@ export {
   safeJsonParse,
   randomInt,
   shuffleArray,
+  getAgeSpecificFormatting,
+  extractAgeRange,
   
   // Claude API
   getSettings,
