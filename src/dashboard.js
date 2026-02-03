@@ -15,6 +15,8 @@ window.supabase = supabase
 
 const state = dashboardState
 
+window.state = window.state || {}
+
 // Helper function to check if streak popup was shown today (per child)
 function hasStreakPopupBeenShownToday(childId) {
   const today = new Date().toISOString().split('T')[0]
