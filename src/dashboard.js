@@ -5,37 +5,17 @@ import { redirectToPaymentLink } from './stripe.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboard-rewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focus-plan.js'
+import { showElement, hideElement, setLoadingState } from './utils/dom.js'
+import { dashboardState, setAllModulesFilters, setCategoryColors, setChildModules, setChildren, setCurrentFocusPlan, setCurrentInsightsSubtab, setCurrentPurchaseModule, setCurrentUser, setEditingChild, setIsCurrentUserAdmin, setModules, setMoreModulesCurrentIndex, setMoreModulesRotationTimer, setParentModules, setSelectedChild, setShowAllChildModules, setCurrentWeeklyPlan } from './state/dashboardState.js'
 
 const LEVEL_XP = 100
 
 // Make supabase available to non-module scripts and inline dashboard.html code
 window.supabase = supabase
 
-// State
-let currentUser = null
-let children = []
-let selectedChild = null
-let modules = []
-let childModules = []
-let parentModules = []
-let categoryColors = {}
-let currentModuleSeries = 'all'
-let currentPurchaseModule = null
-let pendingChildSelection = null
-let editingChild = null
-let showAllUnlockedModules = false
-let showAllChildModules = false
-let currentWeeklyPlan = null
-let currentFocusPlan = null
-let currentInsightsSubtab = 'overview'
-let lockedModulesShowcase = []
-let moreModulesCurrentIndex = 0
-let moreModulesRotationTimer = null
-let allModulesFilters = {
-  category: 'all',
-  series: 'all'
-}
-let isCurrentUserAdmin = false
+const state = dashboardState
+
+window.state = window.state || {}
 
 // Helper function to check if streak popup was shown today (per child)
 function hasStreakPopupBeenShownToday(childId) {
@@ -347,7 +327,7 @@ function renderMoreModulesCarousel() {
   moreModulesCarousel.innerHTML = ''
   moreModulesCarouselIndicators.innerHTML = ''
 
-  if (!lockedModulesShowcase || lockedModulesShowcase.length === 0) {
+  if (!state.lockedModulesShowcase || state.lockedModulesShowcase.length === 0) {
     moreModulesCarousel.innerHTML = `
       <div class="sales-slide active">
         <div class="sales-card">
@@ -362,7 +342,7 @@ function renderMoreModulesCarousel() {
     return
   }
 
-  lockedModulesShowcase.forEach((module, index) => {
+  state.lockedModulesShowcase.forEach((module, index) => {
     const slide = document.createElement('div')
     slide.className = 'sales-slide'
     slide.dataset.index = index
@@ -371,7 +351,7 @@ function renderMoreModulesCarousel() {
     // Set category color on the sales card
     const salesCard = slide.querySelector('.sales-card')
     if (salesCard && module.category) {
-      const categoryColor = categoryColors[module.category] || '#4c6c96'
+      const categoryColor = state.categoryColors[module.category] || '#4c6c96'
       salesCard.style.borderLeftColor = categoryColor
     }
 
@@ -391,37 +371,37 @@ function renderMoreModulesCarousel() {
     moreModulesCarouselIndicators.appendChild(indicator)
   })
 
-  setMoreModulesActiveSlide(moreModulesCurrentIndex)
+  setMoreModulesActiveSlide(state.moreModulesCurrentIndex)
 }
 
 function setMoreModulesActiveSlide(index) {
-  if (!lockedModulesShowcase || lockedModulesShowcase.length === 0) return
-  const total = lockedModulesShowcase.length
-  moreModulesCurrentIndex = ((index % total) + total) % total
+  if (!state.lockedModulesShowcase || state.lockedModulesShowcase.length === 0) return
+  const total = state.lockedModulesShowcase.length
+  setMoreModulesCurrentIndex(((index % total) + total) % total)
 
   const slides = Array.from(moreModulesCarousel?.querySelectorAll('.sales-slide') || [])
   const indicators = Array.from(moreModulesCarouselIndicators?.children || [])
 
   slides.forEach((slide, idx) => {
-    slide.classList.toggle('active', idx === moreModulesCurrentIndex)
+    slide.classList.toggle('active', idx === state.moreModulesCurrentIndex)
   })
 
   indicators.forEach((button, idx) => {
-    button.classList.toggle('active', idx === moreModulesCurrentIndex)
+    button.classList.toggle('active', idx === state.moreModulesCurrentIndex)
   })
 }
 
 function shiftMoreModulesSlide(direction = 1) {
-  if (!lockedModulesShowcase || lockedModulesShowcase.length === 0) return
-  setMoreModulesActiveSlide(moreModulesCurrentIndex + direction)
+  if (!state.lockedModulesShowcase || state.lockedModulesShowcase.length === 0) return
+  setMoreModulesActiveSlide(state.moreModulesCurrentIndex + direction)
 }
 
 function startMoreModulesRotation() {
   stopMoreModulesRotation()
-  if (!lockedModulesShowcase || lockedModulesShowcase.length <= 1) return
-  moreModulesRotationTimer = setInterval(() => {
+  if (!state.lockedModulesShowcase || state.lockedModulesShowcase.length <= 1) return
+  setMoreModulesRotationTimer(setInterval(() => {
     shiftMoreModulesSlide(1)
-  }, 6000)
+  }, 6000))
 }
 
 function restartMoreModulesRotation() {
@@ -429,20 +409,20 @@ function restartMoreModulesRotation() {
 }
 
 function stopMoreModulesRotation() {
-  if (moreModulesRotationTimer) {
-    clearInterval(moreModulesRotationTimer)
-    moreModulesRotationTimer = null
+  if (state.moreModulesRotationTimer) {
+    clearInterval(state.moreModulesRotationTimer)
+    setMoreModulesRotationTimer(null)
   }
 }
 
 function populateAllModulesFilters() {
-  if (!modules || modules.length === 0) return
+  if (!state.modules || state.modules.length === 0) return
   if (!allModulesCategoryFilter || !allModulesSeriesFilter) return
 
   const categories = new Set()
   const seriesValues = new Set()
 
-  modules.forEach(module => {
+  state.modules.forEach(module => {
     if (module?.category) {
       categories.add(module.category.trim())
     }
@@ -451,8 +431,8 @@ function populateAllModulesFilters() {
     }
   })
 
-  setFilterOptions(allModulesCategoryFilter, Array.from(categories).sort(), 'All categories', allModulesFilters.category)
-  setFilterOptions(allModulesSeriesFilter, Array.from(seriesValues).sort(), 'All series', allModulesFilters.series)
+  setFilterOptions(allModulesCategoryFilter, Array.from(categories).sort(), 'All categories', state.allModulesFilters.category)
+  setFilterOptions(allModulesSeriesFilter, Array.from(seriesValues).sort(), 'All series', state.allModulesFilters.series)
 }
 
 function setFilterOptions(selectEl, values, defaultLabel, selectedValue) {
@@ -479,24 +459,24 @@ function setFilterOptions(selectEl, values, defaultLabel, selectedValue) {
   selectEl.value = normalizedSelected
 
   if (selectEl === allModulesCategoryFilter) {
-    allModulesFilters.category = normalizedSelected
+    setAllModulesFilters({ category: normalizedSelected })
   }
   if (selectEl === allModulesSeriesFilter) {
-    allModulesFilters.series = normalizedSelected
+    setAllModulesFilters({ series: normalizedSelected })
   }
 }
 
 function renderAllModulesGrid() {
   if (!allModulesGrid) return
 
-  if (!modules || modules.length === 0) {
+  if (!state.modules || state.modules.length === 0) {
     allModulesGrid.innerHTML = '<p class="all-modules-empty">No modules available yet. Please check back soon.</p>'
     return
   }
 
-  const filtered = modules.filter(module => {
-    const matchesCategory = allModulesFilters.category === 'all' || module.category === allModulesFilters.category
-    const matchesSeries = allModulesFilters.series === 'all' || module.series === allModulesFilters.series
+  const filtered = state.modules.filter(module => {
+    const matchesCategory = state.allModulesFilters.category === 'all' || module.category === state.allModulesFilters.category
+    const matchesSeries = state.allModulesFilters.series === 'all' || module.series === state.allModulesFilters.series
     return matchesCategory && matchesSeries
   })
 
@@ -513,7 +493,7 @@ function renderAllModulesGrid() {
     // Set category color on the all-module card
     const moduleCard = card.querySelector('.all-module-card')
     if (moduleCard && module.category) {
-      const categoryColor = categoryColors[module.category] || '#4c6c96'
+      const categoryColor = state.categoryColors[module.category] || '#4c6c96'
       moduleCard.style.borderLeftColor = categoryColor
     }
     
@@ -562,27 +542,27 @@ function openAllModulesModal() {
   if (!allModulesModal) return
   populateAllModulesFilters()
   renderAllModulesGrid()
-  allModulesModal.classList.remove('hidden')
+  showElement(allModulesModal)
   document.body.style.overflow = 'hidden'
 }
 
 function closeAllModulesModal() {
   if (!allModulesModal) return
-  allModulesModal.classList.add('hidden')
+  hideElement(allModulesModal)
   document.body.style.overflow = ''
 }
 
 function openMoreModulesModal() {
   if (!moreModulesModal) return
-  moreModulesModal.classList.remove('hidden')
+  showElement(moreModulesModal)
   document.body.style.overflow = 'hidden'
-  setMoreModulesActiveSlide(moreModulesCurrentIndex)
+  setMoreModulesActiveSlide(state.moreModulesCurrentIndex)
   startMoreModulesRotation()
 }
 
 function closeMoreModulesModal() {
   if (!moreModulesModal) return
-  moreModulesModal.classList.add('hidden')
+  hideElement(moreModulesModal)
   document.body.style.overflow = ''
   stopMoreModulesRotation()
 }
@@ -607,19 +587,24 @@ function setupParentInsightsSubtabs() {
   insightsOverviewTab.addEventListener('click', () => setParentInsightsSubtab('overview'))
   weeklyCheckinTab.addEventListener('click', () => setParentInsightsSubtab('weekly'))
 
-  setParentInsightsSubtab(currentInsightsSubtab)
+  setParentInsightsSubtab(state.currentInsightsSubtab)
 }
 
 function setParentInsightsSubtab(target) {
   if (!insightsOverviewTab || !weeklyCheckinTab || !insightsOverviewPanel || !weeklyCheckinPanel) return
 
-  currentInsightsSubtab = target === 'weekly' ? 'weekly' : 'overview'
-  const showOverview = currentInsightsSubtab === 'overview'
+  setCurrentInsightsSubtab(target === 'weekly' ? 'weekly' : 'overview')
+  const showOverview = state.currentInsightsSubtab === 'overview'
 
   insightsOverviewTab.classList.toggle('active', showOverview)
   weeklyCheckinTab.classList.toggle('active', !showOverview)
-  insightsOverviewPanel.classList.toggle('hidden', !showOverview)
-  weeklyCheckinPanel.classList.toggle('hidden', showOverview)
+  if (showOverview) {
+    showElement(insightsOverviewPanel)
+    hideElement(weeklyCheckinPanel)
+  } else {
+    hideElement(insightsOverviewPanel)
+    showElement(weeklyCheckinPanel)
+  }
 }
 
 async function checkWeeklyCheckinSettings() {
@@ -631,7 +616,7 @@ async function checkWeeklyCheckinSettings() {
       weeklyCheckinTab.style.display = 'none'
       
       // If currently on weekly tab, switch to overview
-      if (currentInsightsSubtab === 'weekly') {
+      if (state.currentInsightsSubtab === 'weekly') {
         setParentInsightsSubtab('overview')
       }
     } else if (weeklyCheckinTab) {
@@ -704,7 +689,7 @@ function getIntensityClass(value) {
 async function handleWeeklyCheckinSubmit(e) {
   e.preventDefault()
 
-  if (!selectedChild || !currentUser) {
+  if (!state.selectedChild || !state.currentUser) {
     showCheckinMessage('Select a child before submitting a check-in.', 'error')
     return
   }
@@ -740,8 +725,8 @@ async function handleWeeklyCheckinSubmit(e) {
 
   try {
     const saved = await saveWeeklyCheckin({
-      parentUserId: currentUser.id,
-      childId: selectedChild.id,
+      parentUserId: state.currentUser.id,
+      childId: state.selectedChild.id,
       intensity,
       challenge,
       triggers: triggersArray,
@@ -750,14 +735,14 @@ async function handleWeeklyCheckinSubmit(e) {
       generatedPlan: planPayload
     })
 
-    currentWeeklyPlan = saved?.generated_plan || planPayload
+    setCurrentWeeklyPlan(saved?.generated_plan || planPayload)
     weeklyCheckinForm.reset()
     selectedTriggers.clear()
     renderTriggerPicker()
     checkinIntensityInput.value = ''
     clearIntensityButtonClasses()
 
-    renderWeeklyPlan(currentWeeklyPlan)
+    renderWeeklyPlan(state.currentWeeklyPlan)
     updateParentInsights()
     showCheckinMessage('Plan saved! You can view it on the right.', 'success')
   } catch (error) {
@@ -804,11 +789,11 @@ function generateWeeklyPlan({ intensity, challenge, triggers, goal, notes }) {
 }
 
 async function loadLatestWeeklyPlan() {
-  if (!currentUser || !selectedChild) return
+  if (!state.currentUser || !state.selectedChild) return
   try {
-    const latest = await getLatestWeeklyPlan(currentUser.id, selectedChild.id)
-    currentWeeklyPlan = latest?.generated_plan || null
-    renderWeeklyPlan(currentWeeklyPlan)
+    const latest = await getLatestWeeklyPlan(state.currentUser.id, state.selectedChild.id)
+    setCurrentWeeklyPlan(latest?.generated_plan || null)
+    renderWeeklyPlan(state.currentWeeklyPlan)
   } catch (error) {
     console.error('Failed to load weekly plan:', error)
   }
@@ -905,16 +890,7 @@ function showCheckinMessage(message, type = 'success') {
 
 function setCheckinLoading(isLoading) {
   if (!checkinSubmitButton) return
-  checkinSubmitButton.disabled = isLoading
-  if (checkinSubmitText && checkinSubmitSpinner) {
-    if (isLoading) {
-      checkinSubmitText.classList.add('hidden')
-      checkinSubmitSpinner.classList.remove('hidden')
-    } else {
-      checkinSubmitText.classList.remove('hidden')
-      checkinSubmitSpinner.classList.add('hidden')
-    }
-  }
+  setLoadingState(checkinSubmitButton, checkinSubmitText, checkinSubmitSpinner, isLoading)
 }
 
 const triggerToSkills = {
@@ -1011,9 +987,7 @@ async function init() {
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout reached - forcing UI to show')
     hideLoadingScreen()
-    if (childrenView) {
-      childrenView.classList.remove('hidden')
-    }
+    showElement(childrenView)
   }, 6000)
   
   try {
@@ -1027,10 +1001,10 @@ async function init() {
     }
     
     // Get current user
-    currentUser = await getCurrentUser()
+    setCurrentUser(await getCurrentUser())
     
-    if (currentUser && currentUser.email) {
-      headerSubtitle.textContent = `Welcome back, ${currentUser.email}!`
+    if (state.currentUser && state.currentUser.email) {
+      headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
     }
     
     // PARALLEL LOADING - Load all independent data at once
@@ -1047,67 +1021,68 @@ async function init() {
       supabase
         .from('parent_modules')
         .select('module_id, is_active, modules(*)')
-        .eq('parent_id', currentUser.id),
+        .eq('parent_id', state.currentUser.id),
       // Load category colors
       supabase
         .from('category_colors')
         .select('*'),
       // Load children
-      getChildren(currentUser.id),
+      getChildren(state.currentUser.id),
       // Check admin status (non-blocking)
-      isUserAdmin(currentUser.id)
+      isUserAdmin(state.currentUser.id)
     ])
     
     // Process modules
     if (modulesResult.status === 'fulfilled') {
-      modules = modulesResult.value || []
+      setModules(modulesResult.value || [])
     } else {
       console.error('Error loading modules:', modulesResult.reason)
-      modules = []
+      setModules([])
     }
     
     // Process parent modules
     if (parentModulesResult.status === 'fulfilled' && parentModulesResult.value.data) {
-      parentModules = parentModulesResult.value.data
+      setParentModules(parentModulesResult.value.data)
     } else {
       console.error('Error loading parent modules:', parentModulesResult.reason)
-      parentModules = []
+      setParentModules([])
     }
     
     // Process category colors
     if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
-      categoryColors = {}
+      const colors = {}
       categoryColorsResult.value.data.forEach(cc => {
         if (cc?.category && cc?.color) {
-          categoryColors[cc.category] = cc.color
+          colors[cc.category] = cc.color
         }
       })
+      setCategoryColors(colors)
     } else {
-      categoryColors = {}
+      setCategoryColors({})
     }
     
     // Process children
     if (childrenResult.status === 'fulfilled') {
-      children = childrenResult.value || []
+      setChildren(childrenResult.value || [])
     } else {
       console.error('Error loading children:', childrenResult.reason)
-      children = []
+      setChildren([])
     }
     
     // Process admin status (non-critical)
     if (adminResult.status === 'fulfilled') {
-      isCurrentUserAdmin = adminResult.value || false
-      if (isCurrentUserAdmin) {
+      setIsCurrentUserAdmin(adminResult.value || false)
+      if (state.isCurrentUserAdmin) {
         const adminButton = document.getElementById('adminButton')
         const adminButtonDesktop = document.getElementById('adminButtonDesktop')
         if (adminButton) adminButton.style.display = 'block'
-        if (adminButtonDesktop) adminButtonDesktop.classList.remove('hidden')
+        if (adminButtonDesktop) showElement(adminButtonDesktop)
       }
     }
     
     // Update global variables for enhanced dashboard
-    window.modules = modules
-    window.parentModules = parentModules
+    window.modules = state.modules
+    window.parentModules = state.parentModules
     
     // Setup category colors (use defaults if none loaded)
     setupCategoryColors()
@@ -1124,8 +1099,8 @@ async function init() {
     const childIdFromUrl = params.get('childId')
     const tabFromUrl = params.get('tab')
 
-    if (childIdFromUrl && children && children.length > 0) {
-      const childFromUrl = children.find(c => String(c.id) === String(childIdFromUrl))
+    if (childIdFromUrl && state.children && state.children.length > 0) {
+      const childFromUrl = state.children.find(c => String(c.id) === String(childIdFromUrl))
       if (childFromUrl) {
         // Skip password check when returning from module (already authenticated)
         await selectChild(childFromUrl)
@@ -1159,7 +1134,7 @@ async function init() {
       // Force hide loading state
       hideLoadingScreen()
       if (childrenView) {
-        childrenView.classList.remove('hidden')
+        showElement(childrenView)
       }
     }
     alert('Some data failed to load. You can still add children and use the app.')
@@ -1170,7 +1145,7 @@ async function init() {
 function openPurchaseModal(module) {
   if (!purchaseModal || !purchaseModalTitle || !purchaseModalBody || !purchaseModalCost) return
 
-  currentPurchaseModule = module
+  setCurrentPurchaseModule(module)
 
   purchaseModalTitle.textContent = `Purchase: ${module.title}`
 
@@ -1185,24 +1160,24 @@ function openPurchaseModal(module) {
 
   purchaseModalCost.textContent = `Price: ${priceLabel}`
 
-  purchaseModal.classList.remove('hidden')
+  showElement(purchaseModal)
 }
 
 function closePurchaseModal() {
   if (!purchaseModal) return
-  currentPurchaseModule = null
-  purchaseModal.classList.add('hidden')
+  setCurrentPurchaseModule(null)
+  hideElement(purchaseModal)
 }
 
 // Load children
 async function loadChildren() {
   try {
-    children = await getChildren(currentUser.id)
+    setChildren(await getChildren(state.currentUser.id))
     renderChildren()
   } catch (error) {
     console.error('Error loading children:', error)
     // Show children view anyway so user can add a child
-    children = []
+    setChildren([])
     renderChildren()
   }
 }
@@ -1211,12 +1186,12 @@ async function loadChildren() {
 function renderChildren() {
   const loadingState = document.getElementById('loadingState')
   
-  if (loadingState) loadingState.classList.add('hidden')
+  if (loadingState) hideElement(loadingState)
   
   childrenGrid.innerHTML = ''
   
   // Render each child
-  children.forEach(child => {
+  state.children.forEach(child => {
     const childCard = createChildCard(child)
     childrenGrid.appendChild(childCard)
   })
@@ -1480,7 +1455,7 @@ function createConfettiCelebration() {
 async function handleEditFormSubmit(e) {
     e.preventDefault();
     
-    if (!editingChild) return;
+    if (!state.editingChild) return;
     
     const editModalError = document.getElementById('editModalError');
     const editChildName = document.getElementById('editChildName');
@@ -1491,16 +1466,22 @@ async function handleEditFormSubmit(e) {
         
         if (!newName) {
             editModalError.textContent = 'Name is required.';
-            editModalError.classList.remove('hidden');
+            showElement(editModalError);
             return;
         }
         
         const updates = { name: newName, avatar: newAvatar || null };
-        const updatedChild = await updateChildProfile(editingChild.id, updates);
+        const updatedChild = await updateChildProfile(state.editingChild.id, updates);
         
-        const childIndex = children.findIndex(c => c.id === editingChild.id);
-        if (childIndex !== -1) children[childIndex] = updatedChild;
-        if (selectedChild && selectedChild.id === editingChild.id) selectedChild = updatedChild;
+        const childIndex = state.children.findIndex(c => c.id === state.editingChild.id);
+        if (childIndex !== -1) {
+            const nextChildren = [...state.children];
+            nextChildren[childIndex] = updatedChild;
+            setChildren(nextChildren);
+        }
+        if (state.selectedChild && state.selectedChild.id === state.editingChild.id) {
+            setSelectedChild(updatedChild);
+        }
         
         renderChildren();
         createConfettiCelebration();
@@ -1509,7 +1490,7 @@ async function handleEditFormSubmit(e) {
     } catch (error) {
         console.error('Error updating child:', error);
         editModalError.textContent = 'Failed to save changes. Please try again.';
-        editModalError.classList.remove('hidden');
+        showElement(editModalError);
     }
 }
 
@@ -1526,14 +1507,14 @@ async function handleAddFormSubmit(e) {
         
         if (!name || !dob) {
             modalError.textContent = 'Please fill in all fields.';
-            modalError.classList.remove('hidden');
+            showElement(modalError);
             return;
         }
         
-        modalError.classList.add('hidden');
+        hideElement(modalError);
         
-        const newChild = await createChild(currentUser.id, name, dob, avatar);
-        children.push(newChild);
+        const newChild = await createChild(state.currentUser.id, name, dob, avatar);
+        setChildren([...state.children, newChild]);
         renderChildren();
         createConfettiCelebration();
         hideAddChildModal();
@@ -1541,7 +1522,7 @@ async function handleAddFormSubmit(e) {
     } catch (error) {
         console.error('Error creating child:', error);
         modalError.textContent = error.message || 'Failed to add child';
-        modalError.classList.remove('hidden');
+        showElement(modalError);
     }
 }
 
@@ -1553,13 +1534,13 @@ function setupEditModalListeners() {
     document.getElementById('forgetPasswordBtn')?.addEventListener('click', (e) => {
         e.preventDefault();
         closeEditChildModal();
-        parentPasswordModal.classList.remove('hidden');
+        showElement(parentPasswordModal);
     });
     
     document.getElementById('removeChildBtn')?.addEventListener('click', () => {
-        if (editingChild) {
-            removeChildName.textContent = editingChild.name;
-            removeChildModal.classList.remove('hidden');
+        if (state.editingChild) {
+            removeChildName.textContent = state.editingChild.name;
+            showElement(removeChildModal);
         }
     });
     
@@ -1575,7 +1556,7 @@ function setupAddModalListeners() {
 
 
 function promptEditChild(child) {
-    editingChild = child;
+    setEditingChild(child);
     
     const modal = document.querySelector('#editChildModal .modal');
     if (modal && !modal.querySelector('.modal-header-fun')) {
@@ -1584,11 +1565,11 @@ function promptEditChild(child) {
     }
     
     document.getElementById('editChildName').value = child.name;
-    document.getElementById('editModalError')?.classList.add('hidden');
+    hideElement(document.getElementById('editModalError'))
     
     renderEnhancedAvatarPicker(child.avatar || '🦊');
     
-    editChildModal.classList.remove('hidden');
+    showElement(editChildModal);
     setTimeout(() => document.getElementById('editChildName')?.focus(), 100);
 }
 
@@ -1625,10 +1606,10 @@ function renderEnhancedAvatarPicker(selectedAvatar) {
 }
 
 function closeEditChildModal() {
-  editChildModal.classList.add('hidden')
-  editingChild = null
+  hideElement(editChildModal)
+  setEditingChild(null)
   editChildForm.reset()
-  editModalError.classList.add('hidden')
+  hideElement(editModalError)
 }
 
 // Select child
@@ -1648,7 +1629,7 @@ async function selectChild(child) {
     return
   }
   
-  selectedChild = child
+  setSelectedChild(child)
   
   try {
     // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
@@ -1657,27 +1638,27 @@ async function selectChild(child) {
       loadLatestWeeklyPlanData(child.id), // New optimized function
       checkFocusPlan(child.id),
       // Update login streak for this child (using parent's user_id + child_id)
-      currentUser ? updateLoginStreak(currentUser.id, child.id).then(() => getLoginStreak(currentUser.id, child.id)) : Promise.reject('No parent user')
+      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id).then(() => getLoginStreak(state.currentUser.id, child.id)) : Promise.reject('No parent user')
     ])
     
     // Process child modules
     if (childModulesResult.status === 'fulfilled') {
-      childModules = childModulesResult.value || []
+      setChildModules(childModulesResult.value || [])
     } else {
       console.error('Error loading child modules:', childModulesResult.reason)
-      childModules = []
+      setChildModules([])
     }
     
     // Process weekly plan
     if (weeklyPlanResult.status === 'fulfilled') {
-      currentWeeklyPlan = weeklyPlanResult.value
+      setCurrentWeeklyPlan(weeklyPlanResult.value)
     }
     
     // Process focus plan
     if (focusPlanResult.status === 'fulfilled') {
-      currentFocusPlan = focusPlanResult.value
+      setCurrentFocusPlan(focusPlanResult.value)
     } else {
-      currentFocusPlan = null
+      setCurrentFocusPlan(null)
     }
 
     // Process and display login streak
@@ -1705,11 +1686,11 @@ async function selectChild(child) {
     
     // ... (rest of the code remains the same)
     
-    if (!currentFocusPlan) {
+    if (!state.currentFocusPlan) {
       // No active focus plan - show onboarding
       showFocusPlanOnboarding(child.id, (plan, superSkillOrPathway) => {
-        currentFocusPlan = plan
-        window.currentFocusPlan = plan
+        setCurrentFocusPlan(plan)
+        window.state.currentFocusPlan = plan
         
         // Apply the focus plan to the map (handles both super skills and legacy pathways)
         applyFocusPlanToMap(plan)
@@ -1733,7 +1714,7 @@ async function selectChild(child) {
     console.error('Error loading child modules:', error)
     console.error('Error details:', error.message, error.stack)
     // Still show the view even if modules fail to load
-    childModules = []
+    setChildModules([])
     showChildDetailView(child)
     // Still try to render modules even with empty data
     renderModules()
@@ -1746,11 +1727,11 @@ async function selectChild(child) {
 // Optimized weekly plan loading - returns data directly instead of setting global
 async function loadLatestWeeklyPlanData(childId) {
   try {
-    if (!currentUser || !currentUser.id) {
+    if (!state.currentUser || !state.currentUser.id) {
       console.warn('Current user not available for weekly plan loading')
       return null
     }
-    return await getLatestWeeklyPlan(currentUser.id, childId)
+    return await getLatestWeeklyPlan(state.currentUser.id, childId)
   } catch (error) {
     console.error('Error loading weekly plan:', error)
     return null
@@ -1762,21 +1743,21 @@ function showChildrenView() {
   const welcomeLandingPage = document.getElementById('welcomeLandingPage')
   
   if (loadingState) {
-    loadingState.classList.add('hidden')
+    hideElement(loadingState)
   }
 
   if (welcomeLandingPage) {
-    if (!children || children.length === 0) {
-      welcomeLandingPage.classList.remove('hidden')
+    if (!state.children || state.children.length === 0) {
+      showElement(welcomeLandingPage)
     } else {
-      welcomeLandingPage.classList.add('hidden')
+      hideElement(welcomeLandingPage)
     }
   }
   
-  childrenView.classList.remove('hidden')
-  childDetailView.classList.add('hidden')
+  showElement(childrenView)
+  hideElement(childDetailView)
   
-  if (children && children.length > 0) {
+  if (state.children && state.children.length > 0) {
     renderParentModulesOverview()
   }
   
@@ -1789,31 +1770,31 @@ function showChildrenView() {
 // Setup category colors
 function setupCategoryColors() {
   // Default category colors if none are loaded from database
-  if (!categoryColors || Object.keys(categoryColors).length === 0) {
-    categoryColors = {
+  if (!state.categoryColors || Object.keys(state.categoryColors).length === 0) {
+    setCategoryColors({
       'emotions': '#4c6c96',
       'social': '#14b8a6',
       'coping': '#f59e0b',
       'cognitive': '#8b5cf6',
       'behavioral': '#ef4444',
       'default': '#6b7280'
-    }
+    })
   }
 }
 
 // Setup All Workbooks filters
 function setupAllWorkbooksFilter() {
-  if (!allWorkbooksCategoryFilter || !allWorkbooksSeriesFilter || !modules) return
+  if (!allWorkbooksCategoryFilter || !allWorkbooksSeriesFilter || !state.modules) return
   
   // Get unique categories
-  const categories = [...new Set(modules.map(m => m.category).filter(Boolean))].sort()
+  const categories = [...new Set(state.modules.map(m => m.category).filter(Boolean))].sort()
   
   // Populate category filter options
   allWorkbooksCategoryFilter.innerHTML = '<option value="all">All Categories</option>' + 
     categories.map(cat => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('')
   
   // Get unique series
-  const series = [...new Set(modules.map(m => m.series).filter(Boolean))].sort()
+  const series = [...new Set(state.modules.map(m => m.series).filter(Boolean))].sort()
   
   // Populate series filter options
   allWorkbooksSeriesFilter.innerHTML = '<option value="all">All Series</option>' + 
@@ -1826,17 +1807,17 @@ function setupAllWorkbooksFilter() {
 
 // Setup Dashboard filters
 function setupDashboardFilters() {
-  if (!dashboardCategoryFilter || !dashboardSeriesFilter || !modules) return
+  if (!dashboardCategoryFilter || !dashboardSeriesFilter || !state.modules) return
   
   // Get unique categories
-  const categories = [...new Set(modules.map(m => m.category).filter(Boolean))].sort()
+  const categories = [...new Set(state.modules.map(m => m.category).filter(Boolean))].sort()
   
   // Populate category filter options
   dashboardCategoryFilter.innerHTML = '<option value="all">All Categories</option>' + 
     categories.map(cat => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('')
   
   // Get unique series
-  const series = [...new Set(modules.map(m => m.series).filter(Boolean))].sort()
+  const series = [...new Set(state.modules.map(m => m.series).filter(Boolean))].sort()
   
   // Populate series filter options
   dashboardSeriesFilter.innerHTML = '<option value="all">All Series</option>' + 
@@ -1854,19 +1835,22 @@ function renderParentModulesOverview() {
   parentUnlockedModulesGrid.innerHTML = ''
   parentLockedModulesGrid.innerHTML = ''
 
-  if (!modules || modules.length === 0) {
+  if (!state.modules || state.modules.length === 0) {
     parentUnlockedModulesGrid.innerHTML = '<p class="progress-label">No modules available yet.</p>'
     parentLockedModulesGrid.innerHTML = '<p class="progress-label">No modules configured yet.</p>'
     return
   }
 
   const parentModuleMap = new Map()
-  parentModules.forEach(pm => {
+  state.parentModules.forEach(pm => {
     parentModuleMap.set(pm.module_id, pm.is_active)
+  })
+  const moduleList = [...state.modules]
+  state.parentModules.forEach(pm => {
     if (pm.modules) {
-      const alreadyExists = modules.some(m => m.id === pm.module_id)
+      const alreadyExists = moduleList.some(m => m.id === pm.module_id)
       if (!alreadyExists) {
-        modules.push(pm.modules)
+        moduleList.push(pm.modules)
       }
     }
   })
@@ -1875,14 +1859,14 @@ function renderParentModulesOverview() {
   const selectedCategory = allWorkbooksCategoryFilter ? allWorkbooksCategoryFilter.value : 'all'
   const selectedSeries = allWorkbooksSeriesFilter ? allWorkbooksSeriesFilter.value : 'all'
   
-  const unlocked = modules.filter(m => {
+  const unlocked = moduleList.filter(m => {
     const parentHasModule = parentModuleMap.get(m.id)
     const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory
     const matchesSeries = selectedSeries === 'all' || m.series === selectedSeries
     return parentHasModule && matchesCategory && matchesSeries
   })
   
-  const locked = modules.filter(m => {
+  const locked = moduleList.filter(m => {
     const parentHasModule = parentModuleMap.has(m.id)
     const parentActive = parentModuleMap.get(m.id)
     const globallyInactive = m.is_active === false
@@ -1900,7 +1884,7 @@ function renderParentModulesOverview() {
     const shortDescription = module.short_description || ''
 
     // Use category colors like other sections
-    const categoryColor = categoryColors[module.category] || '#4c6c96'
+    const categoryColor = state.categoryColors[module.category] || '#4c6c96'
     
     card.style.borderLeftColor = options.locked ? '#9ca3af' : categoryColor
 
@@ -1964,7 +1948,7 @@ function renderParentModulesOverview() {
     // Hide the rest
     for (let i = showingCount; i < locked.length; i++) {
       const card = makeStaticCard(locked[i], { locked: true })
-      card.classList.add('hidden')
+      hideElement(card)
       parentLockedModulesGrid.appendChild(card)
     }
     
@@ -1980,7 +1964,7 @@ function renderParentModulesOverview() {
         const hiddenCards = parentLockedModulesGrid.querySelectorAll('.module-card.hidden')
         const toShow = Array.from(hiddenCards).slice(0, 3)
         
-        toShow.forEach(card => card.classList.remove('hidden'))
+        toShow.forEach(card => showElement(card))
         
         const remainingHidden = parentLockedModulesGrid.querySelectorAll('.module-card.hidden').length
         if (remainingHidden === 0) {
@@ -1995,7 +1979,7 @@ function renderParentModulesOverview() {
         
         if (visibleLockedCards.length > initialCount) {
           const toHide = visibleLockedCards.slice(-3)
-          toHide.forEach(card => card.classList.add('hidden'))
+          toHide.forEach(card => hideElement(card))
           
           showMoreBtn.style.display = 'inline-block'
           if (visibleLockedCards.length - 3 <= initialCount) {
@@ -2021,16 +2005,16 @@ function showChildDetailView(child) {
     headerSubtitle.textContent = `Welcome back, ${child.name}!`
     
     // Show child detail view
-    childrenView.classList.add('hidden')
-    childDetailView.classList.remove('hidden')
+    hideElement(childrenView)
+    showElement(childDetailView)
     
     // Show dashboard tab by default
     showTab('dashboard')
     
     // Update global variables for enhanced dashboard
-    window.selectedChild = child
-    window.childModules = childModules
-    window.currentFocusPlan = currentFocusPlan
+    window.state.selectedChild = child
+    window.childModules = state.childModules
+    window.state.currentFocusPlan = state.currentFocusPlan
     
     // Show dashboard button when viewing child details
     if (dashboardButton) {
@@ -2042,8 +2026,8 @@ function showChildDetailView(child) {
   })
   
   // Apply focus plan's default super skill or pathway to adventure map
-  if (currentFocusPlan && (currentFocusPlan.super_skill_id || currentFocusPlan.default_pathway_id)) {
-    applyFocusPlanToMap(currentFocusPlan)
+  if (state.currentFocusPlan && (state.currentFocusPlan.super_skill_id || state.currentFocusPlan.default_pathway_id)) {
+    applyFocusPlanToMap(state.currentFocusPlan)
   }
   
   // Show/setup Focus Plan settings button
@@ -2062,12 +2046,12 @@ function showChildDetailView(child) {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
       renderLeaderboard()
-      renderWeeklyPlan(currentWeeklyPlan)
+      renderWeeklyPlan(state.currentWeeklyPlan)
     }, { timeout: 2000 })
   } else {
     setTimeout(() => {
       renderLeaderboard()
-      renderWeeklyPlan(currentWeeklyPlan)
+      renderWeeklyPlan(state.currentWeeklyPlan)
     }, 100)
   }
   
@@ -2161,7 +2145,7 @@ function setupFocusPlanSettingsButton() {
   if (!focusPlanBtn) return
   
   // Show the button if there's a focus plan
-  if (currentFocusPlan) {
+  if (state.currentFocusPlan) {
     focusPlanBtn.style.display = 'flex'
     
     // Remove old listener and add new one
@@ -2169,10 +2153,10 @@ function setupFocusPlanSettingsButton() {
     focusPlanBtn.parentNode.replaceChild(newBtn, focusPlanBtn)
     
     newBtn.addEventListener('click', () => {
-      if (selectedChild && currentFocusPlan) {
-        showFocusPlanSettings(selectedChild.id, currentFocusPlan, (updatedPlan, superSkillOrPathway) => {
-          currentFocusPlan = updatedPlan
-          window.currentFocusPlan = updatedPlan
+      if (state.selectedChild && state.currentFocusPlan) {
+        showFocusPlanSettings(state.selectedChild.id, state.currentFocusPlan, (updatedPlan, superSkillOrPathway) => {
+          setCurrentFocusPlan(updatedPlan)
+          window.state.currentFocusPlan = updatedPlan
           
           // Apply the updated focus plan to the map
           applyFocusPlanToMap(updatedPlan)
@@ -2189,7 +2173,7 @@ function renderModules() {
   if (!modulesGrid) return
   
   // Add safeguard: if childModules is not loaded yet, show loading state and retry
-  if (selectedChild && (!childModules || childModules.length === 0) && modules && modules.length > 0) {
+  if (state.selectedChild && (!state.childModules || state.childModules.length === 0) && state.modules && state.modules.length > 0) {
     modulesGrid.innerHTML = `
       <div style="text-align: center; padding: 40px; color: #4c6c96;">
         <div style="font-size: 18px; margin-bottom: 12px;">Loading modules...</div>
@@ -2216,14 +2200,14 @@ function renderModules() {
   const selectedSeries = dashboardSeriesFilter ? dashboardSeriesFilter.value : 'all'
   
   // Filter to only show modules that the parent owns
-  const parentModuleIds = parentModules.map(pm => pm.module_id)
-  const parentOwnedModules = modules.filter(m => parentModuleIds.includes(m.id))
+  const parentModuleIds = state.parentModules.map(pm => pm.module_id)
+  const parentOwnedModules = state.modules.filter(m => parentModuleIds.includes(m.id))
   
   // If a child is selected, further filter to only show modules active for that child
   let availableModules = parentOwnedModules
 
     
-    const activeChildModuleIds = childModules
+    const activeChildModuleIds = state.childModules
       .filter(cm => cm.is_active === true) // Explicitly check for true
       .map(cm => cm.module_id)
     
@@ -2252,12 +2236,12 @@ function renderModules() {
 
   // Separate completed and incomplete modules
   const incompleteModules = activeModules.filter(module => {
-    const childModule = childModules.find(cm => cm.module_id === module.id)
+    const childModule = state.childModules.find(cm => cm.module_id === module.id)
     return !childModule || childModule.is_completed !== true
   })
 
   const completedModules = activeModules.filter(module => {
-    const childModule = childModules.find(cm => cm.module_id === module.id)
+    const childModule = state.childModules.find(cm => cm.module_id === module.id)
     return childModule && childModule.is_completed === true
   })
   
@@ -2274,7 +2258,7 @@ function renderModules() {
   // Render Incomplete Modules Section
   if (incompleteModules.length > 0) {
     const readyHasHidden = incompleteModules.length > 6
-    const readyModulesToDisplay = showAllChildModules ? incompleteModules : incompleteModules.slice(0, 6)
+    const readyModulesToDisplay = state.showAllChildModules ? incompleteModules : incompleteModules.slice(0, 6)
 
     const incompleteSection = document.createElement('div')
     incompleteSection.style.gridColumn = '1 / -1'
@@ -2347,11 +2331,11 @@ function renderModules() {
       const toggleButton = document.createElement('button')
       toggleButton.className = 'btn-module start'
       toggleButton.style.padding = '12px 28px'
-      toggleButton.textContent = showAllChildModules
+      toggleButton.textContent = state.showAllChildModules
         ? 'Show Less'
         : `Show More (${incompleteModules.length - readyModulesToDisplay.length})`
       toggleButton.addEventListener('click', () => {
-        showAllChildModules = !showAllChildModules
+        setShowAllChildModules(!state.showAllChildModules)
         renderModules()
       })
       showMoreWrapper.appendChild(toggleButton)
@@ -2401,7 +2385,7 @@ function createModuleCard(module) {
   const card = document.createElement('div')
 
   // Check if module is completed
-  const childModule = childModules.find(cm => cm.module_id === module.id)
+  const childModule = state.childModules.find(cm => cm.module_id === module.id)
   const isCompleted = childModule && childModule.is_completed === true
 
   card.className = `module-card ${isCompleted ? 'completed' : ''}`
@@ -2418,7 +2402,7 @@ function createModuleCard(module) {
   const series = module.series || ''
 
   // Use category color from database, fallback to default
-  const categoryColor = categoryColors[category] || '#4c6c96'
+  const categoryColor = state.categoryColors[category] || '#4c6c96'
   card.style.borderLeftColor = isCompleted ? '#2e7d32' : categoryColor
 
   // Build category/series badges
@@ -2460,7 +2444,7 @@ async function startModule(module) {
   try {
     // Load module through the module player
     // Note: child_modules record will be created when module is completed
-    const moduleUrl = `/module.html?code=${module.code}&childId=${selectedChild.id}&moduleId=${module.id}&parentUserId=${currentUser.id}`
+    const moduleUrl = `/module.html?code=${module.code}&childId=${state.selectedChild.id}&moduleId=${module.id}&parentUserId=${state.currentUser.id}`
     window.location.href = moduleUrl
     
   } catch (error) {
@@ -2480,17 +2464,17 @@ function showAddChildModal() {
     // Reset form
     document.getElementById('childName').value = '';
     document.getElementById('childDob').value = '';
-    document.getElementById('modalError')?.classList.add('hidden');
+    hideElement(document.getElementById('modalError'))
     
     renderEnhancedAddAvatarPicker('🦊');
     
-    addChildModal.classList.remove('hidden');
+    showElement(addChildModal);
     setTimeout(() => document.getElementById('childName')?.focus(), 100);
 }
 
 // Hide add child modal
 function hideAddChildModal() {
-  addChildModal.classList.add('hidden')
+  hideElement(addChildModal)
 }
 
 // Handle add child form submission
@@ -2504,11 +2488,11 @@ function hideAddChildModal() {
     
     try {
       if (modalError) {
-        modalError.classList.add('hidden')
+        hideElement(modalError)
       }
       
       // Create child with avatar
-      const newChild = await createChild(currentUser.id, name, dob, avatar)
+      const newChild = await createChild(state.currentUser.id, name, dob, avatar)
       
       // Add to children array
       children.push(newChild)
@@ -2523,7 +2507,7 @@ function hideAddChildModal() {
       console.error('Error creating child:', error)
       if (modalError) {
         modalError.textContent = error.message || 'Failed to add child'
-        modalError.classList.remove('hidden')
+        showElement(modalError)
       }
     }
   })
@@ -2539,7 +2523,7 @@ if (cancelPurchaseButton) {
 
 if (confirmPurchaseButton) {
   confirmPurchaseButton.addEventListener('click', async () => {
-    if (!currentPurchaseModule) return
+    if (!state.currentPurchaseModule) return
     
     try {
       // Show loading state
@@ -2547,8 +2531,8 @@ if (confirmPurchaseButton) {
       confirmPurchaseButton.textContent = 'Redirecting to checkout...'
       
       // Option 1: Use Stripe Payment Link (stored in database)
-      if (currentPurchaseModule.stripe_payment_link) {
-        await redirectToPaymentLink(currentPurchaseModule.stripe_payment_link)
+      if (state.currentPurchaseModule.stripe_payment_link) {
+        await redirectToPaymentLink(state.currentPurchaseModule.stripe_payment_link)
       } else {
         // Fallback: Show message if no payment link configured
         alert('Payment link not configured for this module. Please contact support.')
@@ -2570,13 +2554,13 @@ if (childPasswordForm) {
   childPasswordForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     
-    if (!pendingChildSelection) return
+    if (!state.pendingChildSelection) return
     
     const enteredPassword = childPasswordInput.value
     
     try {
       // Save reference to child before closing modal
-      const childToSelect = pendingChildSelection
+      const childToSelect = state.pendingChildSelection
       
       if (childToSelect.password) {
         // Verify password against database
@@ -2587,7 +2571,7 @@ if (childPasswordForm) {
           await selectChild(childToSelect)
         } else {
           passwordModalError.textContent = 'Incorrect password. Please try again.'
-          passwordModalError.classList.remove('hidden')
+          showElement(passwordModalError)
           childPasswordInput.value = ''
           childPasswordInput.focus()
         }
@@ -2595,16 +2579,21 @@ if (childPasswordForm) {
         // Set new password in database
         if (enteredPassword.length < 3) {
           passwordModalError.textContent = 'Password must be at least 3 characters.'
-          passwordModalError.classList.remove('hidden')
+          showElement(passwordModalError)
           return
         }
         
         await setChildPassword(childToSelect.id, enteredPassword)
         // Update local child object with password
         childToSelect.password = enteredPassword
-        const childIndex = children.findIndex(c => c.id === childToSelect.id)
+        const childIndex = state.children.findIndex(c => c.id === childToSelect.id)
         if (childIndex !== -1) {
-          children[childIndex].password = enteredPassword
+          const nextChildren = [...state.children]
+          nextChildren[childIndex] = {
+            ...nextChildren[childIndex],
+            password: enteredPassword
+          }
+          setChildren(nextChildren)
         }
         
         closePasswordModal()
@@ -2613,7 +2602,7 @@ if (childPasswordForm) {
     } catch (error) {
       console.error('Password error:', error)
       passwordModalError.textContent = 'An error occurred. Please try again.'
-      passwordModalError.classList.remove('hidden')
+      showElement(passwordModalError)
     }
   })
 }
@@ -2628,32 +2617,37 @@ if (cancelPasswordButton) {
 const childForgotPasswordBtn = document.getElementById('childForgotPasswordBtn')
 if (childForgotPasswordBtn) {
   childForgotPasswordBtn.addEventListener('click', async () => {
-    if (!pendingChildSelection) return
+    if (!state.pendingChildSelection) return
     
     // Clear the password for this child so they can set a new one
     try {
-      await setChildPassword(pendingChildSelection.id, null)
+      await setChildPassword(state.pendingChildSelection.id, null)
       
       // Update local child object
-      pendingChildSelection.password = null
-      const childIndex = children.findIndex(c => c.id === pendingChildSelection.id)
+      state.pendingChildSelection.password = null
+      const childIndex = state.children.findIndex(c => c.id === state.pendingChildSelection.id)
       if (childIndex !== -1) {
-        children[childIndex].password = null
+        const nextChildren = [...state.children]
+        nextChildren[childIndex] = {
+          ...nextChildren[childIndex],
+          password: null
+        }
+        setChildren(nextChildren)
       }
       
       // Update modal to show password creation mode
-      childPasswordModalTitle.textContent = `Set New Password for ${pendingChildSelection.name}`
+      childPasswordModalTitle.textContent = `Set New Password for ${state.pendingChildSelection.name}`
       childPasswordInput.placeholder = 'Create a new password'
       childPasswordInput.value = ''
       passwordModalError.textContent = 'Password reset! Please create a new password.'
       passwordModalError.style.color = '#4caf50'
-      passwordModalError.classList.remove('hidden')
+      showElement(passwordModalError)
       childPasswordInput.focus()
     } catch (error) {
       console.error('Error resetting password:', error)
       passwordModalError.textContent = 'Failed to reset password. Please try again.'
       passwordModalError.style.color = '#c02626'
-      passwordModalError.classList.remove('hidden')
+      showElement(passwordModalError)
     }
   })
 }
@@ -2663,7 +2657,7 @@ if (childForgotPasswordBtn) {
   editChildForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     
-    if (!editingChild) return
+    if (!state.editingChild) return
     
     try {
       const newName = editChildName.value.trim()
@@ -2672,7 +2666,7 @@ if (childForgotPasswordBtn) {
       // Validate name
       if (!newName) {
         editModalError.textContent = 'Name is required.'
-        editModalError.classList.remove('hidden')
+        showElement(editModalError)
         return
       }
       
@@ -2683,17 +2677,17 @@ if (childForgotPasswordBtn) {
       updates.avatar = newAvatar || null
       
       // Update child in database
-      const updatedChild = await updateChildProfile(editingChild.id, updates)
+      const updatedChild = await updateChildProfile(state.editingChild.id, updates)
       
       // Update local children array
-      const childIndex = children.findIndex(c => c.id === editingChild.id)
+      const childIndex = children.findIndex(c => c.id === state.editingChild.id)
       if (childIndex !== -1) {
         children[childIndex] = updatedChild
       }
       
       // Update selected child if it's the one being edited
-      if (selectedChild && selectedChild.id === editingChild.id) {
-        selectedChild = updatedChild
+      if (state.selectedChild && state.selectedChild.id === state.editingChild.id) {
+        setSelectedChild(updatedChild)
       }
       
       // Re-render children
@@ -2707,7 +2701,7 @@ if (childForgotPasswordBtn) {
     } catch (error) {
       console.error('Error updating child:', error)
       editModalError.textContent = 'Failed to save changes. Please try again.'
-      editModalError.classList.remove('hidden')
+      showElement(editModalError)
     }
   })
 } */
@@ -2723,8 +2717,8 @@ if (forgetPasswordBtn) {
   forgetPasswordBtn.addEventListener('click', (e) => {
     e.preventDefault()
     // Show parent password verification modal
-    parentPasswordModal.classList.remove('hidden')
-    parentPasswordError.classList.add('hidden')
+    showElement(parentPasswordModal)
+    hideElement(parentPasswordError)
     parentPasswordForm.reset()
     setTimeout(() => parentPassword.focus(), 100)
   })
@@ -2735,9 +2729,9 @@ if (parentPasswordForm) {
   parentPasswordForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     
-    if (!currentUser) {
+    if (!state.currentUser) {
       parentPasswordError.textContent = 'User not authenticated.'
-      parentPasswordError.classList.remove('hidden')
+      showElement(parentPasswordError)
       return
     }
     
@@ -2747,36 +2741,45 @@ if (parentPasswordForm) {
     try {
       // Verify parent password against auth
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: currentUser.email,
+        email: state.currentUser.email,
         password: enteredPassword
       })
       
       if (error || !data.user) {
         parentPasswordError.textContent = 'Incorrect parent password.'
-        parentPasswordError.classList.remove('hidden')
+        showElement(parentPasswordError)
         parentPassword.value = ''
         parentPassword.focus()
         return
       }
       
       // Password verified - update the child's password
-      if (editingChild) {
+      if (state.editingChild) {
         // Validate new password if provided
         if (newChildPassword && newChildPassword.length < 6) {
           parentPasswordError.textContent = 'New password must be at least 6 characters.'
-          parentPasswordError.classList.remove('hidden')
+          showElement(parentPasswordError)
           return
         }
         
         // Update password (null if blank, which clears it)
         const passwordUpdate = newChildPassword || null
-        await updateChildProfile(editingChild.id, { password: passwordUpdate })
+        await updateChildProfile(state.editingChild.id, { password: passwordUpdate })
         
         // Update local child object
-        editingChild.password = passwordUpdate
-        const childIndex = children.findIndex(c => c.id === editingChild.id)
+        const updatedEditingChild = {
+          ...state.editingChild,
+          password: passwordUpdate
+        }
+        setEditingChild(updatedEditingChild)
+        const childIndex = state.children.findIndex(c => c.id === state.editingChild.id)
         if (childIndex !== -1) {
-          children[childIndex].password = passwordUpdate
+          const nextChildren = [...state.children]
+          nextChildren[childIndex] = {
+            ...nextChildren[childIndex],
+            password: passwordUpdate
+          }
+          setChildren(nextChildren)
         }
         
         // Show success message in edit modal
@@ -2785,16 +2788,16 @@ if (parentPasswordForm) {
           : 'Password cleared! The child will set a new password on next login.'
         editModalError.textContent = successMsg
         editModalError.style.color = '#4caf50'
-        editModalError.classList.remove('hidden')
+        showElement(editModalError)
         
         // Close parent password modal
-        parentPasswordModal.classList.add('hidden')
+        hideElement(parentPasswordModal)
         parentPasswordForm.reset()
       }
     } catch (error) {
       console.error('Error verifying parent password:', error)
       parentPasswordError.textContent = 'An error occurred. Please try again.'
-      parentPasswordError.classList.remove('hidden')
+      showElement(parentPasswordError)
     }
   })
 }
@@ -2802,9 +2805,9 @@ if (parentPasswordForm) {
 // Cancel parent password modal
 if (cancelParentPasswordButton) {
   cancelParentPasswordButton.addEventListener('click', () => {
-    parentPasswordModal.classList.add('hidden')
+    hideElement(parentPasswordModal)
     parentPasswordForm.reset()
-    parentPasswordError.classList.add('hidden')
+    hideElement(parentPasswordError)
     if (editChildPassword) {
       editChildPassword.value = ''
     }
@@ -2814,50 +2817,50 @@ if (cancelParentPasswordButton) {
 // Remove child button
 if (removeChildBtn) {
   removeChildBtn.addEventListener('click', () => {
-    if (!editingChild) return
+    if (!state.editingChild) return
     
     // Show confirmation modal
-    removeChildName.textContent = editingChild.name
-    removeChildError.classList.add('hidden')
-    removeChildModal.classList.remove('hidden')
+    removeChildName.textContent = state.editingChild.name
+    hideElement(removeChildError)
+    showElement(removeChildModal)
   })
 }
 
 // Cancel remove child
 if (cancelRemoveChildButton) {
   cancelRemoveChildButton.addEventListener('click', () => {
-    removeChildModal.classList.add('hidden')
+    hideElement(removeChildModal)
   })
 }
 
 // Confirm remove child
 if (confirmRemoveChildButton) {
   confirmRemoveChildButton.addEventListener('click', async () => {
-    if (!editingChild) return
+    if (!state.editingChild) return
     
     try {
-      removeChildError.classList.add('hidden')
+      hideElement(removeChildError)
       
       // Delete child from database
-      await deleteChild(editingChild.id)
+      await deleteChild(state.editingChild.id)
       
       // Remove from local children array
-      children = children.filter(c => c.id !== editingChild.id)
+      setChildren(state.children.filter(c => c.id !== state.editingChild.id))
       
       // Re-render children
       renderChildren()
       
       // Close both modals
-      removeChildModal.classList.add('hidden')
+      hideElement(removeChildModal)
       closeEditChildModal()
       
       // Show success message (optional)
-      alert(`${editingChild.name} has been removed successfully.`)
+      alert(`${state.editingChild.name} has been removed successfully.`)
       
     } catch (error) {
       console.error('Error removing child:', error)
       removeChildError.textContent = 'Failed to remove child. Please try again.'
-      removeChildError.classList.remove('hidden')
+      showElement(removeChildError)
     }
   })
 }
@@ -2882,7 +2885,7 @@ if (cancelAddChild) {
 // Back button
 if (backButton) {
   backButton.addEventListener('click', () => {
-    selectedChild = null
+    setSelectedChild(null)
     showChildrenView()
   })
 }
@@ -2895,8 +2898,8 @@ const adminButtonDesktop = document.getElementById('adminButtonDesktop')
 
 if (dashboardHomeButtonDesktop) {
   dashboardHomeButtonDesktop.addEventListener('click', () => {
-    if (selectedChild) {
-      window.location.href = `/dashboard.html?childId=${selectedChild.id}`
+    if (state.selectedChild) {
+      window.location.href = `/dashboard.html?childId=${state.selectedChild.id}`
     } else {
       window.location.href = '/dashboard.html'
     }
@@ -2958,19 +2961,19 @@ if (allModulesModal) {
   })
 }
 
-if (allModulesCategoryFilter) {
-  allModulesCategoryFilter.addEventListener('change', (event) => {
-    allModulesFilters.category = event.target.value || 'all'
+  if (allModulesCategoryFilter) {
+    allModulesCategoryFilter.addEventListener('change', (event) => {
+    setAllModulesFilters({ category: event.target.value || 'all' })
     renderAllModulesGrid()
-  })
-}
+    })
+  }
 
-if (allModulesSeriesFilter) {
-  allModulesSeriesFilter.addEventListener('change', (event) => {
-    allModulesFilters.series = event.target.value || 'all'
+  if (allModulesSeriesFilter) {
+    allModulesSeriesFilter.addEventListener('change', (event) => {
+    setAllModulesFilters({ series: event.target.value || 'all' })
     renderAllModulesGrid()
-  })
-}
+    })
+  }
 
 if (moreModulesPrevButton) {
   moreModulesPrevButton.addEventListener('click', () => {
@@ -3040,31 +3043,31 @@ function showTab(tabName) {
   tabParentInsights.classList.remove('active')
   
   // Hide all tab content
-  if (dashboardTabContent) dashboardTabContent.classList.add('hidden')
-  if (modulesTabContent) modulesTabContent.classList.add('hidden')
-  if (leaderboardTabContent) leaderboardTabContent.classList.add('hidden')
-  if (spendStarsTabContent) spendStarsTabContent.classList.add('hidden')
-  if (parentInsightsTabContent) parentInsightsTabContent.classList.add('hidden')
+  hideElement(dashboardTabContent)
+  hideElement(modulesTabContent)
+  hideElement(leaderboardTabContent)
+  hideElement(spendStarsTabContent)
+  hideElement(parentInsightsTabContent)
   
   // Show selected tab
   if (tabName === 'dashboard') {
     tabDashboard.classList.add('active')
-    if (dashboardTabContent) dashboardTabContent.classList.remove('hidden')
+    showElement(dashboardTabContent)
   } else if (tabName === 'modules') {
     tabModules.classList.add('active')
-    if (modulesTabContent) modulesTabContent.classList.remove('hidden')
+    showElement(modulesTabContent)
   } else if (tabName === 'leaderboard') {
     tabLeaderboard.classList.add('active')
-    if (leaderboardTabContent) leaderboardTabContent.classList.remove('hidden')
+    showElement(leaderboardTabContent)
   } else if (tabName === 'spendStars') {
     tabSpendStars.classList.add('active')
-    if (spendStarsTabContent) spendStarsTabContent.classList.remove('hidden')
+    showElement(spendStarsTabContent)
     // Initialize rewards tab when shown
-    initializeRewardsTab(selectedChild)
+    initializeRewardsTab(state.selectedChild)
   } else if (tabName === 'parentInsights') {
     tabParentInsights.classList.add('active')
-    if (parentInsightsTabContent) parentInsightsTabContent.classList.remove('hidden')
-    setParentInsightsSubtab(currentInsightsSubtab)
+    showElement(parentInsightsTabContent)
+    setParentInsightsSubtab(state.currentInsightsSubtab)
     // Update insights when tab is shown
     updateParentInsights()
   }
@@ -3086,8 +3089,8 @@ if (tabSpendStars) {
 if (tabParentInsights) {
   tabParentInsights.addEventListener('click', () => {
     // Navigate to the dedicated Parent Insights page for better performance and richer data
-    if (selectedChild) {
-      window.location.href = `/parent-insights.html?childId=${selectedChild.id}`
+    if (state.selectedChild) {
+      window.location.href = `/parent-insights.html?childId=${state.selectedChild.id}`
     } else {
       window.location.href = '/parent-insights.html'
     }
@@ -3096,11 +3099,11 @@ if (tabParentInsights) {
 
 // Update dashboard stats
 async function updateDashboardStats() {
-  if (!selectedChild) return
+  if (!state.selectedChild) return
   
   // Count completed modules (only active modules)
-  const activeModules = modules.filter(m => m.is_active)
-  const completedCount = childModules.filter(cm => cm.is_completed === true).length
+  const activeModules = state.modules.filter(m => m.is_active)
+  const completedCount = state.childModules.filter(cm => cm.is_completed === true).length
   const totalCount = activeModules.length
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
   
@@ -3108,12 +3111,12 @@ async function updateDashboardStats() {
   const totalStarsEl = document.getElementById('totalStars')
   const completedModulesEl = document.getElementById('completedModules')
   const totalModulesEl = document.getElementById('totalModules')
-  if (totalStarsEl) totalStarsEl.textContent = selectedChild.stars || 0
+  if (totalStarsEl) totalStarsEl.textContent = state.selectedChild.stars || 0
   if (completedModulesEl) completedModulesEl.textContent = completedCount
   if (totalModulesEl) totalModulesEl.textContent = totalCount
 
-  const totalXp = selectedChild.total_xp || 0
-  const currentLevel = selectedChild.level || Math.floor(totalXp / LEVEL_XP) + 1
+  const totalXp = state.selectedChild.total_xp || 0
+  const currentLevel = state.selectedChild.level || Math.floor(totalXp / LEVEL_XP) + 1
   const levelProgress = totalXp % LEVEL_XP
   const levelPercent = Math.min(100, Math.round((levelProgress / LEVEL_XP) * 100))
   const levelValueEl = document.getElementById('childLevel')
@@ -3126,7 +3129,7 @@ async function updateDashboardStats() {
   // Get rank from leaderboard
   try {
     const leaderboard = await getAllChildrenLeaderboard(100)
-    const rank = leaderboard.findIndex(child => child.id === selectedChild.id) + 1
+    const rank = leaderboard.findIndex(child => child.id === state.selectedChild.id) + 1
     const childRankEl = document.getElementById('childRank')
     if (childRankEl) childRankEl.textContent = rank > 0 ? `#${rank}` : '#-'
   } catch (error) {
@@ -3195,21 +3198,21 @@ function buildInsightList(items, accent = '#4caf50', icon = '✓') {
 }
 
 function updateParentInsights() {
-  if (!selectedChild || !childModules || !modules) return
+  if (!state.selectedChild || !state.childModules || !state.modules) return
   
   // Get completed modules with their details
-  const completedModules = childModules
+  const completedModules = state.childModules
     .filter(cm => cm.is_completed === true)
-    .map(cm => modules.find(m => m.id === cm.module_id))
+    .map(cm => state.modules.find(m => m.id === cm.module_id))
     .filter(m => m) // Remove any undefined
   
   // Get recently started modules (in progress)
-  const inProgressModules = childModules
+  const inProgressModules = state.childModules
     .filter(cm => cm.is_completed === false && cm.stars_earned > 0)
-    .map(cm => modules.find(m => m.id === cm.module_id))
+    .map(cm => state.modules.find(m => m.id === cm.module_id))
     .filter(m => m)
   
-  const totalStars = selectedChild.stars || 0
+  const totalStars = state.selectedChild.stars || 0
   const completedCount = completedModules.length
   
   // Reinforcement suggestions keyed by workbook
@@ -3385,7 +3388,7 @@ function updateParentInsights() {
 
 // Render leaderboard
 async function renderLeaderboard() {
-  if (!leaderboardList || !selectedChild) return
+  if (!leaderboardList || !state.selectedChild) return
   
   leaderboardList.innerHTML = '<div style="text-align: center; padding: 20px; color: #4c6c96;">Loading leaderboard...</div>'
   
@@ -3405,7 +3408,7 @@ async function renderLeaderboard() {
     
     allChildren.forEach((child, index) => {
       const rank = index + 1
-      const isCurrentUser = child.id === selectedChild.id
+      const isCurrentUser = child.id === state.selectedChild.id
       const avatar = avatars[index % avatars.length]
       
       const item = document.createElement('div')
@@ -3458,10 +3461,10 @@ async function checkAdminStatus() {
       const adminButton = document.getElementById('adminButton')
       const adminButtonDesktop = document.getElementById('adminButtonDesktop')
       if (adminButton) {
-        adminButton.classList.remove('hidden')
+        showElement(adminButton)
       }
       if (adminButtonDesktop) {
-        adminButtonDesktop.classList.remove('hidden')
+        showElement(adminButtonDesktop)
       }
     }
   } catch (error) {
@@ -3472,7 +3475,7 @@ async function checkAdminStatus() {
 // Load and display login streak
 async function loadStreakDisplay() {
   try {
-    const streakData = await getLoginStreak(currentUser.id)
+    const streakData = await getLoginStreak(state.currentUser.id)
     console.log('[Dashboard] Streak data:', streakData)
     const dayStreakEl = document.getElementById('dayStreak')
     
@@ -4016,7 +4019,7 @@ getUniqueSuperSkills() {
     }
     
     startModule(moduleId, code) {
-        var child = window.selectedChild;
+        var child = window.state.selectedChild;
         if (!child) {
             alert('Please select a child first.');
             return;
