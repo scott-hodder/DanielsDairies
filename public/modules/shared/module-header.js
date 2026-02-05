@@ -245,6 +245,66 @@
     console.log('[Print] Injected print styles');
   }
 
+  // ============================================================
+  // AGE RANGE ATTRIBUTE HELPERS
+  // ============================================================
+
+  function normalizeAgeRange(text) {
+    if (!text) {
+      return null;
+    }
+    var normalized = text.replace(/[–—]/g, '-');
+    var match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
+    if (match) {
+      return match[1] + '-' + match[2];
+    }
+    return null;
+  }
+
+  function extractAgeRangeFromText(text) {
+    if (!text) {
+      return null;
+    }
+    var ageMatch = text.match(/Ages?\s*(\d{1,2}\s*-\s*\d{1,2})/i);
+    if (ageMatch) {
+      return normalizeAgeRange(ageMatch[1]);
+    }
+    var rangeMatch = text.match(/(\d{1,2}\s*-\s*\d{1,2})\s*years?/i);
+    if (rangeMatch) {
+      return normalizeAgeRange(rangeMatch[1]);
+    }
+    return null;
+  }
+
+  function applyAgeRangeAttribute() {
+    if (!document.body || document.body.dataset.ageRange) {
+      return true;
+    }
+    var container = document.getElementById('pageContainer') || document.body;
+    var text = container.textContent || '';
+    var ageRange = extractAgeRangeFromText(text);
+    if (ageRange) {
+      document.body.dataset.ageRange = ageRange;
+      return true;
+    }
+    return false;
+  }
+
+  function observeAgeRangeAttribute() {
+    if (applyAgeRangeAttribute()) {
+      return;
+    }
+    var target = document.getElementById('pageContainer') || document.body;
+    if (!target || typeof MutationObserver === 'undefined') {
+      return;
+    }
+    var observer = new MutationObserver(function() {
+      if (applyAgeRangeAttribute()) {
+        observer.disconnect();
+      }
+    });
+    observer.observe(target, { childList: true, subtree: true, characterData: true });
+  }
 
   // ============================================================
   // MAIN MODULE HEADER FUNCTION
@@ -262,6 +322,8 @@
     var onHome = options.onHome;
     var onShowStars = options.onShowStars;
     var onToggleParentMode = options.onToggleParentMode;
+
+    observeAgeRangeAttribute();
 
     // Remove any existing header first
     var existingHeader = document.querySelector('.module-header');
