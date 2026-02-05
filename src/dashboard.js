@@ -2064,6 +2064,59 @@ function showChildDetailView(child) {
   hideLoadingScreen()
 }
 
+function resolveModuleSuperSkillSlug(module) {
+  if (!module) return null
+  if (module.super_skill_slug) return String(module.super_skill_slug).toLowerCase()
+  if (module.super_skill && module.super_skill.slug) {
+    return String(module.super_skill.slug).toLowerCase()
+  }
+  if (module.super_skill_id && Array.isArray(window.superSkills)) {
+    const matchedSkill = window.superSkills.find(skill => skill.id === module.super_skill_id)
+    if (matchedSkill && matchedSkill.slug) {
+      return String(matchedSkill.slug).toLowerCase()
+    }
+  }
+
+  const rawCategory = module.category
+  const categoryName = (rawCategory && typeof rawCategory === 'object' ? rawCategory.name : rawCategory) || module.category_name || ''
+  if (!categoryName) return null
+
+  const normalizedCategory = String(categoryName).toLowerCase()
+  const categoryToSuperSkill = window.CATEGORY_TO_SUPERSKILL || {
+    anger: 'emotion-navigator',
+    anxiety: 'calm-controller',
+    depression: 'resilience-ranger',
+    emotions: 'emotion-navigator',
+    body: 'body-boss',
+    cognitive: 'brain-builder',
+    social: 'connection-captain',
+    general: 'all'
+  }
+
+  return categoryToSuperSkill[normalizedCategory] || normalizedCategory
+}
+
+function getAvailableSuperSkillSlugs() {
+  if (window.enhancedDashboard && window.enhancedDashboard.adventureMap && typeof window.enhancedDashboard.adventureMap.getAvailableCategories === 'function') {
+    const categories = window.enhancedDashboard.adventureMap.getAvailableCategories()
+    if (Array.isArray(categories) && categories.length > 0) {
+      return categories.map(category => String(category).toLowerCase())
+    }
+  }
+
+  const modules = window.modules || state.modules || []
+  const slugs = []
+  const seen = new Set()
+  modules.forEach(module => {
+    const slug = resolveModuleSuperSkillSlug(module)
+    if (slug && !seen.has(slug)) {
+      seen.add(slug)
+      slugs.push(slug)
+    }
+  })
+  return slugs
+}
+
 // Apply focus plan to adventure map - now uses Super Skills
 async function applyFocusPlanToMap(focusPlan) {
   if (!focusPlan) return
@@ -2106,6 +2159,11 @@ async function applyFocusPlanToMap(focusPlan) {
         }
         superSkillSlug = categoryToSuperSkill[categoryName] || 'all'
       }
+    }
+
+    const availableSuperSkills = getAvailableSuperSkillSlugs()
+    if (availableSuperSkills.length > 0 && !availableSuperSkills.includes(superSkillSlug)) {
+      superSkillSlug = availableSuperSkills[0]
     }
     
     // Store the super skill for the enhanced dashboard to use
