@@ -253,12 +253,21 @@ function generatePaletteFromColor(baseColor: string | null | undefined): Categor
   return { primary, secondary, accent, cream, softYellow };
 }
 
+function extractAgeRange(targetAge?: string): string {
+  const match = targetAge?.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}`;
+  }
+  return targetAge || "6-8";
+}
+
 // ====================
 // HTML RENDERER
 
 function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): string {
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
+  const ageRange = extractAgeRange(metadata.targetAge);
   
   // Helper function to render character (image or emoji)
   const renderCharacter = (size: string = 'text-6xl') => {
@@ -690,7 +699,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     }
   </style>
 </head>
-<body class="module-theme" data-series="${escapeHtml(metadata.series || "custom")}">
+<body class="module-theme" data-series="${escapeHtml(metadata.series || "custom")}" data-age-range="${escapeHtml(ageRange)}">
   <div id="moduleHeaderRoot"></div>
   
   <main class="module-content">

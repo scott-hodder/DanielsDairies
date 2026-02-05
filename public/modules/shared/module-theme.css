@@ -89,6 +89,33 @@ body.module-theme{
   color: var(--theme-text);
   line-height: 1.6;
   letter-spacing: -0.01em;
+  --age-font-size-base: 1.02rem;
+  --age-font-size-lead: 1.05rem;
+  --age-heading-scale: 1;
+}
+
+body.module-theme[data-age-range="6-8"]{
+  --age-font-size-base: 1.15rem;
+  --age-font-size-lead: 1.2rem;
+  --age-heading-scale: 1.08;
+}
+
+body.module-theme[data-age-range="9-11"]{
+  --age-font-size-base: 1.07rem;
+  --age-font-size-lead: 1.12rem;
+  --age-heading-scale: 1.04;
+}
+
+body.module-theme[data-age-range="12-14"]{
+  --age-font-size-base: 1.02rem;
+  --age-font-size-lead: 1.05rem;
+  --age-heading-scale: 1;
+}
+
+body.module-theme[data-age-range="15-18"]{
+  --age-font-size-base: 0.98rem;
+  --age-font-size-lead: 1.02rem;
+  --age-heading-scale: 0.98;
 }
 
 /* Subtle background texture (lighter than your current) */
@@ -151,7 +178,7 @@ body.module-theme::before{
 
 .module-hero p{
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--age-font-size-lead);
   color: black;
 }
 
@@ -169,14 +196,14 @@ body.module-theme::before{
 /* Titles */
 .page-heading{
   font-family: var(--module-font-display);
-  font-size: clamp(1.45rem, 2.2vw, 2.05rem);
+  font-size: calc(clamp(1.45rem, 2.2vw, 2.05rem) * var(--age-heading-scale));
   margin: 0 0 14px;
   color: var(--theme-primary);
 }
 
 p, li{
   color: var(--theme-muted);
-  font-size: 1.02rem;
+  font-size: var(--age-font-size-base);
 }
 
 /* Buttons */
