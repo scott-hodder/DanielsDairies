@@ -9,7 +9,7 @@ import {
   updateChildFocusPlan,
   getCategories, 
   getPathways,
-  determineDefaultPathway 
+  determineDefaultPathwayWithModules 
 } from './database.js'
 
 // State for focus plan onboarding
@@ -494,14 +494,32 @@ async function submitFocusPlan() {
   nextBtn.textContent = 'Creating plan...'
   
   try {
+    console.log('Focus Plan: Starting submission...')
+    
     // Get category names for pathway determination
     const selectedCategoryNames = focusPlanState.selectedCategories.map(id => {
       const cat = focusPlanState.categories.find(c => c.id === id)
       return cat ? cat.name : id
     })
     
-    // Determine default pathway
-    const defaultPathway = determineDefaultPathway(selectedCategoryNames, focusPlanState.pathways)
+    console.log('Focus Plan: Selected categories:', selectedCategoryNames)
+    console.log('Focus Plan: Available pathways:', focusPlanState.pathways.map(p => p.name))
+    
+    // Determine default pathway with module availability check
+    let defaultPathway = await determineDefaultPathwayWithModules(selectedCategoryNames, focusPlanState.pathways, focusPlanState.childId)
+    
+    // If no pathway with modules was found, use the original logic but warn about it
+    if (!defaultPathway) {
+      console.warn('Focus Plan: No pathway with modules found, using default pathway selection')
+      // Fall back to original pathway determination
+      const { determineDefaultPathway } = await import('./database.js')
+      defaultPathway = determineDefaultPathway(selectedCategoryNames, focusPlanState.pathways)
+      if (defaultPathway) {
+        console.warn(`Focus Plan: Using pathway "${defaultPathway.name}" which may not have modules`)
+      }
+    }
+    
+    console.log('Focus Plan: Selected pathway:', defaultPathway?.name)
     
     // Create the focus plan with multiple goals and comments
     const plan = await createChildFocusPlan({
@@ -515,6 +533,8 @@ async function submitFocusPlan() {
       comments: focusPlanState.comments || null
     })
     
+    console.log('Focus Plan: Plan created successfully')
+    
     // Close modal
     closeFocusPlanModal()
     
@@ -523,11 +543,13 @@ async function submitFocusPlan() {
     
     // Call completion callback with the plan and pathway
     if (focusPlanState.onComplete) {
+      console.log('Focus Plan: Calling completion callback...')
       focusPlanState.onComplete(plan, defaultPathway)
     }
     
   } catch (error) {
     console.error('Error creating focus plan:', error)
+    console.error('Error details:', error.message, error.stack)
     nextBtn.disabled = false
     nextBtn.textContent = '✨ Start Journey!'
     showFocusPlanToast('Something went wrong. Please try again.', 'error')

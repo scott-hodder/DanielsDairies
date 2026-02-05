@@ -1454,7 +1454,191 @@ export function determineDefaultPathway(selectedCategoryNames, pathways) {
     p.name.toLowerCase().includes('general')
   )
   
-  return foundationsPathway || pathways[0] || null
+  // If foundations pathway exists, return it
+  if (foundationsPathway) return foundationsPathway
+  
+  // Otherwise, return the first pathway that has modules
+  // We'll check this asynchronously in the calling function
+  return pathways[0] || null
+}
+
+// Determine default pathway with module availability check
+export async function determineDefaultPathwayWithModules(selectedCategoryNames, pathways, childId) {
+  try {
+    console.log('Focus Plan: Determining pathway with module check...')
+    
+    // First get the default pathway using the original logic
+    const defaultPathway = determineDefaultPathway(selectedCategoryNames, pathways)
+    
+    console.log('Focus Plan: Default pathway determined:', defaultPathway?.name)
+    
+    // If no pathway found, return null
+    if (!defaultPathway) {
+      console.log('Focus Plan: No default pathway found')
+      return null
+    }
+    
+    // Check if this pathway has modules available for the child
+    const hasModules = await checkPathwayHasModules(defaultPathway, childId)
+    
+    if (hasModules) {
+      console.log(`Focus Plan: Using default pathway "${defaultPathway.name}" - has modules`)
+      return defaultPathway
+    }
+    
+    // If the default pathway doesn't have modules, find one that does
+    for (const pathway of pathways) {
+      if (pathway.id !== defaultPathway.id) {
+        const pathwayHasModules = await checkPathwayHasModules(pathway, childId)
+        if (pathwayHasModules) {
+          console.log(`Focus Plan: Default pathway "${defaultPathway.name}" has no modules, switching to "${pathway.name}"`)
+          return pathway
+        }
+      }
+    }
+    
+    // If no pathway has modules, check super skills as fallback
+    console.log(`Focus Plan: No pathways have modules, checking super skills...`)
+    const superSkillWithModules = await findSuperSkillWithModules()
+    
+    if (superSkillWithModules) {
+      // Create a pseudo-pathway object for the super skill
+      const pseudoPathway = {
+        id: `super-skill-${superSkillWithModules.id}`,
+        name: superSkillWithModules.name,
+        super_skill_id: superSkillWithModules.id
+      }
+      console.log(`Focus Plan: Using super skill "${superSkillWithModules.name}" as fallback`)
+      return pseudoPathway
+    }
+    
+    // If no pathway or super skill has modules, return null to force onboarding to handle it
+    console.warn(`Focus Plan: No pathways or super skills have available modules`)
+    return null
+  } catch (error) {
+    console.error('Focus Plan: Error in determineDefaultPathwayWithModules:', error)
+    // Fallback to original logic
+    return determineDefaultPathway(selectedCategoryNames, pathways)
+  }
+}
+
+// Find a super skill that has modules
+async function findSuperSkillWithModules() {
+  try {
+    // Get all active modules and super skills
+    const [modulesResult, superSkillsResult] = await Promise.all([
+      supabase
+        .from('modules')
+        .select('*')
+        .eq('is_active', true),
+      supabase
+        .from('super_skills')
+        .select('*')
+        .order('name', { ascending: true })
+    ])
+    
+    const { data: modules, error: modulesError } = modulesResult
+    const { data: superSkills, error: superSkillsError } = superSkillsResult
+    
+    if (modulesError || !modules || superSkillsError || !superSkills) return null
+    
+    // Check each super skill for modules
+    for (const superSkill of superSkills) {
+      const modulesWithSuperSkill = modules.filter(m => m.super_skill_id === superSkill.id)
+      
+      if (modulesWithSuperSkill.length > 0) {
+        console.log(`Found super skill "${superSkill.name}" with ${modulesWithSuperSkill.length} modules`)
+        return superSkill
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error finding super skill with modules:', error)
+    return null
+  }
+}
+
+// Check if a pathway has modules available for a child
+async function checkPathwayHasModules(pathway, childId) {
+  try {
+    // Get all active modules and super skills
+    const [modulesResult, superSkillsResult] = await Promise.all([
+      supabase
+        .from('modules')
+        .select('*')
+        .eq('is_active', true),
+      supabase
+        .from('super_skills')
+        .select('*')
+    ])
+    
+    const { data: modules, error: modulesError } = modulesResult
+    const { data: superSkills, error: superSkillsError } = superSkillsResult
+    
+    if (modulesError || !modules) return false
+    
+    // Filter modules based on pathway's super skill
+    let pathwayModules = []
+    
+    // Check if pathway has a super_skill_id (new system)
+    if (pathway.super_skill_id) {
+      // Get the super skill to find its slug
+      const pathwaySuperSkill = superSkills?.find(s => s.id === pathway.super_skill_id)
+      if (pathwaySuperSkill) {
+        // Find modules with this super skill
+        pathwayModules = modules.filter(m => m.super_skill_id === pathway.super_skill_id)
+      }
+    } 
+    // Fall back to pathway name to super skill mapping
+    else {
+      // Map pathway names to super skill slugs
+      const pathwayToSuperSkill = {
+        'anger journey': 'anger-manager',
+        'bravery journey': 'bravery-builder',
+        'heavy heart journey': 'heavy-heart',
+        'connection journey': 'connection-captain',
+        'calm journey': 'calm-controller',
+        'foundations': 'all',
+        "daniel's big feelings": 'all' // Special case for Daniel's pathway
+      }
+      
+      const superSkillSlug = pathwayToSuperSkill[pathway.name?.toLowerCase()] || 'all'
+      
+      // Filter modules by super skill
+      pathwayModules = modules.filter(m => {
+        // First check if module has super_skill_id
+        if (m.super_skill_id && superSkills) {
+          const moduleSuperSkill = superSkills.find(s => s.id === m.super_skill_id)
+          if (moduleSuperSkill) {
+            return moduleSuperSkill.slug === superSkillSlug
+          }
+        }
+        
+        // Fall back to checking category mapping
+        const category = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || '').toLowerCase()
+        
+        // Map categories to super skills
+        const categoryToSuperSkill = {
+          'anger': 'anger-manager',
+          'anxiety': 'bravery-builder',
+          'sadness': 'heavy-heart',
+          'social': 'connection-captain',
+          'calm': 'calm-controller',
+          'general': 'all'
+        }
+        
+        const moduleSuperSkill = categoryToSuperSkill[category] || 'all'
+        return moduleSuperSkill === superSkillSlug
+      })
+    }
+    
+    console.log(`Checking pathway "${pathway.name}": Found ${pathwayModules.length} modules`)
+    return pathwayModules.length > 0
+  } catch (error) {
+    console.error('Error checking pathway modules:', error)
+    return false
+  }
 }
 
 // Check if assessment is needed after module completion
