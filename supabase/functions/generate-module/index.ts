@@ -256,9 +256,22 @@ function generatePaletteFromColor(baseColor: string | null | undefined): Categor
 // ====================
 // HTML RENDERER
 
+function getAgeRangeKey(targetAge?: string): string {
+  if (!targetAge) {
+    return "6-8";
+  }
+  const normalized = targetAge.replace(/[–—]/g, "-").trim();
+  const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}`;
+  }
+  return normalized || "6-8";
+}
+
 function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): string {
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
+  const ageRangeKey = getAgeRangeKey(metadata.targetAge);
   
   // Helper function to render character (image or emoji)
   const renderCharacter = (size: string = 'text-6xl') => {
@@ -690,7 +703,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     }
   </style>
 </head>
-<body class="module-theme" data-series="${escapeHtml(metadata.series || "custom")}">
+<body class="module-theme" data-series="${escapeHtml(metadata.series || "custom")}" data-age-range="${escapeHtml(ageRangeKey)}">
   <div id="moduleHeaderRoot"></div>
   
   <main class="module-content">
