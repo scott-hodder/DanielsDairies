@@ -951,9 +951,25 @@ class DanielModulePreview {
     
     // Show Daniel's pre-activity dialogue first
     this.dialogueSystem.showPreActivity(module, category, () => {
-      // Then show the regular module preview or start directly
-      if (this.originalShowPreview) {
-        this.originalShowPreview(module);
+      // Try direct navigation first since it's more reliable
+      const child = window.state?.selectedChild;
+      
+      if (child && module) {
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
+        window.location.href = moduleUrl;
+        return; // Exit early if direct navigation works
+      }
+      
+      // Fallback to other methods if direct navigation fails
+      if (typeof startModule === 'function') {
+        startModule(module);
+      } else if (window.enhancedDashboard && window.enhancedDashboard.startModule) {
+        // Wrap the module in the expected structure for enhanced dashboard
+        const wrappedModule = {
+          module: module,
+          code: module.code
+        };
+        window.enhancedDashboard.startModule(wrappedModule);
       }
     });
   }
@@ -1152,7 +1168,6 @@ window.danielRelationshipSystem = {
       if (window.enhancedDashboard) {
         this.modulePreview.init();
         this.hubEnhancer.init();
-        console.log('Daniel Relationship System initialized');
       } else {
         setTimeout(waitForDashboard, 200);
       }

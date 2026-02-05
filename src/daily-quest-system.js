@@ -843,22 +843,26 @@ class DailyQuestManager {
     const questCard = document.getElementById('dailyQuestCard');
     if (!questCard) return;
 
-    const progressSection = questCard.querySelector('.quest-progress-section');
-    if (progressSection) {
-      progressSection.innerHTML = `
-        <p class="quest-description" id="questDescription">${this.currentQuest.description}</p>
-        <button class="daily-quest-btn ${this.isCompleted ? 'completed' : ''}" 
-                id="doQuestBtn" 
-                ${this.isCompleted ? 'disabled' : ''}>
-          ${this.isCompleted ? 'Completed Today' : 'Do Daily Quest'}
-        </button>
-      `;
+    // Update the description
+    const descriptionEl = document.getElementById('questDescription');
+    if (descriptionEl) {
+      descriptionEl.textContent = this.currentQuest.description;
     }
 
-    // Add click handler
+    // Update the existing button
     const btn = document.getElementById('doQuestBtn');
-    if (btn && !this.isCompleted) {
-      btn.addEventListener('click', () => this.openQuestModal());
+    if (btn) {
+      btn.className = `daily-quest-btn ${this.isCompleted ? 'completed' : ''}`;
+      btn.disabled = this.isCompleted;
+      btn.textContent = this.isCompleted ? 'Completed Today' : 'Do Daily Quest';
+      
+      // Remove existing listeners and add new one
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      
+      if (!this.isCompleted) {
+        newBtn.addEventListener('click', () => this.openQuestModal());
+      }
     }
   }
 

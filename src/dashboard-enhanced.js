@@ -1649,48 +1649,7 @@ class EnhancedDashboard {
     var self = this;
     var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code) + '&childName=' + encodeURIComponent(child.name || '');
     
-    // Check if assessment is needed before starting module
-    if (window.progressTrackingSystem && window.supabase) {
-      try {
-        var pathwayCategory = this.adventureMap ? this.adventureMap.currentCategory : 'all';
-        if (pathwayCategory === 'all') {
-          pathwayCategory = module.category || 'general';
-        }
-
-        var completedCount = 0;
-        var totalCount = 0;
-        if (this.adventureMap) {
-          // Use unfiltered list so counts are per pathway even when map is on 'all'
-          var source = this.adventureMap.allModules || this.adventureMap.modules || [];
-          var pathwayOnly = source.filter(function(m) { return m.category === pathwayCategory; });
-          completedCount = pathwayOnly.filter(function(m) { return !!m.completed || m.status === 'completed'; }).length;
-          totalCount = pathwayOnly.length;
-        }
-
-        await window.progressTrackingSystem.init(window.supabase);
-
-        var assessmentNeeded = await window.progressTrackingSystem.checkAssessmentNeeded(
-          child.id, pathwayCategory, completedCount, totalCount
-        );
-
-        if (assessmentNeeded) {
-          window.progressTrackingSystem.showAssessment(
-            child.id, pathwayCategory, assessmentNeeded,
-            function(results) {
-              console.log('Assessment completed:', results);
-              window.location.href = moduleUrl;
-            },
-            function() {
-              console.log('Assessment skipped');
-              window.location.href = moduleUrl;
-            }
-          );
-          return;
-        }
-      } catch (error) {
-        console.error('Error checking assessment:', error);
-      }
-    }
+    // Go directly to module - assessments should only trigger on completion, not on start
     window.location.href = moduleUrl;
   }
 

@@ -1372,25 +1372,25 @@ class ProgressTrackingSystem {
 
     const progressPercent = totalModules > 0 ? (completedModules / totalModules) * 100 : 0;
 
-    // Check-ins after every 3 modules
-    const checkInModuleCount = 3;
-    const nextCheckInTarget = Math.floor(completedModules / checkInModuleCount) * checkInModuleCount + checkInModuleCount;
+    // Check-ins after every 9 modules (once every 3 sets of 3 modules)
+    const checkInModuleCount = 9;
     
-    // Count how many check-ins have been completed
+    // Count how many check-ins have been completed for this pathway
     const completedCheckIns = assessments?.filter(a => 
       a.assessment_type !== 'baseline' && 
       a.assessment_type !== 'midpoint' && 
       a.assessment_type !== 'endpoint'
     ).length || 0;
     
+    // Calculate how many check-in milestones should have been reached
     const expectedCheckIns = Math.floor(completedModules / checkInModuleCount);
-
-    // Determine which assessment is needed
+    
+    // Only trigger check-in if we've reached a new milestone and haven't done it yet
+    // This prevents duplicate check-ins for the same module completion milestone
     if (!hasBaseline && completedModules === 0) {
       return ASSESSMENT_TIMING.BASELINE;
     }
-
-    // Check if we need a check-in after every 3 modules
+    
     if (completedModules > 0 && completedModules % checkInModuleCount === 0 && completedCheckIns < expectedCheckIns) {
       return 'checkin';
     }

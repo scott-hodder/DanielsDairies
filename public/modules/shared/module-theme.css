@@ -1,11 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Outfit:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap");
 
 :root{
   /* Typography */
   --module-font-display: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
   --module-font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Shape / depth (lighter than your current) */
+  /* Shape / depth */
   --module-radius-xl: 26px;
   --module-radius-lg: 20px;
   --module-radius-sm: 14px;
@@ -26,7 +26,7 @@
   --theme-text: #1f2937;
   --theme-muted: #4b5563;
 
-  /* Softer hero (your current hero is too heavy) */
+  /* Softer hero */
   --theme-hero: linear-gradient(135deg, rgba(35,59,115,0.92), rgba(65,93,190,0.92));
 
   /* Header theme */
@@ -42,46 +42,153 @@
   --response-hover-border: #2196f3;
 }
 
-/* Luna palette (match the calmer slate/navy/sand feel from module1) */
-body.module-theme[data-series="luna"]{
-  --theme-primary: #405878;
-  --theme-secondary: #4c6c96;
-  --theme-accent: #dfdbca;
-  --theme-surface: #fffff5;
-  --theme-card: #ffffff;
-  --theme-card-border: rgba(64, 88, 120, 0.14);
-  --theme-text: #364f66;
-  --theme-muted: #4c6c96;
-  --theme-hero: linear-gradient(135deg, rgba(64,88,120,0.92), rgba(76,108,150,0.92));
 
-  --module-header-bg: rgba(255, 255, 245, 0.95);
-  --module-header-border: rgba(76, 108, 150, 0.22);
-  --module-header-text: #364f66;
-  --module-header-accent: #405878;
+
+/* ============================================
+   AGE RANGE VARIABLES
+   ============================================
+   Usage: Add data-age-range="6-8" to body element
+   
+   Age Ranges:
+   - 6-8:   Early Childhood (Concrete Learners) - Largest, most playful
+   - 9-11:  Late Childhood (Bridge Thinkers) - Large, friendly
+   - 12-14: Early Adolescence (Transition Thinkers) - Medium, balanced
+   - 15-18: Mid to Late Adolescence (Abstract Integrators) - Standard, mature
+   ============================================ */
+
+/* 6-8 Years: Early Childhood (Concrete Learners) */
+body.module-theme[data-age-range="6-8"] {
+  --age-font-size-base: 1.35rem;
+  --age-font-size-lg: 1.55rem;
+  --age-font-size-xl: 1.85rem;
+  --age-font-size-h1: 2.8rem;
+  --age-font-size-h2: 2.2rem;
+  --age-font-size-h3: 1.85rem;
+  
+  --age-line-height: 1.9;
+  --age-line-height-heading: 1.35;
+  
+  --age-spacing-sm: 1rem;
+  --age-spacing-md: 1.5rem;
+  --age-spacing-lg: 2rem;
+  --age-spacing-xl: 2.5rem;
+  
+  --age-btn-padding: 18px 28px;
+  --age-btn-font-size: 1.25rem;
+  --age-input-padding: 18px 20px;
+  --age-input-font-size: 1.25rem;
+  
+  --age-radius-sm: 16px;
+  --age-radius-md: 22px;
+  --age-radius-lg: 28px;
+  
+  --age-icon-size: 56px;
+  --age-emoji-size: 48px;
+  
+  /* Override module radius for friendlier look */
+  --module-radius-xl: 32px;
+  --module-radius-lg: 28px;
+  --module-radius-sm: 16px;
 }
 
-/* Daniel palette (warm, but keep it clean, not cartoon-chaos) */
-body.module-theme[data-series="daniel"],
-body.module-theme[data-series="__MODULE_SERIES__"]{
-  --theme-primary: #264653;
-  --theme-secondary: #2a9d8f;
-  --theme-accent: #f4a261;
-  --theme-surface: #fff8f0;
-  --theme-card: #ffffff;
-  --theme-card-border: rgba(38, 70, 83, 0.14);
-  --theme-text: #264653;
-  --theme-muted: rgba(38, 70, 83, 0.85);
-  --theme-hero: linear-gradient(135deg, rgba(42,157,143,0.92), rgba(244,162,97,0.92));
-
-  --module-header-bg: rgba(255, 248, 240, 0.95);
-  --module-header-border: rgba(244, 162, 97, 0.30);
-  --module-header-text: #264653;
-  --module-header-accent: #2a9d8f;
+/* 9-11 Years: Late Childhood (Bridge Thinkers) */
+body.module-theme[data-age-range="9-11"] {
+  --age-font-size-base: 1.15rem;
+  --age-font-size-lg: 1.3rem;
+  --age-font-size-xl: 1.5rem;
+  --age-font-size-h1: 2.4rem;
+  --age-font-size-h2: 1.9rem;
+  --age-font-size-h3: 1.55rem;
+  
+  --age-line-height: 1.8;
+  --age-line-height-heading: 1.3;
+  
+  --age-spacing-sm: 0.875rem;
+  --age-spacing-md: 1.25rem;
+  --age-spacing-lg: 1.75rem;
+  --age-spacing-xl: 2.25rem;
+  
+  --age-btn-padding: 14px 24px;
+  --age-btn-font-size: 1.1rem;
+  --age-input-padding: 14px 16px;
+  --age-input-font-size: 1.1rem;
+  
+  --age-radius-sm: 14px;
+  --age-radius-md: 20px;
+  --age-radius-lg: 26px;
+  
+  --age-icon-size: 48px;
+  --age-emoji-size: 40px;
 }
 
-/* Base */
+/* 12-14 Years: Early Adolescence (Transition Thinkers) */
+body.module-theme[data-age-range="12-14"] {
+  --age-font-size-base: 1.05rem;
+  --age-font-size-lg: 1.15rem;
+  --age-font-size-xl: 1.3rem;
+  --age-font-size-h1: 2.1rem;
+  --age-font-size-h2: 1.65rem;
+  --age-font-size-h3: 1.35rem;
+  
+  --age-line-height: 1.75;
+  --age-line-height-heading: 1.25;
+  
+  --age-spacing-sm: 0.75rem;
+  --age-spacing-md: 1rem;
+  --age-spacing-lg: 1.5rem;
+  --age-spacing-xl: 2rem;
+  
+  --age-btn-padding: 12px 20px;
+  --age-btn-font-size: 1rem;
+  --age-input-padding: 12px 14px;
+  --age-input-font-size: 1rem;
+  
+  --age-radius-sm: 12px;
+  --age-radius-md: 18px;
+  --age-radius-lg: 24px;
+  
+  --age-icon-size: 42px;
+  --age-emoji-size: 36px;
+}
+
+/* 15-18 Years: Mid to Late Adolescence (Abstract Integrators) */
+body.module-theme[data-age-range="15-18"] {
+  --age-font-size-base: 1rem;
+  --age-font-size-lg: 1.1rem;
+  --age-font-size-xl: 1.2rem;
+  --age-font-size-h1: 1.9rem;
+  --age-font-size-h2: 1.5rem;
+  --age-font-size-h3: 1.25rem;
+  
+  --age-line-height: 1.7;
+  --age-line-height-heading: 1.2;
+  
+  --age-spacing-sm: 0.625rem;
+  --age-spacing-md: 0.875rem;
+  --age-spacing-lg: 1.25rem;
+  --age-spacing-xl: 1.75rem;
+  
+  --age-btn-padding: 10px 18px;
+  --age-btn-font-size: 0.95rem;
+  --age-input-padding: 10px 12px;
+  --age-input-font-size: 0.95rem;
+  
+  --age-radius-sm: 10px;
+  --age-radius-md: 16px;
+  --age-radius-lg: 22px;
+  
+  --age-icon-size: 36px;
+  --age-emoji-size: 32px;
+}
+
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
+
 body.module-theme{
   margin:0;
   font-family: var(--module-font-body);
@@ -91,7 +198,7 @@ body.module-theme{
   letter-spacing: -0.01em;
 }
 
-/* Subtle background texture (lighter than your current) */
+/* Subtle background texture */
 body.module-theme::before{
   content:"";
   position:fixed;
@@ -104,13 +211,82 @@ body.module-theme::before{
     radial-gradient(circle at 50% 120%, rgba(0,0,0,0.05), transparent 45%);
 }
 
-
 /* Make anchor jumps not hide behind header */
 [id]{
   scroll-margin-top: calc(var(--module-header-height) + 16px);
 }
 
-/* Layout widths */
+
+/* ============================================
+   AGE-BASED TYPOGRAPHY
+   ============================================ */
+
+/* Base body text with age support */
+body.module-theme[data-age-range] {
+  font-size: var(--age-font-size-base);
+  line-height: var(--age-line-height);
+}
+
+body.module-theme[data-age-range] p,
+body.module-theme[data-age-range] li {
+  font-size: var(--age-font-size-base);
+  line-height: var(--age-line-height);
+  color: var(--theme-muted);
+}
+
+/* Headings with age support */
+body.module-theme[data-age-range] h1,
+body.module-theme[data-age-range] .text-4xl {
+  font-size: var(--age-font-size-h1) !important;
+  line-height: var(--age-line-height-heading);
+  margin-bottom: var(--age-spacing-lg);
+}
+
+body.module-theme[data-age-range] h2,
+body.module-theme[data-age-range] .text-2xl {
+  font-size: var(--age-font-size-h2) !important;
+  line-height: var(--age-line-height-heading);
+  margin-bottom: var(--age-spacing-md);
+}
+
+body.module-theme[data-age-range] h3,
+body.module-theme[data-age-range] .text-xl {
+  font-size: var(--age-font-size-h3) !important;
+  line-height: var(--age-line-height-heading);
+  margin-bottom: var(--age-spacing-sm);
+}
+
+/* Age-specific font weights */
+body.module-theme[data-age-range="6-8"] p,
+body.module-theme[data-age-range="6-8"] li {
+  font-weight: 500;
+}
+
+body.module-theme[data-age-range="6-8"] h1,
+body.module-theme[data-age-range="6-8"] h2,
+body.module-theme[data-age-range="6-8"] h3 {
+  font-weight: 700;
+}
+
+body.module-theme[data-age-range="9-11"] p,
+body.module-theme[data-age-range="9-11"] li {
+  font-weight: 450;
+}
+
+/* Age-specific letter spacing */
+body.module-theme[data-age-range="6-8"] {
+  letter-spacing: 0.02em;
+}
+
+body.module-theme[data-age-range="9-11"] {
+  letter-spacing: 0.01em;
+}
+
+
+/* ============================================
+   LAYOUT WIDTHS
+   ============================================ */
+
 .module-hero,
 .module-page{
   max-width: 1040px;
@@ -118,7 +294,11 @@ body.module-theme::before{
   margin-right:auto;
 }
 
-/* Hero (smaller, cleaner, closer to Luna vibe) */
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+
 .module-hero{
   border-radius: var(--module-radius-xl);
   padding: 34px clamp(20px, 3.5vw, 44px);
@@ -155,7 +335,20 @@ body.module-theme::before{
   color: black;
 }
 
-/* Pages / cards */
+/* Age-specific hero adjustments */
+body.module-theme[data-age-range] .module-hero h1 {
+  font-size: clamp(var(--age-font-size-h2), 4vw, var(--age-font-size-h1)) !important;
+}
+
+body.module-theme[data-age-range] .module-hero p {
+  font-size: var(--age-font-size-lg) !important;
+}
+
+
+/* ============================================
+   PAGES / CARDS
+   ============================================ */
+
 .module-page{ margin: 0 auto 22px; }
 
 .page-inner{
@@ -166,6 +359,12 @@ body.module-theme::before{
   box-shadow: var(--module-shadow-card);
 }
 
+/* Age-specific card padding */
+body.module-theme[data-age-range] .page-inner {
+  padding: var(--age-spacing-xl) clamp(var(--age-spacing-lg), 4vw, var(--age-spacing-xl));
+  border-radius: var(--age-radius-lg);
+}
+
 /* Titles */
 .page-heading{
   font-family: var(--module-font-display);
@@ -174,12 +373,21 @@ body.module-theme::before{
   color: var(--theme-primary);
 }
 
-p, li{
-  color: var(--theme-muted);
-  font-size: 1.02rem;
+body.module-theme[data-age-range] .page-heading {
+  font-size: var(--age-font-size-h2) !important;
+  margin-bottom: var(--age-spacing-md);
 }
 
-/* Buttons */
+p, li{
+  color: var(--theme-muted);
+  font-size: var(--age-font-size-base);
+}
+
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
 .primary-btn,
 .secondary-btn{
   padding: 12px 18px;
@@ -196,6 +404,7 @@ p, li{
   color: #fff;
   box-shadow: 0 10px 18px rgba(0,0,0,0.14);
 }
+
 .primary-btn:hover{
   transform: translateY(-1px);
   box-shadow: 0 16px 26px rgba(0,0,0,0.16);
@@ -205,9 +414,30 @@ p, li{
   background: rgba(0,0,0,0.05);
   color: var(--theme-text);
 }
+
 .secondary-btn:hover{ transform: translateY(-1px); }
 
-/* Inputs (less “thick border”, more Luna-like) */
+/* Age-specific button styles */
+body.module-theme[data-age-range] .primary-btn,
+body.module-theme[data-age-range] .secondary-btn {
+  padding: var(--age-btn-padding);
+  font-size: var(--age-btn-font-size);
+  border-radius: var(--age-radius-md);
+}
+
+/* Extra large touch targets for youngest */
+body.module-theme[data-age-range="6-8"] .primary-btn,
+body.module-theme[data-age-range="6-8"] .secondary-btn {
+  min-height: 56px;
+  min-width: 120px;
+  font-weight: 800;
+}
+
+
+/* ============================================
+   INPUTS
+   ============================================ */
+
 textarea,
 select,
 input[type="text"],
@@ -221,6 +451,7 @@ input[type="number"]{
   background: #fff;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
+
 textarea:focus,
 select:focus,
 input:focus{
@@ -229,7 +460,21 @@ input:focus{
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-primary) 14%, transparent);
 }
 
-/* Callouts / sections */
+/* Age-specific input styles */
+body.module-theme[data-age-range] input[type="text"],
+body.module-theme[data-age-range] input[type="number"],
+body.module-theme[data-age-range] textarea,
+body.module-theme[data-age-range] select {
+  padding: var(--age-input-padding);
+  font-size: var(--age-input-font-size);
+  border-radius: var(--age-radius-sm);
+}
+
+
+/* ============================================
+   CALLOUTS / SECTIONS
+   ============================================ */
+
 .callout{
   border-radius: var(--module-radius-lg);
   border: 1px dashed color-mix(in srgb, var(--theme-primary) 28%, transparent);
@@ -238,12 +483,23 @@ input:focus{
   margin-bottom: 16px;
 }
 
-/* Quiz */
+body.module-theme[data-age-range] .callout {
+  padding: var(--age-spacing-md) var(--age-spacing-lg);
+  border-radius: var(--age-radius-md);
+  margin-bottom: var(--age-spacing-md);
+}
+
+
+/* ============================================
+   QUIZ OPTIONS
+   ============================================ */
+
 .quiz-options{
   display:grid;
   gap: 12px;
   margin: 16px 0;
 }
+
 .quiz-option{
   border-radius: var(--module-radius-sm);
   border: 1px solid rgba(0,0,0,0.10);
@@ -253,19 +509,50 @@ input:focus{
   background:#fff;
   transition: transform .12s ease, border-color .12s ease, background .12s ease;
 }
+
 .quiz-option:hover{ transform: translateY(-1px); }
+
 .quiz-option.selected{
   border-color: color-mix(in srgb, var(--theme-primary) 70%, white);
   background: color-mix(in srgb, var(--theme-primary) 10%, white);
 }
 
-/* Checklist */
+/* Age-specific quiz options */
+body.module-theme[data-age-range] .quiz-options {
+  gap: var(--age-spacing-md);
+  margin: var(--age-spacing-lg) 0;
+}
+
+body.module-theme[data-age-range] .quiz-option {
+  padding: var(--age-spacing-md) var(--age-spacing-lg);
+  font-size: var(--age-font-size-base);
+  border-radius: var(--age-radius-md);
+  min-height: calc(var(--age-font-size-base) * 3);
+}
+
+/* Playful style for youngest */
+body.module-theme[data-age-range="6-8"] .quiz-option {
+  border-width: 3px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+}
+
+body.module-theme[data-age-range="6-8"] .quiz-option:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 0 rgba(0,0,0,0.06);
+}
+
+
+/* ============================================
+   CHECKLIST
+   ============================================ */
+
 .checklist{
   display:flex;
   flex-direction:column;
   gap: 12px;
   margin: 14px 0 22px;
 }
+
 .check-item{
   display:flex;
   align-items:flex-start;
@@ -275,6 +562,7 @@ input:focus{
   background: color-mix(in srgb, var(--theme-card) 92%, var(--theme-accent) 8%);
   border: 1px solid rgba(0,0,0,0.08);
 }
+
 .check-item input[type="checkbox"]{
   margin-top: 2px;
   width: 18px;
@@ -282,7 +570,30 @@ input:focus{
   accent-color: var(--theme-primary);
 }
 
-/* Drawing */
+/* Age-specific checklist */
+body.module-theme[data-age-range] .checklist {
+  gap: var(--age-spacing-md);
+  margin: var(--age-spacing-md) 0 var(--age-spacing-xl);
+}
+
+body.module-theme[data-age-range] .check-item {
+  padding: var(--age-spacing-md);
+  border-radius: var(--age-radius-sm);
+  gap: var(--age-spacing-md);
+}
+
+body.module-theme[data-age-range] .check-item input[type="checkbox"] {
+  width: calc(var(--age-font-size-base) * 1.4);
+  height: calc(var(--age-font-size-base) * 1.4);
+  min-width: 20px;
+  min-height: 20px;
+}
+
+
+/* ============================================
+   DRAWING
+   ============================================ */
+
 .draw-canvas{
   width:100%;
   border-radius: var(--module-radius-lg);
@@ -290,6 +601,7 @@ input:focus{
   border: 2px dashed rgba(0,0,0,0.12);
   min-height: 280px;
 }
+
 .draw-controls{
   display:flex;
   gap: 10px;
@@ -297,7 +609,22 @@ input:focus{
   margin-top: 14px;
 }
 
-/* Takeaways */
+/* Age-specific drawing canvas */
+body.module-theme[data-age-range="6-8"] .draw-canvas {
+  min-height: 350px;
+  border-width: 4px;
+}
+
+body.module-theme[data-age-range="6-8"] .draw-controls button {
+  min-width: 100px;
+  min-height: 48px;
+}
+
+
+/* ============================================
+   TAKEAWAYS
+   ============================================ */
+
 .takeaways{
   list-style:none;
   padding:0;
@@ -305,6 +632,7 @@ input:focus{
   display:grid;
   gap: 10px;
 }
+
 .takeaways li{
   padding: 12px 14px;
   border-radius: var(--module-radius-sm);
@@ -312,7 +640,19 @@ input:focus{
   border: 1px solid rgba(0,0,0,0.08);
 }
 
-/* Response Tracking Styles */
+body.module-theme[data-age-range] .takeaways {
+  gap: var(--age-spacing-md);
+}
+
+body.module-theme[data-age-range] .takeaways li {
+  padding: var(--age-spacing-md);
+}
+
+
+/* ============================================
+   RESPONSE TRACKING STYLES
+   ============================================ */
+
 .response-tracked {
   background: var(--response-tracked-bg) !important;
   border-color: var(--response-tracked-border) !important;
@@ -353,7 +693,11 @@ input:focus{
   padding-left: 12px;
 }
 
-/* Rating styles */
+
+/* ============================================
+   RATING STYLES
+   ============================================ */
+
 .rating-container {
   display: flex;
   gap: 8px;
@@ -373,7 +717,30 @@ input:focus{
   transform: scale(1.1);
 }
 
-/* Emoji selector */
+/* Age-specific rating */
+body.module-theme[data-age-range] .rating-star {
+  font-size: calc(var(--age-emoji-size) * 0.65);
+}
+
+body.module-theme[data-age-range="6-8"] .rating-container {
+  gap: 16px;
+}
+
+body.module-theme[data-age-range="6-8"] .rating-star {
+  font-size: 36px;
+  padding: 8px;
+}
+
+body.module-theme[data-age-range="6-8"] .rating-star:hover,
+body.module-theme[data-age-range="6-8"] .rating-star.active {
+  transform: scale(1.2);
+}
+
+
+/* ============================================
+   EMOJI SELECTOR
+   ============================================ */
+
 .emoji-selector {
   display: flex;
   gap: 12px;
@@ -400,7 +767,36 @@ input:focus{
   background: var(--response-tracked-bg);
 }
 
-/* Progress indicator */
+/* Age-specific emoji selector */
+body.module-theme[data-age-range] .emoji-option {
+  font-size: var(--age-emoji-size);
+}
+
+body.module-theme[data-age-range="6-8"] .emoji-selector {
+  gap: 20px;
+}
+
+body.module-theme[data-age-range="6-8"] .emoji-option {
+  font-size: 48px;
+  padding: 14px;
+  border-radius: 16px;
+  border-width: 3px;
+}
+
+body.module-theme[data-age-range="9-11"] .emoji-selector {
+  gap: 14px;
+}
+
+body.module-theme[data-age-range="9-11"] .emoji-option {
+  font-size: 38px;
+  padding: 10px;
+}
+
+
+/* ============================================
+   PROGRESS INDICATOR
+   ============================================ */
+
 .response-progress {
   background: #f0f0f0;
   border-radius: 10px;
@@ -416,9 +812,140 @@ input:focus{
   border-radius: 10px;
 }
 
-/* Mobile */
+/* Age-specific progress */
+body.module-theme[data-age-range="6-8"] .response-progress {
+  height: 14px;
+  border-radius: 14px;
+}
+
+body.module-theme[data-age-range="9-11"] .response-progress {
+  height: 12px;
+  border-radius: 12px;
+}
+
+body.module-theme[data-age-range="12-14"] .response-progress {
+  height: 10px;
+}
+
+
+/* ============================================
+   BREATHING EXERCISE
+   ============================================ */
+
+body.module-theme[data-age-range="6-8"] .breathing-circle {
+  width: 200px !important;
+  height: 200px !important;
+}
+
+body.module-theme[data-age-range="9-11"] .breathing-circle {
+  width: 170px !important;
+  height: 170px !important;
+}
+
+body.module-theme[data-age-range="12-14"] .breathing-circle {
+  width: 150px !important;
+  height: 150px !important;
+}
+
+
+/* ============================================
+   THOUGHT BUBBLES
+   ============================================ */
+
+body.module-theme[data-age-range="6-8"] .thought-bubble {
+  padding: var(--age-spacing-lg) var(--age-spacing-xl);
+  border-radius: 32px !important;
+}
+
+body.module-theme[data-age-range="6-8"] .thought-bubble::before {
+  width: 28px;
+  height: 28px;
+  bottom: -20px;
+}
+
+body.module-theme[data-age-range="6-8"] .thought-bubble::after {
+  width: 18px;
+  height: 18px;
+  bottom: -35px;
+}
+
+body.module-theme[data-age-range="9-11"] .thought-bubble {
+  padding: var(--age-spacing-md) var(--age-spacing-lg);
+  border-radius: 28px !important;
+}
+
+
+/* ============================================
+   MATCHING ACTIVITY
+   ============================================ */
+
+body.module-theme[data-age-range="6-8"] .match-item {
+  padding: var(--age-spacing-md) var(--age-spacing-lg);
+  font-size: var(--age-font-size-lg);
+  border-width: 3px;
+  min-height: 60px;
+}
+
+body.module-theme[data-age-range="9-11"] .match-item {
+  padding: var(--age-spacing-sm) var(--age-spacing-md);
+  font-size: var(--age-font-size-base);
+}
+
+
+/* ============================================
+   COPING CARDS
+   ============================================ */
+
+body.module-theme[data-age-range="6-8"] .coping-card {
+  border-radius: 24px !important;
+}
+
+body.module-theme[data-age-range="6-8"] .coping-card::before {
+  height: 8px;
+}
+
+body.module-theme[data-age-range="9-11"] .coping-card::before {
+  height: 6px;
+}
+
+
+/* ============================================
+   STORY BLANKS
+   ============================================ */
+
+body.module-theme[data-age-range="6-8"] .story-blank {
+  min-width: 160px;
+  border-bottom-width: 4px;
+  font-size: var(--age-font-size-lg);
+}
+
+body.module-theme[data-age-range="9-11"] .story-blank {
+  min-width: 140px;
+  border-bottom-width: 3px;
+}
+
+
+/* ============================================
+   SHIELD SECTIONS
+   ============================================ */
+
+body.module-theme[data-age-range="6-8"] .shield-section {
+  padding: var(--age-spacing-lg);
+}
+
+body.module-theme[data-age-range="6-8"] .shield-input {
+  font-size: var(--age-input-font-size);
+  padding: var(--age-input-padding);
+  border-radius: 18px !important;
+}
+
+
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
+
 @media (max-width: 768px){
-  :root{ --module-header-height: 75px; } /* header often gets taller on mobile */
+  :root{ --module-header-height: 75px; }
   .module-hero{ padding: 26px 18px; }
   .page-inner{ padding: 20px; }
   
@@ -437,5 +964,116 @@ input:focus{
   .emoji-option {
     font-size: 28px;
     padding: 6px;
+  }
+  
+  /* 6-8 mobile adjustments */
+  body.module-theme[data-age-range="6-8"] {
+    --age-font-size-base: 1.2rem;
+    --age-font-size-lg: 1.35rem;
+    --age-font-size-h1: 2.2rem;
+    --age-font-size-h2: 1.8rem;
+    --age-font-size-h3: 1.5rem;
+    --age-btn-padding: 14px 22px;
+    --age-btn-font-size: 1.15rem;
+    --age-emoji-size: 40px;
+  }
+  
+  body.module-theme[data-age-range="6-8"] .breathing-circle {
+    width: 160px !important;
+    height: 160px !important;
+  }
+  
+  body.module-theme[data-age-range="6-8"] .emoji-option {
+    font-size: 38px;
+    padding: 10px;
+  }
+  
+  /* 9-11 mobile adjustments */
+  body.module-theme[data-age-range="9-11"] {
+    --age-font-size-base: 1.05rem;
+    --age-font-size-lg: 1.15rem;
+    --age-font-size-h1: 1.9rem;
+    --age-font-size-h2: 1.55rem;
+    --age-btn-padding: 12px 20px;
+  }
+  
+  /* 12-14 mobile adjustments */
+  body.module-theme[data-age-range="12-14"] {
+    --age-font-size-base: 0.95rem;
+    --age-font-size-h1: 1.7rem;
+  }
+  
+  /* 15-18 mobile adjustments */
+  body.module-theme[data-age-range="15-18"] {
+    --age-font-size-base: 0.9rem;
+    --age-font-size-h1: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body.module-theme[data-age-range="6-8"] {
+    --age-font-size-base: 1.1rem;
+    --age-font-size-lg: 1.2rem;
+    --age-font-size-h1: 1.9rem;
+    --age-font-size-h2: 1.6rem;
+    --age-spacing-xl: 2rem;
+  }
+  
+  body.module-theme[data-age-range="6-8"] .quiz-option {
+    padding: 16px 18px !important;
+  }
+  
+  body.module-theme[data-age-range="6-8"] .primary-btn {
+    min-height: 48px;
+    min-width: 100px;
+  }
+}
+
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  body.module-theme[data-age-range="6-8"] {
+    --age-font-size-base: 14pt;
+    --age-font-size-lg: 16pt;
+    --age-font-size-h1: 24pt;
+    --age-font-size-h2: 20pt;
+    --age-font-size-h3: 16pt;
+  }
+  
+  body.module-theme[data-age-range="9-11"] {
+    --age-font-size-base: 12pt;
+    --age-font-size-h1: 20pt;
+    --age-font-size-h2: 16pt;
+  }
+  
+  body.module-theme[data-age-range="12-14"],
+  body.module-theme[data-age-range="15-18"] {
+    --age-font-size-base: 11pt;
+    --age-font-size-h1: 18pt;
+    --age-font-size-h2: 14pt;
+  }
+}
+
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+@media (prefers-contrast: high) {
+  body.module-theme[data-age-range="6-8"] .quiz-option {
+    border-width: 4px !important;
+  }
+  
+  body.module-theme[data-age-range="6-8"] .primary-btn {
+    border: 3px solid currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.module-theme[data-age-range="6-8"] .quiz-option:hover {
+    transform: none;
   }
 }

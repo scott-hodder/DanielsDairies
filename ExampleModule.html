@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Building Your Amazing Brain Town</title>
+  <title>Bird&#039;s Eye View: Looking at Your Learning City</title>
   <!-- DEBUG: 
   Series Info Debug:
   - characterName: Professor Panda
@@ -253,10 +253,10 @@
       }
     };
     
-    const WORKBOOK_ID = "MOD_ML2VD8S8";
-    const MODULE_CODE = "MOD_ML2VD8S8";
-    const MAX_STARS = 16;
-    const TOTAL_PAGES = 26;
+    const WORKBOOK_ID = "MOD_ML613Y5B";
+    const MODULE_CODE = "MOD_ML613Y5B";
+    const MAX_STARS = 17;
+    const TOTAL_PAGES = 27;
     
     let currentPage = 0;
     let totalStars = 0;
@@ -309,15 +309,15 @@
           <span class="text-white font-title text-xl">Meet Professor Panda!</span>
         </div>
         
-        <h1 class="text-5xl md:text-6xl mb-3 font-title" style="color: var(--dark);">Building Your Amazing Brain Town</h1>
-        <h2 class="text-2xl md:text-3xl mb-6 font-title" style="color: var(--primary);">Discover how your brain grows and changes!</h2>
+        <h1 class="text-5xl md:text-6xl mb-3 font-title" style="color: var(--dark);">Bird&#039;s Eye View: Looking at Your Learning City</h1>
+        <h2 class="text-2xl md:text-3xl mb-6 font-title" style="color: var(--primary);">See your thinking from high above!</h2>
         <div class="text-xl mb-6 font-body" style="color: var(--secondary);">
-          <p class="mb-2">An Interactive Adventure for Ages 8-12</p>
+          <p class="mb-2">An Interactive Adventure for Ages 6-8</p>
         </div>
         <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
           <p class="font-semibold mb-2 font-body text-lg" style="color: var(--dark);">This adventure belongs to:</p>
-          <div class="text-3xl font-title" style="color: var(--primary);">
-            ${getChildName()}
+          <div class="text-3xl font-title" style="color: var(--primary);" id="childNameDisplay">
+            Friend
           </div>
         </div>
         <div class="mt-6">
@@ -333,11 +333,11 @@
       <div class="max-w-4xl mx-auto">
         <div class="flex items-center gap-4 mb-8">
           <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/PongThePanda.png" alt="Professor Panda" class="object-contain" style="height: 20rem; width: 20rem;">
-          <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">Welcome to Your Amazing Brain Town Adventure with Professor Panda! 🐼</h1>
+          <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">Welcome to Your Learning City! 🐼 Professor Panda is Here!</h1>
         </div>
         
         <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white; border-left: 6px solid var(--primary);">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hi there, amazing brain builder! I&#039;m Professor Panda, and I&#039;m SO excited to be your guide on this incredible journey. I love exploring how our brains work and grow, and I can&#039;t wait to share all the cool secrets with you!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Together, we&#039;re going to discover how your brain is like a magical town that&#039;s always growing and changing. You&#039;ll learn how every time you try something new, practice, or even make mistakes, you&#039;re actually building new roads and pathways in your brain town - how awesome is that?</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Whether you&#039;re feeling curious, nervous, excited, or maybe a little bit of everything all at once, that&#039;s totally okay! All feelings are welcome here, and every brain learns in its own special way. You&#039;re going to do amazing things, and I&#039;ll be right here cheering you on every step of the way!</p>
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hi there, amazing learner! 🐼 Professor Panda is so excited to explore with you! We&#039;re going to fly high like birds and look down at your special learning city! ✈️</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">You&#039;ve built so many cool roads in your brain city! 🏙️ Now we&#039;ll see them all from way up high! It&#039;s going to be super fun! 🎉</p>
         </div>
         
         <div class="rounded-xl p-6 text-center" style="background-color: var(--soft-yellow);">
@@ -355,9 +355,9 @@
       <div class="text-center">
         <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
         <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 1</h1>
-        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Welcome to Brain Town!</h2>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Taking Flight Above Your City</h2>
         <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
-          Discovering your amazing brain with Daniel the Dog
+          Learning to see your thinking from high above
         </p>
       </div>
     </div>`;
@@ -367,14 +367,14 @@
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Welcome to Brain Town! 🧠🏘️</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Meet Your Brain Detective! 🕵️</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Hi there! I&#039;m Professor Panda, and I&#039;m here to show you something amazing - your brain is like a bustling town that&#039;s always growing and changing! Every time you learn something new, you&#039;re building new roads and houses in your Brain Town.</p>
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Hi! Professor Panda here! 🐼 Your brain is like a detective that watches how you think and learn!</p>
           
           
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">What do you think happens when you practice something new?</p>
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">What does a detective do?</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -382,7 +382,7 @@
                       data-correct="false"
                       data-index="0"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                Nothing changes
+                Sleeps all day
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -390,7 +390,7 @@
                       data-correct="true"
                       data-index="1"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                Your brain grows stronger connections
+                Looks for clues
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -398,7 +398,7 @@
                       data-correct="false"
                       data-index="2"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                You get tired
+                Eats cookies
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -406,7 +406,7 @@
                       data-correct="false"
                       data-index="3"
                       onclick="handleInteractiveChoice(this, 0, true, 1)">
-                It becomes harder
+                Plays games
               </button>
             
           </div>
@@ -414,13 +414,13 @@
         </div>
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Exactly! When you practice, your brain builds stronger pathways, just like adding more roads to connect different parts of Brain Town.</p>
+            <p class="font-body" style="color: var(--dark);">Yes! Your brain detective looks for clues about how you learn best!</p>
           </div>
         </div>
         
         <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
           <span class="text-3xl">🐼</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">You&#039;re already thinking like a brain scientist! 🐼✨</p>
+          <p class="font-body font-semibold" style="color: var(--dark);">Great job! Your brain is always watching and learning! 🐼✨</p>
         </div>
         
         <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
@@ -430,7 +430,7 @@
             style="accent-color: var(--primary);"
             data-activity="interactive_0"
             onchange="markActivityComplete('interactive_0')"
-            ${completedActivities['interactive_0'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
         </div>
@@ -442,21 +442,21 @@
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Welcome to Your Amazing Brain Town! 🏘️</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Flying High Like a Bird! 🐦</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Hi there, brain builder! I&#039;m Professor Panda 🐼, and I&#039;m SO excited to show you something incredible about your brain. Did you know that your brain is like a magical town that&#039;s always growing and changing? It&#039;s true! Every time you learn something new, practice a skill, or even make a mistake, your brain builds new roads and pathways.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Right now, imagine your brain town is like a brand new neighborhood with just a few dirt paths. When you were a baby, you only had basic roads for things like breathing and sleeping. But as you&#039;ve grown, you&#039;ve built amazing highways for walking, talking, reading, and so much more! Your brain has been busy constructing new streets every single day.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">The best part is that your brain town never stops growing! Scientists have discovered that our brains can build new pathways throughout our entire lives. This amazing ability is called neuroplasticity - which is just a fancy way of saying your brain is like super flexible Play-Doh that can reshape itself whenever you learn or practice something new.</p>
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Professor Panda says birds fly high and see everything below! 🐼 When we think about our thinking, we&#039;re like birds looking down.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">You can watch your own brain work! It&#039;s like being a detective of your own thoughts! 🕵️</p>
         </div>
         
         
     <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Brain Power Fact! 🧠</h3>
-      <p class="font-body" style="color: var(--dark);">Your brain creates new connections every time you learn something, even when you sleep!</p>
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
+      <p class="font-body" style="color: var(--dark);">You can watch your own thinking!</p>
     </div>
         
     <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
       <span class="text-3xl">🐼</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: &#039;Think of your brain as the world&#039;s most amazing construction site - and YOU are the head builder!&#039;</p>
+      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: Try asking yourself &#039;What am I thinking right now?&#039; 🐼✨</p>
     </div>
       </div>
     </div>`;
@@ -464,66 +464,45 @@
 
     function generatePage5() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="gratitude-jar">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Growing Brain Gratitude Jar ⭐</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">How Does Your Brain Feel Right Now? 🧠✨</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Our brains are amazing and can grow stronger every day when we practice new things! Let&#039;s fill our gratitude jar with all the ways our brain has grown and learned.</p>
-          
-          
-    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">🧠</span>
-        <span class="font-title text-lg" style="color: var(--dark);">Learning Wins</span>
-      </div>
-      <p class="font-body mb-2" style="color: var(--dark);">Something new I learned this week...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_0', this.value)">
-    </div>
-  
-    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">💪</span>
-        <span class="font-title text-lg" style="color: var(--dark);">Challenges I Faced</span>
-      </div>
-      <p class="font-body mb-2" style="color: var(--dark);">A hard thing I tried and didn&#039;t give up on...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_1', this.value)">
-    </div>
-  
-    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">👥</span>
-        <span class="font-title text-lg" style="color: var(--dark);">Growth Helpers</span>
-      </div>
-      <p class="font-body mb-2" style="color: var(--dark);">Someone who helped me learn something...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_2', this.value)">
-    </div>
-  
-    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">✨</span>
-        <span class="font-title text-lg" style="color: var(--dark);">Brain Power</span>
-      </div>
-      <p class="font-body mb-2" style="color: var(--dark);">A time I felt proud of my thinking...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_1_3', this.value)">
-    </div>
-  
-          
-          <div class="mt-6 p-4 rounded-xl text-center" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold" style="color: var(--dark);">Every time you learn something new or try again after making a mistake, you&#039;re making your brain stronger! Your gratitude jar shows how much you&#039;ve grown.</p>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Pick the feeling that matches how your thinking brain feels today!</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #A8E6CF; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#A8E6CF' : 'white';">
+      <span class="text-4xl">🌟</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Clear</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #d4a5ff; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#d4a5ff' : 'white';">
+      <span class="text-4xl">😵‍💫</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Confused</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #FFE8A3; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#FFE8A3' : 'white';">
+      <span class="text-4xl">🤔</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Curious</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #87CEEB; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#87CEEB' : 'white';">
+      <span class="text-4xl">🎯</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Focused</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #fecaca; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#fecaca' : 'white';">
+      <span class="text-4xl">🤯</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Overwhelmed</span>
+    </button>
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #F4A261; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#F4A261' : 'white';">
+      <span class="text-4xl">😊</span>
+      <span class="font-body font-semibold" style="color: var(--dark);">Proud</span>
+    </button></div>
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What made your thinking brain feel this way today?</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="feeling_followup_1" onchange="saveFormData('feeling_followup_1', this.value)"></textarea>
           </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="gratitude_1"
-            onchange="markActivityComplete('gratitude_1')"
-            ${completedActivities['gratitude_1'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I filled my gratitude jar!</label>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="feeling_1" onchange="markActivityComplete('feeling_1')" >
+            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
+          </div>
         </div>
       </div>
     </div>`;
@@ -533,29 +512,43 @@
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">The Magic Word: YET! ✨</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Thinking About Thinking! 🤔</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">In Brain Town, we have a magic word that changes everything - YET! When you say &#039;I can&#039;t do this YET,&#039; you&#039;re telling your brain to keep building and growing.</p>
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Sometimes we can think ABOUT our thinking! It&#039;s like watching your thoughts in a mirror! �mirror</p>
           
           
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">Complete this sentence: &#039;I can&#039;t ride a bike without training wheels <input type="text" 
-                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
-                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
-                  placeholder="..."
-                  data-blank-index="1"
-                  oninput="handleFillBlankInput(this, 2)">.&#039;</p>
+          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
+            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"I can notice when I&#039;m confused about something"</p>
+          </div>
+          <div class="flex gap-4 justify-center">
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--secondary); color: var(--dark);"
+                    data-correct="true"
+                    data-index="0"
+                    onclick="handleInteractiveChoice(this, 2, true, 0)">
+              I Agree
+            </button>
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
+                    style="border-color: var(--accent); color: var(--dark);"
+                    data-correct="false"
+                    data-index="1"
+                    onclick="handleInteractiveChoice(this, 2, true, 0)">
+              I Disagree
+            </button>
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
         </div>
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Perfect! Adding &#039;YET&#039; reminds your brain that you&#039;re still learning and growing. Every expert was once a beginner!</p>
+            <p class="font-body" style="color: var(--dark);">You&#039;re right! Noticing when you&#039;re confused is super smart!</p>
           </div>
         </div>
         
         <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
           <span class="text-3xl">🐼</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">That little word &#039;YET&#039; is like a construction sign in Brain Town - it means &#039;still building!&#039; 🐼🚧</p>
+          <p class="font-body font-semibold" style="color: var(--dark);">You&#039;re becoming a thinking expert! Keep noticing your thoughts! 🐼🌟</p>
         </div>
         
         <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
@@ -565,7 +558,7 @@
             style="accent-color: var(--primary);"
             data-activity="interactive_2"
             onchange="markActivityComplete('interactive_2')"
-            ${completedActivities['interactive_2'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
         </div>
@@ -575,50 +568,51 @@
 
     function generatePage7() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="drawing">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="body-map">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🧠 My Growing Brain Garden</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Thinking Body Map 🧠</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Draw your brain as a beautiful garden with different sections for things you&#039;re learning (like math flowers, reading trees, or friendship bushes). Show some plants just starting to grow and others that are big and strong!</p>
-          
-          <div class="border-4 rounded-xl mb-4 overflow-hidden" style="border-color: var(--primary); background-color: white;">
-            <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" style="touch-action: none; display: block;"></canvas>
-          </div>
-          
-          <div class="flex flex-wrap gap-2 mb-6">
-            <button class="clear-canvas-btn px-4 py-2 rounded-lg text-white font-bold font-body" style="background-color: var(--accent);">
-              Clear
-            </button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#264653" style="background-color: #264653;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#F4A261" style="background-color: #F4A261;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#E76F51" style="background-color: #E76F51;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#2A9D8F" style="background-color: #2A9D8F;"></button>
-            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#9b59b6" style="background-color: #9b59b6;"></button>
-          </div>
-          
-          <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What new skill would you like to plant in your brain garden, and how will you help it grow?</label>
-            <input 
-              type="text" 
-              class="w-full rounded-xl p-3 font-body text-lg" 
-              style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);"
-              placeholder="Type your answer here..."
-              onchange="saveFormData('drawing_answer_3', this.value)"
-              value="${formData['drawing_answer_3'] || ''}"
-            >
-          </div>
-          
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Let&#039;s explore how your body feels when you&#039;re thinking about your thinking! Close your eyes and notice what happens in each part of your body when you try to understand how your brain works.</p>
+          <div class="grid gap-3 mb-6">
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">🧠</span>
+      <div>
+        <span class="font-title text-lg">Head</span>
+        <p class="font-body text-sm" style="color: var(--secondary);">Your brain might feel busy or curious, like it&#039;s working extra hard to think about thinking itself</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">💗</span>
+      <div>
+        <span class="font-title text-lg">Chest</span>
+        <p class="font-body text-sm" style="color: var(--secondary);">Your heart might beat a little faster when you discover something new about how you learn</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">🦋</span>
+      <div>
+        <span class="font-title text-lg">Tummy</span>
+        <p class="font-body text-sm" style="color: var(--secondary);">You might feel excited butterflies when you realize you can control how you think and learn</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">✋</span>
+      <div>
+        <span class="font-title text-lg">Hands</span>
+        <p class="font-body text-sm" style="color: var(--secondary);">Your hands might want to move or gesture as you try to explain your thoughts to others</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">🦵</span>
+      <div>
+        <span class="font-title text-lg">Legs</span>
+        <p class="font-body text-sm" style="color: var(--secondary);">Your legs might feel restless with energy when you&#039;re eager to try out new thinking strategies</p>
+      </div>
+    </button></div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input 
-              type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
-              data-activity="drawing_3"
-              onchange="markActivityComplete('drawing_3')"
-              ${completedActivities['drawing_3'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="bodymap_3" onchange="markActivityComplete('bodymap_3')" >
+            <label class="font-title text-xl" style="color: var(--dark);">I explored my body map! ⭐</label>
           </div>
         </div>
       </div>
@@ -631,9 +625,9 @@
       <div class="text-center">
         <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
         <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 2</h1>
-        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Building Brain Roads</h2>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">The Master City Planner&#039;s View</h2>
         <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
-          How your brain grows stronger every day
+          Understanding how all your mental roads connect
         </p>
       </div>
     </div>`;
@@ -643,21 +637,21 @@
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Building New Brain Roads Through Practice 🛤️</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Building Your Thinking City! 🏙️</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Let me tell you about my friend Maya who wanted to learn skateboarding. At first, her brain town had no skateboard roads at all! When she stepped on the board, she wobbled and fell because her brain didn&#039;t know which muscles to use or how to balance. But Maya didn&#039;t give up - she kept practicing every day.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Something magical happened in Maya&#039;s brain town as she practiced. Each time she tried skateboarding, her brain built tiny new pathways connecting her balance center to her leg muscles. At first, these paths were like narrow dirt trails - bumpy and hard to use. But with each practice session, the trails got wider and smoother, turning into proper roads!</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">After weeks of practice, Maya&#039;s brain had built a superhighway for skateboarding! Now she could cruise around the park with confidence. The same thing happens when you practice math, learn to play piano, or even work on being kind to others. Your brain builds stronger and faster roads for whatever you practice most.</p>
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Your brain builds roads when you learn new things! Professor Panda loves watching these roads grow! 🐼</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Some roads are bumpy and some are smooth. You can feel which ones work best for you! 🛤️</p>
         </div>
         
         
     <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Practice Makes Pathways! 🛣️</h3>
-      <p class="font-body" style="color: var(--dark);">The more you practice something, the stronger and faster your brain roads become for that skill.</p>
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
+      <p class="font-body" style="color: var(--dark);">Your brain makes roads when you learn!</p>
     </div>
         
     <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
       <span class="text-3xl">🐼</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: &#039;Every mistake is just your brain figuring out which roads to build next - so celebrate your wobbles!&#039;</p>
+      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: Notice which learning roads feel easy or hard! 🐼🚗</p>
     </div>
       </div>
     </div>`;
@@ -665,148 +659,69 @@
 
     function generatePage10() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="power-up-collector" data-activity="powerup_4">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="breathing">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Brain Power Collector Game! ✨</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🌟 Belly Balloon Breathing 🎈</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Help your brain grow stronger by collecting helpful growth mindset tools! Avoid the brain blockers that stop you from learning and growing.</p>
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">When we feel big feelings, special breathing can help us feel calm and happy! Let&#039;s pretend your belly is a balloon that we fill up and let out slowly.</p>
           
-          <!-- Collection Progress -->
-          <div class="flex justify-center items-center gap-4 mb-6">
-            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl" style="background-color: var(--soft-yellow);">
-              <span class="text-3xl">🎒</span>
-              <span class="font-title text-2xl" style="color: var(--dark);"><span id="collectedCount">0</span> / 5</span>
+          <!-- Animated Breathing Circle -->
+          <div class="text-center mb-6">
+            <div id="breathingExercise_4" class="breathing-circle mx-auto rounded-full flex items-center justify-center cursor-pointer"
+                 style="width: 160px; height: 160px; background: linear-gradient(135deg, var(--light-green), var(--secondary)); transition: transform 4s ease-in-out, box-shadow 4s ease-in-out;"
+                 onclick="window.toggleBreathing('breathingExercise_4')">
+              <div class="text-center">
+                <div class="breathing-emoji text-5xl mb-1">🌬️</div>
+                <div class="breathing-text font-title text-lg" style="color: var(--dark);">Tap to Start</div>
+              </div>
+            </div>
+            <div class="mt-3 font-body text-sm" style="color: var(--dark); opacity: 0.7;">Tap the circle to begin</div>
+          </div>
+          
+          <!-- Phase Cards -->
+          <div class="grid md:grid-cols-3 gap-4 mb-6">
+            <div id="breathingExercise_4_inhale" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--light-green); opacity: 0.5; transform: scale(0.95);">
+              <div class="text-3xl mb-2">😤</div>
+              <h3 class="font-title text-lg mb-1" style="color: var(--dark);">Breathe In</h3>
+              <p class="font-body text-sm" style="color: var(--dark);">Blow up your belly balloon nice and big!</p>
+              <div class="breathing-timer font-title text-2xl mt-2" style="color: var(--primary); display: none;">4</div>
+            </div>
+            <div id="breathingExercise_4_hold" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--soft-yellow); opacity: 0.5; transform: scale(0.95);">
+              <div class="text-3xl mb-2">😊</div>
+              <h3 class="font-title text-lg mb-1" style="color: var(--dark);">Hold</h3>
+              <p class="font-body text-sm" style="color: var(--dark);">Hold that air in your balloon for 3 counts!</p>
+              <div class="breathing-timer font-title text-2xl mt-2" style="color: var(--primary); display: none;">4</div>
+            </div>
+            <div id="breathingExercise_4_exhale" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--primary); opacity: 0.5; transform: scale(0.95);">
+              <div class="text-3xl mb-2">😌</div>
+              <h3 class="font-title text-lg mb-1" style="color: white;">Breathe Out</h3>
+              <p class="font-body text-sm" style="color: white;">Let the air out slowly like a balloon floating down!</p>
+              <div class="breathing-timer font-title text-2xl mt-2" style="color: white; display: none;">4</div>
             </div>
           </div>
           
-          <!-- Collected Items Display -->
-          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl" style="background-color: var(--cream);" id="collectedDisplay">
-            <p class="font-body text-sm self-center" style="color: var(--secondary);">Your collected power-ups will appear here!</p>
+          <!-- Breath Counter -->
+          <div class="text-center mb-6">
+            <span class="font-body" style="color: var(--dark);">Breaths completed: </span>
+            <span id="breathingExercise_4_count" class="font-title text-xl" style="color: var(--primary);">0</span>
+            <span class="font-body" style="color: var(--dark);"> / 3</span>
           </div>
           
-          <!-- Power-Up Grid -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
-            
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="I Can Learn This"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">🧠</div>
-      <p class="font-title text-lg" style="color: var(--dark);">I Can Learn This</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Grows your brain power</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Practice Makes Progress"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">💪</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Practice Makes Progress</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Builds brain muscles</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="false"
-            data-name="I&#039;m Not Good at This"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">❌</div>
-      <p class="font-title text-lg" style="color: var(--dark);">I&#039;m Not Good at This</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Blocks brain growth</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Mistakes Help Me Learn"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">🌱</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Mistakes Help Me Learn</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Feeds your growing brain</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Ask for Help"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">🤝</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Ask for Help</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Opens new brain pathways</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="false"
-            data-name="I Give Up"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">🛑</div>
-      <p class="font-title text-lg" style="color: var(--dark);">I Give Up</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Stops brain connections</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Try Different Ways"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">🔄</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Try Different Ways</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Creates new brain paths</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="false"
-            data-name="It&#039;s Too Hard"
-            onclick="handlePowerUpClick(this, 'powerup_4', 5)">
-      <div class="text-4xl mb-2">😞</div>
-      <p class="font-title text-lg" style="color: var(--dark);">It&#039;s Too Hard</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Shrinks possibilities</p>
-    </button>
-  
-          </div>
-          
-          <!-- Feedback Area -->
-          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" style="display: none;">
-            <p class="font-body text-lg" id="powerupFeedbackText"></p>
-          </div>
-          
-          <!-- Win Message (hidden initially) -->
-          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-4xl mb-2">🎉</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Amazing! You collected all the brain-growing power-ups!</p>
-            <p class="font-body" style="color: var(--secondary);">Your brain grows stronger every time you use these growth mindset tools!</p>
-          </div>
-          
-          <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);" id="powerupComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
             <input 
               type="checkbox" 
+              id="breathing_4_checkbox"
               class="w-8 h-8 rounded cursor-pointer"
               style="accent-color: var(--primary);"
-              data-activity="powerup_4"
-              onchange="markActivityComplete('powerup_4')"
-              ${completedActivities['powerup_4'] ? 'checked disabled' : ''}
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
+              data-activity="breathing_4"
+              onchange="markActivityComplete('breathing_4')"
+              
+            />
+            <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! ⭐</label>
           </div>
         </div>
       </div>
-      
-      <style>
-        .power-up-item:active { transform: scale(0.95); }
-        .power-up-item.collected { opacity: 0.5; pointer-events: none; border-color: var(--light-green) !important; }
-        .power-up-item.wrong { animation: shake 0.5s; background-color: #fecaca !important; }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-      </style>
     </div>`;
 }
 
@@ -814,283 +729,43 @@
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Mistakes Are Brain Builders! 🔨</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Easy or Hard? You Decide! ⚖️</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">In Brain Town, mistakes aren&#039;t problems - they&#039;re construction tools! Every mistake helps your brain build stronger, smarter pathways.</p>
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Your brain can tell if something feels easy or hard! Let&#039;s practice noticing!</p>
           
           
         <div class="interactive-group">
-          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
-            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"Making mistakes means you&#039;re not smart enough."</p>
-          </div>
-          <div class="flex gap-4 justify-center">
-            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
-                    style="border-color: var(--secondary); color: var(--dark);"
-                    data-correct="false"
-                    data-index="0"
-                    onclick="handleInteractiveChoice(this, 5, true, 1)">
-              I Agree
-            </button>
-            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
-                    style="border-color: var(--accent); color: var(--dark);"
-                    data-correct="true"
-                    data-index="1"
-                    onclick="handleInteractiveChoice(this, 5, true, 1)">
-              I Disagree
-            </button>
-          </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
-        </div>
-          
-          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">That&#039;s right! Mistakes are proof that you&#039;re trying new things and your brain is working hard to learn and grow.</p>
-          </div>
-        </div>
-        
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
-          <span class="text-3xl">🐼</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">I love mistakes - they&#039;re like blueprints that help us build better! 🐼📐</p>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="interactive_5"
-            onchange="markActivityComplete('interactive_5')"
-            ${completedActivities['interactive_5'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage12() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="fill-in-story">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Professor Panda&#039;s Brain Growth Adventure 📖</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Fill in the blanks to complete Professor Panda&#039;s story about how our brains can grow and learn!</p>
-          
-          <div class="p-6 rounded-2xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="text-xl leading-loose font-body" style="color: var(--dark);">Professor Panda 🐼 was feeling <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 10rem; min-width: 6rem;" placeholder="a feeling word" onchange="saveFormData('story_6_0', this.value)"> because he couldn&#039;t solve a tricky math problem. But then he remembered that his brain is like a muscle that gets stronger when he practices! So Professor Panda decided to <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 14rem; min-width: 6rem;" placeholder="something you can do to practice" onchange="saveFormData('story_6_1', this.value)"> every day to help his brain grow new connections. His friend <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 14rem; min-width: 6rem;" placeholder="a person who helps you" onchange="saveFormData('story_6_2', this.value)"> encouraged him by saying, &#039;Your brain is amazing and can learn anything with practice!&#039; Soon, Professor Panda discovered that making mistakes was actually helping his brain create new pathways. Now he says, &#039;I can&#039;t do this... YET!&#039; whenever he faces a challenge.</p>
-          </div>
-          
-          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">How does your completed story show that Professor Panda&#039;s brain can grow and change when he practices?</p>
-            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 80px;" placeholder="Write your thoughts..." onchange="saveFormData('story_reflection_6', this.value)"></textarea>
-          </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="fillin_6"
-            onchange="markActivityComplete('fillin_6')"
-            ${completedActivities['fillin_6'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I completed my story!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage13() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Your Growth Mindset Construction Crew 🏗️</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">In your brain town, you have an amazing construction crew that I like to call your Growth Mindset Team! This team includes words and thoughts that help build new brain roads faster. When you say &#039;I can&#039;t do this YET&#039; instead of &#039;I can&#039;t do this,&#039; your construction crew gets excited and starts planning new pathways.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Your Growth Mindset Team loves challenges because they see them as blueprints for new roads! When you face something difficult, like a tricky math problem or learning to tie your shoes, your team doesn&#039;t panic. Instead, they roll up their sleeves and say, &#039;What an awesome opportunity to build something new in brain town!&#039; They know that struggle means your brain is growing stronger.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">The coolest part is that you&#039;re the boss of your construction crew! You can choose thoughts that help them work better, like &#039;This is hard, but I&#039;m learning&#039; or &#039;My brain loves a good challenge.&#039; When you think this way, your Growth Mindset Team works faster and builds stronger roads than ever before.</p>
-        </div>
-        
-        
-    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Mindset Magic! ✨</h3>
-      <p class="font-body" style="color: var(--dark);">Saying &#039;I can&#039;t do this YET&#039; tells your brain to start building new pathways right away!</p>
-    </div>
-        
-    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-      <span class="text-3xl">🐼</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: &#039;Your thoughts are like instructions for your brain&#039;s construction crew - make them encouraging ones!&#039;</p>
-    </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage14() {
-  return `
-    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
-      <div class="text-center">
-        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
-        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 3</h1>
-        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">The Growth Mindset Adventure</h2>
-        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
-          Learning to love challenges and mistakes
-        </p>
-      </div>
-    </div>`;
-}
-
-    function generatePage15() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Your Brain&#039;s Construction Crew 👷‍♀️</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Your brain has tiny workers called neurons that are always busy connecting and building. The more you use your brain, the busier and stronger these workers become!</p>
-          
-          
-        <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Which activity would make your brain&#039;s construction crew work the hardest?</p>
-          <div class="grid grid-cols-2 gap-3 mb-4">
-            
-              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="false"
-                      data-index="0"
-                      onclick="handleInteractiveChoice(this, 7, true, 1)">
-                Watching TV all day
-              </button>
-            
-              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="true"
-                      data-index="1"
-                      onclick="handleInteractiveChoice(this, 7, true, 1)">
-                Learning to play piano
-              </button>
-            
-              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="false"
-                      data-index="2"
-                      onclick="handleInteractiveChoice(this, 7, true, 1)">
-                Sleeping
-              </button>
-            
-              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="false"
-                      data-index="3"
-                      onclick="handleInteractiveChoice(this, 7, true, 1)">
-                Eating candy
-              </button>
-            
-          </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
-        </div>
-          
-          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Yes! Learning new skills like piano gives your brain&#039;s construction crew lots of important work to do, making your Brain Town bigger and better.</p>
-          </div>
-        </div>
-        
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
-          <span class="text-3xl">🐼</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">Those brain workers love a good challenge - it keeps them strong and happy! 🐼💪</p>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="interactive_7"
-            onchange="markActivityComplete('interactive_7')"
-            ${completedActivities['interactive_7'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage16() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="rocket-launcher" data-activity="rocket_8">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">Brain Power Rocket Mission 🚀</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Join Professor Panda on an amazing space adventure to discover how your brain grows stronger with practice! Fuel up your rocket with growth mindset actions and explore planets where learning happens.</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center">Hello, brave space explorer! Professor Panda here with exciting news - your brain is like a muscle that gets stronger every time you try something new or practice a skill. Today we&#039;re blasting off to visit special planets where you&#039;ll discover the amazing power of your growing brain!</p>
-          </div>
-          <div class="text-center mb-4"><span class="text-8xl" id="rocketEmoji_8">🚀</span></div>
-          <div class="mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
-            <div class="flex justify-between mb-2"><span class="font-title">Fuel:</span><span class="font-title text-xl" id="fuelDisplay_8" style="color: var(--primary);">0%</span></div>
-            <div class="h-6 rounded-full overflow-hidden" style="background-color: #e5e7eb;"><div class="h-full rounded-full transition-all duration-500" id="fuelBar_8" style="width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));"></div></div>
-          </div>
-          <p class="font-title text-lg text-center mb-3">Fuel Actions ⚡</p>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">🧠</span><p class="font-body text-xs mt-1">Say &#039;I can learn this!&#039;</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">💪</span><p class="font-body text-xs mt-1">Think of effort as brain exercise</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">🎉</span><p class="font-body text-xs mt-1">Celebrate trying something new</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('8', 25)"><span class="text-2xl">🌱</span><p class="font-body text-xs mt-1">Remember: mistakes help me grow</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25%</span></button></div>
-          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105" id="launchBtn_8" style="background-color: var(--primary); color: white;" onclick="window.launchRocket('8')">🚀 LAUNCH!</button>
-          <div class="mt-6" id="planets_8" style="display: none;">
-            <p class="font-title text-lg text-center mb-3">Feeling Planets 🪐</p>
-            <div class="grid grid-cols-2 gap-4"><div class="p-4 rounded-2xl border-2" id="planet_8_pl1" style="background-color: #fbbf2420; border-color: #fbbf24;"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">🌟</span><span class="font-title">Try-Again Planet</span></div><p class="font-body text-sm mb-2">Think of something you&#039;re learning and say &#039;My brain grows when I practice!&#039;</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: Growth Star</p></div><div class="p-4 rounded-2xl border-2" id="planet_8_pl2" style="background-color: #a8d8ea20; border-color: #a8d8ea;"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">🌙</span><span class="font-title">Mistake Moon</span></div><p class="font-body text-sm mb-2">Share a mistake you made that helped you learn something new</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: Learning Crystal</p></div><div class="p-4 rounded-2xl border-2" id="planet_8_pl3" style="background-color: #ef444420; border-color: #ef4444;"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">🔴</span><span class="font-title">Challenge Mars</span></div><p class="font-body text-sm mb-2">Name something challenging you want to keep practicing</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: Persistence Badge</p></div></div>
-          </div>
-          <div class="p-6 rounded-2xl text-center mt-4" id="rocketReturn_8" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-5xl mb-2">🏠🚀</p>
-            <p class="font-title text-2xl">Welcome home, brilliant space explorer! Professor Panda is so proud - you&#039;ve discovered that your amazing brain grows stronger every day!</p>
-          </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="rocketComplete_8">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="rocket_8" onchange="markActivityComplete('rocket_8')" ${completedActivities['rocket_8'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">Space explorer! ⭐</label>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage17() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Growth Mindset vs. Fixed Mindset 🌱⚡</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">In Brain Town, you can choose between two different mindsets. A growth mindset says &#039;I can learn and improve!&#039; A fixed mindset says &#039;I&#039;m stuck the way I am.&#039;</p>
-          
-          
-        <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">How much do you believe your brain can grow and change? Rate from 1 (not at all) to 5 (completely)!</p>
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Rate how hard it is to tie your shoes (1=super easy, 5=super hard)</p>
           <div class="flex justify-between gap-2 mb-4">
             
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
                       style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '1'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '1'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 1
               </button>
             
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
                       style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '2'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '2'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 2
               </button>
             
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
                       style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '3'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '3'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 3
               </button>
             
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
                       style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '4'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '4'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 4
               </button>
             
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
                       style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_9', '5'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_5', '5'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
                 5
               </button>
             
@@ -1102,13 +777,254 @@
         </div>
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Whatever you rated, remember that believing in your brain&#039;s power to grow actually helps it grow even more!</p>
+            <p class="font-body" style="color: var(--dark);">Good thinking! You know how hard things feel for YOU!</p>
           </div>
         </div>
         
         <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
           <span class="text-3xl">🐼</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">The more you believe in your amazing brain, the more amazing it becomes! 🐼🌟</p>
+          <p class="font-body font-semibold" style="color: var(--dark);">Wow! You&#039;re so good at checking how hard things are! 🐼👟</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_5"
+            onchange="markActivityComplete('interactive_5')"
+            
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage12() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="reflection">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Thinking About Thinking 🧠✨</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Think about a time when you realized you were learning something new or figured out a problem. How did it feel to notice your own brain working?</p>
+          
+          <textarea 
+            class="reflection-input w-full rounded-xl p-4 border-3 font-body text-lg mb-6" 
+            style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 150px;"
+            placeholder="I remember when I was thinking about... and I noticed my brain was..."
+            data-form-key="reflection_6"
+            onchange="saveFormData('reflection_6', this.value)"
+          ></textarea>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="reflection_6"
+              disabled
+              onchange="markActivityComplete('reflection_6')"
+              
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage13() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Being Your Own Helper! 🤝</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">When something feels hard, you can help yourself! Professor Panda knows you&#039;re super smart! 🐼</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">You can say &#039;This is tricky, but I can try again!&#039; or &#039;Let me think of another way!&#039; 💪</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
+      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Key Point</h3>
+      <p class="font-body" style="color: var(--dark);">You can help your own brain learn better!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+      <span class="text-3xl">🐼</span>
+      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: Be your brain&#039;s best friend and cheer it on! 🐼📣</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage14() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
+      <div class="text-center">
+        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
+        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter 3</h1>
+        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">Building Your Thinking Blueprint</h2>
+        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+          Reflecting on your mental city&#039;s growth and changes
+        </p>
+      </div>
+    </div>`;
+}
+
+    function generatePage15() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Learning Tricks That Work! 🎯</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Everyone learns differently! Some kids need to move, some need quiet, some need pictures!</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">What helps YOU learn best?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="opinion"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 7, false, -1)">
+                Moving around
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="opinion"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 7, false, -1)">
+                Looking at pictures
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="opinion"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 7, false, -1)">
+                Hearing songs
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="opinion"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 7, false, -1)">
+                Being quiet
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Perfect! Knowing what helps you is like having a superpower!</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">You know yourself so well! That&#039;s what makes you amazing! 🐼💪</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="interactive_7"
+            onchange="markActivityComplete('interactive_7')"
+            
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage16() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="checklist">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🐼 Professor Panda&#039;s Think-About-Thinking Checklist</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Help Professor Panda check how well you think about your own thinking! Put a checkmark next to each thing you try.</p>
+          
+          <div class="space-y-3 mb-6">
+            
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Ask yourself &#039;What am I learning right now?&#039; before starting something new</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Notice when something feels easy or hard for your brain</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Stop and think &#039;Is this working?&#039; when you&#039;re stuck on something</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Tell someone else how you figured out a problem or answer</span>
+    </label>
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
+      <span class="font-body text-lg" style="color: var(--dark);">Think about what helped you learn something really well</span>
+    </label>
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer"
+              style="accent-color: var(--primary);"
+              data-activity="checklist_8"
+              disabled
+              onchange="markActivityComplete('checklist_8')"
+              
+            >
+            <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage17() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Learning Plan! 📝</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Now you can make a plan! When something is hard, you can choose what to do!</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">When I feel stuck, I will <input type="text" 
+                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
+                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
+                  placeholder="..."
+                  data-blank-index="1"
+                  oninput="handleFillBlankInput(this, 9)"></p>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body" style="color: var(--dark);">Perfect plan! You&#039;re ready to help your own learning!</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+          <span class="text-3xl">🐼</span>
+          <p class="font-body font-semibold" style="color: var(--dark);">You&#039;re the boss of your own brain now! So proud of you! 🐼🎉</p>
         </div>
         
         <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
@@ -1118,7 +1034,7 @@
             style="accent-color: var(--primary);"
             data-activity="interactive_9"
             onchange="markActivityComplete('interactive_9')"
-            ${completedActivities['interactive_9'] ? 'checked disabled' : ''}
+            
           >
           <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
         </div>
@@ -1128,38 +1044,145 @@
 
     function generatePage18() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="superhero-creator" data-activity="superhero_10">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="agree-disagree">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">Brain-Growing Superhero Creator 🦸</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Design your own amazing superhero who helps kids grow their brains and believe in themselves! Choose their special powers, awesome costume, and helpful sidekick.</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center">Professor Panda 🐼 has discovered that children&#039;s brains need special superheroes to help them grow stronger every day! These heroes teach kids that making mistakes helps their brains grow, and that practice makes everything possible. Will you create the next great Brain-Growing Superhero?</p>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Think About Your Thinking! 🤔</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Read each statement and decide if you agree or disagree, then think about why!</p>
+          
+          
+    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
+      <p class="font-body text-lg mb-3" style="color: var(--dark);">"I can notice when my brain is working hard on a problem"</p>
+      <div class="flex gap-3 mb-3">
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_0', 'agree');">
+          I Agree
+        </button>
+        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_0', 'disagree');">
+          I Disagree
+        </button>
+      </div>
+      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
+        <p class="font-body text-sm" style="color: var(--secondary);">This is metacognition in action! When you notice yourself thinking, you&#039;re using your &#039;thinking about thinking&#039; superpower.</p>
+      </div>
+    </div>
+  
+    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
+      <p class="font-body text-lg mb-3" style="color: var(--dark);">"There&#039;s only one right way to solve every problem"</p>
+      <div class="flex gap-3 mb-3">
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_1', 'agree');">
+          I Agree
+        </button>
+        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_1', 'disagree');">
+          I Disagree
+        </button>
+      </div>
+      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
+        <p class="font-body text-sm" style="color: var(--secondary);">Actually, our brains can find many different paths to solutions! Metacognition helps us explore different thinking strategies.</p>
+      </div>
+    </div>
+  
+    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
+      <p class="font-body text-lg mb-3" style="color: var(--dark);">"When I&#039;m confused, I should just give up"</p>
+      <div class="flex gap-3 mb-3">
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_2', 'agree');">
+          I Agree
+        </button>
+        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_2', 'disagree');">
+          I Disagree
+        </button>
+      </div>
+      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
+        <p class="font-body text-sm" style="color: var(--secondary);">Confusion is actually your brain&#039;s way of saying &#039;let me try a different approach!&#039; Metacognitive thinkers see confusion as a signal to switch strategies.</p>
+      </div>
+    </div>
+  
+    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
+      <p class="font-body text-lg mb-3" style="color: var(--dark);">"I can control how I think about things"</p>
+      <div class="flex gap-3 mb-3">
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_3', 'agree');">
+          I Agree
+        </button>
+        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_3', 'disagree');">
+          I Disagree
+        </button>
+      </div>
+      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
+        <p class="font-body text-sm" style="color: var(--secondary);">Yes! While we can&#039;t control what happens to us, we can choose how we think about it. This is one of metacognition&#039;s greatest gifts.</p>
+      </div>
+    </div>
+  
+    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
+      <p class="font-body text-lg mb-3" style="color: var(--dark);">"Smart people never have to think about their thinking"</p>
+      <div class="flex gap-3 mb-3">
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_4', 'agree');">
+          I Agree
+        </button>
+        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_4', 'disagree');">
+          I Disagree
+        </button>
+      </div>
+      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
+        <p class="font-body text-sm" style="color: var(--secondary);">Actually, the opposite is true! The smartest people regularly check in with their own thinking processes and adjust their strategies.</p>
+      </div>
+    </div>
+  
+    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
+      <p class="font-body text-lg mb-3" style="color: var(--dark);">"I learn better when I understand how my brain works"</p>
+      <div class="flex gap-3 mb-3">
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_5', 'agree');">
+          I Agree
+        </button>
+        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
+                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
+                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_10_5', 'disagree');">
+          I Disagree
+        </button>
+      </div>
+      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
+        <p class="font-body text-sm" style="color: var(--secondary);">Absolutely! When you understand your own learning style and thinking patterns, you can choose the best strategies for success.</p>
+      </div>
+    </div>
+  
+          
+          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Which statement surprised you the most, and what does that tell you about how you think about your own thinking?</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 60px;" placeholder="Write your thoughts..." onchange="saveFormData('agree_reflection_10', this.value)"></textarea>
           </div>
-          <div class="p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(135deg, var(--cream), var(--soft-yellow));">
-            <p class="font-title mb-2">Your Superhero:</p>
-            <div class="flex justify-center items-center gap-4 text-6xl">
-              <span id="hero_10_costume">❓</span>
-              <span id="hero_10_power">❓</span>
-              <span id="hero_10_sidekick">❓</span>
-            </div>
-            <input type="text" class="mt-4 p-2 rounded-lg border-2 font-title text-center text-xl w-full max-w-xs" style="border-color: var(--primary);" placeholder="Hero name..." onchange="saveFormData('hero_name_10', this.value); checkHeroComplete('10')">
-          </div>
-          <div class="mb-4"><p class="font-title mb-2">⚡ Power:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '✨')"><span class="text-2xl">✨</span><p class="font-body text-xs mt-1">Mistake Magic</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '🌱')"><span class="text-2xl">🌱</span><p class="font-body text-xs mt-1">Growth Rays</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '💪')"><span class="text-2xl">💪</span><p class="font-body text-xs mt-1">Yet Power</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'power', '👁️')"><span class="text-2xl">👁️</span><p class="font-body text-xs mt-1">Challenge Vision</p></button></div></div>
-          <div class="mb-4"><p class="font-title mb-2">🦸 Costume:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #10b98120; border-color: transparent;" onclick="window.selectHero('10', 'costume', '🦸')"><span class="text-2xl">🦸</span><p class="font-body text-xs mt-1">Growth Cape</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #8b5cf620; border-color: transparent;" onclick="window.selectHero('10', 'costume', '🦹')"><span class="text-2xl">🦹</span><p class="font-body text-xs mt-1">Brain Suit</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #f59e0b20; border-color: transparent;" onclick="window.selectHero('10', 'costume', '⭐')"><span class="text-2xl">⭐</span><p class="font-body text-xs mt-1">Learning Outfit</p></button></div></div>
-          <div class="mb-4"><p class="font-title mb-2">🐾 Sidekick:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'sidekick', '🐧')"><span class="text-2xl">🐧</span><p class="font-body text-xs mt-1">Practice Penguin</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('10', 'sidekick', '🐘')"><span class="text-2xl">🐘</span><p class="font-body text-xs mt-1">Effort Elephant</p></button></div></div>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
-            <p class="font-title mb-2">What brain-growing challenge will your hero help kids with?</p>
-            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My hero will..." onchange="saveFormData('hero_mission_10', this.value); checkHeroComplete('10')"></textarea>
-          </div>
-          <div class="p-6 rounded-2xl text-center" id="heroDone_10" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-5xl mb-2">🦸‍♂️✨🦸‍♀️</p>
-            <p class="font-title text-2xl">Your superhero is ready to help brains grow stronger! Professor Panda 🐼 is so proud of your amazing creation!</p>
-          </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="heroComplete_10">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="superhero_10" onchange="markActivityComplete('superhero_10')" ${completedActivities['superhero_10'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">My superhero is ready! ⭐</label>
-          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer"
+            style="accent-color: var(--primary);"
+            data-activity="agree_10"
+            onchange="markActivityComplete('agree_10')"
+            
+          >
+          <label class="font-title text-xl" style="color: var(--dark);">I shared my opinions!</label>
         </div>
       </div>
     </div>`;
@@ -1167,43 +1190,33 @@
 
     function generatePage19() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="fill-in-story">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Your Brain Town Blueprint 📋</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Professor Panda&#039;s Thinking Adventure 📖</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Now you know the secret - your Brain Town is always under construction! You&#039;re the architect, and every day you get to decide what new skills and knowledge to build.</p>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Fill in the blanks to help Professor Panda learn about thinking!</p>
           
+          <div class="p-6 rounded-2xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="text-xl leading-loose font-body" style="color: var(--dark);">Professor Panda 🐼 was feeling <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 14rem; min-width: 8rem; max-width: 100%; padding: 0 0.35rem;" placeholder="a worried feeling" onchange="saveFormData('story_11_0', this.value)"> about his math test. He stopped and thought, &#039;What is my brain doing right now?&#039; He noticed his thoughts were going very <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 18rem; min-width: 8rem; max-width: 100%; padding: 0 0.35rem;" placeholder="how fast thoughts move" onchange="saveFormData('story_11_1', this.value)">. Professor Panda took a deep breath and said, &#039;I can <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 19rem; min-width: 8rem; max-width: 100%; padding: 0 0.35rem;" placeholder="something calming to do" onchange="saveFormData('story_11_2', this.value)"> to help my brain feel better!&#039; He tried his plan and felt much more <input type="text" class="story-blank inline-block border-b-3 border-dashed text-center font-body mx-1" style="border-color: var(--primary); background: transparent; width: 12rem; min-width: 8rem; max-width: 100%; padding: 0 0.35rem;" placeholder="a good feeling" onchange="saveFormData('story_11_3', this.value)">. &#039;Wow!&#039; said Professor Panda, &#039;When I think about my thinking, I can help myself!&#039;</p>
+          </div>
           
-        <div class="interactive-group">
-          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">One new thing I want to build in my Brain Town is: <input type="text" 
-                  class="inline-block w-32 px-2 py-1 mx-1 rounded-lg border-2 font-body text-lg text-center align-baseline" 
-                  style="background-color: white; border-color: var(--primary); color: var(--dark); vertical-align: baseline;"
-                  placeholder="..."
-                  data-blank-index="1"
-                  oninput="handleFillBlankInput(this, 11)"></p>
-        </div>
-          
-          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">What an exciting addition to your Brain Town! Remember, with practice and the magic word &#039;YET,&#039; you can build anything you set your mind to.</p>
+          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
+            <p class="font-body font-semibold mb-3" style="color: var(--dark);">What does Professor Panda do when he notices his thoughts? How can you think about your thinking too?</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 80px;" placeholder="Write your thoughts..." onchange="saveFormData('story_reflection_11', this.value)"></textarea>
           </div>
         </div>
         
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
-          <span class="text-3xl">🐼</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">I can&#039;t wait to see all the amazing things you&#039;ll build in your Brain Town! Keep growing, young architect! 🐼🏗️</p>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
           <input 
             type="checkbox" 
             class="w-8 h-8 rounded cursor-pointer"
             style="accent-color: var(--primary);"
-            data-activity="interactive_11"
-            onchange="markActivityComplete('interactive_11')"
-            ${completedActivities['interactive_11'] ? 'checked disabled' : ''}
+            data-activity="fillin_11"
+            onchange="markActivityComplete('fillin_11')"
+            
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+          <label class="font-title text-xl" style="color: var(--dark);">I completed my story!</label>
         </div>
       </div>
     </div>`;
@@ -1211,44 +1224,48 @@
 
     function generatePage20() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="calm-den-builder">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">How Do You Feel About Learning New Things? 🧠</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Thinking Space 🏠</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Think about when you try something new or challenging. Click on the feeling that matches how you feel most of the time.</p>
+          <div class="rounded-2xl p-6 mb-6 flex items-start gap-4" style="background-color: var(--soft-yellow);">
+            <span class="text-4xl">🐼</span>
+            <p class="text-lg font-body" style="color: var(--dark);">Luna the Owl has a special cozy corner where she goes to think about her thoughts and feelings. When Luna needs to understand what&#039;s happening in her mind, she curls up in her thinking space with all her favorite things.</p>
+          </div>
+          <p class="text-lg mb-6 font-body font-semibold" style="color: var(--dark);">Build your own thinking space where you can notice your thoughts and feelings. Choose items that help you feel calm and ready to explore your mind.</p>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #F4A261; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#F4A261' : 'white';">
-      <span class="text-4xl">🤩</span>
-      <span class="font-body font-semibold" style="color: var(--dark);">Excited</span>
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">🧠</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">Thinking blanket</span>
     </button>
-    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #d4a5ff; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#d4a5ff' : 'white';">
-      <span class="text-4xl">😰</span>
-      <span class="font-body font-semibold" style="color: var(--dark);">Nervous</span>
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">🛏️</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">Comfy pillow</span>
     </button>
-    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #FFE8A3; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#FFE8A3' : 'white';">
-      <span class="text-4xl">🤔</span>
-      <span class="font-body font-semibold" style="color: var(--dark);">Curious</span>
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">🎵</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">Quiet music</span>
     </button>
-    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #fecaca; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#fecaca' : 'white';">
-      <span class="text-4xl">😤</span>
-      <span class="font-body font-semibold" style="color: var(--dark);">Frustrated</span>
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">📚</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">Feelings book</span>
     </button>
-    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #A8E6CF; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#A8E6CF' : 'white';">
-      <span class="text-4xl">😊</span>
-      <span class="font-body font-semibold" style="color: var(--dark);">Confident</span>
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">🧸</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">Worry buddy</span>
     </button>
-    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: #a8d8ea; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '#a8d8ea' : 'white';">
-      <span class="text-4xl">😟</span>
-      <span class="font-body font-semibold" style="color: var(--dark);">Worried</span>
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-4xl">💡</span>
+      <span class="font-body font-semibold text-center" style="color: var(--dark);">Soft lights</span>
     </button></div>
           <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">What&#039;s one new thing you&#039;d like to learn or get better at, and how can you practice growing your brain in that area?</label>
-            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." onchange="saveFormData('feeling_followup_12', this.value)">${formData['feeling_followup_12'] || ''}</textarea>
+            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">Where will your thinking space be?</label>
+            <input type="text" class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);" placeholder="e.g., My bedroom, under my blanket..." data-form-key="calmden_location_12" onchange="saveFormData('calmden_location_12', this.value)">
           </div>
           <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="feeling_12" onchange="markActivityComplete('feeling_12')" ${completedActivities['feeling_12'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="calmden_12" onchange="markActivityComplete('calmden_12')" >
+            <label class="font-title text-xl" style="color: var(--dark);">I built my calm-down den! ⭐</label>
           </div>
         </div>
       </div>
@@ -1257,12 +1274,62 @@
 
     function generatePage21() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="shield_13">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="action-plan">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Growing Brain Shield 🛡️</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Thinking Detective Plan 🐾</h1>
         
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Build your special shield by filling each section with your amazing growing powers! Remember, your brain gets stronger every time you practice and learn something new.</p>
+          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Create your special plan to catch your thoughts and understand how your brain works! Fill in each step to become a thinking detective.</p>
+          
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">1</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">NOTICE</h3>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">What happens in my body when I&#039;m thinking hard?</p>
+      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="e.g., I scrunch my forehead, I tap my pencil..." data-form-key="actionplan_step1_13" onchange="saveFormData('actionplan_step1_13', this.value)">
+    </div>
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">2</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">PAUSE</h3>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">What will I ask myself about my thinking?</p>
+      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="e.g., Is this working? Do I need a new way?..." data-form-key="actionplan_step2_13" onchange="saveFormData('actionplan_step2_13', this.value)">
+    </div>
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">3</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">CHOOSE</h3>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">What thinking tool will I try?</p>
+      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="e.g., draw a picture, talk it out, break it into pieces..." data-form-key="actionplan_step3_13" onchange="saveFormData('actionplan_step3_13', this.value)">
+    </div>
+    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">4</span>
+        <h3 class="font-title text-xl" style="color: var(--dark);">CHECK</h3>
+      </div>
+      <p class="font-body mb-2" style="color: var(--dark);">How will I know if my thinking worked?</p>
+      <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="e.g., I feel proud, I understand better, I solved it..." data-form-key="actionplan_step4_13" onchange="saveFormData('actionplan_step4_13', this.value)">
+    </div>
+          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="actionplan_13" onchange="markActivityComplete('actionplan_13')" >
+            <label class="font-title text-xl" style="color: var(--dark);">I created my action plan! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage22() {
+  return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="shield_14">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Thinking Shield 🛡️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Build a special shield that shows how smart your brain is! Fill in each part to see all the ways your thinking protects you.</p>
           
           <!-- Shield Visual -->
           <div class="flex justify-center mb-6">
@@ -1287,17 +1354,17 @@
           <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
             <span class="font-body text-sm self-center mr-2" style="color: var(--dark);">Add decorations:</span>
             
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🌟')">🌟</button>
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('⭐')">⭐</button>
   
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🧠')">🧠</button>
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🌟')">🌟</button>
   
     <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('💪')">💪</button>
   
     <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🛡️')">🛡️</button>
   
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🌱')">🌱</button>
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('✨')">✨</button>
   
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('⚡')">⚡</button>
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('🧠')">🧠</button>
   
           </div>
           
@@ -1307,57 +1374,57 @@
     <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--light-green);">
       <div class="flex items-center gap-2 mb-2">
         <span class="text-2xl">🧠</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My Learning Power</h3>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Brain Power</h3>
       </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">What&#039;s something you&#039;ve gotten better at by practicing?</p>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">What does your brain do really well?</p>
       <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
              style="border-color: var(--secondary); background-color: white;"
-             placeholder="I got better at..."
+             placeholder="My brain is good at..."
              data-section="s1"
-             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s1', this.value)"
-             value="${formData['shield_13_s1'] || ''}">
+             data-form-key="shield_14_s1"
+             onchange="handleShieldInput('shield_14', 4); saveFormData('shield_14_s1', this.value)">
     </div>
   
     <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--soft-yellow);">
       <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">💭</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My Growth Words</h3>
+        <span class="text-2xl">👥</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Learning Helpers</h3>
       </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">What do you say to yourself when something is hard?</p>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">Who helps you learn and think better?</p>
       <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
              style="border-color: var(--secondary); background-color: white;"
-             placeholder="I tell myself..."
+             placeholder="People who help my brain..."
              data-section="s2"
-             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s2', this.value)"
-             value="${formData['shield_13_s2'] || ''}">
+             data-form-key="shield_14_s2"
+             onchange="handleShieldInput('shield_14', 4); saveFormData('shield_14_s2', this.value)">
     </div>
   
     <div class="shield-section p-4 rounded-xl transition-all" style="background-color: var(--primary);">
       <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">✨</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My Mistake Magic</h3>
+        <span class="text-2xl">🎯</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Focus Tools</h3>
       </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">How do mistakes help you learn and grow?</p>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">What helps you think clearly?</p>
       <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
              style="border-color: var(--secondary); background-color: white;"
-             placeholder="Mistakes help me..."
+             placeholder="I think best when..."
              data-section="s3"
-             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s3', this.value)"
-             value="${formData['shield_13_s3'] || ''}">
+             data-form-key="shield_14_s3"
+             onchange="handleShieldInput('shield_14', 4); saveFormData('shield_14_s3', this.value)">
     </div>
   
     <div class="shield-section p-4 rounded-xl transition-all" style="background-color: #a8d8ea;">
       <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">🌱</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">My Yet Power</h3>
+        <span class="text-2xl">💡</span>
+        <h3 class="font-title text-lg" style="color: var(--dark);">My Smart Choice</h3>
       </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">What&#039;s something you can&#039;t do YET but are working on?</p>
+      <p class="font-body text-sm mb-2" style="color: var(--dark);">When did you make a really good choice by thinking first?</p>
       <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
              style="border-color: var(--secondary); background-color: white;"
-             placeholder="I can&#039;t _____ yet, but..."
+             placeholder="I thought carefully when..."
              data-section="s4"
-             onchange="handleShieldInput('shield_13', 4); saveFormData('shield_13_s4', this.value)"
-             value="${formData['shield_13_s4'] || ''}">
+             data-form-key="shield_14_s4"
+             onchange="handleShieldInput('shield_14', 4); saveFormData('shield_14_s4', this.value)">
     </div>
   
           </div>
@@ -1370,7 +1437,7 @@
           <!-- Win Message -->
           <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
             <p class="text-4xl mb-2">🛡️</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Your shield is complete! Your brain grows stronger every day, and you have the power to learn anything!</p>
+            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Your thinking shield is complete! Your brain is your superpower!</p>
           </div>
           
           <!-- Completion Checkbox -->
@@ -1379,9 +1446,9 @@
               type="checkbox" 
               class="w-8 h-8 rounded cursor-pointer"
               style="accent-color: var(--primary);"
-              data-activity="shield_13"
-              onchange="markActivityComplete('shield_13')"
-              ${completedActivities['shield_13'] ? 'checked disabled' : ''}
+              data-activity="shield_14"
+              onchange="markActivityComplete('shield_14')"
+              
             >
             <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
           </div>
@@ -1390,92 +1457,39 @@
     </div>`;
 }
 
-    function generatePage22() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sorting-activity">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Growth Mindset Thoughts 🧠</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Sort these thoughts into Growth Mindset (helps your brain grow) or Fixed Mindset (stops your brain from growing).</p>
-          
-          <div class="grid md:grid-cols-2 gap-4 mb-6">
-            
-    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #A8E6CF; border-color: var(--dark);" data-category="Growth Mindset" data-category-index="0" onclick="sortSelectedItem(this, 'Growth Mindset', 14)">
-      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">🌱 Growth Mindset</h3>
-      <div class="dropped-items space-y-2"></div>
-    </div>
-  
-    <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: #fecaca; border-color: var(--dark);" data-category="Fixed Mindset" data-category-index="1" onclick="sortSelectedItem(this, 'Fixed Mindset', 14)">
-      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">🚫 Fixed Mindset</h3>
-      <div class="dropped-items space-y-2"></div>
-    </div>
-  
-          </div>
-          
-          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
-            <div class="sort-items-list space-y-2">
-              
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_0" data-correct-category="Growth Mindset" data-explanation="This shows you believe your brain can grow stronger with effort!" onclick="selectSortItem(this)">
-      I can learn this with practice
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_1" data-correct-category="Fixed Mindset" data-explanation="This thought stops you from trying - add &#039;yet&#039; to make it growth mindset!" onclick="selectSortItem(this)">
-      I&#039;m not good at math
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_2" data-correct-category="Growth Mindset" data-explanation="Mistakes are how our brain builds new connections!" onclick="selectSortItem(this)">
-      Mistakes help me learn
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_3" data-correct-category="Fixed Mindset" data-explanation="Giving up stops your brain from growing stronger" onclick="selectSortItem(this)">
-      I give up when things are hard
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_4" data-correct-category="Growth Mindset" data-explanation="Effort is like exercise for your brain - it makes it stronger!" onclick="selectSortItem(this)">
-      I can get better with effort
-    </div>
-  
-    <div class="sort-item p-3 rounded-lg font-body cursor-pointer transition-all hover:scale-102" style="background-color: white; border: 2px solid var(--primary);" data-item-id="item_5" data-correct-category="Fixed Mindset" data-explanation="Everyone can grow their intelligence with practice and learning!" onclick="selectSortItem(this)">
-      I&#039;m either smart or I&#039;m not
-    </div>
-  
-            </div>
-          </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="sorting_14"
-            onchange="markActivityComplete('sorting_14')"
-            ${completedActivities['sorting_14'] ? 'checked disabled' : ''}
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
     function generatePage23() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="scenario">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="superhero-creator" data-activity="superhero_15">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">The Tricky Math Problem 🧮</h1>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">Mind Detective Hero Creator 🦸</h1>
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);"><p class="text-lg font-body" style="color: var(--dark);">Emma sits down to do her math homework and sees a really hard word problem. She reads it three times but still doesn&#039;t understand it. Her first thought is &#039;I&#039;m just not good at math.&#039; What should Emma do next?</p></div>
-          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">What would you do?</p>
-          <div class="space-y-3 mb-6">
-    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="true" data-feedback="Great thinking! This helps because you&#039;re using a growth mindset. Your brain is like a muscle that gets stronger with practice. Adding &#039;yet&#039; reminds you that learning takes time!">Take a deep breath and think &#039;I can&#039;t solve this YET, but I can learn how&#039;</button>
-    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="false" data-feedback="This could work, but there might be a better way. While it&#039;s okay to take breaks, avoiding challenges means missing chances to grow your brain&#039;s math muscles!">Skip the problem and move on to easier ones</button>
-    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="false" data-feedback="Let&#039;s think about why this might not help. When we say &#039;never,&#039; we forget that our brains can actually grow and change. Every time you practice, you&#039;re building new brain connections!">Give up and say &#039;I&#039;ll never be good at math&#039;</button></div>
-          <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="scenario_15" onchange="markActivityComplete('scenario_15')" ${completedActivities['scenario_15'] ? 'checked disabled' : ''}>
-            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Create your very own thinking superhero who helps kids understand their own minds! Professor Panda 🐼 will help you build the perfect hero.</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">Professor Panda 🐼 has discovered that kids need a special superhero - one who can help them understand their own thoughts and feelings! This hero will teach children how to think about their thinking and become their own mind detectives.</p>
+          </div>
+          <div class="p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(135deg, var(--cream), var(--soft-yellow));">
+            <p class="font-title mb-2">Your Superhero:</p>
+            <div class="flex justify-center items-center gap-4 text-6xl">
+              <span id="hero_15_costume">❓</span>
+              <span id="hero_15_power">❓</span>
+              <span id="hero_15_sidekick">❓</span>
+            </div>
+            <input type="text" class="mt-4 p-2 rounded-lg border-2 font-title text-center text-xl w-full max-w-xs" style="border-color: var(--primary);" placeholder="Hero name..." onchange="saveFormData('hero_name_15', this.value); checkHeroComplete('15')">
+          </div>
+          <div class="mb-4"><p class="font-title mb-2">⚡ Power:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('15', 'power', '🔍')"><span class="text-2xl">🔍</span><p class="font-body text-xs mt-1">Thought Tracker</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('15', 'power', '🪞')"><span class="text-2xl">🪞</span><p class="font-body text-xs mt-1">Mind Mirror</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('15', 'power', '🎯')"><span class="text-2xl">🎯</span><p class="font-body text-xs mt-1">Strategy Scanner</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('15', 'power', '💡')"><span class="text-2xl">💡</span><p class="font-body text-xs mt-1">Learning Light</p></button></div></div>
+          <div class="mb-4"><p class="font-title mb-2">🦸 Costume:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #8b5cf620; border-color: transparent;" onclick="window.selectHero('15', 'costume', '🦸')"><span class="text-2xl">🦸</span><p class="font-body text-xs mt-1">Detective Cape</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #06b6d420; border-color: transparent;" onclick="window.selectHero('15', 'costume', '🦹')"><span class="text-2xl">🦹</span><p class="font-body text-xs mt-1">Wisdom Suit</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #10b98120; border-color: transparent;" onclick="window.selectHero('15', 'costume', '⭐')"><span class="text-2xl">⭐</span><p class="font-body text-xs mt-1">Thinking Gear</p></button></div></div>
+          <div class="mb-4"><p class="font-title mb-2">🐾 Sidekick:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('15', 'sidekick', '🦉')"><span class="text-2xl">🦉</span><p class="font-body text-xs mt-1">Question Owl</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('15', 'sidekick', '🐭')"><span class="text-2xl">🐭</span><p class="font-body text-xs mt-1">Memory Mouse</p></button></div></div>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
+            <p class="font-title mb-2">What thinking challenge will your hero help kids solve?</p>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My hero will..." onchange="saveFormData('hero_mission_15', this.value); checkHeroComplete('15')"></textarea>
+          </div>
+          <div class="p-6 rounded-2xl text-center" id="heroDone_15" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-5xl mb-2">🦸‍♂️✨🦸‍♀️</p>
+            <p class="font-title text-2xl">Amazing! Your thinking superhero is ready to help kids become mind detectives! Professor Panda 🐼 is so proud!</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="heroComplete_15">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="superhero_15" onchange="markActivityComplete('superhero_15')" >
+            <label class="font-title text-xl" style="color: var(--dark);">My superhero is ready! ⭐</label>
           </div>
         </div>
       </div>
@@ -1484,35 +1498,66 @@
 
     function generatePage24() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="summary">
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feelings-orchestra" data-activity="orchestra_16">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🧠 Your Amazing Growing Brain Summary! ✨</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <div class="space-y-4 mb-8">
-            
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">Your brain is like a muscle that gets stronger every time you practice and learn new things!</span>
-    </div>
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">Making mistakes is actually GOOD for your brain - it&#039;s how you grow smarter and stronger!</span>
-    </div>
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">When something feels hard, that means your brain is building new pathways and getting more powerful!</span>
-    </div>
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">You can always learn new skills and get better at things with practice, patience, and a growth mindset!</span>
-    </div>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">My Feelings Orchestra 🎵</h1>
+        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Pick instruments that match how you feel today! Professor Panda 🐼 will help you make beautiful feeling music together.</p>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+            <p class="font-body text-center">Professor Panda 🐼 has a magical orchestra where every feeling gets to play music! Each instrument makes special sounds that show different feelings inside us.</p>
           </div>
-        </div>
-        
-        <div class="rounded-xl p-6 flex items-center gap-4" style="background-color: var(--soft-yellow);">
-          <span class="text-5xl">🐼</span>
-          <p class="font-body text-lg font-semibold" style="color: var(--dark);">🐕 Wow! You&#039;ve learned so much about your incredible brain! Remember, every time you say &#039;I can&#039;t do this YET,&#039; you&#039;re showing your growth mindset. Keep practicing, keep trying, and watch your amazing brain grow stronger every single day. I&#039;m so proud of you for being a brain-growing superstar! Woof woof! 🌟</p>
+          <div class="p-4 rounded-xl mb-6 text-center" id="soundDisplay_16" style="background-color: var(--cream); min-height: 80px;">
+            <p class="font-body">🎵 Tap an instrument to play!</p>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #fbbf2420; border-color: #fbbf24;" onclick="window.playInstrument('16', '🥁', 'Boom boom!', 'joy')">
+      <span class="text-5xl">🥁</span>
+      <p class="font-title text-sm mt-2">Happy Drums</p>
+      <p class="font-body text-xs" style="color: var(--secondary);">joy</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #22c55e20; border-color: #22c55e;" onclick="window.playInstrument('16', '🎶', 'Whooo...', 'peace')">
+      <span class="text-5xl">🎶</span>
+      <p class="font-title text-sm mt-2">Calm Flute</p>
+      <p class="font-body text-xs" style="color: var(--secondary);">peace</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #ef444420; border-color: #ef4444;" onclick="window.playInstrument('16', '🎺', 'Ta-da!', 'courage')">
+      <span class="text-5xl">🎺</span>
+      <p class="font-title text-sm mt-2">Brave Trumpet</p>
+      <p class="font-body text-xs" style="color: var(--secondary);">courage</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #3b82f620; border-color: #3b82f6;" onclick="window.playInstrument('16', '🎻', 'Hmmm...', 'sadness')">
+      <span class="text-5xl">🎻</span>
+      <p class="font-title text-sm mt-2">Sad Violin</p>
+      <p class="font-body text-xs" style="color: var(--secondary);">sadness</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #f9731620; border-color: #f97316;" onclick="window.playInstrument('16', '🔔', 'Ding ding!', 'excitement')">
+      <span class="text-5xl">🔔</span>
+      <p class="font-title text-sm mt-2">Excited Bells</p>
+      <p class="font-body text-xs" style="color: var(--secondary);">excitement</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #8b5cf620; border-color: #8b5cf6;" onclick="window.playInstrument('16', '🎵', 'Peep peep...', 'worry')">
+      <span class="text-5xl">🎵</span>
+      <p class="font-title text-sm mt-2">Worried Whistle</p>
+      <p class="font-body text-xs" style="color: var(--secondary);">worry</p>
+    </button>
+  </div>
+          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
+            <p class="font-title mb-2">What feeling song will you create today?</p>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My feelings music is..." onchange="saveFormData('orchestra_16', this.value)"></textarea>
+          </div>
+          <div class="p-6 rounded-2xl text-center" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+            <p class="text-4xl mb-2">🎶</p>
+            <p class="font-title text-xl">Beautiful music! Every feeling has its own song!</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="orchestra_16" onchange="markActivityComplete('orchestra_16')" >
+            <label class="font-title text-xl" style="color: var(--dark);">I made music! ⭐</label>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1520,14 +1565,50 @@
 
     function generatePage25() {
   return `
+    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="summary">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">🧠 What We Learned About Thinking About Thinking! 🌟</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
+          <div class="space-y-4 mb-8">
+            
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Our brain can think about its own thinking - that&#039;s called metacognition!</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">We can notice when we understand something or when we&#039;re confused.</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">Good learners ask themselves &#039;Do I get this?&#039; and &#039;What should I try next?&#039;</span>
+    </div>
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
+      <span class="text-2xl">✨</span>
+      <span class="font-body text-lg" style="color: var(--dark);">When we pay attention to our thinking, we become better at learning new things!</span>
+    </div>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-6 flex items-center gap-4" style="background-color: var(--soft-yellow);">
+          <span class="text-5xl">🐼</span>
+          <p class="font-body text-lg font-semibold" style="color: var(--dark);">Great job learning about your amazing thinking brain! 🎉 Keep asking yourself questions about your learning - you&#039;re becoming a thinking detective! 🕵️‍♀️✨</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage26() {
+  return `
     <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
       <div class="text-center max-w-2xl">
         <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
-        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">🎉 Congratulations! You Did It! 🎉</h1>
+        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">🎉 Amazing Work, Champion! 🎉</h1>
         
         <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
-          <p class="text-xl mb-4 font-body" style="color: var(--dark);">Wow! Professor Panda 🐼 is so proud of you for completing this workbook! You&#039;ve learned so many amazing skills and shown how brave and thoughtful you can be.</p>
-          <p class="text-lg font-body" style="color: var(--secondary);">Keep practicing what you&#039;ve learned every day, and remember that Professor Panda 🐼 believes in you! You&#039;re ready to use these new skills to make every day a little brighter.</p>
+          <p class="text-xl mb-4 font-body" style="color: var(--dark);">Wow! You did it! Professor Panda 🐼 is so proud of all the hard work you put into this workbook. You learned so many new things and grew stronger!</p>
+          <p class="text-lg font-body" style="color: var(--secondary);">Keep practicing what you learned every day! Professor Panda 🐼 knows you&#039;ll keep being awesome!</p>
         </div>
         
         <div class="flex flex-col gap-4">
@@ -1558,7 +1639,7 @@
     </div>`;
 }
     
-    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17, generatePage18, generatePage19, generatePage20, generatePage21, generatePage22, generatePage23, generatePage24, generatePage25];
+    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17, generatePage18, generatePage19, generatePage20, generatePage21, generatePage22, generatePage23, generatePage24, generatePage25, generatePage26];
     
     // Navigation
     function nextPage() {
@@ -1601,7 +1682,15 @@
     
     // Restore form values from localStorage
     function restoreFormState() {
-      // Restore all text inputs
+      // Restore all text inputs with data-form-key
+      document.querySelectorAll('input[type="text"][data-form-key]').forEach(input => {
+        const key = input.getAttribute('data-form-key');
+        if (key && formData[key]) {
+          input.value = formData[key];
+        }
+      });
+      
+      // Restore all text inputs by parsing onchange
       document.querySelectorAll('input[type="text"]').forEach(input => {
         const onchange = input.getAttribute('onchange') || '';
         const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
@@ -1610,7 +1699,15 @@
         }
       });
       
-      // Restore all textareas
+      // Restore all textareas with data-form-key
+      document.querySelectorAll('textarea[data-form-key]').forEach(textarea => {
+        const key = textarea.getAttribute('data-form-key');
+        if (key && formData[key]) {
+          textarea.value = formData[key];
+        }
+      });
+      
+      // Restore all textareas by parsing onchange
       document.querySelectorAll('textarea').forEach(textarea => {
         const onchange = textarea.getAttribute('onchange') || '';
         const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
@@ -1629,6 +1726,21 @@
           if (valueDisplay) valueDisplay.textContent = formData[match[1]];
         }
       });
+      
+      // Restore completed activity checkboxes
+      document.querySelectorAll('input[type="checkbox"][data-activity]').forEach(checkbox => {
+        const activityId = checkbox.getAttribute('data-activity');
+        if (activityId && completedActivities[activityId]) {
+          checkbox.checked = true;
+          checkbox.disabled = true;
+        }
+      });
+      
+      // Update child name display
+      const childNameEl = document.getElementById('childNameDisplay');
+      if (childNameEl) {
+        childNameEl.textContent = getChildName();
+      }
       
       // Restore button selections (rate-scale only - not polls, as those should be re-answered)
       Object.keys(formData).forEach(key => {
@@ -1764,6 +1876,11 @@
         reflectionInput.addEventListener('input', updateReflection);
         updateReflection();
       }
+
+      // Matching activity
+      document.querySelectorAll('.matching-activity').forEach(activity => {
+        initMatchingActivity(activity);
+      });
       
       // Drawing canvas
       const canvas = document.querySelector('.drawing-canvas');
@@ -1773,6 +1890,127 @@
       document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
         initDrawingCanvas(canvas);
       });
+    }
+
+    function initMatchingActivity(activity) {
+      const board = activity.querySelector('.matching-board');
+      const svg = activity.querySelector('.matching-lines');
+      const leftItems = Array.from(activity.querySelectorAll('.match-item-left'));
+      const rightColumn = activity.querySelector('.match-column-right');
+      const status = activity.querySelector('.matching-status');
+      const completeBox = activity.closest('.rounded-3xl')?.querySelector('[data-activity^="matching_"]');
+
+      if (!board || !svg || !rightColumn) return;
+
+      const shuffle = (arr) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
+      const rightItems = shuffle(Array.from(rightColumn.querySelectorAll('.match-item-right')));
+      rightItems.forEach(item => rightColumn.appendChild(item));
+
+      let selectedLeft = null;
+      const connections = new Map();
+
+      const updateStatus = () => {
+        if (!status) return;
+        if (connections.size === 0) {
+          status.textContent = 'Tap a left item, then a right item to draw a line.';
+          return;
+        }
+        const allMatched = connections.size === leftItems.length;
+        const allCorrect = Array.from(connections.entries()).every(([leftId, rightId]) => leftId === rightId);
+        if (allMatched && allCorrect) {
+          status.textContent = 'All matched correctly! 🎉';
+        } else if (allMatched) {
+          status.textContent = 'Nice try! Some lines need adjusting.';
+        } else {
+          status.textContent = 'Keep going! Connect all the pairs.';
+        }
+      };
+
+      const updateCompleteBox = () => {
+        if (!completeBox) return;
+        const allMatched = connections.size === leftItems.length;
+        const allCorrect = Array.from(connections.entries()).every(([leftId, rightId]) => leftId === rightId);
+        completeBox.disabled = !(allMatched && allCorrect);
+      };
+
+      const drawLines = () => {
+        if (!document.body.contains(activity)) return;
+        const rect = board.getBoundingClientRect();
+        svg.setAttribute('width', rect.width);
+        svg.setAttribute('height', rect.height);
+        svg.setAttribute('viewBox', '0 0 ' + rect.width + ' ' + rect.height);
+        svg.innerHTML = '';
+        connections.forEach((rightId, leftId) => {
+          const leftEl = activity.querySelector('.match-item-left[data-match-id="' + leftId + '"]');
+          const rightEl = activity.querySelector('.match-item-right[data-match-id="' + rightId + '"]');
+          if (!leftEl || !rightEl) return;
+          const leftRect = leftEl.getBoundingClientRect();
+          const rightRect = rightEl.getBoundingClientRect();
+          const x1 = leftRect.right - rect.left;
+          const y1 = leftRect.top + leftRect.height / 2 - rect.top;
+          const x2 = rightRect.left - rect.left;
+          const y2 = rightRect.top + rightRect.height / 2 - rect.top;
+          const correct = leftId === rightId;
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke', correct ? 'var(--primary)' : 'var(--accent)');
+          line.setAttribute('stroke-width', '4');
+          line.setAttribute('stroke-linecap', 'round');
+          svg.appendChild(line);
+        });
+      };
+
+      const handleLeftClick = (item) => {
+        leftItems.forEach(el => el.classList.remove('selected'));
+        if (selectedLeft === item) {
+          selectedLeft = null;
+        } else {
+          selectedLeft = item;
+          item.classList.add('selected');
+        }
+      };
+
+      const handleRightClick = (item) => {
+        if (!selectedLeft) return;
+        const leftId = selectedLeft.dataset.matchId;
+        const rightId = item.dataset.matchId;
+        connections.forEach((value, key) => {
+          if (value === rightId) connections.delete(key);
+        });
+        connections.delete(leftId);
+        connections.set(leftId, rightId);
+        selectedLeft.classList.remove('selected');
+        selectedLeft = null;
+        updateStatus();
+        updateCompleteBox();
+        drawLines();
+      };
+
+      leftItems.forEach(item => item.addEventListener('click', () => handleLeftClick(item)));
+      rightItems.forEach(item => item.addEventListener('click', () => handleRightClick(item)));
+
+      const resizeHandler = () => {
+        if (!document.body.contains(activity)) {
+          window.removeEventListener('resize', resizeHandler);
+          return;
+        }
+        drawLines();
+      };
+      window.addEventListener('resize', resizeHandler);
+
+      updateStatus();
+      updateCompleteBox();
+      drawLines();
     }
     
     function initDrawingCanvas(canvas) {
@@ -1863,7 +2101,7 @@
       
       try {
         header = initModuleHeader({
-          title: "Building Your Amazing Brain Town",
+          title: "Bird&#039;s Eye View: Looking at Your Learning City",
           childName: childDisplayName,
           onNext: nextPage,
           onPrev: prevPage,

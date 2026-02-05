@@ -1373,6 +1373,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.goHome = goHome;
     window.completeModule = completeModule;
     window.getChildName = getChildName;
+    window.pages = pages;  // Expose pages array for print functionality
     window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
     
     // Interactive lesson choice handler

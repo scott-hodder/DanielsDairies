@@ -1684,6 +1684,11 @@ async function selectChild(child) {
     // Setup rewards event listeners for this child (non-blocking)
     setupRewardsEventListeners(child)
     
+    // Initialize daily quest system for this child
+    if (typeof window.initDailyQuest === 'function') {
+      window.initDailyQuest(child.id)
+    }
+    
     // ... (rest of the code remains the same)
     
     if (!state.currentFocusPlan) {

@@ -703,23 +703,13 @@
       }
     };
 
-    // Home button handler - complete module if not already completed, then return home
+    // Home button handler - only return home, don't auto-complete
     window.handleHomeButtonClick = async function() {
       try {
         const params = new URLSearchParams(window.location.search);
         const childId = params.get('childId');
-        const moduleCode = params.get('code');
         
-        // If we have module code and child ID, try to complete the module
-        if (childId && moduleCode && !moduleCompletionHandled) {
-          try {
-            await window.completeModuleDB();
-          } catch (e) {
-            // Module already completed or error - just continue
-          }
-        }
-        
-        // Return to dashboard
+        // Return to dashboard without auto-completing
         if (childId) {
           window.location.href = '/dashboard.html?childId=' + childId;
         } else {
@@ -1101,7 +1091,7 @@
     
     // =========================================
     // PAGE CHANGE OBSERVER
-    // Watch for page changes to trigger completion on last page
+    // Watch for page changes but DO NOT auto-complete
     // =========================================
     function setupPageObserver() {
       // Watch for changes to the module header page display ONLY
@@ -1116,9 +1106,9 @@
         if (match) {
           const current = parseInt(match[1], 10);
           const total = parseInt(match[2], 10);
-          if (current === total && total > 1 && !moduleCompletionHandled) {
-            window.handleModuleCompletion();
-          }
+          // REMOVED: Auto-completion when reaching last page
+          // Modules should only complete when explicitly requested via button click
+          console.log(`Page ${current} of ${total} - Auto-completion disabled`);
         }
       });
       

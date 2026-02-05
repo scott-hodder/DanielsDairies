@@ -366,6 +366,9 @@ export async function completeModule(childId, moduleId) {
       
       await awardModuleXp(childId, moduleId)
       
+      // Temporarily disabled assessment check to identify if this is causing the second modal
+      // await checkForAssessmentAfterCompletion(childId, moduleId)
+      
       return data
     }
 
@@ -390,6 +393,9 @@ export async function completeModule(childId, moduleId) {
     }
 
     await awardModuleXp(childId, moduleId)
+    
+    // Temporarily disabled assessment check to identify if this is causing the second modal
+    // await checkForAssessmentAfterCompletion(childId, moduleId)
     
     return data
   }
@@ -1449,4 +1455,87 @@ export function determineDefaultPathway(selectedCategoryNames, pathways) {
   )
   
   return foundationsPathway || pathways[0] || null
+}
+
+// Check if assessment is needed after module completion
+async function checkForAssessmentAfterCompletion(childId, moduleId) {
+  try {
+    // Get module information to determine pathway/category
+    const { data: moduleData, error: moduleError } = await supabase
+      .from('modules')
+      .select('category, code')
+      .eq('id', moduleId)
+      .single()
+    
+    if (moduleError) {
+      console.error('Error getting module data for assessment check:', moduleError)
+      return
+    }
+    
+    // Get all child modules to count completed modules in this pathway
+    const { data: childModules, error: childModulesError } = await supabase
+      .from('child_modules')
+      .select(`
+        *,
+        modules (category)
+      `)
+      .eq('child_id', childId)
+      .eq('is_completed', true)
+    
+    if (childModulesError) {
+      console.error('Error getting child modules for assessment check:', childModulesError)
+      return
+    }
+    
+    // Count completed modules in the same pathway
+    const pathwayCategory = moduleData?.category || 'general'
+    const completedModulesInPathway = childModules?.filter(cm => 
+      cm.modules?.category === pathwayCategory
+    ).length || 0
+    
+    // Get total modules in this pathway
+    const { data: totalModulesData, error: totalModulesError } = await supabase
+      .from('modules')
+      .select('id')
+      .eq('category', pathwayCategory)
+      .eq('is_active', true)
+    
+    if (totalModulesError) {
+      console.error('Error getting total modules for assessment check:', totalModulesError)
+      return
+    }
+    
+    const totalModulesInPathway = totalModulesData?.length || 0
+    
+    // Check if assessment is needed using progress tracking system
+    if (window.progressTrackingSystem) {
+      await window.progressTrackingSystem.init(supabase)
+      
+      const assessmentNeeded = await window.progressTrackingSystem.checkAssessmentNeeded(
+        childId, 
+        pathwayCategory, 
+        completedModulesInPathway, 
+        totalModulesInPathway
+      )
+      
+      if (assessmentNeeded) {
+        // Show assessment modal - user will be redirected after completing it
+        window.progressTrackingSystem.showAssessment(
+          childId, 
+          pathwayCategory, 
+          assessmentNeeded,
+          function(results) {
+            console.log('Assessment completed after module:', results)
+            // User can continue - no automatic redirect needed since they're already on dashboard
+          },
+          function() {
+            console.log('Assessment skipped after module')
+            // User can continue
+          }
+        )
+      }
+    }
+  } catch (error) {
+    console.error('Error in checkForAssessmentAfterCompletion:', error)
+  }
 }
