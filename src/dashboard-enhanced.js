@@ -25,6 +25,7 @@ function getDashboardData() {
 
 // Super Skills data loaded from database (will be populated on init)
 let superSkillsFromDB = [];
+let cyclesFromDB = [];
 
 const SUPER_SKILL_THEMES = {
   all: {
@@ -280,9 +281,11 @@ class AdventureMapV4 {
     this.lastTranslateY = 0;
     this.hasUserInteracted = false;
     this.currentCategory = null;
+    this.currentCycleId = null;
     this.currentZone = null;
     this.zoneUpgradeTimeout = null;
     this.boundHandlers = {};
+    this.cycleModuleTarget = 12;
     
     this.updateMobileConfig();
   }
@@ -323,24 +326,35 @@ class AdventureMapV4 {
       this.currentCategory = window.currentFocusSuperSkill;
     }
     
-    // Load super skills from database if supabase is available
+    // Load super skills and cycles from database if supabase is available
     if (window.supabase) {
-      window.supabase
-        .from('super_skills')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true })
-        .then(function(result) {
-          if (result.data) {
-            superSkillsFromDB = result.data;
+      Promise.all([
+        window.supabase
+          .from('super_skills')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true }),
+        window.supabase
+          .from('cycles')
+          .select('*')
+          .order('cycle_number', { ascending: true })
+      ])
+        .then(function(results) {
+          var superSkillsResult = results[0];
+          var cyclesResult = results[1];
+          if (superSkillsResult.data) {
+            superSkillsFromDB = superSkillsResult.data;
             // Update SUPER_SKILL_THEMES with database values
-            result.data.forEach(function(skill) {
+            superSkillsResult.data.forEach(function(skill) {
               if (SUPER_SKILL_THEMES[skill.slug]) {
                 SUPER_SKILL_THEMES[skill.slug].name = skill.name;
                 SUPER_SKILL_THEMES[skill.slug].emoji = skill.emoji || SUPER_SKILL_THEMES[skill.slug].emoji;
                 SUPER_SKILL_THEMES[skill.slug].color = skill.theme_color || SUPER_SKILL_THEMES[skill.slug].color;
               }
             });
+          }
+          if (cyclesResult.data) {
+            cyclesFromDB = cyclesResult.data;
           }
           
           // Check again for focus plan after loading (in case it was set while loading)
@@ -351,7 +365,7 @@ class AdventureMapV4 {
           self.render();
         })
         .catch(function(err) {
-          console.log('Could not load super skills from database:', err);
+          console.log('Could not load super skills/cycles from database:', err);
           self.render();
         });
     } else {
@@ -372,6 +386,7 @@ class AdventureMapV4 {
     css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 500; padding: 10px 36px 10px 16px; border-radius: 12px; border: 2px solid rgba(64,88,120,0.15); background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%); color: #405878; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23405878\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 200px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }');
     css.push('.category-filter-select:hover { border-color: rgba(64,88,120,0.25); }');
     css.push('.category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }');
+    css.push('.cycle-badge { background: #ffffff; color: #405878; border: 2px solid rgba(64,88,120,0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }');
     css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 20px; overflow: hidden; cursor: grab; border: 4px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 120px rgba(135,206,235,0.25), 0 12px 28px rgba(15, 23, 42, 0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%); }');
     css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
     css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');
@@ -434,6 +449,7 @@ class AdventureMapV4 {
     css.push('@keyframes currentRing { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.06); opacity: 0.6; } }');
     css.push('@keyframes characterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }');
     css.push('.map-progress { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); border: 1px solid rgba(64,88,120,0.1); font-family: "Fredoka", sans-serif; z-index: 50; }');
+    css.push('.cycle-complete-banner { position: absolute; top: 60px; left: 12px; background: linear-gradient(90deg, #fef9c3, #fde68a); color: #7c5c00; padding: 8px 14px; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; box-shadow: 0 2px 10px rgba(124, 92, 0, 0.18); border: 1px solid rgba(124, 92, 0, 0.2); z-index: 50; }');
     css.push('.progress-icon { font-size: 20px; }');
     css.push('.progress-text { font-size: 14px; font-weight: 600; color: #405878; }');
     css.push('.progress-bar { width: 80px; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }');
@@ -594,6 +610,14 @@ class AdventureMapV4 {
   buildModuleList() {
     var dashMods = window.modules || dashboardModules || [];
     var childMods = window.childModules || dashboardChildModules || [];
+    var cycleLookup = {};
+    if (cyclesFromDB && cyclesFromDB.length > 0) {
+      cyclesFromDB.forEach(function(cycle) {
+        if (cycle && cycle.id) {
+          cycleLookup[cycle.id] = cycle;
+        }
+      });
+    }
 
     if (dashMods.length > 0) {
       var seriesOrder = { 'luna': 1, 'Luna': 1, 'daniel': 2, 'Daniel': 2 };
@@ -637,6 +661,9 @@ class AdventureMapV4 {
         
         var pathwayOrder = (m.pathway_order !== undefined && m.pathway_order !== null) ? Number(m.pathway_order) : 
                           (m.week_number !== undefined && m.week_number !== null) ? Number(m.week_number) : null;
+        var cycleMeta = (m.cycle_id && cycleLookup[m.cycle_id]) ? cycleLookup[m.cycle_id] : null;
+        var cycleNumber = cycleMeta && cycleMeta.cycle_number !== undefined ? cycleMeta.cycle_number : (m.cycle_number || null);
+        var cycleName = cycleMeta && cycleMeta.name ? cycleMeta.name : '';
 
         return {
           id: m.id,
@@ -648,6 +675,9 @@ class AdventureMapV4 {
           status: status,
           completed: completed,
           pathwayOrder: pathwayOrder,
+          cycleId: m.cycle_id || null,
+          cycleNumber: cycleNumber,
+          cycleName: cycleName,
           emoji: self.getModuleEmoji(m, superSkillSlug),
           module: m,
           childModule: childModule
@@ -669,9 +699,20 @@ class AdventureMapV4 {
       var availableCategories = this.getAvailableCategories();
       this.currentCategory = availableCategories.length > 0 ? availableCategories[0] : 'all';
     }
+
+    var availableCycles = this.getAvailableCyclesForCategory();
+    if (!this.currentCycleId || (availableCycles.length > 0 && !availableCycles.find(function(cycle) { return String(cycle.id) === String(self.currentCycleId); }))) {
+      this.syncCycleSelection(availableCycles);
+    }
+    if (this.currentCycleId) {
+      this.setStoredCycleId(this.currentCategory, this.currentCycleId);
+    }
     
     this.modules = this.allModules.filter(function(m) { 
-      return (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory); 
+      var categoryMatch = (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory);
+      if (!categoryMatch) return false;
+      if (!self.currentCycleId) return true;
+      return String(m.cycleId) === String(self.currentCycleId);
     });
 
     // Pathway ordering: if modules have pathway_order, sort ascending (1,2,3...).
@@ -720,6 +761,101 @@ class AdventureMapV4 {
     return categories;
   }
 
+  getCycleStorageKey(category) {
+    return 'adventureMapSelectedCycle_' + (category || 'all');
+  }
+
+  getStoredCycleId(category) {
+    try {
+      return localStorage.getItem(this.getCycleStorageKey(category));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  setStoredCycleId(category, cycleId) {
+    try {
+      if (cycleId) {
+        localStorage.setItem(this.getCycleStorageKey(category), String(cycleId));
+      } else {
+        localStorage.removeItem(this.getCycleStorageKey(category));
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  getAvailableCyclesForCategory() {
+    var category = this.currentCategory;
+    var cycles = [];
+    if (cyclesFromDB && cyclesFromDB.length > 0 && superSkillsFromDB && superSkillsFromDB.length > 0) {
+      var skill = superSkillsFromDB.find(function(s) { return s.slug === category; });
+      if (skill) {
+        cycles = cyclesFromDB.filter(function(cycle) { return cycle.super_skill_id === skill.id; });
+      }
+    }
+
+    if (cycles.length === 0) {
+      var seen = {};
+      this.allModules.forEach(function(m) {
+        if ((m.superSkillSlug === category || m.category === category) && m.cycleId && !seen[m.cycleId]) {
+          seen[m.cycleId] = true;
+          cycles.push({
+            id: m.cycleId,
+            cycle_number: m.cycleNumber,
+            name: m.cycleName
+          });
+        }
+      });
+    }
+
+    cycles.sort(function(a, b) {
+      var aNum = a.cycle_number !== undefined && a.cycle_number !== null ? Number(a.cycle_number) : Number.POSITIVE_INFINITY;
+      var bNum = b.cycle_number !== undefined && b.cycle_number !== null ? Number(b.cycle_number) : Number.POSITIVE_INFINITY;
+      if (aNum !== bNum) return aNum - bNum;
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+    return cycles;
+  }
+
+  syncCycleSelection(availableCycles) {
+    if (!availableCycles || availableCycles.length === 0) {
+      this.currentCycleId = null;
+      return;
+    }
+
+    var stored = this.getStoredCycleId(this.currentCategory);
+    var storedMatch = stored ? availableCycles.find(function(cycle) { return String(cycle.id) === String(stored); }) : null;
+    if (storedMatch) {
+      this.currentCycleId = storedMatch.id;
+      return;
+    }
+
+    var cycleOne = availableCycles.find(function(cycle) { return Number(cycle.cycle_number) === 1; });
+    this.currentCycleId = cycleOne ? cycleOne.id : availableCycles[0].id;
+  }
+
+  isCycleComplete(completedCount, totalCount) {
+    return completedCount >= this.cycleModuleTarget && totalCount >= this.cycleModuleTarget;
+  }
+
+  maybeCelebrateCycleCompletion() {
+    if (!this.currentCycleId) return;
+    var storageKey = 'adventureMapCycleComplete_' + this.currentCycleId;
+    try {
+      if (localStorage.getItem(storageKey) === 'true') return;
+      if (typeof createConfettiCelebration === 'function') {
+        createConfettiCelebration();
+      }
+      localStorage.setItem(storageKey, 'true');
+    } catch (e) {
+      if (typeof createConfettiCelebration === 'function') {
+        createConfettiCelebration();
+      }
+    }
+  }
+
   getModuleEmoji(module, superSkillSlug) {
     if (!module) return '📘';
     var title = (module.title || '').toLowerCase();
@@ -759,7 +895,14 @@ class AdventureMapV4 {
 
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
     var availableCategories = this.getAvailableCategories();
+    var availableCycles = this.getAvailableCyclesForCategory();
+    if (!this.currentCycleId && availableCycles.length > 0) {
+      this.syncCycleSelection(availableCycles);
+    }
+    var currentCycle = availableCycles.find(function(cycle) { return String(cycle.id) === String(this.currentCycleId); }.bind(this)) || null;
     var numModules = this.modules.length;
+    var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var cycleComplete = this.isCycleComplete(completedCount, numModules);
     var canvasHeight = Math.max(this.config.minCanvasHeight, this.config.topPadding + (numModules * this.config.nodeSpacingY) + this.config.bottomPadding);
 
     var self = this;
@@ -769,6 +912,14 @@ class AdventureMapV4 {
       return '<option value="' + cat + '"' + (cat === self.currentCategory ? ' selected' : '') + '>' + catTheme.emoji + ' ' + catTheme.name + ' (' + count + ')</option>';
     }).join('');
 
+    var cycleOptions = availableCycles.map(function(cycle) {
+      var cycleNumber = cycle.cycle_number ? 'Cycle ' + cycle.cycle_number : 'Cycle';
+      var label = cycle.name ? cycleNumber + ': ' + cycle.name : cycleNumber;
+      var selected = currentCycle && String(cycle.id) === String(currentCycle.id) ? ' selected' : '';
+      return '<option value="' + cycle.id + '"' + selected + '>' + label + '</option>';
+    }).join('');
+    var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
+
     var html = '<div class="adventure-header">' +
       '<h2 class="adventure-title" style="color: ' + theme.color + '">' + theme.emoji + ' ' + theme.name + '</h2>' +
       '<p class="adventure-subtitle">' + theme.description + '</p>' +
@@ -776,6 +927,9 @@ class AdventureMapV4 {
       '<div class="category-filter-container">' +
       '<label class="category-filter-label">Choose your skill:</label>' +
       '<select class="category-filter-select" id="categoryFilter">' + categoryOptions + '</select>' +
+      (availableCycles.length > 0 ? '<label class="category-filter-label">Choose your cycle:</label>' +
+      '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
+      '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
       '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + this.modules.length + ' module' + (this.modules.length !== 1 ? 's' : '') + '</span>' +
       '</div>';
 
@@ -799,6 +953,9 @@ class AdventureMapV4 {
         '<span class="progress-text" id="progressText">0/' + numModules + ' completed</span>' +
         '<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%; background: linear-gradient(90deg, ' + theme.color + ', ' + theme.color + '99)"></div></div>' +
         '</div>' +
+        '<div class="cycle-complete-banner" id="cycleCompleteBanner"' + (cycleComplete ? '' : ' style="display:none"') + '>' +
+        '🎉 Cycle complete! You finished all ' + this.cycleModuleTarget + ' modules in this cycle.' +
+        '</div>' +
         '<div class="scroll-hint" id="scrollHint"><span class="scroll-hint-icon">👆</span><span>Drag to explore the map</span></div>' +
         '<div class="map-controls">' +
         '<button class="map-btn" id="btnCenter" title="Center on current">📍</button>' +
@@ -806,10 +963,11 @@ class AdventureMapV4 {
         '</div>' +
         '</div>';
     } else {
+      var emptyText = availableCycles.length > 0 ? 'There are no modules in this cycle yet. Try selecting a different cycle!' : 'There are no modules in this category yet. Try selecting a different path!';
       html += '<div class="map-empty-state">' +
         '<div class="map-empty-emoji">🗺️</div>' +
         '<div class="map-empty-title">No modules yet</div>' +
-        '<div class="map-empty-text">There are no modules in this category yet. Try selecting a different path!</div>' +
+        '<div class="map-empty-text">' + emptyText + '</div>' +
         '</div>';
     }
 
@@ -1223,6 +1381,7 @@ class AdventureMapV4 {
     var total = this.modules.length;
     var progressText = document.getElementById('progressText');
     var progressFill = document.getElementById('progressFill');
+    var cycleBanner = document.getElementById('cycleCompleteBanner');
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
 
     if (progressText) progressText.textContent = completed + '/' + total + ' completed';
@@ -1230,6 +1389,14 @@ class AdventureMapV4 {
       var percent = total > 0 ? (completed / total) * 100 : 0;
       progressFill.style.width = percent + '%';
       progressFill.style.background = 'linear-gradient(90deg, ' + theme.color + ', ' + theme.color + '99)';
+    }
+
+    if (cycleBanner) {
+      var cycleComplete = this.isCycleComplete(completed, total);
+      cycleBanner.style.display = cycleComplete ? 'flex' : 'none';
+      if (cycleComplete) {
+        this.maybeCelebrateCycleCompletion();
+      }
     }
   }
 
@@ -1269,6 +1436,19 @@ class AdventureMapV4 {
     if (categoryFilter) {
       categoryFilter.addEventListener('change', function(e) {
         self.currentCategory = e.target.value;
+        self.currentCycleId = null;
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        self.render();
+      });
+    }
+
+    var cycleFilter = document.getElementById('cycleFilter');
+    if (cycleFilter) {
+      cycleFilter.addEventListener('change', function(e) {
+        self.currentCycleId = e.target.value || null;
+        self.setStoredCycleId(self.currentCategory, self.currentCycleId);
         self.translateX = 0;
         self.translateY = 0;
         self.hasUserInteracted = false;
