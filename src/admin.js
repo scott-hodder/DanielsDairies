@@ -597,6 +597,18 @@ function getAgeRangeLabel(ageRangeValue) {
     return match ? (match.age_range || match.display_name) : ageRangeValue;
 }
 
+function getSelectedAgeRangeCode(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return null;
+    const selectedOption = select.options[select.selectedIndex];
+    const datasetRange = selectedOption?.dataset?.ageRange?.trim();
+    if (datasetRange) return datasetRange;
+    const selectedValue = select.value || null;
+    if (!selectedValue) return null;
+    const match = ageRanges.find(range => range.id === selectedValue);
+    return match?.age_range || selectedValue;
+}
+
 // ================================================================================
 // LOAD CORE THEORIES
 // ================================================================================
@@ -2430,7 +2442,7 @@ if (data.status === "running") {
                 const xpReward = document.getElementById('newModuleXPReward')?.value ? parseInt(document.getElementById('newModuleXPReward').value) : 100;
                 const starsReward = document.getElementById('newModuleStarsReward')?.value ? parseInt(document.getElementById('newModuleStarsReward').value) : 10;
                 const characterName = document.getElementById('newModuleCharacter')?.value || null;
-                const ageRange = document.getElementById('ageRangeSelect')?.value || null;
+                const ageRange = getSelectedAgeRangeCode('ageRangeSelect');
                 const superSkillId = document.getElementById('newModuleSuperSkill')?.value || null;
                 const subSkillId = document.getElementById('newModuleSubSkill')?.value || null;
                 const cycleId = document.getElementById('newModuleCycle')?.value || null;
@@ -4397,7 +4409,7 @@ if (data.status === "running") {
 
             const updates = {
                 title: document.getElementById('editTitle').value,
-                age_range: document.getElementById('editAgeRange').value || null,
+                age_range: getSelectedAgeRangeCode('editAgeRange'),
                 week_number: document.getElementById('editOrder').value ? parseInt(document.getElementById('editOrder').value) : null,
                 xp_reward: document.getElementById('editXPReward').value ? parseInt(document.getElementById('editXPReward').value) : null,
                 stars_reward: document.getElementById('editStarsReward').value ? parseInt(document.getElementById('editStarsReward').value) : null,
