@@ -194,6 +194,27 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(244, 162, 97, 0.5);
     }
+
+    .module-cover-title-block {
+      text-align: center;
+      margin: 24px auto 32px;
+      max-width: 80%;
+    }
+
+    .module-cover-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 32px;
+      color: #264653;
+      margin: 0 0 10px;
+    }
+
+    .module-cover-subtitle {
+      font-family: 'Nunito', sans-serif;
+      font-size: 18px;
+      color: #405878;
+      margin: 0;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body class="module-theme" data-series="custom" data-age-range="9-11">
@@ -949,12 +970,12 @@
       
       try {
         let mod;
-        
+
         if (moduleId) {
           // Try to get module by ID first (preferred method for new modules)
           const { data: modData, error: fetchError } = await supabase
             .from('modules')
-            .select('html_content, title, code, id')
+            .select('html_content, title, code, id, short_description')
             .eq('id', moduleId)
             .single();
           
@@ -965,7 +986,7 @@
           // Fallback to code for backward compatibility
           const { data: mods, error: fetchError } = await supabase
             .from('modules')
-            .select('html_content, title, code, id')
+            .select('html_content, title, code, id, short_description')
             .eq('code', moduleCode);
           
           if (fetchError) throw new Error(fetchError.message);
@@ -984,7 +1005,33 @@
         
         _state.moduleDbId = mod.id;
         document.title = mod.title || 'Module';
-        
+
+        function ensureModuleCoverTitle(moduleData) {
+          var firstPage = document.querySelector('.page');
+          if (!firstPage) return;
+          if (firstPage.querySelector('[data-module-cover="title"]')) return;
+
+          var titleText = moduleData?.title || 'Module';
+          var descriptionText = moduleData?.short_description || moduleData?.description || '';
+          var wrapper = document.createElement('div');
+          wrapper.className = 'module-cover-title-block';
+          wrapper.dataset.moduleCover = 'title';
+
+          var titleEl = document.createElement('h1');
+          titleEl.className = 'module-cover-title';
+          titleEl.textContent = titleText;
+          wrapper.appendChild(titleEl);
+
+          if (descriptionText && descriptionText.trim()) {
+            var subtitleEl = document.createElement('p');
+            subtitleEl.className = 'module-cover-subtitle';
+            subtitleEl.textContent = descriptionText;
+            wrapper.appendChild(subtitleEl);
+          }
+
+          firstPage.insertBefore(wrapper, firstPage.firstChild);
+        }
+
         const parser = new DOMParser();
         const doc = parser.parseFromString(mod.html_content, 'text/html');
         
@@ -1019,6 +1066,8 @@
         const div = document.createElement('div');
         div.innerHTML = doc.body.innerHTML;
         while (div.firstChild) document.body.appendChild(div.firstChild);
+
+        ensureModuleCoverTitle(mod);
         
         // Execute scripts with tracking injection AND stub removal
         if (scripts.length) {

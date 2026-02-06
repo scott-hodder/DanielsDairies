@@ -1791,11 +1791,18 @@ class EnhancedDashboard {
     var imageB = document.getElementById('previewImage');
     var startBtnB = document.getElementById('previewStartBtn');
 
-    if (emoji) emoji.textContent = module.emoji || '📘';
-    if (title) title.textContent = module.name;
-    if (description) description.textContent = (module.module && module.module.description) ? module.module.description : 'Explore emotions and learn coping strategies in this interactive module.';
+    var moduleTitle = (module.module && (module.module.title || module.module.name)) || module.title || module.name || 'Module';
+    var moduleDescription = '';
+    if (module.module) {
+      moduleDescription = module.module.short_description || module.module.description || module.module.long_description || '';
+    }
+    moduleDescription = moduleDescription || module.short_description || module.description || 'Explore emotions and learn coping strategies in this interactive module.';
 
-    if (titleB) titleB.textContent = module.name;
+    if (emoji) emoji.textContent = module.emoji || '📘';
+    if (title) title.textContent = moduleTitle;
+    if (description) description.textContent = moduleDescription;
+
+    if (titleB) titleB.textContent = moduleTitle;
     if (imageB) {
       imageB.innerHTML = '<div class="preview-placeholder">' + (module.emoji || '📚') + '</div>';
     }
