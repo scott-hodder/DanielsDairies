@@ -413,6 +413,107 @@
             margin-top: 16px;
         }
 
+        .progress-story {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .progress-story-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .progress-story-header h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .progress-story-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .progress-story-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 12px 0;
+            display: grid;
+            gap: 10px;
+        }
+
+        .progress-story-list li {
+            background: white;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: var(--text);
+            border: 1px solid #e5e7eb;
+        }
+
+        .progress-story-footer {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .focus-plan-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f3f6fb 100%);
+        }
+
+        .focus-plan-summary {
+            background: #eef2ff;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            color: #1e293b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .focus-plan-summary p {
+            margin: 0 0 8px 0;
+        }
+
+        .focus-plan-summary p:last-child {
+            margin-bottom: 0;
+        }
+
+        .focus-plan-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .focus-plan-block h4 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin: 0 0 8px 0;
+        }
+
+        .focus-plan-footer {
+            margin-top: 16px;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            font-size: 13px;
+            color: var(--text);
+            border: 1px dashed #cbd5f5;
+        }
+
         /* What to Expect Card */
         .expectations-card {
             background: linear-gradient(135deg, var(--fm-bg-primary) 0%, var(--fm-bg-secondary) 100%);
