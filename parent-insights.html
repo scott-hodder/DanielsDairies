@@ -87,6 +87,32 @@
                         <p class="empty-state-text">Your child will complete quick check-ins as they progress through their journey. These science-backed assessments help track meaningful change.</p>
                     </div>
                 </div>
+                <div class="progress-story" id="progressStory">
+                    <div class="progress-story-header">
+                        <h4>What this means in real life</h4>
+                        <span class="progress-story-badge">Parent-friendly translation</span>
+                    </div>
+                    <ul class="progress-story-list" id="progressStoryList">
+                        <li>We'll translate check-ins into everyday language once assessments start.</li>
+                    </ul>
+                    <p class="progress-story-footer" id="progressStoryFooter">Tip: Use the focus plan below to practice one small skill each day.</p>
+                </div>
+            </div>
+
+            <!-- Focus Plan Snapshot Card -->
+            <div class="card focus-plan-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-icon">🧭</span>
+                        Focus Plan Snapshot
+                    </h3>
+                    <span class="card-badge badge-warning" id="focusPlanBadge">Add Check-In</span>
+                </div>
+                <div id="focusPlanContent">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- What to Expect Card -->
@@ -541,8 +567,37 @@
             social: { name: 'Social Skills', icon: '👫', color: '#059669', gradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' },
             body: { name: 'Body Awareness', icon: '💪', color: '#d97706', gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
             cognitive: { name: 'Thinking Skills', icon: '🧠', color: '#0891b2', gradient: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)' },
-            general: { name: 'General Skills', icon: '📚', color: '#4c6c96', gradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)' }
+            general: { name: 'General Skills', icon: '📚', color: '#4c6c96', gradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)' },
+            'brain-builder': { name: 'Brain Builder', icon: '🧩', color: '#2563eb', gradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' },
+            'thought-driver': { name: 'Thought Driver', icon: '🚀', color: '#0ea5e9', gradient: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)' },
+            'emotion-navigator': { name: 'Emotion Navigator', icon: '🧭', color: '#db2777', gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)' },
+            'body-boss': { name: 'Body Boss', icon: '🏋️', color: '#f59e0b', gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
+            'connection-captain': { name: 'Connection Captain', icon: '🤝', color: '#16a34a', gradient: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' },
+            'calm-controller': { name: 'Calm Controller', icon: '🌊', color: '#6366f1', gradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)' },
+            'resilience-ranger': { name: 'Resilience Ranger', icon: '🛡️', color: '#1d4ed8', gradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' }
         };
+
+        const REAL_LIFE_LABELS = {
+            anger: 'big anger moments',
+            anxiety: 'worry moments',
+            depression: 'low mood days',
+            emotions: 'naming and understanding feelings',
+            social: 'friendship and sharing moments',
+            body: 'body signals and energy levels',
+            cognitive: 'focus and planning skills',
+            general: 'overall coping skills',
+            'brain-builder': 'focus and thinking skills',
+            'thought-driver': 'big thinking moments',
+            'emotion-navigator': 'big feeling moments',
+            'body-boss': 'body awareness moments',
+            'connection-captain': 'connection and friendship moments',
+            'calm-controller': 'calm-down moments',
+            'resilience-ranger': 'bounce-back moments'
+        };
+
+        const FALLBACK_COLORS = ['#2563eb', '#16a34a', '#f97316', '#9333ea', '#0ea5e9', '#f43f5e', '#14b8a6'];
+        const fallbackThemeMap = new Map();
+        const LOWER_IS_BETTER = new Set(['anger', 'anxiety', 'depression', 'calm-controller', 'resilience-ranger']);
 
         // Initialize
         async function init() {
@@ -630,6 +685,8 @@
             // Render all sections
             renderHeroSection();
             renderProgressChart();
+            renderProgressStory();
+            renderFocusPlan();
             renderJourneyCards();
             renderMilestones();
             renderWeeklyInsights();
@@ -638,6 +695,7 @@
             // Initialize check-in section
             initializeCheckinForm();
             renderWeeklyPlan();
+            renderFocusPlan();
             renderParentScripts();
         }
 
@@ -745,8 +803,9 @@
         function checkForImprovement(assessments) {
             const grouped = {};
             assessments.forEach(a => {
-                if (!grouped[a.pathway_category]) grouped[a.pathway_category] = [];
-                grouped[a.pathway_category].push(a);
+                const key = normalizeCategoryKey(a.pathway_category || 'general');
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(a);
             });
 
             for (const pathway of Object.keys(grouped)) {
@@ -758,7 +817,7 @@
                     const first = sorted[0].total_score;
                     const last = sorted[sorted.length - 1].total_score;
                     const change = last - first;
-                    const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(pathway);
+                    const lowerIsBetter = isLowerBetter(pathway);
                     const improved = lowerIsBetter ? change < 0 : change > 0;
                     const changeClass = improved ? 'positive' : (change === 0 ? '' : 'negative');
                     const arrow = improved ? '↓' : (change === 0 ? '→' : '↑');
@@ -782,49 +841,38 @@
             chartArea.style.display = 'block';
             noAssessmentsMsg.style.display = 'none';
 
-            // Prepare data by pathway
-            const datasets = [];
-            const labels = [];
-            const grouped = {};
+            const grouped = groupAssessmentsByCategory();
+            const dateKeys = getSortedDateKeys(assessments);
+            const labels = dateKeys.map(key => formatDateLabel(key));
+            const maxScore = Math.max(
+                24,
+                ...assessments.map(a => a.max_score || 24)
+            );
 
-            assessments.forEach(a => {
-                if (!grouped[a.pathway_category]) grouped[a.pathway_category] = [];
-                grouped[a.pathway_category].push(a);
-            });
+            const datasets = Object.values(grouped).map((group, index) => {
+                const scoreMap = new Map();
+                group.assessments
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                    .forEach(a => {
+                        const key = formatDateKey(a.created_at);
+                        const lowerIsBetter = isLowerBetter(group.key);
+                        const score = lowerIsBetter ? maxScore - (a.total_score || 0) : (a.total_score || 0);
+                        scoreMap.set(key, score);
+                    });
 
-            // Create date labels
-            const allDates = [...new Set(assessments.map(a => 
-                new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            ))];
-            labels.push(...allDates);
+                const data = dateKeys.map(dateKey => scoreMap.has(dateKey) ? scoreMap.get(dateKey) : null);
 
-            // Create dataset for each pathway
-            Object.keys(grouped).forEach(pathway => {
-                const theme = PATHWAY_THEMES[pathway] || PATHWAY_THEMES.general;
-                const pathwayAssessments = grouped[pathway].sort((a, b) => 
-                    new Date(a.created_at) - new Date(b.created_at)
-                );
-
-                // For negative pathways, show improvement as going up (invert score)
-                const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(pathway);
-                
-                const data = pathwayAssessments.map(a => {
-                    const maxScore = a.max_score || 24;
-                    const score = a.total_score;
-                    // Convert to "wellness score" where higher is better
-                    return lowerIsBetter ? maxScore - score : score;
-                });
-
-                datasets.push({
-                    label: theme.name,
-                    data: data,
-                    borderColor: theme.color,
-                    backgroundColor: theme.color + '20',
+                return {
+                    label: group.label,
+                    data,
+                    borderColor: group.theme.color,
+                    backgroundColor: group.theme.color + '20',
                     fill: true,
                     tension: 0.4,
+                    spanGaps: true,
                     pointRadius: 6,
                     pointHoverRadius: 8
-                });
+                };
             });
 
             // Destroy existing chart
@@ -870,7 +918,7 @@
                             displayColors: true,
                             callbacks: {
                                 label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y}/24 wellness score`;
+                                    return `${context.dataset.label}: ${context.parsed.y}/${maxScore} wellness score`;
                                 }
                             }
                         }
@@ -878,7 +926,7 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            max: 24,
+                            max: maxScore,
                             title: {
                                 display: true,
                                 text: 'Wellness Score (higher = better)',
@@ -900,6 +948,122 @@
             });
         }
 
+        function formatDateKey(dateValue) {
+            return new Date(dateValue).toISOString().split('T')[0];
+        }
+
+        function formatDateLabel(dateKey) {
+            const date = new Date(`${dateKey}T00:00:00`);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function getSortedDateKeys(items) {
+            const keys = new Set(items.map(item => formatDateKey(item.created_at)));
+            return Array.from(keys).sort((a, b) => new Date(a) - new Date(b));
+        }
+
+        function formatLabel(value) {
+            if (!value) return 'General Skills';
+            return value
+                .replace(/[_-]+/g, ' ')
+                .replace(/\b\w/g, char => char.toUpperCase());
+        }
+
+        function getFallbackTheme(label, index) {
+            if (fallbackThemeMap.has(label)) {
+                return fallbackThemeMap.get(label);
+            }
+            const color = FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+            const theme = {
+                name: label,
+                icon: '✨',
+                color,
+                gradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+            };
+            fallbackThemeMap.set(label, theme);
+            return theme;
+        }
+
+        function normalizeCategoryKey(category) {
+            if (!category) return 'general';
+            const key = category.toLowerCase().replace(/\s+/g, '-');
+            return key;
+        }
+
+        function isLowerBetter(categoryKey) {
+            if (LOWER_IS_BETTER.has(categoryKey)) return true;
+            return ['anger', 'anxiety', 'depression'].some(keyword => categoryKey.includes(keyword));
+        }
+
+        function groupAssessmentsByCategory() {
+            const grouped = {};
+
+            assessments.forEach((assessment, index) => {
+                const key = normalizeCategoryKey(assessment.pathway_category || 'general');
+                const label = PATHWAY_THEMES[key]?.name || formatLabel(assessment.pathway_category || key);
+                const theme = PATHWAY_THEMES[key] || getFallbackTheme(label, index);
+
+                if (!grouped[key]) {
+                    grouped[key] = { key, label, theme, assessments: [] };
+                }
+
+                grouped[key].assessments.push(assessment);
+            });
+
+            return grouped;
+        }
+
+        function renderProgressStory() {
+            const storyList = document.getElementById('progressStoryList');
+            const storyFooter = document.getElementById('progressStoryFooter');
+            if (!storyList || !storyFooter) return;
+
+            if (assessments.length === 0) {
+                storyList.innerHTML = `
+                    <li>No check-ins yet. Once they start, we'll translate the data into easy-to-read language.</li>
+                    <li>In the meantime, focus on completing a module or a weekly check-in.</li>
+                `;
+                storyFooter.textContent = 'Tip: Start with one module to unlock your first progress snapshot.';
+                return;
+            }
+
+            const grouped = groupAssessmentsByCategory();
+            const summaries = Object.values(grouped).map(group => {
+                const sorted = group.assessments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                if (sorted.length < 2) return null;
+                const maxScore = Math.max(...sorted.map(item => item.max_score || 24), 24);
+                const lowerIsBetter = isLowerBetter(group.key);
+                const first = lowerIsBetter ? maxScore - sorted[0].total_score : sorted[0].total_score;
+                const last = lowerIsBetter ? maxScore - sorted[sorted.length - 1].total_score : sorted[sorted.length - 1].total_score;
+                const change = last - first;
+                return { group, change };
+            }).filter(Boolean);
+
+            if (summaries.length === 0) {
+                storyList.innerHTML = `
+                    <li>We need at least two check-ins to show a trend. Keep going!</li>
+                `;
+                storyFooter.textContent = 'Tip: Schedule the next check-in after a few modules.';
+                return;
+            }
+
+            summaries.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+            const topSummaries = summaries.slice(0, 3);
+
+            storyList.innerHTML = topSummaries.map(item => {
+                const label = REAL_LIFE_LABELS[item.group.key] || `skills around ${item.group.label.toLowerCase()}`;
+                if (item.change > 0) {
+                    return `<li>Getting smoother with ${label}. That usually looks like quicker recovery after big feelings.</li>`;
+                }
+                if (item.change < 0) {
+                    return `<li>${label} has felt tougher lately. Expect bigger feelings and lean on tools more often.</li>`;
+                }
+                return `<li>${label} is holding steady. Keep practicing the same routines that are working.</li>`;
+            }).join('');
+
+            storyFooter.textContent = 'Tip: Use the focus plan below to reinforce the skill with the biggest shifts.';
+        }
+
         // Render journey cards
         function renderJourneyCards() {
             const container = document.getElementById('journeyCards');
@@ -909,7 +1073,7 @@
             
             childModules.forEach(cm => {
                 const module = cm.modules || cm;
-                const category = (module.category || 'general').toLowerCase();
+                const category = normalizeCategoryKey(module.category || 'general');
                 if (!journeys[category]) {
                     journeys[category] = { modules: [], assessments: [] };
                 }
@@ -917,7 +1081,7 @@
             });
 
             assessments.forEach(a => {
-                const category = a.pathway_category;
+                const category = normalizeCategoryKey(a.pathway_category || 'general');
                 if (!journeys[category]) {
                     journeys[category] = { modules: [], assessments: [] };
                 }
@@ -952,8 +1116,8 @@
                 return journeyB.modules.length - journeyA.modules.length;
             });
 
-            container.innerHTML = sortedCategories.map(category => {
-                const theme = PATHWAY_THEMES[category] || PATHWAY_THEMES.general;
+            container.innerHTML = sortedCategories.map((category, index) => {
+                const theme = PATHWAY_THEMES[category] || getFallbackTheme(formatLabel(category), index);
                 const journey = journeys[category];
                 const completed = journey.modules.filter(m => m.is_completed).length;
                 const total = journey.modules.length;
@@ -968,7 +1132,7 @@
                     const first = categoryAssessments[0].total_score;
                     const last = categoryAssessments[categoryAssessments.length - 1].total_score;
                     const change = last - first;
-                    const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(category);
+                    const lowerIsBetter = isLowerBetter(category);
                     const improved = lowerIsBetter ? change < 0 : change > 0;
                     const changeClass = improved ? 'positive' : (change === 0 ? '' : 'negative');
                     const arrow = improved ? '↓' : (change === 0 ? '→' : '↑');
@@ -998,14 +1162,15 @@
             const milestones = [];
             
             // Add assessment milestones
-            assessments.forEach(a => {
-                const theme = PATHWAY_THEMES[a.pathway_category] || PATHWAY_THEMES.general;
-                const typeLabel = a.assessment_type === 'baseline' ? 'Started' : 
-                                  a.assessment_type === 'midpoint' ? 'Midpoint Check-in' : 'Completed';
+            assessments.forEach((assessment, index) => {
+                const categoryKey = normalizeCategoryKey(assessment.pathway_category || 'general');
+                const theme = PATHWAY_THEMES[categoryKey] || getFallbackTheme(formatLabel(categoryKey), index);
+                const typeLabel = assessment.assessment_type === 'baseline' ? 'Started' : 
+                                  assessment.assessment_type === 'midpoint' ? 'Midpoint Check-in' : 'Completed';
                 milestones.push({
-                    date: new Date(a.created_at),
+                    date: new Date(assessment.created_at),
                     title: `${theme.name} - ${typeLabel}`,
-                    description: `Score: ${a.total_score}/${a.max_score}`,
+                    description: `Score: ${assessment.total_score}/${assessment.max_score}`,
                     completed: true
                 });
             });
@@ -1433,20 +1598,21 @@
 
             // Filter scripts based on current weekly plan triggers if available
             let scriptsToShow = parentScripts;
-            if (currentWeeklyPlan && currentWeeklyPlan.triggers && currentWeeklyPlan.triggers.length > 0) {
+            const plan = currentWeeklyPlan ? (currentWeeklyPlan.generated_plan || currentWeeklyPlan) : null;
+            if (plan && plan.triggers && plan.triggers.length > 0) {
                 const relevantScripts = parentScripts.filter(script => 
-                    script.feelings.some(f => currentWeeklyPlan.triggers.includes(f))
+                    script.feelings.some(f => plan.triggers.includes(f))
                 );
                 // Show relevant first, then others
                 const otherScripts = parentScripts.filter(script => 
-                    !script.feelings.some(f => currentWeeklyPlan.triggers.includes(f))
+                    !script.feelings.some(f => plan.triggers.includes(f))
                 );
                 scriptsToShow = [...relevantScripts, ...otherScripts];
             }
 
             container.innerHTML = scriptsToShow.map((script, index) => {
-                const isRelevant = currentWeeklyPlan && currentWeeklyPlan.triggers && 
-                    script.feelings.some(f => currentWeeklyPlan.triggers.includes(f));
+                const isRelevant = plan && plan.triggers &&
+                    script.feelings.some(f => plan.triggers.includes(f));
                 
                 return `
                     <div class="script-card ${isRelevant ? 'highlighted' : ''}">
@@ -1462,6 +1628,88 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function getDerivedFocusFromModules() {
+            const recentModules = childModules
+                .filter(cm => cm.updated_at || cm.started_at)
+                .sort((a, b) => new Date(b.updated_at || b.started_at) - new Date(a.updated_at || a.started_at));
+
+            const categoryCounts = {};
+            recentModules.forEach(cm => {
+                const module = cm.modules || cm;
+                const category = normalizeCategoryKey(module.category || 'general');
+                categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+            });
+
+            const sortedCategories = Object.entries(categoryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([category]) => category);
+
+            const skills = sortedCategories.slice(0, 3).map(category => (
+                PATHWAY_THEMES[category]?.name || formatLabel(category)
+            ));
+
+            return {
+                skills: skills.length ? skills : ['Emotional Identification'],
+                challenge: 'daily transitions',
+                goal: 'practice one tool together'
+            };
+        }
+
+        function renderFocusPlan() {
+            const container = document.getElementById('focusPlanContent');
+            const badge = document.getElementById('focusPlanBadge');
+            if (!container || !badge) return;
+
+            const plan = currentWeeklyPlan ? (currentWeeklyPlan.generated_plan || currentWeeklyPlan) : null;
+            const derived = getDerivedFocusFromModules();
+
+            const focusSkills = plan?.focus_skills?.length ? plan.focus_skills : derived.skills;
+            const triggers = plan?.triggers || [];
+            const tools = plan?.tools || [];
+            const goal = plan?.goal || derived.goal;
+            const challenge = plan?.challenge || derived.challenge;
+            const summary = plan?.summary || `Right now, ${selectedChild?.name || 'your child'} is building ${focusSkills.join(', ')}.`;
+
+            if (plan) {
+                badge.textContent = 'Plan Ready';
+                badge.className = 'card-badge badge-success';
+            } else {
+                badge.textContent = 'Add Check-In';
+                badge.className = 'card-badge badge-warning';
+            }
+
+            container.innerHTML = `
+                <div class="focus-plan-summary">
+                    <p><strong>In plain words:</strong> ${summary}</p>
+                    <p><strong>Hardest moment:</strong> ${formatLabel(challenge)}.</p>
+                    <p><strong>Weekly goal:</strong> ${goal || 'Choose one small calming habit to repeat together.'}</p>
+                </div>
+                <div class="focus-plan-grid">
+                    <div class="focus-plan-block">
+                        <h4>Focus Skills</h4>
+                        <div class="plan-chips">
+                            ${focusSkills.map(skill => `<span class="plan-chip skill-chip">${skill}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="focus-plan-block">
+                        <h4>Likely Tricky Moments</h4>
+                        <div class="plan-chips">
+                            ${(triggers.length ? triggers : ['Transitions', 'Big feelings']).map(trigger => `<span class="plan-chip emotion-chip">${trigger}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="focus-plan-block">
+                        <h4>Try at Home</h4>
+                        <div class="plan-chips">
+                            ${(tools.length ? tools : ['5-4-3-2-1 grounding', 'Belly breathing']).map(tool => `<span class="plan-chip tool-chip">${tool}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="focus-plan-footer">
+                    ${plan?.script ? `<p>Parent words to try: <em>${plan.script}</em></p>` : '<p>Complete a check-in for a custom parent script.</p>'}
+                </div>
+            `;
         }
 
         // Initialize on load
