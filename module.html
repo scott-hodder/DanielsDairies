@@ -1006,10 +1006,18 @@
         _state.moduleDbId = mod.id;
         document.title = mod.title || 'Module';
 
+        function findFirstModulePage() {
+          var container = document.getElementById('pageContainer');
+          if (container && container.firstElementChild) {
+            return container.firstElementChild;
+          }
+          return document.querySelector('.page, .module-page, [data-module-page], [data-page]');
+        }
+
         function ensureModuleCoverTitle(moduleData) {
-          var firstPage = document.querySelector('.page');
-          if (!firstPage) return;
-          if (firstPage.querySelector('[data-module-cover="title"]')) return;
+          var firstPage = findFirstModulePage();
+          if (!firstPage) return false;
+          if (firstPage.querySelector('[data-module-cover="title"]')) return true;
 
           var titleText = moduleData?.title || 'Module';
           var descriptionText = moduleData?.short_description || moduleData?.description || '';
@@ -1030,6 +1038,7 @@
           }
 
           firstPage.insertBefore(wrapper, firstPage.firstChild);
+          return true;
         }
 
         const parser = new DOMParser();
@@ -1067,7 +1076,15 @@
         div.innerHTML = doc.body.innerHTML;
         while (div.firstChild) document.body.appendChild(div.firstChild);
 
-        ensureModuleCoverTitle(mod);
+        window.ensureModuleCoverTitle = function() { return ensureModuleCoverTitle(mod); };
+        window.ensureModuleCoverTitle();
+
+        var coverObserver = new MutationObserver(function() {
+          if (ensureModuleCoverTitle(mod)) {
+            coverObserver.disconnect();
+          }
+        });
+        coverObserver.observe(document.body, { childList: true, subtree: true });
         
         // Execute scripts with tracking injection AND stub removal
         if (scripts.length) {
@@ -1083,7 +1100,7 @@
           // Inject tracking into renderPage
           code = code.replace(
             /function\s+renderPage\s*\(\s*\)\s*\{/,
-            'function renderPage() { setTimeout(function() { if (typeof currentPage !== "undefined") { window.enhancePageTracking(currentPage); window.restorePageResponses(currentPage); } }, 50);'
+            'function renderPage() { if (window.ensureModuleCoverTitle) { window.ensureModuleCoverTitle(); } setTimeout(function() { if (typeof currentPage !== "undefined") { window.enhancePageTracking(currentPage); window.restorePageResponses(currentPage); } }, 50);'
           );
           
           // Wrap the code safely
