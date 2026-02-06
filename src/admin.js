@@ -4159,6 +4159,18 @@ if (data.status === "running") {
                             .remove([module.storage_path]);
                     }
 
+                    // First delete references from modules_to_generate
+                    const { error: refError } = await supabase
+                        .from('modules_to_generate')
+                        .delete()
+                        .eq('generated_module_id', module.id);
+
+                    if (refError) {
+                        console.error('[Admin] Failed to delete module references:', refError);
+                        continue;
+                    }
+
+                    // Now delete the module
                     const { error: moduleError } = await supabase
                         .from('modules')
                         .delete()
