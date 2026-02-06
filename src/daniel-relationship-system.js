@@ -343,6 +343,10 @@ class DanielDialogueSystem {
           </div>
           <div class="daniel-speech-section">
             <div class="daniel-speech-bubble" id="danielSpeechBubble">
+              <div class="daniel-module-details">
+                <div class="daniel-module-title" id="danielModuleTitle"></div>
+                <div class="daniel-module-description" id="danielModuleDescription"></div>
+              </div>
               <div class="daniel-situation" id="danielSituation"></div>
               <div class="daniel-question" id="danielQuestion"></div>
               <div class="daniel-skill-hint" id="danielSkillHint"></div>
@@ -538,6 +542,25 @@ class DanielDialogueSystem {
         padding: 24px;
         margin-bottom: 20px;
         border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .daniel-module-details {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      }
+
+      .daniel-module-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 6px;
+      }
+
+      .daniel-module-description {
+        font-size: 14px;
+        line-height: 1.5;
+        color: #475569;
       }
 
       .daniel-speech-bubble::before {
@@ -773,6 +796,25 @@ class DanielDialogueSystem {
     const skillHintEl = document.getElementById('danielSkillHint');
     const emotionIndicator = document.getElementById('danielEmotionIndicator');
     const actionsEl = document.getElementById('danielDialogueActions');
+    const moduleTitleEl = document.getElementById('danielModuleTitle');
+    const moduleDescriptionEl = document.getElementById('danielModuleDescription');
+
+    const moduleTitle = (module?.module && (module.module.title || module.module.name)) || module?.title || module?.name || 'Module';
+    const moduleDescription = (module?.module && (module.module.short_description || module.module.description || module.module.long_description)) || module?.short_description || module?.description || '';
+
+    if (moduleTitleEl) {
+      moduleTitleEl.textContent = moduleTitle;
+    }
+
+    if (moduleDescriptionEl) {
+      if (moduleDescription && moduleDescription.trim()) {
+        moduleDescriptionEl.textContent = moduleDescription;
+        moduleDescriptionEl.style.display = 'block';
+      } else {
+        moduleDescriptionEl.textContent = '';
+        moduleDescriptionEl.style.display = 'none';
+      }
+    }
 
     if (situationEl) {
       let text = situation.situation;
