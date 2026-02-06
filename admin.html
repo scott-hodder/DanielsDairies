@@ -248,6 +248,8 @@
 
                     <div class="bulk-actions" id="customisationBulkActions" style="display: none;">
                         <span class="bulk-actions-label"><span id="customisationSelectedCount">0</span> selected</span>
+                        <button class="bulk-btn activate" id="customisationBulkActivateBtn" onclick="bulkActivateModules()">✓ Make Active</button>
+                        <button class="bulk-btn deactivate" id="customisationBulkDeactivateBtn" onclick="bulkDeactivateModules()">✗ Make Inactive</button>
                         <button class="bulk-btn delete" id="customisationBulkDeleteBtn" onclick="bulkDeleteModules()">🗑️ Delete Selected</button>
                         <button class="bulk-btn" onclick="clearCustomisationSelection()" style="background: #6b7c8f; color: white;">Clear</button>
                     </div>

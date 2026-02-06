@@ -549,7 +549,8 @@ async function loadAgeRanges() {
         const { data: ageRangesData, error: ageRangesError } = await supabase
             .from('age_ranges')
             .select('id, age_range, display_name')
-            .eq('is_active', true);
+            .eq('is_active', true)
+            .order('age_range', { ascending: true });
         
         if (ageRangesError) {
             console.error('[Psychology] Direct age ranges query failed:', ageRangesError);
@@ -566,8 +567,8 @@ async function loadAgeRanges() {
                 targetSelect.innerHTML = '<option value="">Select age range...</option>';
                 ageRanges.forEach(range => {
                     const option = document.createElement('option');
-                    option.value = range.id;
-                    option.textContent = range.display_name;
+                    option.value = range.id; // Keep UUID as value
+                    option.textContent = range.age_range; // Display age_range
                     option.dataset.ageRange = range.age_range;
                     targetSelect.appendChild(option);
                 });
@@ -597,17 +598,6 @@ function getAgeRangeLabel(ageRangeValue) {
     return match ? (match.age_range || match.display_name) : ageRangeValue;
 }
 
-function getSelectedAgeRangeCode(selectId) {
-    const select = document.getElementById(selectId);
-    if (!select) return null;
-    const selectedOption = select.options[select.selectedIndex];
-    const datasetRange = selectedOption?.dataset?.ageRange?.trim();
-    if (datasetRange) return datasetRange;
-    const selectedValue = select.value || null;
-    if (!selectedValue) return null;
-    const match = ageRanges.find(range => range.id === selectedValue);
-    return match?.age_range || selectedValue;
-}
 
 // ================================================================================
 // LOAD CORE THEORIES
@@ -1362,19 +1352,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedSeries = document.getElementById('seriesFilter').value;
             
             let filteredModules = allModules.filter(module => {
-                // Check if module is active for THIS CHILD (from child_modules table)
-                // If no assignment exists, it's inactive for this child
-                const isActiveForChild = currentModuleAssignments[module.id] !== undefined 
+                // Check if module is globally active
+                const isGloballyActive = module.is_active;
+                
+                // Check if module is active for THIS PARENT (from parent_modules table)
+                // If no assignment exists, it's inactive for this parent
+                const isActiveForParent = currentModuleAssignments[module.id] !== undefined 
                     ? currentModuleAssignments[module.id] 
-                    : false; // Default to inactive if not assigned to this child
+                    : false; // Default to inactive if not assigned to this parent
+                
+                // Module is only truly active if BOTH global and parent access are active
+                const isActuallyActive = isGloballyActive && isActiveForParent;
                 
                 const matchesSearch = module.title.toLowerCase().includes(searchTerm);
                 const matchesCategory = selectedCategory === 'all' || module.category === selectedCategory;
                 const matchesSeries = selectedSeries === 'all' || module.series === selectedSeries;
                 const matchesFilter = 
                     currentFilter === 'all' ||
-                    (currentFilter === 'active' && isActiveForChild) ||
-                    (currentFilter === 'inactive' && !isActiveForChild);
+                    (currentFilter === 'active' && isActuallyActive) ||
+                    (currentFilter === 'inactive' && !isActuallyActive);
                 
                 return matchesSearch && matchesCategory && matchesSeries && matchesFilter;
             });
@@ -1392,13 +1388,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             container.innerHTML = filteredModules.map(module => {
-                // Check if module is active for THIS CHILD (from child_modules table)
-                const isActiveForChild = currentModuleAssignments[module.id] !== undefined 
+                // Check if module is globally active
+                const isGloballyActive = module.is_active;
+                
+                // Check if module is active for THIS PARENT (from parent_modules table)
+                const isActiveForParent = currentModuleAssignments[module.id] !== undefined 
                     ? currentModuleAssignments[module.id] 
-                    : false; // Default to inactive if not assigned to this child
+                    : false; // Default to inactive if not assigned to this parent
+                
+                // Module is only truly active if BOTH global and parent access are active
+                const isActuallyActive = isGloballyActive && isActiveForParent;
                 
                 const isSelected = selectedModules.has(module.id);
                 const borderColor = categoryColors[module.category] || '#4c6c96';
+                
+                // Show different status based on why it's inactive
+                let statusText, statusClass;
+                if (!isGloballyActive && isActiveForParent) {
+                    statusText = 'Globally Inactive';
+                    statusClass = 'inactive';
+                } else if (isGloballyActive && !isActiveForParent) {
+                    statusText = 'Parent Inactive';
+                    statusClass = 'inactive';
+                } else if (!isGloballyActive && !isActiveForParent) {
+                    statusText = 'Inactive';
+                    statusClass = 'inactive';
+                } else {
+                    statusText = 'Active';
+                    statusClass = 'active';
+                }
                 
                 return `
                     <div class="module-item ${isSelected ? 'selected' : ''}" 
@@ -1410,8 +1428,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                    data-module-id="${module.id}"
                                    ${isSelected ? 'checked' : ''}>
                             <div class="module-title">${module.emoji || '📖'} ${module.title}</div>
-                            <span class="status-badge ${isActiveForChild ? 'active' : 'inactive'}">
-                                ${isActiveForChild ? 'Active' : 'Inactive'}
+                            <span class="status-badge ${statusClass}">
+                                ${statusText}
                             </span>
                         </div>
                     </div>
@@ -2442,7 +2460,7 @@ if (data.status === "running") {
                 const xpReward = document.getElementById('newModuleXPReward')?.value ? parseInt(document.getElementById('newModuleXPReward').value) : 100;
                 const starsReward = document.getElementById('newModuleStarsReward')?.value ? parseInt(document.getElementById('newModuleStarsReward').value) : 10;
                 const characterName = document.getElementById('newModuleCharacter')?.value || null;
-                const ageRange = getSelectedAgeRangeCode('ageRangeSelect');
+                const ageRange = document.getElementById('ageRangeSelect').value || null;
                 const superSkillId = document.getElementById('newModuleSuperSkill')?.value || null;
                 const subSkillId = document.getElementById('newModuleSubSkill')?.value || null;
                 const cycleId = document.getElementById('newModuleCycle')?.value || null;
@@ -2548,8 +2566,34 @@ if (data.status === "running") {
                 return;
             }
 
+            // Create a modified version for preview that handles the module header differently
+            let previewContent = generatedModuleHTML;
+            
+            // Debug: Log the import line we're looking for
+            console.log('[Preview] Looking for import line in generated HTML...');
+            const importMatch = previewContent.match(/import.*initModuleHeader.*from.*module-header/);
+            console.log('[Preview] Found import:', importMatch);
+            
+            // Replace the ES6 import with a regular script tag for preview
+            previewContent = previewContent.replace(
+                /import\s*\{\s*initModuleHeader\s*\}\s*from\s*['"]\.\/modules\/shared\/module-header\.js['"];?/g,
+                '// Module header loaded via regular script for preview\n' +
+                '// Note: In production, this would be: import { initModuleHeader } from \'./modules/shared/module-header.js\';'
+            );
+            
+            // Debug: Check if replacement worked
+            const afterReplace = previewContent.match(/import.*initModuleHeader.*from.*module-header/);
+            console.log('[Preview] Import after replacement:', afterReplace);
+            
+            // Add the module header script before the closing head tag
+            previewContent = previewContent.replace(
+                /<\/head>/,
+                '    <script src="/modules/shared/module-header.js"></script>\n' +
+                '</head>'
+            );
+
             previewWindow.document.open();
-            previewWindow.document.write(generatedModuleHTML);
+            previewWindow.document.write(previewContent);
             previewWindow.document.close();
         }
 
@@ -4087,6 +4131,8 @@ if (data.status === "running") {
             const bulkActions = document.getElementById('customisationBulkActions');
             const selectedCount = document.getElementById('customisationSelectedCount');
             const deleteBtn = document.getElementById('customisationBulkDeleteBtn');
+            const activateBtn = document.getElementById('customisationBulkActivateBtn');
+            const deactivateBtn = document.getElementById('customisationBulkDeactivateBtn');
 
             const count = customisationSelectedModules.size;
             if (selectedCount) {
@@ -4104,6 +4150,14 @@ if (data.status === "running") {
                 deleteBtn.innerHTML = isBulkDeletingModules
                     ? '<span class="loading-spinner"></span>Deleting...'
                     : '🗑️ Delete Selected';
+            }
+            
+            if (activateBtn) {
+                activateBtn.disabled = count === 0 || isBulkDeletingModules;
+            }
+            
+            if (deactivateBtn) {
+                deactivateBtn.disabled = count === 0 || isBulkDeletingModules;
             }
         }
 
@@ -4217,16 +4271,136 @@ if (data.status === "running") {
             alert(`✓ Deleted ${deletedCount} module(s).`);
         }
 
+        // Bulk activate modules
+        window.bulkActivateModules = async function() {
+            if (customisationSelectedModules.size === 0 || isBulkDeletingModules) {
+                return;
+            }
+
+            const confirmActivate = confirm(
+                `✓ Activate ${customisationSelectedModules.size} selected module(s)?\n\n` +
+                'This will make the modules available for use by parents and children.'
+            );
+
+            if (!confirmActivate) return;
+
+            const btn = document.getElementById('customisationBulkActivateBtn');
+            const originalText = btn.innerHTML;
+            isBulkDeletingModules = true;
+            updateCustomisationBulkActions();
+
+            const moduleIds = Array.from(customisationSelectedModules);
+            let activatedCount = 0;
+
+            for (const moduleId of moduleIds) {
+                try {
+                    const module = allModules.find(m => m.id === moduleId);
+                    if (!module) continue;
+
+                    // Update module active status
+                    const { error: updateError } = await supabase
+                        .from('modules')
+                        .update({ is_active: true })
+                        .eq('id', moduleId);
+
+                    if (updateError) {
+                        console.error('Error activating module:', updateError);
+                        continue;
+                    }
+
+                    // Update local data
+                    module.is_active = true;
+                    activatedCount++;
+
+                } catch (error) {
+                    console.error('[Admin] Bulk activate error:', error);
+                }
+            }
+
+            isBulkDeletingModules = false;
+            customisationSelectedModules.clear();
+            updateStats();
+            renderAllModulesList();
+            updateCustomisationBulkActions();
+
+            alert(`✓ Activated ${activatedCount} module(s).`);
+        };
+
+        // Bulk deactivate modules
+        window.bulkDeactivateModules = async function() {
+            if (customisationSelectedModules.size === 0 || isBulkDeletingModules) {
+                return;
+            }
+
+            const confirmDeactivate = confirm(
+                `✗ Deactivate ${customisationSelectedModules.size} selected module(s)?\n\n` +
+                'This will remove the modules from use by parents and children.'
+            );
+
+            if (!confirmDeactivate) return;
+
+            const btn = document.getElementById('customisationBulkDeactivateBtn');
+            const originalText = btn.innerHTML;
+            isBulkDeletingModules = true;
+            updateCustomisationBulkActions();
+
+            const moduleIds = Array.from(customisationSelectedModules);
+            let deactivatedCount = 0;
+
+            for (const moduleId of moduleIds) {
+                try {
+                    const module = allModules.find(m => m.id === moduleId);
+                    if (!module) continue;
+
+                    // Update module active status
+                    const { error: updateError } = await supabase
+                        .from('modules')
+                        .update({ is_active: false })
+                        .eq('id', moduleId);
+
+                    if (updateError) {
+                        console.error('Error deactivating module:', updateError);
+                        continue;
+                    }
+
+                    // Update local data
+                    module.is_active = false;
+                    deactivatedCount++;
+
+                } catch (error) {
+                    console.error('[Admin] Bulk deactivate error:', error);
+                }
+            }
+
+            isBulkDeletingModules = false;
+            customisationSelectedModules.clear();
+            updateStats();
+            renderAllModulesList();
+            updateCustomisationBulkActions();
+
+            alert(`✓ Deactivated ${deactivatedCount} module(s).`);
+        };
+
         // Select module for editing
         window.selectModuleForEdit = function(moduleId) {
+            console.log('selectModuleForEdit called with moduleId:', moduleId);
+            console.log('Available modules:', allModules.map(m => ({ id: m.id, title: m.title })));
+            
             selectedModule = allModules.find(m => m.id === moduleId);
-            if (!selectedModule) return;
+            console.log('Found selectedModule:', selectedModule);
+            
+            if (!selectedModule) {
+                console.error('Module not found with ID:', moduleId);
+                return;
+            }
 
             // Update UI
             renderAllModulesList();
             document.getElementById('editModuleTitle').textContent = `Edit: ${selectedModule.title}`;
             document.getElementById('moduleEditForm').style.display = 'block';
             document.getElementById('moduleEditPlaceholder').style.display = 'none';
+            
+            console.log('Updated UI - form should be visible now');
 
             // Populate form
             document.getElementById('editTitle').value = selectedModule.title || '';
@@ -4421,7 +4595,7 @@ if (data.status === "running") {
 
             const updates = {
                 title: document.getElementById('editTitle').value,
-                age_range: getSelectedAgeRangeCode('editAgeRange'),
+                age_range: document.getElementById('editAgeRange').value || null,
                 week_number: document.getElementById('editOrder').value ? parseInt(document.getElementById('editOrder').value) : null,
                 xp_reward: document.getElementById('editXPReward').value ? parseInt(document.getElementById('editXPReward').value) : null,
                 stars_reward: document.getElementById('editStarsReward').value ? parseInt(document.getElementById('editStarsReward').value) : null,

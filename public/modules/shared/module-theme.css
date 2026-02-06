@@ -196,12 +196,12 @@ body.module-theme{
   color: var(--theme-text);
   line-height: 1.6;
   letter-spacing: -0.01em;
-  --age-font-size-base: 1rem;
-  --age-font-size-lg: 1.1rem;
-  --age-font-size-xl: 1.2rem;
-  --age-font-size-h1: 1.9rem;
-  --age-font-size-h2: 1.5rem;
-  --age-font-size-h3: 1.25rem;
+  --age-font-size-base: 1.4rem;
+  --age-font-size-lg: 1.8rem;
+  --age-font-size-xl: 2rem;
+  --age-font-size-h1: 2.8rem;
+  --age-font-size-h2: 2.4rem;
+  --age-font-size-h3: 2rem;
   --age-line-height: 1.6;
   --age-line-height-heading: 1.25;
   --age-spacing-sm: 0.75rem;
