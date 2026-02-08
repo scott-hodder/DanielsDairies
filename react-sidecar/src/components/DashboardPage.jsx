@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import AppHeader from './AppHeader'
 import { getCurrentUser } from '../lib/auth'
 import { getChildModules, getChildren, getModules } from '../lib/data'
@@ -95,10 +96,21 @@ export default function DashboardPage() {
       <main className="page-shell">
         <section className="panel hero-panel">
           <h2>Family Dashboard</h2>
-          <p>Track your child&apos;s workbook journey and progress over time.</p>
+          <p>Track your child&apos;s workbook journey and jump into modules, insights, and admin tools.</p>
         </section>
 
         {error ? <p className="error-banner">{error}</p> : null}
+
+
+        <section className="panel">
+          <h3>Quick actions</h3>
+          <div className="row-buttons">
+            <Link className="link-btn" to="/landing">Go to Landing</Link>
+            <Link className="link-btn" to="/module">Open Module Library</Link>
+            <Link className="link-btn" to="/parent-insights">View Parent Insights</Link>
+            <Link className="link-btn" to="/admin">Open Admin Centre</Link>
+          </div>
+        </section>
 
         <section className="panel">
           <h3>Select child</h3>

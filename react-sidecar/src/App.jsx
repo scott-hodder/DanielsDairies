@@ -2,7 +2,9 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './components/LoginPage'
 import DashboardPage from './components/DashboardPage'
 import LandingPage from './components/LandingPage'
-import PlaceholderPage from './components/PlaceholderPage'
+import AdminPage from './components/AdminPage'
+import ModulePage from './components/ModulePage'
+import ParentInsightsPage from './components/ParentInsightsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -29,7 +31,7 @@ export default function App() {
         path="/admin"
         element={
           <ProtectedRoute>
-            <PlaceholderPage title="Admin" />
+            <AdminPage />
           </ProtectedRoute>
         }
       />
@@ -37,7 +39,15 @@ export default function App() {
         path="/module"
         element={
           <ProtectedRoute>
-            <PlaceholderPage title="Module" />
+            <ModulePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parent-insights"
+        element={
+          <ProtectedRoute>
+            <ParentInsightsPage />
           </ProtectedRoute>
         }
       />

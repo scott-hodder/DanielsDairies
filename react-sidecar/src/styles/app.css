@@ -248,3 +248,46 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+
+nav {
+  flex-wrap: wrap;
+}
+
+textarea {
+  font: inherit;
+  border: 1px solid #c6d3e1;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.admin-form {
+  display: grid;
+  gap: 10px;
+}
+
+.checkbox-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.row-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.link-btn {
+  text-decoration: none;
+  border: 1px solid #d0dbea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f8fbff;
+  color: #334a67;
+  font-weight: 700;
+}
+
+.danger-btn {
+  background: #8e2d2d;
+}

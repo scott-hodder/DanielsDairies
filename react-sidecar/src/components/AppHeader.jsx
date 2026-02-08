@@ -1,6 +1,14 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { signOut } from '../lib/auth'
 
+const navItems = [
+  { to: '/landing', label: 'Landing' },
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/module', label: 'Modules' },
+  { to: '/parent-insights', label: 'Parent Insights' },
+  { to: '/admin', label: 'Admin' }
+]
+
 export default function AppHeader() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -21,12 +29,11 @@ export default function AppHeader() {
       </Link>
 
       <nav>
-        <Link className={location.pathname === '/landing' ? 'active' : ''} to="/landing">
-          Landing
-        </Link>
-        <Link className={location.pathname === '/dashboard' ? 'active' : ''} to="/dashboard">
-          Dashboard
-        </Link>
+        {navItems.map((item) => (
+          <Link key={item.to} className={location.pathname === item.to ? 'active' : ''} to={item.to}>
+            {item.label}
+          </Link>
+        ))}
         <button type="button" onClick={handleLogout}>
           Logout
         </button>

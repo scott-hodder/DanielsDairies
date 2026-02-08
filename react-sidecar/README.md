@@ -2,19 +2,14 @@
 
 This folder is a separate React project so the existing production app remains untouched.
 
-## What is included
+## Scope now covered in React sidecar
 
-- Vite + React + React Router scaffold
-- React auth flow at `/` (sign in, sign up, forgot password, reset password)
-- React landing page at `/landing` with:
-  - authenticated user greeting
-  - children list
-  - add-child form
-  - module library preview
-- React dashboard page at `/dashboard` with:
-  - child selector
-  - progress summary
-  - child module status cards
+- `/` Auth flow (sign in, sign up, forgot password, recovery update)
+- `/landing` Parent landing page (children list, add child, module preview)
+- `/dashboard` Parent dashboard (child selection + progress summary)
+- `/module` Module library and per-child status updates
+- `/parent-insights` Child progress + weekly check-in insights
+- `/admin` Admin centre for module management
 
 ## Run locally
 
@@ -33,8 +28,7 @@ VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
 
-## Migration status
+## Notes
 
-✅ Started in separate sidecar project (no edits to legacy app files)
-✅ Login + landing + dashboard routes migrated to React foundations
-🔜 Continue with admin/module routes and deeper dashboard feature parity
+- Legacy app files in project root were not edited.
+- This sidecar is now a full React route map for the existing pages, ready for parity hardening and UX refinements.
