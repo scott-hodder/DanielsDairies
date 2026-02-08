@@ -70,6 +70,20 @@ Your content must be:
 - Engaging with a consistent character/mascot throughout
 - Interactive with activities that reinforce learning
 
+CHARACTER INTERACTION RULES:
+- The primary mascot character (e.g., Professor Panda) is the main guide
+- Daniel 🧒 is the learner/friend who appears throughout the module
+- Create dialogue between the mascot and Daniel to model learning and friendship
+- Use phrases like:
+  * "Daniel, what do you think about..."
+  * "Let me tell Daniel about..."
+  * "Daniel's friend Lenny discovered that..."
+  * "Daniel wants to know..."
+  * "I asked Daniel how he felt..."
+  * "Daniel and his friends..."
+- Include at least 1-2 interactions with Daniel per lesson when appropriate
+- Make Daniel relatable - he experiences the same challenges the reader does
+
 CRITICAL RULES:
 1. Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.
 2. If a specific character/mascot is mentioned (like "Daniel the Dog"), you MUST use EXACTLY that character name and type throughout.
@@ -306,10 +320,17 @@ async function generateLessons(
   const prompt = `Create ${count} lessons for a child's workbook about "${metadata.theme}".
 
 Module: "${metadata.title}"
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Primary Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Learner: Daniel 🧒 (and his friends like Lenny)
 Age: ${metadata.targetAge}
 
 Brief: ${contentBrief}
+
+IMPORTANT: Include interactions between ${metadata.characterName} and Daniel. Show ${metadata.characterName} teaching or talking with Daniel to make the content more relatable. Use phrases like:
+- "Daniel asked me an interesting question today..."
+- "Let me tell Daniel about how this works..."
+- "Daniel's friend Lenny noticed something special..."
+- "I was talking with Daniel about..."
 
 CRITICAL AGE-SPECIFIC FORMATTING FOR ${metadata.targetAge} YEAR OLDS:
 - Paragraph length: ${formatting.lessonParagraphs}
@@ -988,29 +1009,49 @@ async function generateInteractiveLessons(
   count: number
 ): Promise<InteractiveLessonContent[]> {
   const interactionTypes = ["poll", "circle-one", "fill-blank", "rate-scale", "true-false"];
+  const lessons: InteractiveLessonContent[] = [];
   
-  const prompt = `Create ${count} INTERACTIVE lessons for a child's workbook about "${metadata.theme}".
+  // Generate lessons individually with context awareness
+  for (let i = 0; i < count; i++) {
+    // Determine the lesson type based on its sequence
+    const lessonType = i === 0 ? "first" : i < 2 ? "early" : "later";
+    
+    const contextGuidance = {
+      first: "This is the FIRST interactive lesson after the welcome page. Build directly on the welcome's concepts. Start with phrases like 'Now let's dive deeper...' or 'Remember what we talked about?' DO NOT reintroduce the module or mascot - they already know who you are. Include Daniel references like 'Daniel wondered about this too...'",
+      early: "This is an early lesson. The reader already knows the basics. Focus on exploring specific aspects or practicing skills. Build on what came before. Reference Daniel's experiences.",
+      later: "This is a later lesson. The reader has learned foundational concepts. Focus on application, deeper understanding, or challenging scenarios. Show how Daniel applies these skills."
+    }[lessonType];
+    
+    const prompt = `Create interactive lesson ${i + 1} of ${count} for a child's workbook.
 
 Module: "${metadata.title}"
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Theme: ${metadata.theme}
+Primary Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Learner: Daniel 🧒 (and his friends like Lenny)
 Age: ${metadata.targetAge}
 
-These lessons should have SHORT text plus a simple interactive element.
+LESSON CONTEXT: ${contextGuidance}
+
+IMPORTANT: Include interactions with Daniel. Use phrases like:
+- "Daniel asked me..."
+- "Let me tell Daniel about..."
+- "Daniel's friend Lenny noticed..."
+- "Daniel wants to know..."
+
+Brief: ${contentBrief}
+
+Create an interactive lesson with activities that build on previous content. ${lessonType === "first" ? "DO NOT repeat the welcome message or reintroduce concepts - start where the welcome left off." : ""}
 
 Respond with ONLY this JSON:
 {
-  "interactiveLessons": [
-    {
-      "heading": "Engaging title with emoji",
-      "introText": "Brief introduction to the concept (2-3 sentences max)",
-      "interactionType": "poll",
-      "interactionPrompt": "Question for the child to interact with",
-      "interactionOptions": ["Option 1", "Option 2", "Option 3", "Option 4"],
-      "correctAnswerIndex": 1,
-      "followUpText": "Brief explanation after interaction (1-2 sentences)",
-      "mascotComment": "Encouraging comment from mascot"
-    }
-  ]
+  "heading": "Engaging title that shows progression (not 'Welcome' or 'Introduction')",
+  "introText": "Brief intro that builds on previous content and mentions Daniel (2-3 sentences max)",
+  "interactionType": "poll" | "circle-one" | "fill-blank" | "rate-scale" | "true-false",
+  "interactionPrompt": "Interactive question or task",
+  "interactionOptions": ["option1", "option2", "option3", "option4"],
+  "correctAnswerIndex": 1,
+  "followUpText": "Brief explanation after interaction (1-2 sentences)",
+  "mascotComment": "Encouraging comment from ${metadata.characterName}"
 }
 
 IMPORTANT:
@@ -1019,37 +1060,38 @@ IMPORTANT:
 - For opinion-based "poll"/"circle-one": omit correctAnswerIndex (all choices are valid)
 - For "fill-blank": the prompt should have ___ where the child fills in
 - For "rate-scale": prompt asks to rate something 1-5
-- For "true-false": the prompt is a statement to agree/disagree with. IMPORTANT: Set "correctAnswerIndex" to 0 if the correct answer is "I Agree", or 1 if the correct answer is "I Disagree". For example, "Only bad kids feel angry" is FALSE (a myth), so correctAnswerIndex should be 1 (I Disagree). "It's okay to feel scared sometimes" is TRUE, so correctAnswerIndex should be 0 (I Agree).
+- For "true-false": the prompt is a statement to agree/disagree with. Set "correctAnswerIndex" to 0 if "I Agree" is correct, or 1 if "I Disagree" is correct
 - Vary the interaction types across lessons
-- Keep text SHORT - focus on the interaction
-- Order the lessons so they build from simple awareness to practice and real-life application without repeating earlier ideas`;
+- Keep text SHORT - focus on the interaction`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
-  const parsed = safeJsonParse<{ interactiveLessons: InteractiveLessonContent[] }>(response);
-  
-  const lessons = parsed?.interactiveLessons || [];
-  
-  let typeIndex = 0;
-  while (lessons.length < count) {
-    const type = interactionTypes[typeIndex % interactionTypes.length] as InteractiveLessonContent["interactionType"];
-    lessons.push({
-      heading: "Let's Think!",
-      introText: "Sometimes our feelings can be tricky to understand. Let's explore together!",
-      interactionType: type,
-      interactionPrompt: type === "poll" ? "Which of these is the BEST way to handle big feelings?" :
-                         type === "fill-blank" ? "When I feel worried, I can ___" :
-                         type === "rate-scale" ? "How much do you like talking about your feelings?" :
-                         type === "true-false" ? "It's okay to feel scared sometimes" :
-                         "What helps you feel calm?",
-      interactionOptions: (type === "poll" || type === "circle-one") ? ["Yell at someone", "Take deep breaths", "Break things", "Run away"] : undefined,
-      correctAnswerIndex: (type === "poll" || type === "circle-one") ? 1 : (type === "true-false" ? 0 : undefined), // For true-false: 0 = Agree is correct
-      followUpText: "Taking deep breaths helps calm our body and mind!",
-      mascotComment: `${metadata.characterName} says: Great thinking!`
-    });
-    typeIndex++;
+    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
+    const parsed = safeJsonParse<InteractiveLessonContent>(response);
+    
+    if (parsed) {
+      lessons.push(parsed);
+    } else {
+      // Fallback
+      const type = interactionTypes[i % interactionTypes.length] as InteractiveLessonContent["interactionType"];
+      lessons.push({
+        heading: lessonType === "first" ? "Let's Explore Together" : "Building Our Skills",
+        introText: lessonType === "first" 
+          ? `Now that we've met, let's dive deeper! Daniel has been thinking about this too.` 
+          : `Daniel and I have discovered something interesting to share with you.`,
+        interactionType: type,
+        interactionPrompt: type === "poll" ? "Which of these helps when you're feeling overwhelmed?" :
+                           type === "fill-blank" ? "When I feel worried, I can ___" :
+                           type === "rate-scale" ? "How comfortable are you talking about your feelings?" :
+                           type === "true-false" ? "It's okay to feel scared sometimes" :
+                           "What helps you feel calm?",
+        interactionOptions: (type === "poll" || type === "circle-one") ? ["Ignore it", "Take deep breaths", "Get angry", "Hide"] : undefined,
+        correctAnswerIndex: (type === "poll" || type === "circle-one") ? 1 : (type === "true-false" ? 0 : undefined),
+        followUpText: "Taking deep breaths helps calm our body and mind!",
+        mascotComment: `${metadata.characterName} says: Great thinking! Daniel is proud of you!`
+      });
+    }
   }
   
-  return lessons.slice(0, count);
+  return lessons;
 }
 
 async function generateFillInStories(

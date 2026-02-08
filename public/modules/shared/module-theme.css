@@ -973,6 +973,7 @@ body.module-theme[data-age-range="6-8"] .shield-input {
   .rating-container {
     gap: 6px;
   }
+
   
   .rating-star {
     font-size: 20px;
@@ -1028,6 +1029,40 @@ body.module-theme[data-age-range="6-8"] .shield-input {
   body.module-theme[data-age-range="15-18"] {
     --age-font-size-base: 0.9rem;
     --age-font-size-h1: 1.5rem;
+  }
+
+
+  /* Reorder welcome page layout on mobile - put panda above heading */
+  .page[data-page="welcome"] .flex {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .page[data-page="welcome"] .flex img {
+    order: -1;
+    margin-bottom: 1rem !important;
+  }
+
+  .page[data-page="welcome"] .flex h1 {
+    font-size: 2rem !important;
+    text-align: center;
+    margin-top: 0 !important;
+  }
+
+  /* Fix page 2 - reduce space around character */
+  .page:not([data-page="welcome"]) img[alt*="Professor Panda"],
+  .page:not([data-page="welcome"]) img[alt*="Panda"] {
+    margin-bottom: 0.3rem !important;
+  }
+
+  /* Fix page 1 - prevent heading from overlapping character */
+  .page[data-page="cover"] {
+    padding-top: 2rem;
+  }
+
+  .page[data-page="cover"] img[alt*="Professor Panda"],
+  .page[data-page="cover"] img[alt*="Panda"] {
+    margin-bottom: 0.3rem !important;
   }
 }
 

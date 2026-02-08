@@ -1291,7 +1291,7 @@ class DailyQuestManager {
     const zones = ['Head', 'Chest', 'Tummy', 'Hands', 'Legs', 'Nowhere'];
     return `
       <div class="body-map-container">
-        <p style="color: #6d86a8; margin-bottom: 12px;">Where do you feel something in your body?</p>
+        <p style="color: #6d86a8; margin-bottom: 40px;">Where do you feel something in your body?</p>
         <div class="body-map">🧍</div>
         <div class="body-tap-zones">
           ${zones.map(z => `
