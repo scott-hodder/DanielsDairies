@@ -1,29 +1,47 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { checkAuth, signIn, signUp } from '../lib/auth'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { checkAuth, resetPassword, signIn, signUp, updatePassword } from '../lib/auth'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [isLoginMode, setIsLoginMode] = useState(true)
+  const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
+  const title = useMemo(() => {
+    if (mode === 'signup') return 'Create account'
+    if (mode === 'forgot') return 'Reset password'
+    if (mode === 'recover') return 'Set a new password'
+    return 'Sign in'
+  }, [mode])
+
   useEffect(() => {
-    async function loadSession() {
+    async function setup() {
+      const url = new URL(window.location.href)
+      const isResetFlow = url.searchParams.has('access_token') && url.searchParams.has('refresh_token')
+
       try {
         const session = await checkAuth()
-        if (session) {
-          navigate('/dashboard', { replace: true })
+        if (session && isResetFlow) {
+          setMode('recover')
+          return
         }
-      } catch (sessionError) {
-        setError(sessionError.message)
+
+        if (session) {
+          navigate('/landing', { replace: true })
+        }
+      } catch (setupError) {
+        setError(setupError.message)
       }
     }
 
-    loadSession()
+    setup()
   }, [navigate])
 
   async function handleSubmit(event) {
@@ -33,15 +51,40 @@ export default function LoginPage() {
     setMessage('')
 
     try {
-      if (isLoginMode) {
+      if (mode === 'login') {
         await signIn(email, password)
-        navigate('/dashboard', { replace: true })
+        navigate('/landing', { replace: true })
         return
       }
 
-      await signUp(email, password)
-      setMessage('Account created. Check your inbox for email confirmation if enabled.')
-      setIsLoginMode(true)
+      if (mode === 'signup') {
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match')
+        }
+        await signUp(email, password)
+        setMessage('Account created. Please check your inbox for email confirmation.')
+        setMode('login')
+        setPassword('')
+        setConfirmPassword('')
+        return
+      }
+
+      if (mode === 'forgot') {
+        await resetPassword(email)
+        setMessage('Password reset link sent. Check your inbox.')
+        return
+      }
+
+      if (mode === 'recover') {
+        if (newPassword !== confirmNewPassword) {
+          throw new Error('Passwords do not match')
+        }
+        await updatePassword(newPassword)
+        setMessage('Password updated successfully. You can now sign in.')
+        setMode('login')
+        setNewPassword('')
+        setConfirmNewPassword('')
+      }
     } catch (submitError) {
       setError(submitError.message || 'Authentication failed.')
     } finally {
@@ -53,49 +96,106 @@ export default function LoginPage() {
     <main className="auth-shell">
       <section className="auth-card">
         <img className="auth-logo" src="/images/logos/logo.svg" alt="Daniel's Diaries" />
-        <h1>{isLoginMode ? 'Sign in' : 'Create account'}</h1>
-        <p className="muted">React side project for safe migration from the existing app.</p>
+        <h1>{title}</h1>
+        <p className="muted">This is the React sidecar version of the auth flow.</p>
 
         {error ? <p className="error-banner">{error}</p> : null}
         {message ? <p className="success-banner">{message}</p> : null}
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <label>
-            Email
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-            />
-          </label>
+          {mode !== 'recover' ? (
+            <label>
+              Email
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+              />
+            </label>
+          ) : null}
 
-          <label>
-            Password
-            <input
-              required
-              minLength={6}
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••"
-            />
-          </label>
+          {mode === 'recover' ? (
+            <>
+              <label>
+                New password
+                <input
+                  required
+                  minLength={6}
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  placeholder="••••••"
+                />
+              </label>
+              <label>
+                Confirm new password
+                <input
+                  required
+                  minLength={6}
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(event) => setConfirmNewPassword(event.target.value)}
+                  placeholder="••••••"
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              {mode !== 'forgot' ? (
+                <label>
+                  Password
+                  <input
+                    required
+                    minLength={6}
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="••••••"
+                  />
+                </label>
+              ) : null}
+
+              {mode === 'signup' ? (
+                <label>
+                  Confirm password
+                  <input
+                    required
+                    minLength={6}
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    placeholder="••••••"
+                  />
+                </label>
+              ) : null}
+            </>
+          )}
 
           <button type="submit" disabled={loading}>
-            {loading ? 'Please wait...' : isLoginMode ? 'Sign in' : 'Create account'}
+            {loading ? 'Please wait...' : title}
           </button>
         </form>
 
-        <button type="button" className="text-button" onClick={() => setIsLoginMode((value) => !value)}>
-          {isLoginMode ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
-        </button>
+        <div className="auth-links">
+          {mode === 'login' ? (
+            <>
+              <button type="button" className="text-button" onClick={() => setMode('signup')}>
+                Need an account? Sign up
+              </button>
+              <button type="button" className="text-button" onClick={() => setMode('forgot')}>
+                Forgot password?
+              </button>
+            </>
+          ) : null}
 
-        <p className="route-links">
-          Planned routes: <Link to="/landing">Landing</Link> · <Link to="/admin">Admin</Link> ·{' '}
-          <Link to="/module">Module</Link>
-        </p>
+          {mode === 'signup' || mode === 'forgot' || mode === 'recover' ? (
+            <button type="button" className="text-button" onClick={() => setMode('login')}>
+              Back to sign in
+            </button>
+          ) : null}
+        </div>
       </section>
     </main>
   )

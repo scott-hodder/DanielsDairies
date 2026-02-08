@@ -5,9 +5,16 @@ This folder is a separate React project so the existing production app remains u
 ## What is included
 
 - Vite + React + React Router scaffold
-- React auth page (`/`) using Supabase
-- Starter dashboard route (`/dashboard`)
-- Placeholder routes for current pages (`/landing`, `/admin`, `/module`)
+- React auth flow at `/` (sign in, sign up, forgot password, reset password)
+- React landing page at `/landing` with:
+  - authenticated user greeting
+  - children list
+  - add-child form
+  - module library preview
+- React dashboard page at `/dashboard` with:
+  - child selector
+  - progress summary
+  - child module status cards
 
 ## Run locally
 
@@ -26,9 +33,8 @@ VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
 
-## Migration plan
+## Migration status
 
-1. Move shared API/auth/data functions from `/src` to this project's `src/lib`.
-2. Convert each HTML page into a React route/component.
-3. Reuse existing CSS gradually, then replace with component-based styles.
-4. Add tests after each route conversion.
+✅ Started in separate sidecar project (no edits to legacy app files)
+✅ Login + landing + dashboard routes migrated to React foundations
+🔜 Continue with admin/module routes and deeper dashboard feature parity
