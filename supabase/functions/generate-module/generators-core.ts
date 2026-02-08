@@ -176,6 +176,7 @@ interface LessonContent {
   calloutTitle?: string;
   calloutText?: string;
   tipText?: string;
+  danielInteraction?: string; // NEW: Specific Daniel dialogue or interaction note
 }
 
 interface ChapterDivider {
@@ -325,6 +326,7 @@ interface InteractiveLessonContent {
   correctAnswerIndex?: number; // For poll/circle-one questions with a correct answer
   followUpText: string;
   mascotComment: string;
+  danielInteraction?: string; // NEW: Specific Daniel dialogue or interaction note
 }
 
 interface FillInStoryContent {
@@ -1106,9 +1108,8 @@ function getAgeDataOptionalText(
 
 /**
  * Builds an enhanced, psychology-informed content brief
- * Simplified to only send: 
- * - Theory: description, key_theorists (primary_researchers)
- * - Age Range: display_name, language_guidelines, developmental_stage
+ * NOW INCLUDES: secondary theories, diagnosis adaptations, NDIS, SEDI
+ * CONTENT STYLE: Less text, less Daniel, more activities
  */
 function buildEnhancedContentBrief(resolved: {
   title: string;
@@ -1117,88 +1118,108 @@ function buildEnhancedContentBrief(resolved: {
   theoryData: CoreTheoryData;
   brainTownAnalogy: string;
   additionalContext: string;
+  secondaryTheories?: string[];
+  neuroscienceConcept?: string;
+  diagnosisPathways?: string[];
+  fasdStrategies?: string;
+  ndisDomain?: string;
+  dssSedi?: string;
+  moduleObjective?: string;
+  facilitatorTip?: string;
+  reflectionPrompt?: string;
+  rewardText?: string;
 }): string {
-  const { ageData, theoryData, brainTownAnalogy, additionalContext, title, ageRange } = resolved;
+  const { 
+    ageData, theoryData, brainTownAnalogy, additionalContext, title, ageRange,
+    secondaryTheories, neuroscienceConcept, diagnosisPathways, fasdStrategies,
+    ndisDomain, dssSedi, moduleObjective, facilitatorTip, reflectionPrompt, rewardText
+  } = resolved;
+  
   const ageStyleGuide = buildAgeRangeStyleGuide(ageRange, ageData);
   const displayName = getAgeDataText(ageData, "display_name", "displayName");
-  const developmentalStage = getAgeDataText(ageData, "developmental_stage", "developmentalStage");
-  const cognitiveAbilities = getAgeDataText(ageData, "cognitive_abilities", "cognitiveAbilities");
-  const emotionalCapacity = getAgeDataText(ageData, "emotional_capacity", "emotionalCapacity");
-  const attentionSpan = getAgeDataOptionalText(ageData, "attention_span", "attentionSpan");
   const languageGuidelines = getAgeDataText(ageData, "language_guidelines", "languageGuidelines");
-  const vocabularyLevel = getAgeDataText(ageData, "vocabulary_level", "vocabularyLevel");
-  const sentenceComplexity = getAgeDataText(ageData, "sentence_complexity", "sentenceComplexity");
-  const abstractThinking = getAgeDataText(ageData, "abstract_thinking", "abstractThinking");
-  const neurodivergentAdaptations = getAgeDataOptionalText(
-    ageData,
-    "neurodivergent_adaptations",
-    "neurodivergentAdaptations"
-  );
-  const traumaSensitiveNotes = getAgeDataOptionalText(
-    ageData,
-    "trauma_sensitive_notes",
-    "traumaSensitiveNotes"
-  );
   
   return `
 === MODULE BRIEF ===
 Title: ${title}
 Target Age: ${ageRange} (${displayName})
+${moduleObjective ? `Objective: ${moduleObjective}` : ''}
+
+=== CRITICAL CONTENT STYLE RULES ===
+🚨 READ THESE FIRST - MOST IMPORTANT 🚨
+
+1. SHORTER TEXT BLOCKS
+   - Each paragraph: 2-4 sentences MAX
+   - Each page should have small, scannable chunks
+   - Break up long explanations into bite-sized pieces
+
+2. LESS DANIEL DIALOGUE
+   - Daniel appears OCCASIONALLY (2-3 times per module), not constantly
+   - Most content is direct teaching, not Daniel talking
+   - When Daniel does appear, keep it to 1-2 sentences
+   - Example: ✅ "Daniel noticed his hands felt shaky." ❌ "Daniel said, 'Hey, I'm noticing my hands feel shaky, and I wonder what that means...'"
+
+3. MORE ACTIVITIES, LESS READING
+   - Prioritize interactive elements
+   - Use visual cues, prompts, choices
+   - Children should DO more than READ
+   
+4. CHUNK EVERYTHING
+   - Use short paragraphs
+   - Add visual breaks
+   - One idea per section
 
 === PSYCHOLOGICAL FOUNDATION ===
-CORE THEORY: ${theoryData.theory_name}
+PRIMARY THEORY: ${theoryData.theory_name}
 ${theoryData.description}
 
-${theoryData.primary_researchers ? `KEY THEORISTS:\n${theoryData.primary_researchers}\n` : ''}
+${secondaryTheories && secondaryTheories.length > 0 ? `SUPPORTING THEORIES: ${secondaryTheories.join(', ')}` : ''}
 
-=== AGE-APPROPRIATE LANGUAGE GUIDELINES ===
-For children ages ${ageRange} (${displayName}):
-
-DEVELOPMENTAL STAGE:
-${developmentalStage}
-
-COGNITIVE ABILITIES:
-${cognitiveAbilities}
-
-EMOTIONAL CAPACITY:
-${emotionalCapacity}
-
-${attentionSpan ? `ATTENTION SPAN:\n${attentionSpan}\n` : ''}
-
-LANGUAGE GUIDELINES:
+=== LANGUAGE GUIDELINES ===
 ${languageGuidelines}
 
-VOCABULARY LEVEL:
-${vocabularyLevel}
-
-SENTENCE COMPLEXITY:
-${sentenceComplexity}
-
-ABSTRACT THINKING:
-${abstractThinking}
-
-${neurodivergentAdaptations ? `NEURODIVERGENT-AFFIRMING ADAPTATIONS:\n${neurodivergentAdaptations}\n` : ''}
-${traumaSensitiveNotes ? `TRAUMA-SENSITIVE NOTES:\n${traumaSensitiveNotes}\n` : ''}
-
-=== AGE RANGE DIFFERENTIATION PROFILE ===
 ${ageStyleGuide}
 
 === BRAIN TOWN ANALOGY ===
-Use this analogy/metaphor consistently throughout the module:
 ${brainTownAnalogy}
 
-Weave this analogy into lessons, activities, character dialogue, and encouragement messages.
+Keep Brain Town explanations SHORT (2-3 sentences max).
 
-${additionalContext ? `=== ADDITIONAL CONTEXT ===\n${additionalContext}\n` : ''}
+${neuroscienceConcept ? `=== NEUROSCIENCE TIE-IN ===
+Include brief mention of: ${neuroscienceConcept}
+Keep it simple - 1-2 sentences only.
+` : ''}
 
-=== GENERATION INSTRUCTIONS ===
-1. Use the EXACT language complexity appropriate for ${ageRange} year olds
-2. Apply the ${theoryData.theory_name} theory correctly throughout
-3. Only make claims that are listed as "allowed"
-4. Use the Brain Town analogy to explain concepts
-5. Keep activities within the child's developmental capacity
-6. Include trauma-sensitive and neurodivergent-affirming language
-7. Ensure the module feels distinctly tailored to the target age range using the differentiation profile above
+${diagnosisPathways && diagnosisPathways.length > 0 ? `=== DIAGNOSIS ADAPTATIONS ===
+Adapt for: ${diagnosisPathways.map(d => d.toUpperCase()).join(', ')}
+
+${diagnosisPathways.includes('fasd') ? (fasdStrategies ? `FASD: ${fasdStrategies}` : 'FASD: Use concrete visuals, one-step instructions, memory scaffolds') : ''}
+${diagnosisPathways.includes('adhd') ? 'ADHD: Minimal text, movement breaks, chunked info' : ''}
+${diagnosisPathways.includes('asd') ? 'ASD: Literal language, explicit instructions, clear structure' : ''}
+${diagnosisPathways.includes('pda') ? 'PDA: Offer choices, avoid directives, respect autonomy' : ''}
+${diagnosisPathways.includes('trauma') ? 'Trauma: Safety first, no surprises, clear opt-outs' : ''}
+` : ''}
+
+${ndisDomain || dssSedi ? `=== OUTCOME FRAMEWORKS ===
+${ndisDomain ? `NDIS Domain: ${ndisDomain}` : ''}
+${dssSedi ? `DSS SEDI: ${dssSedi}` : ''}
+` : ''}
+
+${facilitatorTip ? `=== FACILITATOR GUIDANCE ===
+${facilitatorTip}
+` : ''}
+
+=== GENERATION RULES ===
+1. Keep ALL paragraphs SHORT (2-4 sentences MAX)
+2. Use Daniel SPARINGLY - 2-3 brief appearances per module
+3. Focus on ACTIVITIES over explanations
+4. Break content into SMALL chunks
+5. More DOING, less READING
+6. Apply ${theoryData.theory_name} theory correctly
+7. Use Brain Town analogy but keep brief
+
+${reflectionPrompt ? `Reflection: "${reflectionPrompt}"` : ''}
+${rewardText ? `Reward: "${rewardText}"` : ''}
 `.trim();
 }
 

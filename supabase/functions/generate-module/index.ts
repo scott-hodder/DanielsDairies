@@ -4904,12 +4904,48 @@ serve(async (req) => {
       // =====================
       // ENHANCED MODE (NEW)
       // =====================
-      const { ageRangeId, coreTheoryId, brainTownAnalogy, additionalContext, title } = body;
+      const { 
+        ageRangeId, coreTheoryId, brainTownAnalogy, additionalContext, title,
+        secondaryTheoryIds, neuroscienceConcept, diagnosisPathways, fasdStrategies,
+        ndisDomainId, dssSediId, moduleObjective, facilitatorTip, reflectionPrompt, rewardText
+      } = body;
       
       if (!brainTownAnalogy) {
         return jsonResponse({ 
           error: "Enhanced mode requires: ageRangeId, coreTheoryId, brainTownAnalogy" 
         }, 400);
+      }
+      
+      // Fetch secondary theory names if provided
+      let secondaryTheories: string[] = [];
+      if (secondaryTheoryIds && Array.isArray(secondaryTheoryIds) && secondaryTheoryIds.length > 0) {
+        const { data: secondaryData } = await supabaseClient
+          .from("core_theories")
+          .select("theory_name")
+          .in("id", secondaryTheoryIds);
+        secondaryTheories = secondaryData?.map(t => t.theory_name) || [];
+      }
+      
+      // Fetch NDIS domain name if provided
+      let ndisDomain: string | undefined;
+      if (ndisDomainId) {
+        const { data: ndisData } = await supabaseClient
+          .from("ndis_domains")
+          .select("domain_name")
+          .eq("id", ndisDomainId)
+          .single();
+        ndisDomain = ndisData?.domain_name;
+      }
+      
+      // Fetch SEDI name if provided
+      let dssSedi: string | undefined;
+      if (dssSediId) {
+        const { data: sediData } = await supabaseClient
+          .from("dss_sedi_categories")
+          .select("sedi_code, sedi_name")
+          .eq("id", dssSediId)
+          .single();
+        dssSedi = sediData ? `${sediData.sedi_code}: ${sediData.sedi_name}` : undefined;
       }
       
       // Fetch age range data - only fetch simplified fields sent to AI
@@ -4946,6 +4982,16 @@ serve(async (req) => {
         theoryData,
         brainTownAnalogy,
         additionalContext: additionalContext || "",
+        secondaryTheories,
+        neuroscienceConcept,
+        diagnosisPathways,
+        fasdStrategies,
+        ndisDomain,
+        dssSedi,
+        moduleObjective,
+        facilitatorTip,
+        reflectionPrompt,
+        rewardText
       });
       
       console.log("[AI] Using enhanced psychology-based content brief");

@@ -5148,7 +5148,8 @@ if (data.status === "running") {
             const { data, error } = await supabase
                 .from('age_ranges')
                 .select('*')
-                .order('age_min');
+                .eq('is_active', true)
+                .order('age_range');
 
             if (error) {
                 console.error('[Admin] Error loading age ranges:', error);
@@ -5323,6 +5324,75 @@ if (data.status === "running") {
             if (selectedSuperSkillTheoriesId) {
                 selectSuperSkillTheories(selectedSuperSkillTheoriesId);
             }
+
+            // Render the skills grid
+            renderSuperSkillsTheoriesGrid();
+        }
+
+        function renderSuperSkillsTheoriesGrid() {
+            const container = document.getElementById('superSkillsTheoriesGrid');
+            if (!container) return;
+            
+            const skills = superSkillsTheoriesData || [];
+            if (skills.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6b7c8f; padding: 40px;">No super skills added yet</p>';
+                return;
+            }
+
+            // Get sub-skills for each super skill
+            const subSkillsBySuperSkill = {};
+            if (window.subSkillsTheoriesData) {
+                window.subSkillsTheoriesData.forEach(subSkill => {
+                    if (!subSkillsBySuperSkill[subSkill.super_skill_id]) {
+                        subSkillsBySuperSkill[subSkill.super_skill_id] = [];
+                    }
+                    subSkillsBySuperSkill[subSkill.super_skill_id].push(subSkill);
+                });
+            }
+
+            container.innerHTML = skills.map(skill => {
+                const subSkills = subSkillsBySuperSkill[skill.id] || [];
+                return `
+                    <div class="skill-card super-skill ${!skill.is_active ? 'inactive' : ''}" 
+                         onclick="selectSuperSkillTheories('${skill.id}')"
+                         style="border-left-color: ${skill.theme_color || '#6366F1'}">
+                        <div class="skill-header">
+                            <div class="skill-emoji">${skill.emoji || '🧠'}</div>
+                            <div class="skill-title-group">
+                                <div class="skill-name">${skill.name}</div>
+                                <div class="skill-meta">${skill.character_name || 'No character'} • ${skill.slug}</div>
+                            </div>
+                        </div>
+                        ${skill.description ? `
+                            <div class="skill-description">${skill.description}</div>
+                        ` : ''}
+                        ${skill.relevant_theories ? `
+                            <div class="skill-theories">
+                                <strong>Theories:</strong> ${skill.relevant_theories}
+                            </div>
+                        ` : ''}
+                        ${subSkills.length > 0 ? `
+                            <div class="sub-skills-list">
+                                <h4>Sub-Skills (${subSkills.length})</h4>
+                                ${subSkills.map(sub => `
+                                    <div class="sub-skill-item">
+                                        <div class="sub-skill-bullet"></div>
+                                        ${sub.name}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="skill-footer">
+                            <span class="skill-status ${skill.is_active ? 'active' : 'inactive'}">
+                                ${skill.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                            <div class="skill-actions">
+                                <button class="skill-action-btn edit" onclick="event.stopPropagation(); selectSuperSkillTheories('${skill.id}')">Edit</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         window.selectSuperSkillTheories = function(superSkillId) {
@@ -5422,40 +5492,7 @@ if (data.status === "running") {
 
             alert('✅ Super skill saved successfully!');
             await loadSuperSkillsTheories();
-        }
-
-        // ========== SUB-SKILLS FUNCTIONS (Theories Tab) ==========
-        
-        async function loadSubSkillsTheories() {
-            const { data, error } = await supabase
-                .from('sub_skills')
-                .select('*, super_skills(name)')
-                .order('name');
-
-            if (error) {
-                console.error('[Admin] Error loading sub-skills:', error);
-                return;
-            }
-
-            subSkillsTheoriesData = data || [];
-            const select = document.getElementById('subSkillSelectTheories');
-            if (select) {
-                select.innerHTML = '<option value="">Select a sub-skill...</option>';
-                subSkillsTheoriesData.forEach(ss => {
-                    const option = document.createElement('option');
-                    option.value = ss.id;
-                    const parentName = ss.super_skills?.name || 'No parent';
-                    option.textContent = `${ss.name} (${parentName})`;
-                    select.appendChild(option);
-                });
-                if (selectedSubSkillTheoriesId) {
-                    select.value = selectedSubSkillTheoriesId;
-                }
-            }
-
-            if (selectedSubSkillTheoriesId) {
-                selectSubSkillTheories(selectedSubSkillTheoriesId);
-            }
+            await loadSubSkillsTheories(); // Refresh sub-skills to update parent references
         }
 
         window.selectSubSkillTheories = function(subSkillId) {
@@ -6039,6 +6076,228 @@ if (data.status === "running") {
         }
 
         // Module Content Creator functions moved to external file: /scripts/module-content-creator.js
+
+        // ============================================================================
+        // ENHANCED ADD MODULE MODAL - INTEGRATED
+        // ============================================================================
+        
+        window.enhancedModuleModal = {
+            secondaryTheoryIds: [],
+            diagnosisPathways: [],
+            ndisDomains: [],
+            sediCategories: []
+        };
+
+        // Override openAddModuleModal
+        const originalOpenAddModuleModal = window.openAddModuleModal;
+        window.openAddModuleModal = async function() {
+            if (typeof originalOpenAddModuleModal === 'function') {
+                originalOpenAddModuleModal();
+            } else {
+                document.getElementById('addModuleModal').classList.add('active');
+            }
+            
+            await loadEnhancedModalData();
+            setTimeout(() => injectEnhancedFields(), 100);
+        };
+
+        async function loadEnhancedModalData() {
+            try {
+                const { data: ndis } = await supabase.from('ndis_domains').select('id, domain_name').eq('is_active', true).order('sort_order');
+                window.enhancedModuleModal.ndisDomains = ndis || [];
+                
+                const { data: sedi } = await supabase.from('dss_sedi_categories').select('id, sedi_code, sedi_name').eq('is_active', true).order('sort_order');
+                window.enhancedModuleModal.sediCategories = sedi || [];
+            } catch (error) {
+                console.error('Error loading enhanced data:', error);
+            }
+        }
+
+        function injectEnhancedFields() {
+            const brainTownField = document.getElementById('brainTownAnalogy');
+            if (!brainTownField || document.getElementById('secondaryTheoriesSection')) return;
+            
+            const formGroup = brainTownField.closest('.form-group');
+            if (!formGroup) return;
+            
+            const enhancedHTML = `
+                <div class="form-group" id="secondaryTheoriesSection" style="margin-top: 20px;">
+                    <label class="form-label">Secondary Theories (Max 3)</label>
+                    <div id="secondaryTheoriesContainer" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: white; border: 1px solid #d1d5db; border-radius: 8px; min-height: 50px;"></div>
+                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Selected: <span id="secondaryTheoryCount">0</span>/3</p>
+                </div>
+                
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">Neuroscience Concept</label>
+                    <select id="neuroscienceConcept" class="form-select">
+                        <option value="">Optional</option>
+                        <option value="Neuroplasticity">Neuroplasticity</option>
+                        <option value="Prefrontal Cortex">Prefrontal Cortex</option>
+                        <option value="Dopamine">Dopamine</option>
+                        <option value="Amygdala">Amygdala</option>
+                        <option value="Interoception">Interoception</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">Diagnosis Adaptations</label>
+                    <div style="display: grid; gap: 8px; margin-top: 8px;">
+                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                            <input type="checkbox" value="fasd" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
+                            <span style="font-weight: 600;">FASD</span>
+                        </label>
+                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                            <input type="checkbox" value="adhd" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
+                            <span style="font-weight: 600;">ADHD</span>
+                        </label>
+                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                            <input type="checkbox" value="asd" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
+                            <span style="font-weight: 600;">ASD</span>
+                        </label>
+                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                            <input type="checkbox" value="pda" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
+                            <span style="font-weight: 600;">PDA</span>
+                        </label>
+                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                            <input type="checkbox" value="trauma" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
+                            <span style="font-weight: 600;">Complex Trauma</span>
+                        </label>
+                    </div>
+                    <div id="fasdStrategiesContainer" style="display: none; margin-top: 12px; padding: 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px;">
+                        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">FASD Strategies</label>
+                        <textarea id="fasdStrategies" rows="2" class="form-textarea" placeholder="Concrete visual supports, one-step instructions..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="form-row" style="margin-top: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">NDIS Domain</label>
+                        <select id="ndisDomain" class="form-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DSS SEDI</label>
+                        <select id="dssSedi" class="form-select"></select>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">Module Objective</label>
+                    <textarea id="moduleObjective" rows="2" class="form-textarea" placeholder="What will children be able to do?"></textarea>
+                </div>
+                
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">Facilitator Tip</label>
+                    <textarea id="facilitatorTip" rows="2" class="form-textarea" placeholder="Guidance for parents/educators"></textarea>
+                </div>
+                
+                <div class="form-row" style="margin-top: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Reflection Prompt</label>
+                        <input type="text" id="reflectionPrompt" class="form-input" placeholder="What did you notice?">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reward Text</label>
+                        <input type="text" id="rewardText" class="form-input" placeholder="You earned stars! ⭐">
+                    </div>
+                </div>
+            `;
+            
+            formGroup.insertAdjacentHTML('afterend', enhancedHTML);
+            populateSecondaryTheories();
+            populateNdisAndSedi();
+            attachEnhancedListeners();
+        }
+
+        async function populateSecondaryTheories() {
+            const container = document.getElementById('secondaryTheoriesContainer');
+            const primarySelect = document.getElementById('coreTheorySelect');
+            if (!container || !primarySelect) return;
+            
+            const theories = Array.from(primarySelect.options).filter(opt => opt.value).map(opt => ({ id: opt.value, name: opt.textContent }));
+            container.innerHTML = theories.map(t => `<div class="secondary-theory-chip" data-theory-id="${t.id}" style="padding: 6px 12px; background: #f3f4f6; color: #374151; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none;">${t.name}</div>`).join('');
+        }
+
+        function populateNdisAndSedi() {
+            const ndisSelect = document.getElementById('ndisDomain');
+            if (ndisSelect) {
+                ndisSelect.innerHTML = '<option value="">Optional</option>' + window.enhancedModuleModal.ndisDomains.map(nd => `<option value="${nd.id}">${nd.domain_name}</option>`).join('');
+            }
+            const sediSelect = document.getElementById('dssSedi');
+            if (sediSelect) {
+                sediSelect.innerHTML = '<option value="">Optional</option>' + window.enhancedModuleModal.sediCategories.map(sc => `<option value="${sc.id}">${sc.sedi_code}: ${sc.sedi_name}</option>`).join('');
+            }
+        }
+
+        function attachEnhancedListeners() {
+            document.querySelectorAll('.secondary-theory-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const theoryId = this.getAttribute('data-theory-id');
+                    const primaryId = document.getElementById('coreTheorySelect').value;
+                    if (theoryId === primaryId) { alert('Already selected as primary'); return; }
+                    const index = window.enhancedModuleModal.secondaryTheoryIds.indexOf(theoryId);
+                    if (index > -1) {
+                        window.enhancedModuleModal.secondaryTheoryIds.splice(index, 1);
+                        this.style.background = '#f3f4f6'; this.style.color = '#374151';
+                    } else {
+                        if (window.enhancedModuleModal.secondaryTheoryIds.length >= 3) { alert('Max 3'); return; }
+                        window.enhancedModuleModal.secondaryTheoryIds.push(theoryId);
+                        this.style.background = '#10b981'; this.style.color = 'white';
+                    }
+                    document.getElementById('secondaryTheoryCount').textContent = window.enhancedModuleModal.secondaryTheoryIds.length;
+                });
+            });
+            
+            document.querySelectorAll('.diagnosis-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const dx = this.value;
+                    const toggle = this.closest('.diagnosis-toggle');
+                    if (this.checked) {
+                        window.enhancedModuleModal.diagnosisPathways.push(dx);
+                        toggle.style.borderColor = '#6366f1'; toggle.style.background = '#eef2ff';
+                        if (dx === 'fasd') document.getElementById('fasdStrategiesContainer').style.display = 'block';
+                    } else {
+                        const idx = window.enhancedModuleModal.diagnosisPathways.indexOf(dx);
+                        if (idx > -1) window.enhancedModuleModal.diagnosisPathways.splice(idx, 1);
+                        toggle.style.borderColor = '#e5e7eb'; toggle.style.background = 'white';
+                        if (dx === 'fasd') document.getElementById('fasdStrategiesContainer').style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Fix sub-skills loading
+        window.loadSubSkillsForSuperSkill = async function(superSkillId) {
+            const subSkillSelect = document.getElementById('newModuleSubSkill');
+            if (!subSkillSelect) return;
+            try {
+                const { data, error } = await supabase.from('sub_skills').select('id, name, slug').eq('super_skill_id', superSkillId).eq('is_active', true).order('sort_order');
+                if (error) throw error;
+                subSkillSelect.innerHTML = '<option value="">Select sub-skill...</option>' + (data || []).map(ss => `<option value="${ss.id}">${ss.name}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading sub-skills:', error);
+            }
+        };
+
+        // Enhance save function
+        const originalSaveNewModule = window.saveNewModule;
+        window.saveNewModule = async function(event) {
+            if (event) event.preventDefault();
+            window.__enhancedModuleData = {
+                secondary_theory_ids: window.enhancedModuleModal.secondaryTheoryIds,
+                neuroscience_concept: document.getElementById('neuroscienceConcept')?.value || null,
+                diagnosis_pathways: window.enhancedModuleModal.diagnosisPathways,
+                fasd_strategies: document.getElementById('fasdStrategies')?.value || null,
+                ndis_domain_id: document.getElementById('ndisDomain')?.value || null,
+                dss_sedi_id: document.getElementById('dssSedi')?.value || null,
+                module_objective: document.getElementById('moduleObjective')?.value || null,
+                facilitator_tip: document.getElementById('facilitatorTip')?.value || null,
+                reflection_prompt: document.getElementById('reflectionPrompt')?.value || null,
+                reward_text: document.getElementById('rewardText')?.value || null
+            };
+            if (typeof originalSaveNewModule === 'function') {
+                return originalSaveNewModule(event);
+            }
+        };
 
         // Initialize
         async function init() {

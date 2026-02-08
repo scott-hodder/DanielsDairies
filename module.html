@@ -280,7 +280,14 @@
         const cache = this.getCache();
         cache[data.questionId] = { ...data, timestamp: Date.now() };
         this.saveCache(cache);
-        this.saveToDB(data).catch(e => {});
+        
+        // DEBUG: Log what we're saving
+        console.log('[ResponseTracker] Saved:', data.questionId, '=', data.responseValue);
+        console.log('[ResponseTracker] Cache now has', Object.keys(cache).length, 'items');
+        
+        this.saveToDB(data).catch(e => {
+          console.error('[ResponseTracker] DB save failed:', e);
+        });
         return cache[data.questionId];
       },
       
@@ -809,10 +816,28 @@
         });
       });
       
-      // Text inputs
+      // Text inputs - save on both 'input' (with debounce) and 'change'
       document.querySelectorAll('.reflection-input, textarea, input[type="text"]').forEach((el, i) => {
+        const id = el.id || el.name || `text_p${pageNum}_${i}`;
+        let debounceTimer = null;
+        
+        // Save on input with debouncing (500ms delay)
+        el.addEventListener('input', function() {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            ResponseTracker.track({
+              questionId: id,
+              questionText: (el.placeholder || id).slice(0, 100),
+              responseType: 'text',
+              responseValue: this.value,
+              pageNumber: pageNum
+            });
+          }, 500);
+        });
+        
+        // Also save immediately on blur
         el.addEventListener('change', function() {
-          const id = el.id || el.name || `text_p${pageNum}_${i}`;
+          clearTimeout(debounceTimer);
           ResponseTracker.track({
             questionId: id,
             questionText: (el.placeholder || id).slice(0, 100),
@@ -828,23 +853,37 @@
     window.restorePageResponses = function(pageNum) {
       const responses = ResponseTracker.getAll();
       
+      console.log('[Restore] Page', pageNum, '- Found', Object.keys(responses).length, 'saved responses');
+      
       // Restore checkboxes
       document.querySelectorAll('.checklist-item').forEach((item, i) => {
-        const saved = responses[`checklist_p${pageNum}_${i}`];
-        if (saved?.responseValue) item.checked = true;
+        const qid = `checklist_p${pageNum}_${i}`;
+        const saved = responses[qid];
+        if (saved?.responseValue) {
+          item.checked = true;
+          console.log('[Restore] Checkbox', qid, 'checked');
+        }
       });
       
       // Restore activities
       document.querySelectorAll('[data-activity]').forEach(item => {
-        const saved = responses[`activity_${item.dataset.activity}`];
-        if (saved?.responseValue) { item.checked = true; item.disabled = true; }
+        const qid = `activity_${item.dataset.activity}`;
+        const saved = responses[qid];
+        if (saved?.responseValue) {
+          item.checked = true;
+          item.disabled = true;
+          console.log('[Restore] Activity', qid, 'checked');
+        }
       });
       
       // Restore text
       document.querySelectorAll('.reflection-input, textarea, input[type="text"]').forEach((el, i) => {
         const id = el.id || el.name || `text_p${pageNum}_${i}`;
         const saved = responses[id];
-        if (saved?.responseValue) el.value = saved.responseValue;
+        if (saved?.responseValue) {
+          el.value = saved.responseValue;
+          console.log('[Restore] Text', id, '=', saved.responseValue);
+        }
       });
     };
     
@@ -1019,25 +1058,7 @@
           if (!firstPage) return false;
           if (firstPage.querySelector('[data-module-cover="title"]')) return true;
 
-          var titleText = moduleData?.title || 'Module';
-          var descriptionText = moduleData?.short_description || moduleData?.description || '';
-          var wrapper = document.createElement('div');
-          wrapper.className = 'module-cover-title-block';
-          wrapper.dataset.moduleCover = 'title';
-
-          var titleEl = document.createElement('h1');
-          titleEl.className = 'module-cover-title';
-          titleEl.textContent = titleText;
-          wrapper.appendChild(titleEl);
-
-          if (descriptionText && descriptionText.trim()) {
-            var subtitleEl = document.createElement('p');
-            subtitleEl.className = 'module-cover-subtitle';
-            subtitleEl.textContent = descriptionText;
-            wrapper.appendChild(subtitleEl);
-          }
-
-          firstPage.insertBefore(wrapper, firstPage.firstChild);
+          
           return true;
         }
 
