@@ -937,6 +937,12 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       window.scrollTo({ top: 0, behavior: 'smooth' });
       bindPageInteractions();
       restoreFormState();
+      const certificateDateEl = document.getElementById('certificateDate');
+      if (certificateDateEl) {
+        const savedDate = formData.certificateDate || new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+        certificateDateEl.textContent = savedDate;
+        if (!formData.certificateDate) saveFormData('certificateDate', savedDate);
+      }
     }
     
     // Restore form values from localStorage
@@ -994,6 +1000,108 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
           checkbox.disabled = true;
         }
       });
+
+      // Restore drawing canvases from cache
+      document.querySelectorAll('.drawing-canvas[data-drawing-key], .comic-drawing-canvas[data-drawing-key]').forEach(canvas => {
+        const drawingKey = canvas.getAttribute('data-drawing-key');
+        if (!drawingKey || !formData[drawingKey]) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = formData[drawingKey];
+      });
+
+      // Restore strength shield completion visibility
+      const shieldPage = document.querySelector('[data-page="strength-shield"]');
+      if (shieldPage) {
+        const shieldInputs = shieldPage.querySelectorAll('.shield-input');
+        const totalSections = shieldInputs.length;
+        const filled = Array.from(shieldInputs).filter(input => input.value.trim().length > 0).length;
+        const progressEl = document.getElementById('shieldProgress');
+        if (progressEl) progressEl.textContent = String(filled);
+        const shieldActivityId = shieldPage.getAttribute('data-activity') || '';
+        if (shieldActivityId) {
+          const savedDecorations = (formData['shield_' + shieldActivityId + '_decorations'] || '').split(',').filter(Boolean);
+          if (savedDecorations.length) {
+            const display = document.getElementById('shieldDecorations');
+            if (display) {
+              display.innerHTML = '🛡️';
+              savedDecorations.forEach(emoji => {
+                const span = document.createElement('span');
+                span.textContent = emoji;
+                span.style.display = 'inline-block';
+                span.style.margin = '2px';
+                display.appendChild(span);
+              });
+            }
+          }
+        }
+        if (filled >= totalSections && totalSections > 0) {
+          const win = document.getElementById('shieldWin');
+          const complete = document.getElementById('shieldComplete');
+          if (win) win.style.display = 'block';
+          if (complete) complete.style.display = 'flex';
+        }
+      }
+
+      // Restore potion state and brewed result visibility
+      const potionPage = document.querySelector('[data-page="magic-potion"]');
+      if (potionPage) {
+        const activityId = potionPage.getAttribute('data-activity') || '';
+        const starIndex = activityId.split('_')[1];
+        if (starIndex) {
+          const savedIngredients = formData['potion_' + starIndex + '_ingredients'];
+          if (savedIngredients) {
+            const cauldron = document.getElementById('cauldron_' + starIndex);
+            if (cauldron) {
+              cauldron.innerHTML = savedIngredients
+                .split(',')
+                .filter(Boolean)
+                .map(emoji => '<span class="text-4xl">' + emoji + '</span>')
+                .join('');
+            }
+          }
+
+          if (formData['potion_' + starIndex + '_brewed'] === 'true') {
+            const result = document.getElementById('potionResult_' + starIndex);
+            const complete = document.getElementById('potionComplete_' + starIndex);
+            if (result) result.style.display = 'block';
+            if (complete) complete.style.display = 'flex';
+          }
+        }
+      }
+
+      // Restore volcano state and UI
+      const volcanoPage = document.querySelector('[data-page="feeling-volcano"]');
+      if (volcanoPage) {
+        const activityId = volcanoPage.getAttribute('data-activity') || '';
+        const savedTemp = Number(formData['volcano_' + activityId]);
+        if (!Number.isNaN(savedTemp) && savedTemp >= 0) {
+          volcanoTemp = savedTemp;
+          const tempEl = document.getElementById('volcanoTemp');
+          const lavaEl = document.getElementById('volcanoLava');
+          const indicatorEl = document.getElementById('volcanoIndicator');
+          if (tempEl) tempEl.textContent = String(volcanoTemp);
+          if (lavaEl) lavaEl.style.opacity = String(Math.max(0, Math.min(1, volcanoTemp / 100)));
+          const emojis = ['😌', '😊', '😤', '🔥', '🌋'];
+          const level = Math.max(1, Math.ceil(volcanoTemp / 25));
+          if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
+          for (let i = 1; i <= 5; i++) {
+            const lvl = document.getElementById('volcanoLevel' + i);
+            if (lvl) lvl.classList.toggle('active', i === level);
+          }
+          if (volcanoTemp <= 0) {
+            const safeEl = document.getElementById('volcanoSafe');
+            const completeEl = document.getElementById('volcanoComplete');
+            if (safeEl) safeEl.style.display = 'block';
+            if (completeEl) completeEl.style.display = 'flex';
+          }
+        }
+      }
       
       // Update child name display
       const childNameEl = document.getElementById('childNameDisplay');
@@ -1149,6 +1257,46 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
         initDrawingCanvas(canvas);
       });
+
+      // Volcano drag and drop
+      const volcanoPage = document.querySelector('[data-page="feeling-volcano"]');
+      if (volcanoPage) {
+        const dropZone = volcanoPage.querySelector('.volcano-drop-zone');
+        const tools = volcanoPage.querySelectorAll('.cooling-action[draggable="true"]');
+        let draggedTool = null;
+
+        tools.forEach(tool => {
+          tool.addEventListener('dragstart', () => {
+            draggedTool = tool;
+            tool.classList.add('opacity-70');
+          });
+          tool.addEventListener('dragend', () => {
+            tool.classList.remove('opacity-70');
+          });
+        });
+
+        if (dropZone) {
+          dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('ring-4');
+            dropZone.style.setProperty('box-shadow', '0 0 0 4px rgba(76,108,150,0.35)');
+          });
+          dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('ring-4');
+            dropZone.style.boxShadow = 'none';
+          });
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('ring-4');
+            dropZone.style.boxShadow = 'none';
+            if (!draggedTool) return;
+            const activityId = dropZone.getAttribute('data-activity-id');
+            const power = Number(draggedTool.getAttribute('data-power') || '0');
+            if (!activityId || power <= 0) return;
+            window.handleVolcanoCool(draggedTool, activityId, power);
+          });
+        }
+      }
     }
 
     function initMatchingActivity(activity) {
@@ -1276,6 +1424,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       const ctx = canvas.getContext('2d');
       let drawing = false;
       let currentColor = '#264653';
+      const drawingKey = canvas.getAttribute('data-drawing-key');
       
       const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
@@ -1306,7 +1455,20 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         ctx.stroke();
       };
       
-      const end = () => { drawing = false; };
+      const saveCanvasState = () => {
+        if (!drawingKey) return;
+        try {
+          saveFormData(drawingKey, canvas.toDataURL('image/png'));
+        } catch (e) {
+          console.warn('Failed to save drawing state:', e);
+        }
+      };
+
+      const end = () => {
+        if (!drawing) return;
+        drawing = false;
+        saveCanvasState();
+      };
       
       canvas.addEventListener('mousedown', start);
       canvas.addEventListener('mousemove', move);
@@ -1328,6 +1490,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
+          saveCanvasState();
         });
       }
     }
@@ -1741,7 +1904,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; }
     };
     
-    window.addShieldDecoration = function(emoji) {
+    window.addShieldDecoration = function(emoji, activityId) {
       const display = document.getElementById('shieldDecorations');
       if (display) {
         // Create a span for each decoration to allow proper wrapping and display
@@ -1750,6 +1913,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         span.style.display = 'inline-block';
         span.style.margin = '2px';
         display.appendChild(span);
+      }
+      if (activityId) {
+        const existing = (formData['shield_' + activityId + '_decorations'] || '').split(',').filter(Boolean);
+        existing.push(emoji);
+        saveFormData('shield_' + activityId + '_decorations', existing.join(','));
       }
     };
     
@@ -1917,6 +2085,31 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.playInstrument = function(starIndex, emoji, sound, feeling) {
       const display = document.getElementById('soundDisplay_' + starIndex);
       display.innerHTML = '<p class="text-5xl">' + emoji + '</p><p class="font-title text-2xl">' + sound + '</p><p class="font-body">' + feeling + '</p>';
+
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!window.__instrumentAudioCtx) {
+          window.__instrumentAudioCtx = new AudioContextClass();
+        }
+        const ctx = window.__instrumentAudioCtx;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const vibe = (sound || '').toLowerCase();
+        const baseFrequency = vibe.includes('drum') ? 140 : vibe.includes('bell') ? 880 : vibe.includes('chime') ? 720 : vibe.includes('trumpet') ? 420 : 520;
+        osc.type = vibe.includes('drum') ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(baseFrequency, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.25, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } catch (e) {
+        console.warn('Instrument audio failed:', e);
+      }
     };
 
     // ===== CALM AQUARIUM =====
@@ -1953,9 +2146,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.addIngredient = function(starIndex, id, emoji, name) {
       if (!potionState[starIndex]) potionState[starIndex] = [];
       if (potionState[starIndex].length >= 3) return;
+      if (potionState[starIndex].some(i => i.id === id)) return;
       potionState[starIndex].push({ id, emoji, name });
       const cauldron = document.getElementById('cauldron_' + starIndex);
       cauldron.innerHTML = potionState[starIndex].map(i => '<span class="text-4xl">' + i.emoji + '</span>').join('');
+      saveFormData('potion_' + starIndex + '_ingredients', potionState[starIndex].map(i => i.emoji).join(','));
     };
 
     window.brewPotion = function(starIndex) {
@@ -1963,7 +2158,29 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         alert('Add at least 2 ingredients!');
         return;
       }
-      document.getElementById('potionResult_' + starIndex).style.display = 'block';
+      const resultEl = document.getElementById('potionResult_' + starIndex);
+      const messageEl = document.getElementById('potionMessage_' + starIndex);
+      const emojiEl = document.getElementById('potionEmoji_' + starIndex);
+      const recipeTag = potionState[starIndex].map(i => i.id).sort().join('-');
+
+      if (messageEl && emojiEl) {
+        if (recipeTag.includes('calm') || recipeTag.includes('breathe')) {
+          emojiEl.textContent = '😌';
+          messageEl.textContent = 'Calm Potion brewed! You made a soothing blend for big feelings.';
+        } else if (recipeTag.includes('brave') || recipeTag.includes('lion')) {
+          emojiEl.textContent = '🦁';
+          messageEl.textContent = 'Brave Potion brewed! You mixed courage to face tricky moments.';
+        } else {
+          emojiEl.textContent = '✨';
+          messageEl.textContent = 'Friendship Potion brewed! Your mix helps feelings feel safer.';
+        }
+      }
+
+      if (resultEl) resultEl.style.display = 'block';
+      const complete = document.getElementById('potionComplete_' + starIndex);
+      if (complete) complete.style.display = 'flex';
+      saveFormData('potion_' + starIndex + '_brewed', 'true');
+      saveFormData('potion_' + starIndex + '_recipe', recipeTag);
     };
 
     // ===== FEELINGS BINGO =====
@@ -2337,6 +2554,7 @@ function renderQuizPage(quiz: QuizContent, starIndex: number): string {
 
 function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
   const activityId = `drawing_${starIndex}`;
+  const drawingCacheKey = `drawing_canvas_${starIndex}`;
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="drawing">
       <div class="max-w-4xl mx-auto">
@@ -2346,7 +2564,7 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
           <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(drawing.instructions)}</p>
           
           <div class="border-4 rounded-xl mb-4 overflow-hidden" style="border-color: var(--primary); background-color: white;">
-            <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" style="touch-action: none; display: block;"></canvas>
+            <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" data-drawing-key="${drawingCacheKey}" style="touch-action: none; display: block;"></canvas>
           </div>
           
           <div class="flex flex-wrap gap-2 mb-6">
@@ -3131,7 +3349,7 @@ function renderMagicPotionPage(potion: MagicPotionContent, starIndex: number, me
             <p class="text-5xl mb-2" id="potionEmoji_${starIndex}">✨</p>
             <p class="font-title text-2xl" id="potionMessage_${starIndex}">${escapeForTemplate(potion.magicMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="potionComplete_${starIndex}">
             <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
             <label class="font-title text-xl" style="color: var(--dark);">I'm a potion master! ⭐</label>
           </div>
@@ -3500,23 +3718,41 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
 
 function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): string {
   const takeawaysHtml = summary.takeaways.map(t => `
-    <div class="flex items-center gap-3 p-4 rounded-xl bg-white">
-      <span class="text-2xl">✨</span>
-      <span class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(t)}</span>
-    </div>`).join("");
+    <li class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(t)}</li>`).join('');
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="summary">
+    <div class="page min-h-screen p-8" style="background: linear-gradient(135deg, #fef9e7, #edf7f2);" data-page="summary">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(summary.heading)}</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <div class="space-y-4 mb-8">
-            ${takeawaysHtml}
+        <div class="rounded-3xl shadow-2xl p-8 md:p-10 border-4" style="background-color: white; border-color: #e6c777;">
+          <div class="text-center mb-6">
+            <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF SEL ACHIEVEMENT</p>
+            <h1 class="text-3xl md:text-4xl mt-2 font-title" style="color: var(--dark);">${escapeForTemplate(summary.heading)}</h1>
+            <p class="font-body text-lg mt-2" style="color: var(--secondary);">Awarded to <strong id="childNameDisplay">Friend</strong></p>
+          </div>
+
+          <div class="p-5 rounded-2xl mb-6" style="background-color: var(--cream); border: 2px dashed var(--primary);">
+            <p class="font-title text-xl mb-2" style="color: var(--dark);">Sub-skill focus</p>
+            <p class="font-body text-lg" style="color: var(--dark);">In this module, you practiced <strong>${escapeForTemplate(metadata.theme)}</strong> by spotting feelings, choosing calming actions, and using kind self-talk in tricky moments.</p>
+          </div>
+
+          <div class="mb-6">
+            <p class="font-title text-xl mb-2" style="color: var(--dark);">What you learned</p>
+            <ul class="list-disc pl-6 space-y-2">${takeawaysHtml}</ul>
+          </div>
+
+          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-4" style="border-top: 2px solid #f2e1a8;">
+            <div>
+              <p class="font-body text-sm" style="color: var(--secondary);">Completed on</p>
+              <p class="font-title text-2xl" id="certificateDate" style="color: var(--dark);"></p>
+            </div>
+            <div class="text-right">
+              <p class="font-body text-sm" style="color: var(--secondary);">Guide</p>
+              <p class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(metadata.characterName)} ${escapeForTemplate(metadata.characterEmoji)}</p>
+            </div>
           </div>
         </div>
-        
-        <div class="rounded-xl p-6 flex items-center gap-4" style="background-color: var(--soft-yellow);">
+
+        <div class="rounded-xl p-6 flex items-center gap-4 mt-6" style="background-color: var(--soft-yellow);">
           <span class="text-5xl">${escapeForTemplate(metadata.characterEmoji)}</span>
           <p class="font-body text-lg font-semibold" style="color: var(--dark);">${escapeForTemplate(summary.encouragement)}</p>
         </div>
@@ -4117,7 +4353,7 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
         <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(panel.prompt)}</p>
       </div>
       <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
-        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" data-drawing-key="comic_canvas_${starIndex}_${panel.panelNumber}" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
       </div>
       <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="${escapeForTemplate(panel.placeholder)}" onchange="saveFormData('comic_${starIndex}_${panel.panelNumber}', this.value)">
     </div>
@@ -4510,7 +4746,7 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
   `).join("");
 
   const decorationsHtml = shield.decorations.map(d => `
-    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('${d}')">${d}</button>
+    <button class="text-3xl p-2 hover:scale-125 transition-all cursor-pointer" onclick="addShieldDecoration('${d}', '${activityId}')">${d}</button>
   `).join("");
 
   return `
@@ -4583,11 +4819,12 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
   const activityId = `volcano_${starIndex}`;
   
   const actionsHtml = volcano.coolingActions.map(action => `
-    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-pointer"
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab"
+            draggable="true"
             style="background-color: white; border-color: var(--secondary);"
             data-cooling="${action.coolingPower}"
-            data-action="${escapeForTemplate(action.action)}"
-            onclick="handleVolcanoCool(this, '${activityId}', ${action.coolingPower})">
+            data-power="${action.coolingPower}"
+            data-action="${escapeForTemplate(action.action)}">
       <span class="text-3xl">${action.emoji}</span>
       <span class="font-body text-sm text-center" style="color: var(--dark);">${escapeForTemplate(action.action)}</span>
     </button>
@@ -4621,7 +4858,7 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
             </div>
             
             <!-- Volcano -->
-            <div class="volcano-container relative">
+            <div class="volcano-container relative volcano-drop-zone" data-activity-id="${activityId}">
               <svg viewBox="0 0 200 200" class="w-48 h-48">
                 <!-- Volcano body -->
                 <path d="M20 200 L60 80 L80 90 L100 60 L120 90 L140 80 L180 200 Z" 
@@ -4649,7 +4886,7 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
           </div>
           
           <!-- Cooling Actions -->
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Use your cooling tools! 🧊</p>
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Drag your cooling tools into the volcano! 🧊</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${actionsHtml}
           </div>
