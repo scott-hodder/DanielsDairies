@@ -88,7 +88,24 @@ document.addEventListener('change', (e) => {
             const modal = document.getElementById('previewModal');
             const iframe = document.getElementById('modulePreviewFrame');
             
-            iframe.srcdoc = window.generatedModuleHTML;
+            // Process the HTML to replace ES6 imports with regular script tags for iframe preview
+            let previewContent = window.generatedModuleHTML;
+            
+            // Replace the ES6 import statement with a comment (module-header.js will be loaded via script tag)
+            previewContent = previewContent.replace(
+                /import\s*\{\s*initModuleHeader\s*\}\s*from\s*['"]\.\/modules\/shared\/module-header\.js['"];?\s*/g,
+                '// Module header loaded via regular script for preview\n    '
+            );
+            
+            // Ensure module-header.js is loaded as a regular script before closing head
+            if (!previewContent.includes('module-header.js')) {
+                previewContent = previewContent.replace(
+                    /<\/head>/,
+                    '  <script src="/modules/shared/module-header.js"></script>\n</head>'
+                );
+            }
+            
+            iframe.srcdoc = previewContent;
             if (window.updateQualityIndicators) window.updateQualityIndicators();
             modal.classList.add('active');
             
@@ -968,6 +985,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadAgeRangesTheories();
                 loadSuperSkillsTheories();
                 loadSubSkillsTheories();
+                loadFasdDomainsTheories();
+                loadNdisDomainsTheories();
             } else if (tabName === 'rewards') {
                 document.getElementById('rewardsTab').classList.add('active');
                 if (!rewards || rewards.length === 0) {
@@ -5335,66 +5354,75 @@ if (data.status === "running") {
             
             const skills = superSkillsTheoriesData || [];
             if (skills.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #6b7c8f; padding: 40px;">No super skills added yet</p>';
+                container.innerHTML = '<div style="background: white; border-radius: 8px; padding: 20px; text-align: center; color: #6b7c8f;">No super skills added yet</div>';
                 return;
             }
 
-            // Get sub-skills for each super skill
-            const subSkillsBySuperSkill = {};
+            // Get sub-skills count for each super skill
+            const subSkillCounts = {};
             if (window.subSkillsTheoriesData) {
                 window.subSkillsTheoriesData.forEach(subSkill => {
-                    if (!subSkillsBySuperSkill[subSkill.super_skill_id]) {
-                        subSkillsBySuperSkill[subSkill.super_skill_id] = [];
+                    const superSkillId = subSkill.super_skill_id;
+                    if (!subSkillCounts[superSkillId]) {
+                        subSkillCounts[superSkillId] = 0;
                     }
-                    subSkillsBySuperSkill[subSkill.super_skill_id].push(subSkill);
+                    subSkillCounts[superSkillId]++;
                 });
             }
 
-            container.innerHTML = skills.map(skill => {
-                const subSkills = subSkillsBySuperSkill[skill.id] || [];
-                return `
-                    <div class="skill-card super-skill ${!skill.is_active ? 'inactive' : ''}" 
-                         onclick="selectSuperSkillTheories('${skill.id}')"
-                         style="border-left-color: ${skill.theme_color || '#6366F1'}">
-                        <div class="skill-header">
-                            <div class="skill-emoji">${skill.emoji || '🧠'}</div>
-                            <div class="skill-title-group">
-                                <div class="skill-name">${skill.name}</div>
-                                <div class="skill-meta">${skill.character_name || 'No character'} • ${skill.slug}</div>
-                            </div>
-                        </div>
-                        ${skill.description ? `
-                            <div class="skill-description">${skill.description}</div>
-                        ` : ''}
-                        ${skill.relevant_theories ? `
-                            <div class="skill-theories">
-                                <strong>Theories:</strong> ${skill.relevant_theories}
-                            </div>
-                        ` : ''}
-                        ${subSkills.length > 0 ? `
-                            <div class="sub-skills-list">
-                                <h4>Sub-Skills (${subSkills.length})</h4>
-                                ${subSkills.map(sub => `
-                                    <div class="sub-skill-item">
-                                        <div class="sub-skill-bullet"></div>
-                                        ${sub.name}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                        <div class="skill-footer">
-                            <span class="skill-status ${skill.is_active ? 'active' : 'inactive'}">
-                                ${skill.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                            <div class="skill-actions">
-                                <button class="skill-action-btn edit" onclick="event.stopPropagation(); selectSuperSkillTheories('${skill.id}')">Edit</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            // Create table with full width
+            container.innerHTML = `
+                <div style="background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                        <thead>
+                            <tr style="background: #f8f9fa; border-bottom: 2px solid #e5e7eb;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151; width: 60px;"></th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151; width: 180px;">Name</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151; width: 140px;">Character</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151;">Description</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151; width: 200px;">Relevant Theories</th>
+                                <th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 700; color: #374151; width: 100px;">Sub-Skills</th>
+                                <th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 700; color: #374151; width: 80px;">Status</th>
+                                <th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 700; color: #374151; width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${skills.map((skill, index) => {
+                                const subSkillCount = subSkillCounts[skill.id] || 0;
+                                return `
+                                <tr style="border-bottom: 1px solid #e5e7eb; cursor: pointer;" 
+                                    onclick="selectSuperSkillTheories('${skill.id}')"
+                                    onmouseover="this.style.background='#f8f9fa'"
+                                    onmouseout="this.style.background='white'">
+                                    <td style="padding: 12px; font-size: 24px;">${skill.emoji || '🧠'}</td>
+                                    <td style="padding: 12px; font-size: 13px; color: #1f2937; font-weight: 600;">${skill.name}</td>
+                                    <td style="padding: 12px; font-size: 12px; color: #6b7c8f;">${skill.character_name || '-'}</td>
+                                    <td style="padding: 12px; font-size: 12px; color: #6b7c8f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${skill.description || '-'}</td>
+                                    <td style="padding: 12px; font-size: 12px; color: #6b7c8f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${skill.relevant_theories || '-'}</td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <span style="display: inline-block; background: #eef2ff; color: #6366F1; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                            ${subSkillCount}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; ${skill.is_active ? 'background: #d1fae5; color: #059669;' : 'background: #fee2e2; color: #dc2626;'}">
+                                            ${skill.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <button onclick="event.stopPropagation(); selectSuperSkillTheories('${skill.id}')" 
+                                                style="background: #6366F1; color: white; border: none; border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer; font-weight: 600;">
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
-
         window.selectSuperSkillTheories = function(superSkillId) {
             selectedSuperSkillTheoriesId = superSkillId;
             const superSkill = superSkillsTheoriesData.find(ss => ss.id === superSkillId);
@@ -5493,6 +5521,476 @@ if (data.status === "running") {
             alert('✅ Super skill saved successfully!');
             await loadSuperSkillsTheories();
             await loadSubSkillsTheories(); // Refresh sub-skills to update parent references
+        }
+
+        // Load Sub-Skills for Theories tab
+        async function loadSubSkillsTheories() {
+            try {
+                const { data, error } = await supabase
+                    .from('sub_skills')
+                    .select('*')
+                    .order('super_skill_id')
+                    .order('sort_order', { ascending: true });
+
+                if (error) throw error;
+
+                subSkillsTheoriesData = data || [];
+                window.subSkillsTheoriesData = subSkillsTheoriesData;
+
+                // Populate dropdown
+                const subSkillSelect = document.getElementById('subSkillSelectTheories');
+                if (subSkillSelect) {
+                    subSkillSelect.innerHTML = '<option value="">Select a sub-skill...</option>';
+                    subSkillsTheoriesData.forEach(ss => {
+                        const option = document.createElement('option');
+                        option.value = ss.id;
+                        option.textContent = ss.name;
+                        subSkillSelect.appendChild(option);
+                    });
+                }
+
+                // Populate parent super skill dropdown in sub-skill editor
+                const parentSelect = document.getElementById('subSkillParentTheories');
+                if (parentSelect) {
+                    const currentValue = parentSelect.value;
+                    parentSelect.innerHTML = '<option value="">Select Super Skill...</option>';
+                    superSkillsTheoriesData.forEach(ss => {
+                        const option = document.createElement('option');
+                        option.value = ss.id;
+                        option.textContent = ss.name;
+                        if (ss.id === currentValue) option.selected = true;
+                        parentSelect.appendChild(option);
+                    });
+                }
+
+                // Render the grid
+                renderSubSkillsTheoriesGrid();
+            } catch (error) {
+                console.error('[Admin] Error loading sub-skills for theories:', error);
+            }
+        }
+
+        // Render Sub-Skills Grid for Theories tab
+        function renderSubSkillsTheoriesGrid() {
+            const container = document.getElementById('subSkillsTheoriesGrid');
+            if (!container) return;
+
+            const skills = subSkillsTheoriesData || [];
+            if (skills.length === 0) {
+                container.innerHTML = '<div style="background: white; border-radius: 8px; padding: 20px; text-align: center; color: #6b7c8f;">No sub-skills added yet</div>';
+                return;
+            }
+
+            // Group by super skill for better organization
+            const grouped = {};
+            skills.forEach(skill => {
+                const superSkillId = skill.super_skill_id || 'no_parent';
+                if (!grouped[superSkillId]) {
+                    grouped[superSkillId] = [];
+                }
+                grouped[superSkillId].push(skill);
+            });
+
+            container.innerHTML = Object.keys(grouped).map(superSkillId => {
+                const subSkills = grouped[superSkillId];
+                const superSkill = superSkillsTheoriesData.find(ss => ss.id === superSkillId);
+                
+                // Skip if no parent super skill found (orphaned sub-skills)
+                if (!superSkill) return '';
+                
+                const superSkillName = superSkill.name;
+
+                return `
+                    <div style="margin-bottom: 32px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="font-size: 14px; color: #6366F1; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                ${superSkill.emoji || '🧠'} ${superSkillName}
+                            </h4>
+                            <button class="btn-save" onclick="addNewSubSkillTheories()" style="font-size: 12px; padding: 6px 12px;">
+                                + Add Sub-Skill
+                            </button>
+                        </div>
+                        <div style="background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; width: 100%;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #e5e7eb;">
+                                        <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151;">Name</th>
+                                        <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151; width: 150px;">Slug</th>
+                                        <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151;">Description</th>
+                                        <th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 700; color: #374151; width: 100px;">Status</th>
+                                        <th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 700; color: #374151; width: 100px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${subSkills.map(skill => `
+                                        <tr style="border-bottom: 1px solid #e5e7eb; cursor: pointer;" 
+                                            onclick="selectSubSkillTheories('${skill.id}')"
+                                            onmouseover="this.style.background='#f8f9fa'"
+                                            onmouseout="this.style.background='white'">
+                                            <td style="padding: 12px; font-size: 13px; color: #1f2937; font-weight: 600;">${skill.name}</td>
+                                            <td style="padding: 12px; font-size: 12px; color: #6b7c8f;">${skill.slug || '-'}</td>
+                                            <td style="padding: 12px; font-size: 12px; color: #6b7c8f;">${skill.description || '-'}</td>
+                                            <td style="padding: 12px; text-align: center;">
+                                                <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; ${skill.is_active ? 'background: #d1fae5; color: #059669;' : 'background: #fee2e2; color: #dc2626;'}">
+                                                    ${skill.is_active ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                            <td style="padding: 12px; text-align: center;">
+                                                <button onclick="event.stopPropagation(); selectSubSkillTheories('${skill.id}')" 
+                                                        style="background: #6366F1; color: white; border: none; border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer; font-weight: 600;">
+                                                    Edit
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }).filter(Boolean).join('');
+        }
+
+        // Load FASD Domains for Theories tab
+        let fasdDomainsTheoriesData = [];
+        let selectedFasdDomainId = null;
+        
+        async function loadFasdDomainsTheories() {
+            try {
+                const { data, error } = await supabase
+                    .from('fasd_domains')
+                    .select('*')
+                    .order('domain_number');
+
+                if (error) throw error;
+
+                fasdDomainsTheoriesData = data || [];
+
+                // Populate dropdown
+                const select = document.getElementById('fasdDomainSelectTheories');
+                if (select) {
+                    select.innerHTML = '<option value="">Select a FASD domain...</option>';
+                    fasdDomainsTheoriesData.forEach(domain => {
+                        const option = document.createElement('option');
+                        option.value = domain.id;
+                        option.textContent = `${domain.domain_number}. ${domain.domain_name}`;
+                        select.appendChild(option);
+                    });
+                }
+
+                // Render grid
+                renderFasdDomainsTheoriesGrid();
+            } catch (error) {
+                console.error('[Admin] Error loading FASD domains:', error);
+            }
+        }
+
+        function renderFasdDomainsTheoriesGrid() {
+            const container = document.getElementById('fasdDomainsTheoriesGrid');
+            if (!container) return;
+
+            const domains = fasdDomainsTheoriesData || [];
+            if (domains.length === 0) {
+                container.innerHTML = '<div style="background: white; border-radius: 8px; padding: 20px; text-align: center; color: #6b7c8f;">No FASD domains added yet</div>';
+                return;
+            }
+
+            // Create table
+            container.innerHTML = `
+                <div style="background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa; border-bottom: 2px solid #e5e7eb;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151; width: 80px;">#</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151;">Domain Name</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151;">Description</th>
+                                <th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 700; color: #374151; width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${domains.map((domain, index) => `
+                                <tr style="border-bottom: 1px solid #e5e7eb; cursor: pointer;" 
+                                    onclick="selectFasdDomain('${domain.id}')"
+                                    onmouseover="this.style.background='#f8f9fa'"
+                                    onmouseout="this.style.background='white'">
+                                    <td style="padding: 12px; font-size: 13px; color: #6b7c8f; font-weight: 600;">${domain.domain_number}</td>
+                                    <td style="padding: 12px; font-size: 13px; color: #1f2937; font-weight: 600;">${domain.domain_name}</td>
+                                    <td style="padding: 12px; font-size: 12px; color: #6b7c8f;">${domain.description || ''}</td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <button onclick="event.stopPropagation(); selectFasdDomain('${domain.id}')" 
+                                                style="background: #6366F1; color: white; border: none; border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer; font-weight: 600;">
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.selectFasdDomain = function(domainId) {
+            selectedFasdDomainId = domainId;
+            const domain = fasdDomainsTheoriesData.find(d => d.id === domainId);
+            const editor = document.getElementById('fasdDomainEditor');
+            const placeholder = document.getElementById('fasdDomainEditorPlaceholder');
+
+            if (!domain) {
+                if (editor) editor.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            if (editor) editor.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+
+            document.getElementById('fasdDomainNumber').value = domain.domain_number || '';
+            document.getElementById('fasdDomainName').value = domain.domain_name || '';
+            document.getElementById('fasdDomainDescription').value = domain.description || '';
+        }
+
+        window.saveFasdDomainChanges = async function() {
+            if (!selectedFasdDomainId) return;
+
+            const updates = {
+                domain_number: parseInt(document.getElementById('fasdDomainNumber').value) || null,
+                domain_name: document.getElementById('fasdDomainName').value.trim(),
+                description: document.getElementById('fasdDomainDescription').value.trim() || null
+            };
+
+            if (!updates.domain_name) {
+                alert('Domain name is required.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('fasd_domains')
+                .update(updates)
+                .eq('id', selectedFasdDomainId);
+
+            if (error) {
+                console.error('[Admin] Error saving FASD domain:', error);
+                alert('Failed to save FASD domain changes.');
+                return;
+            }
+
+            alert('✅ FASD domain saved successfully!');
+            await loadFasdDomainsTheories();
+        }
+
+        // Load NDIS Domains for Theories tab
+        let ndisDomainsTheoriesData = [];
+        let selectedNdisDomainId = null;
+        
+        async function loadNdisDomainsTheories() {
+            try {
+                const { data, error } = await supabase
+                    .from('ndis_domains')
+                    .select('*')
+                    .order('sort_order');
+
+                if (error) throw error;
+
+                ndisDomainsTheoriesData = data || [];
+
+                // Populate dropdown
+                const select = document.getElementById('ndisDomainSelectTheories');
+                if (select) {
+                    select.innerHTML = '<option value="">Select an NDIS domain...</option>';
+                    ndisDomainsTheoriesData.forEach(domain => {
+                        const option = document.createElement('option');
+                        option.value = domain.id;
+                        option.textContent = domain.domain_name;
+                        select.appendChild(option);
+                    });
+                }
+
+                // Render grid
+                renderNdisDomainsTheoriesGrid();
+            } catch (error) {
+                console.error('[Admin] Error loading NDIS domains:', error);
+            }
+        }
+
+        function renderNdisDomainsTheoriesGrid() {
+            const container = document.getElementById('ndisDomainsTheoriesGrid');
+            if (!container) return;
+
+            const domains = ndisDomainsTheoriesData || [];
+            if (domains.length === 0) {
+                container.innerHTML = '<div style="background: white; border-radius: 8px; padding: 20px; text-align: center; color: #6b7c8f;">No NDIS domains added yet</div>';
+                return;
+            }
+
+            // Create table
+            container.innerHTML = `
+                <div style="background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa; border-bottom: 2px solid #e5e7eb;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151;">Domain Name</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 700; color: #374151;">Description</th>
+                                <th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 700; color: #374151; width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${domains.map((domain, index) => `
+                                <tr style="border-bottom: 1px solid #e5e7eb; cursor: pointer;" 
+                                    onclick="selectNdisDomain('${domain.id}')"
+                                    onmouseover="this.style.background='#f8f9fa'"
+                                    onmouseout="this.style.background='white'">
+                                    <td style="padding: 12px; font-size: 13px; color: #1f2937; font-weight: 600;">${domain.domain_name}</td>
+                                    <td style="padding: 12px; font-size: 12px; color: #6b7c8f;">${domain.description || ''}</td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <button onclick="event.stopPropagation(); selectNdisDomain('${domain.id}')" 
+                                                style="background: #6366F1; color: white; border: none; border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer; font-weight: 600;">
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.selectNdisDomain = function(domainId) {
+            selectedNdisDomainId = domainId;
+            const domain = ndisDomainsTheoriesData.find(d => d.id === domainId);
+            const editor = document.getElementById('ndisDomainEditor');
+            const placeholder = document.getElementById('ndisDomainEditorPlaceholder');
+
+            if (!domain) {
+                if (editor) editor.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            if (editor) editor.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+
+            document.getElementById('ndisDomainName').value = domain.domain_name || '';
+            document.getElementById('ndisDomainDescription').value = domain.description || '';
+        }
+
+        window.saveNdisDomainChanges = async function() {
+            if (!selectedNdisDomainId) return;
+
+            const updates = {
+                domain_name: document.getElementById('ndisDomainName').value.trim(),
+                description: document.getElementById('ndisDomainDescription').value.trim() || null
+            };
+
+            if (!updates.domain_name) {
+                alert('Domain name is required.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('ndis_domains')
+                .update(updates)
+                .eq('id', selectedNdisDomainId);
+
+            if (error) {
+                console.error('[Admin] Error saving NDIS domain:', error);
+                alert('Failed to save NDIS domain changes.');
+                return;
+            }
+
+            alert('✅ NDIS domain saved successfully!');
+            await loadNdisDomainsTheories();
+        }
+
+        window.addNewFasdDomain = function() {
+            document.getElementById('addFasdDomainModal').classList.add('active');
+            document.getElementById('newFasdDomainName').value = '';
+            document.getElementById('newFasdDomainNumber').value = '';
+            document.getElementById('newFasdDomainDescription').value = '';
+            document.getElementById('newFasdDomainName').focus();
+        }
+
+        window.closeAddFasdDomainModal = function() {
+            document.getElementById('addFasdDomainModal').classList.remove('active');
+        }
+
+        window.saveNewFasdDomain = async function(event) {
+            event.preventDefault();
+            
+            const domainName = document.getElementById('newFasdDomainName').value.trim();
+            if (!domainName) {
+                alert('Domain name is required.');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('fasd_domains')
+                .insert({
+                    domain_name: domainName,
+                    domain_number: parseInt(document.getElementById('newFasdDomainNumber').value) || null,
+                    description: document.getElementById('newFasdDomainDescription').value.trim() || null
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('[Admin] Error adding FASD domain:', error);
+                alert('Failed to add FASD domain. Please try again.');
+                return;
+            }
+
+            closeAddFasdDomainModal();
+            selectedFasdDomainId = data?.id || null;
+            await loadFasdDomainsTheories();
+            if (selectedFasdDomainId) {
+                selectFasdDomain(selectedFasdDomainId);
+            }
+            alert('✅ FASD domain added successfully!');
+        }
+
+        window.addNewNdisDomain = function() {
+            document.getElementById('addNdisDomainModal').classList.add('active');
+            document.getElementById('newNdisDomainName').value = '';
+            document.getElementById('newNdisDomainDescription').value = '';
+            document.getElementById('newNdisDomainName').focus();
+        }
+
+        window.closeAddNdisDomainModal = function() {
+            document.getElementById('addNdisDomainModal').classList.remove('active');
+        }
+
+        window.saveNewNdisDomain = async function(event) {
+            event.preventDefault();
+            
+            const domainName = document.getElementById('newNdisDomainName').value.trim();
+            if (!domainName) {
+                alert('Domain name is required.');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('ndis_domains')
+                .insert({
+                    domain_name: domainName,
+                    description: document.getElementById('newNdisDomainDescription').value.trim() || null
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('[Admin] Error adding NDIS domain:', error);
+                alert('Failed to add NDIS domain. Please try again.');
+                return;
+            }
+
+            closeAddNdisDomainModal();
+            selectedNdisDomainId = data?.id || null;
+            await loadNdisDomainsTheories();
+            if (selectedNdisDomainId) {
+                selectNdisDomain(selectedNdisDomainId);
+            }
+            alert('✅ NDIS domain added successfully!');
         }
 
         window.selectSubSkillTheories = function(subSkillId) {

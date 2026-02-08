@@ -656,8 +656,11 @@
 
                 <!-- Super Skills Grid View -->
                 <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
-                    <h3 style="font-size: 16px; margin: 0 0 16px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🧠 All Super Skills</h3>
-                    <div id="superSkillsTheoriesGrid" class="skills-grid">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🧠 All Super Skills</h3>
+                        <button class="btn-save" onclick="addNewSuperSkillTheories()">+ Add Super Skill</button>
+                    </div>
+                    <div id="superSkillsTheoriesGrid">
                         <!-- Super skills will be displayed here -->
                     </div>
                 </div>
@@ -714,8 +717,104 @@
                 <!-- Sub-Skills Grid View -->
                 <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
                     <h3 style="font-size: 16px; margin: 0 0 16px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">📚 All Sub-Skills</h3>
-                    <div id="subSkillsTheoriesGrid" class="skills-grid">
+                    <div id="subSkillsTheoriesGrid">
                         <!-- Sub-skills will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- FASD Domains Section -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🧬 FASD Domains</h3>
+                            <p style="font-size: 12px; color: #6b7c8f; margin: 4px 0 0 0;">Domain Name and Description</p>
+                        </div>
+                        <button class="btn-save" onclick="addNewFasdDomain()">+ Add FASD Domain</button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 8px;">Select FASD Domain</label>
+                            <select id="fasdDomainSelectTheories" class="form-select" style="width: 100%;" onchange="selectFasdDomain(this.value)">
+                                <option value="">Select a domain...</option>
+                            </select>
+                        </div>
+
+                        <div id="fasdDomainEditor" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 100px 1fr; gap: 16px;">
+                                <div>
+                                    <label class="form-label">Number</label>
+                                    <input type="number" class="form-input" id="fasdDomainNumber" placeholder="1">
+                                </div>
+                                <div>
+                                    <label class="form-label">Domain Name</label>
+                                    <input type="text" class="form-input" id="fasdDomainName" placeholder="e.g., Motor Skills">
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-textarea" id="fasdDomainDescription" rows="4" placeholder="Describe this domain..."></textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                <button class="btn-save" onclick="saveFasdDomainChanges()">💾 Save FASD Domain</button>
+                            </div>
+                        </div>
+                        <div id="fasdDomainEditorPlaceholder" style="text-align: center; padding: 40px 20px; color: #6b7c8f; grid-column: span 1;">
+                            <p style="font-size: 14px;">👈 Select a FASD domain to edit</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FASD Domains Grid View -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
+                    <h3 style="font-size: 16px; margin: 0 0 16px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🧬 All FASD Domains</h3>
+                    <div id="fasdDomainsTheoriesGrid">
+                        <!-- FASD domains will be displayed here as table -->
+                    </div>
+                </div>
+
+                <!-- NDIS Domains Section -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🏥 NDIS Domains</h3>
+                            <p style="font-size: 12px; color: #6b7c8f; margin: 4px 0 0 0;">Domain Name and Description</p>
+                        </div>
+                        <button class="btn-save" onclick="addNewNdisDomain()">+ Add NDIS Domain</button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 8px;">Select NDIS Domain</label>
+                            <select id="ndisDomainSelectTheories" class="form-select" style="width: 100%;" onchange="selectNdisDomain(this.value)">
+                                <option value="">Select a domain...</option>
+                            </select>
+                        </div>
+
+                        <div id="ndisDomainEditor" style="display: none;">
+                            <div>
+                                <label class="form-label">Domain Name</label>
+                                <input type="text" class="form-input" id="ndisDomainName" placeholder="e.g., Relationships">
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-textarea" id="ndisDomainDescription" rows="4" placeholder="Describe this domain..."></textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                <button class="btn-save" onclick="saveNdisDomainChanges()">💾 Save NDIS Domain</button>
+                            </div>
+                        </div>
+                        <div id="ndisDomainEditorPlaceholder" style="text-align: center; padding: 40px 20px; color: #6b7c8f; grid-column: span 1;">
+                            <p style="font-size: 14px;">👈 Select an NDIS domain to edit</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NDIS Domains Grid View -->
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
+                    <h3 style="font-size: 16px; margin: 0 0 16px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🏥 All NDIS Domains</h3>
+                    <div id="ndisDomainsTheoriesGrid">
+                        <!-- NDIS domains will be displayed here as table -->
                     </div>
                 </div>
 
@@ -1461,6 +1560,66 @@ This fixes:
                 <div class="form-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 0;">
                     <button type="button" class="btn" onclick="closeAddSubSkillTheoriesModal()" style="background: #6b7c8f; color: white;">Cancel</button>
                     <button type="submit" class="btn-save">Add Sub-Skill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New FASD Domain Modal -->
+    <div class="modal" id="addFasdDomainModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🧬 Add New FASD Domain</h2>
+                <button class="modal-close" onclick="closeAddFasdDomainModal()">×</button>
+            </div>
+
+            <form id="addFasdDomainForm" onsubmit="saveNewFasdDomain(event); return false;">
+                <div style="display: grid; grid-template-columns: 100px 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Number</label>
+                        <input type="number" class="form-input" id="newFasdDomainNumber" placeholder="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required-label">Domain Name</label>
+                        <input type="text" class="form-input" id="newFasdDomainName" required placeholder="e.g., Motor Skills">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="newFasdDomainDescription" rows="4" placeholder="Describe this domain..."></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 0;">
+                    <button type="button" class="btn" onclick="closeAddFasdDomainModal()" style="background: #6b7c8f; color: white;">Cancel</button>
+                    <button type="submit" class="btn-save">Add FASD Domain</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New NDIS Domain Modal -->
+    <div class="modal" id="addNdisDomainModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🏥 Add New NDIS Domain</h2>
+                <button class="modal-close" onclick="closeAddNdisDomainModal()">×</button>
+            </div>
+
+            <form id="addNdisDomainForm" onsubmit="saveNewNdisDomain(event); return false;">
+                <div class="form-group">
+                    <label class="form-label required-label">Domain Name</label>
+                    <input type="text" class="form-input" id="newNdisDomainName" required placeholder="e.g., Relationships">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="newNdisDomainDescription" rows="4" placeholder="Describe this domain..."></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 0;">
+                    <button type="button" class="btn" onclick="closeAddNdisDomainModal()" style="background: #6b7c8f; color: white;">Cancel</button>
+                    <button type="submit" class="btn-save">Add NDIS Domain</button>
                 </div>
             </form>
         </div>
