@@ -1,6 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { checkAuth, resetPassword, signIn, signUp, updatePassword } from '../lib/auth'
+import { isSupabaseConfigured, supabaseConfigErrorMessage } from '../lib/supabaseClient'
+
+
+
+function toFriendlyError(error) {
+  if (!error) return 'Authentication failed.'
+
+  if (error.code === 'SUPABASE_CONFIG_MISSING') {
+    return supabaseConfigErrorMessage
+  }
+
+  if (error instanceof TypeError && String(error.message).toLowerCase().includes('failed to fetch')) {
+    return 'Unable to reach Supabase. Check VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY and your network connection.'
+  }
+
+  return error.message || 'Authentication failed.'
+}
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -37,7 +54,7 @@ export default function LoginPage() {
           navigate('/landing', { replace: true })
         }
       } catch (setupError) {
-        setError(setupError.message)
+        setError(toFriendlyError(setupError))
       }
     }
 
@@ -86,7 +103,7 @@ export default function LoginPage() {
         setConfirmNewPassword('')
       }
     } catch (submitError) {
-      setError(submitError.message || 'Authentication failed.')
+      setError(toFriendlyError(submitError))
     } finally {
       setLoading(false)
     }
@@ -98,6 +115,11 @@ export default function LoginPage() {
         <img className="auth-logo" src="/images/logos/logo.svg" alt="Daniel's Diaries" />
         <h1>{title}</h1>
         <p className="muted">This is the React sidecar version of the auth flow.</p>
+        {!isSupabaseConfigured ? (
+          <p className="error-banner">
+            {supabaseConfigErrorMessage}
+          </p>
+        ) : null}
 
         {error ? <p className="error-banner">{error}</p> : null}
         {message ? <p className="success-banner">{message}</p> : null}
@@ -173,7 +195,7 @@ export default function LoginPage() {
             </>
           )}
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading || !isSupabaseConfigured}>
             {loading ? 'Please wait...' : title}
           </button>
         </form>

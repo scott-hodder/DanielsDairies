@@ -1,7 +1,11 @@
-import { supabase } from './supabaseClient'
+import { getSupabaseClient } from './supabaseClient'
+
+function supabase() {
+  return getSupabaseClient()
+}
 
 export async function getChildren(parentUserId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('children')
     .select('*')
     .eq('parent_user_id', parentUserId)
@@ -12,7 +16,7 @@ export async function getChildren(parentUserId) {
 }
 
 export async function createChild(parentUserId, name, dateOfBirth) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('children')
     .insert([
       {
@@ -31,7 +35,7 @@ export async function createChild(parentUserId, name, dateOfBirth) {
 }
 
 export async function getModules() {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('modules')
     .select('*')
     .order('created_at', { ascending: false })
@@ -41,19 +45,19 @@ export async function getModules() {
 }
 
 export async function getModuleById(moduleId) {
-  const { data, error } = await supabase.from('modules').select('*').eq('id', moduleId).single()
+  const { data, error } = await supabase().from('modules').select('*').eq('id', moduleId).single()
   if (error) throw error
   return data
 }
 
 export async function createModule(modulePayload) {
-  const { data, error } = await supabase.from('modules').insert([modulePayload]).select().single()
+  const { data, error } = await supabase().from('modules').insert([modulePayload]).select().single()
   if (error) throw error
   return data
 }
 
 export async function updateModule(moduleId, updates) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('modules')
     .update(updates)
     .eq('id', moduleId)
@@ -65,13 +69,13 @@ export async function updateModule(moduleId, updates) {
 }
 
 export async function deleteModule(moduleId) {
-  const { error } = await supabase.from('modules').delete().eq('id', moduleId)
+  const { error } = await supabase().from('modules').delete().eq('id', moduleId)
   if (error) throw error
   return true
 }
 
 export async function getSuperSkills() {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('super_skills')
     .select('*')
     .order('sort_order', { ascending: true })
@@ -81,7 +85,7 @@ export async function getSuperSkills() {
 }
 
 export async function getParentModules(parentUserId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('parent_modules')
     .select('module_id')
     .eq('parent_id', parentUserId)
@@ -92,7 +96,7 @@ export async function getParentModules(parentUserId) {
 }
 
 export async function getChildModules(childId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('child_modules')
     .select('*, modules(*)')
     .eq('child_id', childId)
@@ -102,7 +106,7 @@ export async function getChildModules(childId) {
 }
 
 export async function updateChildModuleStatus(childId, moduleId, status) {
-  const { data: existing, error: existingError } = await supabase
+  const { data: existing, error: existingError } = await supabase()
     .from('child_modules')
     .select('*')
     .eq('child_id', childId)
@@ -112,7 +116,7 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
   if (existingError) throw existingError
 
   if (existing) {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('child_modules')
       .update({ status })
       .eq('child_id', childId)
@@ -124,7 +128,7 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
     return data
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('child_modules')
     .insert([
       {
@@ -142,7 +146,7 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
 }
 
 export async function getWeeklyCheckins(parentUserId, childId = null) {
-  let query = supabase
+  let query = supabase()
     .from('weekly_checkins')
     .select('*')
     .eq('parent_user_id', parentUserId)

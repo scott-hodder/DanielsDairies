@@ -32,3 +32,6 @@ VITE_SUPABASE_ANON_KEY=...
 
 - Legacy app files in project root were not edited.
 - This sidecar is now a full React route map for the existing pages, ready for parity hardening and UX refinements.
+
+
+If these values are missing, the sidecar auth screen will show a configuration warning and disable submit actions until configured.
