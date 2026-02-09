@@ -1145,6 +1145,15 @@ Title: ${title}
 Target Age: ${ageRange} (${displayName})
 ${moduleObjective ? `Objective: ${moduleObjective}` : ''}
 
+${additionalContext ? `=== HIGH-PRIORITY CREATOR INSTRUCTIONS (MUST FOLLOW) ===
+${additionalContext}
+
+NON-NEGOTIABLE:
+- Treat every instruction above as a hard requirement.
+- If these instructions conflict with generic style patterns, prioritize these instructions.
+- Use the exact framing, metaphors, and wording requirements when specified.
+` : ''}
+
 === CRITICAL CONTENT STYLE RULES ===
 🚨 READ THESE FIRST - MOST IMPORTANT 🚨
 
@@ -1217,6 +1226,7 @@ ${facilitatorTip}
 5. More DOING, less READING
 6. Apply ${theoryData.theory_name} theory correctly
 7. Use Brain Town analogy but keep brief
+${additionalContext ? '8. HIGH PRIORITY: Strictly follow the HIGH-PRIORITY CREATOR INSTRUCTIONS above.' : ''}
 
 ${reflectionPrompt ? `Reflection: "${reflectionPrompt}"` : ''}
 ${rewardText ? `Reward: "${rewardText}"` : ''}
