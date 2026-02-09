@@ -2225,11 +2225,7 @@ function classifyGenerationError(error) {
             return;
         }
         // Emotions and skills validation removed - no longer required
-        if (!contentBrief) {
-            alert('❌ Please provide a content brief for the AI');
-            document.getElementById('newModuleContentBrief').focus();
-            return;
-        }
+        // Content brief is optional - no validation needed
 
         // Show loading modal
         showGenerationPipeline();
@@ -5071,7 +5067,7 @@ if (data.status === "running") {
             document.getElementById('subSkillDescriptionTheories').value = subSkill.description || '';
         }
 
-        window.addNewSubSkillTheories = function() {
+        window.addNewSubSkillTheories = function(preselectedSuperSkillId) {
             // Open the modal instead of using prompt
             document.getElementById('addSubSkillTheoriesModal').classList.add('active');
             document.getElementById('newSubSkillTheoriesName').value = '';
@@ -5084,6 +5080,10 @@ if (data.status === "running") {
                 const option = document.createElement('option');
                 option.value = ss.id;
                 option.textContent = ss.name;
+                // Pre-select the super skill if ID was provided
+                if (preselectedSuperSkillId && ss.id === preselectedSuperSkillId) {
+                    option.selected = true;
+                }
                 parentSelect.appendChild(option);
             });
             
@@ -5606,7 +5606,7 @@ if (data.status === "running") {
                             <h4 style="font-size: 14px; color: #6366F1; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                                 ${superSkill.emoji || '🧠'} ${superSkillName}
                             </h4>
-                            <button class="btn-save" onclick="addNewSubSkillTheories()" style="font-size: 12px; padding: 6px 12px;">
+                            <button class="btn-save" onclick="addNewSubSkillTheories('${superSkillId}')" style="font-size: 12px; padding: 6px 12px;">
                                 + Add Sub-Skill
                             </button>
                         </div>
@@ -6014,7 +6014,7 @@ if (data.status === "running") {
             document.getElementById('subSkillDescriptionTheories').value = subSkill.description || '';
         }
 
-        window.addNewSubSkillTheories = function() {
+        window.addNewSubSkillTheories = function(preselectedSuperSkillId) {
             // Open the modal instead of using prompt
             document.getElementById('addSubSkillTheoriesModal').classList.add('active');
             document.getElementById('newSubSkillTheoriesName').value = '';
@@ -6027,6 +6027,10 @@ if (data.status === "running") {
                 const option = document.createElement('option');
                 option.value = ss.id;
                 option.textContent = ss.name;
+                // Pre-select the super skill if ID was provided
+                if (preselectedSuperSkillId && ss.id === preselectedSuperSkillId) {
+                    option.selected = true;
+                }
                 parentSelect.appendChild(option);
             });
             
