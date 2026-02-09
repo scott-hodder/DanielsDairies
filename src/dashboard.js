@@ -7,6 +7,9 @@ import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focus-plan.js'
 import { showElement, hideElement, setLoadingState } from './utils/dom.js'
 import { dashboardState, setAllModulesFilters, setCategoryColors, setChildModules, setChildren, setCurrentFocusPlan, setCurrentInsightsSubtab, setCurrentPurchaseModule, setCurrentUser, setEditingChild, setIsCurrentUserAdmin, setModules, setMoreModulesCurrentIndex, setMoreModulesRotationTimer, setParentModules, setSelectedChild, setShowAllChildModules, setCurrentWeeklyPlan } from './state/dashboardState.js'
+import { setAppState, getAppState } from './services/appState.js'
+import { buildModuleUrl } from './features/modules/moduleNavigation.js'
+import { renderDevSetupMessage } from './ui/devSetupMessage.js'
 
 const LEVEL_XP = 100
 
@@ -980,6 +983,7 @@ const leaderboardList = document.getElementById('leaderboardList')
 
 // Initialize - OPTIMIZED for performance
 async function init() {
+  if (renderDevSetupMessage('dashboardRoot')) return
   // Show fun loading screen
   showLoadingScreen()
   
@@ -1082,6 +1086,7 @@ async function init() {
     
     // Update global variables for enhanced dashboard
     window.modules = state.modules
+    setAppState('modules', state.modules)
     window.parentModules = state.parentModules
     
     // Setup category colors (use defaults if none loaded)
@@ -1630,6 +1635,7 @@ async function selectChild(child) {
   }
   
   setSelectedChild(child)
+  setAppState('selectedChild', child)
   
   try {
     // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
@@ -2019,6 +2025,7 @@ function showChildDetailView(child) {
     // Update global variables for enhanced dashboard
     window.state.selectedChild = child
     window.childModules = state.childModules
+    setAppState('childModules', state.childModules)
     window.state.currentFocusPlan = state.currentFocusPlan
     
     // Show dashboard button when viewing child details
@@ -2104,7 +2111,7 @@ function getAvailableSuperSkillSlugs() {
     }
   }
 
-  const modules = window.modules || state.modules || []
+  const modules = getAppState('modules') || window.modules || state.modules || []
   const slugs = []
   const seen = new Set()
   modules.forEach(module => {
@@ -2507,7 +2514,9 @@ async function startModule(module) {
   try {
     // Load module through the module player
     // Note: child_modules record will be created when module is completed
-    const moduleUrl = `/module.html?code=${module.code}&childId=${state.selectedChild.id}&moduleId=${module.id}&parentUserId=${state.currentUser.id}`
+    const moduleUrl = buildModuleUrl({
+      link: `/module.html?code=${module.code}&moduleId=${module.id}&parentUserId=${state.currentUser.id}`
+    }, state.selectedChild.id)
     window.location.href = moduleUrl
     
   } catch (error) {
@@ -2648,13 +2657,13 @@ if (childPasswordForm) {
         
         await setChildPassword(childToSelect.id, enteredPassword)
         // Update local child object with password
-        childToSelect.password = enteredPassword
+        childToSelect.password = "***"
         const childIndex = state.children.findIndex(c => c.id === childToSelect.id)
         if (childIndex !== -1) {
           const nextChildren = [...state.children]
           nextChildren[childIndex] = {
             ...nextChildren[childIndex],
-            password: enteredPassword
+            password: "***"
           }
           setChildren(nextChildren)
         }
@@ -2805,7 +2814,7 @@ if (parentPasswordForm) {
       // Verify parent password against auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: state.currentUser.email,
-        password: enteredPassword
+        password: "***"
       })
       
       if (error || !data.user) {

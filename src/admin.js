@@ -1,27 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { getSettings, updateSettings } from './database.js';
+import { requireSupabaseEnv } from './features/admin/runtimeConfig.js';
 
-
-// -----------------------------------------------------------------------------
-// Runtime config helpers (admin.js is loaded directly in the browser).
-// If you are NOT bundling with Vite, import.meta.env is undefined.
-// These helpers try a few common locations.
-// -----------------------------------------------------------------------------
-function getSupabaseUrl() {
-  return (window.SUPABASE_URL || window.__SUPABASE_URL__ || window.ENV?.SUPABASE_URL || supabase?.supabaseUrl || '');
-}
-function getSupabaseAnonKey() {
-  return (window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY__ || window.ENV?.SUPABASE_ANON_KEY || supabase?.supabaseKey || '');
-}
-function requireSupabaseEnv() {
-  const url = getSupabaseUrl();
-  const key = getSupabaseAnonKey();
-  if (!url || !key) {
-    console.error('[Admin] Missing Supabase URL / anon key for fetch calls. ' +
-      'Set window.SUPABASE_URL and window.SUPABASE_ANON_KEY (or window.ENV.*).');
-  }
-  return { url, key };
-}
 
 // Make supabase available globally for module-content-creator.js
 window.supabase = supabase;

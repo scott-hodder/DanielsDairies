@@ -1,5 +1,6 @@
 import { checkAuth, signIn, signUp, resetPassword, updatePassword } from './auth.js'
 import { showElement, hideElement, setLoadingState, setMessage, clearMessages as clearMessagesUI } from './utils/dom.js'
+import { renderDevSetupMessage } from './ui/devSetupMessage.js'
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm')
@@ -20,6 +21,7 @@ let isRecoverySession = false
 
 // Initialize
 async function init() {
+  if (renderDevSetupMessage('authContainer')) return
   console.log('🚀 Login page initializing...')
   console.log('Error element:', errorMessage)
   console.log('Success element:', successMessage)
