@@ -1,14 +1,14 @@
-import { supabase } from './supabaseClient.js'
+import { getSupabaseClient } from './supabaseClient.js'
 
 // Check if user is logged in
 export async function checkAuth() {
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session } } = await getSupabaseClient().auth.getSession()
   return session
 }
 
 // Sign in with email and password
 export async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await getSupabaseClient().auth.signInWithPassword({
     email,
     password,
   })
@@ -22,7 +22,7 @@ export async function signIn(email, password) {
 
 // Sign up new user
 export async function signUp(email, password, metadata = {}) {
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await getSupabaseClient().auth.signUp({
     email,
     password,
     options: {
@@ -37,7 +37,7 @@ export async function signUp(email, password, metadata = {}) {
   // Create parent profile after successful signup
   if (data.user) {
     try {
-      const { error: profileError } = await supabase.rpc('create_parent_profile', {
+      const { error: profileError } = await getSupabaseClient().rpc('create_parent_profile', {
         user_id: data.user.id,
         user_email: email
       })
@@ -57,7 +57,7 @@ export async function signUp(email, password, metadata = {}) {
 
 // Trigger password reset email
 export async function resetPassword(email) {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/index.html`
   })
 
@@ -68,7 +68,7 @@ export async function resetPassword(email) {
 
 // Update password once user has recovery session
 export async function updatePassword(newPassword) {
-  const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+  const { data, error } = await getSupabaseClient().auth.updateUser({ password: newPassword })
 
   if (error) {
     throw error
@@ -79,7 +79,7 @@ export async function updatePassword(newPassword) {
 
 // Sign out
 export async function signOut() {
-  const { error } = await supabase.auth.signOut()
+  const { error } = await getSupabaseClient().auth.signOut()
   
   if (error) {
     throw error
@@ -88,11 +88,11 @@ export async function signOut() {
 
 // Get current user
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getSupabaseClient().auth.getUser()
   return user
 }
 
 // Listen to auth state changes
 export function onAuthStateChange(callback) {
-  return supabase.auth.onAuthStateChange(callback)
+  return getSupabaseClient().auth.onAuthStateChange(callback)
 }

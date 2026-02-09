@@ -1,11 +1,11 @@
-import { supabase } from './supabaseClient.js'
-import bcrypt from 'bcryptjs'
+import { getSupabaseClient } from './supabaseClient.js'
+import { setChildPasswordServer, verifyChildPasswordServer } from './services/childCredentials.js'
 
 const LEVEL_XP = 100
 
 // Get all children for a parent
 export async function getChildren(parentUserId) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('children')
     .select('*')
     .eq('parent_user_id', parentUserId)
@@ -40,7 +40,7 @@ export async function saveWeeklyCheckin({
     generated_plan: generatedPlan
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('weekly_checkins')
     .insert([payload])
     .select()
@@ -55,7 +55,7 @@ export async function saveWeeklyCheckin({
 
 // Get the latest weekly plan for a parent/child combo
 export async function getLatestWeeklyPlan(parentUserId, childId) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('weekly_checkins')
     .select('*')
     .eq('parent_user_id', parentUserId)
@@ -73,7 +73,7 @@ export async function getLatestWeeklyPlan(parentUserId, childId) {
 
 // Get a specific child
 export async function getChild(childId) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('children')
     .select('*')
     .eq('id', childId)
@@ -88,7 +88,7 @@ export async function getChild(childId) {
 
 // Create a new child
 export async function createChild(parentUserId, name, dateOfBirth, avatar = null) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('children')
     .insert([
       { 
@@ -110,49 +110,21 @@ export async function createChild(parentUserId, name, dateOfBirth, avatar = null
   return data
 }
 
-// Set child's password (hashes before storing)
+// Set child password via server-side function (never hashes in browser)
 export async function setChildPassword(childId, password) {
-  // Hash the password with bcrypt (salt rounds: 10)
-  const hashedPassword = await bcrypt.hash(password, 10)
-  
-  const { data, error } = await supabase
-    .from('children')
-    .update({ password: hashedPassword })
-    .eq('id', childId)
-    .select()
-    .single()
-  
-  if (error) {
-    throw error
-  }
-  
-  return data
+  const result = await setChildPasswordServer(childId, password)
+  return result
 }
 
-// Verify child's password (compares with hashed version)
+// Verify child password via server-side function (never compares in browser)
 export async function verifyChildPassword(childId, password) {
-  const { data, error } = await supabase
-    .from('children')
-    .select('password')
-    .eq('id', childId)
-    .single()
-  
-  if (error) {
-    throw error
-  }
-  
-  // If no password is set, return false
-  if (!data.password) {
-    return false
-  }
-  
-  // Compare plain text password with hashed password
-  return await bcrypt.compare(password, data.password)
+  const result = await verifyChildPasswordServer(childId, password)
+  return Boolean(result?.valid)
 }
 
 // Update child's stars
 export async function updateChildStars(childId, stars) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('children')
     .update({ stars })
     .eq('id', childId)
@@ -168,7 +140,7 @@ export async function updateChildStars(childId, stars) {
 
 // Update child's profile (name, avatar, password)
 export async function updateChildProfile(childId, updates) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('children')
     .update(updates)
     .eq('id', childId)
@@ -185,7 +157,7 @@ export async function updateChildProfile(childId, updates) {
 // Delete a child and all their associated data
 export async function deleteChild(childId) {
   // First delete all child_modules records (if cascade delete is not set up)
-  const { error: modulesError } = await supabase
+  const { error: modulesError } = await getSupabaseClient()
     .from('child_modules')
     .delete()
     .eq('child_id', childId)
@@ -196,7 +168,7 @@ export async function deleteChild(childId) {
   }
   
   // Delete the child
-  const { error } = await supabase
+  const { error } = await getSupabaseClient()
     .from('children')
     .delete()
     .eq('id', childId)
@@ -210,7 +182,7 @@ export async function deleteChild(childId) {
 
 // Get all modules (active and inactive)
 export async function getModules() {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('modules')
     .select('*')
     .order('created_at', { ascending: false })
@@ -225,7 +197,7 @@ export async function getModules() {
 // Get all Super Skills for dropdowns
 export async function getSuperSkills() {
   console.log('[Database] Fetching Super Skills...');
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('super_skills')
     .select('*')
     // .eq('is_active', true)  // Temporarily removed - show all skills
@@ -244,7 +216,7 @@ export async function getSuperSkills() {
 
 // Get modules a parent has access to
 export async function getParentModules(parentUserId) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('parent_modules')
     .select('module_id')
     .eq('parent_id', parentUserId)
@@ -259,7 +231,7 @@ export async function getParentModules(parentUserId) {
 
 // Retrieve module category color configuration
 export async function getCategoryColors() {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('category_colors')
     .select('*')
 
@@ -272,7 +244,7 @@ export async function getCategoryColors() {
 
 // Get child's module progress
 export async function getChildModules(childId) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('child_modules')
     .select(`
       *,
@@ -290,7 +262,7 @@ export async function getChildModules(childId) {
 // Create or update child module status
 export async function updateChildModuleStatus(childId, moduleId, status) {
   // First check if record exists
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabaseClient()
     .from('child_modules')
     .select('*')
     .eq('child_id', childId)
@@ -299,7 +271,7 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
   
   if (existing) {
     // Update existing record
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_modules')
       .update({ status })
       .eq('child_id', childId)
@@ -314,7 +286,7 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
     return data
   } else {
     // Create new record
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_modules')
       .insert([
         { 
@@ -337,7 +309,7 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
 // Mark module as completed
 export async function completeModule(childId, moduleId) {
   // First check if record exists
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabaseClient()
     .from('child_modules')
     .select('*')
     .eq('child_id', childId)
@@ -349,7 +321,7 @@ export async function completeModule(childId, moduleId) {
   if (existing) {
     // Update existing record
     if (!wasCompleted) {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('child_modules')
         .update({ 
           is_completed: true,
@@ -375,7 +347,7 @@ export async function completeModule(childId, moduleId) {
     return existing
   } else {
     // Create new record with completed status
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_modules')
       .insert([
         { 
@@ -402,7 +374,7 @@ export async function completeModule(childId, moduleId) {
 }
 
 async function awardModuleXp(childId, moduleId) {
-  const { data: moduleData, error: moduleError } = await supabase
+  const { data: moduleData, error: moduleError } = await getSupabaseClient()
     .from('modules')
     .select('xp_reward')
     .eq('id', moduleId)
@@ -416,7 +388,7 @@ async function awardModuleXp(childId, moduleId) {
   if (!xpReward) return
 
   try {
-    const { error: rpcError } = await supabase.rpc('increment_child_rewards', {
+    const { error: rpcError } = await getSupabaseClient().rpc('increment_child_rewards', {
       p_child_id: childId,
       p_stars: 0,
       p_xp: xpReward
@@ -428,7 +400,7 @@ async function awardModuleXp(childId, moduleId) {
     console.warn('increment_child_rewards RPC error, falling back to direct update:', rpcError)
   }
 
-  const { data: child, error: childError } = await supabase
+  const { data: child, error: childError } = await getSupabaseClient()
     .from('children')
     .select('total_xp, level')
     .eq('id', childId)
@@ -442,7 +414,7 @@ async function awardModuleXp(childId, moduleId) {
   const newTotalXp = currentXp + xpReward
   const newLevel = Math.max(1, Math.floor(newTotalXp / LEVEL_XP) + 1)
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await getSupabaseClient()
     .from('children')
     .update({ total_xp: newTotalXp, level: newLevel })
     .eq('id', childId)
@@ -464,7 +436,7 @@ export async function awardStars(childId, starsToAdd) {
 
 // Get all children ordered by stars (for leaderboard)
 export async function getAllChildrenLeaderboard(limit = 10) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('children')
     .select('id, name, stars, created_at')
     .order('stars', { ascending: false })
@@ -481,7 +453,7 @@ export async function getAllChildrenLeaderboard(limit = 10) {
 // Check if user is admin
 export async function isUserAdmin(userId) {
   // Use the security definer function to avoid RLS recursion
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .rpc('is_user_admin_check', { user_id: userId })
   
   if (error) {
@@ -494,7 +466,7 @@ export async function isUserAdmin(userId) {
 
 // Set user admin status
 export async function setUserAdmin(userId, isAdmin) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('parent_profiles')
     .update({ is_admin: isAdmin })
     .eq('id', userId)
@@ -510,7 +482,7 @@ export async function setUserAdmin(userId, isAdmin) {
 
 // Get parent profile
 export async function getParentProfile(userId) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('parent_profiles')
     .select('*')
     .eq('id', userId)
@@ -525,7 +497,7 @@ export async function getParentProfile(userId) {
 
 // Create a parent profile (called when user signs up)
 export async function createParentProfile(userId, email) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('parent_profiles')
     .insert([
       {
@@ -549,7 +521,7 @@ export async function createParentProfile(userId, email) {
 export async function createMissingParentProfiles() {
   try {
     // Get all unique parent_user_ids from children table
-    const { data: children, error: childrenError } = await supabase
+    const { data: children, error: childrenError } = await getSupabaseClient()
       .from('children')
       .select('parent_user_id')
     
@@ -564,7 +536,7 @@ export async function createMissingParentProfiles() {
     const uniqueParentIds = [...new Set(children.map(c => c.parent_user_id))]
     
     // Get existing parent profiles
-    const { data: existingProfiles, error: profilesError } = await supabase
+    const { data: existingProfiles, error: profilesError } = await getSupabaseClient()
       .from('parent_profiles')
       .select('id')
       .in('id', uniqueParentIds)
@@ -580,7 +552,7 @@ export async function createMissingParentProfiles() {
     }
     
     // Create missing profiles
-    const { data: createdProfiles, error: createError } = await supabase
+    const { data: createdProfiles, error: createError } = await getSupabaseClient()
       .from('parent_profiles')
       .insert(
         missingIds.map(id => ({
@@ -642,7 +614,7 @@ export async function updateLoginStreak(userId, childId = null) {
         insertData.child_id = childId
       }
       
-      const { data: newRecord, error: createError } = await supabase
+      const { data: newRecord, error: createError } = await getSupabaseClient()
         .from('login_streaks')
         .insert(insertData)
         .select()
@@ -775,7 +747,7 @@ export async function saveModuleResponse({
       is_correct: isCorrect
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('module_responses')
       .insert([payload])
       .select()
@@ -795,7 +767,7 @@ export async function saveModuleResponse({
 // Get all responses for a specific child and module
 export async function getModuleResponses(childId, moduleId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('module_responses')
       .select('*')
       .eq('child_id', childId)
@@ -816,7 +788,7 @@ export async function getModuleResponses(childId, moduleId) {
 // Get all responses for a child across all modules
 export async function getChildResponses(childId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('module_responses')
       .select(`
         *,
@@ -840,7 +812,7 @@ export async function getChildResponses(childId) {
 // Get response analytics for a parent's children
 export async function getParentResponseAnalytics(parentUserId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('module_response_analytics')
       .select('*')
       .eq('parent_user_id', parentUserId)
@@ -860,7 +832,7 @@ export async function getParentResponseAnalytics(parentUserId) {
 // Update an existing response
 export async function updateModuleResponse(responseId, updates) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('module_responses')
       .update(updates)
       .eq('id', responseId)
@@ -881,7 +853,7 @@ export async function updateModuleResponse(responseId, updates) {
 // Delete a response
 export async function deleteModuleResponse(responseId) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
       .from('module_responses')
       .delete()
       .eq('id', responseId)
@@ -900,7 +872,7 @@ export async function deleteModuleResponse(responseId) {
 // Get response statistics for a module
 export async function getModuleStatistics(moduleId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('module_responses')
       .select(`
         response_type,
@@ -969,7 +941,7 @@ export async function getModuleStatistics(moduleId) {
 // Settings Management
 export async function getSettings() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('settings')
       .select('*')
       .single()
@@ -1034,14 +1006,14 @@ export async function getSettings() {
 export async function updateSettings(settings) {
   try {
     // Check if settings exist
-    const { data: existing } = await supabase
+    const { data: existing } = await getSupabaseClient()
       .from('settings')
       .select('id')
       .single()
     
     if (existing) {
       // Update existing settings
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('settings')
         .update(settings)
         .eq('id', existing.id)
@@ -1052,7 +1024,7 @@ export async function updateSettings(settings) {
       return data
     } else {
       // Create new settings
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('settings')
         .insert([settings])
         .select()
@@ -1070,7 +1042,7 @@ export async function updateSettings(settings) {
 // Series Management
 export async function getSeries() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('series')
       .select('*')
       .order('label', { ascending: true })
@@ -1085,7 +1057,7 @@ export async function getSeries() {
 
 export async function addSeries(label) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('series')
       .insert([{ label }])
       .select()
@@ -1101,7 +1073,7 @@ export async function addSeries(label) {
 
 export async function deleteSeries(id) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
       .from('series')
       .delete()
       .eq('id', id)
@@ -1117,7 +1089,7 @@ export async function deleteSeries(id) {
 // Emotions Management
 export async function getEmotions() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('emotions')
       .select('*')
       .order('label', { ascending: true })
@@ -1132,7 +1104,7 @@ export async function getEmotions() {
 
 export async function addEmotion(id, label) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('emotions')
       .insert([{ id, label }])
       .select()
@@ -1148,7 +1120,7 @@ export async function addEmotion(id, label) {
 
 export async function deleteEmotion(id) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
       .from('emotions')
       .delete()
       .eq('id', id)
@@ -1164,7 +1136,7 @@ export async function deleteEmotion(id) {
 // Skills Management
 export async function getSkills() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('skills')
       .select('*')
       .order('label', { ascending: true })
@@ -1179,7 +1151,7 @@ export async function getSkills() {
 
 export async function addSkill(id, label) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('skills')
       .insert([{ id, label }])
       .select()
@@ -1195,7 +1167,7 @@ export async function addSkill(id, label) {
 
 export async function deleteSkill(id) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
       .from('skills')
       .delete()
       .eq('id', id)
@@ -1215,7 +1187,7 @@ export async function deleteSkill(id) {
 // Get active focus plan for a child
 export async function getChildFocusPlan(childId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_focus_plan')
       .select('*')
       .eq('child_id', childId)
@@ -1239,7 +1211,7 @@ export async function getChildFocusPlan(childId) {
 // Get all focus plans for a child (including inactive)
 export async function getChildFocusPlanHistory(childId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_focus_plan')
       .select('*')
       .eq('child_id', childId)
@@ -1267,7 +1239,7 @@ export async function createChildFocusPlan({
   try {
     // First, deactivate any existing active plans for this child
     try {
-      await supabase
+      await getSupabaseClient()
         .from('child_focus_plan')
         .update({ is_active: false })
         .eq('child_id', childId)
@@ -1290,7 +1262,7 @@ export async function createChildFocusPlan({
       
       // Look up the pathway for this category
       try {
-        const { data: categoryData } = await supabase
+        const { data: categoryData } = await getSupabaseClient()
           .from('category_colors')
           .select('category')
           .eq('id', targetCategoryIds[0])
@@ -1298,7 +1270,7 @@ export async function createChildFocusPlan({
         
         if (categoryData && categoryData.category) {
           // Find the pathway that matches this category
-          const { data: pathwayData } = await supabase
+          const { data: pathwayData } = await getSupabaseClient()
             .from('pathways')
             .select('id')
             .eq('category', categoryData.category)
@@ -1336,7 +1308,7 @@ export async function createChildFocusPlan({
     }
     
     // Create the new plan
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_focus_plan')
       .insert([insertData])
       .select()
@@ -1362,7 +1334,7 @@ export async function createChildFocusPlan({
 // Update an existing focus plan
 export async function updateChildFocusPlan(planId, updates) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_focus_plan')
       .update(updates)
       .eq('id', planId)
@@ -1380,7 +1352,7 @@ export async function updateChildFocusPlan(planId, updates) {
 // Deactivate a focus plan (for starting a new cycle)
 export async function deactivateChildFocusPlan(planId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('child_focus_plan')
       .update({ is_active: false })
       .eq('id', planId)
@@ -1398,7 +1370,7 @@ export async function deactivateChildFocusPlan(planId) {
 // Get all categories from the category_colors table
 export async function getCategories() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('category_colors')
       .select('id, category')
       .order('category', { ascending: true })
@@ -1415,7 +1387,7 @@ export async function getCategories() {
 // Get all pathways
 export async function getPathways() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('pathways')
       .select('*')
       .order('name', { ascending: true })
@@ -1645,7 +1617,7 @@ async function checkPathwayHasModules(pathway, childId) {
 async function checkForAssessmentAfterCompletion(childId, moduleId) {
   try {
     // Get module information to determine pathway/category
-    const { data: moduleData, error: moduleError } = await supabase
+    const { data: moduleData, error: moduleError } = await getSupabaseClient()
       .from('modules')
       .select('category, code')
       .eq('id', moduleId)
@@ -1657,7 +1629,7 @@ async function checkForAssessmentAfterCompletion(childId, moduleId) {
     }
     
     // Get all child modules to count completed modules in this pathway
-    const { data: childModules, error: childModulesError } = await supabase
+    const { data: childModules, error: childModulesError } = await getSupabaseClient()
       .from('child_modules')
       .select(`
         *,
@@ -1678,7 +1650,7 @@ async function checkForAssessmentAfterCompletion(childId, moduleId) {
     ).length || 0
     
     // Get total modules in this pathway
-    const { data: totalModulesData, error: totalModulesError } = await supabase
+    const { data: totalModulesData, error: totalModulesError } = await getSupabaseClient()
       .from('modules')
       .select('id')
       .eq('category', pathwayCategory)
