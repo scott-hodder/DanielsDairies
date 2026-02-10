@@ -62,7 +62,7 @@ import {
 // CONTENT GENERATION
 // ====================
 
-const SYSTEM_PROMPT = `You are an expert child psychologist and educational content creator specializing in social-emotional learning (SEL) workbooks for children and teens ages 6-18.
+const SYSTEM_PROMPT = `You are an expert child psychologist and educational content creator specialising in social-emotional learning (SEL) workbooks for children and teens ages 6-18.
 
 Your content must be:
 - Age-appropriate, warm, and encouraging
@@ -70,35 +70,95 @@ Your content must be:
 - Engaging with a consistent character/mascot throughout
 - Interactive with activities that reinforce learning
 
-CHARACTER INTERACTION RULES:
-- The primary mascot character (e.g., Professor Panda) is the main guide
-- Daniel 🧒 is the learner/friend who appears throughout the module
-- Create dialogue between the mascot and Daniel to model learning and friendship
-- Use phrases like:
-  * "Daniel, what do you think about..."
-  * "Let me tell Daniel about..."
-  * "Daniel's friend Lenny discovered that..."
-  * "Daniel wants to know..."
-  * "I asked Daniel how he felt..."
-  * "Daniel and his friends..."
-- Include at least 1-2 interactions with Daniel per lesson when appropriate
-- Make Daniel relatable - he experiences the same challenges the reader does
-
 CRITICAL RULES:
 1. Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.
-2. If a specific character/mascot is mentioned (like "Daniel the Dog"), you MUST use EXACTLY that character name and type throughout.
-3. Never substitute a different animal or character name - if told to use "Daniel the Dog", every reference must be to "Daniel" and a dog, not a fox, bear, or any other animal.
-4. The mascot emoji must match the character type exactly.
-5. When asked to create multiple items, sequence them as a learning journey: start with simple awareness, then practice skills, then apply them in real-life or challenge scenarios. Each item should build on the previous one and avoid repeating earlier points.
-6. Treat the age range guidance and language guidelines in the content brief as hard requirements, and make the output clearly distinct across age ranges.
+2. If a specific character/mascot is mentioned, you MUST use EXACTLY that character name and type throughout. Never substitute a different animal or character.
+3. The mascot emoji must match the character type exactly.
+4. When creating multiple items, sequence them as a learning journey: start with simple awareness, then practise skills, then apply in real-life scenarios. Each item should build on the previous one without repeating earlier points.
+5. Treat the age range and language guidelines as hard requirements. Output must be clearly distinct across age ranges.
+6. Use Australian English spelling throughout (colour, behaviour, favourite, organise, centre, mum, learnt).
+7. NEVER use em dashes, "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
+8. Write as a warm, experienced educator, not a marketing copywriter.`;
 
-CRITICAL AGE DIFFERENTIATION - THIS IS MANDATORY:
-- For ages 6-8: Use VERY SHORT text (1-2 sentences max per paragraph). Simple words only. Big friendly energy. Lots of emojis. Like talking to a young child.
-- For ages 9-11: Short-medium text (2-3 sentences). Friendly but more grown-up. Some new vocabulary with quick explanations.
-- For ages 12-14: Medium text (3-4 sentences). Respectful tone, not babyish. More sophisticated vocabulary and concepts.
-- For ages 15-18: Fuller text (4-5 sentences when needed). Mature, nuanced language. Treats them as near-adults.
+// Build a condensed context block from the full content brief for use in all generators.
+// This ensures every activity (not just lessons) stays aligned with the module's theory,
+// Brain Town analogy, Australian English rules, and diagnosis adaptations.
+function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): string {
+  const ageRange = extractAgeRange(metadata);
+  const formatting = getAgeSpecificFormatting(ageRange);
+  
+  // Extract key sections from the brief using regex
+  const extractSection = (header: string): string => {
+    const regex = new RegExp(`=== ${header} ===\\n([\\s\\S]*?)(?=\\n===|$)`, 'i');
+    const match = contentBrief.match(regex);
+    return match ? match[1].trim() : '';
+  };
+  
+  const theory = extractSection('PSYCHOLOGICAL FOUNDATION');
+  const brainTown = extractSection('BRAIN TOWN ANALOGY');
+  const diagnosisAdaptations = extractSection('DIAGNOSIS ADAPTATIONS');
+  const creatorInstructions = extractSection('HIGH-PRIORITY CREATOR INSTRUCTIONS');
+  
+  // Extract title
+  const titleMatch = contentBrief.match(/^Title:\s*(.+)$/m);
+  const title = titleMatch ? titleMatch[1].trim() : metadata.title;
+  
+  const parts = [
+    `Module: "${title}"`,
+    `Theme: ${metadata.theme}`,
+    `Mascot: ${metadata.characterName} ${metadata.characterEmoji}`,
+    `Age: ${metadata.targetAge}`,
+    '',
+    `AGE-SPECIFIC FORMATTING (${metadata.targetAge} year olds):`,
+    `- Paragraph length: ${formatting.paragraphLength}`,
+    `- Sentences: ${formatting.sentenceCount}`,
+    `- Vocabulary: ${formatting.vocabularyLevel}`,
+    `- Tone: ${formatting.toneDescription}`,
+    `- Complexity: ${formatting.contentComplexity}`,
+  ];
+  
+  if (theory) {
+    parts.push('', `THEORY: ${theory.split('\n').slice(0, 2).join(' ').substring(0, 200)}`);
+  }
+  
+  if (brainTown) {
+    parts.push('', `BRAIN TOWN: ${brainTown.split('\n')[0].substring(0, 200)}`);
+    parts.push('Keep Brain Town references SHORT (1-2 sentences). Weave it naturally, do not force it.');
+  }
+  
+  if (diagnosisAdaptations) {
+    parts.push('', `ADAPTATIONS: ${diagnosisAdaptations.substring(0, 200)}`);
+  }
 
-A module for 6-8 year olds MUST look dramatically different from one for 15-18 year olds. The text length, vocabulary, and complexity must be clearly distinct.`;
+  if (creatorInstructions) {
+    parts.push('', `CREATOR INSTRUCTIONS (MUST FOLLOW): ${creatorInstructions.substring(0, 300)}`);
+  }
+  
+  parts.push('', 'LANGUAGE: Australian English mandatory (colour, behaviour, favourite, organise, centre, mum, learnt).');
+  
+  return parts.join('\n');
+}
+
+// Determine if Daniel should appear as the learner character.
+// Daniel is the learner only when the series mascot is NOT Daniel.
+function shouldIncludeDaniel(metadata: ModuleMetadata, seriesInfo?: SeriesInfo | null): boolean {
+  const name = (metadata.characterName || '').toLowerCase();
+  const label = (seriesInfo?.label || '').toLowerCase();
+  // If the mascot IS Daniel (e.g. "Daniel the Dog", "Daniel's Diaries"), don't add Daniel as a separate learner
+  return !name.startsWith('daniel') && !label.startsWith('daniel');
+}
+
+// Build a character context string for prompts that include character interactions
+function buildCharacterContext(metadata: ModuleMetadata, seriesInfo?: SeriesInfo | null): string {
+  if (!shouldIncludeDaniel(metadata, seriesInfo)) {
+    return `Primary character: ${metadata.characterName} ${metadata.characterEmoji} (guides the child directly)`;
+  }
+  return `Primary Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Learner: Daniel 🧒 (appears 2-3 times per module, briefly)
+- Daniel models relatable experiences the reader might share
+- Keep Daniel appearances to 1-2 sentences each
+- Example: "Daniel noticed his hands felt shaky when he was nervous."`;
+}
 
 // Helper to extract age range from metadata for formatting decisions
 function extractAgeRange(metadata: ModuleMetadata): string {
@@ -199,36 +259,29 @@ Respond with ONLY this JSON structure:
 async function generateWelcome(
   apiKey: string,
   metadata: ModuleMetadata,
-  contentBrief: string
+  contentBrief: string,
+  seriesInfo?: SeriesInfo | null
 ): Promise<{ heading: string; paragraphs: string[] }> {
-  const ageRange = extractAgeRange(metadata);
-  const formatting = getAgeSpecificFormatting(ageRange);
+  const context = buildCondensedContext(contentBrief, metadata);
+  const formatting = getAgeSpecificFormatting(extractAgeRange(metadata));
   
   const prompt = `Create a warm welcome page for a child's workbook.
 
-Module: "${metadata.title}"
-Theme: ${metadata.theme}
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
-Age: ${metadata.targetAge}
+${context}
 
-Brief: ${contentBrief}
-
-CRITICAL AGE-SPECIFIC FORMATTING FOR ${metadata.targetAge} YEAR OLDS:
+Welcome page specifics:
 - Paragraph style: ${formatting.welcomeParagraphs}
-- Sentence length: ${formatting.sentenceCount}
-- Vocabulary: ${formatting.vocabularyLevel}
-- Tone: ${formatting.toneDescription}
+- The mascot greets the child and introduces the module theme
+${shouldIncludeDaniel(metadata, seriesInfo) ? '- Briefly mention Daniel as someone who will be learning alongside them' : ''}
 
 Respond with ONLY this JSON:
 {
   "heading": "Welcoming heading with mascot name and emoji",
   "paragraphs": [
-    "Greeting from mascot - MUST match age formatting above",
-    "What we'll learn - MUST match age formatting above"
+    "Greeting from mascot",
+    "What we'll learn together"
   ]
-}
-
-REMEMBER: For ages 6-8, paragraphs must be VERY SHORT (1-2 sentences each, simple words). For older ages, can be longer.`;
+}`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<{ heading: string; paragraphs: string[] }>(response);
@@ -251,7 +304,7 @@ async function generateChapterDividers(
 ): Promise<ChapterDivider[]> {
   const prompt = `Create ${count} chapter dividers for a child's workbook about "${metadata.theme}".
 
-Brief: ${contentBrief}
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -285,76 +338,36 @@ async function generateLessons(
   apiKey: string,
   metadata: ModuleMetadata,
   contentBrief: string,
-  count: number
+  count: number,
+  seriesInfo?: SeriesInfo | null
 ): Promise<LessonContent[]> {
-  const ageRange = extractAgeRange(metadata);
-  const formatting = getAgeSpecificFormatting(ageRange);
-  
-  // Build age-specific paragraph instructions
-  let paragraphInstructions: string;
-  if (ageRange === "6-8") {
-    paragraphInstructions = `"paragraphs": [
-        "Very short intro (1-2 simple sentences only)",
-        "Brief example or story bit (1-2 simple sentences only)"
-      ]`;
-  } else if (ageRange === "9-11") {
-    paragraphInstructions = `"paragraphs": [
-        "Introduction to the concept (2-3 sentences)",
-        "Example or story element (2-3 sentences)",
-        "Brief practical explanation (2-3 sentences)"
-      ]`;
-  } else if (ageRange === "12-14") {
-    paragraphInstructions = `"paragraphs": [
-        "Introduction to the concept (3-4 sentences)",
-        "Examples or story element (3-4 sentences)",
-        "Practical explanation (3-4 sentences)"
-      ]`;
-  } else {
-    paragraphInstructions = `"paragraphs": [
-        "Introduction to the concept (4-5 sentences)",
-        "Examples or discussion (4-5 sentences)",
-        "Deeper practical application (4-5 sentences)"
-      ]`;
-  }
+  const context = buildCondensedContext(contentBrief, metadata);
+  const formatting = getAgeSpecificFormatting(extractAgeRange(metadata));
+  const characterContext = buildCharacterContext(metadata, seriesInfo);
 
-  const prompt = `Create ${count} lessons for a child's workbook about "${metadata.theme}".
+  const prompt = `Create ${count} lessons for a child's workbook.
 
-Module: "${metadata.title}"
-Primary Mascot: ${metadata.characterName} ${metadata.characterEmoji}
-Learner: Daniel 🧒 (and his friends like Lenny)
-Age: ${metadata.targetAge}
+${context}
 
-Brief: ${contentBrief}
+${characterContext}
 
-IMPORTANT: Include interactions between ${metadata.characterName} and Daniel. Show ${metadata.characterName} teaching or talking with Daniel to make the content more relatable. Use phrases like:
-- "Daniel asked me an interesting question today..."
-- "Let me tell Daniel about how this works..."
-- "Daniel's friend Lenny noticed something special..."
-- "I was talking with Daniel about..."
-
-CRITICAL AGE-SPECIFIC FORMATTING FOR ${metadata.targetAge} YEAR OLDS:
+Lesson specifics:
 - Paragraph length: ${formatting.lessonParagraphs}
-- Sentence style: ${formatting.sentenceCount}
-- Vocabulary: ${formatting.vocabularyLevel}
-- Tone: ${formatting.toneDescription}
-- Complexity: ${formatting.contentComplexity}
 
 Respond with ONLY this JSON:
 {
   "lessons": [
     {
       "heading": "Engaging lesson title with emoji",
-      ${paragraphInstructions},
+      "paragraphs": ["Paragraph 1", "Paragraph 2"],
       "calloutTitle": "Key Point",
-      "calloutText": "Important takeaway (1 short sentence for young kids, 1-2 for older)",
-      "tipText": "Fun tip from the mascot (keep short for young kids)"
+      "calloutText": "Important takeaway (age-appropriate length)",
+      "tipText": "Tip from the mascot"
     }
   ]
 }
 
-IMPORTANT: For ages 6-8, lessons must be VERY SHORT with simple words. Only 2 short paragraphs of 1-2 sentences each. Use words a 6-year-old knows!
-
-Create exactly ${count} unique lessons. Make each lesson focus on a different aspect of ${metadata.theme}, and order them so they build from simple awareness to practice and real-life application without repeating earlier ideas.`;
+Create exactly ${count} unique lessons. Each should focus on a different aspect of ${metadata.theme}, ordered from simple awareness to practise and real-life application.`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
   const parsed = safeJsonParse<{ lessons: LessonContent[] }>(response);
@@ -385,8 +398,7 @@ async function generateChecklists(
 ): Promise<ChecklistContent[]> {
   const prompt = `Create ${count} checklist activities for children about "${metadata.theme}".
 
-Module: "${metadata.title}"
-Mascot: ${metadata.characterName}
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -436,6 +448,8 @@ async function generateReflections(
 ): Promise<ReflectionContent[]> {
   const prompt = `Create ${count} reflection writing activities for children about "${metadata.theme}".
 
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "reflections": [
@@ -471,6 +485,8 @@ async function generateQuizzes(
   count: number
 ): Promise<QuizContent[]> {
   const prompt = `Create ${count} quiz questions for children about "${metadata.theme}".
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -518,6 +534,8 @@ async function generateDrawings(
 ): Promise<DrawingContent[]> {
   const prompt = `Create ${count} drawing activities for children about "${metadata.theme}".
 
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "drawings": [
@@ -548,9 +566,15 @@ Create exactly ${count} different drawing activities.`;
 
 async function generateBreathing(
   apiKey: string,
-  metadata: ModuleMetadata
+  metadata: ModuleMetadata,
+  contentBrief: string
 ): Promise<BreathingContent> {
   const prompt = `Create a breathing exercise for children.
+
+Module: "${metadata.title}"
+Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Age: ${metadata.targetAge}
+LANGUAGE: Australian English mandatory.
 
 Respond with ONLY this JSON:
 {
@@ -580,6 +604,8 @@ async function generateScenarios(
   count: number
 ): Promise<ScenarioContent[]> {
   const prompt = `Create ${count} scenario-based activities for children about "${metadata.theme}".
+
+${buildCondensedContext(contentBrief, metadata)}
 
 These should present a situation and ask the child to choose the best response.
 
@@ -629,6 +655,8 @@ async function generateFeelingThermometers(
 ): Promise<FeelingThermometerContent[]> {
   const prompt = `Create ${count} feeling thermometer activities for children about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
 Respond with ONLY this JSON:
 {
   "thermometers": [
@@ -666,6 +694,9 @@ async function generateBodyMaps(
   count: number
 ): Promise<BodyMapContent[]> {
   const prompt = `Create ${count} body map activities for children about "${metadata.theme}".
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -712,6 +743,9 @@ async function generateFeelingSelectors(
   count: number
 ): Promise<FeelingSelectorContent[]> {
   const prompt = `Create ${count} feeling selector activities for children about "${metadata.theme}".
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -762,6 +796,9 @@ async function generateCalmDenBuilders(
   count: number
 ): Promise<CalmDenBuilderContent[]> {
   const prompt = `Create ${count} calm-down den builder activities for children about "${metadata.theme}".
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -815,6 +852,9 @@ async function generateActionPlans(
 ): Promise<ActionPlanContent[]> {
   const prompt = `Create ${count} action plan activities for children about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "actionPlans": [
@@ -859,6 +899,9 @@ async function generateWarningSigns(
 ): Promise<WarningSingsContent[]> {
   const prompt = `Create ${count} warning signs identification activities for children about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "warningSigns": [
@@ -900,6 +943,9 @@ async function generateMatchingActivities(
   count: number
 ): Promise<MatchingActivityContent[]> {
   const prompt = `Create ${count} matching activities for children about "${metadata.theme}".
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -946,6 +992,9 @@ async function generateSummary(
   // ... (rest of the code remains the same)
   const prompt = `Create a summary page for a child's workbook about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "heading": "Summary title with emoji",
@@ -979,7 +1028,10 @@ async function generateCompletion(
 ): Promise<CompletionContent> {
   const prompt = `Create a completion/celebration page for a child's workbook.
 
+Module: "${metadata.title}"
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Age: ${metadata.targetAge}
+LANGUAGE: Australian English mandatory.
 
 Respond with ONLY this JSON:
 {
@@ -1006,46 +1058,36 @@ async function generateInteractiveLessons(
   apiKey: string,
   metadata: ModuleMetadata,
   contentBrief: string,
-  count: number
+  count: number,
+  seriesInfo?: SeriesInfo | null
 ): Promise<InteractiveLessonContent[]> {
   const interactionTypes = ["poll", "circle-one", "fill-blank", "rate-scale", "true-false"];
   const lessons: InteractiveLessonContent[] = [];
+  const context = buildCondensedContext(contentBrief, metadata);
+  const characterContext = buildCharacterContext(metadata, seriesInfo);
+  const includeDaniel = shouldIncludeDaniel(metadata, seriesInfo);
   
-  // Generate lessons individually with context awareness
   for (let i = 0; i < count; i++) {
-    // Determine the lesson type based on its sequence
     const lessonType = i === 0 ? "first" : i < 2 ? "early" : "later";
     
     const contextGuidance = {
-      first: "This is the FIRST interactive lesson after the welcome page. Build directly on the welcome's concepts. Start with phrases like 'Now let's dive deeper...' or 'Remember what we talked about?' DO NOT reintroduce the module or mascot - they already know who you are. Include Daniel references like 'Daniel wondered about this too...'",
-      early: "This is an early lesson. The reader already knows the basics. Focus on exploring specific aspects or practicing skills. Build on what came before. Reference Daniel's experiences.",
-      later: "This is a later lesson. The reader has learned foundational concepts. Focus on application, deeper understanding, or challenging scenarios. Show how Daniel applies these skills."
+      first: "This is the FIRST interactive lesson after the welcome. Build directly on the welcome's concepts. DO NOT reintroduce the module or mascot.",
+      early: "This is an early lesson. The reader knows the basics. Focus on exploring specific aspects or practising skills.",
+      later: "This is a later lesson. Focus on application, deeper understanding, or challenging scenarios."
     }[lessonType];
     
     const prompt = `Create interactive lesson ${i + 1} of ${count} for a child's workbook.
 
-Module: "${metadata.title}"
-Theme: ${metadata.theme}
-Primary Mascot: ${metadata.characterName} ${metadata.characterEmoji}
-Learner: Daniel 🧒 (and his friends like Lenny)
-Age: ${metadata.targetAge}
+${context}
+
+${characterContext}
 
 LESSON CONTEXT: ${contextGuidance}
-
-IMPORTANT: Include interactions with Daniel. Use phrases like:
-- "Daniel asked me..."
-- "Let me tell Daniel about..."
-- "Daniel's friend Lenny noticed..."
-- "Daniel wants to know..."
-
-Brief: ${contentBrief}
-
-Create an interactive lesson with activities that build on previous content. ${lessonType === "first" ? "DO NOT repeat the welcome message or reintroduce concepts - start where the welcome left off." : ""}
 
 Respond with ONLY this JSON:
 {
   "heading": "Engaging title that shows progression (not 'Welcome' or 'Introduction')",
-  "introText": "Brief intro that builds on previous content and mentions Daniel (2-3 sentences max)",
+  "introText": "Brief intro that builds on previous content (2-3 sentences max)",
   "interactionType": "poll" | "circle-one" | "fill-blank" | "rate-scale" | "true-false",
   "interactionPrompt": "Interactive question or task",
   "interactionOptions": ["option1", "option2", "option3", "option4"],
@@ -1054,15 +1096,14 @@ Respond with ONLY this JSON:
   "mascotComment": "Encouraging comment from ${metadata.characterName}"
 }
 
-IMPORTANT:
+Rules:
 - interactionType must be one of: "poll", "circle-one", "fill-blank", "rate-scale", "true-false"
-- For "poll" and "circle-one" with factual questions: provide 3-4 options AND set "correctAnswerIndex" to the 0-based index of the correct option
-- For opinion-based "poll"/"circle-one": omit correctAnswerIndex (all choices are valid)
-- For "fill-blank": the prompt should have ___ where the child fills in
+- For factual questions: provide 3-4 options AND set "correctAnswerIndex" (0-based)
+- For opinion-based questions: omit correctAnswerIndex
+- For "fill-blank": prompt should have ___ where the child fills in
 - For "rate-scale": prompt asks to rate something 1-5
-- For "true-false": the prompt is a statement to agree/disagree with. Set "correctAnswerIndex" to 0 if "I Agree" is correct, or 1 if "I Disagree" is correct
-- Vary the interaction types across lessons
-- Keep text SHORT - focus on the interaction`;
+- For "true-false": set "correctAnswerIndex" to 0 (Agree) or 1 (Disagree)
+- Vary interaction types across lessons`;
 
     const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
     const parsed = safeJsonParse<InteractiveLessonContent>(response);
@@ -1103,6 +1144,9 @@ async function generateFillInStories(
   const prompt = `Create ${count} fill-in-the-blank story activities for children about "${metadata.theme}".
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1150,6 +1194,9 @@ async function generateCopingCards(
 ): Promise<CopingCardsContent[]> {
   const prompt = `Create ${count} coping cards builder activities for children about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "copingCards": [
@@ -1193,6 +1240,9 @@ async function generateGratitudeJars(
   count: number
 ): Promise<GratitudeJarContent[]> {
   const prompt = `Create ${count} gratitude jar activities for children about "${metadata.theme}".
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1239,6 +1289,9 @@ async function generateSortingActivities(
   count: number
 ): Promise<SortingActivityContent[]> {
   const prompt = `Create ${count} sorting activities for children about "${metadata.theme}".
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1291,6 +1344,9 @@ async function generateThoughtBubbles(
 ): Promise<ThoughtBubblesContent[]> {
   const prompt = `Create ${count} thought bubble challenge activities for children about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "thoughtBubbles": [
@@ -1334,6 +1390,9 @@ async function generateEmojiCheckIns(
   const prompt = `Create ${count} emoji check-in activities for children about "${metadata.theme}".
 
 IMPORTANT: Use actual emoji characters, not text names!
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1393,6 +1452,9 @@ async function generateWordScrambles(
 ): Promise<WordScrambleContent[]> {
   const prompt = `Create ${count} word scramble activities for children about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "wordScrambles": [
@@ -1437,6 +1499,9 @@ async function generateAgreeDisagrees(
 ): Promise<AgreeDisagreeContent[]> {
   const prompt = `Create ${count} agree/disagree activities for children about "${metadata.theme}".
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "agreeDisagrees": [
@@ -1480,6 +1545,9 @@ async function generateComicStrips(
   count: number
 ): Promise<ComicStripContent[]> {
   const prompt = `Create ${count} comic strip activities for children about "${metadata.theme}".
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1539,6 +1607,9 @@ Examples of WRONG combinations to AVOID:
 - "I choose to" + "brave and" + "strong" = "I choose to brave and strong" ✗ (grammatically incorrect!)
 - "I will" + "brave and" + "confident" = "I will brave and confident" ✗ (missing "be")
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "affirmationBuilders": [
@@ -1594,6 +1665,9 @@ async function generateWeatherControllers(
 
 This is an interactive game where children control emotional "weather" by using calming actions.
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "weatherControllers": [
@@ -1648,6 +1722,9 @@ async function generatePowerUpCollectors(
   const prompt = `Create ${count} power-up collector activities for children about "${metadata.theme}".
 
 This is a game where children collect positive coping strategies while avoiding unhelpful ones.
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1707,6 +1784,9 @@ async function generateEmotionMazes(
   const prompt = `Create ${count} emotion maze activities for children about "${metadata.theme}".
 
 This is a path-choosing game where children navigate from a challenging emotion to a better state.
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1795,6 +1875,9 @@ async function generateStrengthShields(
 
 This is an activity where children build a protective shield with their personal strengths.
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "strengthShields": [
@@ -1846,6 +1929,9 @@ async function generateFeelingVolcanoes(
   const prompt = `Create ${count} feeling volcano activities for children about "${metadata.theme}".
 
 This is a game where children learn to "cool down" a volcano of big feelings before it erupts.
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -1917,6 +2003,9 @@ async function generateSpinTheWheels(
 
 This is a fun, engaging game where children spin a wheel and get different feelings/responses. Make it interactive and colorful!
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "spinTheWheels": [
@@ -1937,7 +2026,7 @@ Respond with ONLY this JSON:
   ]
 }
 
-Make each activity unique and fun for children ages 5-12.`;
+Make the content age-appropriate for ${metadata.targetAge} year olds.`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ spinTheWheels: SpinTheWheelContent[] }>(response);
@@ -1973,6 +2062,9 @@ async function generateStickerCollectors(
 
 This is a gamified activity where children collect stickers by completing challenges. Make it fun and rewarding!
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "stickerCollectors": [
@@ -1993,7 +2085,7 @@ Respond with ONLY this JSON:
   ]
 }
 
-Make it interactive, encouraging, and suitable for children learning about feelings.`;
+Make the content age-appropriate for ${metadata.targetAge} year olds.`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ stickerCollectors: StickerCollectorContent[] }>(response);
@@ -2029,6 +2121,9 @@ async function generateMindfulAdventures(
 
 This is a guided journey through different mindful scenes where children pause and reflect on their senses and feelings.
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "mindfulAdventures": [
@@ -2045,7 +2140,7 @@ Respond with ONLY this JSON:
   ]
 }
 
-Make it calming, sensory-rich, and suitable for children to feel peaceful and present.`;
+Make the content calming, sensory-rich, and age-appropriate for ${metadata.targetAge} year olds.`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ mindfulAdventures: MindfulAdventureContent[] }>(response);
@@ -2097,6 +2192,9 @@ async function generateEmotionDetectives(
   const prompt = `Create ${count} "Emotion Detective" mystery activities for children about "${metadata.theme}".
 
 This is a mystery game where children collect clues and solve an emotion-based mystery. Very engaging and educational!
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -2175,6 +2273,9 @@ This is an interactive game where children pop worry balloons using calming tool
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "balloonPops": [
@@ -2240,6 +2341,9 @@ async function generateTreasureHunts(
 This is an adventure game where children explore different locations and discover emotional treasures (coping skills, insights, strengths).
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -2338,6 +2442,9 @@ This is a game where children tame emotion monsters using kindness and coping st
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "monsterTamers": [
@@ -2416,6 +2523,9 @@ async function generateGardenGrowers(
 This is a nurturing game where children grow emotional plants by practicing positive actions. Each plant represents a positive feeling/skill.
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -2519,6 +2629,9 @@ This is a creative game where children build their own emotional superhero with 
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "superheroCreators": [
@@ -2604,6 +2717,9 @@ This is a creative game where each instrument represents a different emotion, an
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "feelingsOrchestras": [
@@ -2661,6 +2777,9 @@ async function generateCalmAquariums(
 This is a relaxing, mindful activity where children build a peaceful underwater world and practice calm breathing with bubbles.
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -2734,6 +2853,9 @@ This is an adventure game where children fuel up a rocket with positive actions 
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
 
+
+${buildCondensedContext(contentBrief, metadata)}
+
 Respond with ONLY this JSON:
 {
   "rocketLaunchers": [
@@ -2798,6 +2920,9 @@ async function generateMagicPotions(
 This is a creative activity where children mix emotional ingredients to create magical feeling potions.
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -2864,6 +2989,9 @@ async function generateFeelingsBingos(
 This is an interactive bingo game where each square has a feeling challenge to complete.
 
 Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+
+
+${buildCondensedContext(contentBrief, metadata)}
 
 Respond with ONLY this JSON:
 {
@@ -2987,13 +3115,13 @@ async function generateAllContent(
   await updateProgress("structure", "Planning module structure...");
   const [chapters, welcome] = await Promise.all([
     generateChapterDividers(apiKey, metadata, contentBrief, counts.chapters),
-    generateWelcome(apiKey, metadata, contentBrief),
+    generateWelcome(apiKey, metadata, contentBrief, seriesInfo),
   ]);
   
   await updateProgress("lessons", "Creating lesson content...");
   const [lessons, interactiveLessons] = await Promise.all([
-    counts.lessons > 0 ? generateLessons(apiKey, metadata, contentBrief, counts.lessons) : Promise.resolve([]),
-    counts.interactiveLessons > 0 ? generateInteractiveLessons(apiKey, metadata, contentBrief, counts.interactiveLessons) : Promise.resolve([]),
+    counts.lessons > 0 ? generateLessons(apiKey, metadata, contentBrief, counts.lessons, seriesInfo) : Promise.resolve([]),
+    counts.interactiveLessons > 0 ? generateInteractiveLessons(apiKey, metadata, contentBrief, counts.interactiveLessons, seriesInfo) : Promise.resolve([]),
   ]);
   
   await updateProgress("activities", "Designing interactive activities...");
@@ -3003,7 +3131,7 @@ async function generateAllContent(
     counts.quizzes > 0 ? generateQuizzes(apiKey, metadata, contentBrief, counts.quizzes) : Promise.resolve([]),
     counts.drawings > 0 ? generateDrawings(apiKey, metadata, contentBrief, counts.drawings) : Promise.resolve([]),
     counts.scenarios > 0 ? generateScenarios(apiKey, metadata, contentBrief, counts.scenarios) : Promise.resolve([]),
-    generateBreathing(apiKey, metadata),
+    generateBreathing(apiKey, metadata, contentBrief),
   ]);
   
   await updateProgress("interactive", "Creating interactive experiences...");

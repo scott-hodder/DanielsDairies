@@ -69,6 +69,8 @@ import {
   type FeelingsBingoContent,
   type AgeRangeData,
   type CoreTheoryData,
+  type VerificationReport,
+  type ModuleSummary,
   buildEnhancedContentBrief,
   
   // Configuration
@@ -416,6 +418,9 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         break;
       case "completion":
         pageHtml = renderCompletionPage(content.completion, metadata);
+        break;
+      case "admin-verification":
+        pageHtml = renderAdminVerificationPage(content.verificationReport, content.moduleSummary, metadata);
         break;
        
     }
@@ -1086,9 +1091,10 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         initMatchingActivity(activity);
       });
       
-      // Drawing canvas
-      const canvas = document.querySelector('.drawing-canvas');
-      if (canvas) initDrawingCanvas(canvas);
+      // Drawing canvas - init ALL drawing canvases (not just the first)
+      document.querySelectorAll('.drawing-canvas').forEach(canvas => {
+        initDrawingCanvas(canvas);
+      });
       
       // Comic strip canvases
       document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
@@ -1262,6 +1268,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       let drawing = false;
       let currentColor = '#264653';
       const drawingKey = canvas.getAttribute('data-drawing-key');
+      const container = canvas.closest('.rounded-3xl') || canvas.parentElement?.parentElement;
       
       const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
@@ -1315,15 +1322,16 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       canvas.addEventListener('touchmove', move, { passive: false });
       canvas.addEventListener('touchend', end);
       
-      // Color buttons
-      document.querySelectorAll('.color-btn').forEach(btn => {
+      // Color buttons - scope to this canvas's container
+      const colorBtns = container ? container.querySelectorAll('.color-btn') : document.querySelectorAll('.color-btn');
+      colorBtns.forEach(btn => {
         btn.addEventListener('click', () => {
           currentColor = btn.dataset.color;
         });
       });
       
-      // Clear button
-      const clearBtn = document.querySelector('.clear-canvas-btn');
+      // Clear button - scope to this canvas's container
+      const clearBtn = container ? container.querySelector('.clear-canvas-btn') : document.querySelector('.clear-canvas-btn');
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -3638,6 +3646,167 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
 }
 
 // ========================================
+// ADMIN-ONLY VERIFICATION PAGE
+// ========================================
+
+function renderAdminVerificationPage(report: VerificationReport | undefined, moduleSummary: ModuleSummary | undefined, metadata: ModuleMetadata): string {
+  const r = report || {
+    theoriesUsed: [],
+    ageRangeTheoriesApplied: "Not available",
+    subSkillAlignment: "Not available",
+    superSkillAlignment: "Not available",
+    brainTownAnalogyUsage: "Not available",
+    unselectedConceptsIntroduced: [],
+    toneComplianceNotes: "Not available",
+    claimTypes: "Not available",
+    australianEnglishCheck: "Not available",
+    overallAssessment: "NOT VERIFIED",
+    flaggedIssues: [],
+    autoRevisions: [],
+  };
+  
+  const ms = moduleSummary || {
+    summary: "Not available",
+    keyConceptsCovered: [],
+    skillsIntroduced: [],
+    characterProgressionNotes: "Not available",
+  };
+
+  const assessmentColour = r.overallAssessment.includes("PASS") && !r.overallAssessment.includes("NEEDS")
+    ? "#10B981"
+    : r.overallAssessment.includes("NOTES")
+      ? "#F59E0B"
+      : "#EF4444";
+
+  const theoriesRows = r.theoriesUsed.map(t => `
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">${escapeForTemplate(t.theoryName)}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">${escapeForTemplate(t.whereOperationalised)}</td>
+    </tr>
+  `).join("") || '<tr><td colspan="2" style="padding: 8px 12px; color: #6b7280;">No theories detected</td></tr>';
+
+  const flaggedItems = r.flaggedIssues.length > 0
+    ? r.flaggedIssues.map(f => `<li style="margin-bottom: 4px; color: #DC2626;">${escapeForTemplate(f)}</li>`).join("")
+    : '<li style="color: #10B981;">No issues flagged</li>';
+
+  const unselectedItems = r.unselectedConceptsIntroduced.length > 0
+    ? r.unselectedConceptsIntroduced.map(c => `<li style="margin-bottom: 4px; color: #F59E0B;">${escapeForTemplate(c)}</li>`).join("")
+    : '<li style="color: #10B981;">None - all concepts were specified</li>';
+
+  return `
+    <div class="page min-h-screen p-8" style="background-color: #1a1a2e;" data-page="admin-verification" data-admin-only="true">
+      <div class="max-w-4xl mx-auto">
+        <div style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center;">
+          <h1 style="font-family: 'Fredoka One', cursive; font-size: 2rem; color: white; margin-bottom: 8px;">
+            🔒 Admin Verification Report
+          </h1>
+          <p style="color: rgba(255,255,255,0.8); font-family: 'Nunito', sans-serif; font-size: 14px;">
+            This page is only visible to administrators. It shows the AI self-verification audit results.
+          </p>
+        </div>
+        
+        <!-- Overall Assessment -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 6px solid ${assessmentColour};">
+          <h2 style="font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: #1a1a2e; margin-bottom: 8px;">
+            Overall Assessment
+          </h2>
+          <div style="font-family: 'Nunito', sans-serif; font-size: 1.2rem; font-weight: 700; color: ${assessmentColour};">
+            ${escapeForTemplate(r.overallAssessment)}
+          </div>
+        </div>
+
+        <!-- Theories Used -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
+            📚 Theories Used & Where Operationalised
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; font-family: 'Nunito', sans-serif; font-size: 14px;">
+            <thead>
+              <tr style="background: #f3f4f6;">
+                <th style="padding: 8px 12px; text-align: left; font-weight: 700;">Theory</th>
+                <th style="padding: 8px 12px; text-align: left; font-weight: 700;">Where Operationalised</th>
+              </tr>
+            </thead>
+            <tbody>${theoriesRows}</tbody>
+          </table>
+        </div>
+
+        <!-- Alignment Checks -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🎯 Age Range Alignment</h4>
+            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.ageRangeTheoriesApplied)}</p>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🧩 Sub-Skill Alignment</h4>
+            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.subSkillAlignment)}</p>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🏆 Super Skill Alignment</h4>
+            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.superSkillAlignment)}</p>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🧠 Brain Town Analogy</h4>
+            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.brainTownAnalogyUsage)}</p>
+          </div>
+        </div>
+
+        <!-- Tone & Language -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🗣️ Tone Compliance</h4>
+            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.toneComplianceNotes)}</p>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🇦🇺 Australian English Check</h4>
+            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.australianEnglishCheck)}</p>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">📋 Claim Types</h4>
+            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.claimTypes)}</p>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 16px;">
+            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">⚠️ Unselected Concepts</h4>
+            <ul style="font-family: 'Nunito', sans-serif; font-size: 13px; margin: 0; padding-left: 20px;">${unselectedItems}</ul>
+          </div>
+        </div>
+
+        <!-- Flagged Issues -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 6px solid ${r.flaggedIssues.length > 0 ? '#EF4444' : '#10B981'};">
+          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
+            🚩 Flagged Issues
+          </h3>
+          <ul style="font-family: 'Nunito', sans-serif; font-size: 14px; margin: 0; padding-left: 20px;">${flaggedItems}</ul>
+        </div>
+
+        <!-- Module Summary (for next week) -->
+        <div style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 2px solid #10B981;">
+          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
+            📝 Module Summary (for next week's continuity)
+          </h3>
+          <p style="font-family: 'Nunito', sans-serif; font-size: 14px; color: #374151; margin-bottom: 12px;">
+            ${escapeForTemplate(ms.summary)}
+          </p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <strong style="font-size: 13px; color: #1a1a2e;">Key Concepts:</strong>
+              <p style="font-size: 13px; color: #374151;">${ms.keyConceptsCovered.map(c => escapeForTemplate(c)).join(", ") || "None listed"}</p>
+            </div>
+            <div>
+              <strong style="font-size: 13px; color: #1a1a2e;">Skills Introduced:</strong>
+              <p style="font-size: 13px; color: #374151;">${ms.skillsIntroduced.map(s => escapeForTemplate(s)).join(", ") || "None listed"}</p>
+            </div>
+          </div>
+          <div style="margin-top: 8px;">
+            <strong style="font-size: 13px; color: #1a1a2e;">Character Progression:</strong>
+            <p style="font-size: 13px; color: #374151;">${escapeForTemplate(ms.characterProgressionNotes)}</p>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ========================================
 // NEW PAGE RENDERERS (v4.0)
 // ========================================
 
@@ -4816,6 +4985,8 @@ async function generateModule(
     pageCount,
     starCount: pageStructure.filter(p => p.starReward).length,
     metadata: content.metadata,
+    verificationReport: content.verificationReport,
+    moduleSummary: content.moduleSummary,
     generatedAt: new Date().toISOString(),
   };
   
@@ -4856,6 +5027,24 @@ async function runAsyncGeneration(
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
+    
+    // Save module_summary to the modules table if available
+    if (result?.spec?.moduleSummary?.summary) {
+      try {
+        // Find the module associated with this job and update its module_summary
+        const { data: jobData } = await supabaseClient
+          .from("ai_generation_jobs")
+          .select("result")
+          .eq("id", jobId)
+          .single();
+        
+        // The module_summary is stored in the job result for the admin to use
+        // It will be written to the modules table when the module is saved
+        console.log("[AI] Module summary generated for continuity:", result.spec.moduleSummary.summary.substring(0, 100) + "...");
+      } catch (e) {
+        console.warn("[AI] Could not save module summary:", e);
+      }
+    }
     
 
     
@@ -4970,7 +5159,7 @@ serve(async (req) => {
     const superSkillId = body?.superSkillId;
     
     // NEW: Check if this is enhanced mode or legacy mode
-    const isEnhancedMode = body?.ageRangeId && body?.coreTheoryId;
+    const isEnhancedMode = (body?.ageRangeId || body?.age_range_id) && (body?.coreTheoryId || body?.primary_theory_id);
     
     let contentBrief: string;
     
@@ -4978,17 +5167,36 @@ serve(async (req) => {
       // =====================
       // ENHANCED MODE (NEW)
       // =====================
+      // Accept both camelCase and snake_case field names
+      const ageRangeId = body.ageRangeId || body.age_range_id;
+      const coreTheoryId = body.coreTheoryId || body.primary_theory_id;
       const { 
-        ageRangeId, coreTheoryId, brainTownAnalogy, additionalContext, title,
-        secondaryTheoryIds, neuroscienceConcept, diagnosisPathways, fasdStrategies,
-        ndisDomainId, dssSediId, moduleObjective, facilitatorTip, reflectionPrompt, rewardText
+        additionalContext,
       } = body;
+      const title = body.title || body.module_title || '';
+      
+      // Accept multiple possible field names for brain town analogy
+      const brainTownAnalogy = body.brainTownAnalogy || body.brain_town_analogy || body.brainTownMetaphor || body.brain_town_metaphor || '';
       
       if (!brainTownAnalogy) {
         return jsonResponse({ 
-          error: "Enhanced mode requires: ageRangeId, coreTheoryId, brainTownAnalogy" 
+          error: "Enhanced mode requires: ageRangeId, coreTheoryId, brainTownAnalogy (or brain_town_analogy / brain_town_metaphor)" 
         }, 400);
       }
+      
+      // Accept snake_case variants for all fields
+      const secondaryTheoryIds = body.secondaryTheoryIds || body.secondary_theory_ids || [];
+      const neuroscienceConcept = body.neuroscienceConcept || body.neuroscience_concept || '';
+      const diagnosisPathways = body.diagnosisPathways || body.diagnosis_pathways || [];
+      const fasdStrategies = body.fasdStrategies || body.fasd_strategies || '';
+      const ndisDomainId = body.ndisDomainId || body.ndis_domain_id || '';
+      const dssSediId = body.dssSediId || body.dss_sedi_id || '';
+      const moduleObjective = body.moduleObjective || body.module_objective || '';
+      const facilitatorTip = body.facilitatorTip || body.facilitator_tip || '';
+      const reflectionPrompt = body.reflectionPrompt || body.reflection_prompt || '';
+      const rewardText = body.rewardText || body.reward_text || '';
+      const previousModuleSummary = body.previousModuleSummary || body.previous_module_summary || '';
+      const weekNumber = body.weekNumber || body.week_number || body.cycleWeek || body.cycle_week;
       
       // Fetch secondary theory names if provided
       let secondaryTheories: string[] = [];
@@ -5065,7 +5273,9 @@ serve(async (req) => {
         moduleObjective,
         facilitatorTip,
         reflectionPrompt,
-        rewardText
+        rewardText,
+        previousModuleSummary,
+        weekNumber
       });
       
       console.log("[AI] Using enhanced psychology-based content brief");
@@ -5244,6 +5454,7 @@ serve(async (req) => {
       pageCount: result.pageCount,
       characterCount: result.characterCount,
       spec: result.spec,
+      moduleSummary: result.spec.moduleSummary?.summary || null,
     });
     
   } catch (e) {

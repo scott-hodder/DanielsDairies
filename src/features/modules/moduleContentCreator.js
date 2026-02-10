@@ -421,6 +421,14 @@ function mapColumnName(columnName) {
         'brain town analogy': 'brain_town_analogy',
         'brain_town_analogy': 'brain_town_analogy',
         'braintownanalogy': 'brain_town_analogy',
+        'brain town metaphor': 'brain_town_analogy',
+        'brain_town_metaphor': 'brain_town_analogy',
+        'neuroscience concept': 'neuroscience_concept',
+        'neuroscience_concept': 'neuroscience_concept',
+        'module objective': 'module_objective',
+        'module_objective': 'module_objective',
+        'module summary': 'module_summary',
+        'module_summary': 'module_summary',
         'ai content prompt': 'ai_content_prompt',
         'ai_content_prompt': 'ai_content_prompt',
         'ai content prompt (with theory)': 'ai_content_prompt',
@@ -647,16 +655,41 @@ async function loadModuleBlueprintIntoForm() {
         // Populate form fields
         const titleEl = document.getElementById('newModuleTitle');
         if (titleEl) titleEl.value = blueprint.module_title || '';
-        const ageRangeEl = document.getElementById('newModuleAgeRange');
-        if (!setSelectByName(ageRangeEl, blueprint.age_range || '')) {
-            if (ageRangeEl) ageRangeEl.value = blueprint.age_range || '';
+        const ageRangeEl = document.getElementById('ageRangeSelect');
+        if (ageRangeEl) {
+            // Try to match by age range text
+            const targetAge = (blueprint.age_range || '').trim().toLowerCase();
+            if (targetAge) {
+                for (let opt of ageRangeEl.options) {
+                    if (opt.text.trim().toLowerCase().includes(targetAge) || opt.value === blueprint.age_range_id) {
+                        ageRangeEl.value = opt.value;
+                        break;
+                    }
+                }
+            }
         }
-        const coreTheoryEl = document.getElementById('newModuleCoreTheory');
-        if (!setSelectByName(coreTheoryEl, blueprint.core_theory || '')) {
-            if (coreTheoryEl) coreTheoryEl.value = blueprint.core_theory || '';
+        const coreTheoryEl = document.getElementById('coreTheorySelect');
+        if (coreTheoryEl) {
+            // Try to match by theory name text in the dropdown options
+            if (blueprint.core_theory) {
+                const target = blueprint.core_theory.trim().toLowerCase();
+                let matched = false;
+                for (let opt of coreTheoryEl.options) {
+                    if (opt.text.trim().toLowerCase().includes(target) || target.includes(opt.text.trim().toLowerCase())) {
+                        coreTheoryEl.value = opt.value;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) console.warn('[Blueprint] Could not match core theory:', blueprint.core_theory);
+            }
+            // If we have a primary_theory_id UUID, use it directly
+            if (blueprint.primary_theory_id) {
+                coreTheoryEl.value = blueprint.primary_theory_id;
+            }
         }
-        const brainTownEl = document.getElementById('newModuleBrainTownAnalogy');
-        if (brainTownEl) brainTownEl.value = blueprint.brain_town_analogy || '';
+        const brainTownEl = document.getElementById('brainTownAnalogy');
+        if (brainTownEl) brainTownEl.value = blueprint.brain_town_analogy || blueprint.brain_town_metaphor || '';
         
         console.log(' Blueprint loaded in module-content-creator.js');
         console.log('Core Theory:', blueprint.core_theory);
@@ -736,8 +769,16 @@ function buildContentBriefFromBlueprint(blueprint) {
     if (blueprint.core_theory) {
         parts.push(`\nCore Theory: ${blueprint.core_theory}`);
     }
-    if (blueprint.brain_town_analogy) {
-        parts.push(`\nBrain Town Analogy: ${blueprint.brain_town_analogy}`);
+    // Handle both possible field names for brain town
+    const brainTown = blueprint.brain_town_analogy || blueprint.brain_town_metaphor;
+    if (brainTown) {
+        parts.push(`\nBrain Town Analogy: ${brainTown}`);
+    }
+    if (blueprint.neuroscience_concept) {
+        parts.push(`\nNeuroscience Concept: ${blueprint.neuroscience_concept}`);
+    }
+    if (blueprint.module_objective) {
+        parts.push(`\nObjective: ${blueprint.module_objective}`);
     }
     
     return parts.join('\n');

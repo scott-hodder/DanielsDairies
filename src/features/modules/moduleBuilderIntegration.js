@@ -900,6 +900,16 @@ function renderStep5() {
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px;">
+                    <div style="font-weight: 600; color: #405878;">Brain Town Metaphor:</div>
+                    <div style="color: ${state.formData.brainTownMetaphor ? '#6b7280' : '#EF4444'};">${state.formData.brainTownMetaphor || '⚠️ Not set - strongly recommended'}</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px;">
+                    <div style="font-weight: 600; color: #405878;">Neuroscience:</div>
+                    <div style="color: #6b7280;">${state.formData.neuroscienceConcept || 'None'}</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px;">
                     <div style="font-weight: 600; color: #405878;">Adaptations:</div>
                     <div style="color: #6b7280;">${state.formData.diagnosisPathways.length > 0 ? state.formData.diagnosisPathways.map(d => d.toUpperCase()).join(', ') : 'None'}</div>
                 </div>
@@ -948,6 +958,7 @@ async function saveModuleBlueprint() {
             super_skill_id: state.formData.superSkillId,
             sub_skill_id: state.formData.subSkillId,
             age_range: state.ageRanges.find(ar => ar.id === state.formData.ageRangeId)?.age_range,
+            age_range_id: state.formData.ageRangeId,
             stage: state.formData.stage,
             level: state.formData.stage, // Legacy field
             cycle_week: state.formData.cycleWeek,
@@ -956,6 +967,7 @@ async function saveModuleBlueprint() {
             secondary_theory_ids: state.formData.secondaryTheoryIds,
             neuroscience_concept: state.formData.neuroscienceConcept || null,
             brain_town_metaphor: state.formData.brainTownMetaphor || null,
+            brain_town_analogy: state.formData.brainTownMetaphor || null,
             diagnosis_pathways: state.formData.diagnosisPathways,
             fasd_strategies: state.formData.fasdStrategies || null,
             ndis_domain_id: state.formData.ndisDomainId || null,
