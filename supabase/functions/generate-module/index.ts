@@ -107,6 +107,13 @@ function getAgeRangeKey(targetAge?: string): string {
   return normalized || "6-8";
 }
 
+function extractTitleFromContentBrief(contentBrief?: string): string | null {
+  if (!contentBrief) return null;
+  const titleMatch = contentBrief.match(/^Title:\s*(.+)$/im);
+  const title = titleMatch?.[1]?.trim();
+  return title || null;
+}
+
 function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): string {
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
@@ -4940,7 +4947,8 @@ async function generateModule(
   contentBrief: string,
   jobId?: string,
   seriesInfo?: SeriesInfo | null,
-  categoryColor?: string | null
+  categoryColor?: string | null,
+  forcedTitle?: string | null
 ): Promise<{ html: string; pageCount: number; characterCount: number; spec: any }> {
   
   const updateProgress = async (step: string, message: string) => {
@@ -4966,7 +4974,7 @@ async function generateModule(
 
   
   await updateProgress("generating", `Creating ${pageStructure.length}-page module...`);
-  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo);
+  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo, forcedTitle);
   
   // Generate module code
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
@@ -5002,7 +5010,8 @@ async function runAsyncGeneration(
   jobId: string,
   contentBrief: string,
   seriesInfo?: SeriesInfo | null,
-  categoryColor?: string | null
+  categoryColor?: string | null,
+  forcedTitle?: string | null
 ) {
   const startTime = Date.now();
   
@@ -5016,7 +5025,7 @@ async function runAsyncGeneration(
       setTimeout(() => reject(new Error("Generation timeout")), JOB_TIMEOUT_MS);
     });
     
-    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor);
+    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
     
     await supabaseClient
@@ -5162,6 +5171,7 @@ serve(async (req) => {
     const isEnhancedMode = (body?.ageRangeId || body?.age_range_id) && (body?.coreTheoryId || body?.primary_theory_id);
     
     let contentBrief: string;
+    let forcedTitle: string | null = null;
     
     if (isEnhancedMode) {
       // =====================
@@ -5174,6 +5184,7 @@ serve(async (req) => {
         additionalContext,
       } = body;
       const title = body.title || body.module_title || '';
+      forcedTitle = title?.trim() || null;
       
       // Accept multiple possible field names for brain town analogy
       const brainTownAnalogy = body.brainTownAnalogy || body.brain_town_analogy || body.brainTownMetaphor || body.brain_town_metaphor || '';
@@ -5291,6 +5302,8 @@ serve(async (req) => {
           error: "contentBrief is required (or use enhanced mode with ageRangeId + coreTheoryId + brainTownAnalogy)" 
         }, 400);
       }
+
+      forcedTitle = (body?.title || body?.module_title || '').trim() || extractTitleFromContentBrief(contentBrief);
     }
     
     // =====================
@@ -5439,16 +5452,16 @@ serve(async (req) => {
       
       const anyGlobal = globalThis as any;
       if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
-        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor));
+        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
       } else {
-        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor).catch(console.error);
+        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle).catch(console.error);
       }
       
       return jsonResponse({ jobId });
     }
     
     // Sync mode
-    const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo, categoryColor);
+    const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo, categoryColor, forcedTitle);
     return jsonResponse({
       html: result.html,
       pageCount: result.pageCount,
