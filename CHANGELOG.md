@@ -9,3 +9,5 @@
   - added CI workflow and root quality scripts (`lint`, `typecheck`, `test`, `build:all`)
   - added baseline automated tests and production-readiness documentation
   - started modular refactor by extracting admin/dashboard/modules helpers into feature/service folders
+
+- Moved core JS files into feature/service folders with compatibility wrappers at original paths.
