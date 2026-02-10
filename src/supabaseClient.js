@@ -1,23 +1,19 @@
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseBrowserClient } from './lib/supabaseClientFactory.js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const { client, isConfigured, configError, message } = createSupabaseBrowserClient()
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Missing Supabase environment variables. Please create a .env file with your credentials.')
-  console.warn('See QUICKSTART.md for setup instructions.')
+if (!isConfigured && message) {
+  console.warn(`⚠️ ${message}`)
 }
 
-// Create client with proper session persistence
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined
-    }
+export const isSupabaseConfigured = isConfigured
+export const supabaseConfigError = configError
+
+export const supabase = client
+
+export function getSupabaseClient() {
+  if (!supabase) {
+    throw configError || new Error('Supabase client is unavailable')
   }
-)
+  return supabase
+}
