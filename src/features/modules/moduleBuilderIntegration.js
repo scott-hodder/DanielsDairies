@@ -34,11 +34,7 @@ let moduleBuilderState = {
         
         // Step 4: Outcomes
         ndisDomainId: '',
-        dssSediId: '',
-        moduleObjective: '',
-        facilitatorTip: '',
-        reflectionPrompt: '',
-        rewardText: ''
+        dssSediId: ''
     },
     
     // Cached data
@@ -778,44 +774,6 @@ function renderStep4() {
                     </select>
                 </div>
             </div>
-            
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #405878; margin-bottom: 8px;">
-                    Module Objective
-                </label>
-                <textarea id="moduleObjective" rows="2" 
-                    placeholder="What will children be able to do after completing this module? Be specific."
-                    style="width: 100%; padding: 10px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; resize: vertical;">${state.formData.moduleObjective}</textarea>
-            </div>
-            
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #405878; margin-bottom: 8px;">
-                    Facilitator Tip
-                </label>
-                <textarea id="facilitatorTip" rows="2" 
-                    placeholder="Guidance for parents/educators on delivering this module"
-                    style="width: 100%; padding: 10px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; resize: vertical;">${state.formData.facilitatorTip}</textarea>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #405878; margin-bottom: 8px;">
-                        Reflection Prompt
-                    </label>
-                    <input type="text" id="reflectionPrompt" value="${state.formData.reflectionPrompt}" 
-                        placeholder="e.g., What did you notice about your body when you felt calm?"
-                        style="width: 100%; padding: 10px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
-                </div>
-                
-                <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #405878; margin-bottom: 8px;">
-                        Reward Text
-                    </label>
-                    <input type="text" id="rewardText" value="${state.formData.rewardText}" 
-                        placeholder="e.g., You've earned 5 brain-building stars! ⭐"
-                        style="width: 100%; padding: 10px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
-                </div>
-            </div>
         </div>
     `;
 }
@@ -829,22 +787,6 @@ function attachStep4Listeners() {
     
     document.getElementById('dssSedi').addEventListener('change', (e) => {
         state.formData.dssSediId = e.target.value;
-    });
-    
-    document.getElementById('moduleObjective').addEventListener('input', (e) => {
-        state.formData.moduleObjective = e.target.value;
-    });
-    
-    document.getElementById('facilitatorTip').addEventListener('input', (e) => {
-        state.formData.facilitatorTip = e.target.value;
-    });
-    
-    document.getElementById('reflectionPrompt').addEventListener('input', (e) => {
-        state.formData.reflectionPrompt = e.target.value;
-    });
-    
-    document.getElementById('rewardText').addEventListener('input', (e) => {
-        state.formData.rewardText = e.target.value;
     });
 }
 
@@ -972,10 +914,6 @@ async function saveModuleBlueprint() {
             fasd_strategies: state.formData.fasdStrategies || null,
             ndis_domain_id: state.formData.ndisDomainId || null,
             dss_sedi_id: state.formData.dssSediId || null,
-            module_objective: state.formData.moduleObjective || null,
-            facilitator_tip: state.formData.facilitatorTip || null,
-            reflection_prompt: state.formData.reflectionPrompt || null,
-            reward_text: state.formData.rewardText || null,
             created_by: user.id,
             has_been_generated: false,
             progress_percentage: 0
@@ -1025,11 +963,7 @@ function resetModuleBuilder() {
         fasdDomainIds: [],
         fasdStrategies: '',
         ndisDomainId: '',
-        dssSediId: '',
-        moduleObjective: '',
-        facilitatorTip: '',
-        reflectionPrompt: '',
-        rewardText: ''
+        dssSediId: ''
     };
     
     renderStep(1);

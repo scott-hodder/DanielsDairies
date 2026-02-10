@@ -2440,6 +2440,22 @@ if (data.status === "running") {
                     return;
                 }
 
+                // Validate required fields
+                const superSkillId = document.getElementById('newModuleSuperSkill')?.value || null;
+                const subSkillId = document.getElementById('newModuleSubSkill')?.value || null;
+                
+                if (!superSkillId) {
+                    alert('❌ Super Skill is required before saving the module.');
+                    document.getElementById('newModuleSuperSkill')?.focus();
+                    return;
+                }
+                
+                if (!subSkillId) {
+                    alert('❌ Sub-Skill is required before saving the module.');
+                    document.getElementById('newModuleSubSkill')?.focus();
+                    return;
+                }
+
                 if (saveBtn) {
                     saveBtn.disabled = true;
                     saveBtn.textContent = 'Saving...';
@@ -2460,8 +2476,6 @@ if (data.status === "running") {
                 const starsReward = document.getElementById('newModuleStarsReward')?.value ? parseInt(document.getElementById('newModuleStarsReward').value) : 10;
                 const characterName = document.getElementById('newModuleCharacter')?.value || null;
                 const ageRange = document.getElementById('ageRangeSelect').value || null;
-                const superSkillId = document.getElementById('newModuleSuperSkill')?.value || null;
-                const subSkillId = document.getElementById('newModuleSubSkill')?.value || null;
                 const cycleId = document.getElementById('newModuleCycle')?.value || null;
                 const shortDescription = document.getElementById('newModuleShortDescription')?.value?.trim()
                     || currentGenerationSpec?.metadata?.shortDescription
@@ -2469,8 +2483,15 @@ if (data.status === "running") {
                 const description = document.getElementById('newModuleDescription')?.value?.trim()
                     || currentGenerationSpec?.metadata?.description
                     || null;
+                
+                // Get psychology fields
+                const primaryTheoryId = document.getElementById('coreTheorySelect')?.value || null;
+                const ndisDomainId = document.getElementById('ndisDomain')?.value || null;
+                const dssSediId = document.getElementById('dssSedi')?.value || null;
+                const neuroscienceConcept = document.getElementById('neuroscienceConcept')?.value || null;
+                const brainTownMetaphor = document.getElementById('brainTownAnalogy')?.value?.trim() || null;
 
-                // Insert module into database (no code field)
+                // Insert module into database
                 const { data: newModule, error: insertError } = await supabase
                     .from('modules')
                     .insert({
@@ -2478,18 +2499,22 @@ if (data.status === "running") {
                         category: category,
                         series: series,
                         age_range: ageRange,
-                        // Emotions and skills fields removed - no longer required
                         short_description: shortDescription,
                         description: description,
                         html_content: generatedModuleHTML,
                         is_active: true,
-                        super_skill_id: superSkillId || null,
-                        sub_skill_id: subSkillId || null,
+                        super_skill_id: superSkillId,
+                        sub_skill_id: subSkillId,
                         cycle_id: cycleId || null,
                         week_number: weekNumber,
                         xp_reward: xpReward,
                         stars_reward: starsReward,
-                        character_name: characterName
+                        character_name: characterName,
+                        primary_theory_id: primaryTheoryId,
+                        ndis_domain_id: ndisDomainId,
+                        dss_sedi_id: dssSediId,
+                        neuroscience_concept: neuroscienceConcept,
+                        brain_town_metaphor: brainTownMetaphor
                     })
                     .select()
                     .single();
