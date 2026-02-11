@@ -107,6 +107,31 @@ function getAgeRangeKey(targetAge?: string): string {
   return normalized || "6-8";
 }
 
+function extractTitleFromContentBrief(contentBrief?: string): string | null {
+  if (!contentBrief) return null;
+  const titleMatch = contentBrief.match(/^Title:\s*(.+)$/im);
+  const title = titleMatch?.[1]?.trim();
+  return title || null;
+}
+
+function firstNonEmptyString(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function firstPresent<T>(...values: Array<T | null | undefined>): T | null {
+  for (const value of values) {
+    if (value !== null && value !== undefined) {
+      return value;
+    }
+  }
+  return null;
+}
+
 function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): string {
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
@@ -5229,7 +5254,9 @@ serve(async (req) => {
     }
     
     // NEW: Check if this is enhanced mode or legacy mode
-    const isEnhancedMode = (body?.ageRangeId || body?.age_range_id) && (body?.coreTheoryId || body?.primary_theory_id);
+    const enhancedAgeRef = firstPresent(body?.adminAge, body?.ageRangeId, body?.age_range_id);
+    const enhancedTheoryRef = firstPresent(body?.briefTheory, body?.coreTheoryId, body?.primary_theory_id);
+    const isEnhancedMode = Boolean(enhancedAgeRef && enhancedTheoryRef);
     
     let contentBrief: string;
     
@@ -5238,15 +5265,24 @@ serve(async (req) => {
       // ENHANCED MODE (NEW)
       // =====================
       // Accept both camelCase and snake_case field names
-      const ageRangeId = body.ageRangeId || body.age_range_id;
-      const coreTheoryId = body.coreTheoryId || body.primary_theory_id;
+      const ageRangeRef = firstPresent(body.adminAge, body.ageRangeId, body.age_range_id);
+      const coreTheoryRef = firstPresent(body.briefTheory, body.coreTheoryId, body.primary_theory_id);
       const { 
         additionalContext,
       } = body;
       const title = body.title || body.module_title || '';
+      forcedTitle = title?.trim() || null;
       
       // Accept multiple possible field names for brain town analogy
-      const brainTownAnalogy = body.brainTownAnalogy || body.brain_town_analogy || body.brainTownMetaphor || body.brain_town_metaphor || '';
+      const brainTownAnalogy = firstNonEmptyString(
+        body.brainTownAnalogy,
+        body.brain_town_analogy,
+        body.brainTownMetaphor,
+        body.brain_town_metaphor
+      );
+
+      const superSkillBrief = firstNonEmptyString(body.briefSuperSkill, body.superSkillName);
+      const subSkillBrief = firstNonEmptyString(body.briefSubSkill, body.subSkillName);
       
       if (!brainTownAnalogy) {
         return jsonResponse({ 
@@ -5256,17 +5292,17 @@ serve(async (req) => {
       
       // Accept snake_case variants for all fields
       const secondaryTheoryIds = body.secondaryTheoryIds || body.secondary_theory_ids || [];
-      const neuroscienceConcept = body.neuroscienceConcept || body.neuroscience_concept || '';
+      const neuroscienceConcept = firstNonEmptyString(body.neuroscienceConcept, body.neuroscience_concept);
       const diagnosisPathways = body.diagnosisPathways || body.diagnosis_pathways || [];
-      const fasdStrategies = body.fasdStrategies || body.fasd_strategies || '';
-      const ndisDomainId = body.ndisDomainId || body.ndis_domain_id || '';
-      const dssSediId = body.dssSediId || body.dss_sedi_id || '';
-      const moduleObjective = body.moduleObjective || body.module_objective || '';
-      const facilitatorTip = body.facilitatorTip || body.facilitator_tip || '';
-      const reflectionPrompt = body.reflectionPrompt || body.reflection_prompt || '';
-      const rewardText = body.rewardText || body.reward_text || '';
-      const previousModuleSummary = body.previousModuleSummary || body.previous_module_summary || '';
-      const weekNumber = body.weekNumber || body.week_number || body.cycleWeek || body.cycle_week;
+      const fasdStrategies = firstNonEmptyString(body.fasdStrategies, body.fasd_strategies);
+      const ndisDomainId = firstNonEmptyString(body.ndisDomainId, body.ndis_domain_id);
+      const dssSediId = firstNonEmptyString(body.dssSediId, body.dss_sedi_id);
+      const moduleObjective = firstNonEmptyString(body.moduleObjective, body.module_objective);
+      const facilitatorTip = firstNonEmptyString(body.facilitatorTip, body.facilitator_tip);
+      const reflectionPrompt = firstNonEmptyString(body.reflectionPrompt, body.reflection_prompt);
+      const rewardText = firstNonEmptyString(body.rewardText, body.reward_text);
+      const previousModuleSummary = firstNonEmptyString(body.previousModuleSummary, body.previous_module_summary);
+      const weekNumber = firstPresent(body.weekNumber, body.week_number, body.cycleWeek, body.cycle_week);
       
       // Fetch secondary theory names if provided
       let secondaryTheories: string[] = [];
@@ -5301,12 +5337,18 @@ serve(async (req) => {
       }
       
       // Fetch age range data - only fetch simplified fields sent to AI
-      const { data: ageData, error: ageError } = await supabaseClient
+      let ageQuery = supabaseClient
         .from("age_ranges")
         .select("id, age_range, display_name, language_guidelines, developmental_stage")
-        .eq("id", ageRangeId)
-        .eq("is_active", true)
-        .single();
+        .eq("is_active", true);
+
+      if (typeof ageRangeRef === "string" && /^[0-9a-fA-F-]{32,36}$/.test(ageRangeRef)) {
+        ageQuery = ageQuery.eq("id", ageRangeRef);
+      } else {
+        ageQuery = ageQuery.or(`age_range.eq.${ageRangeRef},display_name.eq.${ageRangeRef}`);
+      }
+
+      const { data: ageData, error: ageError } = await ageQuery.single();
       
       if (ageError || !ageData) {
         console.error("[API] Age range lookup failed:", ageError);
@@ -5314,12 +5356,18 @@ serve(async (req) => {
       }
       
       // Fetch core theory data - only fetch simplified fields sent to AI
-      const { data: theoryData, error: theoryError } = await supabaseClient
+      let theoryQuery = supabaseClient
         .from("core_theories")
         .select("id, theory_name, description, primary_researchers")
-        .eq("id", coreTheoryId)
-        .eq("is_active", true)
-        .single();
+        .eq("is_active", true);
+
+      if (typeof coreTheoryRef === "string" && /^[0-9a-fA-F-]{32,36}$/.test(coreTheoryRef)) {
+        theoryQuery = theoryQuery.eq("id", coreTheoryRef);
+      } else {
+        theoryQuery = theoryQuery.eq("theory_name", coreTheoryRef);
+      }
+
+      const { data: theoryData, error: theoryError } = await theoryQuery.single();
       
       if (theoryError || !theoryData) {
         console.error("[API] Core theory lookup failed:", theoryError);
@@ -5350,7 +5398,11 @@ serve(async (req) => {
         ageData,
         theoryData,
         brainTownAnalogy,
-        additionalContext: additionalContext || "",
+        additionalContext: [
+          superSkillBrief ? `Super Skill Focus: ${superSkillBrief}` : "",
+          subSkillBrief ? `Sub Skill Focus: ${subSkillBrief}` : "",
+          additionalContext || ""
+        ].filter(Boolean).join("\n"),
         secondaryTheories,
         neuroscienceConcept,
         diagnosisPathways,
