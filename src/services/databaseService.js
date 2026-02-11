@@ -1234,7 +1234,8 @@ export async function createChildFocusPlan({
   goalText = null,
   frequency = null,
   intensity = null,
-  comments = null
+  comments = null,
+  superSkillId = null
 }) {
   try {
     // First, deactivate any existing active plans for this child
@@ -1255,6 +1256,8 @@ export async function createChildFocusPlan({
       is_active: true,
       target_category_ids: targetCategoryIds || []
     }
+    
+    if (superSkillId) insertData.super_skill_id = superSkillId
     
     // Set the primary category (first selected)
     if (targetCategoryIds && targetCategoryIds.length > 0) {

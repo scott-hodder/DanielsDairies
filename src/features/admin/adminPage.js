@@ -954,7 +954,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (tabName === 'generalSettings') {
                 document.getElementById('generalSettingsTab').classList.add('active');
-                loadGeneralSettings();
+                loadCheckInsSettings();
             } else if (tabName === 'childModules') {
                 document.getElementById('parentModulesTab').classList.add('active');
                 // Load parents if not already loaded
@@ -3777,6 +3777,240 @@ if (data.status === "running") {
                     if (pathway.id === currentValue) option.selected = true;
                     editPathway.appendChild(option);
                 });
+            }
+        }
+
+        // =============================================
+        // CHECK INS MANAGEMENT
+        // =============================================
+
+        async function loadCheckInsSettings() {
+            try {
+                const [catRes, goalsRes, freqRes, intRes, challRes, cgRes, trigRes, ssRes] = await Promise.all([
+                    supabase.from('focus_plan_categories').select('*, super_skills(id, name, emoji)').eq('is_active', true).order('sort_order'),
+                    supabase.from('focus_plan_goals').select('*').eq('is_active', true).order('sort_order'),
+                    supabase.from('focus_plan_frequencies').select('*').eq('is_active', true).order('sort_order'),
+                    supabase.from('focus_plan_intensities').select('*').eq('is_active', true).order('sort_order'),
+                    supabase.from('checkin_challenges').select('*').eq('is_active', true).order('sort_order'),
+                    supabase.from('checkin_goals').select('*').eq('is_active', true).order('sort_order'),
+                    supabase.from('checkin_triggers').select('*').eq('is_active', true).order('sort_order'),
+                    supabase.from('super_skills').select('id, name, emoji').order('sort_order'),
+                ]);
+                renderFocusPlanCategories(catRes.data || []);
+                populateFocusCatSuperSkillDropdown(ssRes.data || []);
+                renderCheckinList('focusPlanGoalsList', goalsRes.data || [], 'focus_plan_goals', (item) => `${item.icon} ${item.label}`);
+                renderCheckinList('focusPlanFrequenciesList', freqRes.data || [], 'focus_plan_frequencies', (item) => `${item.label} — ${item.description}`);
+                renderCheckinList('focusPlanIntensitiesList', intRes.data || [], 'focus_plan_intensities', (item) => `${item.icon} ${item.label} — ${item.description}`);
+                renderCheckinList('checkinChallengesList', challRes.data || [], 'checkin_challenges', (item) => item.label);
+                renderCheckinList('checkinGoalsList', cgRes.data || [], 'checkin_goals', (item) => item.label);
+                renderCheckinList('checkinTriggersList', trigRes.data || [], 'checkin_triggers', (item) => item.label);
+            } catch (error) {
+                console.error('Error loading check-ins settings:', error);
+            }
+        }
+
+        function renderFocusPlanCategories(items) {
+            const container = document.getElementById('focusPlanCategoriesList');
+            if (!container) return;
+            if (items.length === 0) {
+                container.innerHTML = '<div style="color: #6b7c8f; font-size: 12px; text-align: center; padding: 12px;">No focus area categories yet</div>';
+                return;
+            }
+            container.innerHTML = items.map(item => {
+                const ssName = item.super_skills ? `${item.super_skills.emoji || ''} ${item.super_skills.name}` : 'None';
+                return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                        <span style="font-size: 16px;">${item.icon}</span>
+                        <div style="min-width: 0;">
+                            <div style="font-size: 12px; color: #374151; font-weight: 600;">${item.name}</div>
+                            <div style="font-size: 11px; color: #6b7c8f;">${item.short_description || ''}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        <span style="font-size: 11px; color: #6366F1; background: #EEF2FF; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">${ssName}</span>
+                        <button onclick="deleteCheckinItem('focus_plan_categories', '${item.id}')" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">×</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function populateFocusCatSuperSkillDropdown(superSkills) {
+            const sel = document.getElementById('newFocusCatSuperSkill');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Link to Super Skill (optional)</option>' +
+                superSkills.map(ss => `<option value="${ss.id}">${ss.emoji || ''} ${ss.name}</option>`).join('');
+        }
+
+        function renderCheckinList(containerId, items, tableName, formatFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            if (items.length === 0) {
+                container.innerHTML = '<div style="color: #6b7c8f; font-size: 12px; text-align: center; padding: 12px;">No items yet</div>';
+                return;
+            }
+            container.innerHTML = items.map(item => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <span style="font-size: 12px; color: #374151;">${formatFn(item)}</span>
+                    <button onclick="deleteCheckinItem('${tableName}', '${item.id}')" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer; flex-shrink: 0;">×</button>
+                </div>
+            `).join('');
+        }
+
+        window.deleteCheckinItem = async function(tableName, id) {
+            if (!confirm('Delete this item?')) return;
+            try {
+                const { error } = await supabase.from(tableName).delete().eq('id', id);
+                if (error) throw error;
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                alert('Failed to delete. Please try again.');
+            }
+        }
+
+        window.addFocusPlanCategory = async function() {
+            const iconInput = document.getElementById('newFocusCatIcon');
+            const nameInput = document.getElementById('newFocusCatName');
+            const descInput = document.getElementById('newFocusCatDesc');
+            const ssSelect = document.getElementById('newFocusCatSuperSkill');
+            const icon = (iconInput.value || '').trim() || '📚';
+            const name = (nameInput.value || '').trim();
+            const short_description = (descInput.value || '').trim();
+            const super_skill_id = ssSelect.value || null;
+            if (!name) { alert('Please enter a category name.'); return; }
+            try {
+                const { data: maxRow } = await supabase.from('focus_plan_categories').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+                const row = { name, icon, short_description, sort_order: nextOrder };
+                if (super_skill_id) row.super_skill_id = super_skill_id;
+                const { error } = await supabase.from('focus_plan_categories').insert(row);
+                if (error) throw error;
+                iconInput.value = '';
+                nameInput.value = '';
+                descInput.value = '';
+                ssSelect.value = '';
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error adding focus plan category:', error);
+                alert('Failed to add category. It may already exist.');
+            }
+        }
+
+        window.addFocusPlanGoal = async function() {
+            const iconInput = document.getElementById('newFocusGoalIcon');
+            const labelInput = document.getElementById('newFocusGoalLabel');
+            const icon = (iconInput.value || '').trim() || '🎯';
+            const label = (labelInput.value || '').trim();
+            if (!label) { alert('Please enter a goal label.'); return; }
+            try {
+                const key = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                const { data: maxRow } = await supabase.from('focus_plan_goals').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+                const { error } = await supabase.from('focus_plan_goals').insert({ key, label, icon, sort_order: nextOrder });
+                if (error) throw error;
+                iconInput.value = '';
+                labelInput.value = '';
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error adding goal:', error);
+                alert('Failed to add goal. It may already exist.');
+            }
+        }
+
+        window.addFocusPlanFrequency = async function() {
+            const labelInput = document.getElementById('newFrequencyLabel');
+            const descInput = document.getElementById('newFrequencyDesc');
+            const label = (labelInput.value || '').trim();
+            const description = (descInput.value || '').trim();
+            if (!label) { alert('Please enter a label.'); return; }
+            try {
+                const value = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                const { data: maxRow } = await supabase.from('focus_plan_frequencies').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+                const { error } = await supabase.from('focus_plan_frequencies').insert({ value, label, description, sort_order: nextOrder });
+                if (error) throw error;
+                labelInput.value = '';
+                descInput.value = '';
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error adding frequency:', error);
+                alert('Failed to add frequency. It may already exist.');
+            }
+        }
+
+        window.addFocusPlanIntensity = async function() {
+            const iconInput = document.getElementById('newIntensityIcon');
+            const labelInput = document.getElementById('newIntensityLabel');
+            const descInput = document.getElementById('newIntensityDesc');
+            const icon = (iconInput.value || '').trim() || '🌱';
+            const label = (labelInput.value || '').trim();
+            const description = (descInput.value || '').trim();
+            if (!label) { alert('Please enter a label.'); return; }
+            try {
+                const value = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                const { data: maxRow } = await supabase.from('focus_plan_intensities').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+                const { error } = await supabase.from('focus_plan_intensities').insert({ value, label, description, icon, sort_order: nextOrder });
+                if (error) throw error;
+                iconInput.value = '';
+                labelInput.value = '';
+                descInput.value = '';
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error adding intensity:', error);
+                alert('Failed to add intensity. It may already exist.');
+            }
+        }
+
+        window.addCheckinChallenge = async function() {
+            const input = document.getElementById('newCheckinChallenge');
+            const label = (input.value || '').trim();
+            if (!label) { alert('Please enter a challenge option.'); return; }
+            try {
+                const { data: maxRow } = await supabase.from('checkin_challenges').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+                const { error } = await supabase.from('checkin_challenges').insert({ label, sort_order: nextOrder });
+                if (error) throw error;
+                input.value = '';
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error adding challenge:', error);
+                alert('Failed to add challenge. It may already exist.');
+            }
+        }
+
+        window.addCheckinGoal = async function() {
+            const input = document.getElementById('newCheckinGoal');
+            const label = (input.value || '').trim();
+            if (!label) { alert('Please enter a goal option.'); return; }
+            try {
+                const { data: maxRow } = await supabase.from('checkin_goals').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+                const { error } = await supabase.from('checkin_goals').insert({ label, sort_order: nextOrder });
+                if (error) throw error;
+                input.value = '';
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error adding goal:', error);
+                alert('Failed to add goal. It may already exist.');
+            }
+        }
+
+        window.addCheckinTrigger = async function() {
+            const input = document.getElementById('newCheckinTrigger');
+            const label = (input.value || '').trim();
+            if (!label) { alert('Please enter a trigger / feeling.'); return; }
+            try {
+                const { data: maxRow } = await supabase.from('checkin_triggers').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+                const { error } = await supabase.from('checkin_triggers').insert({ label, sort_order: nextOrder });
+                if (error) throw error;
+                input.value = '';
+                await loadCheckInsSettings();
+            } catch (error) {
+                console.error('Error adding trigger:', error);
+                alert('Failed to add trigger. It may already exist.');
             }
         }
 

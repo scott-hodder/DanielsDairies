@@ -135,8 +135,40 @@ const avatarOptions = [
     ...avatarCategories.heroes,
     ...avatarCategories.space
 ]
-const triggerOptions = ['Anger', 'Overwhelm', 'Worry/Anxiety', 'Sadness', 'Frustration']
+let triggerOptions = ['Anger', 'Overwhelm', 'Worry/Anxiety', 'Sadness', 'Frustration']
 const selectedTriggers = new Set()
+
+async function loadCheckinOptions() {
+  try {
+    const [challRes, goalRes, trigRes] = await Promise.all([
+      supabase.from('checkin_challenges').select('label').eq('is_active', true).order('sort_order'),
+      supabase.from('checkin_goals').select('label').eq('is_active', true).order('sort_order'),
+      supabase.from('checkin_triggers').select('label').eq('is_active', true).order('sort_order'),
+    ])
+
+    if (challRes.data && challRes.data.length > 0) {
+      const sel = document.getElementById('checkinChallenge')
+      if (sel) {
+        sel.innerHTML = '<option value="">Select one</option>' +
+          challRes.data.map(c => `<option>${c.label}</option>`).join('')
+      }
+    }
+
+    if (goalRes.data && goalRes.data.length > 0) {
+      const sel = document.getElementById('checkinGoal')
+      if (sel) {
+        sel.innerHTML = '<option value="">Choose a goal</option>' +
+          goalRes.data.map(g => `<option>${g.label}</option>`).join('')
+      }
+    }
+
+    if (trigRes.data && trigRes.data.length > 0) {
+      triggerOptions = trigRes.data.map(t => t.label)
+    }
+  } catch (error) {
+    console.error('Error loading check-in options from DB, using defaults:', error)
+  }
+}
 
 const parentScriptsSeed = [
   {
@@ -570,7 +602,9 @@ function closeMoreModulesModal() {
   stopMoreModulesRotation()
 }
 
-setupWeeklyCheckinUI()
+loadCheckinOptions().then(() => {
+  setupWeeklyCheckinUI()
+})
 setupParentInsightsSubtabs()
 checkWeeklyCheckinSettings()
 

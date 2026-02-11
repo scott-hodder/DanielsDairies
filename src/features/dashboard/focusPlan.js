@@ -27,8 +27,8 @@ let focusPlanState = {
   onComplete: null
 }
 
-// Goal options
-const GOAL_OPTIONS = [
+// Goal options — loaded from DB, with hardcoded fallbacks
+const FALLBACK_GOAL_OPTIONS = [
   { key: 'calm_faster', label: 'Calm down faster', icon: '🧘' },
   { key: 'less_meltdowns', label: 'Fewer meltdowns', icon: '🌊' },
   { key: 'better_communication', label: 'Better communication', icon: '💬' },
@@ -38,18 +38,43 @@ const GOAL_OPTIONS = [
   { key: 'custom', label: 'Custom goal...', icon: '✏️' }
 ]
 
-const FREQUENCY_OPTIONS = [
+const FALLBACK_FREQUENCY_OPTIONS = [
   { value: 'daily', label: 'Daily', description: 'Every day' },
   { value: 'few_per_week', label: 'A few times a week', description: '3-4 times' },
   { value: 'weekly', label: 'Weekly', description: 'Once a week' },
   { value: 'rare', label: 'As needed', description: 'When it comes up' }
 ]
 
-const INTENSITY_OPTIONS = [
+const FALLBACK_INTENSITY_OPTIONS = [
   { value: 'mild', label: 'Mild', description: 'Small challenges', icon: '🌱' },
   { value: 'medium', label: 'Medium', description: 'Regular challenges', icon: '🌿' },
   { value: 'big', label: 'Big', description: 'Significant challenges', icon: '🌳' }
 ]
+
+let GOAL_OPTIONS = [...FALLBACK_GOAL_OPTIONS]
+let FREQUENCY_OPTIONS = [...FALLBACK_FREQUENCY_OPTIONS]
+let INTENSITY_OPTIONS = [...FALLBACK_INTENSITY_OPTIONS]
+
+async function loadFocusPlanOptions() {
+  try {
+    const [goalsRes, freqRes, intRes] = await Promise.all([
+      supabase.from('focus_plan_goals').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('focus_plan_frequencies').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('focus_plan_intensities').select('*').eq('is_active', true).order('sort_order'),
+    ])
+    if (goalsRes.data && goalsRes.data.length > 0) {
+      GOAL_OPTIONS = goalsRes.data.map(g => ({ key: g.key, label: g.label, icon: g.icon }))
+    }
+    if (freqRes.data && freqRes.data.length > 0) {
+      FREQUENCY_OPTIONS = freqRes.data.map(f => ({ value: f.value, label: f.label, description: f.description }))
+    }
+    if (intRes.data && intRes.data.length > 0) {
+      INTENSITY_OPTIONS = intRes.data.map(i => ({ value: i.value, label: i.label, description: i.description, icon: i.icon }))
+    }
+  } catch (error) {
+    console.error('Error loading focus plan options from DB, using fallbacks:', error)
+  }
+}
 
 // Check if child has an active focus plan
 export async function checkFocusPlan(childId) {
@@ -74,20 +99,39 @@ export async function showFocusPlanOnboarding(childId, onComplete) {
   focusPlanState.intensity = null
   focusPlanState.comments = ''
 
-  // Load categories and pathways
+  // Load configurable options from DB (falls back to hardcoded if DB fails)
+  await loadFocusPlanOptions()
+
+  // Load focus area categories from focus_plan_categories table (with super_skill link)
   try {
-    const rawCategories = await getCategories()
-    // Normalize category data - category_colors table uses 'category' field
-    focusPlanState.categories = rawCategories.map(cat => {
-      const categoryName = cat.name || cat.category || 'Unknown'
-      const icon = getCategoryIcon(categoryName)
-      return {
+    const { data: fpCats, error: fpCatsError } = await supabase
+      .from('focus_plan_categories')
+      .select('id, name, icon, short_description, super_skill_id')
+      .eq('is_active', true)
+      .order('sort_order')
+
+    if (!fpCatsError && fpCats && fpCats.length > 0) {
+      focusPlanState.categories = fpCats.map(cat => ({
         id: cat.id,
-        name: capitalizeFirstLetter(categoryName),
-        icon: icon,
-        short_description: cat.short_description || ''
-      }
-    })
+        name: cat.name,
+        icon: cat.icon || '📚',
+        short_description: cat.short_description || '',
+        super_skill_id: cat.super_skill_id || null
+      }))
+    } else {
+      // Fall back to category_colors if focus_plan_categories is empty or errors
+      const rawCategories = await getCategories()
+      focusPlanState.categories = rawCategories.map(cat => {
+        const categoryName = cat.name || cat.category || 'Unknown'
+        const icon = getCategoryIcon(categoryName)
+        return {
+          id: cat.id,
+          name: capitalizeFirstLetter(categoryName),
+          icon: icon,
+          short_description: cat.short_description || ''
+        }
+      })
+    }
     focusPlanState.pathways = await getPathways()
   } catch (error) {
     console.error('Error loading focus plan data:', error)
@@ -521,6 +565,10 @@ async function submitFocusPlan() {
     
     console.log('Focus Plan: Selected pathway:', defaultPathway?.name)
     
+    // Resolve super_skill_id from the first selected category (if linked)
+    const primaryCat = focusPlanState.categories.find(c => c.id === focusPlanState.selectedCategories[0])
+    const superSkillId = primaryCat?.super_skill_id || null
+
     // Create the focus plan with multiple goals and comments
     const plan = await createChildFocusPlan({
       childId: focusPlanState.childId,
@@ -530,7 +578,8 @@ async function submitFocusPlan() {
       goalText: focusPlanState.customGoalText || null,
       frequency: focusPlanState.frequency,
       intensity: focusPlanState.intensity,
-      comments: focusPlanState.comments || null
+      comments: focusPlanState.comments || null,
+      superSkillId: superSkillId
     })
     
     console.log('Focus Plan: Plan created successfully')
