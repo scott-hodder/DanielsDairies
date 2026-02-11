@@ -4965,8 +4965,7 @@ async function generateModule(
   contentBrief: string,
   jobId?: string,
   seriesInfo?: SeriesInfo | null,
-  categoryColor?: string | null,
-  forcedTitle?: string | null
+  categoryColor?: string | null
 ): Promise<{ html: string; pageCount: number; characterCount: number; spec: any }> {
   
   const updateProgress = async (step: string, message: string) => {
@@ -4992,7 +4991,7 @@ async function generateModule(
 
   
   await updateProgress("generating", `Creating ${pageStructure.length}-page module...`);
-  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo, forcedTitle);
+  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo);
   
   // Generate module code
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
@@ -5028,8 +5027,7 @@ async function runAsyncGeneration(
   jobId: string,
   contentBrief: string,
   seriesInfo?: SeriesInfo | null,
-  categoryColor?: string | null,
-  forcedTitle?: string | null
+  categoryColor?: string | null
 ) {
   const startTime = Date.now();
   
@@ -5043,7 +5041,7 @@ async function runAsyncGeneration(
       setTimeout(() => reject(new Error("Generation timeout")), JOB_TIMEOUT_MS);
     });
     
-    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle);
+    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
     
     await supabaseClient
@@ -5185,13 +5183,82 @@ serve(async (req) => {
     const category = body?.category;
     const superSkillId = body?.superSkillId;
     
+    // =====================
+    // SUPER SKILL LOOKUP (needed by both enhanced and legacy modes, AND by content brief)
+    // Must run BEFORE buildEnhancedContentBrief so name/description are available
+    // =====================
+    let themeColor: string | null = null;
+    let seriesInfo: SeriesInfo | null = null;
+    let superSkillName: string | undefined;
+    let superSkillDescription: string | undefined;
+    if (superSkillId) {
+      const { data: superSkillData, error: superSkillError } = await supabaseClient
+        .from("super_skills")
+        .select("name, description, emoji, theme_color, character_name, character_image_url")
+        .eq("id", superSkillId)
+        .single();
+      
+      if (!superSkillError && superSkillData) {
+        themeColor = superSkillData.theme_color;
+        superSkillName = superSkillData.name;
+        superSkillDescription = superSkillData.description;
+        
+        if (superSkillData.character_name) {
+          let cleanName = superSkillData.character_name;
+          if (cleanName.includes(' the ')) {
+            cleanName = cleanName.split(' the ')[0];
+          }
+          
+          // Use the emoji field from the database directly
+          const superSkillEmoji = superSkillData.emoji || '';
+          
+          seriesInfo = {
+            label: cleanName,
+            character_type: cleanName.toLowerCase().replace(/\s+/g, '_'),
+            emoji: superSkillEmoji,
+            character_image_url: superSkillData.character_image_url || null,
+          };
+          
+          // Only fall back to extraction/guessing if the DB emoji field is empty
+          if (!seriesInfo.emoji && superSkillData.character_image_url) {
+            const urlParts = superSkillData.character_image_url.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            const emojiMatch = fileName.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u);
+            if (emojiMatch) {
+              seriesInfo.emoji = emojiMatch[0];
+            }
+          }
+          
+          if (seriesInfo && !seriesInfo.emoji) {
+            const characterTypeToEmoji: Record<string, string> = {
+              'bear': '🐻', 'dog': '🐕', 'cat': '🐱', 'rabbit': '🐰',
+              'fox': '🦊', 'owl': '🦉', 'penguin': '🐧', 'lion': '🦁',
+              'elephant': '🐘', 'monkey': '🐵', 'panda': '🐼', 'professor': '🎓',
+              'turtle': '🐢',
+            };
+            
+            const characterLower = cleanName.toLowerCase();
+            for (const [type, emoji] of Object.entries(characterTypeToEmoji)) {
+              if (characterLower.includes(type)) {
+                seriesInfo.emoji = emoji;
+                break;
+              }
+            }
+            
+            if (!seriesInfo.emoji) {
+              seriesInfo.emoji = '🌟';
+            }
+          }
+        }
+      }
+    }
+    
     // NEW: Check if this is enhanced mode or legacy mode
     const enhancedAgeRef = firstPresent(body?.adminAge, body?.ageRangeId, body?.age_range_id);
     const enhancedTheoryRef = firstPresent(body?.briefTheory, body?.coreTheoryId, body?.primary_theory_id);
     const isEnhancedMode = Boolean(enhancedAgeRef && enhancedTheoryRef);
     
     let contentBrief: string;
-    let forcedTitle: string | null = null;
     
     if (isEnhancedMode) {
       // =====================
@@ -5307,6 +5374,23 @@ serve(async (req) => {
         return jsonResponse({ error: "Invalid or inactive core theory" }, 400);
       }
       
+      // Fetch sub skill name and description if provided
+      const subSkillId = body.subSkillId || body.sub_skill_id || '';
+      let subSkillName: string | undefined;
+      let subSkillDescription: string | undefined;
+      if (subSkillId) {
+        const { data: subData } = await supabaseClient
+          .from("sub_skills")
+          .select("name, description")
+          .eq("id", subSkillId)
+          .single();
+        subSkillName = subData?.name;
+        subSkillDescription = subData?.description;
+      }
+      
+      // superSkillName and superSkillDescription were already fetched above
+      // (in the super_skills lookup that runs before the enhanced/legacy mode check)
+      
       // Build the enhanced content brief
       contentBrief = buildEnhancedContentBrief({
         title: title || "My Feelings Adventure",
@@ -5330,7 +5414,11 @@ serve(async (req) => {
         reflectionPrompt,
         rewardText,
         previousModuleSummary,
-        weekNumber
+        weekNumber,
+        superSkillName,
+        superSkillDescription,
+        subSkillName,
+        subSkillDescription,
       });
       
       console.log("[AI] Using enhanced psychology-based content brief");
@@ -5353,64 +5441,8 @@ serve(async (req) => {
     // =====================
     // REST OF EXISTING CODE (keep everything below as-is)
     // =====================
-    
-    // Look up theme color and character info from super_skills table if superSkillId provided
-    let themeColor: string | null = null;
-    let seriesInfo: SeriesInfo | null = null;
-    if (superSkillId) {
-      const { data: superSkillData, error: superSkillError } = await supabaseClient
-        .from("super_skills")
-        .select("theme_color, character_name, character_image_url")
-        .eq("id", superSkillId)
-        .single();
-      
-      if (!superSkillError && superSkillData) {
-        themeColor = superSkillData.theme_color;
-        
-        if (superSkillData.character_name) {
-          let cleanName = superSkillData.character_name;
-          if (cleanName.includes(' the ')) {
-            cleanName = cleanName.split(' the ')[0];
-          }
-          
-          seriesInfo = {
-            label: cleanName,
-            character_type: cleanName.toLowerCase().replace(/\s+/g, '_'),
-            emoji: '',
-            character_image_url: superSkillData.character_image_url || null,
-          };
-          
-          if (superSkillData.character_image_url && seriesInfo) {
-            const urlParts = superSkillData.character_image_url.split('/');
-            const fileName = urlParts[urlParts.length - 1];
-            const emojiMatch = fileName.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u);
-            if (emojiMatch) {
-              seriesInfo.emoji = emojiMatch[0];
-            }
-          }
-          
-          if (seriesInfo && !seriesInfo.emoji) {
-            const characterTypeToEmoji: Record<string, string> = {
-              'bear': '🐻', 'dog': '🐕', 'cat': '🐱', 'rabbit': '🐰',
-              'fox': '🦊', 'owl': '🦉', 'penguin': '🐧', 'lion': '🦁',
-              'elephant': '🐘', 'monkey': '🐵', 'panda': '🐼', 'professor': '🎓',
-            };
-            
-            const characterLower = cleanName.toLowerCase();
-            for (const [type, emoji] of Object.entries(characterTypeToEmoji)) {
-              if (characterLower.includes(type)) {
-                seriesInfo.emoji = emoji;
-                break;
-              }
-            }
-            
-            if (!seriesInfo.emoji) {
-              seriesInfo.emoji = '🌟';
-            }
-          }
-        }
-      }
-    }
+    // NOTE: super_skills lookup (themeColor, seriesInfo, superSkillName, superSkillDescription) 
+    // has been moved ABOVE the enhanced/legacy mode block so it's available to buildEnhancedContentBrief
     
     // Fallback to category color
     let categoryColor: string | null = themeColor;

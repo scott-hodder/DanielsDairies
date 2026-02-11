@@ -1169,12 +1169,17 @@ function buildEnhancedContentBrief(resolved: {
   rewardText?: string;
   previousModuleSummary?: string;
   weekNumber?: number;
+  superSkillName?: string;
+  superSkillDescription?: string;
+  subSkillName?: string;
+  subSkillDescription?: string;
 }): string {
   const { 
     ageData, theoryData, brainTownAnalogy, additionalContext, title, ageRange,
     secondaryTheories, neuroscienceConcept, diagnosisPathways, fasdStrategies,
     ndisDomain, dssSedi, moduleObjective, facilitatorTip, reflectionPrompt, rewardText,
-    previousModuleSummary, weekNumber
+    previousModuleSummary, weekNumber, superSkillName, superSkillDescription,
+    subSkillName, subSkillDescription
   } = resolved;
   
   const ageStyleGuide = buildAgeRangeStyleGuide(ageRange, ageData);
@@ -1185,7 +1190,17 @@ function buildEnhancedContentBrief(resolved: {
 === MODULE BRIEF ===
 Title: ${title}
 Target Age: ${ageRange} (${displayName})
+${superSkillName ? `Super Skill: ${superSkillName}${superSkillDescription ? ` — ${superSkillDescription}` : ''}` : ''}
+${subSkillName ? `Sub-Skill: ${subSkillName}${subSkillDescription ? ` — ${subSkillDescription}` : ''}` : ''}
 ${moduleObjective ? `Objective: ${moduleObjective}` : ''}
+
+CRITICAL — NON-NEGOTIABLE REQUIREMENTS:
+- The module title MUST be exactly "${title}" — do NOT change, rephrase, or create a different title.
+- The target age range MUST be exactly "${ageRange}" — do NOT change this.
+- The primary theory MUST be "${theoryData.theory_name}" — all content must operationalise this theory.
+- The Brain Town analogy MUST be woven throughout the content (see BRAIN TOWN ANALOGY section).
+${superSkillName ? `- All content must align with the Super Skill: "${superSkillName}".` : ''}
+${subSkillName ? `- All content must focus on building the Sub-Skill: "${subSkillName}".` : ''}
 
 ${additionalContext ? `=== HIGH-PRIORITY CREATOR INSTRUCTIONS (MUST FOLLOW) ===
 ${additionalContext}
@@ -1224,17 +1239,26 @@ NON-NEGOTIABLE:
 PRIMARY THEORY: ${theoryData.theory_name}
 ${theoryData.description}
 
-${secondaryTheories && secondaryTheories.length > 0 ? `SUPPORTING THEORIES: ${secondaryTheories.join(', ')}` : ''}
+IMPORTANT: This theory MUST be the central framework for ALL content in this module.
+Every lesson, activity, and interactive element should operationalise "${theoryData.theory_name}" in a child-friendly way.
+${superSkillName ? `The Super Skill "${superSkillName}" provides the overarching skill domain.` : ''}
+${subSkillName ? `The Sub-Skill "${subSkillName}"${subSkillDescription ? ` (${subSkillDescription})` : ''} is the specific focus area within that domain.` : ''}
+
+${secondaryTheories && secondaryTheories.length > 0 ? `SUPPORTING THEORIES (secondary, supplement the primary): ${secondaryTheories.join(', ')}` : ''}
 
 === LANGUAGE GUIDELINES ===
 ${languageGuidelines}
 
 ${ageStyleGuide}
 
-=== BRAIN TOWN ANALOGY ===
+=== BRAIN TOWN ANALOGY (MUST BE USED THROUGHOUT) ===
 ${brainTownAnalogy}
 
-Keep Brain Town explanations SHORT (2-3 sentences max).
+CRITICAL: This Brain Town analogy MUST appear in the generated content:
+- Introduce it early (welcome page or first lesson)
+- Reference it in at least 2-3 lessons and activities throughout the module
+- Use the analogy to explain the primary theory concepts in a child-friendly way
+- Keep each Brain Town reference SHORT (2-3 sentences max) but make sure it appears
 
 ${neuroscienceConcept ? `=== NEUROSCIENCE TIE-IN ===
 Include brief mention of: ${neuroscienceConcept}
@@ -1266,9 +1290,11 @@ ${facilitatorTip}
 3. Focus on ACTIVITIES over explanations
 4. Break content into SMALL chunks
 5. More DOING, less READING
-6. Apply ${theoryData.theory_name} theory correctly
-7. Use Brain Town analogy but keep brief
-${additionalContext ? '8. HIGH PRIORITY: Strictly follow the HIGH-PRIORITY CREATOR INSTRUCTIONS above.' : ''}
+6. Apply "${theoryData.theory_name}" theory correctly — this is the PRIMARY framework for ALL content
+7. Use the Brain Town analogy throughout (introduce early, reference in lessons and activities)
+${superSkillName ? `8. Align all content with the Super Skill: "${superSkillName}"` : ''}
+${subSkillName ? `9. Focus on building the Sub-Skill: "${subSkillName}"` : ''}
+${additionalContext ? `10. HIGH PRIORITY: Strictly follow the HIGH-PRIORITY CREATOR INSTRUCTIONS above.` : ''}
 
 === AUSTRALIAN ENGLISH (MANDATORY) ===
 All content MUST use Australian English spelling and conventions:
