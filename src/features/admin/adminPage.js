@@ -821,15 +821,24 @@ window.generateModuleWithAI = async function() {
                         'apikey': requireSupabaseEnv().key
                     },
                     body: JSON.stringify({
-                        // NEW: Enhanced psychology mode
+                        // Enhanced psychology mode
                         ageRangeId,
                         coreTheoryId,
                         brainTownAnalogy,
                         additionalContext,
                         title,
                         
+                        // Enhanced modal fields
+                        neuroscienceConcept: document.getElementById('neuroscienceConcept')?.value || undefined,
+                        secondaryTheoryIds: window.enhancedModuleModal?.secondaryTheoryIds || [],
+                        diagnosisPathways: window.enhancedModuleModal?.diagnosisPathways || [],
+                        fasdStrategies: document.getElementById('fasdStrategies')?.value || undefined,
+                        ndisDomainId: document.getElementById('ndisDomain')?.value || undefined,
+                        dssSediId: document.getElementById('dssSedi')?.value || undefined,
+                        
                         // Existing fields
                         superSkillId,
+                        subSkillId: document.getElementById('newModuleSubSkill')?.value || undefined,
                         seriesId: seriesId || undefined,
                         category: category || undefined,
                         
@@ -838,7 +847,7 @@ window.generateModuleWithAI = async function() {
                     })
                 }
             );
-
+            
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('[AI] HTTP error:', response.status, errorText);
@@ -2490,6 +2499,11 @@ if (data.status === "running") {
                 const dssSediId = document.getElementById('dssSedi')?.value || null;
                 const neuroscienceConcept = document.getElementById('neuroscienceConcept')?.value || null;
                 const brainTownMetaphor = document.getElementById('brainTownAnalogy')?.value?.trim() || null;
+                
+                // Get module_summary from the AI generation spec (admin-only summary page)
+                const moduleSummary = currentGenerationSpec?.moduleSummary?.summary
+                    || window.currentGenerationSpec?.moduleSummary?.summary
+                    || null;
 
                 // Insert module into database
                 const { data: newModule, error: insertError } = await supabase
@@ -2514,7 +2528,8 @@ if (data.status === "running") {
                         ndis_domain_id: ndisDomainId,
                         dss_sedi_id: dssSediId,
                         neuroscience_concept: neuroscienceConcept,
-                        brain_town_metaphor: brainTownMetaphor
+                        brain_town_metaphor: brainTownMetaphor,
+                        module_summary: moduleSummary
                     })
                     .select()
                     .single();
@@ -6683,26 +6698,6 @@ if (data.status === "running") {
                     </div>
                 </div>
                 
-                <div class="form-group" style="margin-top: 16px;">
-                    <label class="form-label">Module Objective</label>
-                    <textarea id="moduleObjective" rows="2" class="form-textarea" placeholder="What will children be able to do?"></textarea>
-                </div>
-                
-                <div class="form-group" style="margin-top: 16px;">
-                    <label class="form-label">Facilitator Tip</label>
-                    <textarea id="facilitatorTip" rows="2" class="form-textarea" placeholder="Guidance for parents/educators"></textarea>
-                </div>
-                
-                <div class="form-row" style="margin-top: 16px;">
-                    <div class="form-group">
-                        <label class="form-label">Reflection Prompt</label>
-                        <input type="text" id="reflectionPrompt" class="form-input" placeholder="What did you notice?">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Reward Text</label>
-                        <input type="text" id="rewardText" class="form-input" placeholder="You earned stars! ⭐">
-                    </div>
-                </div>
             `;
             
             formGroup.insertAdjacentHTML('afterend', enhancedHTML);
@@ -6791,11 +6786,7 @@ if (data.status === "running") {
                 diagnosis_pathways: window.enhancedModuleModal.diagnosisPathways,
                 fasd_strategies: document.getElementById('fasdStrategies')?.value || null,
                 ndis_domain_id: document.getElementById('ndisDomain')?.value || null,
-                dss_sedi_id: document.getElementById('dssSedi')?.value || null,
-                module_objective: document.getElementById('moduleObjective')?.value || null,
-                facilitator_tip: document.getElementById('facilitatorTip')?.value || null,
-                reflection_prompt: document.getElementById('reflectionPrompt')?.value || null,
-                reward_text: document.getElementById('rewardText')?.value || null
+                dss_sedi_id: document.getElementById('dssSedi')?.value || null
             };
             if (typeof originalSaveNewModule === 'function') {
                 return originalSaveNewModule(event);
