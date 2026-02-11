@@ -1002,7 +1002,8 @@ EARLY CHILDHOOD (6-8) — Concrete Learners
     case "9-11":
       return `
 LATE CHILDHOOD (9-11) — Bridge Thinkers
-- Short to medium text blocks (2-4 sentences).
+- Keep text concise: usually 1-3 short sentences per paragraph.
+- Keep most teaching blocks to ~70-120 words before moving to an activity.
 - Introduce new vocabulary with quick definitions or examples.
 - Balance playful tone with growing independence and responsibility.
 - Activities can be 2-3 steps with light reflection.
@@ -1070,14 +1071,14 @@ function getAgeSpecificFormatting(ageRange: string, ageData?: AgeRangeData): {
       };
     case "9-11":
       return {
-        paragraphLength: "2-3 sentences per paragraph",
-        sentenceCount: "Sentences can be 10-15 words",
-        vocabularyLevel: "Simple vocabulary with occasional new words explained briefly",
+        paragraphLength: "1-3 sentences per paragraph, with frequent visual breaks",
+        sentenceCount: "Aim for 8-14 words per sentence; avoid dense compound sentences",
+        vocabularyLevel: "Plain school-age vocabulary; define any new term in-context immediately",
         toneDescription: "Friendly and encouraging, treats them as capable learners",
         instructionStyle: "Clear 2-3 step instructions, can include 'why' briefly",
-        contentComplexity: "Can introduce cause-and-effect, simple reflection questions",
-        welcomeParagraphs: "2-3 paragraphs (2-3 sentences each)",
-        lessonParagraphs: "2-3 paragraphs (2-3 sentences each), include relatable examples",
+        contentComplexity: "Cause-and-effect is appropriate, but keep explanations brief and concrete",
+        welcomeParagraphs: "2 short paragraphs (1-2 sentences each)",
+        lessonParagraphs: "1-2 short teaching paragraphs, then move quickly into interaction",
         itemCount: "4-5 items"
       };
     case "12-14":
