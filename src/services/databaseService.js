@@ -27,7 +27,10 @@ export async function saveWeeklyCheckin({
   triggers = [],
   goal = null,
   notes = null,
-  generatedPlan = null
+  generatedPlan = null,
+  subSkillId = null,
+  weekNumber = null,
+  moduleId = null
 }) {
   const payload = {
     parent_user_id: parentUserId,
@@ -39,6 +42,10 @@ export async function saveWeeklyCheckin({
     notes,
     generated_plan: generatedPlan
   }
+  
+  if (subSkillId) payload.sub_skill_id = subSkillId
+  if (weekNumber) payload.week_number = weekNumber
+  if (moduleId) payload.module_id = moduleId
 
   const { data, error } = await getSupabaseClient()
     .from('weekly_checkins')

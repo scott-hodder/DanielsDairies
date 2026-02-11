@@ -740,10 +740,10 @@ class DanielDialogueSystem {
     const backdrop = this.modalElement.querySelector('.daniel-dialogue-backdrop');
 
     if (continueBtn) {
-      continueBtn.addEventListener('click', () => {
+      continueBtn.onclick = () => {
         if (this.onContinue) this.onContinue();
         this.hide();
-      });
+      };
     }
 
     if (laterBtn) {
@@ -992,14 +992,44 @@ class DanielModulePreview {
     const category = window.enhancedDashboard?.adventureMap?.currentCategory || 'all';
     
     // Show Daniel's pre-activity dialogue first
-    this.dialogueSystem.showPreActivity(module, category, () => {
-      // Try direct navigation first since it's more reliable
+    this.dialogueSystem.showPreActivity(module, category, async () => {
       const child = window.state?.selectedChild;
       
       if (child && module) {
         const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
+        
+        // Check-in intercept for weeks 1, 4, 7, 10
+        // The raw DB module is at module.module (adventure map wraps it)
+        const CHECKIN_WEEKS = [1, 4, 7, 10];
+        const rawMod = module.module || module;
+        let week = Number(rawMod.week_number || rawMod.pathway_order || module.pathwayOrder || 0);
+        // Fallback: derive week from position in the adventure map's current module list
+        if (!week && window.enhancedDashboard?.adventureMap?.modules) {
+          const mapModules = window.enhancedDashboard.adventureMap.modules;
+          const idx = mapModules.findIndex(m => m.id === module.id);
+          if (idx !== -1) week = idx + 1;
+        }
+        if (week && CHECKIN_WEEKS.includes(week) && typeof window.showCheckinPopup === 'function') {
+          try {
+            const { data } = await window.supabase
+              .from('weekly_checkins')
+              .select('id')
+              .eq('child_id', child.id)
+              .eq('module_id', rawMod.id)
+              .limit(1)
+              .maybeSingle();
+            if (!data) {
+              const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code });
+              window.showCheckinPopup(popupMod, () => { window.location.href = moduleUrl; });
+              return;
+            }
+          } catch (e) {
+            console.error('Error checking checkin:', e);
+          }
+        }
+        
         window.location.href = moduleUrl;
-        return; // Exit early if direct navigation works
+        return;
       }
       
       // Fallback to other methods if direct navigation fails

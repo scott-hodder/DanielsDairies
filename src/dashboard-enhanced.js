@@ -1834,9 +1834,35 @@ class EnhancedDashboard {
     if (!module.module || !child) return;
 
     var self = this;
-    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code) + '&childName=' + encodeURIComponent(child.name || '');
+    var mod = module.module;
+    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '');
     
-    // Go directly to module - assessments should only trigger on completion, not on start
+    // Check-in intercept for weeks 1, 4, 7, 10
+    var CHECKIN_WEEKS = [1, 4, 7, 10];
+    var week = Number(mod.week_number || mod.pathway_order || module.pathwayOrder || 0);
+    if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
+      try {
+        var existing = await window.supabase
+          .from('weekly_checkins')
+          .select('id')
+          .eq('child_id', child.id)
+          .eq('module_id', mod.id)
+          .limit(1)
+          .maybeSingle();
+        if (!existing.data) {
+          if (typeof window.showCheckinPopup === 'function') {
+            var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
+            window.showCheckinPopup(popupModule, function() {
+              window.location.href = moduleUrl;
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error checking checkin:', e);
+      }
+    }
+    
     window.location.href = moduleUrl;
   }
 

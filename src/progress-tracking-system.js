@@ -1429,7 +1429,40 @@ class ProgressTrackingSystem {
     this.currentQuestionIndex = 0;
     this.responses = {};
 
-    const assessment = PATHWAY_ASSESSMENTS[this.pathwayId] || PATHWAY_ASSESSMENTS.general;
+    // Try loading questions from DB first, fall back to hardcoded
+    let assessment = PATHWAY_ASSESSMENTS[this.pathwayId] || PATHWAY_ASSESSMENTS.general;
+    if (this.supabaseClient) {
+      try {
+        const { data: dbQuestions } = await this.supabaseClient
+          .from('assessment_questions')
+          .select('*')
+          .eq('pathway_category', this.pathwayId)
+          .eq('is_active', true)
+          .order('sort_order');
+        if (dbQuestions && dbQuestions.length > 0) {
+          const mappedQuestions = dbQuestions.map(q => ({
+            id: q.question_key,
+            text: q.question_text,
+            type: q.question_type,
+            options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+            reverseScore: q.reverse_score,
+            category: q.score_category || undefined
+          }));
+          // Override questions but keep the rest of the assessment metadata
+          assessment = Object.assign({}, assessment, { questions: mappedQuestions });
+          // Recalculate maxScore based on DB questions
+          const maxPerQ = mappedQuestions.reduce((sum, q) => {
+            const maxVal = Array.isArray(q.options) ? q.options.reduce((m, o) => Math.max(m, Number(o.value)), 0) : 4;
+            return sum + maxVal;
+          }, 0);
+          if (assessment.scoringGuide) {
+            assessment.scoringGuide = Object.assign({}, assessment.scoringGuide, { maxScore: maxPerQ });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load assessment questions from DB, using hardcoded:', e);
+      }
+    }
     this.currentAssessment = assessment;
 
     const overlay = document.createElement('div');

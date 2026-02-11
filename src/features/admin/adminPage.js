@@ -3804,6 +3804,7 @@ if (data.status === "running") {
                 renderCheckinList('checkinChallengesList', challRes.data || [], 'checkin_challenges', (item) => item.label);
                 renderCheckinList('checkinGoalsList', cgRes.data || [], 'checkin_goals', (item) => item.label);
                 renderCheckinList('checkinTriggersList', trigRes.data || [], 'checkin_triggers', (item) => item.label);
+                loadAssessmentQuestions();
             } catch (error) {
                 console.error('Error loading check-ins settings:', error);
             }
@@ -4013,6 +4014,327 @@ if (data.status === "running") {
                 alert('Failed to add trigger. It may already exist.');
             }
         }
+
+        // =============================================
+        // PSYCHOMETRIC ASSESSMENT QUESTIONS MANAGEMENT
+        // =============================================
+
+        window.loadAssessmentQuestions = async function() {
+            const pathway = document.getElementById('assessmentPathwayFilter')?.value || 'anger';
+            try {
+                const { data, error } = await supabase
+                    .from('assessment_questions')
+                    .select('*')
+                    .eq('pathway_category', pathway)
+                    .eq('is_active', true)
+                    .order('sort_order');
+                if (error) throw error;
+                renderAssessmentQuestions(data || []);
+                initNewAqOptions();
+            } catch (err) {
+                console.error('Error loading assessment questions:', err);
+                const container = document.getElementById('assessmentQuestionsList');
+                if (container) container.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:12px;">Failed to load questions</div>';
+            }
+        };
+
+        function renderAssessmentQuestions(questions) {
+            const container = document.getElementById('assessmentQuestionsList');
+            const countEl = document.getElementById('assessmentQuestionCount');
+            if (!container) return;
+            if (countEl) countEl.textContent = `(${questions.length} question${questions.length !== 1 ? 's' : ''})`;
+
+            if (questions.length === 0) {
+                container.innerHTML = '<div style="color:#6b7c8f;font-size:12px;text-align:center;padding:16px;">No questions for this pathway yet</div>';
+                return;
+            }
+
+            container.innerHTML = questions.map((q, idx) => {
+                const opts = (typeof q.options === 'string' ? JSON.parse(q.options) : q.options) || [];
+                const optsPreview = opts.map(o => `${o.emoji || ''} ${o.label} (${o.value})`).join(' · ');
+                return `
+                <div style="background:white;border-radius:8px;border:1px solid #e5e7eb;padding:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:2px;">
+                                ${idx + 1}. ${q.question_text}
+                            </div>
+                            <div style="font-size:11px;color:#6b7c8f;margin-bottom:4px;">
+                                Key: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px;">${q.question_key}</code>
+                                · Type: <strong>${q.question_type}</strong>
+                                ${q.reverse_score ? ' · <span style="color:#6366F1;">↩ Reverse scored</span>' : ''}
+                                ${q.score_category ? ' · Category: <strong>' + q.score_category + '</strong>' : ''}
+                            </div>
+                            <div style="font-size:10px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${optsPreview}</div>
+                        </div>
+                        <div style="display:flex;gap:4px;flex-shrink:0;">
+                            <button onclick="editAssessmentQuestion('${q.id}')" style="background:#6366F1;color:white;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;">Edit</button>
+                            <button onclick="deleteAssessmentQuestion('${q.id}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;">×</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Render a single option row in the "Add New Question" form
+        function renderNewAqOptionRow(container, value, emoji, label) {
+            const row = document.createElement('div');
+            row.className = 'new-aq-opt-row';
+            row.style.cssText = 'display:grid;grid-template-columns:50px 40px 1fr 28px;gap:4px;align-items:center;background:#fff;border-radius:6px;padding:4px 6px;border:1px solid #e5e7eb;';
+            row.innerHTML = `
+                <input type="number" class="new-aq-val" value="${value}" min="0" max="10" style="padding:4px 6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;text-align:center;" title="Score value">
+                <input type="text" class="new-aq-emoji" value="${emoji}" maxlength="4" style="padding:4px;border-radius:6px;border:1px solid #d1d5db;font-size:16px;text-align:center;" title="Emoji">
+                <input type="text" class="new-aq-label" value="${label}" style="padding:4px 8px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;" placeholder="Label text" title="Label">
+                <button type="button" style="background:#ef4444;color:#fff;border:none;border-radius:6px;width:24px;height:24px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove" onclick="this.closest('.new-aq-opt-row').remove()">×</button>
+            `;
+            container.appendChild(row);
+        }
+
+        // Add a blank option row
+        window.addNewAqOptionRow = function() {
+            const container = document.getElementById('newAssessmentOptionsRows');
+            if (!container) return;
+            const rows = container.querySelectorAll('.new-aq-opt-row');
+            const nextVal = rows.length > 0 ? rows.length : 0;
+            renderNewAqOptionRow(container, nextVal, '😐', '');
+        };
+
+        // Initialize default 5 option rows when the section loads
+        function initNewAqOptions() {
+            const container = document.getElementById('newAssessmentOptionsRows');
+            if (!container || container.children.length > 0) return;
+            const defaults = [
+                { value: 0, emoji: '😊', label: 'Never' },
+                { value: 1, emoji: '🙂', label: 'Rarely' },
+                { value: 2, emoji: '😐', label: 'Sometimes' },
+                { value: 3, emoji: '😕', label: 'Often' },
+                { value: 4, emoji: '😔', label: 'Very often' }
+            ];
+            defaults.forEach(d => renderNewAqOptionRow(container, d.value, d.emoji, d.label));
+        }
+
+        // Collect options from the visual rows
+        function collectNewAqOptions() {
+            const container = document.getElementById('newAssessmentOptionsRows');
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('.new-aq-opt-row')).map(row => ({
+                value: parseInt(row.querySelector('.new-aq-val').value) || 0,
+                emoji: row.querySelector('.new-aq-emoji').value.trim() || '😐',
+                label: row.querySelector('.new-aq-label').value.trim()
+            }));
+        }
+
+        window.addAssessmentQuestion = async function() {
+            const pathway = document.getElementById('assessmentPathwayFilter')?.value;
+            const key = document.getElementById('newAssessmentKey')?.value?.trim();
+            const text = document.getElementById('newAssessmentText')?.value?.trim();
+            const type = document.getElementById('newAssessmentType')?.value;
+            const reverseScore = document.getElementById('newAssessmentReverseScore')?.value === 'true';
+            const scoreCategory = document.getElementById('newAssessmentScoreCategory')?.value || null;
+
+            if (!key || !text) { alert('Please enter a unique key and question text.'); return; }
+
+            const options = collectNewAqOptions();
+            if (options.length === 0) { alert('Add at least one answer option.'); return; }
+            if (options.some(o => !o.label)) { alert('All answer options need a label.'); return; }
+
+            try {
+                const { data: maxRow } = await supabase.from('assessment_questions')
+                    .select('sort_order')
+                    .eq('pathway_category', pathway)
+                    .order('sort_order', { ascending: false })
+                    .limit(1);
+                const nextOrder = (maxRow?.[0]?.sort_order || 0) + 1;
+
+                const { error } = await supabase.from('assessment_questions').insert({
+                    pathway_category: pathway,
+                    question_key: key,
+                    question_text: text,
+                    question_type: type,
+                    options: options,
+                    reverse_score: reverseScore,
+                    score_category: scoreCategory,
+                    sort_order: nextOrder
+                });
+                if (error) throw error;
+
+                document.getElementById('newAssessmentKey').value = '';
+                document.getElementById('newAssessmentText').value = '';
+                // Reset option rows to defaults
+                const container = document.getElementById('newAssessmentOptionsRows');
+                if (container) container.innerHTML = '';
+                initNewAqOptions();
+                await loadAssessmentQuestions();
+            } catch (err) {
+                console.error('Error adding assessment question:', err);
+                alert('Failed to add question. The key may already exist.');
+            }
+        };
+
+        window.deleteAssessmentQuestion = async function(id) {
+            if (!confirm('Delete this assessment question?')) return;
+            try {
+                const { error } = await supabase.from('assessment_questions').delete().eq('id', id);
+                if (error) throw error;
+                await loadAssessmentQuestions();
+            } catch (err) {
+                console.error('Error deleting assessment question:', err);
+                alert('Failed to delete question.');
+            }
+        };
+
+        window.editAssessmentQuestion = async function(id) {
+            try {
+                const { data: q, error } = await supabase.from('assessment_questions').select('*').eq('id', id).single();
+                if (error) throw error;
+
+                const opts = (typeof q.options === 'string' ? JSON.parse(q.options) : q.options) || [];
+
+                // Remove any existing edit modal
+                const prev = document.getElementById('editAssessmentModal');
+                if (prev) prev.remove();
+
+                const modal = document.createElement('div');
+                modal.id = 'editAssessmentModal';
+                modal.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);animation:fadeIn .15s ease;';
+                modal.innerHTML = `
+                    <div style="background:#fff;border-radius:16px;max-width:640px;width:94%;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="margin:0;font-size:16px;color:#1a1a2e;font-weight:700;">Edit Assessment Question</h3>
+                            <button id="editAqClose" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7c8f;padding:4px 8px;">✕</button>
+                        </div>
+
+                        <div style="margin-bottom:12px;">
+                            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Question Text</label>
+                            <textarea id="editAqText" rows="2" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:13px;resize:vertical;font-family:inherit;">${q.question_text.replace(/"/g, '&quot;')}</textarea>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+                            <div>
+                                <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Type</label>
+                                <select id="editAqType" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;">
+                                    ${['frequency','intensity','awareness','behavior','regulation','self_efficacy','somatic','avoidance','sleep','energy','coping','expression','comfort','satisfaction','hope','anhedonia','self_esteem','reframing','flexibility','problem_solving','wellbeing','functioning','other']
+                                      .map(t => '<option value="' + t + '"' + (t === q.question_type ? ' selected' : '') + '>' + t + '</option>').join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Scoring</label>
+                                <select id="editAqReverse" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;">
+                                    <option value="false"${!q.reverse_score ? ' selected' : ''}>Normal</option>
+                                    <option value="true"${q.reverse_score ? ' selected' : ''}>Reverse</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Score Category</label>
+                                <select id="editAqCategory" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;">
+                                    ${['','awareness','efficacy','skills','expression','comfort','satisfaction','energy','sleep','wellbeing','functioning','social','basics']
+                                      .map(c => '<option value="' + c + '"' + (c === (q.score_category || '') ? ' selected' : '') + '>' + (c || '— None —') + '</option>').join('')}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <label style="font-size:12px;font-weight:600;color:#374151;">Answer Options</label>
+                                <button id="editAqAddOpt" style="background:#6366F1;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">+ Add Option</button>
+                            </div>
+                            <div id="editAqOptions" style="display:grid;gap:6px;"></div>
+                        </div>
+
+                        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+                            <button id="editAqCancel" style="padding:8px 20px;border-radius:8px;border:1px solid #d1d5db;background:#f9fafb;color:#6b7c8f;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+                            <button id="editAqSave" style="padding:8px 24px;border-radius:8px;border:none;background:#6366F1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Save Changes</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // Render option rows
+                const optionsContainer = document.getElementById('editAqOptions');
+                function renderOptionRows(options) {
+                    optionsContainer.innerHTML = options.map((o, i) => `
+                        <div class="aq-opt-row" data-idx="${i}" style="display:grid;grid-template-columns:50px 40px 1fr 32px;gap:6px;align-items:center;background:#f8f9fa;border-radius:8px;padding:6px 8px;">
+                            <input type="number" class="aq-opt-val" value="${o.value}" min="0" max="10" style="padding:4px 6px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;text-align:center;" title="Score value">
+                            <input type="text" class="aq-opt-emoji" value="${o.emoji || ''}" maxlength="4" style="padding:4px;border-radius:6px;border:1px solid #d1d5db;font-size:16px;text-align:center;" title="Emoji">
+                            <input type="text" class="aq-opt-label" value="${(o.label || '').replace(/"/g, '&quot;')}" style="padding:4px 8px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;" placeholder="Label text" title="Label">
+                            <button class="aq-opt-del" data-idx="${i}" style="background:#ef4444;color:#fff;border:none;border-radius:6px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove">×</button>
+                        </div>
+                    `).join('');
+
+                    // Delete option handlers
+                    optionsContainer.querySelectorAll('.aq-opt-del').forEach(btn => {
+                        btn.onclick = () => {
+                            const idx = parseInt(btn.dataset.idx);
+                            currentOpts.splice(idx, 1);
+                            renderOptionRows(currentOpts);
+                        };
+                    });
+                }
+
+                let currentOpts = opts.map(o => ({ ...o }));
+                renderOptionRows(currentOpts);
+
+                // Add option
+                document.getElementById('editAqAddOpt').onclick = () => {
+                    const nextVal = currentOpts.length > 0 ? Math.max(...currentOpts.map(o => Number(o.value))) + 1 : 0;
+                    currentOpts.push({ value: nextVal, label: '', emoji: '😐' });
+                    renderOptionRows(currentOpts);
+                };
+
+                // Collect current option values from DOM
+                function collectOptions() {
+                    const rows = optionsContainer.querySelectorAll('.aq-opt-row');
+                    return Array.from(rows).map(row => ({
+                        value: parseInt(row.querySelector('.aq-opt-val').value) || 0,
+                        label: row.querySelector('.aq-opt-label').value.trim(),
+                        emoji: row.querySelector('.aq-opt-emoji').value.trim() || '😐'
+                    }));
+                }
+
+                // Close / Cancel
+                const closeModal = () => modal.remove();
+                document.getElementById('editAqClose').onclick = closeModal;
+                document.getElementById('editAqCancel').onclick = closeModal;
+                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+                // Save
+                document.getElementById('editAqSave').onclick = async () => {
+                    const newText = document.getElementById('editAqText').value.trim();
+                    if (!newText) { alert('Question text cannot be empty.'); return; }
+
+                    const finalOpts = collectOptions();
+                    if (finalOpts.length === 0) { alert('Add at least one answer option.'); return; }
+                    if (finalOpts.some(o => !o.label)) { alert('All options need a label.'); return; }
+
+                    const saveBtn = document.getElementById('editAqSave');
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving...';
+
+                    try {
+                        const { error: updateErr } = await supabase.from('assessment_questions')
+                            .update({
+                                question_text: newText,
+                                question_type: document.getElementById('editAqType').value,
+                                reverse_score: document.getElementById('editAqReverse').value === 'true',
+                                score_category: document.getElementById('editAqCategory').value || null,
+                                options: finalOpts
+                            })
+                            .eq('id', id);
+                        if (updateErr) throw updateErr;
+                        closeModal();
+                        await loadAssessmentQuestions();
+                    } catch (saveErr) {
+                        console.error('Error saving assessment question:', saveErr);
+                        alert('Failed to save changes.');
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Save Changes';
+                    }
+                };
+            } catch (err) {
+                console.error('Error editing assessment question:', err);
+                alert('Failed to load question for editing.');
+            }
+        };
 
         // Parent Toolkit Management
         let toolkitSettings = { weeklyCheckinEnabled: true };

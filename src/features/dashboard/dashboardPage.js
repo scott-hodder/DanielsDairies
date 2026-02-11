@@ -1040,6 +1040,7 @@ async function init() {
     
     // Get current user
     setCurrentUser(await getCurrentUser())
+    window.state.currentUser = state.currentUser
     
     if (state.currentUser && state.currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
@@ -2543,16 +2544,118 @@ function createModuleCard(module) {
   return card
 }
 
-// Start module
+// Check-in trigger weeks
+const CHECKIN_WEEKS = [1, 4, 7, 10]
+
+async function hasExistingCheckin(childId, moduleId) {
+  if (!childId || !moduleId) return true
+  try {
+    const { data } = await supabase
+      .from('weekly_checkins')
+      .select('id')
+      .eq('child_id', childId)
+      .eq('module_id', moduleId)
+      .limit(1)
+      .maybeSingle()
+    return !!data
+  } catch (e) {
+    console.error('Error checking existing checkin:', e)
+    return true
+  }
+}
+
+function shouldTriggerCheckin(module) {
+  const week = module.week_number || module.pathway_order || module.order
+  return week && CHECKIN_WEEKS.includes(Number(week))
+}
+
+function navigateToModule(module) {
+  const moduleUrl = buildModuleUrl({
+    link: `/module.html?code=${module.code}&moduleId=${module.id}&parentUserId=${state.currentUser.id}`
+  }, state.selectedChild.id)
+  window.location.href = moduleUrl
+}
+
+window.showCheckinPopup = showCheckinPopup
+function showCheckinPopup(module, onComplete) {
+  // Determine the pathway/super skill for the psychometric assessment
+  // Priority: module's super_skill_id → current adventure map category → 'general'
+  let pathwayOrSuperSkill = 'general'
+
+  // Try to get super skill slug from the module's super_skill_id
+  if (module.super_skill_id && window.superSkills) {
+    const ss = window.superSkills.find(s => s.id === module.super_skill_id)
+    if (ss && ss.slug) pathwayOrSuperSkill = ss.slug
+  }
+
+  // Fallback: use the current adventure map category
+  if (pathwayOrSuperSkill === 'general') {
+    const mapCat = window.enhancedDashboard?.adventureMap?.currentCategory ||
+                   window.currentFocusSuperSkill || 'general'
+    if (mapCat && mapCat !== 'all') pathwayOrSuperSkill = mapCat
+  }
+
+  const childId = state.selectedChild?.id || window.state?.selectedChild?.id
+  if (!childId) {
+    onComplete()
+    return
+  }
+
+  // Initialize the progress tracking system if needed
+  if (window.progressTrackingSystem && !window.progressTrackingSystem.supabaseClient) {
+    window.progressTrackingSystem.init(supabase)
+  }
+
+  if (!window.progressTrackingSystem) {
+    console.warn('Progress tracking system not available, skipping check-in')
+    onComplete()
+    return
+  }
+
+  // Use 'checkin' assessment type for weekly check-ins
+  window.progressTrackingSystem.showAssessment(
+    childId,
+    pathwayOrSuperSkill,
+    'checkin',
+    // onComplete — assessment finished, also record in weekly_checkins so it won't trigger again
+    async (results) => {
+      try {
+        await saveWeeklyCheckin({
+          parentUserId: state.currentUser?.id || window.state?.currentUser?.id,
+          childId: childId,
+          intensity: results?.totalScore || 0,
+          challenge: pathwayOrSuperSkill,
+          triggers: [],
+          goal: null,
+          notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) — score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
+          generatedPlan: null,
+          subSkillId: module.sub_skill_id || null,
+          weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,
+          moduleId: module.id
+        })
+      } catch (e) {
+        console.error('Error recording weekly checkin after assessment:', e)
+      }
+      onComplete()
+    },
+    // onSkip — user skipped, still navigate to module
+    () => {
+      onComplete()
+    }
+  )
+}
+
+// Start module (with check-in intercept for weeks 1, 4, 7, 10)
 async function startModule(module) {
   try {
-    // Load module through the module player
-    // Note: child_modules record will be created when module is completed
-    const moduleUrl = buildModuleUrl({
-      link: `/module.html?code=${module.code}&moduleId=${module.id}&parentUserId=${state.currentUser.id}`
-    }, state.selectedChild.id)
-    window.location.href = moduleUrl
-    
+    if (shouldTriggerCheckin(module) && state.selectedChild && state.currentUser) {
+      const alreadyDone = await hasExistingCheckin(state.selectedChild.id, module.id)
+      if (!alreadyDone) {
+        showCheckinPopup(module, () => navigateToModule(module))
+        return
+      }
+    }
+    navigateToModule(module)
   } catch (error) {
     console.error('Error starting module:', error)
     alert('Failed to start module. Please try again.')
@@ -4124,7 +4227,7 @@ getUniqueSuperSkills() {
         }
     }
     
-    startModule(moduleId, code) {
+    async startModule(moduleId, code) {
         var child = window.state.selectedChild;
         if (!child) {
             alert('Please select a child first.');
@@ -4134,6 +4237,34 @@ getUniqueSuperSkills() {
         this.closeModal();
         
         var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + moduleId + '&code=' + code + '&childName=' + encodeURIComponent(child.name || '');
+        
+        // Check-in intercept for weeks 1, 4, 7, 10
+        var CHECKIN_WEEKS = [1, 4, 7, 10];
+        var mod = (window.modules || []).find(function(m) { return m.id === moduleId; });
+        if (mod && typeof window.showCheckinPopup === 'function') {
+            var week = Number(mod.week_number || mod.pathway_order || 0);
+            if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
+                try {
+                    var existing = await window.supabase
+                        .from('weekly_checkins')
+                        .select('id')
+                        .eq('child_id', child.id)
+                        .eq('module_id', mod.id)
+                        .limit(1)
+                        .maybeSingle();
+                    if (!existing.data) {
+                        var popupModule = Object.assign({}, mod, { code: code });
+                        window.showCheckinPopup(popupModule, function() {
+                            window.location.href = moduleUrl;
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Error checking checkin:', e);
+                }
+            }
+        }
+        
         window.location.href = moduleUrl;
     }
     

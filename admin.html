@@ -322,10 +322,101 @@
                     </div>
                 </div>
 
+                <!-- ========== SECTION 3: Psychometric Assessment Questions ========== -->
+                <div style="margin-top: 32px;">
+                    <h3 style="font-size: 16px; color: #1a1a2e; margin: 0 0 4px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        📊 Psychometric Assessment Questions
+                    </h3>
+                    <p style="font-size: 12px; color: #6b7c8f; margin: 0 0 16px 0;">These questions appear during check-ins on weeks 1, 4, 7 &amp; 10. They feed the "How Skills Are Growing" chart in parent insights.</p>
+
+                    <!-- Pathway filter -->
+                    <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center;">
+                        <label style="font-size: 13px; font-weight: 600; color: #374151;">Pathway:</label>
+                        <select id="assessmentPathwayFilter" class="form-select" onchange="loadAssessmentQuestions()" style="padding: 6px 10px; font-size: 12px; min-width: 180px;">
+                            <option value="anger">🔥 Anger</option>
+                            <option value="anxiety">🌧️ Anxiety</option>
+                            <option value="depression">🌙 Depression</option>
+                            <option value="emotions">💭 Emotions</option>
+                            <option value="social">👫 Social</option>
+                            <option value="body">💪 Body</option>
+                            <option value="cognitive">🧠 Cognitive</option>
+                            <option value="general">📚 General</option>
+                        </select>
+                        <span id="assessmentQuestionCount" style="font-size: 11px; color: #6b7c8f;"></span>
+                    </div>
+
+                    <!-- Question list -->
+                    <div id="assessmentQuestionsList" style="display: grid; gap: 8px; margin-bottom: 16px; max-height: 500px; overflow-y: auto;"></div>
+
+                    <!-- Add question form -->
+                    <div style="background: #f0f4ff; border-radius: 8px; padding: 16px; border: 1px dashed #6366F1;">
+                        <h4 style="font-size: 13px; color: #6366F1; margin: 0 0 10px 0; font-weight: 700;">Add New Question</h4>
+                        <div style="display: grid; gap: 8px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px;">
+                                <input type="text" class="form-input" id="newAssessmentKey" placeholder="unique_key" style="padding: 6px 10px; font-size: 12px;">
+                                <input type="text" class="form-input" id="newAssessmentText" placeholder="Question text shown to the child" style="padding: 6px 10px; font-size: 12px;">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                                <select class="form-select" id="newAssessmentType" style="padding: 6px 10px; font-size: 12px;">
+                                    <option value="frequency">frequency</option>
+                                    <option value="intensity">intensity</option>
+                                    <option value="awareness">awareness</option>
+                                    <option value="behavior">behavior</option>
+                                    <option value="regulation">regulation</option>
+                                    <option value="self_efficacy">self_efficacy</option>
+                                    <option value="somatic">somatic</option>
+                                    <option value="avoidance">avoidance</option>
+                                    <option value="sleep">sleep</option>
+                                    <option value="energy">energy</option>
+                                    <option value="coping">coping</option>
+                                    <option value="expression">expression</option>
+                                    <option value="comfort">comfort</option>
+                                    <option value="satisfaction">satisfaction</option>
+                                    <option value="other">other</option>
+                                </select>
+                                <select class="form-select" id="newAssessmentReverseScore" style="padding: 6px 10px; font-size: 12px;">
+                                    <option value="false">Normal scoring</option>
+                                    <option value="true">Reverse scoring</option>
+                                </select>
+                                <select class="form-select" id="newAssessmentScoreCategory" style="padding: 6px 10px; font-size: 12px;">
+                                    <option value="">No category</option>
+                                    <option value="awareness">awareness</option>
+                                    <option value="efficacy">efficacy</option>
+                                    <option value="skills">skills</option>
+                                    <option value="expression">expression</option>
+                                    <option value="comfort">comfort</option>
+                                    <option value="satisfaction">satisfaction</option>
+                                    <option value="energy">energy</option>
+                                    <option value="sleep">sleep</option>
+                                    <option value="wellbeing">wellbeing</option>
+                                    <option value="functioning">functioning</option>
+                                    <option value="social">social</option>
+                                    <option value="basics">basics</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label style="font-size: 11px; font-weight: 600; color: #6b7c8f;">Answer Options</label>
+                                    <button type="button" onclick="addNewAqOptionRow()" style="background: #6366F1; color: #fff; border: none; border-radius: 6px; padding: 3px 8px; font-size: 10px; font-weight: 600; cursor: pointer;">+ Add Option</button>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 50px 40px 1fr 28px; gap: 4px; margin-bottom: 4px; padding: 0 8px;">
+                                    <span style="font-size: 10px; color: #9ca3af; text-align: center;">Score</span>
+                                    <span style="font-size: 10px; color: #9ca3af; text-align: center;">Emoji</span>
+                                    <span style="font-size: 10px; color: #9ca3af;">Label</span>
+                                    <span></span>
+                                </div>
+                                <div id="newAssessmentOptionsRows" style="display: grid; gap: 4px;"></div>
+                            </div>
+                            <button class="btn-save" onclick="addAssessmentQuestion()" style="padding: 8px 16px; font-size: 12px; justify-self: start;">Add Question</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
         <!-- End Check Ins Tab -->
 
+        <!-- Tab Content: Module Customisation -->
         <div id="moduleCustomisationTab" class="tab-content active">
             <div class="admin-grid">
                 <!-- Modules List -->
