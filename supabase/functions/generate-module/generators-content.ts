@@ -90,8 +90,9 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   const formatting = getAgeSpecificFormatting(ageRange);
   
   // Extract key sections from the brief using regex
+  // The regex matches "=== HEADER ===" or "=== HEADER (extra text) ===" 
   const extractSection = (header: string): string => {
-    const regex = new RegExp(`=== ${header} ===\\n([\\s\\S]*?)(?=\\n===|$)`, 'i');
+    const regex = new RegExp(`=== ${header}[^=]*===\\n([\\s\\S]*?)(?=\\n===|$)`, 'i');
     const match = contentBrief.match(regex);
     return match ? match[1].trim() : '';
   };
@@ -106,11 +107,19 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   const titleMatch = contentBrief.match(/^Title:\s*(.+)$/m);
   const title = titleMatch ? titleMatch[1].trim() : metadata.title;
   
+  // Extract super skill and sub-skill
+  const superSkillMatch = contentBrief.match(/^Super Skill:\s*(.+)$/m);
+  const superSkill = superSkillMatch ? superSkillMatch[1].trim() : '';
+  const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+)$/m);
+  const subSkill = subSkillMatch ? subSkillMatch[1].trim() : '';
+  
   const parts = [
     `Module: "${title}"`,
     `Theme: ${metadata.theme}`,
     `Mascot: ${metadata.characterName} ${metadata.characterEmoji}`,
     `Age: ${metadata.targetAge}`,
+    superSkill ? `Super Skill: ${superSkill}` : '',
+    subSkill ? `Sub-Skill: ${subSkill}` : '',
     '',
     `AGE-SPECIFIC FORMATTING (${metadata.targetAge} year olds):`,
     `- Paragraph length: ${formatting.paragraphLength}`,
@@ -121,12 +130,13 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   ];
   
   if (theory) {
-    parts.push('', `THEORY: ${theory.split('\n').slice(0, 2).join(' ').substring(0, 200)}`);
+    // Include the full theory description (up to 500 chars) so the AI can properly operationalise it
+    parts.push('', `PRIMARY THEORY (must operationalise in content): ${theory.substring(0, 500)}`);
   }
   
   if (brainTown) {
-    parts.push('', `BRAIN TOWN: ${brainTown.split('\n')[0].substring(0, 200)}`);
-    parts.push('Keep Brain Town references SHORT (1-2 sentences). Weave it naturally, do not force it.');
+    // Include the FULL Brain Town analogy text (up to 500 chars) — it must be woven into content
+    parts.push('', `BRAIN TOWN ANALOGY (must weave into content): ${brainTown.substring(0, 500)}`);
   }
   
   if (diagnosisAdaptations) {
@@ -144,7 +154,7 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   
   parts.push('', 'LANGUAGE: Australian English mandatory (colour, behaviour, favourite, organise, centre, mum, learnt).');
   
-  return parts.join('\n');
+  return parts.filter(p => p !== undefined).join('\n');
 }
 
 // Determine if Daniel should appear as the learner character.
@@ -178,8 +188,7 @@ function extractAgeRange(metadata: ModuleMetadata): string {
 async function generateMetadata(
   apiKey: string,
   contentBrief: string,
-  seriesInfo?: SeriesInfo | null,
-  forcedTitle?: string | null
+  seriesInfo?: SeriesInfo | null
 ): Promise<ModuleMetadata> {
   const cleanLabel = seriesInfo?.label 
     ? seriesInfo.label.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
@@ -211,26 +220,56 @@ Always refer to the mascot as "${fullCharacterName}" throughout the module.
 DO NOT use any other animal or emoji - only use ${seriesInfo.emoji} for the mascot.`
     : "";
 
+  // Extract the admin-specified title and age range from the content brief
+  // These are NON-NEGOTIABLE and must not be overridden by AI
+  const briefTitleMatch = contentBrief.match(/^Title:\s*(.+)$/m);
+  const adminTitle = briefTitleMatch ? briefTitleMatch[1].trim() : '';
+  const briefAgeMatch = contentBrief.match(/^Target Age:\s*(.+?)(?:\s*\(|$)/m);
+  const adminAge = briefAgeMatch ? briefAgeMatch[1].trim() : '';
+  
+  // Extract super skill and sub-skill from the brief for theming
+  const superSkillMatch = contentBrief.match(/^Super Skill:\s*(.+?)(?:\s*—|$)/m);
+  const briefSuperSkill = superSkillMatch ? superSkillMatch[1].trim() : '';
+  const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+?)(?:\s*—|$)/m);
+  const briefSubSkill = subSkillMatch ? subSkillMatch[1].trim() : '';
+  
+  // Extract the primary theory name for theming
+  const theoryMatch = contentBrief.match(/^PRIMARY THEORY:\s*(.+)$/m);
+  const briefTheory = theoryMatch ? theoryMatch[1].trim() : '';
+
   const prompt = `Based on this content brief, create module metadata.
 
 CONTENT BRIEF:
 ${contentBrief}${seriesContext}
 
+CRITICAL RULES — DO NOT IGNORE:
+- The "title" field MUST be EXACTLY: "${adminTitle || 'My Feelings Adventure'}" — do NOT change, rephrase, or invent a new title.
+- The "targetAge" field MUST be EXACTLY: "${adminAge || '6-8'}" — do NOT change the age range.
+- The "theme" must relate to the primary theory: "${briefTheory || 'emotional awareness'}".
+${briefSuperSkill ? `- Content relates to the Super Skill: "${briefSuperSkill}".` : ''}
+${briefSubSkill ? `- Content focuses on the Sub-Skill: "${briefSubSkill}".` : ''}
+
 Respond with ONLY this JSON structure:
 {
-  "title": "Main module title (catchy, child-friendly)",
+  "title": "${adminTitle || 'My Feelings Adventure'}",
   "subtitle": "Brief tagline (10 words max)",
   "shortDescription": "Short description (1-2 sentences, 120 characters max)",
   "description": "Full description (2-4 sentences, parent-facing, 300 characters max)",
   "series": "${cleanLabel || 'custom'}",
-  "targetAge": "Age range like '5-8' or '8-12'",
-  "theme": "Core psychological theme (e.g., 'anxiety management', 'emotional regulation')",
+  "targetAge": "${adminAge || '6-8'}",
+  "theme": "Core psychological theme derived from ${briefTheory || 'the primary theory'}",
   "characterName": "${fullCharacterName || 'Friendly mascot name (animal preferred)'}",
   "characterEmoji": "${seriesInfo?.emoji || 'Single emoji representing the mascot'}"
 }`;
 
   const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<ModuleMetadata>(response);
+  
+  // ALWAYS force-override admin-specified title and age (never trust AI for these)
+  if (parsed) {
+    if (adminTitle) parsed.title = adminTitle;
+    if (adminAge) parsed.targetAge = adminAge;
+  }
   
   // If we have series info, ALWAYS enforce the character type and emoji (override AI response)
   if (seriesInfo && parsed) {
@@ -241,26 +280,18 @@ Respond with ONLY this JSON structure:
   }
   
   if (!parsed || !parsed.title) {
-    const fallback = {
-      title: "My Feelings Adventure",
+    return {
+      title: adminTitle || "My Feelings Adventure",
       subtitle: "Learning about emotions together",
       shortDescription: "Build emotional awareness with playful activities and stories.",
       description: "This module helps kids explore their feelings through stories, games, and reflection. It includes simple tools they can practice with caregivers to build emotional confidence.",
       series: cleanLabel || seriesInfo?.label || "custom",
-      targetAge: "5-10",
-      theme: "emotional awareness",
+      targetAge: adminAge || "6-8",
+      theme: briefTheory || "emotional awareness",
       characterName: fullCharacterName || "Buddy",
       characterEmoji: seriesInfo?.emoji || "🐕",
       characterType: cleanCharacterType || seriesInfo?.character_type
     };
-    if (forcedTitle?.trim()) {
-      fallback.title = forcedTitle.trim();
-    }
-    return fallback;
-  }
-
-  if (forcedTitle?.trim()) {
-    parsed.title = forcedTitle.trim();
   }
   
   if (!parsed.shortDescription) {
@@ -3194,6 +3225,183 @@ Include 8 unique squares (plus free space = 9 total for 3x3 grid).`;
   
   return activities.slice(0, count);
 }
+// ====================
+// VERIFICATION & MODULE SUMMARY GENERATORS
+// ====================
+
+/**
+ * Generate a self-verification report that audits the generated content
+ * against the content brief requirements (theory, age range, tone, etc.)
+ */
+async function generateVerificationReport(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  generatedContent: Omit<GeneratedContent, 'verificationReport' | 'moduleSummary'>
+): Promise<VerificationReport> {
+  // Extract key info from content brief for verification
+  const extractSection = (header: string): string => {
+    const regex = new RegExp(`=== ${header}[^=]*===\\n([\\s\\S]*?)(?=\\n===|$)`, 'i');
+    const match = contentBrief.match(regex);
+    return match ? match[1].trim() : '';
+  };
+
+  const theorySection = extractSection('PSYCHOLOGICAL FOUNDATION');
+  const brainTownSection = extractSection('BRAIN TOWN ANALOGY');
+  const diagnosisSection = extractSection('DIAGNOSIS ADAPTATIONS');
+
+  // Extract structured fields from the brief
+  const briefTitleMatch = contentBrief.match(/^Title:\s*(.+)$/m);
+  const briefTitle = briefTitleMatch ? briefTitleMatch[1].trim() : metadata.title;
+  const briefAgeMatch = contentBrief.match(/^Target Age:\s*(.+?)(?:\s*\(|$)/m);
+  const briefAge = briefAgeMatch ? briefAgeMatch[1].trim() : metadata.targetAge;
+  const superSkillMatch = contentBrief.match(/^Super Skill:\s*(.+?)(?:\s*—|$)/m);
+  const superSkillName = superSkillMatch ? superSkillMatch[1].trim() : '';
+  const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+?)(?:\s*—|$)/m);
+  const subSkillName = subSkillMatch ? subSkillMatch[1].trim() : '';
+
+  // Build a summary of generated content for audit
+  const lessonTopics = generatedContent.lessons.map(l => l.heading).join('; ');
+  const interactiveTopics = generatedContent.interactiveLessons.map(l => l.heading).join('; ');
+  const welcomeSample = generatedContent.welcome.paragraphs.join(' ').substring(0, 400);
+  
+  // Sample from activities for tone checking
+  const activitySamples: string[] = [];
+  if (generatedContent.checklists.length > 0) activitySamples.push(`Checklist: "${generatedContent.checklists[0].heading}"`);
+  if (generatedContent.quizzes.length > 0) activitySamples.push(`Quiz: "${generatedContent.quizzes[0].heading}" - "${generatedContent.quizzes[0].question}"`);
+  if (generatedContent.scenarios.length > 0) activitySamples.push(`Scenario: "${generatedContent.scenarios[0].heading}" - "${generatedContent.scenarios[0].scenario?.substring(0, 100)}"`);
+  if (generatedContent.reflections.length > 0) activitySamples.push(`Reflection: "${generatedContent.reflections[0].heading}" - "${generatedContent.reflections[0].prompt}"`);
+
+  const prompt = `You are auditing a generated children's SEL module for quality and compliance. Carefully check whether the generated content matches the specifications.
+
+=== SPECIFICATIONS FROM ADMIN ===
+Title specified: "${briefTitle}"
+Target Age specified: ${briefAge}
+${superSkillName ? `Super Skill: ${superSkillName}` : 'Super Skill: not specified'}
+${subSkillName ? `Sub-Skill Focus: ${subSkillName}` : 'Sub-Skill: not specified'}
+Primary Theory: ${theorySection.substring(0, 500)}
+Brain Town Analogy: ${brainTownSection.substring(0, 400)}
+${diagnosisSection ? `Diagnosis Adaptations: ${diagnosisSection.substring(0, 300)}` : ''}
+
+=== WHAT WAS GENERATED ===
+Title used: "${metadata.title}"
+Age range used: ${metadata.targetAge}
+Character: ${metadata.characterName} ${metadata.characterEmoji}
+Theme: ${metadata.theme}
+
+Welcome text sample: "${welcomeSample}"
+
+Lesson topics: ${lessonTopics}
+Interactive lesson topics: ${interactiveTopics}
+
+Activity samples:
+${activitySamples.join('\n')}
+
+=== YOUR AUDIT ===
+Check EACH of these carefully:
+1. Is the primary theory "${theorySection.split('\n')[0]}" correctly operationalised in the content?
+2. Is the content appropriate for the ${briefAge} age range?
+3. Does it align with the sub-skill "${subSkillName || 'not specified'}"?
+4. Does it align with the super skill "${superSkillName || 'not specified'}"?
+5. Is the Brain Town analogy used in the content?
+6. Is the tone warm, age-appropriate, and not AI-sounding?
+7. Is Australian English used consistently?
+8. Are there any concepts introduced that were NOT specified?
+
+Respond with ONLY this JSON:
+{
+  "theoriesUsed": [
+    { "theoryName": "Name of each theory detected in content", "whereOperationalised": "Which pages/activities apply it" }
+  ],
+  "ageRangeTheoriesApplied": "Assessment of whether content matches ${briefAge} age range",
+  "subSkillAlignment": "Assessment of alignment with sub-skill: ${subSkillName || 'not specified'}",
+  "superSkillAlignment": "Assessment of alignment with super skill: ${superSkillName || 'not specified'}",
+  "brainTownAnalogyUsage": "How and where the Brain Town analogy was used",
+  "unselectedConceptsIntroduced": ["List any concepts introduced that were NOT in the brief"],
+  "toneComplianceNotes": "Assessment of warm, age-appropriate, non-AI-sounding tone",
+  "claimTypes": "Types of claims made",
+  "australianEnglishCheck": "Whether Australian English spelling was used consistently",
+  "overallAssessment": "PASS / PASS WITH NOTES / NEEDS REVIEW",
+  "flaggedIssues": ["Any concerns or issues found"],
+  "autoRevisions": ["Any auto-corrections that were applied"]
+}`;
+
+  try {
+    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+    const parsed = safeJsonParse<VerificationReport>(response);
+    if (parsed && parsed.overallAssessment) {
+      return parsed;
+    }
+  } catch (e) {
+    console.error('[AI] Verification report generation failed:', e);
+  }
+
+  return {
+    theoriesUsed: [],
+    ageRangeTheoriesApplied: "Verification could not be completed",
+    subSkillAlignment: "Verification could not be completed",
+    superSkillAlignment: "Verification could not be completed",
+    brainTownAnalogyUsage: "Verification could not be completed",
+    unselectedConceptsIntroduced: [],
+    toneComplianceNotes: "Verification could not be completed",
+    claimTypes: "Verification could not be completed",
+    australianEnglishCheck: "Verification could not be completed",
+    overallAssessment: "NEEDS REVIEW - Verification could not be completed",
+    flaggedIssues: ["Verification report generation failed"],
+    autoRevisions: [],
+  };
+}
+
+/**
+ * Generate a module summary for week-over-week continuity
+ */
+async function generateModuleSummary(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  generatedContent: Omit<GeneratedContent, 'verificationReport' | 'moduleSummary'>
+): Promise<ModuleSummary> {
+  const lessonSummary = generatedContent.lessons.map(l => `${l.heading}: ${l.paragraphs[0] || ''}`).join('\n');
+  const interactiveSummary = generatedContent.interactiveLessons.map(l => l.heading).join('; ');
+  
+  const prompt = `Summarise this generated children's SEL module for continuity with the next week's module.
+
+Module Title: ${metadata.title}
+Target Age: ${metadata.targetAge}
+Theme: ${metadata.theme}
+Character: ${metadata.characterName}
+
+Lesson Content:
+${lessonSummary.substring(0, 600)}
+
+Interactive Lessons: ${interactiveSummary.substring(0, 300)}
+
+Respond with ONLY this JSON:
+{
+  "summary": "2-3 sentence summary of what this module covered",
+  "keyConceptsCovered": ["concept1", "concept2", "concept3"],
+  "skillsIntroduced": ["skill1", "skill2"],
+  "characterProgressionNotes": "How the character's story progressed"
+}`;
+
+  try {
+    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
+    const parsed = safeJsonParse<ModuleSummary>(response);
+    if (parsed && parsed.summary) {
+      return parsed;
+    }
+  } catch (e) {
+    console.error('[AI] Module summary generation failed:', e);
+  }
+
+  return {
+    summary: "Module summary could not be generated.",
+    keyConceptsCovered: [],
+    skillsIntroduced: [],
+    characterProgressionNotes: "Not available",
+  };
+}
+
 // ORCHESTRATOR
 // ====================
 
@@ -3202,8 +3410,7 @@ async function generateAllContent(
   contentBrief: string,
   pageStructure: PageTemplate[],
   updateProgress: (step: string, message: string) => Promise<void>,
-  seriesInfo?: SeriesInfo | null,
-  forcedTitle?: string | null
+  seriesInfo?: SeriesInfo | null
 ): Promise<GeneratedContent> {
   
   // Count how many of each type we need
@@ -3258,7 +3465,7 @@ async function generateAllContent(
   };
   
   await updateProgress("metadata", "Creating module theme and character...");
-  const metadata = await generateMetadata(apiKey, contentBrief, seriesInfo, forcedTitle);
+  const metadata = await generateMetadata(apiKey, contentBrief, seriesInfo);
   
   await updateProgress("structure", "Planning module structure...");
   const [chapters, welcome] = await Promise.all([
@@ -3351,11 +3558,8 @@ async function generateAllContent(
     generateCompletion(apiKey, metadata),
   ]);
 
-  await updateProgress("verification", "Preparing admin verification report...");
-  const verificationReport = buildVerificationReport(contentBrief, metadata, lessons, checklists, reflections, quizzes);
-  const moduleSummary = buildModuleSummary(metadata, lessons, checklists);
-  
-  return {
+  // Build the content object without verification (needed as input for audit)
+  const contentWithoutVerification = {
     metadata,
     welcome,
     chapters,
@@ -3374,7 +3578,6 @@ async function generateAllContent(
     actionPlans,
     warningSigns,
     matchingActivities,
-    // v4
     fillInStories,
     copingCards,
     gratitudeJars,
@@ -3385,13 +3588,11 @@ async function generateAllContent(
     agreeDisagrees,
     comicStrips,
     affirmationBuilders,
-    // v5 NEW CHALLENGES
     weatherControllers,
     powerUpCollectors,
     emotionMazes,
     strengthShields,
     feelingVolcanoes,
-    // v6 NEW FUN INTERACTIVE LESSONS
     spinTheWheels,
     stickerCollectors,
     mindfulAdventures,
@@ -3408,6 +3609,17 @@ async function generateAllContent(
     feelingsBingos,
     summary,
     completion,
+  };
+
+  // Generate verification report and module summary in parallel
+  await updateProgress("verification", "Running AI self-verification audit...");
+  const [verificationReport, moduleSummary] = await Promise.all([
+    generateVerificationReport(apiKey, metadata, contentBrief, contentWithoutVerification),
+    generateModuleSummary(apiKey, metadata, contentBrief, contentWithoutVerification),
+  ]);
+  
+  return {
+    ...contentWithoutVerification,
     verificationReport,
     moduleSummary,
   };
