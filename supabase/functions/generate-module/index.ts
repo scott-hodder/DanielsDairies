@@ -5300,8 +5300,41 @@ serve(async (req) => {
       const facilitatorTip = firstNonEmptyString(body.facilitatorTip, body.facilitator_tip);
       const reflectionPrompt = firstNonEmptyString(body.reflectionPrompt, body.reflection_prompt);
       const rewardText = firstNonEmptyString(body.rewardText, body.reward_text);
-      const previousModuleSummary = firstNonEmptyString(body.previousModuleSummary, body.previous_module_summary);
+      const cycleId = firstNonEmptyString(body.cycleId, body.cycle_id);
+      const previousModuleSummaryFromRequest = firstNonEmptyString(body.previousModuleSummary, body.previous_module_summary);
       const weekNumber = firstPresent(body.weekNumber, body.week_number, body.cycleWeek, body.cycle_week);
+      const parsedWeekNumber = Number(weekNumber);
+      const hasValidWeekNumber = Number.isFinite(parsedWeekNumber) && parsedWeekNumber > 0;
+      let previousModuleSummary = previousModuleSummaryFromRequest;
+
+      if (!previousModuleSummary && hasValidWeekNumber && parsedWeekNumber > 1) {
+        const previousWeekNumber = parsedWeekNumber - 1;
+        let previousModuleQuery = supabaseClient
+          .from("modules")
+          .select("module_summary, title, week_number")
+          .eq("week_number", previousWeekNumber)
+          .eq("is_active", true)
+          .not("module_summary", "is", null)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+
+        if (cycleId) {
+          previousModuleQuery = previousModuleQuery.eq("cycle_id", cycleId);
+        }
+
+        if (superSkillId) {
+          previousModuleQuery = previousModuleQuery.eq("super_skill_id", superSkillId);
+        }
+
+        const { data: previousModuleData, error: previousModuleError } = await previousModuleQuery.maybeSingle();
+
+        if (previousModuleError) {
+          console.warn("[AI] Could not fetch previous module summary:", previousModuleError.message);
+        } else if (previousModuleData?.module_summary?.trim()) {
+          previousModuleSummary = previousModuleData.module_summary.trim();
+          console.log(`[AI] Using previous module summary from Week ${previousModuleData.week_number} (${previousModuleData.title || "Untitled"})`);
+        }
+      }
       
       // Fetch secondary theory names if provided
       let secondaryTheories: string[] = [];

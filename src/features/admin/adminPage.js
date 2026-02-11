@@ -2186,6 +2186,8 @@ function classifyGenerationError(error) {
     const moduleCode = document.getElementById('newModuleCode').value.trim();
     const category = document.getElementById('newModuleCategory').value;
     const seriesId = document.getElementById('newModuleSeries').value;
+    const weekNumber = document.getElementById('newModuleOrder')?.value || null;
+    const cycleId = document.getElementById('newModuleCycle')?.value || null;
     // Emotions and skills fields removed - no longer required
     const contentBrief = document.getElementById('newModuleContentBrief').value.trim();
     const enrichedBrief = moduleCode
@@ -2266,6 +2268,8 @@ function classifyGenerationError(error) {
                 contentBrief: enrichedBrief,
                 seriesId,
                 category,
+                weekNumber,
+                cycleId,
                 superSkillId,
                 subSkillId,
                 title,
