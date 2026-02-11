@@ -2190,8 +2190,21 @@ function classifyGenerationError(error) {
     saveBtn.disabled = true;
 
     try {
-        // Get Super Skill ID early for validation
-        const superSkillId = document.getElementById('newModuleSuperSkill')?.value || null;
+        // Collect structured module inputs for enhanced generation mode
+        const superSkillEl = document.getElementById('newModuleSuperSkill');
+        const subSkillEl = document.getElementById('newModuleSubSkill');
+        const ageRangeEl = document.getElementById('ageRangeSelect');
+        const coreTheoryEl = document.getElementById('coreTheorySelect');
+        const brainTownEl = document.getElementById('brainTownAnalogy');
+
+        const superSkillId = superSkillEl?.value || null;
+        const subSkillId = subSkillEl?.value || null;
+        const ageRangeId = ageRangeEl?.value || null;
+        const coreTheoryId = coreTheoryEl?.value || null;
+        const brainTownAnalogy = brainTownEl?.value?.trim() || '';
+
+        const superSkillName = superSkillEl?.selectedOptions?.[0]?.text?.trim() || '';
+        const subSkillName = subSkillEl?.selectedOptions?.[0]?.text?.trim() || '';
         
         // Validation
         if (!title) {
@@ -2204,10 +2217,19 @@ function classifyGenerationError(error) {
             document.getElementById('newModuleSuperSkill').focus();
             return;
         }
-        // Emotions and skills validation removed - no longer required
-        if (!contentBrief) {
-            alert('❌ Please provide a content brief for the AI');
-            document.getElementById('newModuleContentBrief').focus();
+        if (!ageRangeId) {
+            alert('❌ Please select an Age Range');
+            ageRangeEl?.focus();
+            return;
+        }
+        if (!coreTheoryId) {
+            alert('❌ Please select a Core Theory');
+            coreTheoryEl?.focus();
+            return;
+        }
+        if (!brainTownAnalogy) {
+            alert('❌ Please provide a Brain Town Analogy');
+            brainTownEl?.focus();
             return;
         }
 
@@ -2231,7 +2253,23 @@ function classifyGenerationError(error) {
 
         try {
             // Start generation
-            const jobId = await startGenerationJob(enrichedBrief, seriesId, category, superSkillId);
+            const jobId = await startGenerationJob({
+                contentBrief: enrichedBrief,
+                seriesId,
+                category,
+                superSkillId,
+                subSkillId,
+                title,
+                ageRangeId,
+                coreTheoryId,
+                brainTownAnalogy,
+                additionalContext: contentBrief,
+                briefSuperSkill: superSkillName,
+                briefSubSkill: subSkillName,
+                adminTitle: title,
+                adminAge: ageRangeId,
+                briefTheory: coreTheoryId
+            });
             currentJobId = jobId;
             saveGenerationSession(jobId, contentBrief);
         
@@ -2301,7 +2339,7 @@ function sleep(ms) {
 }
 
 // Start generation job (returns job ID)
-async function startGenerationJob(contentBrief, seriesId, category, superSkillId) {
+async function startGenerationJob(payload) {
   const response = await fetch(
     `${requireSupabaseEnv().url}/functions/v1/generate-module`,
     {
@@ -2311,7 +2349,10 @@ async function startGenerationJob(contentBrief, seriesId, category, superSkillId
         "Authorization": `Bearer ${requireSupabaseEnv().key}`,
         "apikey": requireSupabaseEnv().key
       },
-      body: JSON.stringify({ contentBrief, seriesId, category, superSkillId, async: true })
+      body: JSON.stringify({
+        ...payload,
+        async: true
+      })
     }
   );
 
