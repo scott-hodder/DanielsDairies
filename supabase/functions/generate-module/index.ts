@@ -3770,10 +3770,6 @@ function renderAdminVerificationPage(report: VerificationReport | undefined, mod
             <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🏆 Super Skill Alignment</h4>
             <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.superSkillAlignment)}</p>
           </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🧠 Brain Town Analogy</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.brainTownAnalogyUsage)}</p>
-          </div>
         </div>
 
         <!-- Tone & Language -->
