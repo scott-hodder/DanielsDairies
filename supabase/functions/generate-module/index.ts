@@ -4965,7 +4965,8 @@ async function generateModule(
   contentBrief: string,
   jobId?: string,
   seriesInfo?: SeriesInfo | null,
-  categoryColor?: string | null
+  categoryColor?: string | null,
+  forcedTitle?: string | null
 ): Promise<{ html: string; pageCount: number; characterCount: number; spec: any }> {
   
   const updateProgress = async (step: string, message: string) => {
@@ -5027,7 +5028,8 @@ async function runAsyncGeneration(
   jobId: string,
   contentBrief: string,
   seriesInfo?: SeriesInfo | null,
-  categoryColor?: string | null
+  categoryColor?: string | null,
+  forcedTitle?: string | null
 ) {
   const startTime = Date.now();
   
@@ -5041,7 +5043,7 @@ async function runAsyncGeneration(
       setTimeout(() => reject(new Error("Generation timeout")), JOB_TIMEOUT_MS);
     });
     
-    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor);
+    const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
     
     await supabaseClient
@@ -5182,6 +5184,7 @@ serve(async (req) => {
     const seriesId = body?.seriesId;
     const category = body?.category;
     const superSkillId = body?.superSkillId;
+    let forcedTitle: string | null = null;
     
     // =====================
     // SUPER SKILL LOOKUP (needed by both enhanced and legacy modes, AND by content brief)
