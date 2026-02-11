@@ -5259,6 +5259,7 @@ serve(async (req) => {
     const isEnhancedMode = Boolean(enhancedAgeRef && enhancedTheoryRef);
     
     let contentBrief: string;
+    let titleOverride: string | null = null;
     
     if (isEnhancedMode) {
       // =====================
@@ -5270,7 +5271,7 @@ serve(async (req) => {
       const { 
         additionalContext,
       } = body;
-      const title = body.title || body.module_title || '';
+      const title = firstNonEmptyString(body.adminTitle, body.title, body.module_title);
       forcedTitle = title?.trim() || null;
       
       // Accept multiple possible field names for brain town analogy
@@ -5434,6 +5435,8 @@ serve(async (req) => {
           error: "contentBrief is required (or use enhanced mode with ageRangeId + coreTheoryId + brainTownAnalogy)" 
         }, 400);
       }
+
+      forcedTitle = (body?.title || body?.module_title || '').trim() || extractTitleFromContentBrief(contentBrief);
     }
     
     // =====================
@@ -5526,16 +5529,16 @@ serve(async (req) => {
       
       const anyGlobal = globalThis as any;
       if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
-        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor));
+        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
       } else {
-        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor).catch(console.error);
+        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle).catch(console.error);
       }
       
       return jsonResponse({ jobId });
     }
     
     // Sync mode
-    const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo, categoryColor);
+    const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo, categoryColor, forcedTitle);
     return jsonResponse({
       html: result.html,
       pageCount: result.pageCount,
