@@ -5271,7 +5271,7 @@ serve(async (req) => {
         additionalContext,
       } = body;
       const title = firstNonEmptyString(body.adminTitle, body.title, body.module_title);
-      titleOverride = title?.trim() || null;
+      forcedTitle = title?.trim() || null;
       
       // Accept multiple possible field names for brain town analogy
       const brainTownAnalogy = firstNonEmptyString(
