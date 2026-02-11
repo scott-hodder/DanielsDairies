@@ -100,6 +100,7 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   const brainTown = extractSection('BRAIN TOWN ANALOGY');
   const diagnosisAdaptations = extractSection('DIAGNOSIS ADAPTATIONS');
   const creatorInstructions = extractSection('HIGH-PRIORITY CREATOR INSTRUCTIONS');
+  const languageGuidelines = extractSection('LANGUAGE GUIDELINES');
   
   // Extract title
   const titleMatch = contentBrief.match(/^Title:\s*(.+)$/m);
@@ -130,6 +131,11 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   
   if (diagnosisAdaptations) {
     parts.push('', `ADAPTATIONS: ${diagnosisAdaptations.substring(0, 200)}`);
+  }
+
+  if (languageGuidelines) {
+    parts.push('', `LANGUAGE GUIDELINES (HARD REQUIREMENT): ${languageGuidelines.split('\n').slice(0, 3).join(' ').substring(0, 260)}`);
+    parts.push('Keep reading load low: short paragraphs, high white-space, and concise instructions.');
   }
 
   if (creatorInstructions) {
@@ -273,6 +279,50 @@ function extractBriefLine(contentBrief: string, label: string): string {
   return match?.[1]?.trim() || "";
 }
 
+function extractBriefSection(contentBrief: string, header: string): string {
+  const regex = new RegExp(`=== ${header} ===\\n([\\s\\S]*?)(?=\\n===|$)`, "i");
+  const match = contentBrief.match(regex);
+  return match?.[1]?.trim() || "";
+}
+
+function parseFirstMeaningfulLine(section: string): string {
+  if (!section) return "";
+  const line = section
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => l && !l.startsWith("PRIMARY THEORY:") && !l.startsWith("SUPPORTING THEORIES:"));
+  return line || "";
+}
+
+function hasBrainTownEvidence(
+  brainTownAnalogy: string,
+  textCorpus: string
+): { found: boolean; evidence: string } {
+  const normalisedCorpus = textCorpus.toLowerCase();
+
+  if (normalisedCorpus.includes("brain town")) {
+    return { found: true, evidence: 'Detected direct "Brain Town" references across generated content.' };
+  }
+
+  const candidateTokens = brainTownAnalogy
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => token.length >= 4)
+    .filter((token) => !["brain", "town", "analogy", "your", "with", "that", "this", "have", "from"].includes(token));
+
+  const matchedTokens = candidateTokens.filter((token) => normalisedCorpus.includes(token));
+  if (matchedTokens.length >= 2) {
+    return {
+      found: true,
+      evidence: `Detected key analogy terms in content: ${matchedTokens.slice(0, 4).join(", ")}.`,
+    };
+  }
+
+  return { found: false, evidence: "No reliable Brain Town phrase match detected in generated text." };
+}
+
 function buildVerificationReport(
   contentBrief: string,
   metadata: ModuleMetadata,
@@ -281,10 +331,32 @@ function buildVerificationReport(
   reflections: ReflectionContent[],
   quizzes: QuizContent[]
 ): VerificationReport {
-  const theoryName = extractBriefLine(contentBrief, "Core Theory") || "Theory from content brief";
-  const ageRange = extractBriefLine(contentBrief, "Age Range") || metadata.targetAge || "Not specified";
-  const brainTown = extractBriefLine(contentBrief, "Brain Town Analogy");
+  const theoryName =
+    extractBriefLine(contentBrief, "Core Theory") ||
+    extractBriefLine(contentBrief, "PRIMARY THEORY") ||
+    parseFirstMeaningfulLine(extractBriefSection(contentBrief, "PSYCHOLOGICAL FOUNDATION")) ||
+    "Theory from content brief";
+
+  const ageRange =
+    extractBriefLine(contentBrief, "Age Range") ||
+    extractBriefLine(contentBrief, "Target Age") ||
+    metadata.targetAge ||
+    "Not specified";
+
+  const brainTown =
+    extractBriefLine(contentBrief, "Brain Town Analogy") ||
+    extractBriefSection(contentBrief, "BRAIN TOWN ANALOGY");
+
   const objective = extractBriefLine(contentBrief, "Objective");
+
+  const contentCorpus = [
+    ...lessons.map((lesson) => [lesson.heading, ...(lesson.paragraphs || [])].join(" ")),
+    ...checklists.map((item) => [item.heading, ...(item.items || [])].join(" ")),
+    ...reflections.map((item) => [item.heading, item.prompt].join(" ")),
+    ...quizzes.map((item) => [item.question, ...(item.options || [])].join(" ")),
+  ].join(" ");
+
+  const brainTownEvidence = hasBrainTownEvidence(brainTown, contentCorpus);
 
   const theoriesUsed = [{
     theoryName,
@@ -305,14 +377,16 @@ function buildVerificationReport(
     subSkillAlignment: alignmentNotes,
     superSkillAlignment: `Module theme \"${metadata.theme}\" is reinforced across teaching, practise, and completion pages.`,
     brainTownAnalogyUsage: brainTown
-      ? `Brain Town analogy integrated through explanations and activity prompts: ${brainTown}`
+      ? `${brainTownEvidence.evidence} Brief analogy: ${brainTown.split("\n")[0].trim()}`
       : "Brain Town analogy was not provided in the brief; no explicit metaphor reference detected.",
     unselectedConceptsIntroduced: [],
     toneComplianceNotes: "Warm, encouraging educator voice maintained throughout activity instructions.",
     claimTypes: "Educational and behavioural skill-building claims only; no medical efficacy claims generated.",
     australianEnglishCheck: "Australian English spellings and phrasing requested in system prompt and applied to generated copy.",
     overallAssessment: "PASS - VERIFIED",
-    flaggedIssues: [],
+    flaggedIssues: brainTown && !brainTownEvidence.found
+      ? ["Brain Town analogy provided but not clearly reflected in generated content text. Review for explicit metaphor consistency."]
+      : [],
     autoRevisions: [],
   };
 }

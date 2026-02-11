@@ -992,8 +992,9 @@ function buildAgeRangeStyleGuide(ageRange: string, ageData?: AgeRangeData): stri
     case "6-8":
       return `
 EARLY CHILDHOOD (6-8) — Concrete Learners
-- Very short text blocks (1-2 sentences max per paragraph) with lots of line breaks.
-- Simple, friendly words; avoid abstract terms unless explained with a concrete example.
+- Very short text blocks (1-2 short sentences per paragraph) with frequent line breaks.
+- Keep most teaching chunks under ~40-70 words before shifting to an activity.
+- Use simple, concrete words; avoid abstract terms unless explained with an immediate example.
 - Use playful, reassuring tone with lots of encouragement.
 - Activities should be highly guided with clear, single-step instructions.
 - Prefer visuals, emojis, and imaginative play; minimal reading required.
@@ -1002,7 +1003,8 @@ EARLY CHILDHOOD (6-8) — Concrete Learners
     case "9-11":
       return `
 LATE CHILDHOOD (9-11) — Bridge Thinkers
-- Short to medium text blocks (2-4 sentences).
+- Keep text concise: usually 1-3 short sentences per paragraph.
+- Keep most teaching blocks to ~70-120 words before moving to an activity.
 - Introduce new vocabulary with quick definitions or examples.
 - Balance playful tone with growing independence and responsibility.
 - Activities can be 2-3 steps with light reflection.
@@ -1012,8 +1014,9 @@ LATE CHILDHOOD (9-11) — Bridge Thinkers
     case "12-14":
       return `
 EARLY ADOLESCENCE (12-14) — Transition Thinkers
-- Medium-length text blocks (3-5 sentences) with clear structure.
-- Use more sophisticated vocabulary, but keep it approachable.
+- Medium text blocks (2-4 sentences) with clear structure and spacing.
+- Keep teaching sections focused (~90-160 words), then move to choice-based interaction.
+- Use more sophisticated vocabulary, but define less-familiar terms naturally in context.
 - Respect autonomy; avoid babyish phrasing.
 - Activities can be multi-step with choice and self-directed reflection.
 - Introduce abstract ideas (values, identity, beliefs) with concrete examples.
@@ -1022,7 +1025,8 @@ EARLY ADOLESCENCE (12-14) — Transition Thinkers
     case "15-18":
       return `
 MID-LATE ADOLESCENCE (15-18) — Abstract Integrators
-- Longer, structured text blocks (4-7 sentences) allowed when needed.
+- Structured text blocks (3-5 sentences) with strong purpose and minimal repetition.
+- Keep explanatory passages concise (~120-220 words) before prompting analysis or action.
 - Use mature, nuanced language; avoid oversimplification.
 - Encourage metacognition, goal-setting, and personal agency.
 - Activities can be multi-part with deeper reflection and planning.
@@ -1059,49 +1063,49 @@ function getAgeSpecificFormatting(ageRange: string, ageData?: AgeRangeData): {
     case "6-8":
       return {
         paragraphLength: "1-2 short sentences maximum per paragraph",
-        sentenceCount: "Keep each sentence under 10 words when possible",
-        vocabularyLevel: "Use only simple, everyday words a 6-year-old knows",
+        sentenceCount: "Keep most sentences around 6-10 words; avoid multi-clause structures",
+        vocabularyLevel: "Use simple everyday words; explain any unfamiliar word immediately",
         toneDescription: "Super friendly, warm, and playful - like talking to a young friend",
         instructionStyle: "One simple step at a time, use 'Let's...' and 'Can you...'",
         contentComplexity: "Focus on feelings they can see/feel RIGHT NOW, use lots of emojis",
         welcomeParagraphs: "2 very short paragraphs (1-2 sentences each), big friendly energy",
-        lessonParagraphs: "2 short paragraphs max (1-2 sentences each), use simple story examples",
+        lessonParagraphs: "1-2 short paragraphs max, then activity prompts",
         itemCount: "3-4 items maximum, each very short"
       };
     case "9-11":
       return {
-        paragraphLength: "2-3 sentences per paragraph",
-        sentenceCount: "Sentences can be 10-15 words",
-        vocabularyLevel: "Simple vocabulary with occasional new words explained briefly",
+        paragraphLength: "1-3 sentences per paragraph, with frequent visual breaks",
+        sentenceCount: "Aim for 8-14 words per sentence; avoid dense compound sentences",
+        vocabularyLevel: "Plain school-age vocabulary; define any new term in-context immediately",
         toneDescription: "Friendly and encouraging, treats them as capable learners",
         instructionStyle: "Clear 2-3 step instructions, can include 'why' briefly",
-        contentComplexity: "Can introduce cause-and-effect, simple reflection questions",
-        welcomeParagraphs: "2-3 paragraphs (2-3 sentences each)",
-        lessonParagraphs: "2-3 paragraphs (2-3 sentences each), include relatable examples",
+        contentComplexity: "Cause-and-effect is appropriate, but keep explanations brief and concrete",
+        welcomeParagraphs: "2 short paragraphs (1-2 sentences each)",
+        lessonParagraphs: "1-2 short teaching paragraphs, then move quickly into interaction",
         itemCount: "4-5 items"
       };
     case "12-14":
       return {
-        paragraphLength: "3-4 sentences per paragraph",
-        sentenceCount: "Varied sentence length for natural flow",
-        vocabularyLevel: "More sophisticated vocabulary, respecting their intelligence",
+        paragraphLength: "2-4 sentences per paragraph with clear section breaks",
+        sentenceCount: "Average 10-18 words with occasional shorter emphasis sentences",
+        vocabularyLevel: "Growing academic vocabulary; define technical/abstract terms in-line",
         toneDescription: "Supportive but not babyish, peer-like and respectful",
         instructionStyle: "Multi-step with some autonomy and choice",
         contentComplexity: "Can discuss abstract concepts with concrete examples, deeper reflection",
-        welcomeParagraphs: "2-3 paragraphs (3-4 sentences each)",
-        lessonParagraphs: "3 paragraphs (3-4 sentences each), more nuanced discussion",
+        welcomeParagraphs: "2 concise paragraphs (2-3 sentences each)",
+        lessonParagraphs: "2 short teaching paragraphs then applied activity",
         itemCount: "5-6 items"
       };
     case "15-18":
       return {
-        paragraphLength: "4-5 sentences per paragraph when needed",
-        sentenceCount: "Natural, mature sentence structures",
+        paragraphLength: "3-5 sentences per paragraph; avoid unnecessary length",
+        sentenceCount: "Natural mature syntax with controlled length (roughly 12-22 words typical)",
         vocabularyLevel: "Mature vocabulary, nuanced language",
         toneDescription: "Respectful, empowering, treats them as near-adults",
         instructionStyle: "Self-directed with meaningful choices and deeper exploration",
         contentComplexity: "Abstract reasoning, metacognition, long-term planning",
-        welcomeParagraphs: "2-3 substantive paragraphs",
-        lessonParagraphs: "3-4 paragraphs with depth and nuance",
+        welcomeParagraphs: "2 focused paragraphs",
+        lessonParagraphs: "2-3 purposeful paragraphs followed by reflective action",
         itemCount: "5-7 items with depth"
       };
     default:
