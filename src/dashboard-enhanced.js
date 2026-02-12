@@ -286,6 +286,10 @@ class AdventureMapV4 {
     this.zoneUpgradeTimeout = null;
     this.boundHandlers = {};
     this.cycleModuleTarget = 12;
+    this.cycleCompletionPopupObserver = null;
+    this.cycleCompletionPopupTimer = null;
+    this.activeCycleCompletionPopup = null;
+    this.lastCyclePopupShownId = null;
     
     this.updateMobileConfig();
   }
@@ -456,6 +460,20 @@ class AdventureMapV4 {
     css.push('.cycle-next-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }');
     css.push('.map-btn-primary { width: auto; height: auto; border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }');
     css.push('.cycle-next-empty { font-family: "Fredoka", sans-serif; color: #7c5c00; font-size: 13px; }');
+    css.push('.cycle-complete-popup-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.45); display: flex; align-items: center; justify-content: center; z-index: 12000; padding: 16px; animation: fadeInOverlay 0.25s ease; }');
+    css.push('.cycle-complete-popup { width: min(560px, 96vw); background: linear-gradient(180deg, #ffffff 0%, #fef3c7 100%); border-radius: 20px; border: 2px solid rgba(245, 158, 11, 0.35); box-shadow: 0 16px 38px rgba(15, 23, 42, 0.3); padding: 18px; font-family: "Fredoka", sans-serif; color: #7c5c00; }');
+    css.push('.cycle-complete-popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }');
+    css.push('.cycle-complete-popup-avatar { width: 54px; height: 54px; border-radius: 50%; background: #fff; border: 2px solid rgba(245, 158, 11, 0.35); padding: 4px; flex: 0 0 auto; }');
+    css.push('.cycle-complete-popup-title { font-size: 22px; font-weight: 700; margin: 0; color: #9a6500; }');
+    css.push('.cycle-complete-popup-text { font-size: 14px; color: #8f6a00; margin: 0 0 14px 0; line-height: 1.5; }');
+    css.push('.cycle-complete-popup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }');
+    css.push('.cycle-popup-btn { border: 0; border-radius: 12px; padding: 10px 14px; font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }');
+    css.push('.cycle-popup-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(124, 92, 0, 0.2); }');
+    css.push('.cycle-popup-btn.primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }');
+    css.push('.cycle-popup-btn.secondary { background: #fff; color: #8f6a00; border: 2px solid rgba(245, 158, 11, 0.3); }');
+    css.push('.cycle-complete-popup-selectors { display: none; gap: 8px; flex-wrap: wrap; align-items: center; }');
+    css.push('.cycle-complete-popup-selectors.visible { display: flex; }');
+    css.push('@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }');
     css.push('.progress-icon { font-size: 20px; }');
     css.push('.progress-text { font-size: 14px; font-weight: 600; color: #405878; }');
     css.push('.progress-bar { width: 80px; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }');
@@ -525,7 +543,7 @@ class AdventureMapV4 {
     // Cracked ground effect for start zone
     css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
     
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-next-prompt { top: 96px; } .cycle-next-controls { flex-direction: column; align-items: stretch; } .map-btn-primary { width: 100%; } }');
+    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-next-prompt { top: 96px; } .cycle-next-controls { flex-direction: column; align-items: stretch; } .map-btn-primary { width: 100%; } .cycle-complete-popup-title { font-size: 19px; } .cycle-complete-popup-actions, .cycle-complete-popup-selectors { flex-direction: column; } .cycle-popup-btn { width: 100%; } }');
     
     var styles = document.createElement('style');
     styles.id = 'adventure-map-v4-styles';
@@ -899,6 +917,144 @@ class AdventureMapV4 {
       };
     }).filter(function(entry) {
       return entry.cycles.length > 0;
+    });
+  }
+
+  clearCycleCompletionPopupWatcher() {
+    if (this.cycleCompletionPopupObserver) {
+      this.cycleCompletionPopupObserver.disconnect();
+      this.cycleCompletionPopupObserver = null;
+    }
+    if (this.cycleCompletionPopupTimer) {
+      clearTimeout(this.cycleCompletionPopupTimer);
+      this.cycleCompletionPopupTimer = null;
+    }
+  }
+
+  maybeShowCycleCompletionPopup() {
+    var mapSection = document.querySelector('.adventure-map-section');
+    var cycleComplete = !!(this.currentCycleId && this.isCycleCompletedWithWeekCheck(this.currentCategory, this.currentCycleId));
+    if (!mapSection || !cycleComplete) {
+      this.clearCycleCompletionPopupWatcher();
+      return;
+    }
+
+    if (this.lastCyclePopupShownId === this.currentCycleId || this.activeCycleCompletionPopup) {
+      return;
+    }
+
+    var self = this;
+    this.clearCycleCompletionPopupWatcher();
+    this.cycleCompletionPopupObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.45) return;
+        self.clearCycleCompletionPopupWatcher();
+        self.cycleCompletionPopupTimer = setTimeout(function() {
+          var stillComplete = !!(self.currentCycleId && self.isCycleCompletedWithWeekCheck(self.currentCategory, self.currentCycleId));
+          if (!stillComplete || self.activeCycleCompletionPopup) return;
+          self.showCycleCompletionPopup();
+        }, 2200);
+      });
+    }, { threshold: [0.45] });
+
+    this.cycleCompletionPopupObserver.observe(mapSection);
+  }
+
+  showCycleCompletionPopup() {
+    if (!this.currentCycleId) return;
+    var eligibleOptions = this.getEligibleSkillCycleOptions();
+    var overlay = document.createElement('div');
+    overlay.className = 'cycle-complete-popup-overlay';
+
+    var self = this;
+    var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
+    var optionsHtml = eligibleOptions.map(function(option) {
+      return '<option value="' + option.category + '">' + option.theme.emoji + ' ' + option.theme.name + '</option>';
+    }).join('');
+
+    overlay.innerHTML =
+      '<div class="cycle-complete-popup" role="dialog" aria-modal="true" aria-label="Cycle completion congratulations">' +
+      '<div class="cycle-complete-popup-header">' +
+      '<img src="/images/characters/DanielTheDog.png" alt="Daniel" class="cycle-complete-popup-avatar" />' +
+      '<h3 class="cycle-complete-popup-title">🎉 Congratulations!</h3>' +
+      '</div>' +
+      '<p class="cycle-complete-popup-text">You completed this cycle in ' + theme.name + '. Would you like to move to your next cycle, or choose a different super skill?</p>' +
+      '<div class="cycle-complete-popup-actions">' +
+      '<button class="cycle-popup-btn primary" id="cyclePopupNextBtn" type="button">Move to next cycle</button>' +
+      '<button class="cycle-popup-btn secondary" id="cyclePopupDifferentBtn" type="button">Choose different super skill</button>' +
+      '</div>' +
+      '<div class="cycle-complete-popup-selectors" id="cyclePopupSelectors">' +
+      '<select class="category-filter-select" id="cyclePopupSkillSelect">' + optionsHtml + '</select>' +
+      '<select class="category-filter-select" id="cyclePopupCycleSelect"></select>' +
+      '<button class="cycle-popup-btn primary" id="cyclePopupGoBtn" type="button">Go</button>' +
+      '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+    this.activeCycleCompletionPopup = overlay;
+
+    var selectors = overlay.querySelector('#cyclePopupSelectors');
+    var skillSelect = overlay.querySelector('#cyclePopupSkillSelect');
+    var cycleSelect = overlay.querySelector('#cyclePopupCycleSelect');
+
+    var renderCycleSelectOptions = function() {
+      var selectedSkill = skillSelect.value;
+      var selected = eligibleOptions.find(function(option) { return option.category === selectedSkill; });
+      var cycles = selected ? selected.cycles : [];
+      cycleSelect.innerHTML = cycles.map(function(cycle) {
+        var label = cycle.cycle_number ? ('Cycle ' + cycle.cycle_number) : 'Cycle';
+        if (cycle.name) label += ': ' + cycle.name;
+        return '<option value="' + cycle.id + '">' + label + '</option>';
+      }).join('');
+      cycleSelect.disabled = cycles.length === 0;
+    };
+
+    if (skillSelect) {
+      if (!eligibleOptions.length) {
+        skillSelect.innerHTML = '<option value="">No available super skills</option>';
+        skillSelect.disabled = true;
+      } else {
+        var currentSkillOption = eligibleOptions.find(function(option) { return option.category === self.currentCategory; });
+        skillSelect.value = currentSkillOption ? currentSkillOption.category : eligibleOptions[0].category;
+        renderCycleSelectOptions();
+      }
+    }
+
+    var closePopup = function() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      self.activeCycleCompletionPopup = null;
+      self.lastCyclePopupShownId = self.currentCycleId;
+    };
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closePopup();
+    });
+
+    overlay.querySelector('#cyclePopupNextBtn').addEventListener('click', function() {
+      var currentSkill = eligibleOptions.find(function(option) { return option.category === self.currentCategory; });
+      var nextCycle = currentSkill && currentSkill.cycles.length > 0 ? currentSkill.cycles[0] : null;
+      if (!nextCycle) {
+        selectors.classList.add('visible');
+        return;
+      }
+      self.currentCycleId = nextCycle.id;
+      self.setStoredCycleId(self.currentCategory, self.currentCycleId);
+      closePopup();
+      self.render();
+    });
+
+    overlay.querySelector('#cyclePopupDifferentBtn').addEventListener('click', function() {
+      selectors.classList.add('visible');
+      renderCycleSelectOptions();
+    });
+
+    overlay.querySelector('#cyclePopupGoBtn').addEventListener('click', function() {
+      if (!skillSelect.value || !cycleSelect.value) return;
+      self.currentCategory = skillSelect.value;
+      self.currentCycleId = cycleSelect.value;
+      self.setStoredCycleId(self.currentCategory, self.currentCycleId);
+      closePopup();
+      self.render();
     });
   }
 
@@ -1487,6 +1643,8 @@ class AdventureMapV4 {
         this.renderNextCycleOptions();
       }
     }
+
+    this.maybeShowCycleCompletionPopup();
   }
 
   renderNextCycleOptions() {
@@ -1615,6 +1773,8 @@ class AdventureMapV4 {
   }
 
   removeEventListeners() {
+    this.clearCycleCompletionPopupWatcher();
+
     if (this.viewport && this.boundHandlers && this.boundHandlers.mousedown) {
       this.viewport.removeEventListener('mousedown', this.boundHandlers.mousedown);
       this.viewport.removeEventListener('mousemove', this.boundHandlers.mousemove);
