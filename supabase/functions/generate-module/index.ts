@@ -525,6 +525,16 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     }
     .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
     
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      15% { transform: translateX(-8px); }
+      30% { transform: translateX(8px); }
+      45% { transform: translateX(-6px); }
+      60% { transform: translateX(6px); }
+      75% { transform: translateX(-3px); }
+      90% { transform: translateX(3px); }
+    }
+    
     @keyframes pulse-glow {
       0%, 100% { box-shadow: 0 0 20px rgba(244, 162, 97, 0.3); }
       50% { box-shadow: 0 0 35px rgba(244, 162, 97, 0.6); }
@@ -1633,27 +1643,55 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.sortSelectedItem = function(category, categoryName, starIndex) {
       if (!selectedSortItem) return;
       
-      const droppedArea = category.querySelector('.dropped-items');
-      const itemText = selectedSortItem.textContent.trim();
-      const correctCategory = selectedSortItem.dataset.correctCategory;
-      const explanation = selectedSortItem.dataset.explanation;
-      const isCorrect = correctCategory === categoryName;
+      var droppedArea = category.querySelector('.dropped-items');
+      var itemText = selectedSortItem.textContent.trim();
+      var correctCategory = selectedSortItem.dataset.correctCategory;
+      var explanation = selectedSortItem.dataset.explanation;
+      var isCorrect = correctCategory === categoryName;
       
-      // Create sorted item display
-      const sortedItem = document.createElement('div');
-      sortedItem.className = 'p-2 rounded-lg font-body text-sm mb-1';
-      sortedItem.style.backgroundColor = isCorrect ? 'white' : '#fecaca';
-      sortedItem.style.border = isCorrect ? '2px solid var(--secondary)' : '2px solid var(--accent)';
-      sortedItem.innerHTML = (isCorrect ? '✓ ' : '✗ ') + itemText;
-      sortedItem.title = explanation;
-      droppedArea.appendChild(sortedItem);
-      
-      // Remove from items list
-      selectedSortItem.remove();
-      selectedSortItem = null;
+      if (isCorrect) {
+        // Correct: move item to the category box
+        var sortedItem = document.createElement('div');
+        sortedItem.className = 'p-2 rounded-lg font-body text-sm mb-1';
+        sortedItem.style.backgroundColor = 'white';
+        sortedItem.style.border = '2px solid var(--secondary)';
+        sortedItem.innerHTML = '✓ ' + itemText;
+        sortedItem.title = explanation;
+        droppedArea.appendChild(sortedItem);
+        
+        // Remove from items list
+        selectedSortItem.remove();
+        selectedSortItem = null;
+      } else {
+        // Wrong: shake the item and show feedback, do NOT move it to the box
+        var item = selectedSortItem;
+        item.style.backgroundColor = '#fecaca';
+        item.style.borderColor = 'var(--accent)';
+        item.style.animation = 'shake 0.5s ease-in-out';
+        
+        // Show inline feedback briefly
+        var feedbackSpan = document.createElement('span');
+        feedbackSpan.className = 'font-body text-xs';
+        feedbackSpan.style.color = 'var(--accent)';
+        feedbackSpan.style.display = 'block';
+        feedbackSpan.style.marginTop = '4px';
+        feedbackSpan.textContent = '✗ Try a different category!';
+        item.appendChild(feedbackSpan);
+        
+        // Reset after delay
+        setTimeout(function() {
+          item.style.backgroundColor = 'white';
+          item.style.borderColor = 'var(--primary)';
+          item.style.animation = '';
+          item.classList.remove('selected');
+          if (feedbackSpan.parentNode) feedbackSpan.remove();
+        }, 1500);
+        
+        selectedSortItem = null;
+      }
       
       // Save to form data
-      saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName);
+      saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName + (isCorrect ? '_correct' : '_wrong'));
     };
     
     // v5 CHALLENGE HANDLERS
@@ -1741,9 +1779,17 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       const isCorrect = btn.dataset.correct === 'true';
       const feedback = btn.dataset.feedback;
       const feedbackEl = document.getElementById('mazeFeedback' + stepIdx);
-      btn.parentElement.querySelectorAll('.maze-option').forEach(b => b.classList.add('disabled'));
-      btn.classList.add(isCorrect ? 'correct' : 'wrong');
-      if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca'; feedbackEl.innerHTML = '<p class="font-body">' + feedback + '</p>'; }
+      
+      if (isCorrect) {
+        // Correct: disable all options and highlight the correct one
+        btn.parentElement.querySelectorAll('.maze-option').forEach(b => b.classList.add('disabled'));
+        btn.classList.add('correct');
+      } else {
+        // Wrong: only disable the wrong button so user can try other options
+        btn.classList.add('wrong', 'disabled');
+      }
+      
+      if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca'; feedbackEl.innerHTML = isCorrect ? '<p class="font-body">' + feedback + '</p>' : '<p class="font-body">' + feedback + ' Try another path!</p>'; }
       if (isCorrect) {
         mazeStep++;
         const progress = (mazeStep / totalSteps) * 100;
@@ -1829,13 +1875,20 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
       document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
   
-      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '+' + power + ' calming power!');
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '💪 +' + power + ' calming power! (' + balloonState[starIndex].power + '%)');
+      
+      // At 100% power, show encouraging message to pop balloons
+      if (balloonState[starIndex].power >= 100) {
+        window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '🌟 Full calming power! Now tap the worry balloons to pop them!');
+      }
     };
 
     window.popBalloon = function(balloonId, activityId, total) {
       const starIndex = activityId.split('_')[1];
-      if (!balloonState[starIndex] || balloonState[starIndex].power < 25) {
-        window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, 'Need more calming power first!');
+      if (!balloonState[starIndex]) balloonState[starIndex] = { power: 0, popped: [] };
+      
+      if (balloonState[starIndex].power < 20) {
+        window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '🧰 Build up your calming power first using the tools above!');
         return;
       }
       
@@ -1843,13 +1896,14 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       if (balloon.classList.contains('popped')) return;
       
       balloon.classList.add('popped');
-      balloonState[starIndex].power -= 25;
       balloonState[starIndex].popped.push(balloonId);
       
+      // Deduct some power per pop (but less than before so it feels fair)
+      balloonState[starIndex].power = Math.max(0, balloonState[starIndex].power - 15);
       document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
       document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
       
-      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, balloon.dataset.response);
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '💥 POP! ' + balloon.dataset.response);
       
       if (balloonState[starIndex].popped.length >= total) {
         document.getElementById('balloonVictory_' + starIndex).style.display = 'block';
@@ -1914,18 +1968,45 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       gardenState[starIndex][plantId]++;
       const currentStage = gardenState[starIndex][plantId];
       
-      document.getElementById('plantEmoji_' + starIndex + '_' + plantId).textContent = stages[currentStage];
+      // Update the plant emoji
+      var emojiEl = document.getElementById('plantEmoji_' + starIndex + '_' + plantId);
+      if (emojiEl) {
+        emojiEl.textContent = stages[currentStage];
+        // Quick grow animation
+        emojiEl.style.transform = 'scale(1.3)';
+        setTimeout(function() { emojiEl.style.transform = 'scale(1)'; }, 300);
+      }
       
-      for (let i = 0; i <= currentStage; i++) {
-        const dot = document.getElementById('growth_' + starIndex + '_' + plantId + '_' + i);
+      // Update the action text to show progress
+      var actionEl = document.getElementById('plantAction_' + starIndex + '_' + plantId);
+      if (actionEl) {
+        if (currentStage >= stages.length - 1) {
+          actionEl.textContent = '🌟 Fully grown!';
+          actionEl.style.backgroundColor = 'var(--light-green)';
+        } else {
+          actionEl.textContent = '💧 Growing... (' + (currentStage + 1) + '/' + stages.length + ')';
+        }
+      }
+      
+      // Update progress dots
+      for (var i = 0; i <= currentStage; i++) {
+        var dot = document.getElementById('growth_' + starIndex + '_' + plantId + '_' + i);
         if (dot) dot.style.backgroundColor = 'var(--primary)';
       }
       
       if (currentStage >= stages.length - 1) {
-        document.getElementById('plant_' + starIndex + '_' + plantId).classList.add('grown');
+        var plantEl = document.getElementById('plant_' + starIndex + '_' + plantId);
+        if (plantEl) plantEl.classList.add('grown');
       }
       
-      const fullyGrown = Object.values(gardenState[starIndex]).filter(g => g >= stages.length - 1).length;
+      // Count fully grown - compare against each plant's own stage count
+      var fullyGrown = 0;
+      var keys = Object.keys(gardenState[starIndex]);
+      for (var k = 0; k < keys.length; k++) {
+        // A plant is fully grown if its stage >= stages.length - 1
+        // Since all plants in this garden have same stages length, this works
+        if (gardenState[starIndex][keys[k]] >= stages.length - 1) fullyGrown++;
+      }
       document.getElementById('gardenProgress_' + starIndex).textContent = fullyGrown;
       
       if (fullyGrown >= total) {
@@ -1952,7 +2033,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     };
 
     // ===== FEELINGS ORCHESTRA =====
-    window.playInstrument = function(starIndex, emoji, sound, feeling) {
+    window.playInstrument = function(starIndex, emoji, sound, feeling, instrumentName) {
       const display = document.getElementById('soundDisplay_' + starIndex);
       display.innerHTML = '<p class="text-5xl">' + emoji + '</p><p class="font-title text-2xl">' + sound + '</p><p class="font-body">' + feeling + '</p>';
 
@@ -1963,20 +2044,394 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
           window.__instrumentAudioCtx = new AudioContextClass();
         }
         const ctx = window.__instrumentAudioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
         const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const vibe = (sound || '').toLowerCase();
-        const baseFrequency = vibe.includes('drum') ? 140 : vibe.includes('bell') ? 880 : vibe.includes('chime') ? 720 : vibe.includes('trumpet') ? 420 : 520;
-        osc.type = vibe.includes('drum') ? 'triangle' : 'sine';
-        osc.frequency.setValueAtTime(baseFrequency, now);
+        
+        // Combine all text fields for keyword matching
+        const allText = ((sound || '') + ' ' + (instrumentName || '') + ' ' + (feeling || '')).toLowerCase();
+        
+        // Helper to detect instrument type from any of the text fields
+        function has(keyword) { return allText.includes(keyword); }
+        
+        // ========== VIOLIN / STRINGS ==========
+        if (has('violin') || has('string') || has('cello') || has('viola') || has('fiddle')) {
+          // Violin: layered sawtooth oscillators with vibrato and slow attack for bowing effect
+          var baseFreq = has('cello') ? 220 : has('viola') ? 330 : 440;
+          var duration = 2.0;
+          
+          // Main tone - two detuned sawtooths for richness
+          for (var d = 0; d < 2; d++) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            var filt = ctx.createBiquadFilter();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(baseFreq + (d * 1.5 - 0.75), now); // slight detune
+            filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(1200, now);
+            filt.frequency.linearRampToValueAtTime(2500, now + 0.3);
+            filt.frequency.linearRampToValueAtTime(1800, now + duration);
+            filt.Q.value = 1.5;
+            // Slow attack like a bow stroke
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.12, now + 0.15);
+            gn.gain.linearRampToValueAtTime(0.10, now + duration * 0.7);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            // Vibrato
+            var lfo = ctx.createOscillator();
+            var lfoGn = ctx.createGain();
+            lfo.frequency.value = 5.5;
+            lfoGn.gain.value = 4;
+            lfo.connect(lfoGn);
+            lfoGn.connect(osc.frequency);
+            lfo.start(now + 0.2);
+            lfo.stop(now + duration);
+            osc.connect(filt);
+            filt.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          }
+          return;
+        }
+        
+        // ========== DRUMS ==========
+        if (has('drum') || has('thunder') || has('boom') || has('thump') || has('beat') || has('snare') || has('percussion')) {
+          var duration = 0.6;
+          // Kick/body - low sine with pitch drop
+          var kick = ctx.createOscillator();
+          var kickGn = ctx.createGain();
+          kick.type = 'sine';
+          kick.frequency.setValueAtTime(150, now);
+          kick.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+          kickGn.gain.setValueAtTime(0.5, now);
+          kickGn.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+          kick.connect(kickGn);
+          kickGn.connect(ctx.destination);
+          kick.start(now);
+          kick.stop(now + 0.5);
+          
+          // Snare/hit noise layer
+          var bufSize = ctx.sampleRate * 0.2;
+          var noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+          var noiseData = noiseBuf.getChannelData(0);
+          for (var s = 0; s < bufSize; s++) noiseData[s] = Math.random() * 2 - 1;
+          var noise = ctx.createBufferSource();
+          noise.buffer = noiseBuf;
+          var noiseFilt = ctx.createBiquadFilter();
+          noiseFilt.type = 'highpass';
+          noiseFilt.frequency.value = 1000;
+          var noiseGn = ctx.createGain();
+          noiseGn.gain.setValueAtTime(0.3, now);
+          noiseGn.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+          noise.connect(noiseFilt);
+          noiseFilt.connect(noiseGn);
+          noiseGn.connect(ctx.destination);
+          noise.start(now);
+          noise.stop(now + 0.3);
+          
+          // Second hit slightly delayed for thunder effect
+          if (has('thunder')) {
+            var kick2 = ctx.createOscillator();
+            var kick2Gn = ctx.createGain();
+            kick2.type = 'sine';
+            kick2.frequency.setValueAtTime(120, now + 0.12);
+            kick2.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+            kick2Gn.gain.setValueAtTime(0.0001, now);
+            kick2Gn.gain.linearRampToValueAtTime(0.35, now + 0.12);
+            kick2Gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+            kick2.connect(kick2Gn);
+            kick2Gn.connect(ctx.destination);
+            kick2.start(now);
+            kick2.stop(now + 0.6);
+          }
+          return;
+        }
+        
+        // ========== CYMBALS / CRASH ==========
+        if (has('cymbal') || has('crash') || has('clash') || has('clang')) {
+          var duration = 1.5;
+          var bufSize = ctx.sampleRate * duration;
+          var noiseBuf = ctx.createBuffer(2, bufSize, ctx.sampleRate);
+          for (var ch = 0; ch < 2; ch++) {
+            var data = noiseBuf.getChannelData(ch);
+            for (var s = 0; s < bufSize; s++) data[s] = Math.random() * 2 - 1;
+          }
+          var noise = ctx.createBufferSource();
+          noise.buffer = noiseBuf;
+          // Band pass to get metallic shimmer
+          var bp1 = ctx.createBiquadFilter();
+          bp1.type = 'bandpass';
+          bp1.frequency.value = 5000;
+          bp1.Q.value = 0.5;
+          var hp = ctx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.value = 3000;
+          var noiseGn = ctx.createGain();
+          noiseGn.gain.setValueAtTime(0.0001, now);
+          noiseGn.gain.linearRampToValueAtTime(0.35, now + 0.005);
+          noiseGn.gain.exponentialRampToValueAtTime(0.08, now + 0.3);
+          noiseGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          noise.connect(bp1);
+          bp1.connect(hp);
+          hp.connect(noiseGn);
+          noiseGn.connect(ctx.destination);
+          // Add a metallic ring
+          var ring = ctx.createOscillator();
+          var ringGn = ctx.createGain();
+          ring.type = 'square';
+          ring.frequency.value = 340;
+          ringGn.gain.setValueAtTime(0.04, now);
+          ringGn.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+          ring.connect(ringGn);
+          ringGn.connect(ctx.destination);
+          ring.start(now);
+          ring.stop(now + 1.0);
+          noise.start(now);
+          noise.stop(now + duration + 0.1);
+          return;
+        }
+        
+        // ========== FLUTE ==========
+        if (has('flute') || has('whistle') || has('breeze') || has('wind') || has('ocean flute') || has('pipe')) {
+          var baseFreq = 580;
+          var duration = 1.8;
+          // Pure sine with breathy noise layer and vibrato
+          var osc = ctx.createOscillator();
+          var oscGn = ctx.createGain();
+          var filt = ctx.createBiquadFilter();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(baseFreq, now);
+          // Gentle pitch rise
+          osc.frequency.linearRampToValueAtTime(baseFreq * 1.02, now + 0.5);
+          osc.frequency.linearRampToValueAtTime(baseFreq, now + duration);
+          filt.type = 'lowpass';
+          filt.frequency.value = 3000;
+          // Breath-like attack
+          oscGn.gain.setValueAtTime(0.0001, now);
+          oscGn.gain.linearRampToValueAtTime(0.15, now + 0.12);
+          oscGn.gain.linearRampToValueAtTime(0.12, now + duration * 0.8);
+          oscGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          // Vibrato
+          var lfo = ctx.createOscillator();
+          var lfoGn = ctx.createGain();
+          lfo.frequency.value = 5;
+          lfoGn.gain.value = 6;
+          lfo.connect(lfoGn);
+          lfoGn.connect(osc.frequency);
+          lfo.start(now + 0.3);
+          lfo.stop(now + duration);
+          osc.connect(filt);
+          filt.connect(oscGn);
+          oscGn.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration + 0.1);
+          // Breath noise layer
+          var breathSize = ctx.sampleRate * duration;
+          var breathBuf = ctx.createBuffer(1, breathSize, ctx.sampleRate);
+          var bData = breathBuf.getChannelData(0);
+          for (var s = 0; s < breathSize; s++) bData[s] = Math.random() * 2 - 1;
+          var breath = ctx.createBufferSource();
+          breath.buffer = breathBuf;
+          var breathFilt = ctx.createBiquadFilter();
+          breathFilt.type = 'bandpass';
+          breathFilt.frequency.value = 2000;
+          breathFilt.Q.value = 2;
+          var breathGn = ctx.createGain();
+          breathGn.gain.setValueAtTime(0.0001, now);
+          breathGn.gain.linearRampToValueAtTime(0.025, now + 0.1);
+          breathGn.gain.linearRampToValueAtTime(0.015, now + duration * 0.8);
+          breathGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          breath.connect(breathFilt);
+          breathFilt.connect(breathGn);
+          breathGn.connect(ctx.destination);
+          breath.start(now);
+          breath.stop(now + duration + 0.1);
+          return;
+        }
+        
+        // ========== TRUMPET / HORN / BRASS ==========
+        if (has('trumpet') || has('horn') || has('brass') || has('fanfare') || has('trombone') || has('tuba')) {
+          var baseFreq = 370;
+          var duration = 1.5;
+          // Brass: sawtooth with lowpass filter sweep
+          var osc = ctx.createOscillator();
+          var osc2 = ctx.createOscillator();
+          var oscGn = ctx.createGain();
+          var filt = ctx.createBiquadFilter();
+          osc.type = 'sawtooth';
+          osc2.type = 'square';
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc2.frequency.setValueAtTime(baseFreq * 1.003, now); // slight detune for fatness
+          filt.type = 'lowpass';
+          filt.frequency.setValueAtTime(400, now);
+          filt.frequency.linearRampToValueAtTime(2800, now + 0.08); // bright attack
+          filt.frequency.linearRampToValueAtTime(1800, now + 0.5);
+          filt.frequency.linearRampToValueAtTime(1200, now + duration);
+          filt.Q.value = 2;
+          // Brass attack envelope
+          oscGn.gain.setValueAtTime(0.0001, now);
+          oscGn.gain.linearRampToValueAtTime(0.14, now + 0.04);
+          oscGn.gain.linearRampToValueAtTime(0.11, now + 0.2);
+          oscGn.gain.linearRampToValueAtTime(0.09, now + duration * 0.8);
+          oscGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          // Vibrato
+          var lfo = ctx.createOscillator();
+          var lfoGn = ctx.createGain();
+          lfo.frequency.value = 5;
+          lfoGn.gain.value = 3;
+          lfo.connect(lfoGn);
+          lfoGn.connect(osc.frequency);
+          lfo.start(now + 0.4);
+          lfo.stop(now + duration);
+          var merge = ctx.createGain();
+          merge.gain.value = 0.5;
+          osc.connect(merge);
+          osc2.connect(merge);
+          merge.connect(filt);
+          filt.connect(oscGn);
+          oscGn.connect(ctx.destination);
+          osc.start(now);
+          osc2.start(now);
+          osc.stop(now + duration + 0.1);
+          osc2.stop(now + duration + 0.1);
+          return;
+        }
+        
+        // ========== HARP ==========
+        if (has('harp') || has('lyre') || has('pluck') || has('strum')) {
+          // Harp arpeggio: series of plucked notes
+          var baseFreq = 330;
+          var ratios = [1, 5/4, 3/2, 2, 5/2, 3];
+          ratios.forEach(function(ratio, idx) {
+            var freq = baseFreq * ratio;
+            var startTime = now + idx * 0.1;
+            var dur = 1.5 - idx * 0.1;
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            var filt = ctx.createBiquadFilter();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, startTime);
+            filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(4000, startTime);
+            filt.frequency.exponentialRampToValueAtTime(800, startTime + dur);
+            // Pluck envelope: instant attack, slow decay
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.18 / (idx + 1), startTime + 0.005);
+            gn.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
+            osc.connect(filt);
+            filt.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + dur + 0.1);
+          });
+          return;
+        }
+        
+        // ========== BELL / CHIME ==========
+        if (has('bell') || has('chime') || has('ding') || has('gong') || has('ring') || has('tinkle')) {
+          var baseFreq = 660;
+          var duration = 2.5;
+          // Bells have inharmonic partials
+          var partials = [1, 2.0, 2.76, 4.07, 5.4, 6.8];
+          var amps = [0.15, 0.08, 0.06, 0.03, 0.02, 0.01];
+          partials.forEach(function(p, idx) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq * p, now);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(amps[idx], now + 0.003);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration - idx * 0.2);
+            osc.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== XYLOPHONE / MARIMBA ==========
+        if (has('xylophone') || has('marimba') || has('glockenspiel') || has('kalimba')) {
+          var baseFreq = 520;
+          var duration = 0.8;
+          // Xylophone: sine + 3rd harmonic, fast decay
+          [1, 3].forEach(function(h) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq * h, now);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.2 / h, now + 0.003);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== PIANO ==========
+        if (has('piano') || has('key')) {
+          var baseFreq = 440;
+          var duration = 2.0;
+          var harmonics = [1, 2, 3, 4, 5, 6];
+          var amps = [0.15, 0.10, 0.05, 0.03, 0.015, 0.008];
+          harmonics.forEach(function(h, idx) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq * h, now);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(amps[idx], now + 0.005);
+            gn.gain.exponentialRampToValueAtTime(amps[idx] * 0.3, now + 0.5);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== GUITAR ==========
+        if (has('guitar') || has('ukulele') || has('strum') || has('chord')) {
+          var baseFreq = 330;
+          var duration = 1.2;
+          // Plucked string with harmonics
+          [1, 2, 3, 4, 5].forEach(function(h) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            var filt = ctx.createBiquadFilter();
+            osc.type = h <= 2 ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(baseFreq * h, now);
+            filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(3000, now);
+            filt.frequency.exponentialRampToValueAtTime(500, now + duration);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.12 / h, now + 0.003);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(filt);
+            filt.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== DEFAULT: gentle melodic tone ==========
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
         gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.25, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.4);
+        osc.stop(now + 1.2);
       } catch (e) {
         console.warn('Instrument audio failed:', e);
       }
@@ -2629,7 +3084,7 @@ function renderBodyMapPage(bodyMap: BodyMapContent, starIndex: number): string {
 function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: number): string {
   const activityId = `feeling_${starIndex}`;
   const feelingsHtml = selector.feelings.map((f) => `
-    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: ${f.color}; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '${f.color}' : 'white';">
+    <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: ${f.color}; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '${f.color}' : 'white'; var followUp = this.closest('.page').querySelector('.feeling-followup'); if(followUp) followUp.style.display = 'block';">
       <span class="text-4xl">${escapeForTemplate(f.emoji)}</span>
       <span class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(f.name)}</span>
     </button>`).join("");
@@ -2642,7 +3097,7 @@ function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: 
         <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
           <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(selector.instructions)}</p>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${feelingsHtml}</div>
-          <div class="mb-6">
+          <div class="feeling-followup mb-6" style="display: none;">
             <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(selector.followUpQuestion)}</label>
             <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="feeling_followup_${starIndex}" onchange="saveFormData('feeling_followup_${starIndex}', this.value)"></textarea>
           </div>
@@ -2808,10 +3263,12 @@ function renderBalloonPopPage(balloon: BalloonPopContent, starIndex: number, met
             </div>
           </div>
           
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Your Calming Tools 🧰</p>
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Step 1: Build Calming Power 🧰</p>
+          <p class="font-body text-sm text-center mb-3" style="color: var(--secondary);">Tap the calming tools to fill your power bar!</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${toolsHtml}</div>
           
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Worry Balloons 🎈</p>
+          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Step 2: Pop the Worry Balloons 🎈</p>
+          <p class="font-body text-sm text-center mb-3" style="color: var(--secondary);">Once you have enough calming power, tap each balloon to pop it!</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="balloons_${starIndex}">${balloonsHtml}</div>
           
           <div class="p-4 rounded-xl text-center mb-4" id="balloonFeedback_${starIndex}" style="display: none; background-color: var(--light-green);">
@@ -2961,17 +3418,17 @@ function renderGardenGrowerPage(garden: GardenGrowerContent, starIndex: number, 
   const activityId = `garden_${starIndex}`;
   
   const plantsHtml = garden.plants.map(p => {
-    const stagesJson = JSON.stringify(p.growthStages).replace(/"/g, '&quot;');
+    const stagesAttr = p.growthStages.map(s => escapeForTemplate(s)).join('|');
     return `
     <div class="garden-plant p-4 rounded-2xl border-2 transition-all" id="plant_${starIndex}_${p.id}" style="background-color: white; border-color: var(--secondary);">
       <div class="text-center mb-2"><span class="text-5xl" id="plantEmoji_${starIndex}_${p.id}">${p.growthStages[0]}</span></div>
       <h3 class="font-title text-center mb-1" style="color: var(--dark);">${escapeForTemplate(p.name)}</h3>
       <p class="font-body text-xs text-center mb-2" style="color: var(--secondary);">${escapeForTemplate(p.feeling)}</p>
-      <p class="font-body text-sm text-center mb-3 p-2 rounded-lg" style="background-color: var(--cream);">${escapeForTemplate(p.nurturingAction)}</p>
+      <p class="font-body text-sm text-center mb-3 p-2 rounded-lg" id="plantAction_${starIndex}_${p.id}" style="background-color: var(--cream);">${escapeForTemplate(p.nurturingAction)}</p>
       <div class="flex justify-center gap-1 mb-2">
         ${p.growthStages.map((_, i) => `<div class="w-3 h-3 rounded-full" id="growth_${starIndex}_${p.id}_${i}" style="background-color: ${i === 0 ? 'var(--primary)' : '#e5e7eb'};"></div>`).join("")}
       </div>
-      <button class="w-full py-2 rounded-lg font-title cursor-pointer hover:scale-105 transition-all" style="background-color: var(--light-green);" onclick="window.waterPlant('${starIndex}', '${p.id}', ${stagesJson}, ${garden.plants.length})">💧 Water!</button>
+      <button class="w-full py-2 rounded-lg font-title cursor-pointer hover:scale-105 transition-all" style="background-color: var(--light-green);" data-stages="${stagesAttr}" data-plant-id="${p.id}" data-star-index="${starIndex}" data-total="${garden.plants.length}" onclick="window.waterPlant(this.dataset.starIndex, this.dataset.plantId, this.dataset.stages.split('|'), parseInt(this.dataset.total))">💧 Water!</button>
     </div>`;
   }).join("");
 
@@ -3060,7 +3517,7 @@ function renderFeelingsOrchestraPage(orchestra: FeelingsOrchestraContent, starIn
   const activityId = `orchestra_${starIndex}`;
   
   const instrumentsHtml = orchestra.instruments.map(i => `
-    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: ${i.color}20; border-color: ${i.color};" onclick="window.playInstrument('${starIndex}', '${i.emoji}', '${escapeForOnclick(i.sound)}', '${escapeForOnclick(i.feeling)}')">
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: ${i.color}20; border-color: ${i.color};" onclick="window.playInstrument('${starIndex}', '${i.emoji}', '${escapeForOnclick(i.sound)}', '${escapeForOnclick(i.feeling)}', '${escapeForOnclick(i.name)}')">
       <span class="text-5xl">${i.emoji}</span>
       <p class="font-title text-sm mt-2">${escapeForTemplate(i.name)}</p>
       <p class="font-body text-xs" style="color: var(--secondary);">${escapeForTemplate(i.feeling)}</p>
@@ -3122,12 +3579,12 @@ function renderCalmAquariumPage(aquarium: CalmAquariumContent, starIndex: number
           <div class="p-4 rounded-xl mb-4 text-center" style="background-color: var(--light-green);">
             <p class="font-title mb-2">${escapeForTemplate(aquarium.breathingBubbles.message)}</p>
             <div class="flex justify-center gap-4">
-              <span>Breathe in: ${aquarium.breathingBubbles.inhaleTime}s 🫧</span>
+              <span>Breathe in: ${aquarium.breathingBubbles.inhaleTime}s 💭</span>
               <span>Breathe out: ${aquarium.breathingBubbles.exhaleTime}s 💨</span>
             </div>
           </div>
           <div class="mb-4"><p class="font-title mb-2">🐠 Add Creatures:</p><div class="flex flex-wrap gap-2">${creaturesHtml}</div></div>
-          <div class="mb-4"><p class="font-title mb-2">🪸 Add Decorations:</p><div class="flex flex-wrap gap-2">${decorationsHtml}</div></div>
+          <div class="mb-4"><p class="font-title mb-2">🌊 Add Decorations:</p><div class="flex flex-wrap gap-2">${decorationsHtml}</div></div>
           <div class="p-6 rounded-2xl text-center" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
             <p class="text-4xl mb-2">🌊</p>
             <p class="font-title text-xl">${escapeForTemplate(aquarium.peaceMessage)}</p>
@@ -3595,7 +4052,7 @@ function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): s
       <div class="max-w-4xl mx-auto">
         <div class="rounded-3xl shadow-2xl p-8 md:p-10 border-4" style="background-color: white; border-color: #e6c777;">
           <div class="text-center mb-6">
-            <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF SEL ACHIEVEMENT</p>
+            <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF ACHIEVEMENT</p>
             <h1 class="text-3xl md:text-4xl mt-2 font-title" style="color: var(--dark);">${escapeForTemplate(summary.heading)}</h1>
             <p class="font-body text-lg mt-2" style="color: var(--secondary);">Awarded to <strong id="childNameDisplay">Friend</strong></p>
           </div>
@@ -3842,18 +4299,31 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
     case "circle-one": {
       // Check if this has a correct answer (correctAnswerIndex) or is opinion-based
       const hasCorrectAnswer = typeof lesson.correctAnswerIndex === 'number';
-      const correctIdx = lesson.correctAnswerIndex ?? -1;
+      const originalCorrectIdx = lesson.correctAnswerIndex ?? -1;
+      
+      // Shuffle options to randomize correct answer position
+      const indexedOptions = options.map((opt, i) => ({ text: opt, originalIndex: i }));
+      // Fisher-Yates shuffle
+      for (let i = indexedOptions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indexedOptions[i], indexedOptions[j]] = [indexedOptions[j], indexedOptions[i]];
+      }
+      // Find the new position of the correct answer after shuffling
+      const shuffledCorrectIdx = hasCorrectAnswer 
+        ? indexedOptions.findIndex(o => o.originalIndex === originalCorrectIdx)
+        : -1;
+      
       interactionHtml = `
         <div class="interactive-group">
           <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.interactionPrompt)}</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
-            ${options.map((opt, i) => `
+            ${indexedOptions.map((opt, i) => `
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="${hasCorrectAnswer ? (i === correctIdx ? 'true' : 'false') : 'opinion'}"
+                      data-correct="${hasCorrectAnswer ? (i === shuffledCorrectIdx ? 'true' : 'false') : 'opinion'}"
                       data-index="${i}"
-                      onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
-                ${escapeForTemplate(opt)}
+                      onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${shuffledCorrectIdx})">
+                ${escapeForTemplate(opt.text)}
               </button>
             `).join("")}
           </div>
@@ -4068,16 +4538,36 @@ function renderCopingCardsPage(cards: CopingCardsContent, starIndex: number): st
 function renderGratitudeJarPage(jar: GratitudeJarContent, starIndex: number): string {
   const activityId = `gratitude_${starIndex}`;
   
-  const promptsHtml = jar.promptCategories.map((cat, i) => `
-    <div class="rounded-xl p-4 mb-3" style="background-color: var(--soft-yellow);">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-2xl">${cat.emoji}</span>
-        <span class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(cat.category)}</span>
+  const jarColors = ['#FFB5B5', '#B5D8FF', '#B5FFD8', '#FFE5B5', '#E5B5FF', '#FFB5E5'];
+  
+  const promptsHtml = jar.promptCategories.map((cat, i) => {
+    const jarColor = jarColors[i % jarColors.length];
+    return `
+    <div class="gratitude-jar-item" style="display: flex; flex-direction: column; align-items: center;">
+      <!-- Jar Visual -->
+      <div class="gratitude-jar" style="position: relative; width: 220px; margin-bottom: 12px;">
+        <!-- Jar Lid -->
+        <div style="width: 120px; height: 22px; margin: 0 auto; background: linear-gradient(180deg, #b8860b, #daa520, #b8860b); border-radius: 8px 8px 0 0; border: 2px solid #8b6914; border-bottom: none; position: relative; z-index: 2;"></div>
+        <!-- Jar Neck -->
+        <div style="width: 110px; height: 12px; margin: 0 auto; background: rgba(255,255,255,0.35); border-left: 2px solid rgba(0,0,0,0.08); border-right: 2px solid rgba(0,0,0,0.08); position: relative; z-index: 1;"></div>
+        <!-- Jar Body -->
+        <div style="width: 190px; height: 170px; margin: 0 auto; background: linear-gradient(135deg, rgba(255,255,255,0.6), ${jarColor}30, rgba(255,255,255,0.25)); border: 2px solid rgba(0,0,0,0.10); border-radius: 16px 16px 32px 32px; position: relative; overflow: hidden; box-shadow: inset -10px 0 16px rgba(255,255,255,0.35), inset 10px 0 16px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.1);">
+          <!-- Glass shine -->
+          <div style="position: absolute; top: 12px; left: 16px; width: 10px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 5px; transform: rotate(5deg);"></div>
+          <!-- Jar fill (colour at bottom) -->
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, ${jarColor}50, ${jarColor}80); border-radius: 0 0 30px 30px;"></div>
+          <!-- Jar contents label -->
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 12px; position: relative; z-index: 1;">
+            <span style="font-size: 2.8rem;">${cat.emoji}</span>
+            <span class="font-title" style="font-size: 1.1rem; color: var(--dark); text-align: center; margin-top: 6px;">${escapeForTemplate(cat.category)}</span>
+          </div>
+        </div>
       </div>
-      <p class="font-body mb-2" style="color: var(--dark);">${escapeForTemplate(cat.prompt)}</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white;" placeholder="I'm grateful for..." onchange="saveFormData('gratitude_${starIndex}_${i}', this.value)">
-    </div>
-  `).join("");
+      <!-- Prompt and Input -->
+      <p class="font-body text-sm mb-2 text-center" style="color: var(--dark); max-width: 220px;">${escapeForTemplate(cat.prompt)}</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white; max-width: 220px;" placeholder="I'm grateful for..." data-form-key="gratitude_${starIndex}_${i}" onchange="saveFormData('gratitude_${starIndex}_${i}', this.value)">
+    </div>`;
+  }).join("");
 
   return `
     <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="gratitude-jar">
@@ -4087,7 +4577,9 @@ function renderGratitudeJarPage(jar: GratitudeJarContent, starIndex: number): st
         <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
           <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(jar.introText)}</p>
           
-          ${promptsHtml}
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 28px; justify-items: center;">
+            ${promptsHtml}
+          </div>
           
           <div class="mt-6 p-4 rounded-xl text-center" style="background-color: var(--light-green);">
             <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(jar.encouragement)}</p>
@@ -4218,13 +4710,23 @@ function renderEmojiCheckInPage(checkIn: EmojiCheckInContent, starIndex: number)
       <p class="font-title text-sm mb-3" style="color: var(--dark);">${escapeForTemplate(time.label)}</p>
       <div class="flex flex-wrap justify-center gap-2">
         ${checkIn.moodOptions.map((mood, mi) => `
-          <button class="mood-option w-12 h-12 rounded-full text-2xl flex items-center justify-center cursor-pointer transition-all border-2 border-transparent hover:scale-110" 
-                  style="background-color: ${mood.color};" 
-                  onclick="this.parentElement.querySelectorAll('.mood-option').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; saveFormData('mood_${starIndex}_${ti}', '${escapeForTemplate(mood.label)}');">
+          <button class="mood-option w-14 h-14 rounded-full text-2xl flex items-center justify-center cursor-pointer transition-all border-3 hover:scale-125" 
+                  style="background-color: ${mood.color}; border-color: transparent;" 
+                  title="${escapeForTemplate(mood.label)}"
+                  onclick="
+                    this.parentElement.querySelectorAll('.mood-option').forEach(function(b) { b.style.borderColor = 'transparent'; b.style.transform = 'scale(1)'; b.style.boxShadow = 'none'; });
+                    this.style.borderColor = 'var(--dark)';
+                    this.style.transform = 'scale(1.25)';
+                    this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                    var label = this.closest('.text-center').querySelector('.mood-selected-label');
+                    if (label) { label.textContent = '${escapeForTemplate(mood.label)}'; label.style.display = 'block'; }
+                    saveFormData('mood_${starIndex}_${ti}', '${escapeForTemplate(mood.label)}');
+                  ">
             ${mood.emoji}
           </button>
         `).join("")}
       </div>
+      <p class="mood-selected-label font-body text-xs mt-2 font-semibold" style="color: var(--primary); display: none;"></p>
     </div>
   `).join("");
 

@@ -5279,6 +5279,7 @@ if (data.status === "running") {
             Object.assign(selectedModule, updates);
             
             const skillsSearchInput = document.getElementById('skillsSearchInput');
+            const emotionsSearchInput = document.getElementById('emotionsSearchInput');
             const emotionsSelect = document.getElementById('newModuleEmotions');
             const skillsSelect = document.getElementById('newModuleSkills');
             
