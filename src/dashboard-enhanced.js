@@ -391,6 +391,17 @@ class AdventureMapV4 {
     css.push('.category-filter-select:hover { border-color: rgba(64,88,120,0.25); }');
     css.push('.category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }');
     css.push('.cycle-badge { background: #ffffff; color: #405878; border: 2px solid rgba(64,88,120,0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }');
+    css.push('.town-progress-cue { margin: 0 8px 16px; border-radius: 16px; border: 2px solid rgba(64,88,120,0.12); background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.98) 100%); box-shadow: 0 8px 20px rgba(15,23,42,0.08); overflow: hidden; }');
+    css.push('.town-progress-cue-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 10px; border-bottom: 1px solid rgba(64,88,120,0.1); }');
+    css.push('.town-progress-cue-title { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #405878; display: flex; align-items: center; gap: 8px; }');
+    css.push('.town-progress-cue-stage { font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 600; color: #405878; background: rgba(64,88,120,0.08); border-radius: 999px; padding: 5px 10px; }');
+    css.push('.town-progress-cue-copy { padding: 10px 16px 14px; font-size: 13px; line-height: 1.45; color: #4b5f7a; }');
+    css.push('.town-progress-cue-strong { color: #2f4664; font-weight: 700; }');
+    css.push('.town-progress-cue-timeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }');
+    css.push('.town-progress-cue-step { border-radius: 10px; border: 1px solid rgba(64,88,120,0.12); background: #fff; padding: 8px 6px; text-align: center; font-size: 11px; color: #6d86a8; }');
+    css.push('.town-progress-cue-step strong { display: block; font-family: "Fredoka", sans-serif; color: #405878; font-size: 12px; margin-top: 2px; }');
+    css.push('.town-progress-cue-step.active { border-color: rgba(47, 108, 197, 0.45); background: rgba(59,130,246,0.08); color: #2f4664; }');
+    css.push('.town-progress-cue-step.done { border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.1); color: #2f6e4a; }');
     css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 20px; overflow: hidden; cursor: grab; border: 4px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 120px rgba(135,206,235,0.25), 0 12px 28px rgba(15, 23, 42, 0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%); }');
     css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
     css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');
@@ -1160,6 +1171,7 @@ class AdventureMapV4 {
       '</div>';
 
     if (this.modules.length > 0) {
+      html += this.getTownProgressCueHtml(completedCount);
       html += '<div class="adventure-viewport" id="adventureViewport">' +
         '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
         '<div class="map-zone-layers" aria-hidden="true"></div>' +
@@ -1265,6 +1277,44 @@ class AdventureMapV4 {
     if (completed <= 5) return 1;
     if (completed <= 8) return 2;
     return 3;
+  }
+
+  getTownStageMeta() {
+    return [
+      { label: 'Trailhead', emoji: '🌱', minComplete: 0, maxComplete: 2, milestone: 3, rangeLabel: '0-2' },
+      { label: 'Village', emoji: '🏡', minComplete: 3, maxComplete: 5, milestone: 6, rangeLabel: '3-5' },
+      { label: 'Town Center', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '6-8' },
+      { label: 'City', emoji: '🏙️', minComplete: 9, maxComplete: 99, milestone: null, rangeLabel: '9+' }
+    ];
+  }
+
+  getTownProgressCueHtml(completedCount) {
+    var stages = this.getTownStageMeta();
+    var stageIndex = this.getTownStage();
+    var stage = stages[stageIndex] || stages[0];
+    var nextStage = stages[Math.min(stageIndex + 1, stages.length - 1)];
+    var nextMilestone = stage.milestone;
+    var modulesLeft = nextMilestone ? Math.max(0, nextMilestone - completedCount) : 0;
+    var transitionCopy = nextMilestone
+      ? 'Complete <span class="town-progress-cue-strong">' + modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + '</span> to unlock <span class="town-progress-cue-strong">' + nextStage.emoji + ' ' + nextStage.label + '</span>.'
+      : 'You unlocked the final town stage. Keep reviewing modules to strengthen those pathways.';
+
+    var timeline = stages.map(function(item, idx) {
+      var statusClass = 'town-progress-cue-step';
+      if (idx < stageIndex) statusClass += ' done';
+      if (idx === stageIndex) statusClass += ' active';
+      return '<div class="' + statusClass + '">' + item.emoji + '<strong>' + item.label + '</strong>' + item.rangeLabel + ' modules</div>';
+    }).join('');
+
+    return '<div class="town-progress-cue" role="status" aria-live="polite">' +
+      '<div class="town-progress-cue-head">' +
+      '<div class="town-progress-cue-title">🧠➡️🏙️ Brain Pathways = Town Pathways</div>' +
+      '<div class="town-progress-cue-stage">Current: ' + stage.emoji + ' ' + stage.label + '</div>' +
+      '</div>' +
+      '<div class="town-progress-cue-copy">Each completed module lays another pathway in your brain, just like building roads and places in your town. ' + transitionCopy +
+      '<div class="town-progress-cue-timeline">' + timeline + '</div>' +
+      '</div>' +
+      '</div>';
   }
   
   getDanielExpression() {
