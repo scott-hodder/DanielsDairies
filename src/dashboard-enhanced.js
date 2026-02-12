@@ -1653,6 +1653,32 @@ class AdventureMapV4 {
       cycleFilter.addEventListener('change', this._cycleChangeHandler);
     }
 
+    var nextSkillFilter = document.getElementById('nextSkillFilter');
+    if (nextSkillFilter) {
+      this._nextSkillChangeHandler = function() {
+        self.renderNextCycleOptions();
+      };
+      nextSkillFilter.addEventListener('change', this._nextSkillChangeHandler);
+      this.renderNextCycleOptions();
+    }
+
+    var goToNextCycle = document.getElementById('goToNextCycle');
+    if (goToNextCycle) {
+      this._goToNextCycleHandler = function() {
+        var skillSelect = document.getElementById('nextSkillFilter');
+        var cycleSelect = document.getElementById('nextCycleFilter');
+        if (!skillSelect || !cycleSelect || !cycleSelect.value) return;
+        self.currentCategory = skillSelect.value;
+        self.currentCycleId = cycleSelect.value;
+        self.setStoredCycleId(self.currentCategory, self.currentCycleId);
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        self.render();
+      };
+      goToNextCycle.addEventListener('click', this._goToNextCycleHandler);
+    }
+
     // Viewport-dependent listeners (drag, scroll, etc.)
     var viewport = document.getElementById('adventureViewport');
     if (!viewport) return;

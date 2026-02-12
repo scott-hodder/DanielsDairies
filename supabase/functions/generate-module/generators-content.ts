@@ -80,7 +80,13 @@ CRITICAL RULES:
 5. Treat the age range and language guidelines as hard requirements. Output must be clearly distinct across age ranges.
 6. Use Australian English spelling throughout (colour, behaviour, favourite, organise, centre, mum, learnt).
 7. NEVER use em dashes, "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
-8. Write as a warm, experienced educator, not a marketing copywriter.`;
+8. Write as a warm, experienced educator, not a marketing copywriter.
+9. EMOJI SAFETY: Only use well-supported, common emojis from Unicode 12.0 or earlier. NEVER use emojis added after 2019 (Unicode 13+), ZWJ sequences (combined emojis), or skin-tone variants. 
+   SAFE emojis: 😊 😢 😡 😨 😌 🤩 😳 😤 🤔 😴 🥰 😎 🤗 😮 🙂 😞 😰 ⭐ 💛 ❤ 🌟 🎯 🎨 📝 💡 🏠 🌈 🐕 🐱 🦁 🐻 🌸 🌻 🎵 🎶 💪 🧠 ❓ ✅ ✓ ❌ 🐢 🐠 🐟 🐙 🐚 🌊 🐬 🐳 🐋 🦈 🐡 🦀 🌿 🍃 🪨 💎 ⚡ 🔥 💧 🌙 ☀ 🌤 ⛅ 🌧 ⛈ 🌪 🌞 🎈 🎉 🏆 🎪 🎭 🎬 🎵 🎶 🎹 🥁 🎸 🎺 🎻 📖 📚 ✏ 🖍 🖌 👀 👂 🫂 🤝 👍 👏 🙌 💭 💬 🔍 🧩
+   BANNED emojis (render as empty boxes): 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 — and ANY emoji you are unsure about.
+   For aquarium themes use: 🐢 🐠 🐟 🐙 🐚 🌊 🐬 — NOT coral or jellyfish emojis.
+   For nature/plant themes use: 🌿 🍃 🌸 🌻 🌺 🌹 🌷 — NOT newer botanical emojis.
+   When in doubt, use a text label instead of an emoji.`;
 
 // Build a condensed context block from the full content brief for use in all generators.
 // This ensures every activity (not just lessons) stays aligned with the module's theory,
@@ -132,6 +138,7 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   if (theory) {
     // Include the full theory description (up to 500 chars) so the AI can properly operationalise it
     parts.push('', `PRIMARY THEORY (must operationalise in content): ${theory.substring(0, 500)}`);
+    parts.push('CRITICAL: Every lesson and activity MUST demonstrate this theory in action. For social-cognitive theories like Theory of Mind/Perspective Taking, include content about understanding OTHER people\'s thoughts, feelings, and viewpoints - not just the child\'s own internal states. Include scenarios where children consider what others might be thinking or feeling.');
   }
   
   if (brainTown) {
@@ -172,9 +179,10 @@ function buildCharacterContext(metadata: ModuleMetadata, seriesInfo?: SeriesInfo
     return `Primary character: ${metadata.characterName} ${metadata.characterEmoji} (guides the child directly)`;
   }
   return `Primary Mascot: ${metadata.characterName} ${metadata.characterEmoji}
-Learner: Daniel 🧒 (appears 2-3 times per module, briefly)
-- Daniel models relatable experiences the reader might share
+Learner: Daniel 🐕 (appears 2-3 times per module, briefly)
+- Daniel is a dog character who models relatable experiences the reader might share
 - Keep Daniel appearances to 1-2 sentences each
+- Daniel's emoji MUST be 🐕 (dog) - never use a person emoji for Daniel
 - Example: "Daniel noticed his hands felt shaky when he was nervous."`;
 }
 
@@ -384,7 +392,7 @@ function buildVerificationReport(
     ...lessons.map((lesson) => [lesson.heading, ...(lesson.paragraphs || [])].join(" ")),
     ...checklists.map((item) => [item.heading, ...(item.items || [])].join(" ")),
     ...reflections.map((item) => [item.heading, item.prompt].join(" ")),
-    ...quizzes.map((item) => [item.question, ...(item.options || [])].join(" ")),
+    ...quizzes.map((item) => [item.question, ...(item.answers || []).map(a => a.text)].join(" ")),
   ].join(" ");
 
   const brainTownEvidence = hasBrainTownEvidence(brainTown, contentCorpus);
@@ -450,7 +458,7 @@ ${context}
 Welcome page specifics:
 - Paragraph style: ${formatting.welcomeParagraphs}
 - The mascot greets the child and introduces the module theme
-${shouldIncludeDaniel(metadata, seriesInfo) ? '- Briefly mention Daniel as someone who will be learning alongside them' : ''}
+${shouldIncludeDaniel(metadata, seriesInfo) ? '- Briefly mention Daniel as someone who will be learning alongside them. Do NOT say "You\'ll meet Daniel" - Daniel is already known to the child. Say something like "Daniel will be joining us on this adventure too" or "Daniel is learning right along with you".' : ''}
 
 Respond with ONLY this JSON:
 {
@@ -531,6 +539,7 @@ ${characterContext}
 
 Lesson specifics:
 - Paragraph length: ${formatting.lessonParagraphs}
+- IMPORTANT: Do NOT start any lesson with "Hi! I'm [character name]" or any character introduction. The character has already been introduced on the welcome page. Jump straight into the teaching content for each lesson.
 
 Respond with ONLY this JSON:
 {
@@ -688,6 +697,17 @@ Create exactly ${count} different quiz questions.`;
   const parsed = safeJsonParse<{ quizzes: QuizContent[] }>(response);
   
   const quizzes = parsed?.quizzes || [];
+  
+  // ISSUE FIX: Shuffle quiz answers so the correct answer isn't always in the same position
+  for (const quiz of quizzes) {
+    if (quiz.answers && quiz.answers.length > 1) {
+      for (let j = quiz.answers.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [quiz.answers[j], quiz.answers[k]] = [quiz.answers[k], quiz.answers[j]];
+      }
+    }
+  }
+  
   while (quizzes.length < count) {
     quizzes.push({
       heading: "🎯 Quick Quiz!",
@@ -899,7 +919,7 @@ Respond with ONLY this JSON:
   const bodyMaps = parsed?.bodyMaps || [];
   while (bodyMaps.length < count) {
     bodyMaps.push({
-      heading: "🫀 Where Do Feelings Live in My Body?",
+      heading: "❤️ Where Do Feelings Live in My Body?",
       instructions: "Tap on different parts of the body to see how feelings show up there!",
       bodyParts: [
         { name: "Head", emoji: "🧠 ", description: "Racing thoughts or foggy thinking" },
@@ -986,11 +1006,11 @@ Respond with ONLY this JSON:
       "storyText": "Short story about the mascot's calm space (2-3 sentences)",
       "instructions": "Instructions for building their own calm space (1-2 sentences)",
       "items": [
-        { "id": "blanket", "name": "Soft blanket", "emoji": "🧠¸" },
+        { "id": "blanket", "name": "Soft blanket", "emoji": "🧸" },
         { "id": "pillow", "name": "Comfy pillow", "emoji": "🛏️" },
         { "id": "music", "name": "Calm music", "emoji": "🎵" },
         { "id": "book", "name": "Favorite book", "emoji": "📚" },
-        { "id": "toy", "name": "Special toy", "emoji": "🧠¸" },
+        { "id": "toy", "name": "Special toy", "emoji": "🧸" },
         { "id": "light", "name": "Dim lights", "emoji": "💡" }
       ],
       "locationQuestion": "Where will your calm-down space be?"
@@ -1008,11 +1028,11 @@ Respond with ONLY this JSON:
       storyText: `When ${metadata.characterName}'s feelings get too big, they go to their special calm-down space. It's cozy and safe, with all their favorite things to help them feel better.`,
       instructions: "Tap on items to add them to YOUR calm-down den!",
       items: [
-        { id: "blanket", name: "Soft blanket", emoji: "🧠£" },
+        { id: "blanket", name: "Soft blanket", emoji: "🧸" },
         { id: "pillow", name: "Comfy pillow", emoji: "🛏️" },
         { id: "music", name: "Calm music", emoji: "🎵" },
         { id: "book", name: "Favorite book", emoji: "📚" },
-        { id: "toy", name: "Special toy", emoji: "🧠¸" },
+        { id: "toy", name: "Special toy", emoji: "🧸" },
         { id: "light", name: "Dim lights", emoji: "💡" }
       ],
       locationQuestion: "Where will your calm-down space be at home?"
@@ -1087,7 +1107,7 @@ Respond with ONLY this JSON:
       "heading": "Activity title with warning emoji",
       "instructions": "Instructions for identifying warning signs (1-2 sentences)",
       "categories": [
-        { "category": "Body Signs", "emoji": "🫀", "examples": ["Heart beats fast", "Hands get sweaty", "Tummy feels funny"] },
+        { "category": "Body Signs", "emoji": "❤️", "examples": ["Heart beats fast", "Hands get sweaty", "Tummy feels funny"] },
         { "category": "Thought Signs", "emoji": "💭", "examples": ["Can't stop worrying", "Thoughts go fast", "Hard to focus"] },
         { "category": "Action Signs", "emoji": "🏃", "examples": ["Want to run away", "Feel like yelling", "Can't sit still"] }
       ]
@@ -1104,7 +1124,7 @@ Respond with ONLY this JSON:
       heading: "⚠ ï¸ My Early Warning Signs",
       instructions: "Check the signs that happen to YOU when feelings start getting big!",
       categories: [
-        { category: "Body Signs", emoji: "🫀", examples: ["Heart beats fast", "Hands get sweaty", "Tummy feels funny", "Face gets hot"] },
+        { category: "Body Signs", emoji: "❤️", examples: ["Heart beats fast", "Hands get sweaty", "Tummy feels funny", "Face gets hot"] },
         { category: "Thought Signs", emoji: "💭", examples: ["Can't stop worrying", "Thoughts go fast", "Hard to focus", "Feel confused"] },
         { category: "Action Signs", emoji: "🏃", examples: ["Want to run away", "Feel like yelling", "Can't sit still", "Want to hide"] }
       ]
@@ -1249,9 +1269,9 @@ async function generateInteractiveLessons(
     const lessonType = i === 0 ? "first" : i < 2 ? "early" : "later";
     
     const contextGuidance = {
-      first: "This is the FIRST interactive lesson after the welcome. Build directly on the welcome's concepts. DO NOT reintroduce the module or mascot.",
-      early: "This is an early lesson. The reader knows the basics. Focus on exploring specific aspects or practising skills.",
-      later: "This is a later lesson. Focus on application, deeper understanding, or challenging scenarios."
+      first: "This is the FIRST interactive lesson after the welcome. Build directly on the welcome's concepts. DO NOT reintroduce the module or mascot. Do NOT start with 'Hi, I'm [character name]' or any introduction - the character has already been introduced on the welcome page. Jump straight into teaching content.",
+      early: "This is an early lesson. The reader already knows the mascot and the basics. DO NOT reintroduce the character. Focus on exploring specific aspects or practising skills.",
+      later: "This is a later lesson. Focus on application, deeper understanding, or challenging scenarios. DO NOT reintroduce the character."
     }[lessonType];
     
     const prompt = `Create interactive lesson ${i + 1} of ${count} for a child's workbook.
@@ -1261,6 +1281,8 @@ ${context}
 ${characterContext}
 
 LESSON CONTEXT: ${contextGuidance}
+
+CRITICAL: Do NOT start introText with "Hi! I'm [character name]" or any character self-introduction. The character was already introduced on the welcome page. Start directly with the lesson content.
 
 Respond with ONLY this JSON:
 {
@@ -1287,6 +1309,22 @@ Rules:
     const parsed = safeJsonParse<InteractiveLessonContent>(response);
     
     if (parsed) {
+      // ISSUE FIX: Shuffle options so the correct answer isn't always in the same position
+      if (parsed.interactionOptions && typeof parsed.correctAnswerIndex === 'number' && 
+          (parsed.interactionType === 'poll' || parsed.interactionType === 'circle-one')) {
+        const options = [...parsed.interactionOptions];
+        const correctAnswer = options[parsed.correctAnswerIndex];
+        
+        // Fisher-Yates shuffle the options
+        for (let j = options.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          [options[j], options[k]] = [options[k], options[j]];
+        }
+        
+        // Find the new position of the correct answer
+        parsed.interactionOptions = options;
+        parsed.correctAnswerIndex = options.indexOf(correctAnswer);
+      }
       lessons.push(parsed);
     } else {
       // Fallback
@@ -3299,7 +3337,7 @@ ${activitySamples.join('\n')}
 
 === YOUR AUDIT ===
 Check EACH of these carefully:
-1. Is the primary theory "${theorySection.split('\n')[0]}" correctly operationalised in the content?
+1. Is the primary theory "${theorySection.split('\n')[0]}" correctly operationalised in the content? "Operationalised" means the theory's SPECIFIC mechanisms are actively demonstrated in lessons and activities - not just mentioned by name. For example, if the theory is "Theory of Mind" or "Perspective Taking", the content must include activities about understanding OTHER people's thoughts, feelings, and viewpoints - not just internal brain states.
 2. Is the content appropriate for the ${briefAge} age range?
 3. Does it align with the sub-skill "${subSkillName || 'not specified'}"?
 4. Does it align with the super skill "${superSkillName || 'not specified'}"?
@@ -3307,6 +3345,7 @@ Check EACH of these carefully:
 6. Is the tone warm, age-appropriate, and not AI-sounding?
 7. Is Australian English used consistently?
 8. Are there any concepts introduced that were NOT specified?
+9. Does the content focus on the SOCIAL-COGNITIVE elements of the theory (if applicable) rather than just internal states?
 
 Respond with ONLY this JSON:
 {
