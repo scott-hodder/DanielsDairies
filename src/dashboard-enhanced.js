@@ -548,6 +548,9 @@ class AdventureMapV4 {
     requestAnimationFrame(function() {
       self.createMapHTML();
       
+      // Setup event listeners immediately after creating the HTML
+      self.setupEventListeners();
+      
       if (self.modules.length > 0) {
         // Batch these operations together
         self.applyThemeToBackground();
@@ -566,8 +569,6 @@ class AdventureMapV4 {
           }, 100);
         });
       }
-      
-      self.setupEventListeners();
     });
   }
   
@@ -1402,9 +1403,40 @@ class AdventureMapV4 {
 
   setupEventListeners() {
     this.removeEventListeners();
-    if (!this.viewport) return;
-
+    
     var self = this;
+    
+    // Always attach dropdown listeners regardless of viewport
+    var categoryFilter = document.getElementById('categoryFilter');
+    if (categoryFilter) {
+      this._categoryChangeHandler = function(e) {
+        self.currentCategory = e.target.value;
+        self.currentCycleId = null;
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        self.render();
+      };
+      categoryFilter.addEventListener('change', this._categoryChangeHandler);
+    }
+
+    var cycleFilter = document.getElementById('cycleFilter');
+    if (cycleFilter) {
+      this._cycleChangeHandler = function(e) {
+        self.currentCycleId = e.target.value || null;
+        self.setStoredCycleId(self.currentCategory, self.currentCycleId);
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        self.render();
+      };
+      cycleFilter.addEventListener('change', this._cycleChangeHandler);
+    }
+
+    // Viewport-dependent listeners (drag, scroll, etc.)
+    var viewport = document.getElementById('adventureViewport');
+    if (!viewport) return;
+
     this.boundHandlers = {
       mousedown: function(e) { self.startDrag(e); },
       mousemove: function(e) { self.drag(e); },
@@ -1419,42 +1451,21 @@ class AdventureMapV4 {
       }
     };
 
-    this.viewport.addEventListener('mousedown', this.boundHandlers.mousedown);
-    this.viewport.addEventListener('mousemove', this.boundHandlers.mousemove);
-    this.viewport.addEventListener('mouseup', this.boundHandlers.mouseup);
-    this.viewport.addEventListener('mouseleave', this.boundHandlers.mouseleave);
-    this.viewport.addEventListener('touchstart', this.boundHandlers.touchstart, { passive: false });
-    this.viewport.addEventListener('touchmove', this.boundHandlers.touchmove, { passive: false });
-    this.viewport.addEventListener('touchend', this.boundHandlers.touchend);
+    viewport.addEventListener('mousedown', this.boundHandlers.mousedown);
+    viewport.addEventListener('mousemove', this.boundHandlers.mousemove);
+    viewport.addEventListener('mouseup', this.boundHandlers.mouseup);
+    viewport.addEventListener('mouseleave', this.boundHandlers.mouseleave);
+    viewport.addEventListener('touchstart', this.boundHandlers.touchstart, { passive: false });
+    viewport.addEventListener('touchmove', this.boundHandlers.touchmove, { passive: false });
+    viewport.addEventListener('touchend', this.boundHandlers.touchend);
+    
+    // Store viewport reference for later use
+    this.viewport = viewport;
 
     var btnCenter = document.getElementById('btnCenter');
     var btnTop = document.getElementById('btnTop');
     if (btnCenter) btnCenter.addEventListener('click', function() { self.centerOnCurrentModule(); });
     if (btnTop) btnTop.addEventListener('click', function() { self.scrollToTop(); });
-
-    var categoryFilter = document.getElementById('categoryFilter');
-    if (categoryFilter) {
-      categoryFilter.addEventListener('change', function(e) {
-        self.currentCategory = e.target.value;
-        self.currentCycleId = null;
-        self.translateX = 0;
-        self.translateY = 0;
-        self.hasUserInteracted = false;
-        self.render();
-      });
-    }
-
-    var cycleFilter = document.getElementById('cycleFilter');
-    if (cycleFilter) {
-      cycleFilter.addEventListener('change', function(e) {
-        self.currentCycleId = e.target.value || null;
-        self.setStoredCycleId(self.currentCategory, self.currentCycleId);
-        self.translateX = 0;
-        self.translateY = 0;
-        self.hasUserInteracted = false;
-        self.render();
-      });
-    }
 
     // Add window resize listener
     window.addEventListener('resize', this.boundHandlers.resize);
@@ -1473,6 +1484,17 @@ class AdventureMapV4 {
     
     if (this.boundHandlers && this.boundHandlers.resize) {
       window.removeEventListener('resize', this.boundHandlers.resize);
+    }
+
+    // Remove dropdown event listeners
+    var categoryFilter = document.getElementById('categoryFilter');
+    if (categoryFilter && this._categoryChangeHandler) {
+      categoryFilter.removeEventListener('change', this._categoryChangeHandler);
+    }
+
+    var cycleFilter = document.getElementById('cycleFilter');
+    if (cycleFilter && this._cycleChangeHandler) {
+      cycleFilter.removeEventListener('change', this._cycleChangeHandler);
     }
   }
 
