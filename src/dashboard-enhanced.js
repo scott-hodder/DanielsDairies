@@ -1137,9 +1137,8 @@ class AdventureMapV4 {
       var label = cycle.name ? cycleNumber + ': ' + cycle.name : cycleNumber;
       var selected = currentCycle && String(cycle.id) === String(currentCycle.id) ? ' selected' : '';
       var isCompletedCycle = self.isCycleCompletedWithWeekCheck(self.currentCategory, cycle.id);
-      var disableOption = isCompletedCycle && !(currentCycle && String(cycle.id) === String(currentCycle.id));
-      var lockText = isCompletedCycle ? ' ✅ Completed' : '';
-      return '<option value="' + cycle.id + '"' + selected + (disableOption ? ' disabled' : '') + '>' + label + lockText + '</option>';
+      var completedText = isCompletedCycle ? ' ✅ Completed (review)' : '';
+      return '<option value="' + cycle.id + '"' + selected + '>' + label + completedText + '</option>';
     }).join('');
     var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
     var congratsSkillOptions = eligibleSkillCycleOptions.map(function(option) {
