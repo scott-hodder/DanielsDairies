@@ -450,6 +450,12 @@ class AdventureMapV4 {
     css.push('@keyframes characterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }');
     css.push('.map-progress { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); border: 1px solid rgba(64,88,120,0.1); font-family: "Fredoka", sans-serif; z-index: 50; }');
     css.push('.cycle-complete-banner { position: absolute; top: 60px; left: 12px; background: linear-gradient(90deg, #fef9c3, #fde68a); color: #7c5c00; padding: 8px 14px; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; box-shadow: 0 2px 10px rgba(124, 92, 0, 0.18); border: 1px solid rgba(124, 92, 0, 0.2); z-index: 50; }');
+    css.push('.cycle-next-prompt { position: absolute; top: 104px; left: 12px; right: 12px; background: rgba(255, 255, 255, 0.94); border: 2px solid rgba(245, 158, 11, 0.25); border-radius: 16px; padding: 12px; z-index: 50; box-shadow: 0 8px 24px rgba(124, 92, 0, 0.16); }');
+    css.push('.cycle-next-title { font-family: "Fredoka", sans-serif; color: #7c5c00; font-size: 16px; font-weight: 700; margin-bottom: 4px; }');
+    css.push('.cycle-next-subtitle { font-size: 12px; color: #8f6a00; margin-bottom: 10px; }');
+    css.push('.cycle-next-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }');
+    css.push('.map-btn-primary { width: auto; height: auto; border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }');
+    css.push('.cycle-next-empty { font-family: "Fredoka", sans-serif; color: #7c5c00; font-size: 13px; }');
     css.push('.progress-icon { font-size: 20px; }');
     css.push('.progress-text { font-size: 14px; font-weight: 600; color: #405878; }');
     css.push('.progress-bar { width: 80px; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }');
@@ -519,7 +525,7 @@ class AdventureMapV4 {
     // Cracked ground effect for start zone
     css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
     
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } }');
+    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-next-prompt { top: 96px; } .cycle-next-controls { flex-direction: column; align-items: stretch; } .map-btn-primary { width: 100%; } }');
     
     var styles = document.createElement('style');
     styles.id = 'adventure-map-v4-styles';
@@ -786,8 +792,8 @@ class AdventureMapV4 {
     }
   }
 
-  getAvailableCyclesForCategory() {
-    var category = this.currentCategory;
+  getAvailableCyclesForCategory(categoryOverride) {
+    var category = categoryOverride || this.currentCategory;
     var cycles = [];
     if (cyclesFromDB && cyclesFromDB.length > 0 && superSkillsFromDB && superSkillsFromDB.length > 0) {
       var skill = superSkillsFromDB.find(function(s) { return s.slug === category; });
@@ -826,19 +832,74 @@ class AdventureMapV4 {
       return;
     }
 
+    var self = this;
+    var selectableCycles = availableCycles.filter(function(cycle) {
+      return !self.isCycleCompletedWithWeekCheck(self.currentCategory, cycle.id);
+    });
+    var cyclePool = selectableCycles.length > 0 ? selectableCycles : availableCycles;
+
     var stored = this.getStoredCycleId(this.currentCategory);
-    var storedMatch = stored ? availableCycles.find(function(cycle) { return String(cycle.id) === String(stored); }) : null;
+    var storedMatch = stored ? cyclePool.find(function(cycle) { return String(cycle.id) === String(stored); }) : null;
     if (storedMatch) {
       this.currentCycleId = storedMatch.id;
       return;
     }
 
-    var cycleOne = availableCycles.find(function(cycle) { return Number(cycle.cycle_number) === 1; });
-    this.currentCycleId = cycleOne ? cycleOne.id : availableCycles[0].id;
+    var cycleOne = cyclePool.find(function(cycle) { return Number(cycle.cycle_number) === 1; });
+    this.currentCycleId = cycleOne ? cycleOne.id : cyclePool[0].id;
   }
 
   isCycleComplete(completedCount, totalCount) {
     return completedCount >= this.cycleModuleTarget && totalCount >= this.cycleModuleTarget;
+  }
+
+  isModuleComplete(module) {
+    return !!(module && (module.completed || module.status === 'completed'));
+  }
+
+  isCycleCompletedWithWeekCheck(category, cycleId) {
+    if (!category || !cycleId) return false;
+    var cycleModules = this.allModules.filter(function(module) {
+      var categoryMatch = module.superSkillSlug === category || module.category === category;
+      return categoryMatch && String(module.cycleId) === String(cycleId);
+    });
+
+    if (!cycleModules.length) return false;
+
+    var week12Modules = cycleModules.filter(function(module) {
+      return Number(module.pathwayOrder) === 12;
+    });
+    var previousWeeks = cycleModules.filter(function(module) {
+      var week = Number(module.pathwayOrder);
+      return week > 0 && week < 12;
+    });
+
+    if (week12Modules.length > 0 && previousWeeks.length > 0) {
+      var week12Completed = week12Modules.every(function(module) { return this.isModuleComplete(module); }.bind(this));
+      var previousCompleted = previousWeeks.every(function(module) { return this.isModuleComplete(module); }.bind(this));
+      return week12Completed && previousCompleted;
+    }
+
+    var completedCount = cycleModules.filter(function(module) { return this.isModuleComplete(module); }.bind(this)).length;
+    return this.isCycleComplete(completedCount, cycleModules.length);
+  }
+
+  getEligibleSkillCycleOptions() {
+    var self = this;
+    var categories = this.getAvailableCategories();
+    return categories.map(function(category) {
+      var theme = CATEGORY_THEMES[category] || CATEGORY_THEMES.all;
+      var cycles = self.getAvailableCyclesForCategory(category).filter(function(cycle) {
+        return !self.isCycleCompletedWithWeekCheck(category, cycle.id);
+      });
+      return {
+        category: category,
+        theme: theme,
+        cycles: cycles
+      };
+    }).filter(function(entry) {
+      return entry.cycles.length > 0;
+    });
   }
 
   maybeCelebrateCycleCompletion() {
@@ -903,7 +964,9 @@ class AdventureMapV4 {
     var currentCycle = availableCycles.find(function(cycle) { return String(cycle.id) === String(this.currentCycleId); }.bind(this)) || null;
     var numModules = this.modules.length;
     var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    var cycleComplete = this.isCycleComplete(completedCount, numModules);
+    var cycleComplete = !!(currentCycle && this.isCycleCompletedWithWeekCheck(this.currentCategory, currentCycle.id));
+    var eligibleSkillCycleOptions = this.getEligibleSkillCycleOptions();
+    var hasNextCycleOptions = eligibleSkillCycleOptions.length > 0;
     var canvasHeight = Math.max(this.config.minCanvasHeight, this.config.topPadding + (numModules * this.config.nodeSpacingY) + this.config.bottomPadding);
 
     var self = this;
@@ -917,9 +980,15 @@ class AdventureMapV4 {
       var cycleNumber = cycle.cycle_number ? 'Cycle ' + cycle.cycle_number : 'Cycle';
       var label = cycle.name ? cycleNumber + ': ' + cycle.name : cycleNumber;
       var selected = currentCycle && String(cycle.id) === String(currentCycle.id) ? ' selected' : '';
-      return '<option value="' + cycle.id + '"' + selected + '>' + label + '</option>';
+      var isCompletedCycle = self.isCycleCompletedWithWeekCheck(self.currentCategory, cycle.id);
+      var disableOption = isCompletedCycle && !(currentCycle && String(cycle.id) === String(currentCycle.id));
+      var lockText = isCompletedCycle ? ' ✅ Completed' : '';
+      return '<option value="' + cycle.id + '"' + selected + (disableOption ? ' disabled' : '') + '>' + label + lockText + '</option>';
     }).join('');
     var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
+    var congratsSkillOptions = eligibleSkillCycleOptions.map(function(option) {
+      return '<option value="' + option.category + '"' + (option.category === self.currentCategory ? ' selected' : '') + '>' + option.theme.emoji + ' ' + option.theme.name + '</option>';
+    }).join('');
 
     var html = '<div class="adventure-header">' +
       '<h2 class="adventure-title" style="color: ' + theme.color + '">' + theme.emoji + ' ' + theme.name + '</h2>' +
@@ -955,7 +1024,18 @@ class AdventureMapV4 {
         '<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%; background: linear-gradient(90deg, ' + theme.color + ', ' + theme.color + '99)"></div></div>' +
         '</div>' +
         '<div class="cycle-complete-banner" id="cycleCompleteBanner"' + (cycleComplete ? '' : ' style="display:none"') + '>' +
-        '🎉 Cycle complete! You finished all ' + this.cycleModuleTarget + ' modules in this cycle.' +
+        '🎉 Cycle complete! You finished Week 12 and the full cycle. Pick your next adventure below.' +
+        '</div>' +
+        '<div class="cycle-next-prompt" id="cycleNextPrompt"' + (cycleComplete ? '' : ' style="display:none"') + '>' +
+        '<div class="cycle-next-title">Great work! Choose a new cycle</div>' +
+        '<div class="cycle-next-subtitle">Select a super skill and cycle to continue. Completed cycles are locked.</div>' +
+        (hasNextCycleOptions ?
+          '<div class="cycle-next-controls">' +
+          '<select class="category-filter-select" id="nextSkillFilter">' + congratsSkillOptions + '</select>' +
+          '<select class="category-filter-select" id="nextCycleFilter"></select>' +
+          '<button class="map-btn map-btn-primary" id="goToNextCycle" type="button">Go to cycle</button>' +
+          '</div>' :
+          '<div class="cycle-next-empty">You have completed all available cycles. Amazing effort! 🎉</div>') +
         '</div>' +
         '<div class="scroll-hint" id="scrollHint"><span class="scroll-hint-icon">👆</span><span>Drag to explore the map</span></div>' +
         '<div class="map-controls">' +
@@ -1383,7 +1463,9 @@ class AdventureMapV4 {
     var progressText = document.getElementById('progressText');
     var progressFill = document.getElementById('progressFill');
     var cycleBanner = document.getElementById('cycleCompleteBanner');
+    var cycleNextPrompt = document.getElementById('cycleNextPrompt');
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
+    var cycleComplete = !!(this.currentCycleId && this.isCycleCompletedWithWeekCheck(this.currentCategory, this.currentCycleId));
 
     if (progressText) progressText.textContent = completed + '/' + total + ' completed';
     if (progressFill) {
@@ -1393,12 +1475,47 @@ class AdventureMapV4 {
     }
 
     if (cycleBanner) {
-      var cycleComplete = this.isCycleComplete(completed, total);
       cycleBanner.style.display = cycleComplete ? 'flex' : 'none';
       if (cycleComplete) {
         this.maybeCelebrateCycleCompletion();
       }
     }
+
+    if (cycleNextPrompt) {
+      cycleNextPrompt.style.display = cycleComplete ? 'block' : 'none';
+      if (cycleComplete) {
+        this.renderNextCycleOptions();
+      }
+    }
+  }
+
+  renderNextCycleOptions() {
+    var skillSelect = document.getElementById('nextSkillFilter');
+    var cycleSelect = document.getElementById('nextCycleFilter');
+    if (!skillSelect || !cycleSelect) return;
+
+    var eligibleOptions = this.getEligibleSkillCycleOptions();
+    if (!eligibleOptions.length) {
+      cycleSelect.innerHTML = '<option value="">No new cycles</option>';
+      cycleSelect.disabled = true;
+      return;
+    }
+
+    var selectedSkill = skillSelect.value;
+    if (!selectedSkill || !eligibleOptions.find(function(option) { return option.category === selectedSkill; })) {
+      selectedSkill = eligibleOptions[0].category;
+      skillSelect.value = selectedSkill;
+    }
+
+    var chosen = eligibleOptions.find(function(option) { return option.category === selectedSkill; });
+    var cycleOptionsHtml = chosen.cycles.map(function(cycle) {
+      var cycleNumber = cycle.cycle_number ? 'Cycle ' + cycle.cycle_number : 'Cycle';
+      var label = cycle.name ? cycleNumber + ': ' + cycle.name : cycleNumber;
+      return '<option value="' + cycle.id + '">' + label + '</option>';
+    }).join('');
+
+    cycleSelect.innerHTML = cycleOptionsHtml;
+    cycleSelect.disabled = chosen.cycles.length === 0;
   }
 
   setupEventListeners() {
@@ -1431,6 +1548,32 @@ class AdventureMapV4 {
         self.render();
       };
       cycleFilter.addEventListener('change', this._cycleChangeHandler);
+    }
+
+    var nextSkillFilter = document.getElementById('nextSkillFilter');
+    if (nextSkillFilter) {
+      this._nextSkillChangeHandler = function() {
+        self.renderNextCycleOptions();
+      };
+      nextSkillFilter.addEventListener('change', this._nextSkillChangeHandler);
+      this.renderNextCycleOptions();
+    }
+
+    var goToNextCycle = document.getElementById('goToNextCycle');
+    if (goToNextCycle) {
+      this._goToNextCycleHandler = function() {
+        var skillSelect = document.getElementById('nextSkillFilter');
+        var cycleSelect = document.getElementById('nextCycleFilter');
+        if (!skillSelect || !cycleSelect || !cycleSelect.value) return;
+        self.currentCategory = skillSelect.value;
+        self.currentCycleId = cycleSelect.value;
+        self.setStoredCycleId(self.currentCategory, self.currentCycleId);
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        self.render();
+      };
+      goToNextCycle.addEventListener('click', this._goToNextCycleHandler);
     }
 
     // Viewport-dependent listeners (drag, scroll, etc.)
@@ -1495,6 +1638,16 @@ class AdventureMapV4 {
     var cycleFilter = document.getElementById('cycleFilter');
     if (cycleFilter && this._cycleChangeHandler) {
       cycleFilter.removeEventListener('change', this._cycleChangeHandler);
+    }
+
+    var nextSkillFilter = document.getElementById('nextSkillFilter');
+    if (nextSkillFilter && this._nextSkillChangeHandler) {
+      nextSkillFilter.removeEventListener('change', this._nextSkillChangeHandler);
+    }
+
+    var goToNextCycle = document.getElementById('goToNextCycle');
+    if (goToNextCycle && this._goToNextCycleHandler) {
+      goToNextCycle.removeEventListener('click', this._goToNextCycleHandler);
     }
   }
 
