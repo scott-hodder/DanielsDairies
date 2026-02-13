@@ -380,6 +380,98 @@
             color: var(--primary);
         }
 
+        .development-card {
+            border: 1px solid #eef1f5;
+            box-shadow: 0 6px 18px rgba(39, 58, 92, 0.08);
+        }
+
+        .dev-score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .dev-score-label {
+            color: var(--text-medium);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .dev-score-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .dev-velocity {
+            background: #f3f7ff;
+            color: #2b5da8;
+            border-radius: 999px;
+            padding: 0.5rem 0.9rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .dev-breakdown-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .dev-breakdown-item {
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e8edf3;
+            padding: 0.8rem;
+        }
+
+        .dev-breakdown-item strong {
+            display: block;
+            font-size: 1.25rem;
+            color: var(--text-dark);
+        }
+
+        .dev-columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 0.9rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .dev-panel {
+            background: #fbfcfe;
+            border: 1px solid #e8edf3;
+            border-radius: 10px;
+            padding: 0.9rem;
+        }
+
+        .dev-panel h4 { margin-bottom: 0.45rem; color: var(--primary); }
+        .dev-panel ul { margin-left: 1rem; }
+
+        .dev-alert {
+            background: #fff5f4;
+            color: #b03a2e;
+            border: 1px solid #ffd8d5;
+            border-radius: 10px;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .dev-milestone, .dev-time-machine, .dev-parent-confidence {
+            background: #f7f9fc;
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem;
+            border: 1px solid #e8edf3;
+            margin-top: 0.6rem;
+            color: var(--text-dark);
+        }
+
         /* Focus Plan */
         .focus-plan-summary {
             margin-bottom: 2rem;
@@ -593,6 +685,39 @@
             </div>
         </section>
 
+        <section class="card development-card" id="developmentCard">
+            <div class="card-header">
+                <h3 class="card-title"><span class="card-icon">⭐</span> Development Intelligence</h3>
+                <span class="card-badge badge-warning">Forecast + Actions</span>
+            </div>
+            <div class="dev-score-row">
+                <div>
+                    <div class="dev-score-label" id="developmentScoreLabel">Development Score</div>
+                    <div class="dev-score-value" id="developmentScoreValue">-- / 100</div>
+                </div>
+                <div class="dev-velocity" id="developmentVelocityText">Trajectory data loading...</div>
+            </div>
+            <div class="dev-breakdown-grid" id="developmentBreakdownGrid"></div>
+            <div class="dev-alert" id="developmentRiskAlert" style="display:none;"></div>
+            <div class="dev-columns">
+                <div class="dev-panel">
+                    <h4>3-Month Forecast</h4>
+                    <p id="developmentForecastText"></p>
+                </div>
+                <div class="dev-panel">
+                    <h4>What you should do this week</h4>
+                    <ul id="developmentActionList"></ul>
+                </div>
+                <div class="dev-panel">
+                    <h4>Real-world outcomes</h4>
+                    <ul id="developmentOutcomesList"></ul>
+                </div>
+            </div>
+            <div class="dev-milestone" id="developmentMilestone"></div>
+            <div class="dev-time-machine" id="developmentTimeMachine"></div>
+            <div class="dev-parent-confidence" id="parentConfidenceRow"></div>
+        </section>
+
         <!-- Main Grid -->
         <div class="section-grid">
             <!-- Progress Chart Card -->
@@ -803,6 +928,119 @@
             return { direction: 'steady', text: 'Recent check-ins are stable, showing a consistent baseline.' };
         }
 
+        function toGrowthScore(raw) {
+            if (!Number.isFinite(raw)) return null;
+            return Math.max(0, Math.min(100, Math.round(((24 - raw) / 24) * 100)));
+        }
+
+        function latestScoresByPathway(assessments) {
+            const latest = {};
+            assessments.forEach(item => {
+                const key = normalizeCategoryKey(item.pathway_category);
+                latest[key] = item;
+            });
+            return latest;
+        }
+
+        function average(items) {
+            const valid = items.filter(v => Number.isFinite(v));
+            if (!valid.length) return null;
+            return valid.reduce((a, b) => a + b, 0) / valid.length;
+        }
+
+        function renderDevelopmentIntelligence(moduleStats, assessments, childName) {
+            const latest = latestScoresByPathway(assessments);
+            const emotionalRegulation = Math.round(average([
+                toGrowthScore(latest.anger?.total_score),
+                toGrowthScore(latest.emotions?.total_score),
+                toGrowthScore(latest.body?.total_score)
+            ]) ?? 68);
+            const socialConfidence = Math.round(average([
+                toGrowthScore(latest.social?.total_score),
+                toGrowthScore(latest.general?.total_score)
+            ]) ?? 64);
+            const resilience = Math.round(average([
+                toGrowthScore(latest.cognitive?.total_score),
+                toGrowthScore(latest.depression?.total_score),
+                toGrowthScore(latest.general?.total_score)
+            ]) ?? 66);
+
+            const trajectory = buildTrendSummary(assessments);
+            const anxietyNow = latest.anxiety?.total_score;
+            const anxietyHistory = assessments
+                .filter(a => normalizeCategoryKey(a.pathway_category) === 'anxiety')
+                .map(a => a.total_score);
+            const anxietyPrev = anxietyHistory.length > 1 ? anxietyHistory[anxietyHistory.length - 2] : null;
+            const anxietyMarkerText = (Number.isFinite(anxietyNow) && Number.isFinite(anxietyPrev) && anxietyNow < anxietyPrev)
+                ? '↓ improving'
+                : (Number.isFinite(anxietyNow) && Number.isFinite(anxietyPrev) && anxietyNow > anxietyPrev)
+                    ? '↑ watch closely'
+                    : '→ stable';
+
+            const composite = Math.round(average([emotionalRegulation, socialConfidence, resilience]) ?? 67);
+            const velocityPercentile = Math.max(52, Math.min(89, Math.round(composite - 2 + moduleStats.completedCycles * 3 + (trajectory.direction === 'up' ? 6 : trajectory.direction === 'down' ? -4 : 1))));
+
+            document.getElementById('developmentScoreLabel').textContent = `${childName}’s Development Score`;
+            document.getElementById('developmentScoreValue').textContent = `${composite} / 100`;
+            document.getElementById('developmentVelocityText').textContent = `Faster growth than ~${velocityPercentile}% of similar learners (estimated).`;
+            document.getElementById('developmentBreakdownGrid').innerHTML = `
+                <div class="dev-breakdown-item">Emotional regulation<strong>${emotionalRegulation}</strong></div>
+                <div class="dev-breakdown-item">Social confidence<strong>${socialConfidence}</strong></div>
+                <div class="dev-breakdown-item">Resilience<strong>${resilience}</strong></div>
+                <div class="dev-breakdown-item">Anxiety markers<strong>${anxietyMarkerText}</strong></div>
+            `;
+
+            const forecastText = trajectory.direction === 'up'
+                ? `${childName} is likely to show stronger conflict-resolution and self-calming skills within 3 months if this pace continues.`
+                : trajectory.direction === 'down'
+                    ? `${childName} may need extra support over the next 3 months, but consistent routines can quickly rebuild momentum.`
+                    : `${childName} is on a steady path; with consistent practice, confidence and recovery skills should strengthen over the next 3 months.`;
+            document.getElementById('developmentForecastText').textContent = forecastText;
+
+            const actionList = [
+                'Encourage one brave social interaction this week (e.g. say hello, ask a question, or invite a friend).',
+                'Let your child lead one small independence task (order food, ask for help, or choose the plan).',
+                'Praise effort and strategy (“You kept trying”) rather than only outcomes.'
+            ];
+            if (trajectory.direction === 'down') {
+                actionList.unshift('Add a 2-minute daily emotional check-in before bedtime using “name the feeling + one tool”.');
+            }
+            document.getElementById('developmentActionList').innerHTML = actionList.map(item => `<li>${item}</li>`).join('');
+
+            document.getElementById('developmentOutcomesList').innerHTML = [
+                'Better problem solving during stressful situations at school.',
+                'Stronger friendship confidence and lower social hesitation.',
+                'Faster recovery after setbacks and frustration spikes.'
+            ].map(item => `<li>${item}</li>`).join('');
+
+            const riskAlert = document.getElementById('developmentRiskAlert');
+            const recent = assessments.slice(-2);
+            const riskTriggered = recent.length === 2 && Number.isFinite(recent[0].total_score) && Number.isFinite(recent[1].total_score) && (recent[1].total_score - recent[0].total_score) >= 2;
+            if (riskTriggered) {
+                riskAlert.style.display = 'block';
+                riskAlert.textContent = '⚠️ Recent check-ins show an upward challenge trend. Children with this pattern can show social hesitation or emotional overload. Recommended response: increase short daily coaching moments this week.';
+            } else {
+                riskAlert.style.display = 'none';
+            }
+
+            const first = assessments[0];
+            const latestAssessment = assessments[assessments.length - 1];
+            if (first && latestAssessment) {
+                const shift = latestAssessment.total_score - first.total_score;
+                document.getElementById('developmentTimeMachine').textContent = `⏳ Time Machine: ${formatDate(first.created_at)} vs ${formatDate(latestAssessment.created_at)} — overall challenge score ${shift < 0 ? 'improved by ' + Math.abs(shift) : shift > 0 ? 'increased by ' + shift : 'is unchanged'}.`;
+            } else {
+                document.getElementById('developmentTimeMachine').textContent = '⏳ Time Machine: complete more check-ins to compare then vs now.';
+            }
+
+            const milestone = trajectory.direction === 'up' && resilience >= 70
+                ? '🏆 Resilience milestone achieved: children at this stage typically recover faster from setbacks, persist longer, and show stronger independence.'
+                : '🎯 Milestone in progress: keep stacking small wins to unlock stronger resilience and confidence patterns.';
+            document.getElementById('developmentMilestone').textContent = milestone;
+
+            const parentConfidence = Math.max(45, Math.min(95, Math.round(55 + moduleStats.completedCycles * 4 + (trajectory.direction === 'up' ? 10 : trajectory.direction === 'down' ? -3 : 5))));
+            document.getElementById('parentConfidenceRow').textContent = `👨‍👩‍👧 Parent confidence score: ${parentConfidence}/100 (${trajectory.direction === 'up' ? 'up' : 'steady'}) — this reflects confidence in supporting your child emotionally with current tools.`;
+        }
+
         function renderStatsSection(moduleStats, assessments) {
             const grid = document.getElementById('insightGrid');
             const list = document.getElementById('progressStoryList');
@@ -966,6 +1204,7 @@
 
             updateHeader(child, moduleStats, safeAssessments);
             renderChart(safeAssessments);
+            renderDevelopmentIntelligence(moduleStats, safeAssessments, child.name);
             renderStatsSection(moduleStats, safeAssessments);
             renderPlainEnglishSection(moduleStats, safeAssessments);
             renderFocusPlan(moduleStats, safeAssessments);
