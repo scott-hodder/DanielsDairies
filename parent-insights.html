@@ -641,153 +641,247 @@
         </div>
     </main>
 
-    <script>
-        // Mock data for demonstration - replace with real data from your system
-        let currentChild = {
-            id: 'child_1',
-            name: 'Jasmine',
-            modulesCompleted: 12,
-            starsEarned: 176,
-            checkInsDone: 13
+    <script type="module">
+        import { supabase } from './src/supabaseClient.js';
+
+        const PATHWAY_META = {
+            anger: { label: 'Anger Management', color: '#E76F51', icon: '🔥' },
+            anxiety: { label: 'Anxiety Skills', color: '#AB47BC', icon: '🌧️' },
+            depression: { label: 'Mood Resilience', color: '#002657', icon: '🌙' },
+            emotions: { label: 'Emotional Awareness', color: '#5FAD56', icon: '💭' },
+            social: { label: 'Social Skills', color: '#5B9BD5', icon: '👫' },
+            body: { label: 'Body Awareness', color: '#F4A73B', icon: '💪' },
+            cognitive: { label: 'Thinking Skills', color: '#8B5CF6', icon: '🧠' },
+            general: { label: 'General Wellbeing', color: '#4C6C96', icon: '📚' }
         };
 
-        // Initialize page
-        function init() {
-            loadChildData();
-            createProgressChart();
+        let progressChart = null;
+
+        function getChildIdFromContext() {
+            const params = new URLSearchParams(window.location.search);
+            const fromUrl = params.get('childId');
+            if (fromUrl) return fromUrl;
+
+            try {
+                const state = JSON.parse(localStorage.getItem('dashboard_app_state') || '{}');
+                if (state?.selectedChild?.id) return state.selectedChild.id;
+            } catch (error) {
+                console.warn('Could not read dashboard state from localStorage:', error);
+            }
+
+            return null;
         }
 
-        function loadChildData() {
-            // Update hero section
-            document.getElementById('heroTitle').textContent = `${currentChild.name}'s Progress 🎉`;
-            document.getElementById('heroGreeting').textContent = `${currentChild.name}'s emotional growth journey`;
-            
-            // Update hero stats
-            const heroStats = document.getElementById('heroStats');
-            heroStats.innerHTML = `
+        function formatDate(dateValue) {
+            if (!dateValue) return 'Unknown';
+            return new Date(dateValue).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+        }
+
+        function updateHeader(child, moduleStats, assessments) {
+            document.getElementById('heroTitle').textContent = `${child.name}'s Progress 🎉`;
+            document.getElementById('heroGreeting').textContent = `${child.name}'s emotional growth journey`;
+
+            const heroSubtitle = document.getElementById('heroSubtitle');
+            const lastCheckin = assessments.length ? assessments[assessments.length - 1].created_at : null;
+            heroSubtitle.textContent = lastCheckin
+                ? `Last check-in: ${formatDate(lastCheckin)} • Data refreshes live from completed modules + check-ins.`
+                : `${child.name} is building real emotional skills through consistent practice.`;
+
+            document.getElementById('heroStats').innerHTML = `
                 <div class="hero-stat">
-                    <span class="hero-stat-value">${currentChild.modulesCompleted}</span>
+                    <span class="hero-stat-value">${moduleStats.completedModules}</span>
                     <span class="hero-stat-label">Modules Completed</span>
                 </div>
                 <div class="hero-stat">
-                    <span class="hero-stat-value">${currentChild.starsEarned}</span>
+                    <span class="hero-stat-value">${moduleStats.totalStars}</span>
                     <span class="hero-stat-label">Stars Earned</span>
                 </div>
                 <div class="hero-stat">
-                    <span class="hero-stat-value">${currentChild.checkInsDone}</span>
+                    <span class="hero-stat-value">${assessments.length}</span>
                     <span class="hero-stat-label">Check-ins Done</span>
                 </div>
             `;
 
-            // Update child selector
-            const childTabs = document.getElementById('childTabs');
-            childTabs.innerHTML = `
-                <button class="child-tab active">
-                    👧 ${currentChild.name}
-                </button>
+            document.getElementById('childTabs').innerHTML = `
+                <button class="child-tab active">👧 ${child.name}</button>
             `;
         }
 
-        function createProgressChart() {
-            const ctx = document.getElementById('progressChart').getContext('2d');
-            
-            // Mock assessment data - replace with real data
-            const assessmentData = {
-                dates: ['Jan 18', 'Jan 22', 'Jan 29', 'Feb 2'],
-                angerJourney: [19, null, 17, 15],
-                anxietyJourney: [null, null, null, null],
-                socialSkills: [14, null, 17, null],
-                emotionalAwareness: [null, 12, 14, 16],
-                thinkingSkills: [null, null, 15, null]
-            };
+        function buildModuleStats(childModules, allModules) {
+            const completed = childModules.filter(cm => cm.is_completed);
+            const moduleById = new Map(allModules.map(m => [m.id, m]));
+            const completedModules = completed.map(cm => ({
+                ...cm,
+                module: moduleById.get(cm.module_id)
+            }));
 
-            new Chart(ctx, {
+            const categoryCounts = {};
+            const recentTitles = [];
+            completedModules
+                .sort((a, b) => new Date(b.completed_at || b.updated_at || b.created_at) - new Date(a.completed_at || a.updated_at || a.created_at))
+                .forEach((cm, index) => {
+                    const category = cm.module?.category || 'general';
+                    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                    if (index < 5) {
+                        recentTitles.push(cm.module?.title || cm.module?.name || 'Module');
+                    }
+                });
+
+            const strongestCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+            const completedModulesCount = completed.length;
+            const completedCycles = Math.floor(completedModulesCount / 3);
+            const totalStars = childModules.reduce((sum, cm) => sum + (cm.stars_earned || 0), 0);
+
+            return {
+                completedModules: completedModulesCount,
+                completedCycles,
+                totalStars,
+                categoryCounts,
+                strongestCategory,
+                recentTitles,
+                inProgressCount: childModules.filter(cm => !cm.is_completed && (cm.stars_earned || 0) > 0).length
+            };
+        }
+
+        function renderProgressStory(moduleStats, assessments) {
+            const list = document.getElementById('progressStoryList');
+            const footer = document.getElementById('progressStoryFooter');
+
+            const categorySummary = Object.entries(moduleStats.categoryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([key, count]) => `${PATHWAY_META[key]?.label || key}: ${count}`)
+                .join(' • ');
+
+            const recentCheckins = assessments.slice(-3);
+            const checkinSummary = recentCheckins.length
+                ? recentCheckins.map(a => `${formatDate(a.created_at)} (${PATHWAY_META[a.pathway_category]?.label || a.pathway_category})`).join(', ')
+                : 'No check-ins yet';
+
+            list.innerHTML = `
+                <li>Completed <strong>${moduleStats.completedModules}</strong> modules across <strong>${moduleStats.completedCycles}</strong> learning cycles.</li>
+                <li>Top growth areas from completed modules: <strong>${categorySummary || 'General emotional skills'}</strong>.</li>
+                <li>Recent check-ins recorded: <strong>${checkinSummary}</strong>.</li>
+                <li>Latest lessons completed: <strong>${moduleStats.recentTitles.join(', ') || 'Start a module to unlock insights'}</strong>.</li>
+            `;
+
+            footer.textContent = moduleStats.strongestCategory
+                ? `💡 Home coaching idea: Ask how they used a ${PATHWAY_META[moduleStats.strongestCategory]?.label || moduleStats.strongestCategory} skill today.`
+                : '💡 Keep practicing: Try one calming tool together each evening this week.';
+        }
+
+        function renderFocusPlan(moduleStats, assessments) {
+            const focusPlan = document.getElementById('focusPlanContent');
+            const latestAssessment = assessments.length ? assessments[assessments.length - 1] : null;
+            const focusCategory = latestAssessment?.pathway_category || moduleStats.strongestCategory || 'general';
+            const focusMeta = PATHWAY_META[focusCategory] || PATHWAY_META.general;
+
+            const previous = assessments.length > 1 ? assessments[assessments.length - 2] : null;
+            const trendText = previous && latestAssessment
+                ? latestAssessment.total_score < previous.total_score
+                    ? 'Scores are improving compared with the previous check-in.'
+                    : latestAssessment.total_score > previous.total_score
+                        ? 'Scores increased since the previous check-in, so this is a good week for extra support and practice.'
+                        : 'Scores are steady compared with the previous check-in.'
+                : 'Complete more check-ins to unlock stronger trend insights.';
+
+            const chips = Object.entries(moduleStats.categoryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([key]) => `<span class="plan-chip skill-chip">${PATHWAY_META[key]?.label || key}</span>`)
+                .join('') || '<span class="plan-chip skill-chip">Emotional Skills</span>';
+
+            focusPlan.innerHTML = `
+                <div class="focus-plan-summary">
+                    <p><strong>What we're working on:</strong> Primary focus is <strong>${focusMeta.label}</strong> based on latest check-ins and completed modules.</p>
+                    <p><strong>Progress trend:</strong> ${trendText}</p>
+                    <p><strong>This week’s coaching goal:</strong> Complete one short home practice after each module (2-5 minutes) and log how your child responded.</p>
+                </div>
+                <div class="focus-plan-grid">
+                    <div class="focus-plan-block">
+                        <h4>Skills Being Built Most</h4>
+                        <div class="plan-chips">${chips}</div>
+                    </div>
+                    <div class="focus-plan-block">
+                        <h4>Module Momentum</h4>
+                        <div class="plan-chips">
+                            <span class="plan-chip emotion-chip">${moduleStats.completedModules} Completed</span>
+                            <span class="plan-chip emotion-chip">${moduleStats.inProgressCount} In Progress</span>
+                            <span class="plan-chip emotion-chip">${moduleStats.completedCycles} Cycles</span>
+                        </div>
+                    </div>
+                    <div class="focus-plan-block">
+                        <h4>Tools to Try at Home</h4>
+                        <div class="plan-chips">
+                            <span class="plan-chip tool-chip">Name the feeling + body signal</span>
+                            <span class="plan-chip tool-chip">3 deep breaths + reset</span>
+                            <span class="plan-chip tool-chip">One win reflection at bedtime</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="focus-plan-footer">
+                    <strong>What to say:</strong> <em>"I noticed how you kept trying. What helped most today, and what should we try next time?"</em>
+                </div>
+            `;
+        }
+
+        function renderChart(assessments) {
+            const chartArea = document.getElementById('progressChartArea');
+            const noData = document.getElementById('noAssessmentsMessage');
+
+            if (!assessments.length) {
+                chartArea.style.display = 'none';
+                noData.style.display = 'block';
+                return;
+            }
+
+            chartArea.style.display = 'block';
+            noData.style.display = 'none';
+
+            const sorted = assessments
+                .filter(a => a.created_at)
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            const labels = [...new Set(sorted.map(a => formatDate(a.created_at)))];
+            const pathways = [...new Set(sorted.map(a => a.pathway_category))];
+
+            const datasets = pathways.map((pathway) => {
+                const meta = PATHWAY_META[pathway] || PATHWAY_META.general;
+                const data = labels.map(label => {
+                    const rows = sorted.filter(a => a.pathway_category === pathway && formatDate(a.created_at) === label);
+                    if (!rows.length) return null;
+                    return rows[rows.length - 1].total_score;
+                });
+
+                return {
+                    label: meta.label,
+                    data,
+                    borderColor: meta.color,
+                    backgroundColor: `${meta.color}22`,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.3,
+                    spanGaps: true
+                };
+            });
+
+            if (progressChart) progressChart.destroy();
+            progressChart = new Chart(document.getElementById('progressChart').getContext('2d'), {
                 type: 'line',
-                data: {
-                    labels: assessmentData.dates,
-                    datasets: [
-                        {
-                            label: 'Anger Management',
-                            data: assessmentData.angerJourney,
-                            borderColor: '#E76F51',
-                            backgroundColor: 'rgba(231, 111, 81, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
-                            tension: 0.3,
-                            spanGaps: true
-                        },
-                        {
-                            label: 'Social Skills',
-                            data: assessmentData.socialSkills,
-                            borderColor: '#5B9BD5',
-                            backgroundColor: 'rgba(91, 155, 213, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
-                            tension: 0.3,
-                            spanGaps: true
-                        },
-                        {
-                            label: 'Emotional Awareness',
-                            data: assessmentData.emotionalAwareness,
-                            borderColor: '#5FAD56',
-                            backgroundColor: 'rgba(95, 173, 86, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
-                            tension: 0.3,
-                            spanGaps: true
-                        },
-                        {
-                            label: 'Thinking Skills',
-                            data: assessmentData.thinkingSkills,
-                            borderColor: '#8B5CF6',
-                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
-                            tension: 0.3,
-                            spanGaps: true
-                        }
-                    ]
-                },
+                data: { labels, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'bottom',
-                            labels: {
-                                padding: 15,
-                                font: {
-                                    size: 13,
-                                    weight: 600,
-                                    family: 'League Spartan'
-                                },
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
+                            position: 'bottom'
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: {
-                                size: 14,
-                                weight: 700
-                            },
-                            bodyFont: {
-                                size: 13
-                            },
                             callbacks: {
-                                label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    const value = context.parsed.y;
-                                    if (value !== null) {
-                                        return `${label}: ${value}/24`;
-                                    }
-                                    return label;
+                                label(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}/24`;
                                 }
                             }
                         }
@@ -796,46 +890,46 @@
                         y: {
                             beginAtZero: true,
                             max: 24,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            },
-                            ticks: {
-                                font: {
-                                    size: 12,
-                                    family: 'League Spartan'
-                                }
-                            },
                             title: {
                                 display: true,
-                                text: 'Skill Level (Lower = Better for Challenges)',
-                                font: {
-                                    size: 13,
-                                    weight: 600,
-                                    family: 'League Spartan'
-                                }
+                                text: 'Skill Level (Lower = Better for Challenges)'
                             }
                         },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                font: {
-                                    size: 12,
-                                    family: 'League Spartan'
-                                }
-                            }
-                        }
+                        x: { grid: { display: false } }
                     },
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    }
+                    interaction: { mode: 'index', intersect: false }
                 }
             });
         }
 
-        // Initialize on load
+        async function init() {
+            const childId = getChildIdFromContext();
+            if (!childId) {
+                console.warn('No child ID found for parent insights page');
+                return;
+            }
+
+            const [{ data: child, error: childError }, { data: childModules, error: modulesError }, { data: modules, error: allModulesError }, { data: assessments, error: assessmentsError }] = await Promise.all([
+                supabase.from('children').select('*').eq('id', childId).single(),
+                supabase.from('child_modules').select('*').eq('child_id', childId),
+                supabase.from('modules').select('*'),
+                supabase.from('pathway_assessments').select('*').eq('child_id', childId).order('created_at', { ascending: true })
+            ]);
+
+            if (childError || modulesError || allModulesError || assessmentsError) {
+                console.error('Parent insights load failed:', { childError, modulesError, allModulesError, assessmentsError });
+                return;
+            }
+
+            const moduleStats = buildModuleStats(childModules || [], modules || []);
+            const safeAssessments = assessments || [];
+
+            updateHeader(child, moduleStats, safeAssessments);
+            renderChart(safeAssessments);
+            renderProgressStory(moduleStats, safeAssessments);
+            renderFocusPlan(moduleStats, safeAssessments);
+        }
+
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
