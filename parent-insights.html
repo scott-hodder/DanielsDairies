@@ -345,6 +345,41 @@
             font-style: italic;
         }
 
+
+        .plain-english-story {
+            border-left-color: var(--success);
+            background: linear-gradient(135deg, #F6FBF6 0%, #EEF8EE 100%);
+        }
+
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .insight-tile {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.85rem;
+        }
+
+        .insight-tile-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text-medium);
+            margin-bottom: 0.35rem;
+            font-weight: 600;
+        }
+
+        .insight-tile-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
         /* Focus Plan */
         .focus-plan-summary {
             margin-bottom: 2rem;
@@ -581,17 +616,22 @@
                         <p class="empty-state-text">Your child will complete quick check-ins as they progress. These help us track real changes in how they handle emotions.</p>
                     </div>
                 </div>
-                <div class="progress-story" id="progressStory">
+                <div class="progress-story" id="progressStatsStory">
+                    <div class="progress-story-header">
+                        <h4>Progress Snapshot (Live Data)</h4>
+                        <span class="progress-story-badge">Data</span>
+                    </div>
+                    <div class="insight-grid" id="insightGrid"></div>
+                    <ul class="progress-story-list" id="progressStoryList"></ul>
+                </div>
+
+                <div class="progress-story plain-english-story" id="plainEnglishStory">
                     <div class="progress-story-header">
                         <h4>What this means in everyday life</h4>
                         <span class="progress-story-badge">Plain English</span>
                     </div>
-                    <ul class="progress-story-list" id="progressStoryList">
-                        <li>Getting better at recognizing when big feelings are starting, instead of being surprised by anger or tears.</li>
-                        <li>Bouncing back faster after frustrating moments. What used to take hours now takes 15-20 minutes.</li>
-                        <li>Using calming strategies more often, especially during homework time and before bed.</li>
-                    </ul>
-                    <p class="progress-story-footer" id="progressStoryFooter">💡 Keep practicing: Try one calming tool together each evening this week.</p>
+                    <ul class="progress-story-list" id="plainEnglishList"></ul>
+                    <p class="progress-story-footer" id="plainEnglishFooter"></p>
                 </div>
             </div>
 
@@ -655,7 +695,23 @@
             general: { label: 'General Wellbeing', color: '#4C6C96', icon: '📚' }
         };
 
+        const CATEGORY_ALIASES = {
+            'brain-builder': 'cognitive',
+            'thought-driver': 'cognitive',
+            'emotion-navigator': 'emotions',
+            'body-boss': 'body',
+            'connection-captain': 'social',
+            'calm-controller': 'anxiety',
+            'resilience-ranger': 'depression'
+        };
+
         let progressChart = null;
+
+        function normalizeCategoryKey(rawKey) {
+            if (!rawKey) return 'general';
+            const key = String(rawKey).toLowerCase().trim();
+            return CATEGORY_ALIASES[key] || (PATHWAY_META[key] ? key : 'general');
+        }
 
         function getChildIdFromContext() {
             const params = new URLSearchParams(window.location.search);
@@ -684,7 +740,7 @@
             const heroSubtitle = document.getElementById('heroSubtitle');
             const lastCheckin = assessments.length ? assessments[assessments.length - 1].created_at : null;
             heroSubtitle.textContent = lastCheckin
-                ? `Last check-in: ${formatDate(lastCheckin)} • Data refreshes live from completed modules + check-ins.`
+                ? `Last check-in: ${formatDate(lastCheckin)} • Live insights from check-ins, modules, and skill pathways.`
                 : `${child.name} is building real emotional skills through consistent practice.`;
 
             document.getElementById('heroStats').innerHTML = `
@@ -702,40 +758,32 @@
                 </div>
             `;
 
-            document.getElementById('childTabs').innerHTML = `
-                <button class="child-tab active">👧 ${child.name}</button>
-            `;
+            document.getElementById('childTabs').innerHTML = `<button class="child-tab active">👧 ${child.name}</button>`;
         }
 
         function buildModuleStats(childModules, allModules) {
             const completed = childModules.filter(cm => cm.is_completed);
             const moduleById = new Map(allModules.map(m => [m.id, m]));
-            const completedModules = completed.map(cm => ({
-                ...cm,
-                module: moduleById.get(cm.module_id)
-            }));
+            const completedModules = completed.map(cm => ({ ...cm, module: moduleById.get(cm.module_id) }));
 
             const categoryCounts = {};
             const recentTitles = [];
+
             completedModules
                 .sort((a, b) => new Date(b.completed_at || b.updated_at || b.created_at) - new Date(a.completed_at || a.updated_at || a.created_at))
                 .forEach((cm, index) => {
-                    const category = cm.module?.category || 'general';
+                    const categoryRaw = cm.module?.pathway_category || cm.module?.category || 'general';
+                    const category = normalizeCategoryKey(categoryRaw);
                     categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-                    if (index < 5) {
-                        recentTitles.push(cm.module?.title || cm.module?.name || 'Module');
-                    }
+                    if (index < 5) recentTitles.push(cm.module?.title || cm.module?.name || 'Module');
                 });
 
             const strongestCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-            const completedModulesCount = completed.length;
-            const completedCycles = Math.floor(completedModulesCount / 3);
-            const totalStars = childModules.reduce((sum, cm) => sum + (cm.stars_earned || 0), 0);
 
             return {
-                completedModules: completedModulesCount,
-                completedCycles,
-                totalStars,
+                completedModules: completed.length,
+                completedCycles: Math.floor(completed.length / 3),
+                totalStars: childModules.reduce((sum, cm) => sum + (cm.stars_earned || 0), 0),
                 categoryCounts,
                 strongestCategory,
                 recentTitles,
@@ -743,86 +791,69 @@
             };
         }
 
-        function renderProgressStory(moduleStats, assessments) {
-            const list = document.getElementById('progressStoryList');
-            const footer = document.getElementById('progressStoryFooter');
+        function buildTrendSummary(assessments) {
+            if (assessments.length < 2) return { direction: 'steady', text: 'We need more check-ins to identify a reliable trend.' };
+            const current = assessments[assessments.length - 1];
+            const previous = assessments[assessments.length - 2];
+            const improved = current.total_score < previous.total_score;
+            const declined = current.total_score > previous.total_score;
 
-            const categorySummary = Object.entries(moduleStats.categoryCounts)
+            if (improved) return { direction: 'up', text: 'Your child’s latest check-in improved compared with the previous one.' };
+            if (declined) return { direction: 'down', text: 'The latest check-in was tougher than the previous one, which is normal during growth.' };
+            return { direction: 'steady', text: 'Recent check-ins are stable, showing a consistent baseline.' };
+        }
+
+        function renderStatsSection(moduleStats, assessments) {
+            const grid = document.getElementById('insightGrid');
+            const list = document.getElementById('progressStoryList');
+
+            const trend = buildTrendSummary(assessments);
+            const topAreas = Object.entries(moduleStats.categoryCounts)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 3)
                 .map(([key, count]) => `${PATHWAY_META[key]?.label || key}: ${count}`)
                 .join(' • ');
 
-            const recentCheckins = assessments.slice(-3);
-            const checkinSummary = recentCheckins.length
-                ? recentCheckins.map(a => `${formatDate(a.created_at)} (${PATHWAY_META[a.pathway_category]?.label || a.pathway_category})`).join(', ')
-                : 'No check-ins yet';
+            const recentCheckins = assessments.slice(-3)
+                .map(a => `${formatDate(a.created_at)} (${PATHWAY_META[normalizeCategoryKey(a.pathway_category)]?.label || 'General Wellbeing'})`)
+                .join(', ');
+
+            grid.innerHTML = `
+                <div class="insight-tile"><div class="insight-tile-label">Learning Cycles</div><div class="insight-tile-value">${moduleStats.completedCycles}</div></div>
+                <div class="insight-tile"><div class="insight-tile-label">In Progress Now</div><div class="insight-tile-value">${moduleStats.inProgressCount}</div></div>
+                <div class="insight-tile"><div class="insight-tile-label">Top Skill Track</div><div class="insight-tile-value">${PATHWAY_META[moduleStats.strongestCategory]?.label || 'Building Foundations'}</div></div>
+                <div class="insight-tile"><div class="insight-tile-label">Trend Signal</div><div class="insight-tile-value">${trend.direction === 'up' ? 'Improving' : trend.direction === 'down' ? 'Needs support' : 'Steady'}</div></div>
+            `;
 
             list.innerHTML = `
-                <li>Completed <strong>${moduleStats.completedModules}</strong> modules across <strong>${moduleStats.completedCycles}</strong> learning cycles.</li>
-                <li>Top growth areas from completed modules: <strong>${categorySummary || 'General emotional skills'}</strong>.</li>
-                <li>Recent check-ins recorded: <strong>${checkinSummary}</strong>.</li>
-                <li>Latest lessons completed: <strong>${moduleStats.recentTitles.join(', ') || 'Start a module to unlock insights'}</strong>.</li>
+                <li><strong>Top growth areas:</strong> ${topAreas || 'General emotional skill-building'}.</li>
+                <li><strong>Recent check-ins:</strong> ${recentCheckins || 'No check-ins yet'}.</li>
+                <li><strong>Latest modules completed:</strong> ${moduleStats.recentTitles.join(', ') || 'Start a module to unlock more insight'}.</li>
+                <li><strong>Progress signal:</strong> ${trend.text}</li>
             `;
-
-            footer.textContent = moduleStats.strongestCategory
-                ? `💡 Home coaching idea: Ask how they used a ${PATHWAY_META[moduleStats.strongestCategory]?.label || moduleStats.strongestCategory} skill today.`
-                : '💡 Keep practicing: Try one calming tool together each evening this week.';
         }
 
-        function renderFocusPlan(moduleStats, assessments) {
-            const focusPlan = document.getElementById('focusPlanContent');
-            const latestAssessment = assessments.length ? assessments[assessments.length - 1] : null;
-            const focusCategory = latestAssessment?.pathway_category || moduleStats.strongestCategory || 'general';
-            const focusMeta = PATHWAY_META[focusCategory] || PATHWAY_META.general;
+        function renderPlainEnglishSection(moduleStats, assessments) {
+            const list = document.getElementById('plainEnglishList');
+            const footer = document.getElementById('plainEnglishFooter');
 
-            const previous = assessments.length > 1 ? assessments[assessments.length - 2] : null;
-            const trendText = previous && latestAssessment
-                ? latestAssessment.total_score < previous.total_score
-                    ? 'Scores are improving compared with the previous check-in.'
-                    : latestAssessment.total_score > previous.total_score
-                        ? 'Scores increased since the previous check-in, so this is a good week for extra support and practice.'
-                        : 'Scores are steady compared with the previous check-in.'
-                : 'Complete more check-ins to unlock stronger trend insights.';
+            const primarySkill = PATHWAY_META[moduleStats.strongestCategory]?.label || 'emotional regulation';
+            const trend = buildTrendSummary(assessments);
 
-            const chips = Object.entries(moduleStats.categoryCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([key]) => `<span class="plan-chip skill-chip">${PATHWAY_META[key]?.label || key}</span>`)
-                .join('') || '<span class="plan-chip skill-chip">Emotional Skills</span>';
+            const trendLine = trend.direction === 'up'
+                ? 'Your child is starting to use their tools more independently, especially after difficult moments.'
+                : trend.direction === 'down'
+                    ? 'Your child is having a harder stretch right now, which is common while learning new habits.'
+                    : 'Your child is showing a steady pattern, which means routines are starting to stick.';
 
-            focusPlan.innerHTML = `
-                <div class="focus-plan-summary">
-                    <p><strong>What we're working on:</strong> Primary focus is <strong>${focusMeta.label}</strong> based on latest check-ins and completed modules.</p>
-                    <p><strong>Progress trend:</strong> ${trendText}</p>
-                    <p><strong>This week’s coaching goal:</strong> Complete one short home practice after each module (2-5 minutes) and log how your child responded.</p>
-                </div>
-                <div class="focus-plan-grid">
-                    <div class="focus-plan-block">
-                        <h4>Skills Being Built Most</h4>
-                        <div class="plan-chips">${chips}</div>
-                    </div>
-                    <div class="focus-plan-block">
-                        <h4>Module Momentum</h4>
-                        <div class="plan-chips">
-                            <span class="plan-chip emotion-chip">${moduleStats.completedModules} Completed</span>
-                            <span class="plan-chip emotion-chip">${moduleStats.inProgressCount} In Progress</span>
-                            <span class="plan-chip emotion-chip">${moduleStats.completedCycles} Cycles</span>
-                        </div>
-                    </div>
-                    <div class="focus-plan-block">
-                        <h4>Tools to Try at Home</h4>
-                        <div class="plan-chips">
-                            <span class="plan-chip tool-chip">Name the feeling + body signal</span>
-                            <span class="plan-chip tool-chip">3 deep breaths + reset</span>
-                            <span class="plan-chip tool-chip">One win reflection at bedtime</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="focus-plan-footer">
-                    <strong>What to say:</strong> <em>"I noticed how you kept trying. What helped most today, and what should we try next time?"</em>
-                </div>
+            list.innerHTML = `
+                <li><strong>What they’re learning:</strong> Through modules, your child is practising <strong>${primarySkill}</strong> in bite-sized steps.</li>
+                <li><strong>What this looks like at home:</strong> ${trendLine}</li>
+                <li><strong>How you can help:</strong> Ask one gentle question each day: “What helped you feel better today?” and praise effort, not perfection.</li>
+                <li><strong>Quick routine:</strong> 2 minutes each evening — name one feeling, one body signal, and one tool they can try tomorrow.</li>
             `;
+
+            footer.textContent = '💡 Parent tip: Keep language simple and warm — “I can see this is hard. Let’s try one small step together.”';
         }
 
         function renderChart(assessments) {
@@ -838,31 +869,34 @@
             chartArea.style.display = 'block';
             noData.style.display = 'none';
 
-            const sorted = assessments
+            const normalized = assessments
                 .filter(a => a.created_at)
+                .map(a => ({ ...a, normalizedPathway: normalizeCategoryKey(a.pathway_category) }))
                 .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-            const labels = [...new Set(sorted.map(a => formatDate(a.created_at)))];
-            const pathways = [...new Set(sorted.map(a => a.pathway_category))];
+            const labels = [...new Set(normalized.map(a => formatDate(a.created_at)))].slice(-10);
+            const pathways = [...new Set(normalized.map(a => a.normalizedPathway))];
 
-            const datasets = pathways.map((pathway) => {
+            const datasets = pathways.map(pathway => {
                 const meta = PATHWAY_META[pathway] || PATHWAY_META.general;
-                const data = labels.map(label => {
-                    const rows = sorted.filter(a => a.pathway_category === pathway && formatDate(a.created_at) === label);
-                    if (!rows.length) return null;
-                    return rows[rows.length - 1].total_score;
+                const points = labels.map(label => {
+                    const entries = normalized.filter(a => a.normalizedPathway === pathway && formatDate(a.created_at) === label);
+                    return entries.length ? entries[entries.length - 1].total_score : null;
                 });
+
+                const nonNullCount = points.filter(v => v !== null).length;
 
                 return {
                     label: meta.label,
-                    data,
+                    data: points,
                     borderColor: meta.color,
                     backgroundColor: `${meta.color}22`,
                     borderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    tension: 0.3,
-                    spanGaps: true
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.35,
+                    spanGaps: true,
+                    showLine: nonNullCount > 1
                 };
             });
 
@@ -876,9 +910,17 @@
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 14,
+                                font: { size: 13, weight: 600, family: 'League Spartan' }
+                            }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(35, 43, 58, 0.92)',
+                            padding: 12,
                             callbacks: {
                                 label(context) {
                                     return `${context.dataset.label}: ${context.parsed.y}/24`;
@@ -890,10 +932,8 @@
                         y: {
                             beginAtZero: true,
                             max: 24,
-                            title: {
-                                display: true,
-                                text: 'Skill Level (Lower = Better for Challenges)'
-                            }
+                            grid: { color: 'rgba(0,0,0,0.06)' },
+                            title: { display: true, text: 'Skill Level (Lower = Better for Challenges)' }
                         },
                         x: { grid: { display: false } }
                     },
@@ -926,8 +966,56 @@
 
             updateHeader(child, moduleStats, safeAssessments);
             renderChart(safeAssessments);
-            renderProgressStory(moduleStats, safeAssessments);
+            renderStatsSection(moduleStats, safeAssessments);
+            renderPlainEnglishSection(moduleStats, safeAssessments);
             renderFocusPlan(moduleStats, safeAssessments);
+        }
+
+        function renderFocusPlan(moduleStats, assessments) {
+            const focusPlan = document.getElementById('focusPlanContent');
+            const latestAssessment = assessments.length ? assessments[assessments.length - 1] : null;
+            const focusCategory = normalizeCategoryKey(latestAssessment?.pathway_category || moduleStats.strongestCategory || 'general');
+            const focusMeta = PATHWAY_META[focusCategory] || PATHWAY_META.general;
+            const trend = buildTrendSummary(assessments);
+
+            const chips = Object.entries(moduleStats.categoryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([key]) => `<span class="plan-chip skill-chip">${PATHWAY_META[key]?.label || key}</span>`)
+                .join('') || '<span class="plan-chip skill-chip">Emotional Skills</span>';
+
+            focusPlan.innerHTML = `
+                <div class="focus-plan-summary">
+                    <p><strong>What we’re building now:</strong> <strong>${focusMeta.label}</strong> is the current focus from check-ins and completed learning activities.</p>
+                    <p><strong>Progress signal:</strong> ${trend.text}</p>
+                    <p><strong>Parent action this week:</strong> Pick one tool, practise it after school for 2 minutes, and celebrate effort immediately.</p>
+                </div>
+                <div class="focus-plan-grid">
+                    <div class="focus-plan-block">
+                        <h4>Skills Being Built Most</h4>
+                        <div class="plan-chips">${chips}</div>
+                    </div>
+                    <div class="focus-plan-block">
+                        <h4>Module Momentum</h4>
+                        <div class="plan-chips">
+                            <span class="plan-chip emotion-chip">${moduleStats.completedModules} Completed</span>
+                            <span class="plan-chip emotion-chip">${moduleStats.inProgressCount} In Progress</span>
+                            <span class="plan-chip emotion-chip">${moduleStats.completedCycles} Cycles</span>
+                        </div>
+                    </div>
+                    <div class="focus-plan-block">
+                        <h4>Tools to Try at Home</h4>
+                        <div class="plan-chips">
+                            <span class="plan-chip tool-chip">Name feeling + body signal</span>
+                            <span class="plan-chip tool-chip">3 deep breaths + reset</span>
+                            <span class="plan-chip tool-chip">One win reflection at bedtime</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="focus-plan-footer">
+                    <strong>What to say:</strong> <em>“I can see you’re trying. Which tool should we use right now?”</em>
+                </div>
+            `;
         }
 
         document.addEventListener('DOMContentLoaded', init);
