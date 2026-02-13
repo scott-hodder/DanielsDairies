@@ -431,9 +431,9 @@ const PATHWAY_ASSESSMENTS = {
     scoringGuide: {
       maxScore: 24,
       interpretation: {
-        low: { range: [16, 24], label: 'Strong emotional skills', color: '#4CAF50' },
-        moderate: { range: [8, 15], label: 'Developing emotional skills', color: '#FF9800' },
-        high: { range: [0, 7], label: 'Building emotional foundation', color: '#2196F3' }
+        low: { range: [0, 8], label: 'Strong emotional skills', color: '#4CAF50' },
+        moderate: { range: [9, 16], label: 'Developing emotional skills', color: '#FF9800' },
+        high: { range: [17, 24], label: 'Building emotional foundation', color: '#2196F3' }
       }
     }
   },
@@ -533,9 +533,9 @@ const PATHWAY_ASSESSMENTS = {
     scoringGuide: {
       maxScore: 24,
       interpretation: {
-        low: { range: [16, 24], label: 'Strong social skills', color: '#4CAF50' },
-        moderate: { range: [8, 15], label: 'Developing social skills', color: '#FF9800' },
-        high: { range: [0, 7], label: 'Building social foundation', color: '#2196F3' }
+        low: { range: [0, 8], label: 'Strong social skills', color: '#4CAF50' },
+        moderate: { range: [9, 16], label: 'Developing social skills', color: '#FF9800' },
+        high: { range: [17, 24], label: 'Building social foundation', color: '#2196F3' }
       }
     }
   },
@@ -633,9 +633,9 @@ const PATHWAY_ASSESSMENTS = {
     scoringGuide: {
       maxScore: 24,
       interpretation: {
-        low: { range: [16, 24], label: 'Strong body awareness', color: '#4CAF50' },
-        moderate: { range: [8, 15], label: 'Developing body awareness', color: '#FF9800' },
-        high: { range: [0, 7], label: 'Building body awareness', color: '#2196F3' }
+        low: { range: [0, 8], label: 'Strong body awareness', color: '#4CAF50' },
+        moderate: { range: [9, 16], label: 'Developing body awareness', color: '#FF9800' },
+        high: { range: [17, 24], label: 'Building body awareness', color: '#2196F3' }
       }
     }
   },
@@ -733,9 +733,9 @@ const PATHWAY_ASSESSMENTS = {
     scoringGuide: {
       maxScore: 24,
       interpretation: {
-        low: { range: [16, 24], label: 'Strong thinking skills', color: '#4CAF50' },
-        moderate: { range: [8, 15], label: 'Developing thinking skills', color: '#FF9800' },
-        high: { range: [0, 7], label: 'Building thinking foundation', color: '#2196F3' }
+        low: { range: [0, 8], label: 'Strong thinking skills', color: '#4CAF50' },
+        moderate: { range: [9, 16], label: 'Developing thinking skills', color: '#FF9800' },
+        high: { range: [17, 24], label: 'Building thinking foundation', color: '#2196F3' }
       }
     }
   },
@@ -834,9 +834,9 @@ const PATHWAY_ASSESSMENTS = {
     scoringGuide: {
       maxScore: 24,
       interpretation: {
-        low: { range: [16, 24], label: 'Doing well', color: '#4CAF50' },
-        moderate: { range: [8, 15], label: 'Some challenges', color: '#FF9800' },
-        high: { range: [0, 7], label: 'Needs support', color: '#2196F3' }
+        low: { range: [0, 8], label: 'Doing well', color: '#4CAF50' },
+        moderate: { range: [9, 16], label: 'Some challenges', color: '#FF9800' },
+        high: { range: [17, 24], label: 'Needs support', color: '#2196F3' }
       }
     }
   }
@@ -1143,6 +1143,7 @@ class ProgressTrackingSystem {
       .assessment-results {
         padding: 40px 32px;
         text-align: center;
+        position: relative;
       }
 
       .results-icon {
@@ -1486,6 +1487,7 @@ class ProgressTrackingSystem {
     overlay.innerHTML = `
       <div class="assessment-modal">
         <div class="assessment-header">
+          <button class="assessment-close" id="closeAssessmentBtn" aria-label="Close assessment">✕</button>
           <span class="assessment-icon">${assessment.icon}</span>
           <h2 class="assessment-title">${assessment.name}</h2>
           <p class="assessment-description">${timingDescriptions[assessmentType]}</p>
@@ -1573,6 +1575,14 @@ class ProgressTrackingSystem {
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const skipLink = document.getElementById('skipAssessment');
+    const closeBtn = document.getElementById('closeAssessmentBtn');
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        overlay.remove();
+        if (onSkip) onSkip();
+      });
+    }
 
     prevBtn.addEventListener('click', () => {
       if (this.currentQuestionIndex > 0) {
@@ -1588,7 +1598,7 @@ class ProgressTrackingSystem {
       } else {
         // Complete assessment
         const results = await this.calculateAndSaveResults();
-        this.showResults(results, onComplete);
+        this.showResults(results, onComplete, onSkip);
       }
     });
 
@@ -1666,19 +1676,30 @@ class ProgressTrackingSystem {
       return;
     }
 
-    const { error } = await this.supabaseClient
+    const assessmentPayload = {
+      child_id: results.childId,
+      pathway_category: results.pathwayCategory,
+      assessment_type: results.assessmentType,
+      total_score: results.totalScore,
+      max_score: results.maxScore,
+      efficacy_score: results.efficacyScore,
+      question_scores: results.questionScores,
+      responses: results.responses,
+      created_at: results.timestamp
+    };
+
+    let { error } = await this.supabaseClient
       .from('pathway_assessments')
-      .insert({
-        child_id: results.childId,
-        pathway_category: results.pathwayCategory,
-        assessment_type: results.assessmentType,
-        total_score: results.totalScore,
-        max_score: results.maxScore,
-        efficacy_score: results.efficacyScore,
-        question_scores: results.questionScores,
-        responses: results.responses,
-        created_at: results.timestamp
-      });
+      .insert(assessmentPayload);
+
+    // Backward compatibility: some DBs use `check_in` in the constraint instead of `checkin`.
+    if (error?.code === '23514' && results.assessmentType === 'checkin') {
+      const fallbackPayload = Object.assign({}, assessmentPayload, { assessment_type: 'check_in' });
+      const fallbackResult = await this.supabaseClient
+        .from('pathway_assessments')
+        .insert(fallbackPayload);
+      error = fallbackResult.error;
+    }
 
     if (error) {
       console.error('Error saving assessment:', error);
@@ -1687,52 +1708,42 @@ class ProgressTrackingSystem {
     }
   }
 
-  showResults(results, onComplete) {
+  showResults(results, onComplete, onSkip) {
     const overlay = document.getElementById('assessmentOverlay');
     const modal = overlay.querySelector('.assessment-modal');
     
     const guide = this.currentAssessment.scoringGuide;
     let interpretation = guide.interpretation.moderate;
+    let interpretationKey = 'moderate';
     
     // Find the correct interpretation based on score
     for (const key of ['low', 'moderate', 'high']) {
       const range = guide.interpretation[key].range;
       if (results.totalScore >= range[0] && results.totalScore <= range[1]) {
         interpretation = guide.interpretation[key];
+        interpretationKey = key;
         break;
       }
     }
 
-    // Calculate comparison if we have previous data
-    let comparisonHTML = '';
-    if (results.previousAssessments && results.previousAssessments.length > 0) {
-      const baseline = results.previousAssessments.find(a => a.assessment_type === 'baseline');
-      const midpoint = results.previousAssessments.find(a => a.assessment_type === 'midpoint');
-      
-      if (baseline || midpoint) {
-        comparisonHTML = `
-          <div class="score-comparison">
-            ${baseline ? `
-              <div class="comparison-item">
-                <div class="comparison-label">Baseline</div>
-                <div class="comparison-value">${baseline.total_score}</div>
-              </div>
-            ` : ''}
-            ${midpoint ? `
-              <div class="comparison-item">
-                <div class="comparison-label">Midpoint</div>
-                <div class="comparison-value">${midpoint.total_score}</div>
-              </div>
-            ` : ''}
-            <div class="comparison-item">
-              <div class="comparison-label">Now</div>
-              <div class="comparison-value">${results.totalScore}</div>
-              ${this.getChangeIndicator(baseline?.total_score, results.totalScore)}
-            </div>
-          </div>
-        `;
-      }
-    }
+    const supportiveFeedback = {
+      low: 'You are showing lots of helpful skills right now. Keep going — you’re doing great.',
+      moderate: 'You are learning and growing every week. Keep practising your tools — progress takes time.',
+      high: 'Thanks for checking in honestly. Everyone has hard days, and we’ll keep supporting you step by step.'
+    };
+
+    const previousScores = Array.isArray(results.previousAssessments)
+      ? results.previousAssessments
+          .map(assessment => Number(assessment.total_score))
+          .filter(score => Number.isFinite(score))
+      : [];
+
+    const lastScore = previousScores.length > 0 ? previousScores[previousScores.length - 1] : null;
+    const hasImprovedSinceLastCheckin = Number.isFinite(lastScore) && results.totalScore < lastScore;
+
+    const encouragementMessage = hasImprovedSinceLastCheckin
+      ? 'Amazing progress! You are growing stronger every week — keep using your tools, you are doing brilliantly!'
+      : supportiveFeedback[interpretationKey];
 
     const messages = {
       baseline: 'Great job completing your check-in! This helps us understand where you\'re starting from.',
@@ -1743,17 +1754,14 @@ class ProgressTrackingSystem {
 
     modal.innerHTML = `
       <div class="assessment-results">
+        <button class="assessment-close" id="closeResultsBtn" aria-label="Close assessment results">✕</button>
         <div class="results-icon">${results.assessmentType === 'endpoint' ? '🎉' : '✨'}</div>
         <h2 class="results-title">Check-In Complete!</h2>
         <p class="results-message">${messages[results.assessmentType]}</p>
         
         <div class="score-display">
-          <div class="score-label">Your Score</div>
-          <div class="score-value">${results.totalScore}/${results.maxScore}</div>
-          <div class="score-interpretation" style="background: ${interpretation.color}">
-            ${interpretation.label}
-          </div>
-          ${comparisonHTML}
+          <div class="score-label">Your check-in message</div>
+          <p class="results-message" style="margin: 0; color: #405878;">${encouragementMessage}</p>
         </div>
         
         <button class="assessment-btn primary" id="continueBtn" style="margin: 0 auto;">
@@ -1766,27 +1774,21 @@ class ProgressTrackingSystem {
       overlay.remove();
       if (onComplete) onComplete(results);
     });
+
+    document.getElementById('closeResultsBtn').addEventListener('click', () => {
+      overlay.remove();
+      if (onSkip) onSkip();
+    });
   }
 
   getChangeIndicator(baseline, current) {
     if (!baseline) return '';
     
     const diff = current - baseline;
-    // For most assessments, lower score = better (less symptoms)
-    // But we need to check the assessment type
-    const assessmentType = this.currentAssessment;
-    
-    // For "negative" assessments (anger, anxiety, depression), lower is better
-    // For "positive" assessments (emotions, social, cognitive, body, general), higher is better
-    const lowerIsBetter = ['anger', 'anxiety', 'depression'].includes(this.pathwayId);
-    
-    let improved = lowerIsBetter ? diff < 0 : diff > 0;
+    // Lower scores indicate fewer symptoms and better coping across all pathways.
+    let improved = diff < 0;
     let changeClass = diff === 0 ? 'same' : (improved ? 'improved' : 'declined');
     let changeText = diff === 0 ? 'No change' : (improved ? `↓ ${Math.abs(diff)} improved` : `↑ ${Math.abs(diff)}`);
-    
-    if (!lowerIsBetter) {
-      changeText = diff === 0 ? 'No change' : (improved ? `↑ ${Math.abs(diff)} improved` : `↓ ${Math.abs(diff)}`);
-    }
     
     return `<div class="comparison-change ${changeClass}">${changeText}</div>`;
   }
