@@ -1676,19 +1676,30 @@ class ProgressTrackingSystem {
       return;
     }
 
-    const { error } = await this.supabaseClient
+    const assessmentPayload = {
+      child_id: results.childId,
+      pathway_category: results.pathwayCategory,
+      assessment_type: results.assessmentType,
+      total_score: results.totalScore,
+      max_score: results.maxScore,
+      efficacy_score: results.efficacyScore,
+      question_scores: results.questionScores,
+      responses: results.responses,
+      created_at: results.timestamp
+    };
+
+    let { error } = await this.supabaseClient
       .from('pathway_assessments')
-      .insert({
-        child_id: results.childId,
-        pathway_category: results.pathwayCategory,
-        assessment_type: results.assessmentType,
-        total_score: results.totalScore,
-        max_score: results.maxScore,
-        efficacy_score: results.efficacyScore,
-        question_scores: results.questionScores,
-        responses: results.responses,
-        created_at: results.timestamp
-      });
+      .insert(assessmentPayload);
+
+    // Backward compatibility: some DBs use `check_in` in the constraint instead of `checkin`.
+    if (error?.code === '23514' && results.assessmentType === 'checkin') {
+      const fallbackPayload = Object.assign({}, assessmentPayload, { assessment_type: 'check_in' });
+      const fallbackResult = await this.supabaseClient
+        .from('pathway_assessments')
+        .insert(fallbackPayload);
+      error = fallbackResult.error;
+    }
 
     if (error) {
       console.error('Error saving assessment:', error);
