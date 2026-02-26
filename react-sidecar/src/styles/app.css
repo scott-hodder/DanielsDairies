@@ -291,3 +291,34 @@ textarea {
 .danger-btn {
   background: #8e2d2d;
 }
+
+.tier-grid .card {
+  border-left: 4px solid #8aa5c8;
+}
+
+.ledger-table {
+  display: grid;
+  gap: 8px;
+}
+
+.ledger-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr 0.7fr 2fr;
+  gap: 10px;
+  border: 1px solid #dce5f0;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+  align-items: center;
+}
+
+.ledger-head {
+  background: #f1f6fd;
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .ledger-row {
+    grid-template-columns: 1fr;
+  }
+}

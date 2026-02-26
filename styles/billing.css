@@ -1,0 +1,29 @@
+:root { font-family: 'League Spartan', system-ui, sans-serif; }
+body { margin:0; background:#f2f5fb; color:#23364f; }
+.billing-shell { max-width: 980px; margin: 0 auto; padding: 24px; display:grid; gap:16px; }
+.billing-header { display:flex; justify-content:space-between; align-items:center; }
+.back-link { color:#334a67; text-decoration:none; font-weight:700; }
+.card { background:white; border:1px solid #d8e3f0; border-radius:14px; padding:18px; }
+.hero { background: linear-gradient(135deg, #2f4764, #45658f); color:white; }
+.hero p { color:#e3edf8; }
+.tiers-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+.tier { border:1px solid #d9e5f2; border-left:4px solid #7ea0c9; border-radius:10px; padding:10px; }
+.form-grid { display:grid; gap:10px; }
+.form-grid label { display:grid; gap:6px; font-weight:600; }
+input,select,button { font: inherit; }
+input,select { padding:10px; border:1px solid #c7d6e8; border-radius:8px; }
+button { background:#334a67; color:white; border:0; border-radius:8px; padding:10px 12px; font-weight:700; cursor:pointer; }
+.inline-check { display:flex !important; align-items:center; gap:8px; }
+.wallet-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.wallet-grid div { background:#f7faff; border:1px solid #dbe7f4; border-radius:10px; padding:12px; display:grid; gap:6px; }
+.wallet-grid strong { font-size:26px; }
+.quick-form { margin-top:12px; display:flex; gap:10px; align-items:end; flex-wrap:wrap; }
+.quick-form label { display:grid; gap:6px; font-weight:600; }
+.ledger-rows { display:grid; gap:8px; }
+.ledger-row { display:grid; grid-template-columns:1.5fr 1fr .8fr .8fr 2fr; gap:8px; font-size:14px; border:1px solid #dce7f3; border-radius:8px; padding:8px; }
+.ledger-head { background:#f1f6fd; font-weight:700; }
+.status-ok { background:#e7f8ea; color:#1e6b2d; }
+.status-error { background:#fdecec; color:#8f2d2d; }
+.muted { color:#57708f; }
+.ghost-btn { background:white; color:#334a67; border:1px solid #c8d8ea; }
+@media (max-width: 760px){ .ledger-row{grid-template-columns:1fr;} .wallet-grid{grid-template-columns:1fr;} }
