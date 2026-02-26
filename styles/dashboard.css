@@ -3140,7 +3140,7 @@ box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 .adventure-node.locked {
 background: #d1d5db;
 color: #6b7280;
-cursor: not-allowed;
+cursor: pointer;
 }
 
 .adventure-node.available {
@@ -5848,7 +5848,7 @@ button:active, .btn:active {
         z-index:-1;
     }
     .adventure-node.locked {
-        cursor:not-allowed;
+        cursor:pointer;
         background: linear-gradient(180deg, rgba(203,213,225,.75) 0%, rgba(148,163,184,.55) 100%);
         filter: grayscale(.25) saturate(.6);
         box-shadow: 0 10px 22px rgba(17,24,39,.08);

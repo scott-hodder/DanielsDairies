@@ -448,7 +448,7 @@ class AdventureMapV4 {
     css.push('.adventure-node.completed { background: linear-gradient(145deg, #4ADE80 0%, #22C55E 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), 0 0 0 4px rgba(34, 197, 94, 0.2); }');
     css.push('.adventure-node.available { background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); animation: availablePulse 2s ease-in-out infinite; }');
     css.push('@keyframes availablePulse { 0%, 100% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); } 50% { box-shadow: 0 8px 30px rgba(245, 158, 11, 0.7), 0 0 0 8px rgba(245, 158, 11, 0.15); } }');
-    css.push('.adventure-node.locked { background: linear-gradient(145deg, #9CA3AF 0%, #6B7280 100%); border: 4px solid rgba(255,255,255,0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: not-allowed; opacity: 0.8; }');
+    css.push('.adventure-node.locked { background: linear-gradient(145deg, #9CA3AF 0%, #6B7280 100%); border: 4px solid rgba(255,255,255,0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; opacity: 0.8; }');
     css.push('.adventure-node.locked .node-emoji { filter: grayscale(0.7) drop-shadow(0 2px 3px rgba(0,0,0,0.2)); opacity: 0.6; }');
     css.push('.node-number { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2px solid rgba(64,88,120,0.15); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #405878; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-family: "Fredoka", sans-serif; }');
     css.push('.node-badge { position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }');
@@ -1807,22 +1807,30 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = 'Complete previous module';
+        statusText = 'Locked — spend 1 credit to unlock';
         statusClass = 'locked-status';
       }
 
       node.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (module.status !== 'locked') {
-          self.onNodeClick(module);
+        if (module.status === 'locked') {
+          if (typeof window.openPurchaseModal === 'function') {
+            window.openPurchaseModal(module.module || module);
+          }
+          return;
         }
+        self.onNodeClick(module);
       });
 
       node.addEventListener('touchend', function(e) {
         e.stopPropagation();
-        if (module.status !== 'locked') {
-          self.onNodeClick(module);
+        if (module.status === 'locked') {
+          if (typeof window.openPurchaseModal === 'function') {
+            window.openPurchaseModal(module.module || module);
+          }
+          return;
         }
+        self.onNodeClick(module);
       });
 
       node.style.pointerEvents = 'auto';

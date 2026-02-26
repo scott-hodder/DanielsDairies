@@ -1281,6 +1281,8 @@ function openPurchaseModal(module) {
   showElement(purchaseModal)
 }
 
+window.openPurchaseModal = openPurchaseModal
+
 function closePurchaseModal() {
   if (!purchaseModal) return
   setCurrentPurchaseModule(null)
