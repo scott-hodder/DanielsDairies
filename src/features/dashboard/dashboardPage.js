@@ -1247,24 +1247,24 @@ function openPurchaseModal(module) {
   if (walletValue > 0) {
     purchaseModalBody.innerHTML = `
       <span>${ageRange}${description}</span>
-      <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">Spend 1 dog bone credit to unlock this workbook for your family.</span>
-      <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">Dog bones available right now: ${walletValue}</span>
+      <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">Spend 1 credit to unlock this workbook for your family.</span>
+      <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">Credits available right now: ${walletValue}</span>
     `
     if (confirmPurchaseButton) {
       confirmPurchaseButton.disabled = false
-      confirmPurchaseButton.textContent = 'Spend 1 Dog Bone'
+      confirmPurchaseButton.textContent = 'Spend 1 Credit'
     }
   } else {
     const renewalLine = nextCreditDate
       ? `Your next refill is on <strong>${nextCreditDate}</strong>.`
       : 'Your next refill date will appear once your subscription is active.'
     const tierLine = tierCreditCount !== null
-      ? `You'll receive <strong>${tierCreditCount}</strong> new dog bone credits for that billing period.`
-      : 'Your monthly dog bone credit amount will appear once a tier is selected.'
+      ? `You'll receive <strong>${tierCreditCount}</strong> new credits for that billing period.`
+      : 'Your monthly credit amount will appear once a tier is selected.'
 
     purchaseModalBody.innerHTML = `
       <span>${ageRange}${description}</span>
-      <span style="display:block; margin-top: 10px; color: #b45309; font-size: 13px;">You do not have any dog bone credits available right now.</span>
+      <span style="display:block; margin-top: 10px; color: #b45309; font-size: 13px;">You do not have any credits available right now.</span>
       <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">${renewalLine}</span>
       <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">${tierLine}</span>
       <span style="display:block; margin-top: 8px; color: #4c6c96; font-size: 13px;">Review your unlocked modules anytime from the dashboard and billing pages.</span>
@@ -1276,7 +1276,7 @@ function openPurchaseModal(module) {
     }
   }
 
-  purchaseModalCost.textContent = 'Unlock cost: 1 dog bone credit'
+  purchaseModalCost.textContent = 'Unlock cost: 1 credit'
 
   showElement(purchaseModal)
 }
@@ -1286,7 +1286,7 @@ function closePurchaseModal() {
   setCurrentPurchaseModule(null)
   if (confirmPurchaseButton) {
     confirmPurchaseButton.disabled = false
-    confirmPurchaseButton.textContent = 'Spend 1 Dog Bone'
+    confirmPurchaseButton.textContent = 'Spend 1 Credit'
   }
   hideElement(purchaseModal)
 }
@@ -2410,12 +2410,12 @@ function renderModules() {
   const selectedCategory = dashboardCategoryFilter ? dashboardCategoryFilter.value : 'all'
   const selectedSeries = dashboardSeriesFilter ? dashboardSeriesFilter.value : 'all'
   
-  const parentModuleMap = new Map()
-  state.parentModules.forEach((pm) => {
-    parentModuleMap.set(pm.module_id, pm.is_active !== false)
+  const childModuleLockMap = new Map()
+  state.childModules.forEach((cm) => {
+    childModuleLockMap.set(cm.module_id, cm.locked !== false)
   })
 
-  // All modules are shown, but locked until a credit unlocks them
+  // All modules are shown, but locked until a credit unlocks them for this child
   const availableModules = state.modules.filter((m) => m.is_active !== false)
 
   // Apply filters
@@ -2435,8 +2435,8 @@ function renderModules() {
     return
   }
 
-  const unlockedModules = visibleModules.filter((module) => parentModuleMap.get(module.id))
-  const lockedModules = visibleModules.filter((module) => !parentModuleMap.get(module.id))
+  const unlockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) === false)
+  const lockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) !== false)
 
   // Separate completed and incomplete modules for modules the family has unlocked
   const incompleteModules = unlockedModules.filter(module => {
@@ -2455,7 +2455,7 @@ function renderModules() {
     emptyUnlockedMessage.style.textAlign = 'center'
     emptyUnlockedMessage.style.padding = '16px'
     emptyUnlockedMessage.style.color = '#4c6c96'
-    emptyUnlockedMessage.innerHTML = '<p style="font-size: 16px; margin: 0;">All modules are currently locked. Spend a dog bone credit on any module below to unlock it.</p>'
+    emptyUnlockedMessage.innerHTML = '<p style="font-size: 16px; margin: 0;">All modules are currently locked. Spend a credit on any module below to unlock it.</p>'
     modulesGrid.appendChild(emptyUnlockedMessage)
   }
   
@@ -2612,7 +2612,7 @@ function renderModules() {
     const lockedHint = document.createElement('p')
     lockedHint.className = 'module-subtitle'
     lockedHint.style.margin = '0 0 14px 0'
-    lockedHint.textContent = 'Click a locked module to spend 1 dog bone and unlock it.'
+    lockedHint.textContent = 'Click a locked module to spend 1 credit and unlock it.'
 
     const lockedGrid = document.createElement('div')
     lockedGrid.className = 'modules-grid'
@@ -2646,7 +2646,7 @@ function createModuleCard(module, options = {}) {
   const iconHtml = isLocked ? '🔒' : (isCompleted ? '✓' : '📖')
   const iconClass = isLocked ? 'default' : (isCompleted ? 'completed' : 'default')
   const buttonHtml = isLocked
-    ? '<button class="btn-module locked">Unlock with 1 Dog Bone</button>'
+    ? '<button class="btn-module locked">Unlock with 1 Credit</button>'
     : isCompleted
       ? '<button class="btn-module completed">✓ Completed</button>'
       : `<button class="btn-module start">Start Module →</button>`
@@ -2678,7 +2678,7 @@ function createModuleCard(module, options = {}) {
         ${ageRange ? `<div class="module-subtitle" style="font-weight: 600;">Ages ${ageRange}</div>` : ''}
         ${shortDescription ? `<p class="module-subtitle" style="margin-top: 4px;">${shortDescription}</p>` : ''}
         <p class="module-subtitle" style="margin-top: 8px;">
-          ${isLocked ? 'Locked — spend 1 dog bone to unlock' : (isCompleted ? 'Completed' : 'Ready to start')}
+          ${isLocked ? 'Locked — spend 1 credit to unlock' : (isCompleted ? 'Completed' : 'Ready to start')}
         </p>
       </div>
     </div>
@@ -2920,6 +2920,21 @@ if (confirmPurchaseButton) {
       confirmPurchaseButton.textContent = 'Unlocking...'
 
       await unlockModuleWithCredit(state.currentPurchaseModule.id, currentBillingPeriod.periodStart)
+
+      if (state.selectedChild?.id) {
+        const { error: childUnlockError } = await supabase
+          .from('child_modules')
+          .upsert([
+            {
+              child_id: state.selectedChild.id,
+              module_id: state.currentPurchaseModule.id,
+              locked: false
+            }
+          ], { onConflict: 'child_id,module_id' })
+
+        if (childUnlockError) throw childUnlockError
+      }
+
       currentCreditSummary = await getCreditSummary(
         state.currentUser.id,
         currentBillingPeriod.periodStart,
@@ -2963,7 +2978,7 @@ if (confirmPurchaseButton) {
       alert(error.message || 'Failed to unlock module. Please ensure you have credits available for this period.')
     } finally {
       confirmPurchaseButton.disabled = false
-      confirmPurchaseButton.textContent = 'Spend 1 Dog Bone'
+      confirmPurchaseButton.textContent = 'Spend 1 Credit'
     }
   })
 }
