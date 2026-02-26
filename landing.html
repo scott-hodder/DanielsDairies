@@ -581,28 +581,36 @@ function showAddChildModal() {
         setupAddModalListeners();
     }
     
-    document.getElementById('childName').value = '';
-    document.getElementById('childDob').value = '';
-    document.getElementById('childPassword').value = '';
+    const childNameInput = document.getElementById('childName');
+    const childDobInput = document.getElementById('childDob');
+    const childPasswordInput = document.getElementById('childPassword');
+    
+    if (childNameInput) childNameInput.value = '';
+    if (childDobInput) childDobInput.value = '';
+    if (childPasswordInput) childPasswordInput.value = '';
     document.getElementById('modalError')?.classList.add('hidden');
     
     renderEnhancedAddAvatarPicker('🦊');
     
     addChildModal.style.display = 'flex';
+    addChildModal.classList.remove('hidden');
     setTimeout(() => document.getElementById('childName')?.focus(), 100);
 }
 
         function hideAddChildModal() {
             addChildModal.style.display = 'none'
-            addChildForm.reset()
-            modalError.style.display = 'none'
+            addChildModal.classList.add('hidden')
+            const form = document.getElementById('addChildForm')
+            if (form) form.reset()
+            const errorEl = document.getElementById('modalError')
+            if (errorEl) errorEl.style.display = 'none'
         }
 
 
 const avatarCategories = {
     animals: ['🦊', '🐼', '🦁', '🐨', '🦋', '🐸', '🐯', '🐺'],
     magical: ['🧚', '🧙', '🧜', '🐉', '🦄', '🌈', '🔮', '🦕'],
-    heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎'],
+    heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎', '😈'],
     space: ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌙', '⭐', '🪐', '☄️']
 };
 
@@ -772,10 +780,13 @@ function setupAddModalListeners() {
         const childDob = document.getElementById('childDob').value;
         const childPassword = document.getElementById('childPassword').value;
         const avatar = document.getElementById('addChildAvatar').value || '🦊';
+        const errorEl = document.getElementById('modalError');
 
         if (!childName || !childDob || !childPassword) {
-            modalError.textContent = 'Please fill in all fields';
-            modalError.classList.remove('hidden');
+            if (errorEl) {
+                errorEl.textContent = 'Please fill in all fields';
+                errorEl.classList.remove('hidden');
+            }
             return;
         }
 
@@ -788,8 +799,10 @@ function setupAddModalListeners() {
             window.location.reload();
         } catch (error) {
             console.error('Error creating child:', error);
-            modalError.textContent = error.message || 'Failed to create child';
-            modalError.classList.remove('hidden');
+            if (errorEl) {
+                errorEl.textContent = error.message || 'Failed to create child';
+                errorEl.classList.remove('hidden');
+            }
         }
     });
 }

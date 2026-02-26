@@ -1366,33 +1366,40 @@ export async function createChildFocusPlan({
     
     if (superSkillId) insertData.super_skill_id = superSkillId
     
-    // Set the primary category (first selected)
-    if (targetCategoryIds && targetCategoryIds.length > 0) {
-      insertData.category = targetCategoryIds[0]
-      
-      // Look up the pathway for this category
+    // Set the primary category from super_skill if available
+    if (superSkillId) {
       try {
-        const { data: categoryData } = await getSupabaseClient()
-          .from('category_colors')
-          .select('category')
-          .eq('id', targetCategoryIds[0])
+        // Look up the super_skill to get its linked category
+        const { data: skillData } = await getSupabaseClient()
+          .from('super_skills')
+          .select('id, category_id')
+          .eq('id', superSkillId)
           .single()
         
-        if (categoryData && categoryData.category) {
-          // Find the pathway that matches this category
-          const { data: pathwayData } = await getSupabaseClient()
-            .from('pathways')
-            .select('id')
-            .eq('category', categoryData.category)
+        if (skillData && skillData.category_id) {
+          insertData.category = skillData.category_id
+          
+          // Look up the category to find matching pathway
+          const { data: categoryData } = await getSupabaseClient()
+            .from('category_colors')
+            .select('category')
+            .eq('id', skillData.category_id)
             .single()
           
-          if (pathwayData) {
-            insertData.default_pathway_id = pathwayData.id
+          if (categoryData && categoryData.category) {
+            const { data: pathwayData } = await getSupabaseClient()
+              .from('pathways')
+              .select('id')
+              .eq('category', categoryData.category)
+              .single()
+            
+            if (pathwayData) {
+              insertData.default_pathway_id = pathwayData.id
+            }
           }
         }
-      } catch (pathwayError) {
-        console.warn('Warning looking up pathway:', pathwayError)
-        // Continue without pathway if lookup fails
+      } catch (lookupError) {
+        console.warn('Warning looking up category/pathway from super_skill:', lookupError)
       }
     }
     
