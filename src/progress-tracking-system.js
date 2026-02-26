@@ -1414,8 +1414,13 @@ class ProgressTrackingSystem {
   }
 
   // Show assessment modal
-  async showAssessment(childId, pathwayOrSuperSkill, assessmentType, onComplete, onSkip) {
+  async showAssessment(childId, pathwayOrSuperSkill, assessmentType, onComplete, onSkip, moduleData = null) {
     this.childId = childId;
+    this.moduleData = moduleData;
+    
+    // Reset save state for new assessment
+    this.assessmentSaved = false;
+    this.lastResults = null;
     
     // Handle both super skill slugs and old category names
     let assessmentKey = pathwayOrSuperSkill.toLowerCase();
@@ -1611,6 +1616,12 @@ class ProgressTrackingSystem {
   }
 
   async calculateAndSaveResults() {
+    // Prevent duplicate saves if this is called multiple times
+    if (this.assessmentSaved) {
+      console.warn('Assessment already saved, skipping duplicate save');
+      return this.lastResults;
+    }
+
     const questions = this.currentAssessment.questions;
     let totalScore = 0;
     let efficacyScore = 0;
@@ -1661,11 +1672,16 @@ class ProgressTrackingSystem {
       questionScores: questionScores,
       responses: this.responses,
       previousAssessments: previousAssessments,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      moduleData: this.moduleData
     };
 
     // Save to database
     await this.saveAssessment(results);
+    
+    // Mark as saved to prevent duplicates
+    this.assessmentSaved = true;
+    this.lastResults = results;
 
     return results;
   }
@@ -1687,6 +1703,22 @@ class ProgressTrackingSystem {
       responses: results.responses,
       created_at: results.timestamp
     };
+
+    // Add module tracking information if available
+    if (results.moduleData && results.moduleData.id) {
+      assessmentPayload.module_id = results.moduleData.id;
+      assessmentPayload.week_number = Number(results.moduleData.week_number || results.moduleData.pathway_order || results.moduleData.order || 0) || null;
+      
+      // Extract cycle number from cycle string (e.g., "Cycle 1" -> 1)
+      let cycleNum = null;
+      if (results.moduleData.cycle_number) {
+        cycleNum = results.moduleData.cycle_number;
+      } else if (results.moduleData.cycle) {
+        const cycleMatch = String(results.moduleData.cycle).match(/\d+/);
+        cycleNum = cycleMatch ? parseInt(cycleMatch[0]) : null;
+      }
+      assessmentPayload.cycle_number = cycleNum;
+    }
 
     let { error } = await this.supabaseClient
       .from('pathway_assessments')

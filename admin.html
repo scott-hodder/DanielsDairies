@@ -46,155 +46,12 @@
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" onclick="switchTab(event, 'moduleCustomisation')">Module Customisation</button>
-            <button class="tab" onclick="switchTab(event, 'moduleContentCreator')">Module Content Creator</button>
             <button class="tab" onclick="switchTab(event, 'childModules')">Parent's Modules</button>
             <button class="tab" onclick="switchTab(event, 'theories')">Theories</button>
             <button class="tab" onclick="switchTab(event, 'rewards')">Rewards</button>
             <button class="tab" onclick="switchTab(event, 'parentToolkit')">Parent Toolkit</button>
             <button class="tab" onclick="switchTab(event, 'generalSettings')">Check Ins</button>
         </div>
-
-        <!-- Tab Content: Module Content Creator -->
-        <div id="moduleContentCreatorTab" class="tab-content">
-            <div class="rewards-panel" style="max-width: 1400px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h2 class="panel-title" style="margin-bottom: 4px;">🧠 Module Content Creator</h2>
-                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Create psychologically-sound module blueprints for AI generation</p>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <span id="modulesToGenerateCount" style="background: #6366F1; color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">0 pending</span>
-                    </div>
-                </div>
-
-                <!-- Tab Selector for Creation Methods -->
-                <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e0e7ff;">
-                    <button id="builderTabBtn" class="sub-tab active" onclick="switchCreatorTab('builder')" style="padding: 10px 20px; background: none; border: none; border-bottom: 3px solid #6366F1; color: #6366F1; font-weight: 700; cursor: pointer;">
-                        🏗️ Module Builder
-                    </button>
-                    <button id="bulkTabBtn" class="sub-tab" onclick="switchCreatorTab('bulk')" style="padding: 10px 20px; background: none; border: none; border-bottom: 3px solid transparent; color: #6b7c8f; font-weight: 600; cursor: pointer;">
-                        📊 Bulk Upload
-                    </button>
-                    <button id="listTabBtn" class="sub-tab" onclick="switchCreatorTab('list')" style="padding: 10px 20px; background: none; border: none; border-bottom: 3px solid transparent; color: #6b7c8f; font-weight: 600; cursor: pointer;">
-                        📋 View Blueprints
-                    </button>
-                </div>
-
-                <!-- Module Builder (Enhanced Form) -->
-                <div id="builderContent" class="creator-sub-content" style="display: block;">
-                    <div id="enhancedModuleBuilder" style="max-width: 900px; margin: 0 auto;">
-                        <!-- Step Progress -->
-                        <div style="margin-bottom: 32px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
-                                <div style="position: absolute; top: 15px; left: 30px; right: 30px; height: 2px; background: #e0e7ff; z-index: 0;"></div>
-                                
-                                <div id="step-indicator-1" class="step-indicator" style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                                    <div class="step-circle active" style="width: 32px; height: 32px; border-radius: 50%; background: #6366F1; border: 2px solid #6366F1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white;">1</div>
-                                    <div class="step-label" style="font-size: 11px; color: #6366F1; font-weight: 600;">Basics</div>
-                                </div>
-                                <div id="step-indicator-2" class="step-indicator" style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                                    <div class="step-circle" style="width: 32px; height: 32px; border-radius: 50%; background: #f8f9fa; border: 2px solid #e0e7ff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #90a4ae;">2</div>
-                                    <div class="step-label" style="font-size: 11px; color: #90a4ae; font-weight: 600;">Theory</div>
-                                </div>
-                                <div id="step-indicator-3" class="step-indicator" style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                                    <div class="step-circle" style="width: 32px; height: 32px; border-radius: 50%; background: #f8f9fa; border: 2px solid #e0e7ff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #90a4ae;">3</div>
-                                    <div class="step-label" style="font-size: 11px; color: #90a4ae; font-weight: 600;">Adaptations</div>
-                                </div>
-                                <div id="step-indicator-4" class="step-indicator" style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                                    <div class="step-circle" style="width: 32px; height: 32px; border-radius: 50%; background: #f8f9fa; border: 2px solid #e0e7ff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #90a4ae;">4</div>
-                                    <div class="step-label" style="font-size: 11px; color: #90a4ae; font-weight: 600;">Outcomes</div>
-                                </div>
-                                <div id="step-indicator-5" class="step-indicator" style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                                    <div class="step-circle" style="width: 32px; height: 32px; border-radius: 50%; background: #f8f9fa; border: 2px solid #e0e7ff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #90a4ae;">5</div>
-                                    <div class="step-label" style="font-size: 11px; color: #90a4ae; font-weight: 600;">Review</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Step Content Container -->
-                        <div id="stepContent" style="background: #f8f9fa; border-radius: 12px; padding: 24px; min-height: 400px;">
-                            <!-- Steps will be dynamically inserted here -->
-                        </div>
-
-                        <!-- Navigation Buttons -->
-                        <div style="display: flex; justify-content: space-between; margin-top: 24px;">
-                            <button id="btnBuilderBack" class="btn" onclick="moduleBuilderPrevStep()" disabled style="padding: 10px 24px; background: #e0e7ff; color: #6b7c8f; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
-                                ← Back
-                            </button>
-                            <button id="btnBuilderNext" class="btn" onclick="moduleBuilderNextStep()" style="padding: 10px 24px; background: #6366F1; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
-                                Next →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bulk Upload -->
-                <div id="bulkContent" class="creator-sub-content" style="display: none;">
-                    <div style="max-width: 800px; margin: 0 auto;">
-                        <!-- Excel Upload Section -->
-                        <div style="background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border-radius: 12px; padding: 20px; border: 2px dashed #6366F1;">
-                            <h3 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #4338CA;">
-                                📊 Bulk Upload from Excel
-                            </h3>
-                            <p style="font-size: 13px; color: #6366F1; margin-bottom: 16px;">
-                                Upload an Excel file (.xlsx) using the template below. Each row will create a module blueprint.
-                            </p>
-                            
-                            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                                <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleExcelUpload(event)">
-                                <button type="button" class="btn" onclick="document.getElementById('excelFileInput').click()" style="background: #6366F1; color: white;">
-                                    📁 Choose Excel File
-                                </button>
-                                <span id="excelFileName" style="font-size: 13px; color: #6b7c8f;">No file selected</span>
-                            </div>
-                            
-                            <div id="excelPreview" style="display: none; margin-top: 16px;">
-                                <div style="background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                                    <p style="font-size: 13px; margin: 0 0 8px 0; font-weight: 600;"><span id="excelRowCount">0</span> rows found</p>
-                                    <div id="excelColumnMapping" style="font-size: 12px; color: #6b7c8f;"></div>
-                                </div>
-                                <button type="button" class="btn-save" onclick="importExcelData()" style="width: 100%;">
-                                    ⬆️ Import All Rows
-                                </button>
-                            </div>
-                            
-                            <div style="margin-top: 12px;">
-                                <button type="button" class="btn" onclick="downloadExcelTemplate()" style="background: transparent; color: #6366F1; border: 1px solid #6366F1; font-size: 12px;">
-                                    📥 Download Template
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Blueprints List -->
-                <div id="listContent" class="creator-sub-content" style="display: none;">
-                    <div style="max-width: 1200px; margin: 0 auto;">
-                        <div style="background: #f8f9fa; border-radius: 12px; padding: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                                <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                                    📋 Module Blueprints
-                                </h3>
-                                <div style="display: flex; gap: 8px;">
-                                    <select id="mtgFilterStatus" onchange="loadModulesToGenerate()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 12px;">
-                                        <option value="pending">Pending Only</option>
-                                        <option value="generated">Generated Only</option>
-                                        <option value="all">All</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div id="modulesToGenerateList" style="max-height: 600px; overflow-y: auto;">
-                                <div style="text-align: center; padding: 40px; color: #6b7c8f;">
-                                    <p>Loading module blueprints...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- End Module Content Creator Tab -->
 
         <!-- Tab Content: Check Ins -->
         <div id="generalSettingsTab" class="tab-content">
@@ -792,7 +649,8 @@
                                     <textarea class="form-textarea" id="superSkillRelevantTheories" rows="4" placeholder="e.g., CBT, Mindfulness, Attachment Theory..."></textarea>
                                 </div>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+                                <button class="btn-delete" onclick="deleteSuperSkillTheories()">🗑️ Delete Super Skill</button>
                                 <button class="btn-save" onclick="saveSuperSkillTheoriesChanges()">💾 Save Super Skill</button>
                             </div>
                         </div>
@@ -852,7 +710,8 @@
                                 <label class="form-label">Description <span style="color: #6366F1; font-size: 11px;">(sent to AI)</span></label>
                                 <textarea class="form-textarea" id="subSkillDescriptionTheories" rows="4" placeholder="Describe what this sub-skill covers..."></textarea>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+                                <button class="btn-delete" onclick="deleteSubSkillTheories()">🗑️ Delete Sub-Skill</button>
                                 <button class="btn-save" onclick="saveSubSkillTheoriesChanges()">💾 Save Sub-Skill</button>
                             </div>
                         </div>

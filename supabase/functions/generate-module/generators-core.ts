@@ -1308,6 +1308,7 @@ All content MUST use Australian English spelling and conventions:
 === NATURAL LANGUAGE RULES (MANDATORY) ===
 Write in a natural, human voice. Avoid patterns that sound like AI-generated text:
 - NEVER use em dashes (—). Use commas, full stops, or rewrite the sentence instead.
+- NEVER use hyphens or en dashes to join compound words in headings, labels, activity content, or descriptions. Use spaces instead. Examples: "thought feeling" NOT "thought-feeling", "feeling action" NOT "feeling-action", "self care" NOT "self-care". The only exception is internal code identifiers.
 - NEVER use "Let's dive in", "dive into", "Unlock your", "Unleash", "delve into"
 - Avoid overuse of exclamation marks (max 2-3 per page)
 - Avoid starting consecutive sentences with the same word
@@ -1508,48 +1509,48 @@ function generatePageStructure(): PageTemplate[] {
     { type: "welcome",         starReward: false },
   ];
   
-  // Chapter 1: Introduction - mix interactive lessons with activities
-  structure.push({ type: "chapter-divider", starReward: false });
-  structure.push({ type: "interactive-lesson", starReward: false }); // More engaging than plain lesson
-  structure.push({ type: "lesson", starReward: false });
-  if (activities.length > 0) structure.push(activities.shift()!);
-  structure.push({ type: "interactive-lesson", starReward: false });
-  if (activities.length > 0) structure.push(activities.shift()!);
+  // Fixed pages: cover + welcome + 3 chapter-dividers + summary + completion + admin = 8
+  const fixedPages = 8;
+  const contentPages = Math.max(9, targetPages - fixedPages);
+  // Equal thirds — ch3 absorbs remainder (at most 2 extra)
+  const ch1Count = Math.max(3, Math.floor(contentPages / 3));
+  const ch2Count = Math.max(3, Math.floor(contentPages / 3));
+  const ch3Count = Math.max(3, contentPages - ch1Count - ch2Count);
   
-  // Chapter 2: Deeper exploration
-  structure.push({ type: "chapter-divider", starReward: false });
-  structure.push({ type: "lesson", starReward: false });
-  if (activities.length > 0) structure.push(activities.shift()!);
-  structure.push({ type: "interactive-lesson", starReward: false });
-  if (activities.length > 0) structure.push(activities.shift()!);
-  structure.push({ type: "lesson", starReward: false });
-  
-  // Chapter 3 (if room)
-  if (targetPages >= 20) {
+  function buildChapter(pagesNeeded: number, chapterIdx: number): void {
     structure.push({ type: "chapter-divider", starReward: false });
+    let filled = 0;
+    
+    // Start with interactive lesson
     structure.push({ type: "interactive-lesson", starReward: false });
+    filled++;
+    
+    // Plain lesson early in chapters 1 and 2
+    if (chapterIdx <= 2 && filled < pagesNeeded) {
+      structure.push({ type: "lesson", starReward: false });
+      filled++;
+    }
+    
+    // Fill strictly to pagesNeeded — no random extra insertions
+    while (filled < pagesNeeded) {
+      if (activities.length > 0) {
+        structure.push(activities.shift()!);
+      } else {
+        structure.push(Math.random() > 0.3
+          ? { type: "interactive-lesson", starReward: false }
+          : { type: "lesson", starReward: false });
+      }
+      filled++;
+    }
   }
   
-  // Add remaining activities with interactive lessons between
+  buildChapter(ch1Count, 1);
+  buildChapter(ch2Count, 2);
+  buildChapter(ch3Count, 3);
+  
+  // Append any leftover activities
   while (activities.length > 0) {
     structure.push(activities.shift()!);
-    if (activities.length > 0 && structure.length < targetPages - 3) {
-      // Alternate between regular and interactive lessons
-      if (Math.random() > 0.4) {
-        structure.push({ type: "interactive-lesson", starReward: false });
-      } else {
-        structure.push({ type: "lesson", starReward: false });
-      }
-    }
-  }
-  
-  // Fill remaining slots - prefer interactive lessons for engagement
-  while (structure.length < targetPages - 2) {
-    if (Math.random() > 0.3) {
-      structure.push({ type: "interactive-lesson", starReward: false });
-    } else {
-      structure.push({ type: "lesson", starReward: false });
-    }
   }
   
   // Always end with summary and completion

@@ -32,16 +32,45 @@
                 </a>
             </div>
             <div class="header-right">
-                <button class="btn-header" id="viewDashboardBtn">
-                    📊 Dashboard
+                <!-- Desktop Navigation Buttons -->
+                <div class="desktop-nav">
+                    <button class="btn-header" id="viewDashboardBtnDesktop">
+                        📊 Dashboard
+                    </button>
+                    <button class="btn-header" id="profileButtonDesktop">
+                        Profile
+                    </button>
+                    <button class="btn-header" id="logoutButtonDesktop">Logout</button>
+                    <button class="btn-header settings hidden" id="adminButtonDesktop" style="margin-left: 12px;">
+                        Admin Centre
+                    </button>
+                </div>
+                
+                <!-- Mobile Hamburger Menu -->
+                <button class="hamburger-menu" id="hamburgerMenu" aria-label="Menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
                 </button>
-                <button class="btn-header" id="profileButton">
-                    Profile
-                </button>
-                <button class="btn-header" id="logoutButton">Logout</button>
-                <button class="btn-header settings" id="adminButton" style="display: none;">
-                    Admin Centre
-                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <button class="dropdown-item" id="viewDashboardBtn">
+                        <span class="dropdown-icon">📊</span>
+                        Dashboard
+                    </button>
+                    <button class="dropdown-item" id="profileButton">
+                        <span class="dropdown-icon">👤</span>
+                        Profile
+                    </button>
+                    <button class="dropdown-item" id="adminButton" style="display: none;">
+                        <span class="dropdown-icon">⚙️</span>
+                        Admin Centre
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item logout" id="logoutButton">
+                        <span class="dropdown-icon">🚪</span>
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -172,15 +201,23 @@
         const childSelection = document.getElementById('childSelection')
         const nextStepSection = document.getElementById('nextStepSection')
         const childrenList = document.getElementById('childrenList')
+        
+        // Header buttons - both desktop and mobile
         const logoutButton = document.getElementById('logoutButton')
+        const logoutButtonDesktop = document.getElementById('logoutButtonDesktop')
         const adminButton = document.getElementById('adminButton')
-        const dashboardHomeButton = document.getElementById('dashboardHomeButton')
+        const adminButtonDesktop = document.getElementById('adminButtonDesktop')
         const profileButton = document.getElementById('profileButton')
+        const profileButtonDesktop = document.getElementById('profileButtonDesktop')
+        const viewDashboardBtn = document.getElementById('viewDashboardBtn')
+        const viewDashboardBtnDesktop = document.getElementById('viewDashboardBtnDesktop')
+        const hamburgerMenu = document.getElementById('hamburgerMenu')
+        const dropdownMenu = document.getElementById('dropdownMenu')
+        
         const welcomeGreeting = document.getElementById('welcomeGreeting')
         const nextStepTitle = document.getElementById('nextStepTitle')
         const continueButton = document.getElementById('continueButton')
         const browseButton = document.getElementById('browseButton')
-        const viewDashboardBtn = document.getElementById('viewDashboardBtn')
 
         function showElement(element, display = 'block') {
             if (!element) return
@@ -440,13 +477,14 @@
         }
 
         async function setupAdminAccess(userId) {
-            if (!adminButton) return
+            const adminButtons = [adminButton, adminButtonDesktop].filter(btn => btn)
+            if (adminButtons.length === 0) return
             try {
                 const profile = await getParentProfile(userId)
                 if (profile?.is_admin) {
-                    adminButton.style.display = 'block'
+                    adminButtons.forEach(btn => btn.style.display = 'block')
                 } else {
-                    adminButton.style.display = 'none'
+                    adminButtons.forEach(btn => btn.style.display = 'none')
                 }
             } catch (error) {
                 console.error('Error checking admin status:', error)
@@ -454,24 +492,43 @@
         }
 
         // Header button handlers
-        if (dashboardHomeButton) {
-            dashboardHomeButton.addEventListener('click', () => {
+        // Dashboard buttons
+        if (viewDashboardBtn) {
+            viewDashboardBtn.addEventListener('click', () => {
+                window.location.href = '/dashboard.html'
+            })
+        }
+        if (viewDashboardBtnDesktop) {
+            viewDashboardBtnDesktop.addEventListener('click', () => {
                 window.location.href = '/dashboard.html'
             })
         }
 
+        // Profile buttons
         if (profileButton) {
             profileButton.addEventListener('click', () => {
                 window.location.href = '/dashboard.html'
             })
         }
+        if (profileButtonDesktop) {
+            profileButtonDesktop.addEventListener('click', () => {
+                window.location.href = '/dashboard.html'
+            })
+        }
 
+        // Admin buttons
         if (adminButton) {
             adminButton.addEventListener('click', () => {
                 window.location.href = '/admin.html'
             })
         }
+        if (adminButtonDesktop) {
+            adminButtonDesktop.addEventListener('click', () => {
+                window.location.href = '/admin.html'
+            })
+        }
 
+        // Logout buttons
         if (logoutButton) {
             logoutButton.addEventListener('click', async () => {
                 try {
@@ -480,6 +537,31 @@
                 } catch (error) {
                     console.error('Logout error:', error)
                     alert('Failed to logout. Please try again.')
+                }
+            })
+        }
+        if (logoutButtonDesktop) {
+            logoutButtonDesktop.addEventListener('click', async () => {
+                try {
+                    await signOut()
+                    window.location.href = '/'
+                } catch (error) {
+                    console.error('Logout error:', error)
+                    alert('Failed to logout. Please try again.')
+                }
+            })
+        }
+
+        // Hamburger menu functionality
+        if (hamburgerMenu && dropdownMenu) {
+            hamburgerMenu.addEventListener('click', () => {
+                dropdownMenu.classList.toggle('show')
+            })
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!hamburgerMenu.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                    dropdownMenu.classList.remove('show')
                 }
             })
         }

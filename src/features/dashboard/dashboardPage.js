@@ -1143,6 +1143,7 @@ async function init() {
       const childFromUrl = state.children.find(c => String(c.id) === String(childIdFromUrl))
       if (childFromUrl) {
         // Skip password check when returning from module (already authenticated)
+        // selectChild now waits for the map to render before hiding the loading screen
         await selectChild(childFromUrl)
         
         // Switch to specific tab if requested
@@ -1150,7 +1151,6 @@ async function init() {
           showTab(tabFromUrl)
         }
         
-        hideLoadingScreen()
         clearTimeout(loadingTimeout)
         return
       }
@@ -1652,6 +1652,33 @@ function closeEditChildModal() {
   hideElement(editModalError)
 }
 
+// Wait for the enhanced dashboard / adventure map to finish rendering.
+// Returns a promise that resolves when the map signals completion,
+// or after a safety timeout so the user is never stuck on the loading screen.
+function waitForDashboardRender() {
+  return new Promise((resolve) => {
+    const SAFETY_TIMEOUT = 3000
+    let resolved = false
+    
+    const safetyTimer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        console.warn('Dashboard render safety timeout reached - showing UI')
+        window._dashboardRenderComplete = null
+        resolve()
+      }
+    }, SAFETY_TIMEOUT)
+    
+    window._dashboardRenderComplete = () => {
+      if (!resolved) {
+        resolved = true
+        clearTimeout(safetyTimer)
+        resolve()
+      }
+    }
+  })
+}
+
 // Select child
 async function selectChild(child) {
   
@@ -1734,7 +1761,7 @@ async function selectChild(child) {
     
     if (!state.currentFocusPlan) {
       // No active focus plan - show onboarding
-      showFocusPlanOnboarding(child.id, (plan, superSkillOrPathway) => {
+      showFocusPlanOnboarding(child.id, async (plan, superSkillOrPathway) => {
         setCurrentFocusPlan(plan)
         window.state.currentFocusPlan = plan
         
@@ -1746,6 +1773,10 @@ async function selectChild(child) {
         
         // Render modules after onboarding is complete
         renderModules()
+        
+        // Wait for the adventure map to finish rendering before showing the UI
+        await waitForDashboardRender()
+        hideLoadingScreen()
       })
       return // Don't show detail view yet - wait for onboarding
     }
@@ -1756,6 +1787,10 @@ async function selectChild(child) {
     // Render modules immediately after showing the view
     renderModules()
     
+    // Wait for the adventure map to finish rendering before showing the UI
+    await waitForDashboardRender()
+    hideLoadingScreen()
+    
   } catch (error) {
     console.error('Error loading child modules:', error)
     console.error('Error details:', error.message, error.stack)
@@ -1764,6 +1799,7 @@ async function selectChild(child) {
     showChildDetailView(child)
     // Still try to render modules even with empty data
     renderModules()
+    hideLoadingScreen()
   } finally {
     // Always reset the selecting flag
     window.selectingChild = false
@@ -2042,8 +2078,12 @@ function renderParentModulesOverview() {
 
 // Show child detail view - OPTIMIZED with batched DOM operations
 function showChildDetailView(child) {
-  // Batch DOM reads first
-  const currentHeaderText = headerSubtitle.textContent
+  // Set global variables SYNCHRONOUSLY before any rendering
+  // so the enhanced dashboard / adventure map reads correct data
+  window.state.selectedChild = child
+  window.childModules = state.childModules
+  setAppState('childModules', state.childModules)
+  window.state.currentFocusPlan = state.currentFocusPlan
   
   // Batch DOM writes using requestAnimationFrame to avoid forced reflow
   requestAnimationFrame(() => {
@@ -2056,12 +2096,6 @@ function showChildDetailView(child) {
     
     // Show dashboard tab by default
     showTab('dashboard')
-    
-    // Update global variables for enhanced dashboard
-    window.state.selectedChild = child
-    window.childModules = state.childModules
-    setAppState('childModules', state.childModules)
-    window.state.currentFocusPlan = state.currentFocusPlan
     
     // Show dashboard button when viewing child details
     if (dashboardButton) {
@@ -2080,13 +2114,10 @@ function showChildDetailView(child) {
   // Show/setup Focus Plan settings button
   setupFocusPlanSettingsButton()
   
-  // Defer non-critical renders to next frame
-  requestAnimationFrame(() => {
-    // Refresh enhanced dashboard if it exists
-    if (typeof window.refreshEnhancedDashboard === 'function') {
-      window.refreshEnhancedDashboard()
-    }
-  })
+  // Refresh enhanced dashboard synchronously (it has its own debounce)
+  if (typeof window.refreshEnhancedDashboard === 'function') {
+    window.refreshEnhancedDashboard()
+  }
   
   // Defer leaderboard and weekly plan to idle callback or setTimeout
   // These are not visible on initial load
@@ -2102,8 +2133,8 @@ function showChildDetailView(child) {
     }, 100)
   }
   
-  // Hide loading screen now that child detail view is shown
-  hideLoadingScreen()
+  // NOTE: Loading screen is NOT hidden here.
+  // The caller (selectChild) hides it after all rendering is complete.
 }
 
 function resolveModuleSuperSkillSlug(module) {
@@ -2208,37 +2239,14 @@ async function applyFocusPlanToMap(focusPlan) {
       superSkillSlug = availableSuperSkills[0]
     }
     
-    // Store the super skill for the enhanced dashboard to use
+    // Store the super skill as a default for the enhanced dashboard.
+    // The adventure map's own init() handles priority:
+    //   1. User's explicit localStorage choice (from dropdown)
+    //   2. This focus plan default (window.currentFocusSuperSkill)
+    //   3. First available category
+    // So we do NOT directly set currentCategory on the map here —
+    // that would race with init() and override the user's stored preference.
     window.currentFocusSuperSkill = superSkillSlug
-    
-    // Update the adventure map category filter dropdown
-    const categoryFilter = document.getElementById('categoryFilter')
-    if (categoryFilter) {
-      // Find the matching option in the dropdown
-      const options = Array.from(categoryFilter.options)
-      const matchingOption = options.find(opt => 
-        opt.value === superSkillSlug ||
-        opt.value.toLowerCase() === superSkillSlug.toLowerCase()
-      )
-      
-      if (matchingOption) {
-        categoryFilter.value = matchingOption.value
-        // Trigger change event to update the map
-        categoryFilter.dispatchEvent(new Event('change'))
-      }
-    }
-    
-    // Also update window.adventureMap if it exists
-    if (window.adventureMap) {
-      window.adventureMap.currentCategory = superSkillSlug
-      window.adventureMap.render()
-    }
-    
-    // Update enhanced dashboard if exists
-    if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
-      window.enhancedDashboard.adventureMap.currentCategory = superSkillSlug
-      window.enhancedDashboard.adventureMap.render()
-    }
   } catch (error) {
     console.error('Error applying focus plan to map:', error)
   }
@@ -2550,14 +2558,32 @@ const CHECKIN_WEEKS = [1, 4, 7, 10]
 async function hasExistingCheckin(childId, moduleId) {
   if (!childId || !moduleId) return true
   try {
-    const { data } = await supabase
+    // Check if a check-in has been started for this specific module
+    const { data: assessmentData } = await supabase
+      .from('pathway_assessments')
+      .select('id')
+      .eq('child_id', childId)
+      .eq('module_id', moduleId)
+      .eq('assessment_type', 'checkin')
+      .limit(1)
+      .maybeSingle()
+    
+    // If an assessment exists for this module, the check-in was already triggered
+    if (assessmentData) return true
+    
+    // Also check if a weekly_checkin exists for this module (for backwards compatibility)
+    const { data: checkinData } = await supabase
       .from('weekly_checkins')
       .select('id')
       .eq('child_id', childId)
       .eq('module_id', moduleId)
       .limit(1)
       .maybeSingle()
-    return !!data
+    
+    // If a weekly_checkin exists for this module, the check-in was completed
+    if (checkinData) return true
+    
+    return false
   } catch (e) {
     console.error('Error checking existing checkin:', e)
     return true
@@ -2641,7 +2667,9 @@ function showCheckinPopup(module, onComplete) {
     // onSkip — user skipped, still navigate to module
     () => {
       onComplete()
-    }
+    },
+    // Pass module data for tracking
+    module
   )
 }
 
@@ -4245,14 +4273,8 @@ getUniqueSuperSkills() {
             var week = Number(mod.week_number || mod.pathway_order || 0);
             if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
                 try {
-                    var existing = await window.supabase
-                        .from('weekly_checkins')
-                        .select('id')
-                        .eq('child_id', child.id)
-                        .eq('module_id', mod.id)
-                        .limit(1)
-                        .maybeSingle();
-                    if (!existing.data) {
+                    var alreadyDone = await hasExistingCheckin(child.id, mod.id);
+                    if (!alreadyDone) {
                         var popupModule = Object.assign({}, mod, { code: code });
                         window.showCheckinPopup(popupModule, function() {
                             window.location.href = moduleUrl;

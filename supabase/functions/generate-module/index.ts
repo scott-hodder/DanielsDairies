@@ -517,6 +517,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     
     /* Page Layout */
     .page { min-height: 100vh; padding-top: 80px; padding-bottom: 100px; }
+    .page.chapter-scene-page { min-height: 0 !important; height: calc(100vh - 75px) !important; max-height: calc(100vh - 75px) !important; padding: 0 !important; overflow: hidden !important; }
     
     /* Animations */
     @keyframes bounce-slow {
@@ -2721,16 +2722,268 @@ function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | 
 }
 
 function renderChapterDivider(chapter: ChapterDivider): string {
+  const ch = chapter.chapterNumber;
+
+  // Journey labels per stage
+  const journeyLabel = ch <= 1 ? 'Setting Out' : ch === 2 ? 'Growing Stronger' : 'Welcome to Brain Town';
+  const journeyEmoji = ch <= 1 ? '🌿' : ch === 2 ? '🏡' : '🏘️';
+
+  // ── SVG scene builders using CSS vars for colour harmony ──
+  // Hills use darkened primary/secondary, buildings use dark + primary tints,
+  // windows use soft-yellow (lit) and cream-tinted (unlit), road uses dark + accent dashes.
+
+  // Stage 1: Rolling hills, a tree, a fence — open countryside
+  const hillsOnly = `
+    <!-- Far hills -->
+    <ellipse cx="150" cy="200" rx="280" ry="90" fill="var(--hill-far)"/>
+    <ellipse cx="550" cy="200" rx="350" ry="110" fill="var(--hill-near)"/>
+    <ellipse cx="950" cy="200" rx="300" ry="95" fill="var(--hill-far)"/>
+    <ellipse cx="1150" cy="200" rx="200" ry="70" fill="var(--hill-near)"/>
+    <!-- Trees -->
+    <rect x="220" y="128" width="6" height="32" fill="var(--tree-trunk)"/>
+    <ellipse cx="223" cy="122" rx="20" ry="18" fill="var(--tree-crown)"/>
+    <rect x="700" y="135" width="5" height="28" fill="var(--tree-trunk)"/>
+    <ellipse cx="702" cy="130" rx="16" ry="15" fill="var(--tree-crown-alt)"/>
+    <!-- Fence -->
+    <rect x="430" y="155" width="3" height="22" fill="var(--fence)"/>
+    <rect x="460" y="155" width="3" height="22" fill="var(--fence)"/>
+    <rect x="490" y="155" width="3" height="22" fill="var(--fence)"/>
+    <rect x="520" y="155" width="3" height="22" fill="var(--fence)"/>
+    <line x1="430" y1="162" x2="520" y2="162" stroke="var(--fence)" stroke-width="2"/>
+    <line x1="430" y1="170" x2="520" y2="170" stroke="var(--fence)" stroke-width="2"/>
+    <!-- Flowers -->
+    <circle cx="340" cy="172" r="4" fill="var(--accent)"/>
+    <circle cx="355" cy="168" r="3" fill="var(--soft-yellow)"/>
+    <circle cx="365" cy="174" r="4" fill="var(--accent)"/>
+    <circle cx="800" cy="165" r="3" fill="var(--soft-yellow)"/>
+    <circle cx="815" cy="170" r="4" fill="var(--accent)"/>`;
+
+  // Stage 2: Hills + small village with houses
+  const smallVillage = `
+    <ellipse cx="200" cy="200" rx="300" ry="100" fill="var(--hill-far)"/>
+    <ellipse cx="650" cy="200" rx="380" ry="115" fill="var(--hill-near)"/>
+    <ellipse cx="1050" cy="200" rx="280" ry="90" fill="var(--hill-far)"/>
+    <!-- House 1 -->
+    <rect x="130" y="148" width="42" height="52" rx="2" fill="var(--bld-light)"/>
+    <polygon points="125,148 172,148 151,128" fill="var(--bld-roof)"/>
+    <rect x="139" y="162" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="155" y="162" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="147" y="182" width="12" height="18" rx="1" fill="var(--bld-door)"/>
+    <!-- House 2 with chimney -->
+    <rect x="280" y="138" width="52" height="62" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="275,138 332,138 303,115" fill="var(--bld-roof)"/>
+    <rect x="315" y="110" width="8" height="28" fill="var(--bld-dark)"/>
+    <rect x="289" y="150" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="305" y="150" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="289" y="170" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="305" y="170" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Small shop -->
+    <rect x="450" y="155" width="48" height="45" rx="2" fill="var(--bld-light)"/>
+    <rect x="452" y="155" width="44" height="6" fill="var(--accent)"/>
+    <rect x="459" y="168" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="479" y="168" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- House 3 -->
+    <rect x="720" y="145" width="42" height="55" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="715,145 762,145 738,125" fill="var(--bld-roof)"/>
+    <rect x="729" y="158" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="745" y="158" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Tree -->
+    <rect x="600" y="142" width="5" height="25" fill="var(--tree-trunk)"/>
+    <ellipse cx="602" cy="137" rx="16" ry="14" fill="var(--tree-crown)"/>
+    <!-- Signpost -->
+    <rect x="880" y="152" width="4" height="28" fill="var(--fence)"/>
+    <rect x="870" y="150" width="32" height="14" rx="3" fill="var(--bld-light)"/>
+    <!-- Flowers -->
+    <circle cx="390" cy="175" r="4" fill="var(--accent)"/>
+    <circle cx="405" cy="178" r="3" fill="var(--soft-yellow)"/>
+    <circle cx="660" cy="170" r="3" fill="var(--accent)"/>`;
+
+  // Stage 3: Full Brain Town skyline
+  const brainTownCity = `
+    <ellipse cx="200" cy="200" rx="300" ry="100" fill="var(--hill-far)"/>
+    <ellipse cx="600" cy="200" rx="420" ry="120" fill="var(--hill-near)"/>
+    <ellipse cx="1000" cy="200" rx="320" ry="100" fill="var(--hill-far)"/>
+    <!-- Tall building left -->
+    <rect x="75" y="108" width="46" height="92" rx="2" fill="var(--bld-dark)"/>
+    <rect x="83" y="118" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="99" y="118" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="83" y="138" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="99" y="138" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="83" y="158" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="99" y="158" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="83" y="178" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Medium building -->
+    <rect x="135" y="128" width="56" height="72" rx="2" fill="var(--bld-light)"/>
+    <rect x="137" y="128" width="52" height="6" fill="var(--accent)" opacity="0.6"/>
+    <rect x="144" y="142" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="162" y="142" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="144" y="162" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="162" y="162" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Small house -->
+    <rect x="215" y="152" width="42" height="48" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="210,152 257,152 233,134" fill="var(--bld-roof)"/>
+    <rect x="224" y="165" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="240" y="165" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <!-- ★ Brain Town Tower (HQ) -->
+    <rect x="315" y="88" width="52" height="112" rx="2" fill="var(--bld-tower)"/>
+    <rect x="317" y="88" width="48" height="8" fill="var(--accent)" opacity="0.7"/>
+    <rect x="323" y="104" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="343" y="104" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="323" y="124" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="343" y="124" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="323" y="144" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="343" y="144" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="323" y="164" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="343" y="164" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="323" y="180" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="343" y="180" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Antenna + beacon -->
+    <line x1="341" y1="88" x2="341" y2="72" stroke="var(--fence)" stroke-width="2"/>
+    <circle cx="341" cy="70" r="4" fill="var(--accent)"/>
+    <!-- Clock face -->
+    <circle cx="341" cy="97" r="6" fill="var(--win-dim)" opacity="0.5"/>
+    <circle cx="341" cy="97" r="5" fill="none" stroke="var(--bld-dark)" stroke-width="1"/>
+    <!-- Buildings cluster mid -->
+    <rect x="415" y="138" width="46" height="62" rx="2" fill="var(--bld-light)"/>
+    <rect x="423" y="150" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="439" y="150" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="423" y="170" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="439" y="170" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="475" y="122" width="56" height="78" rx="2" fill="var(--bld-dark)"/>
+    <rect x="483" y="134" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="503" y="134" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="483" y="154" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="503" y="154" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="483" y="174" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Park trees -->
+    <rect x="558" y="158" width="5" height="22" fill="var(--tree-trunk)"/>
+    <ellipse cx="560" cy="153" rx="15" ry="13" fill="var(--tree-crown)"/>
+    <rect x="590" y="152" width="5" height="26" fill="var(--tree-trunk)"/>
+    <ellipse cx="592" cy="147" rx="17" ry="15" fill="var(--tree-crown-alt)"/>
+    <!-- Right buildings -->
+    <rect x="695" y="132" width="50" height="68" rx="2" fill="var(--bld-light)"/>
+    <polygon points="690,132 745,132 717,112" fill="var(--bld-roof)"/>
+    <rect x="704" y="145" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="722" y="145" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="704" y="165" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="722" y="165" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="765" y="148" width="40" height="52" rx="2" fill="var(--bld-dark)"/>
+    <rect x="773" y="160" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="789" y="160" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="835" y="118" width="58" height="82" rx="2" fill="var(--bld-light)"/>
+    <rect x="837" y="118" width="54" height="6" fill="var(--accent)" opacity="0.5"/>
+    <rect x="844" y="132" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="864" y="132" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="844" y="152" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="864" y="152" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="844" y="172" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="864" y="172" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Far right houses -->
+    <rect x="945" y="155" width="42" height="45" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="940,155 987,155 963,138" fill="var(--bld-roof)"/>
+    <rect x="954" y="168" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="1020" y="162" width="36" height="38" rx="2" fill="var(--bld-light)"/>
+    <rect x="1028" y="172" width="10" height="12" rx="1" fill="var(--win-dim)"/>`;
+
+  const scene = ch <= 1 ? hillsOnly : ch === 2 ? smallVillage : brainTownCity;
+
   return `
-    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--primary), var(--accent));" data-page="chapter">
-      <div class="text-center">
-        <div class="text-8xl mb-6 animate-bounce-slow">📖</div>
-        <h1 class="text-5xl md:text-6xl text-white mb-4 font-title">Chapter ${chapter.chapterNumber}</h1>
-        <h2 class="text-3xl md:text-4xl text-white mb-8 font-title">${escapeForTemplate(chapter.chapterTitle)}</h2>
-        <p class="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-body">
+    <div class="page chapter-scene-page" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;" data-page="chapter">
+
+      <!-- Daytime sky -->
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+        color-mix(in srgb, var(--primary) 12%, #e0f0ff) 0%,
+        color-mix(in srgb, var(--primary) 8%, #f0f7ff) 25%,
+        color-mix(in srgb, var(--cream) 50%, #f8fbff) 55%,
+        var(--cream) 100%
+      );"></div>
+
+      <!-- Sun glow -->
+      <div style="position:absolute;top:6%;right:12%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle, var(--soft-yellow) 0%, color-mix(in srgb, var(--soft-yellow) 40%, transparent) 50%, transparent 70%);opacity:0.7;"></div>
+
+      <!-- Soft clouds (pure CSS) -->
+      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">
+        <div class="ch-cloud ch-cloud-1"></div>
+        <div class="ch-cloud ch-cloud-2"></div>
+        <div class="ch-cloud ch-cloud-3"></div>
+        <div class="ch-cloud ch-cloud-4"></div>
+      </div>
+
+      <!-- Landscape at bottom — 280px -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:280px;z-index:1;">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" style="width:100%;height:100%;">
+          ${scene}
+          <!-- Road surface -->
+          <rect x="0" y="185" width="1200" height="15" fill="color-mix(in srgb, var(--dark) 85%, var(--primary))" rx="0"/>
+          <!-- Road centre line -->
+          <line x1="0" y1="192" x2="1200" y2="192" stroke="var(--accent)" stroke-width="2" stroke-dasharray="12 12" class="ch-road-dash"/>
+        </svg>
+      </div>
+
+      <!-- Content — centred above scene -->
+      <div style="position:relative;z-index:10;text-align:center;padding:0 24px;max-width:640px;margin:0 auto;padding-bottom:300px;">
+        <!-- Journey badge -->
+        <div style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--primary) 12%, white);border:1px solid color-mix(in srgb, var(--primary) 25%, transparent);border-radius:20px;padding:5px 14px;margin-bottom:20px;backdrop-filter:blur(8px);">
+          <span style="font-size:13px;">${journeyEmoji}</span>
+          <span style="color:var(--primary);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">${escapeForTemplate(journeyLabel)}</span>
+        </div>
+
+        <!-- Chapter number + title -->
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
+          <h1 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(32px,7vw,52px);font-weight:800;color:var(--primary);margin:0;line-height:1.1;text-shadow:0 2px 12px color-mix(in srgb, var(--primary) 25%, transparent);">
+            Chapter ${chapter.chapterNumber}
+          </h1>
+          <h2 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(24px,5vw,38px);font-weight:800;color:var(--dark);margin:0;line-height:1.15;">
+            ${escapeForTemplate(chapter.chapterTitle)}
+          </h2>
+        </div>
+
+        <!-- Decorative dashes in accent colour -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px;">
+          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+          <div style="width:24px;height:3px;background:var(--accent);border-radius:2px;"></div>
+          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+        </div>
+
+        <!-- Subtitle -->
+        <p style="font-family:'Nunito',sans-serif;font-size:clamp(15px,3vw,20px);font-weight:600;color:color-mix(in srgb, var(--dark) 70%, var(--secondary));margin:0;line-height:1.5;max-width:460px;margin-left:auto;margin-right:auto;">
           ${escapeForTemplate(chapter.chapterSubtitle)}
         </p>
       </div>
+
+      <!-- Scoped styles — all derived from theme vars for colour harmony -->
+      <style>
+        .chapter-scene-page {
+          /* Hill colours: darken primary & secondary to earthy greens */
+          --hill-near: color-mix(in srgb, var(--secondary) 40%, #3a7a5a);
+          --hill-far: color-mix(in srgb, var(--primary) 30%, #4a8a6a);
+          /* Tree colours */
+          --tree-trunk: color-mix(in srgb, var(--dark) 60%, #6b5b3a);
+          --tree-crown: color-mix(in srgb, var(--secondary) 45%, #4a8a5a);
+          --tree-crown-alt: color-mix(in srgb, var(--primary) 35%, #5a9a6a);
+          /* Building colours */
+          --bld-dark: color-mix(in srgb, var(--dark) 80%, var(--primary));
+          --bld-light: color-mix(in srgb, var(--dark) 60%, var(--cream));
+          --bld-tower: color-mix(in srgb, var(--primary) 55%, var(--dark));
+          --bld-roof: color-mix(in srgb, var(--accent) 60%, var(--dark));
+          --bld-door: color-mix(in srgb, var(--dark) 85%, var(--accent));
+          /* Window colours */
+          --win-lit: var(--soft-yellow);
+          --win-dim: color-mix(in srgb, var(--cream) 50%, var(--secondary) 20%);
+          /* Fence */
+          --fence: color-mix(in srgb, var(--dark) 45%, var(--cream));
+        }
+        @keyframes chRoadDash{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+        .ch-road-dash{animation:chRoadDash 1s linear infinite}
+        @keyframes chCloudDrift{from{transform:translateX(-300px)}to{transform:translateX(calc(100vw + 300px))}}
+        .ch-cloud{position:absolute;border-radius:200px;background:rgba(255,255,255,0.45);filter:blur(8px);animation:chCloudDrift linear infinite;will-change:transform}
+        .ch-cloud-1{top:10%;width:140px;height:50px;animation-duration:55s;animation-delay:-10s;opacity:0.3}
+        .ch-cloud-2{top:18%;width:100px;height:38px;animation-duration:45s;animation-delay:-25s;opacity:0.25}
+        .ch-cloud-3{top:8%;width:170px;height:60px;animation-duration:65s;animation-delay:-40s;opacity:0.2}
+        .ch-cloud-4{top:25%;width:110px;height:42px;animation-duration:50s;animation-delay:-5s;opacity:0.3}
+      </style>
     </div>`;
 }
 

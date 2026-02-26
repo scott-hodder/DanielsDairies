@@ -5672,6 +5672,37 @@ if (data.status === "running") {
             await loadSuperSkillsTheories();
         }
 
+        window.deleteSuperSkillTheories = async function() {
+            if (!selectedSuperSkillTheoriesId) return;
+
+            const superSkill = superSkillsTheoriesData.find(ss => ss.id === selectedSuperSkillTheoriesId);
+            if (!superSkill) return;
+
+            if (!confirm(`Are you sure you want to delete "${superSkill.name}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('super_skills')
+                .delete()
+                .eq('id', selectedSuperSkillTheoriesId);
+
+            if (error) {
+                console.error('[Admin] Error deleting super skill:', error);
+                alert('Failed to delete super skill. Please try again.');
+                return;
+            }
+
+            alert('✅ Super skill deleted successfully!');
+            selectedSuperSkillTheoriesId = null;
+            await loadSuperSkillsTheories();
+            
+            const editor = document.getElementById('superSkillEditorTheories');
+            const placeholder = document.getElementById('superSkillEditorPlaceholderTheories');
+            if (editor) editor.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'block';
+        }
+
         window.selectSubSkillTheories = function(subSkillId) {
             selectedSubSkillTheoriesId = subSkillId;
             const subSkill = subSkillsTheoriesData.find(ss => ss.id === subSkillId);
@@ -5781,6 +5812,37 @@ if (data.status === "running") {
 
             alert('✅ Sub-skill saved successfully!');
             await loadSubSkillsTheories();
+        }
+
+        window.deleteSubSkillTheories = async function() {
+            if (!selectedSubSkillTheoriesId) return;
+
+            const subSkill = subSkillsTheoriesData.find(ss => ss.id === selectedSubSkillTheoriesId);
+            if (!subSkill) return;
+
+            if (!confirm(`Are you sure you want to delete "${subSkill.name}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('sub_skills')
+                .delete()
+                .eq('id', selectedSubSkillTheoriesId);
+
+            if (error) {
+                console.error('[Admin] Error deleting sub-skill:', error);
+                alert('Failed to delete sub-skill. Please try again.');
+                return;
+            }
+
+            alert('✅ Sub-skill deleted successfully!');
+            selectedSubSkillTheoriesId = null;
+            await loadSubSkillsTheories();
+            
+            const editor = document.getElementById('subSkillEditorTheories');
+            const placeholder = document.getElementById('subSkillEditorPlaceholderTheories');
+            if (editor) editor.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'block';
         }
 
         // ========== AGE RANGES FUNCTIONS (Theories Tab) ==========

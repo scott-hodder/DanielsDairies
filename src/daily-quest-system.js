@@ -813,7 +813,7 @@ class DailyQuestManager {
           .single();
 
         if (data && !error) {
-          this.isCompleted = true;
+          this.isCompleted = false; //true;
           this.currentQuest = DAILY_QUESTS.find(q => q.id === data.quest_id) || DAILY_QUESTS[0];
           return;
         }

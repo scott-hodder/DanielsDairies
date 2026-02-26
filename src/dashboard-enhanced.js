@@ -302,7 +302,7 @@ class AdventureMapV4 {
       nodeSpacingY: this.isMobile ? 85 : 140,
       pathAmplitude: this.isMobile ? 55 : 140,
       zigzagFrequency: this.isMobile ? 0.8 : 1.2,
-      topPadding: this.isMobile ? 60 : 120,
+      topPadding: this.isMobile ? 250 : 120,
       bottomPadding: this.isMobile ? 80 : 160,
       sidePadding: this.isMobile ? 36 : 100,
       minCanvasHeight: this.isMobile ? 400 : 500
@@ -328,6 +328,12 @@ class AdventureMapV4 {
     // Check if there's a focus plan super skill already set
     if (window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
       this.currentCategory = window.currentFocusSuperSkill;
+    }
+    
+    // Restore user's explicit category selection (overrides focus plan default)
+    var storedCategory = this.getStoredCategory();
+    if (storedCategory && SUPER_SKILL_THEMES[storedCategory]) {
+      this.currentCategory = storedCategory;
     }
     
     // Load super skills and cycles from database if supabase is available
@@ -362,7 +368,7 @@ class AdventureMapV4 {
           }
           
           // Check again for focus plan after loading (in case it was set while loading)
-          if (window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
+          if (!self.currentCategory && window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
             self.currentCategory = window.currentFocusSuperSkill;
           }
           
@@ -548,7 +554,38 @@ class AdventureMapV4 {
     // Cracked ground effect for start zone
     css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
     
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-complete-popup-title { font-size: 19px; } .cycle-complete-popup-actions, .cycle-complete-popup-selectors { flex-direction: column; } .cycle-popup-btn { width: 100%; } .cycle-complete-popup-daniel { width: 140px; height: 140px; top: -86px; } }');
+    // Zone upgrade celebration styles
+    css.push('.zone-upgrade-shimmer { position: absolute; inset: 0; z-index: 60; pointer-events: none; background: linear-gradient(135deg, rgba(255,215,0,0.0) 0%, rgba(255,215,0,0.45) 40%, rgba(255,255,255,0.7) 50%, rgba(255,215,0,0.45) 60%, rgba(255,215,0,0.0) 100%); background-size: 300% 300%; animation: zoneShimmerSweep 1.2s ease-out forwards; border-radius: 20px; }');
+    css.push('@keyframes zoneShimmerSweep { 0% { background-position: 150% 150%; opacity: 0; } 30% { opacity: 1; } 100% { background-position: -50% -50%; opacity: 0; } }');
+    
+    css.push('.zone-upgrade-banner { position: absolute; top: 0; left: 0; right: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; padding: 0; animation: zoneBannerSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform: translateY(-100%); pointer-events: auto; }');
+    css.push('.zone-upgrade-banner.dismissing { animation: zoneBannerSlideOut 0.5s ease-in forwards; }');
+    css.push('@keyframes zoneBannerSlideIn { 0% { transform: translateY(-100%); } 100% { transform: translateY(0); } }');
+    css.push('@keyframes zoneBannerSlideOut { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100%); opacity: 0; } }');
+    
+    css.push('.zone-upgrade-card { position: relative; width: 92%; max-width: 420px; margin-top: 16px; background: linear-gradient(135deg, #fffbe6 0%, #fff7cc 40%, #fff3b0 100%); border: 3px solid #f59e0b; border-radius: 20px; padding: 20px 20px 18px; box-shadow: 0 8px 32px rgba(245, 158, 11, 0.35), 0 0 0 6px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255,255,255,0.8); text-align: center; overflow: visible; cursor: pointer; }');
+    css.push('.zone-upgrade-card::before { content: ""; position: absolute; inset: -3px; border-radius: 22px; background: linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24, #fcd34d); z-index: -1; animation: zoneBorderGlow 2s ease-in-out infinite; }');
+    css.push('@keyframes zoneBorderGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }');
+    
+    css.push('.zone-upgrade-daniel { width: 80px; height: 80px; margin: -56px auto 8px; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25)); animation: zoneDanielBounce 0.8s ease-in-out 0.4s infinite alternate; }');
+    css.push('.zone-upgrade-daniel img { width: 100%; height: 100%; object-fit: contain; }');
+    css.push('@keyframes zoneDanielBounce { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-8px) scale(1.05); } }');
+    
+    css.push('.zone-upgrade-emoji { font-size: 36px; margin-bottom: 4px; animation: zoneEmojiPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both; }');
+    css.push('@keyframes zoneEmojiPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }');
+    
+    css.push('.zone-upgrade-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 4px; line-height: 1.2; }');
+    css.push('.zone-upgrade-subtitle { font-family: "Fredoka", sans-serif; font-size: 13px; color: #b45309; margin: 0 0 10px; line-height: 1.4; }');
+    
+    css.push('.zone-upgrade-new-label { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35); }');
+    
+    css.push('.zone-upgrade-tap-hint { font-family: "Fredoka", sans-serif; font-size: 11px; color: #d97706; margin-top: 8px; opacity: 0.7; }');
+    
+    css.push('.zone-upgrade-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 20px; z-index: 79; }');
+    css.push('.zone-confetti-piece { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: zoneConfettiFall 2.5s ease-in forwards; }');
+    css.push('@keyframes zoneConfettiFall { 0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(500px) rotate(720deg) scale(0.3); opacity: 0; } }');
+    
+    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-complete-popup-title { font-size: 19px; } .cycle-complete-popup-actions, .cycle-complete-popup-selectors { flex-direction: column; } .cycle-popup-btn { width: 100%; } .cycle-complete-popup-daniel { width: 140px; height: 140px; top: -86px; } .zone-upgrade-card { padding: 16px 14px 14px; max-width: 340px; } .zone-upgrade-title { font-size: 17px; } .zone-upgrade-subtitle { font-size: 12px; } .zone-upgrade-daniel { width: 64px; height: 64px; margin-top: -44px; } .zone-upgrade-emoji { font-size: 28px; } }');
     
     var styles = document.createElement('style');
     styles.id = 'adventure-map-v4-styles';
@@ -596,7 +633,19 @@ class AdventureMapV4 {
           setTimeout(function() {
             self.centerOnCurrentModule();
           }, 100);
+          
+          // Signal that the dashboard map has finished rendering
+          if (typeof window._dashboardRenderComplete === 'function') {
+            window._dashboardRenderComplete();
+            window._dashboardRenderComplete = null;
+          }
         });
+      } else {
+        // No modules to render - still signal completion
+        if (typeof window._dashboardRenderComplete === 'function') {
+          window._dashboardRenderComplete();
+          window._dashboardRenderComplete = null;
+        }
       }
     });
   }
@@ -809,6 +858,26 @@ class AdventureMapV4 {
         localStorage.setItem(this.getCycleStorageKey(category), String(cycleId));
       } else {
         localStorage.removeItem(this.getCycleStorageKey(category));
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  getStoredCategory() {
+    try {
+      return localStorage.getItem('adventureMapSelectedCategory');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  setStoredCategory(category) {
+    try {
+      if (category) {
+        localStorage.setItem('adventureMapSelectedCategory', String(category));
+      } else {
+        localStorage.removeItem('adventureMapSelectedCategory');
       }
     } catch (e) {
       // Ignore storage errors
@@ -1070,6 +1139,7 @@ class AdventureMapV4 {
     overlay.querySelector('#cyclePopupGoBtn').addEventListener('click', function() {
       if (!skillSelect.value || !cycleSelect.value) return;
       self.currentCategory = skillSelect.value;
+      self.setStoredCategory(self.currentCategory);
       self.currentCycleId = cycleSelect.value;
       self.setStoredCycleId(self.currentCategory, self.currentCycleId);
       closePopup();
@@ -1243,9 +1313,142 @@ class AdventureMapV4 {
   applyZoneBackground() {
     if (!this.viewport) return;
     var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    this.viewport.dataset.zone = this.getZoneForCompletedCount(completedCount);
+    var newZone = this.getZoneForCompletedCount(completedCount);
+    var previousZone = this.currentZone;
+    this.viewport.dataset.zone = newZone;
+    this.currentZone = newZone;
+
+    // Detect zone upgrade: only when moving to a higher zone (not zone 1)
+    if (previousZone !== null && newZone > previousZone && newZone > 1) {
+      var self = this;
+      // Small delay so the background image loads before the celebration plays
+      setTimeout(function() {
+        self.showZoneUpgradeBanner(newZone, completedCount);
+      }, 400);
+    } else if (previousZone === null && newZone > 1) {
+      // First render after selecting a child — check if this zone was already celebrated
+      var child = window.state && window.state.selectedChild;
+      var childId = child ? child.id : 'unknown';
+      var storageKey = 'zoneUpgradeSeen_child_' + childId + '_zone_' + newZone;
+      if (localStorage.getItem(storageKey) !== 'true') {
+        var self = this;
+        setTimeout(function() {
+          self.showZoneUpgradeBanner(newZone, completedCount);
+        }, 800);
+      }
+    }
   }
-  
+
+  showZoneUpgradeBanner(zone, completedCount) {
+    if (!this.viewport) return;
+
+    // localStorage guard — only show once per child per zone
+    var child = window.state && window.state.selectedChild;
+    var childId = child ? child.id : 'unknown';
+    var storageKey = 'zoneUpgradeSeen_child_' + childId + '_zone_' + zone;
+    if (localStorage.getItem(storageKey) === 'true') return;
+    localStorage.setItem(storageKey, 'true');
+
+    // Remove any existing banner
+    var existing = this.viewport.querySelector('.zone-upgrade-banner');
+    if (existing) existing.remove();
+    var existingShimmer = this.viewport.querySelector('.zone-upgrade-shimmer');
+    if (existingShimmer) existingShimmer.remove();
+    var existingConfetti = this.viewport.querySelector('.zone-upgrade-confetti');
+    if (existingConfetti) existingConfetti.remove();
+
+    // Zone metadata
+    var stages = this.getTownStageMeta();
+    var stageIndex = zone <= 1 ? 0 : Math.min(zone - 1, stages.length - 1);
+    var stage = stages[stageIndex];
+    var zoneTitles = [
+      '',
+      'Your Brain Town is Starting!',
+      'Your Brain Town Grew Into a Village!',
+      'Your Brain Town is Now a City!',
+      'Your Brain Town is a Metropolis!'
+    ];
+    var zoneSubtitles = [
+      '',
+      'Every module builds new pathways in your brain!',
+      'Look! Houses and fences appeared — your brain pathways are growing stronger!',
+      'Shops and street lights! Your brain connections are getting really powerful!',
+      'A whole skyline! Your brain is an incredible network of pathways!'
+    ];
+
+    var title = zoneTitles[zone] || 'Your Brain Town Upgraded!';
+    var subtitle = zoneSubtitles[zone] || 'Keep completing modules to grow your town!';
+    var emoji = stage ? stage.emoji : '🏘️';
+
+    // 1. Add golden shimmer flash over the viewport
+    var shimmer = document.createElement('div');
+    shimmer.className = 'zone-upgrade-shimmer';
+    this.viewport.appendChild(shimmer);
+    setTimeout(function() { shimmer.remove(); }, 1400);
+
+    // 2. Add confetti
+    this.spawnZoneConfetti();
+
+    // 3. Build and show the banner
+    var self = this;
+    var banner = document.createElement('div');
+    banner.className = 'zone-upgrade-banner';
+    banner.innerHTML =
+      '<div class="zone-upgrade-card">' +
+        '<div class="zone-upgrade-daniel"><img src="/images/characters/DanielTheDogThumbsUp.png" alt="Daniel celebrates"></div>' +
+        '<div class="zone-upgrade-emoji">' + emoji + '</div>' +
+        '<div class="zone-upgrade-title">' + title + '</div>' +
+        '<div class="zone-upgrade-subtitle">' + subtitle + '</div>' +
+        '<div class="zone-upgrade-new-label"><span>✨</span> New Landscape Unlocked <span>✨</span></div>' +
+        '<div class="zone-upgrade-tap-hint">Tap to continue exploring</div>' +
+      '</div>';
+
+    banner.addEventListener('click', function() {
+      self.dismissZoneUpgradeBanner(banner);
+    });
+
+    this.viewport.appendChild(banner);
+
+    // Auto-dismiss after 6 seconds
+    this.zoneUpgradeTimeout = setTimeout(function() {
+      self.dismissZoneUpgradeBanner(banner);
+    }, 6000);
+  }
+
+  dismissZoneUpgradeBanner(banner) {
+    if (!banner || !banner.parentNode) return;
+    if (this.zoneUpgradeTimeout) {
+      clearTimeout(this.zoneUpgradeTimeout);
+      this.zoneUpgradeTimeout = null;
+    }
+    banner.classList.add('dismissing');
+    setTimeout(function() {
+      if (banner.parentNode) banner.remove();
+    }, 600);
+  }
+
+  spawnZoneConfetti() {
+    if (!this.viewport) return;
+    var container = document.createElement('div');
+    container.className = 'zone-upgrade-confetti';
+    var colors = ['#fbbf24', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6', '#22c55e', '#ec4899', '#14b8a6'];
+    var viewportWidth = this.viewport.offsetWidth || 400;
+
+    for (var i = 0; i < 40; i++) {
+      var piece = document.createElement('div');
+      piece.className = 'zone-confetti-piece';
+      var color = colors[Math.floor(Math.random() * colors.length)];
+      var left = Math.random() * viewportWidth;
+      var delay = Math.random() * 1.2;
+      var size = 6 + Math.random() * 6;
+      piece.style.cssText = 'left:' + left + 'px; top:-10px; width:' + size + 'px; height:' + size + 'px; background:' + color + '; animation-delay:' + delay + 's; border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';';
+      container.appendChild(piece);
+    }
+
+    this.viewport.appendChild(container);
+    setTimeout(function() { if (container.parentNode) container.remove(); }, 4000);
+  }
+
   interpolateColor(color1, color2, factor) {
     var c1 = this.hexToRgb(color1);
     var c2 = this.hexToRgb(color2);
@@ -1681,6 +1884,7 @@ class AdventureMapV4 {
     if (categoryFilter) {
       this._categoryChangeHandler = function(e) {
         self.currentCategory = e.target.value;
+        self.setStoredCategory(self.currentCategory);
         self.currentCycleId = null;
         self.translateX = 0;
         self.translateY = 0;
@@ -1719,6 +1923,7 @@ class AdventureMapV4 {
         var cycleSelect = document.getElementById('nextCycleFilter');
         if (!skillSelect || !cycleSelect || !cycleSelect.value) return;
         self.currentCategory = skillSelect.value;
+        self.setStoredCategory(self.currentCategory);
         self.currentCycleId = cycleSelect.value;
         self.setStoredCycleId(self.currentCategory, self.currentCycleId);
         self.translateX = 0;
@@ -2294,6 +2499,7 @@ window.setAdventureMapSuperSkill = function(superSkillSlug) {
   // Update the adventure map if it exists
   if (enhancedDashboard && enhancedDashboard.adventureMap) {
     enhancedDashboard.adventureMap.currentCategory = superSkillSlug;
+    enhancedDashboard.adventureMap.setStoredCategory(superSkillSlug);
     enhancedDashboard.adventureMap.render();
   }
 };

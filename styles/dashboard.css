@@ -3602,6 +3602,7 @@ box-shadow: 0 8px 20px rgba(0,0,0,0.25);
         height: 75vh;
     }
 
+
     .adventure-node {
         width: 35px !important;
         height: 35px !important;
@@ -4802,7 +4803,7 @@ body::before {
     background-repeat: no-repeat;
     animation: floatClouds 80s linear infinite;
     pointer-events: none;
-    z-index: 0;
+    z-index: -1;
     opacity: 0.75;
 }
 

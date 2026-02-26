@@ -81,7 +81,8 @@ CRITICAL RULES:
 6. Use Australian English spelling throughout (colour, behaviour, favourite, organise, centre, mum, learnt).
 7. NEVER use em dashes, "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
 8. Write as a warm, experienced educator, not a marketing copywriter.
-9. EMOJI SAFETY: Only use well-supported, common emojis from Unicode 12.0 or earlier. NEVER use emojis added after 2019 (Unicode 13+), ZWJ sequences (combined emojis), or skin-tone variants. 
+9. NEVER use hyphens or en dashes to join compound words in activity content, headings, or labels. Use spaces instead. For example: "thought feeling" not "thought-feeling", "feeling action" not "feeling-action", "self care" not "self-care", "deep breathing" not "deep-breathing". The ONLY exception is page type identifiers in code.
+10. EMOJI SAFETY: Only use well-supported, common emojis from Unicode 12.0 or earlier. NEVER use emojis added after 2019 (Unicode 13+), ZWJ sequences (combined emojis), or skin-tone variants. 
    SAFE emojis: 😊 😢 😡 😨 😌 🤩 😳 😤 🤔 😴 🥰 😎 🤗 😮 🙂 😞 😰 ⭐ 💛 ❤ 🌟 🎯 🎨 📝 💡 🏠 🌈 🐕 🐱 🦁 🐻 🌸 🌻 🎵 🎶 💪 🧠 ❓ ✅ ✓ ❌ 🐢 🐠 🐟 🐙 🐚 🌊 🐬 🐳 🐋 🦈 🐡 🦀 🌿 🍃 🪨 💎 ⚡ 🔥 💧 🌙 ☀ 🌤 ⛅ 🌧 ⛈ 🌪 🌞 🎈 🎉 🏆 🎪 🎭 🎬 🎵 🎶 🎹 🥁 🎸 🎺 🎻 📖 📚 ✏ 🖍 🖌 👀 👂 🫂 🤝 👍 👏 🙌 💭 💬 🔍 🧩
    BANNED emojis (render as empty boxes): 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 — and ANY emoji you are unsure about.
    For aquarium themes use: 🐢 🐠 🐟 🐙 🐚 🌊 🐬 — NOT coral or jellyfish emojis.
@@ -162,6 +163,37 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   parts.push('', 'LANGUAGE: Australian English mandatory (colour, behaviour, favourite, organise, centre, mum, learnt).');
   
   return parts.filter(p => p !== undefined).join('\n');
+}
+
+/**
+ * Post-process AI-generated strings to remove hyphens/en dashes used in compound words.
+ * Replaces patterns like "thought-feeling", "self-care" → "thought feeling", "self care".
+ * Preserves hyphens in actual hyphenated contexts (e.g. "6-8", "step-by-step" IDs).
+ */
+function dehyphenateContent(text: string): string {
+  if (!text || typeof text !== 'string') return text;
+  // Replace letter-hyphen-letter sequences (compound words) with spaces
+  // This matches "thought-feeling" but not "6-8" (number-number)
+  return text.replace(/([a-zA-Z])-([a-zA-Z])/g, '$1 $2');
+}
+
+/**
+ * Recursively dehyphenate all string values in a JSON object/array.
+ * Used to post-process AI responses before returning them.
+ * Skips keys that are identifiers (id, type, category, correctCategory, interactionType).
+ */
+function dehyphenateObject<T>(obj: T): T {
+  if (typeof obj === 'string') return dehyphenateContent(obj) as unknown as T;
+  if (Array.isArray(obj)) return obj.map(item => dehyphenateObject(item)) as unknown as T;
+  if (obj && typeof obj === 'object') {
+    const skipKeys = new Set(['id', 'type', 'interactionType', 'weatherType']);
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = skipKeys.has(key) ? value : dehyphenateObject(value);
+    }
+    return result as T;
+  }
+  return obj;
 }
 
 // Determine if Daniel should appear as the learner character.
@@ -491,6 +523,11 @@ async function generateChapterDividers(
   const prompt = `Create ${count} chapter dividers for a child's workbook about "${metadata.theme}".
 
 ${buildCondensedContext(contentBrief, metadata)}
+
+The chapters should follow this progression:
+- Chapter 1: Introduction and foundation (exploring the topic)
+- Chapter 2: Deeper exploration (building skills and understanding)
+- Chapter 3: Putting it all together (applying everything learned, connecting the dots)
 
 Respond with ONLY this JSON:
 {
@@ -3657,11 +3694,14 @@ async function generateAllContent(
     generateModuleSummary(apiKey, metadata, contentBrief, contentWithoutVerification),
   ]);
   
-  return {
+  // Post-process: remove hyphens from compound words in all AI-generated content
+  const rawContent = {
     ...contentWithoutVerification,
     verificationReport,
     moduleSummary,
   };
+  
+  return dehyphenateObject(rawContent);
 }
 
 // ====================
