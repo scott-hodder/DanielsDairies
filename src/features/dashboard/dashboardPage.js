@@ -77,6 +77,11 @@ const purchaseModalBody = document.getElementById('purchaseModalBody')
 const purchaseModalCost = document.getElementById('purchaseModalCost')
 const cancelPurchaseButton = document.getElementById('cancelPurchaseButton')
 const confirmPurchaseButton = document.getElementById('confirmPurchaseButton')
+const unlockResultModal = document.getElementById('unlockResultModal')
+const unlockResultTitle = document.getElementById('unlockResultTitle')
+const unlockResultMessage = document.getElementById('unlockResultMessage')
+const unlockResultIcon = document.getElementById('unlockResultIcon')
+const unlockResultCloseButton = document.getElementById('unlockResultCloseButton')
 const childPasswordModal = document.getElementById('childPasswordModal')
 const childPasswordModalTitle = document.getElementById('childPasswordModalTitle')
 const childPasswordForm = document.getElementById('childPasswordForm')
@@ -1264,8 +1269,7 @@ function openPurchaseModal(module) {
       <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">Spend 1 credit to unlock this workbook for your family.</span>
       <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">Credits available right now: ${walletValue}</span>
     `
-    if (confirmPurchaseButton) {
-      confirmPurchaseButton.disabled = false
+if (confirmPurchaseButton) {      confirmPurchaseButton.disabled = false
       confirmPurchaseButton.textContent = 'Spend 1 Credit'
     }
   } else {
@@ -1305,6 +1309,24 @@ function closePurchaseModal() {
     confirmPurchaseButton.textContent = 'Spend 1 Credit'
   }
   hideElement(purchaseModal)
+}
+
+function showUnlockResultModal({ title, message, type = 'success' }) {
+  if (!unlockResultModal || !unlockResultTitle || !unlockResultMessage || !unlockResultIcon) return
+
+  unlockResultTitle.textContent = title
+  unlockResultMessage.textContent = message
+
+  unlockResultIcon.classList.remove('success', 'error')
+  if (type === 'error') {
+    unlockResultIcon.classList.add('error')
+    unlockResultIcon.textContent = '⚠️'
+  } else {
+    unlockResultIcon.classList.add('success')
+    unlockResultIcon.textContent = '🎉'
+  }
+
+  showElement(unlockResultModal)
 }
 
 function getNextCreditRefreshDateLabel() {
@@ -2927,6 +2949,19 @@ if (cancelPurchaseButton) {
   })
 }
 
+
+if (unlockResultCloseButton) {
+  unlockResultCloseButton.addEventListener('click', () => {
+    hideElement(unlockResultModal)
+  })
+}
+
+if (unlockResultModal) {
+  unlockResultModal.addEventListener('click', (event) => {
+    if (event.target === unlockResultModal) hideElement(unlockResultModal)
+  })
+}
+
 if (confirmPurchaseButton) {
   confirmPurchaseButton.addEventListener('click', async () => {
     if (!state.currentPurchaseModule || !state.currentUser) return
@@ -2989,10 +3024,17 @@ if (confirmPurchaseButton) {
 
       closePurchaseModal()
       createConfettiCelebration()
-      alert('Module unlocked with 1 credit!')
+      showUnlockResultModal({
+        title: 'Module Unlocked!',
+        message: 'Your module is now active and ready for your child to start.'
+      })
     } catch (error) {
       console.error('Unlock error:', error)
-      alert(error.message || 'Failed to unlock module. Please ensure you have credits available for this period.')
+      showUnlockResultModal({
+        title: 'Could not unlock module',
+        message: error.message || 'We could not unlock this module right now. Please check your credits and try again.',
+        type: 'error'
+      })
     } finally {
       confirmPurchaseButton.disabled = false
       confirmPurchaseButton.textContent = 'Spend 1 Credit'

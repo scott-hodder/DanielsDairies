@@ -6105,3 +6105,32 @@ button:active, .btn:active {
             font-size: 12px;
         }
     }
+
+
+.unlock-result-modal {
+    border: 2px solid #dbeafe;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.unlock-result-icon {
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+}
+
+.unlock-result-icon.success {
+    background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25);
+}
+
+.unlock-result-icon.error {
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
+}
