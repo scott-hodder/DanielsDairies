@@ -193,6 +193,45 @@ body {
     align-items: center;
 }
 
+.credit-wallet {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 12px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.credit-wallet--empty {
+    background: rgba(255, 243, 205, 0.35);
+}
+
+.credit-wallet-icon {
+    width: 34px;
+    height: 18px;
+}
+
+.credit-wallet-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+}
+
+.credit-wallet-label {
+    color: var(--fm-bg-primary);
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.credit-wallet-value {
+    color: var(--fm-bg-primary);
+    font-size: 16px;
+    font-weight: 700;
+}
+
 /* Hamburger Menu Button - Hidden on desktop, shown on mobile */
 .hamburger-menu {
     display: none;
@@ -318,6 +357,19 @@ body {
 @media (max-width: 768px) {
     .desktop-nav {
         display: none;
+    }
+
+    .credit-wallet {
+        margin-right: 8px;
+        padding: 6px 10px;
+    }
+
+    .credit-wallet-label {
+        font-size: 10px;
+    }
+
+    .credit-wallet-value {
+        font-size: 14px;
     }
 }
 
@@ -1307,11 +1359,10 @@ body {
 }
 
 .module-card.locked {
-    opacity: 0.6;
+    opacity: 0.95;
     background-color: #f8f9fa;
     border: 2px solid #e0e0e0;
     border-left: 5px solid #9e9e9e;
-    cursor: not-allowed;
 }
 
 .module-card.locked:hover {
@@ -1408,6 +1459,15 @@ body {
 .btn-module.completed {
     background-color: var(--fm-sand-beige);
     color: var(--fm-steel-blue);
+}
+
+.btn-module.locked {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    color: #fff;
+}
+
+.btn-module.locked:hover {
+    transform: translateY(-1px);
 }
 
 .module-card-footer {
@@ -3080,7 +3140,7 @@ box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 .adventure-node.locked {
 background: #d1d5db;
 color: #6b7280;
-cursor: not-allowed;
+cursor: pointer;
 }
 
 .adventure-node.available {
@@ -5788,7 +5848,7 @@ button:active, .btn:active {
         z-index:-1;
     }
     .adventure-node.locked {
-        cursor:not-allowed;
+        cursor:pointer;
         background: linear-gradient(180deg, rgba(203,213,225,.75) 0%, rgba(148,163,184,.55) 100%);
         filter: grayscale(.25) saturate(.6);
         box-shadow: 0 10px 22px rgba(17,24,39,.08);
@@ -6045,3 +6105,32 @@ button:active, .btn:active {
             font-size: 12px;
         }
     }
+
+
+.unlock-result-modal {
+    border: 2px solid #dbeafe;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.unlock-result-icon {
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+}
+
+.unlock-result-icon.success {
+    background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25);
+}
+
+.unlock-result-icon.error {
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
+}
