@@ -289,6 +289,16 @@ function parseModulePrice(module) {
   return numeric
 }
 
+function getSafeAgeRange(module) {
+  const rawAgeRange = module?.age_range ?? module?.age_label ?? module?.age_band ?? ''
+  if (!rawAgeRange) return ''
+  const ageText = String(rawAgeRange).trim()
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (uuidPattern.test(ageText)) return ''
+  if (ageText.length > 32) return ''
+  return ageText
+}
+
 function getModulePriceLabel(module) {
   const priceValue = parseModulePrice(module)
   const currency = module?.price_currency || module?.currency || 'AUD'
@@ -317,8 +327,9 @@ function buildModuleHighlights(module) {
   if (module?.series) {
     highlights.push(`Part of ${module.series} collection`)
   }
-  if (module?.age_range) {
-    highlights.push(`Ages ${module.age_range}`)
+  const ageRange = getSafeAgeRange(module)
+  if (ageRange) {
+    highlights.push(`Ages ${ageRange}`)
   }
   highlights.push('Includes parent coaching scripts')
   highlights.push('Real-life practice missions')
@@ -339,13 +350,14 @@ function createSalesSlideMarkup(module) {
   const highlightItems = highlights.map(item => `<li><span>⭐</span>${item}</li>`).join('')
   const heroLabel = module?.series || module?.category || 'Featured'
   const description = module.long_description || module.short_description || 'Build emotional strength with guided stories, games, and parent scripts.'
+  const ageRange = getSafeAgeRange(module)
 
   return `
     <div class="sales-card">
       <div class="sales-card-header">
         <div class="sales-badge">✨ ${heroLabel}</div>
         <h3 class="sales-title">${module.title}</h3>
-        ${module.age_range ? `<p class="sales-age">Perfect for ages ${module.age_range}</p>` : ''}
+        ${ageRange ? `<p class="sales-age">Perfect for ages ${ageRange}</p>` : ''}
         <p class="sales-description">${description}</p>
       </div>
       <div class="sales-card-body">
@@ -566,7 +578,7 @@ function createAllModulesCard(module) {
         ${module?.category && module?.category !== heroLabel ? `<span class="module-tag module-tag--soft">${module.category}</span>` : ''}
       </div>
       <h3>${module.title}</h3>
-      ${module.age_range ? `<p class="module-age">Ages ${module.age_range}</p>` : ''}
+      ${ageRange ? `<p class="module-age">Ages ${ageRange}</p>` : ''}
       <p class="module-description">${shortDesc}</p>
       <ul class="module-benefits">${highlightItems}</ul>
       <div class="all-module-card__footer">
@@ -1237,7 +1249,8 @@ function openPurchaseModal(module) {
 
   purchaseModalTitle.textContent = `Unlock Module: ${module.title}`
 
-  const ageRange = module.age_range ? `Ages ${module.age_range}. ` : ''
+  const safeAgeRange = getSafeAgeRange(module)
+  const ageRange = safeAgeRange ? `Ages ${safeAgeRange}. ` : ''
   const description = module.short_description || 'This workbook helps support your child with emotional regulation and practical activities.'
   const walletValue = currentCreditSummary?.credits_available ?? 0
   const tierConfig = subscriptionTiers.find((tier) => tier.tier === currentSubscription?.tier)
@@ -2062,7 +2075,7 @@ function renderParentModulesOverview() {
     const card = document.createElement('div')
     card.className = `module-card ${options.locked ? 'locked' : ''}`
 
-    const ageRange = module.age_range || ''
+    const ageRange = getSafeAgeRange(module)
     const shortDescription = module.short_description || ''
 
     // Use category colors like other sections
@@ -2653,7 +2666,7 @@ function createModuleCard(module, options = {}) {
       ? '<button class="btn-module completed">✓ Completed</button>'
       : `<button class="btn-module start">Start Module →</button>`
 
-  const ageRange = module.age_range || ''
+  const ageRange = getSafeAgeRange(module)
   const shortDescription = module.short_description || ''
   const category = module.category || ''
   const series = module.series || ''
@@ -2974,7 +2987,8 @@ if (confirmPurchaseButton) {
       }
 
       closePurchaseModal()
-      alert('Module unlocked with 1 dog bone credit!')
+      createConfettiCelebration()
+      alert('Module unlocked with 1 credit!')
     } catch (error) {
       console.error('Unlock error:', error)
       alert(error.message || 'Failed to unlock module. Please ensure you have credits available for this period.')
@@ -4190,7 +4204,7 @@ getUniqueSuperSkills() {
         var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
         var title = module.title || module.name || 'Untitled';
         var shortDesc = module.short_description || module.description || '';
-        var ageRange = module.age_range || '';
+        var ageRange = getSafeAgeRange(module);
         
         var statusClass = 'active';
         var statusText = 'Ready to start';
@@ -4331,7 +4345,7 @@ getUniqueSuperSkills() {
         var title = module.title || module.name || 'Untitled';
         var shortDesc = module.short_description || '';
         var description = module.description || 'No description available.';
-        var ageRange = module.age_range || 'All ages';
+        var ageRange = getSafeAgeRange(module) || 'All ages';
         var code = module.code || '';
         var pathway = module.pathway || '';
         var emotions = module.emotions || [];
