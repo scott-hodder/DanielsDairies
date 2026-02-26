@@ -2972,7 +2972,7 @@ if (confirmPurchaseButton) {
       }
 
       closePurchaseModal()
-      alert('Module unlocked with 1 credit!')
+      alert('Module unlocked with 1 dog bone credit!')
     } catch (error) {
       console.error('Unlock error:', error)
       alert(error.message || 'Failed to unlock module. Please ensure you have credits available for this period.')
