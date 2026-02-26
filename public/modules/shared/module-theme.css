@@ -123,9 +123,9 @@ body.module-theme[data-age-range="9-11"] {
 
 /* 12-14 Years: Early Adolescence (Transition Thinkers) */
 body.module-theme[data-age-range="12-14"] {
-  --age-font-size-base: 1.05rem;
-  --age-font-size-lg: 1.15rem;
-  --age-font-size-xl: 1.3rem;
+  --age-font-size-base: 1.125rem;
+  --age-font-size-lg: 1.25rem;
+  --age-font-size-xl: 1.5rem;
   --age-font-size-h1: 2.1rem;
   --age-font-size-h2: 1.65rem;
   --age-font-size-h3: 1.35rem;
@@ -153,12 +153,12 @@ body.module-theme[data-age-range="12-14"] {
 
 /* 15-18 Years: Mid to Late Adolescence (Abstract Integrators) */
 body.module-theme[data-age-range="15-18"] {
-  --age-font-size-base: 1rem;
+  --age-font-size-base: 1.125rem;
   --age-font-size-lg: 1.1rem;
-  --age-font-size-xl: 1.2rem;
-  --age-font-size-h1: 1.9rem;
-  --age-font-size-h2: 1.5rem;
-  --age-font-size-h3: 1.25rem;
+  --age-font-size-xl: 1.4rem;
+  --age-font-size-h1: 2.1rem;
+  --age-font-size-h2: 2.4rem;
+  --age-font-size-h3: 1.35rem;
   
   --age-line-height: 1.7;
   --age-line-height-heading: 1.2;

@@ -2559,17 +2559,21 @@ async function hasExistingCheckin(childId, moduleId) {
   if (!childId || !moduleId) return true
   try {
     // Check if a check-in has been started for this specific module
+    // Check for both 'checkin' and 'check_in' assessment types
     const { data: assessmentData } = await supabase
       .from('pathway_assessments')
       .select('id')
       .eq('child_id', childId)
       .eq('module_id', moduleId)
-      .eq('assessment_type', 'checkin')
+      .in('assessment_type', ['checkin', 'check_in'])
       .limit(1)
       .maybeSingle()
     
     // If an assessment exists for this module, the check-in was already triggered
-    if (assessmentData) return true
+    if (assessmentData) {
+      console.log('[Check-in] Found existing assessment for module:', moduleId)
+      return true
+    }
     
     // Also check if a weekly_checkin exists for this module (for backwards compatibility)
     const { data: checkinData } = await supabase
@@ -2581,8 +2585,12 @@ async function hasExistingCheckin(childId, moduleId) {
       .maybeSingle()
     
     // If a weekly_checkin exists for this module, the check-in was completed
-    if (checkinData) return true
+    if (checkinData) {
+      console.log('[Check-in] Found existing weekly_checkin for module:', moduleId)
+      return true
+    }
     
+    console.log('[Check-in] No existing check-in found for module:', moduleId)
     return false
   } catch (e) {
     console.error('Error checking existing checkin:', e)

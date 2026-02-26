@@ -1011,17 +1011,45 @@ class DanielModulePreview {
         }
         if (week && CHECKIN_WEEKS.includes(week) && typeof window.showCheckinPopup === 'function') {
           try {
-            const { data } = await window.supabase
+            // Use the module ID that will be stored - prefer rawMod.id, fallback to module.id
+            const moduleIdToCheck = rawMod.id || module.id;
+            console.log('[Daniel Check-in] Checking for existing check-in:', { childId: child.id, moduleId: moduleIdToCheck, week });
+            
+            // Check pathway_assessments for existing check-in (primary check)
+            const { data: existingAssessment, error: assessmentError } = await window.supabase
+              .from('pathway_assessments')
+              .select('id')
+              .eq('child_id', child.id)
+              .eq('module_id', moduleIdToCheck)
+              .in('assessment_type', ['checkin', 'check_in'])
+              .limit(1)
+              .maybeSingle();
+            
+            if (assessmentError) {
+              console.error('[Daniel Check-in] Error checking pathway_assessments:', assessmentError);
+            }
+            
+            // Also check weekly_checkins for backwards compatibility
+            const { data: existingCheckin, error: checkinError } = await window.supabase
               .from('weekly_checkins')
               .select('id')
               .eq('child_id', child.id)
-              .eq('module_id', rawMod.id)
+              .eq('module_id', moduleIdToCheck)
               .limit(1)
               .maybeSingle();
-            if (!data) {
-              const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code });
+            
+            if (checkinError) {
+              console.error('[Daniel Check-in] Error checking weekly_checkins:', checkinError);
+            }
+            
+            console.log('[Daniel Check-in] Results:', { existingAssessment, existingCheckin });
+            
+            if (!existingAssessment && !existingCheckin) {
+              const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code, id: moduleIdToCheck });
               window.showCheckinPopup(popupMod, () => { window.location.href = moduleUrl; });
               return;
+            } else {
+              console.log('[Daniel Check-in] Skipping check-in - already exists');
             }
           } catch (e) {
             console.error('Error checking checkin:', e);

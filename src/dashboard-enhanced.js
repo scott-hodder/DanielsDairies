@@ -2368,14 +2368,26 @@ class EnhancedDashboard {
     var week = Number(mod.week_number || mod.pathway_order || module.pathwayOrder || 0);
     if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
       try {
-        var existing = await window.supabase
+        // Check pathway_assessments for existing check-in (primary check)
+        var existingAssessment = await window.supabase
+          .from('pathway_assessments')
+          .select('id')
+          .eq('child_id', child.id)
+          .eq('module_id', mod.id)
+          .in('assessment_type', ['checkin', 'check_in'])
+          .limit(1)
+          .maybeSingle();
+        
+        // Also check weekly_checkins for backwards compatibility
+        var existingCheckin = await window.supabase
           .from('weekly_checkins')
           .select('id')
           .eq('child_id', child.id)
           .eq('module_id', mod.id)
           .limit(1)
           .maybeSingle();
-        if (!existing.data) {
+        
+        if (!existingAssessment.data && !existingCheckin.data) {
           if (typeof window.showCheckinPopup === 'function') {
             var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
             window.showCheckinPopup(popupModule, function() {

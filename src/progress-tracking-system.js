@@ -1709,15 +1709,14 @@ class ProgressTrackingSystem {
       assessmentPayload.module_id = results.moduleData.id;
       assessmentPayload.week_number = Number(results.moduleData.week_number || results.moduleData.pathway_order || results.moduleData.order || 0) || null;
       
-      // Extract cycle number from cycle string (e.g., "Cycle 1" -> 1)
-      let cycleNum = null;
+      // Store cycle as text (e.g., "Cycle 1" or just the value)
+      let cycleValue = null;
       if (results.moduleData.cycle_number) {
-        cycleNum = results.moduleData.cycle_number;
+        cycleValue = String(results.moduleData.cycle_number);
       } else if (results.moduleData.cycle) {
-        const cycleMatch = String(results.moduleData.cycle).match(/\d+/);
-        cycleNum = cycleMatch ? parseInt(cycleMatch[0]) : null;
+        cycleValue = String(results.moduleData.cycle);
       }
-      assessmentPayload.cycle_number = cycleNum;
+      assessmentPayload.cycle_number = cycleValue;
     }
 
     let { error } = await this.supabaseClient
