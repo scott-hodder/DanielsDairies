@@ -95,6 +95,97 @@ export async function getParentModules(parentUserId) {
   return data || []
 }
 
+export async function getSubscriptionTiers() {
+  const { data, error } = await supabase()
+    .from('subscription_tiers')
+    .select('*')
+    .eq('is_active', true)
+    .order('modules_per_month', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getParentSubscription(parentUserId) {
+  const { data, error } = await supabase()
+    .from('parent_subscriptions')
+    .select('*')
+    .eq('parent_id', parentUserId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export async function upsertParentSubscription(subscriptionPayload) {
+  const { data, error } = await supabase()
+    .from('parent_subscriptions')
+    .upsert([subscriptionPayload], { onConflict: 'parent_id' })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getCreditSummary(parentUserId, periodStart, periodEnd) {
+  const { data, error } = await supabase()
+    .from('v_parent_credit_summary')
+    .select('*')
+    .eq('parent_id', parentUserId)
+    .eq('period_start', periodStart)
+    .eq('period_end', periodEnd)
+    .maybeSingle()
+
+  if (error) throw error
+  return (
+    data || {
+      parent_id: parentUserId,
+      period_start: periodStart,
+      period_end: periodEnd,
+      credits_granted: 0,
+      credits_used: 0,
+      credits_available: 0
+    }
+  )
+}
+
+export async function getCreditLedger(parentUserId, periodStart, periodEnd) {
+  const { data, error } = await supabase()
+    .from('subscription_credit_ledger')
+    .select('*')
+    .eq('parent_id', parentUserId)
+    .eq('period_start', periodStart)
+    .eq('period_end', periodEnd)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getModuleUnlocks(parentUserId, periodStart, periodEnd) {
+  const { data, error } = await supabase()
+    .from('module_unlocks')
+    .select('module_id, period_start, period_end, unlock_source')
+    .eq('parent_id', parentUserId)
+    .eq('is_active', true)
+    .eq('period_start', periodStart)
+    .eq('period_end', periodEnd)
+
+  if (error) throw error
+  return data || []
+}
+
+export async function unlockModuleWithCredit(moduleId, periodStart) {
+  const { data, error } = await supabase().rpc('unlock_module_with_credit', {
+    p_module_id: moduleId,
+    p_period_start: periodStart
+  })
+
+  if (error) throw error
+  return data
+}
+
 export async function getChildModules(childId) {
   const { data, error } = await supabase()
     .from('child_modules')

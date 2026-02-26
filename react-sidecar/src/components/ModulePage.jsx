@@ -5,11 +5,25 @@ import { getCurrentUser } from '../lib/auth'
 import {
   getChildModules,
   getChildren,
+  getCreditSummary,
   getModuleById,
+  getModuleUnlocks,
   getModules,
   getParentModules,
+  unlockModuleWithCredit,
   updateChildModuleStatus
 } from '../lib/data'
+
+function getCurrentPeriodWindow() {
+  const now = new Date()
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0))
+
+  return {
+    periodStart: periodStart.toISOString().slice(0, 10),
+    periodEnd: periodEnd.toISOString().slice(0, 10)
+  }
+}
 
 export default function ModulePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -19,8 +33,14 @@ export default function ModulePage() {
   const [selectedChildId, setSelectedChildId] = useState('')
   const [selectedModuleId, setSelectedModuleId] = useState(searchParams.get('moduleId') || '')
   const [progressRecords, setProgressRecords] = useState([])
+  const [creditSummary, setCreditSummary] = useState(null)
+  const [unlockingModuleId, setUnlockingModuleId] = useState(null)
+  const [currentUserId, setCurrentUserId] = useState(null)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(true)
+
+  const period = useMemo(() => getCurrentPeriodWindow(), [])
 
   useEffect(() => {
     let mounted = true
@@ -33,16 +53,24 @@ export default function ModulePage() {
           return
         }
 
-        const [childrenData, modulesData, parentModulesData] = await Promise.all([
+        const [childrenData, modulesData, parentModulesData, unlockRows, summary] = await Promise.all([
           getChildren(user.id),
           getModules(),
-          getParentModules(user.id)
+          getParentModules(user.id),
+          getModuleUnlocks(user.id, period.periodStart, period.periodEnd),
+          getCreditSummary(user.id, period.periodStart, period.periodEnd)
         ])
 
         if (!mounted) return
+        setCurrentUserId(user.id)
         setChildren(childrenData)
         setModules(modulesData)
-        setEntitlements(parentModulesData.map((entry) => String(entry.module_id)))
+
+        const legacyEntitlements = parentModulesData.map((entry) => String(entry.module_id))
+        const subscriptionEntitlements = unlockRows.map((entry) => String(entry.module_id))
+        setEntitlements([...new Set([...legacyEntitlements, ...subscriptionEntitlements])])
+
+        setCreditSummary(summary)
 
         if (childrenData[0]) setSelectedChildId(String(childrenData[0].id))
         if (!searchParams.get('moduleId') && modulesData[0]) setSelectedModuleId(String(modulesData[0].id))
@@ -58,7 +86,7 @@ export default function ModulePage() {
     return () => {
       mounted = false
     }
-  }, [searchParams])
+  }, [period.periodEnd, period.periodStart, searchParams])
 
   useEffect(() => {
     let mounted = true
@@ -95,6 +123,37 @@ export default function ModulePage() {
     return map
   }, [progressRecords])
 
+  async function refreshCreditState() {
+    if (!currentUserId) return
+
+    const [unlockRows, summary] = await Promise.all([
+      getModuleUnlocks(currentUserId, period.periodStart, period.periodEnd),
+      getCreditSummary(currentUserId, period.periodStart, period.periodEnd)
+    ])
+
+    setEntitlements((prev) => {
+      const unlockEntitlements = unlockRows.map((entry) => String(entry.module_id))
+      return [...new Set([...prev, ...unlockEntitlements])]
+    })
+    setCreditSummary(summary)
+  }
+
+  async function handleUnlockWithCredit(moduleId) {
+    setError('')
+    setSuccess('')
+    setUnlockingModuleId(moduleId)
+
+    try {
+      await unlockModuleWithCredit(moduleId, period.periodStart)
+      await refreshCreditState()
+      setSuccess('Module unlocked successfully for this billing period.')
+    } catch (unlockError) {
+      setError(unlockError.message || 'Failed to unlock module with credits')
+    } finally {
+      setUnlockingModuleId(null)
+    }
+  }
+
   async function handleOpenModule(moduleId) {
     setSelectedModuleId(String(moduleId))
     const module = await getModuleById(moduleId)
@@ -122,10 +181,36 @@ export default function ModulePage() {
       <main className="page-shell">
         <section className="panel hero-panel">
           <h2>Workbook Module Library</h2>
-          <p>Browse modules, view details, and set progress per child.</p>
+          <p>Browse modules, unlock with credits, and set progress per child.</p>
         </section>
 
         {error ? <p className="error-banner">{error}</p> : null}
+        {success ? <p className="success-banner">{success}</p> : null}
+
+        <section className="panel">
+          <h3>Current credit wallet</h3>
+          <p className="muted">
+            Billing period: {period.periodStart} to {period.periodEnd}
+          </p>
+          {creditSummary ? (
+            <div className="stats-row">
+              <div className="stat-box">
+                <span className="stat-label">Credits granted</span>
+                <strong>{creditSummary.credits_granted}</strong>
+              </div>
+              <div className="stat-box">
+                <span className="stat-label">Credits used</span>
+                <strong>{creditSummary.credits_used}</strong>
+              </div>
+              <div className="stat-box">
+                <span className="stat-label">Credits available</span>
+                <strong>{creditSummary.credits_available}</strong>
+              </div>
+            </div>
+          ) : (
+            <p className="muted">Loading wallet...</p>
+          )}
+        </section>
 
         <section className="panel">
           <h3>Child context</h3>
@@ -156,12 +241,21 @@ export default function ModulePage() {
                     <h4>{module.title || `Module ${module.id}`}</h4>
                     <p>{module.description || 'No description available.'}</p>
                     <p>Category: {module.category || 'General'}</p>
-                    <p>{entitlement ? '✅ Purchased' : '🛒 Not purchased yet'}</p>
+                    <p>{entitlement ? '✅ Unlocked' : '🔒 Locked'}</p>
                     <p>Status: {progress?.status || 'not_started'}</p>
                     <div className="row-buttons">
                       <button type="button" onClick={() => handleOpenModule(module.id)}>
                         View
                       </button>
+                      {!entitlement ? (
+                        <button
+                          type="button"
+                          disabled={unlockingModuleId === module.id}
+                          onClick={() => handleUnlockWithCredit(module.id)}
+                        >
+                          {unlockingModuleId === module.id ? 'Unlocking...' : 'Unlock (1 credit)'}
+                        </button>
+                      ) : null}
                       <button type="button" onClick={() => handleStatusChange(module.id, 'in_progress')}>
                         Mark In Progress
                       </button>

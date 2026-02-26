@@ -5,6 +5,7 @@ const navItems = [
   { to: '/landing', label: 'Landing' },
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/module', label: 'Modules' },
+  { to: '/billing', label: 'Billing' },
   { to: '/parent-insights', label: 'Parent Insights' },
   { to: '/admin', label: 'Admin' }
 ]
