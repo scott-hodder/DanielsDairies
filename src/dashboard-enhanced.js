@@ -719,7 +719,8 @@ class AdventureMapV4 {
       this.allModules = sorted.map(function(m, index) {
         var childModule = childMods.find(function(cm) { return cm.module_id === m.id; }) || null;
         var completed = !!(childModule && childModule.is_completed);
-        var status = completed ? 'completed' : 'available';
+        var isLocked = childModule ? childModule.locked !== false : true;
+        var status = completed ? 'completed' : (isLocked ? 'locked' : 'available');
         var seriesName = (m.series && m.series.label) || m.series_name || m.series || '';
         
         // Get super skill slug - prioritize super_skill_id, fallback to category mapping
@@ -759,7 +760,8 @@ class AdventureMapV4 {
           cycleName: cycleName,
           emoji: self.getModuleEmoji(m, superSkillSlug),
           module: m,
-          childModule: childModule
+          childModule: childModule,
+          locked: isLocked
         };
       });
     }
@@ -803,26 +805,14 @@ class AdventureMapV4 {
       return 0;
     });
 
-    // Sequential unlocking: only the first incomplete module is playable; later ones are locked.
-    // Completed modules stay completed.
-    if (this.currentCategory !== 'all') {
-      var firstIncompleteIndex = -1;
-      for (var i = 0; i < this.modules.length; i++) {
-        if (!this.modules[i].completed) {
-          firstIncompleteIndex = i;
-          break;
-        }
-      }
-
-      for (var j = 0; j < this.modules.length; j++) {
-        var mod = this.modules[j];
-        if (mod.completed) {
-          mod.status = 'completed';
-        } else if (firstIncompleteIndex === -1 || j === firstIncompleteIndex) {
-          mod.status = 'available';
-        } else {
-          mod.status = 'locked';
-        }
+    // Respect per-child lock state from child_modules.locked.
+    // Completed modules stay completed, unlocked modules are available, and locked ones remain locked/greyed out.
+    for (var i = 0; i < this.modules.length; i++) {
+      var mod = this.modules[i];
+      if (mod.completed) {
+        mod.status = 'completed';
+      } else {
+        mod.status = mod.locked ? 'locked' : 'available';
       }
     }
   }
