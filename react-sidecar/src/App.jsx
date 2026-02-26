@@ -5,6 +5,7 @@ import LandingPage from './components/LandingPage'
 import AdminPage from './components/AdminPage'
 import ModulePage from './components/ModulePage'
 import ParentInsightsPage from './components/ParentInsightsPage'
+import BillingPage from './components/BillingPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -40,6 +41,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ModulePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute>
+            <BillingPage />
           </ProtectedRoute>
         }
       />
