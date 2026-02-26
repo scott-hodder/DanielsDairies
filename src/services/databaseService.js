@@ -236,6 +236,106 @@ export async function getParentModules(parentUserId) {
   return data || []
 }
 
+
+
+export function getCurrentBillingPeriod(referenceDate = new Date()) {
+  const year = referenceDate.getUTCFullYear()
+  const month = referenceDate.getUTCMonth()
+  const periodStart = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
+  const periodEnd = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10)
+  return { periodStart, periodEnd }
+}
+
+export async function getSubscriptionTiers() {
+  const { data, error } = await getSupabaseClient()
+    .from('subscription_tiers')
+    .select('*')
+    .eq('is_active', true)
+    .order('modules_per_month', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getParentSubscription(parentUserId) {
+  const { data, error } = await getSupabaseClient()
+    .from('parent_subscriptions')
+    .select('*')
+    .eq('parent_id', parentUserId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export async function upsertParentSubscription(subscriptionPayload) {
+  const { data, error } = await getSupabaseClient()
+    .from('parent_subscriptions')
+    .upsert([subscriptionPayload], { onConflict: 'parent_id' })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getCreditSummary(parentUserId, periodStart, periodEnd) {
+  const { data, error } = await getSupabaseClient()
+    .from('v_parent_credit_summary')
+    .select('*')
+    .eq('parent_id', parentUserId)
+    .eq('period_start', periodStart)
+    .eq('period_end', periodEnd)
+    .maybeSingle()
+
+  if (error) throw error
+
+  return data || {
+    parent_id: parentUserId,
+    period_start: periodStart,
+    period_end: periodEnd,
+    credits_granted: 0,
+    credits_used: 0,
+    credits_available: 0
+  }
+}
+
+export async function getCreditLedger(parentUserId, periodStart, periodEnd) {
+  const { data, error } = await getSupabaseClient()
+    .from('subscription_credit_ledger')
+    .select('*')
+    .eq('parent_id', parentUserId)
+    .eq('period_start', periodStart)
+    .eq('period_end', periodEnd)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getModuleUnlocks(parentUserId, periodStart, periodEnd) {
+  const { data, error } = await getSupabaseClient()
+    .from('module_unlocks')
+    .select('module_id, period_start, period_end, unlock_source, modules(*)')
+    .eq('parent_id', parentUserId)
+    .eq('is_active', true)
+    .eq('period_start', periodStart)
+    .eq('period_end', periodEnd)
+
+  if (error) throw error
+  return data || []
+}
+
+export async function unlockModuleWithCredit(moduleId, periodStart) {
+  const { data, error } = await getSupabaseClient().rpc('unlock_module_with_credit', {
+    p_module_id: moduleId,
+    p_period_start: periodStart
+  })
+
+  if (error) throw error
+  return data
+}
+
 // Retrieve module category color configuration
 export async function getCategoryColors() {
   const { data, error } = await getSupabaseClient()

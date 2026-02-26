@@ -1,7 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills } from '../../database.js'
-import { redirectToPaymentLink } from '../../stripe.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -50,6 +49,7 @@ const modulesSeriesTabs = document.getElementById('modulesCategoryTabs')
 const logoutButton = document.getElementById('logoutButton')
 const dashboardHomeButton = document.getElementById('dashboardHomeButton')
 const profileButton = document.getElementById('profileButton')
+const billingButton = document.getElementById('billingButton')
 const moreModulesButton = document.getElementById('moreModulesButton')
 const moreModulesModal = document.getElementById('moreModulesModal')
 const closeMoreModulesButton = document.getElementById('closeMoreModulesButton')
@@ -137,6 +137,8 @@ const avatarOptions = [
 ]
 let triggerOptions = ['Anger', 'Overwhelm', 'Worry/Anxiety', 'Sadness', 'Frustration']
 const selectedTriggers = new Set()
+let currentBillingPeriod = getCurrentBillingPeriod()
+let currentCreditSummary = null
 
 async function loadCheckinOptions() {
   try {
@@ -350,7 +352,7 @@ function createSalesSlideMarkup(module) {
           <p class="sales-price">${priceLabel}<span style="font-size: 14px; font-weight: 600;">${module?.price_frequency ? '/' + module.price_frequency : ''}</span></p>
           <p class="sales-price-note">💎 ${priceSubtext}</p>
         </div>
-        <button type="button" class="sales-cta">🚀 Unlock Module</button>
+        <button type="button" class="sales-cta">🚀 Unlock with 1 Credit</button>
       </div>
     </div>
   `
@@ -567,7 +569,7 @@ function createAllModulesCard(module) {
           <p class="sales-price" style="margin: 0;">${priceLabel}</p>
           <p class="module-price-subtext" style="margin: 0;">${module?.price_frequency || ''}</p>
         </div>
-        <button type="button" class="sales-cta">Get Access →</button>
+        <button type="button" class="sales-cta">Unlock (1 credit) →</button>
       </div>
     </div>
   `
@@ -1047,20 +1049,28 @@ async function init() {
     }
     
     // PARALLEL LOADING - Load all independent data at once
+    currentBillingPeriod = getCurrentBillingPeriod()
+
     const [
       modulesResult,
       parentModulesResult,
+      creditUnlocksResult,
+      creditSummaryResult,
       categoryColorsResult,
       childrenResult,
       adminResult
     ] = await Promise.allSettled([
       // Load modules
       getModules(),
-      // Load parent modules with full module data
+      // Load legacy parent modules with full module data
       supabase
         .from('parent_modules')
         .select('module_id, is_active, modules(*)')
         .eq('parent_id', state.currentUser.id),
+      // Load subscription-credit unlocks for current month
+      getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
+      // Load current wallet summary
+      getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
       // Load category colors
       supabase
         .from('category_colors')
@@ -1079,13 +1089,38 @@ async function init() {
       setModules([])
     }
     
-    // Process parent modules
-    if (parentModulesResult.status === 'fulfilled' && parentModulesResult.value.data) {
-      setParentModules(parentModulesResult.value.data)
-    } else {
+    // Process parent modules and merge subscription-credit unlocks
+    const legacyParentModules = parentModulesResult.status === 'fulfilled' && parentModulesResult.value.data
+      ? parentModulesResult.value.data
+      : []
+
+    if (parentModulesResult.status !== 'fulfilled') {
       console.error('Error loading parent modules:', parentModulesResult.reason)
-      setParentModules([])
     }
+
+    const creditUnlocks = creditUnlocksResult.status === 'fulfilled'
+      ? (creditUnlocksResult.value || []).map(entry => ({
+          module_id: entry.module_id,
+          is_active: true,
+          modules: entry.modules || null,
+          unlock_source: entry.unlock_source || 'subscription_credit'
+        }))
+      : []
+
+    if (creditUnlocksResult.status !== 'fulfilled') {
+      console.error('Error loading credit unlocks:', creditUnlocksResult.reason)
+    }
+
+    const mergedParentModulesMap = new Map()
+    ;[...legacyParentModules, ...creditUnlocks].forEach(entry => {
+      const existing = mergedParentModulesMap.get(entry.module_id)
+      if (!existing || (entry.is_active && !existing.is_active)) {
+        mergedParentModulesMap.set(entry.module_id, entry)
+      }
+    })
+    setParentModules(Array.from(mergedParentModulesMap.values()))
+
+    currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
     
     // Process category colors
     if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
@@ -1181,24 +1216,24 @@ async function init() {
   }
 }
 
-// Purchase modal helpers
+// Credit unlock modal helpers
 function openPurchaseModal(module) {
   if (!purchaseModal || !purchaseModalTitle || !purchaseModalBody || !purchaseModalCost) return
 
   setCurrentPurchaseModule(module)
 
-  purchaseModalTitle.textContent = `Purchase: ${module.title}`
+  purchaseModalTitle.textContent = `Unlock Module: ${module.title}`
 
   const ageRange = module.age_range ? `Ages ${module.age_range}. ` : ''
   const description = module.short_description || 'This workbook helps support your child with emotional regulation and practical activities.'
-  const priceLabel = getModulePriceLabel(module)
-  const priceSubtext = getModulePriceSubtext(module)
+  const walletValue = currentCreditSummary?.credits_available ?? 0
   purchaseModalBody.innerHTML = `
     <span>${ageRange}${description}</span>
-    <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">${priceSubtext}</span>
+    <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">Unlock cost: 1 credit this month.</span>
+    <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">Credits available: ${walletValue}</span>
   `
 
-  purchaseModalCost.textContent = `Price: ${priceLabel}`
+  purchaseModalCost.textContent = 'Cost: 1 credit'
 
   showElement(purchaseModal)
 }
@@ -1988,9 +2023,9 @@ function renderParentModulesOverview() {
       ${options.locked ? `
       <div class="module-card-footer" style="margin-top: 12px;">
         <div class="module-card-progress">
-          <span>Available to purchase</span>
+          <span>Unlock with 1 credit</span>
         </div>
-        <button class="btn-module start parent-purchase-button" type="button">Purchase</button>
+        <button class="btn-module start parent-purchase-button" type="button">Unlock</button>
       </div>
       ` : ''}
     `
@@ -2768,28 +2803,56 @@ if (cancelPurchaseButton) {
 
 if (confirmPurchaseButton) {
   confirmPurchaseButton.addEventListener('click', async () => {
-    if (!state.currentPurchaseModule) return
-    
+    if (!state.currentPurchaseModule || !state.currentUser) return
+
     try {
-      // Show loading state
       confirmPurchaseButton.disabled = true
-      confirmPurchaseButton.textContent = 'Redirecting to checkout...'
-      
-      // Option 1: Use Stripe Payment Link (stored in database)
-      if (state.currentPurchaseModule.stripe_payment_link) {
-        await redirectToPaymentLink(state.currentPurchaseModule.stripe_payment_link)
-      } else {
-        // Fallback: Show message if no payment link configured
-        alert('Payment link not configured for this module. Please contact support.')
-        closePurchaseModal()
+      confirmPurchaseButton.textContent = 'Unlocking...'
+
+      await unlockModuleWithCredit(state.currentPurchaseModule.id, currentBillingPeriod.periodStart)
+      currentCreditSummary = await getCreditSummary(
+        state.currentUser.id,
+        currentBillingPeriod.periodStart,
+        currentBillingPeriod.periodEnd
+      )
+
+      const refreshedLegacy = await supabase
+        .from('parent_modules')
+        .select('module_id, is_active, modules(*)')
+        .eq('parent_id', state.currentUser.id)
+
+      const refreshedUnlocks = await getModuleUnlocks(
+        state.currentUser.id,
+        currentBillingPeriod.periodStart,
+        currentBillingPeriod.periodEnd
+      )
+
+      const mergedMap = new Map()
+      ;[(refreshedLegacy.data || []), ...(refreshedUnlocks || []).map(entry => ({
+        module_id: entry.module_id,
+        is_active: true,
+        modules: entry.modules || null,
+        unlock_source: entry.unlock_source || 'subscription_credit'
+      }))].flat().forEach(entry => {
+        const existing = mergedMap.get(entry.module_id)
+        if (!existing || (entry.is_active && !existing.is_active)) mergedMap.set(entry.module_id, entry)
+      })
+      setParentModules(Array.from(mergedMap.values()))
+
+      renderParentModulesOverview()
+      renderAllModulesGrid()
+      if (state.selectedChild) {
+        await selectChild(state.selectedChild)
       }
-      
-      // Note: User will be redirected to Stripe, so modal will close automatically
+
+      closePurchaseModal()
+      alert('Module unlocked with 1 credit!')
     } catch (error) {
-      console.error('Purchase error:', error)
-      alert('Failed to process purchase. Please try again.')
+      console.error('Unlock error:', error)
+      alert(error.message || 'Failed to unlock module. Please ensure you have credits available for this period.')
+    } finally {
       confirmPurchaseButton.disabled = false
-      confirmPurchaseButton.textContent = 'Purchase'
+      confirmPurchaseButton.textContent = 'Unlock Module'
     }
   })
 }
@@ -3138,6 +3201,7 @@ if (backButton) {
 // Desktop Navigation Buttons (same functionality as mobile)
 const dashboardHomeButtonDesktop = document.getElementById('dashboardHomeButtonDesktop')
 const profileButtonDesktop = document.getElementById('profileButtonDesktop')
+const billingButtonDesktop = document.getElementById('billingButtonDesktop')
 const logoutButtonDesktop = document.getElementById('logoutButtonDesktop')
 const adminButtonDesktop = document.getElementById('adminButtonDesktop')
 
@@ -3154,6 +3218,12 @@ if (dashboardHomeButtonDesktop) {
 if (profileButtonDesktop) {
   profileButtonDesktop.addEventListener('click', () => {
     window.location.href = '/dashboard.html'
+  })
+}
+
+if (billingButtonDesktop) {
+  billingButtonDesktop.addEventListener('click', () => {
+    window.location.href = '/billing.html'
   })
 }
 
@@ -3231,6 +3301,24 @@ if (moreModulesNextButton) {
   moreModulesNextButton.addEventListener('click', () => {
     shiftMoreModulesSlide(1)
     restartMoreModulesRotation()
+  })
+}
+
+if (dashboardHomeButton) {
+  dashboardHomeButton.addEventListener('click', () => {
+    window.location.href = '/dashboard.html'
+  })
+}
+
+if (profileButton) {
+  profileButton.addEventListener('click', () => {
+    window.location.href = '/dashboard.html'
+  })
+}
+
+if (billingButton) {
+  billingButton.addEventListener('click', () => {
+    window.location.href = '/billing.html'
   })
 }
 
