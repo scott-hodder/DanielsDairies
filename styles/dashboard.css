@@ -1470,6 +1470,17 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-module.locked.locked-disabled {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.8;
+}
+
+.btn-module.locked.locked-disabled:hover {
+    transform: none;
+}
+
 .module-card-footer {
     display: flex;
     align-items: center;
