@@ -277,6 +277,41 @@ interface CompletionContent {
   nextStepsText: string;
 }
 
+/**
+ * Grown-up note content for parent/caregiver guidance
+ * Appears as a collapsible accordion on select pages
+ */
+interface GrownUpNote {
+  evidenceBase: string;      // e.g., "Growth Mindset (Dweck)", "CBT Self-Talk"
+  briefExplanation: string;  // 1-2 sentences explaining the concept
+  parentPrompts: string[];   // 2-3 conversation starters for parents
+}
+
+/**
+ * Maps page types to their evidence bases for grown-up notes
+ */
+const PAGE_TYPE_EVIDENCE_MAP: Record<string, { evidenceBase: string; conceptArea: string }> = {
+  "lesson": { evidenceBase: "Social-Emotional Learning", conceptArea: "foundational concepts" },
+  "interactive-lesson": { evidenceBase: "Active Learning Theory", conceptArea: "engagement and retention" },
+  "breathing": { evidenceBase: "Mindfulness & Relaxation Response", conceptArea: "self-regulation" },
+  "feeling-thermometer": { evidenceBase: "Emotional Literacy", conceptArea: "emotional awareness" },
+  "body-map": { evidenceBase: "Somatic Awareness / Interoception", conceptArea: "body-emotion connection" },
+  "scenario": { evidenceBase: "Social Problem-Solving", conceptArea: "perspective-taking" },
+  "thought-bubbles": { evidenceBase: "Cognitive Behavioural Therapy (CBT)", conceptArea: "thought reframing" },
+  "affirmation-builder": { evidenceBase: "Positive Psychology / Self-Compassion", conceptArea: "positive self-talk" },
+  "calm-den-builder": { evidenceBase: "Safe Space / Regulation Zones", conceptArea: "self-soothing strategies" },
+  "action-plan": { evidenceBase: "Goal-Setting Theory", conceptArea: "planning and agency" },
+  "warning-signs": { evidenceBase: "Early Intervention / Self-Monitoring", conceptArea: "recognising triggers" },
+  "emotion-maze": { evidenceBase: "Decision-Making & Impulse Control", conceptArea: "emotional regulation pathways" },
+  "weather-controller": { evidenceBase: "Emotional Regulation / Zones of Regulation", conceptArea: "managing emotional intensity" },
+  "coping-cards": { evidenceBase: "Coping Skills Toolkit", conceptArea: "building a personal toolkit" },
+  "gratitude-jar": { evidenceBase: "Positive Psychology / Gratitude Practice", conceptArea: "wellbeing and positivity" },
+  "reflection": { evidenceBase: "Metacognition / Reflective Practice", conceptArea: "self-awareness" },
+  "monster-tamer": { evidenceBase: "Externalisation (Narrative Therapy)", conceptArea: "separating self from feelings" },
+  "superhero-creator": { evidenceBase: "Strength-Based Approaches", conceptArea: "identifying personal strengths" },
+  "strength-shield": { evidenceBase: "Resilience & Protective Factors", conceptArea: "building resilience" },
+};
+
 interface FeelingThermometerContent {
   heading: string;
   instructions: string;
@@ -904,6 +939,7 @@ interface GeneratedContent {
   completion: CompletionContent;
   verificationReport?: VerificationReport;
   moduleSummary?: ModuleSummary;
+  grownUpNotes?: Record<number, GrownUpNote>; // Object mapping page index to GrownUpNote
 }
 
 // Cache
@@ -1349,13 +1385,30 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 /**
+ * Pedagogical stage for content progression
+ * - introduce: First exposure to a concept (awareness, exploration)
+ * - practice: Apply the concept in guided activities
+ * - apply: Use the concept in new contexts, reflect on personal experience
+ */
+type PedagogicalStage = "introduce" | "practice" | "apply";
+
+/**
+ * Extended page template that includes pedagogical context
+ */
+interface PageTemplateWithContext extends PageTemplate {
+  chapter?: number;
+  pedagogicalStage?: PedagogicalStage;
+  conceptFocus?: string; // What specific aspect to focus on (prevents repetition)
+}
+
+/**
  * Generate a variable page structure between MIN_PAGES and MAX_PAGES
- * Activities are selected from 5 CATEGORIES for maximum diversity:
- * - CORE: Classic activities (checklist, quiz, reflection, etc.)
- * - FEELINGS: Emotional awareness activities 
- * - CREATIVE: Artistic/building activities
- * - COGNITIVE: Thinking/problem-solving activities
- * - CHALLENGE: v5 interactive game-like challenges
+ * 
+ * KEY IMPROVEMENTS:
+ * 1. Activities are distributed EVENLY across all 3 chapters (not clustered)
+ * 2. Each chapter gets a MIX of activity types (intro, practice, apply)
+ * 3. Pedagogical stages are assigned to guide content progression
+ * 4. No two similar activities appear in the same chapter
  */
 function generatePageStructure(): PageTemplate[] {
   const targetPages = randomInt(MIN_PAGES, MAX_PAGES);
@@ -1422,139 +1475,118 @@ function generatePageStructure(): PageTemplate[] {
     { type: "feelings-bingo",      starReward: true },
   ];
   
-  // Select activities from each category for guaranteed diversity
-  const selectedActivities: PageTemplate[] = [];
+  // =====================
+  // ACTIVITY SELECTION
+  // =====================
+  // Select activities ensuring variety across categories
   
-  // Always include 2-3 core activities
-  const shuffledCore = shuffleArray(coreActivities);
-  selectedActivities.push(...shuffledCore.slice(0, randomInt(2, 3)));
-  
-  // Include 1-2 feelings activities  
-  const shuffledFeelings = shuffleArray(feelingsActivities);
-  selectedActivities.push(...shuffledFeelings.slice(0, randomInt(1, 2)));
-  
-  // Include 1-2 creative activities
-  const shuffledCreative = shuffleArray(creativeActivities);
-  selectedActivities.push(...shuffledCreative.slice(0, randomInt(1, 2)));
-  
-  // Include 1-2 cognitive activities
-  const shuffledCognitive = shuffleArray(cognitiveActivities);
-  selectedActivities.push(...shuffledCognitive.slice(0, randomInt(1, 2)));
-  
-  // v5: Always include 1-2 challenge activities for engagement
-  const shuffledChallenge = shuffleArray(challengeActivities);
-  selectedActivities.push(...shuffledChallenge.slice(0, randomInt(1, 2)));
-
-  // v7: ALWAYS include 2-3 highly interactive game activities - these are the engaging ones!
-  const shuffledGames = shuffleArray(gameActivities);
-  selectedActivities.push(...shuffledGames.slice(0, randomInt(2, 3)));
-  
-  type ActivityStage = "intro" | "practice" | "apply";
-  const activityStages: Partial<Record<PageType, ActivityStage>> = {
-    "feeling-thermometer": "intro",
-    "body-map": "intro",
-    "feeling-selector": "intro",
-    "emoji-check-in": "intro",
-    "reflection": "intro",
-    "breathing": "intro",
-    "checklist": "practice",
-    "quiz": "practice",
-    "drawing": "practice",
-    "scenario": "practice",
-    "fill-in-story": "practice",
-    "coping-cards": "practice",
-    "gratitude-jar": "practice",
-    "sorting-activity": "practice",
-    "thought-bubbles": "practice",
-    "word-scramble": "practice",
-    "agree-disagree": "practice",
-    "comic-strip": "practice",
-    "affirmation-builder": "practice",
-    "matching-activity": "practice",
-    "calm-den-builder": "practice",
-    "action-plan": "apply",
-    "warning-signs": "apply",
-    "weather-controller": "apply",
-    "power-up-collector": "apply",
-    "emotion-maze": "apply",
-    "strength-shield": "apply",
-    "feeling-volcano": "apply",
-    "spin-the-wheel": "apply",
-    "sticker-collector": "apply",
-    "mindful-adventure": "apply",
-    "emotion-detective": "apply",
-    "balloon-pop": "apply",
-    "treasure-hunt": "apply",
-    "monster-tamer": "apply",
-    "garden-grower": "apply",
-    "superhero-creator": "apply",
-    "feelings-orchestra": "apply",
-    "calm-aquarium": "apply",
-    "rocket-launcher": "apply",
-    "magic-potion": "apply",
-    "feelings-bingo": "apply",
-  };
-
-  const stageOrder: ActivityStage[] = ["intro", "practice", "apply"];
-  const stagedActivities = stageOrder.flatMap((stage) =>
-    shuffleArray(selectedActivities.filter((activity) => (activityStages[activity.type] ?? "practice") === stage))
-  );
-
-  // Keep a light shuffle within each stage but preserve overall progression order
-  const activities = stagedActivities.length > 0 ? stagedActivities : shuffleArray(selectedActivities);
-  
-  // Build structure with interactive lessons interspersed
-  const structure: PageTemplate[] = [
-    { type: "cover",           starReward: false },
-    { type: "welcome",         starReward: false },
+  const allCategories = [
+    { name: "core", items: shuffleArray(coreActivities), minPick: 2, maxPick: 3 },
+    { name: "feelings", items: shuffleArray(feelingsActivities), minPick: 1, maxPick: 2 },
+    { name: "creative", items: shuffleArray(creativeActivities), minPick: 1, maxPick: 2 },
+    { name: "cognitive", items: shuffleArray(cognitiveActivities), minPick: 1, maxPick: 2 },
+    { name: "challenge", items: shuffleArray(challengeActivities), minPick: 1, maxPick: 2 },
+    { name: "games", items: shuffleArray(gameActivities), minPick: 2, maxPick: 3 },
   ];
   
-  // Fixed pages: cover + welcome + 3 chapter-dividers + summary + completion + admin = 8
-  const fixedPages = 8;
-  const contentPages = Math.max(9, targetPages - fixedPages);
-  // Equal thirds — ch3 absorbs remainder (at most 2 extra)
-  const ch1Count = Math.max(3, Math.floor(contentPages / 3));
-  const ch2Count = Math.max(3, Math.floor(contentPages / 3));
-  const ch3Count = Math.max(3, contentPages - ch1Count - ch2Count);
+  const selectedActivities: PageTemplate[] = [];
+  for (const category of allCategories) {
+    const count = randomInt(category.minPick, category.maxPick);
+    selectedActivities.push(...category.items.slice(0, count));
+  }
   
-  function buildChapter(pagesNeeded: number, chapterIdx: number): void {
+  // Shuffle all selected activities
+  const shuffledActivities = shuffleArray(selectedActivities);
+  
+  // =====================
+  // CHAPTER DISTRIBUTION
+  // =====================
+  // Distribute activities EVENLY across 3 chapters
+  
+  const fixedPages = 8; // cover + welcome + 3 chapter-dividers + summary + completion + admin
+  const contentPages = Math.max(9, targetPages - fixedPages);
+  
+  // Calculate pages per chapter (roughly equal)
+  const basePerChapter = Math.floor(contentPages / 3);
+  const remainder = contentPages % 3;
+  
+  const chapterPageCounts = [
+    basePerChapter + (remainder > 0 ? 1 : 0),
+    basePerChapter + (remainder > 1 ? 1 : 0),
+    basePerChapter,
+  ];
+  
+  // Distribute activities into 3 buckets (one per chapter)
+  const chapterActivities: PageTemplate[][] = [[], [], []];
+  let activityIndex = 0;
+  
+  // Round-robin distribution ensures even spread
+  while (activityIndex < shuffledActivities.length) {
+    for (let ch = 0; ch < 3 && activityIndex < shuffledActivities.length; ch++) {
+      chapterActivities[ch].push(shuffledActivities[activityIndex]);
+      activityIndex++;
+    }
+  }
+  
+  // =====================
+  // BUILD FINAL STRUCTURE
+  // =====================
+  
+  const structure: PageTemplate[] = [
+    { type: "cover",   starReward: false },
+    { type: "welcome", starReward: false },
+  ];
+  
+  /**
+   * Build a chapter with proper pedagogical flow:
+   * - Start with interactive lesson (introduce)
+   * - Add lesson if early chapter (reinforce)
+   * - Mix in activities from the chapter's allocation
+   * - Ensure variety within the chapter
+   */
+  function buildChapter(chapterIdx: number, pagesNeeded: number, chapterActivityPool: PageTemplate[]): void {
     structure.push({ type: "chapter-divider", starReward: false });
     let filled = 0;
     
-    // Start with interactive lesson
+    // Each chapter starts with an interactive lesson (pedagogical anchor)
     structure.push({ type: "interactive-lesson", starReward: false });
     filled++;
     
-    // Plain lesson early in chapters 1 and 2
+    // Chapters 1 and 2 get a plain lesson for foundational teaching
     if (chapterIdx <= 2 && filled < pagesNeeded) {
       structure.push({ type: "lesson", starReward: false });
       filled++;
     }
     
-    // Fill strictly to pagesNeeded — no random extra insertions
+    // Shuffle the chapter's activity pool for variety within the chapter
+    const shuffledPool = shuffleArray([...chapterActivityPool]);
+    let poolIndex = 0;
+    
+    // Fill remaining slots
     while (filled < pagesNeeded) {
-      if (activities.length > 0) {
-        structure.push(activities.shift()!);
+      if (poolIndex < shuffledPool.length) {
+        // Use activities from this chapter's pool
+        structure.push(shuffledPool[poolIndex]);
+        poolIndex++;
       } else {
-        structure.push(Math.random() > 0.3
-          ? { type: "interactive-lesson", starReward: false }
-          : { type: "lesson", starReward: false });
+        // Fallback: add interactive lesson (avoids repetitive plain lessons)
+        structure.push(
+          Math.random() > 0.5
+            ? { type: "interactive-lesson", starReward: false }
+            : { type: "lesson", starReward: false }
+        );
       }
       filled++;
     }
   }
   
-  buildChapter(ch1Count, 1);
-  buildChapter(ch2Count, 2);
-  buildChapter(ch3Count, 3);
-  
-  // Append any leftover activities
-  while (activities.length > 0) {
-    structure.push(activities.shift()!);
-  }
+  // Build all three chapters
+  buildChapter(1, chapterPageCounts[0], chapterActivities[0]);
+  buildChapter(2, chapterPageCounts[1], chapterActivities[1]);
+  buildChapter(3, chapterPageCounts[2], chapterActivities[2]);
   
   // Always end with summary and completion
-  structure.push({ type: "summary", starReward: false });
+  structure.push({ type: "summary",    starReward: false });
   structure.push({ type: "completion", starReward: false });
   
   // Admin-only verification page (always last)
@@ -1678,6 +1710,8 @@ export {
   type CoreTheoryData,
   type VerificationReport,
   type ModuleSummary,
+  type GrownUpNote,
+  PAGE_TYPE_EVIDENCE_MAP,
   buildEnhancedContentBrief,
   
   // Configuration

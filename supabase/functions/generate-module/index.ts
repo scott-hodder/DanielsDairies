@@ -71,6 +71,7 @@ import {
   type CoreTheoryData,
   type VerificationReport,
   type ModuleSummary,
+  type GrownUpNote,
   buildEnhancedContentBrief,
   
   // Configuration
@@ -143,6 +144,51 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto" style="max-height: 8rem; max-width: 8rem; display: block;">`;
     }
     return `<span class="${size}">${escapeForTemplate(metadata.characterEmoji)}</span>`;
+  };
+  
+  /**
+   * Helper function to render a grown-up note accordion
+   * Returns empty string if no note exists for this page
+   */
+  const renderGrownUpNote = (pageIndex: number): string => {
+    const note = content.grownUpNotes?.[pageIndex];
+    if (!note) return '';
+    
+    const accordionId = `grownup-note-${pageIndex}`;
+    const promptsHtml = note.parentPrompts.map(prompt => 
+      `<li class="mb-1">"${escapeForTemplate(prompt)}"</li>`
+    ).join('');
+    
+    return `
+      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
+        <button 
+          onclick="toggleGrownUpNote('${accordionId}')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors"
+          style="color: var(--secondary);"
+        >
+          <span class="flex items-center gap-2 font-semibold text-sm">
+            <span>👨‍👩‍👧</span>
+            <span>Grown-Up Note</span>
+          </span>
+          <svg id="${accordionId}-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="${accordionId}" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--secondary);">
+            ${escapeForTemplate(note.evidenceBase)}
+          </div>
+          <p class="text-sm mb-3" style="color: var(--dark);">
+            ${escapeForTemplate(note.briefExplanation)}
+          </p>
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1" style="color: var(--secondary);">
+            Try asking:
+          </div>
+          <ul class="text-sm list-disc list-inside" style="color: var(--dark);">
+            ${promptsHtml}
+          </ul>
+        </div>
+      </div>`;
   };
   
   // Track indices for each content type
@@ -448,6 +494,17 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         pageHtml = renderAdminVerificationPage(content.verificationReport, content.moduleSummary, metadata);
         break;
        
+    }
+    
+    // Inject grown-up note if this page has one
+    // Insert before the closing </div> of the max-w-4xl container
+    const grownUpNoteHtml = renderGrownUpNote(pageIndex);
+    if (grownUpNoteHtml && pageHtml.includes('</div>')) {
+      // Find the last </div></div> pattern (end of content container)
+      const lastDivPattern = /<\/div>\s*<\/div>\s*$/;
+      if (lastDivPattern.test(pageHtml)) {
+        pageHtml = pageHtml.replace(lastDivPattern, `${grownUpNoteHtml}</div></div>`);
+      }
     }
     
     // Escape backticks in the HTML content but preserve ${} for runtime evaluation
@@ -778,9 +835,68 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     
     const pages = [${Array.from({ length: totalPages }, (_, i) => `generatePage${i}`).join(', ')}];
     
+    // Check if current page has an uncompleted required activity
+    function getCurrentPageActivityStatus() {
+      const page = document.querySelector('.page');
+      if (!page) return { hasActivity: false, isComplete: true };
+      
+      // Check for activity checkbox on the page
+      const activityCheckbox = page.querySelector('[data-activity]');
+      if (!activityCheckbox) return { hasActivity: false, isComplete: true };
+      
+      const activityId = activityCheckbox.getAttribute('data-activity');
+      const isComplete = completedActivities[activityId] || activityCheckbox.checked;
+      
+      return { hasActivity: true, isComplete, activityId };
+    }
+    
+    // Show a gentle reminder to complete the activity
+    function showActivityReminder() {
+      // Remove any existing reminder
+      const existing = document.querySelector('.activity-reminder');
+      if (existing) existing.remove();
+      
+      const reminder = document.createElement('div');
+      reminder.className = 'activity-reminder';
+      reminder.innerHTML = \`
+        <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+                    background: var(--primary); color: white; padding: 16px 24px; 
+                    border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); 
+                    z-index: 9999; font-family: var(--font-body); font-size: 1rem;
+                    display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.5rem;">✨</span>
+          <span>Complete the activity first to continue!</span>
+        </div>
+      \`;
+      document.body.appendChild(reminder);
+      
+      // Auto-remove after 3 seconds
+      setTimeout(() => reminder.remove(), 3000);
+      
+      // Scroll to the activity checkbox
+      const activityCheckbox = document.querySelector('[data-activity]');
+      if (activityCheckbox) {
+        activityCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a brief highlight effect
+        const parent = activityCheckbox.closest('.rounded-xl, .rounded-2xl, div');
+        if (parent) {
+          parent.style.transition = 'box-shadow 0.3s';
+          parent.style.boxShadow = '0 0 0 3px var(--primary)';
+          setTimeout(() => { parent.style.boxShadow = ''; }, 2000);
+        }
+      }
+    }
+    
     // Navigation
     function nextPage() {
       if (currentPage < pages.length - 1) {
+        // Check if current page requires activity completion
+        const status = getCurrentPageActivityStatus();
+        if (status.hasActivity && !status.isComplete) {
+          showActivityReminder();
+          return;
+        }
+        
         currentPage++;
         renderPage();
       }
@@ -795,6 +911,14 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     
     function jumpToPage(pageNum) {
       if (pageNum >= 0 && pageNum < pages.length) {
+        // Only check activity completion when moving forward
+        if (pageNum > currentPage) {
+          const status = getCurrentPageActivityStatus();
+          if (status.hasActivity && !status.isComplete) {
+            showActivityReminder();
+            return;
+          }
+        }
         currentPage = pageNum;
         renderPage();
       }
@@ -1029,6 +1153,17 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         console.error('Failed to save stars:', e);
       }
       if (header) header.updateStars(totalStars);
+    }
+    
+    // Toggle grown-up note accordion
+    function toggleGrownUpNote(accordionId) {
+      const content = document.getElementById(accordionId);
+      const icon = document.getElementById(accordionId + '-icon');
+      if (content && icon) {
+        const isHidden = content.classList.contains('hidden');
+        content.classList.toggle('hidden');
+        icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+      }
     }
     
     async function markActivityComplete(activityId) {
@@ -1430,6 +1565,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.goHome = goHome;
     window.completeModule = completeModule;
     window.getChildName = getChildName;
+    window.toggleGrownUpNote = toggleGrownUpNote;
     window.pages = pages;  // Expose pages array for print functionality
     window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
     
@@ -1462,16 +1598,22 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
             : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
         }
         
-        // Only show followup and mascot feedback on correct answer
+        // Only show followup and mascot feedback on correct answer, and enable completion
         if (isCorrect) {
           if (ffEl) ffEl.style.display = 'block';
           if (mfEl) mfEl.style.display = 'flex';
+          // Enable the completion checkbox
+          const completeBox = page.querySelector('[data-activity]');
+          if (completeBox) completeBox.disabled = false;
         }
       } else {
         // Opinion-based - all answers valid
         btn.classList.add('option-selected');
         if (ffEl) ffEl.style.display = 'block';
         if (mfEl) mfEl.style.display = 'flex';
+        // Enable the completion checkbox for opinion-based questions
+        const completeBox = page.querySelector('[data-activity]');
+        if (completeBox) completeBox.disabled = false;
       }
       
       saveFormData('poll_' + starIndex, btn.textContent.trim());
@@ -1621,8 +1763,11 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       // Save this blank's value
       saveFormData('fillblank_' + starIndex + '_' + blankIndex, input.value);
       
-      // Only show feedback when user explicitly confirms (blur event or Enter key)
-      // Don't validate on every keystroke
+      // Enable completion checkbox when user fills in something
+      if (input.value.trim().length > 0) {
+        const completeBox = page.querySelector('[data-activity]');
+        if (completeBox) completeBox.disabled = false;
+      }
     };
     
     // Sorting activity functions
@@ -2692,28 +2837,28 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
 function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | null): string {
   const { metadata, welcome } = content;
   
-  // Helper function to render character (image or emoji) - bigger for welcome title
+  // Helper function to render character (image or emoji) - sized well for welcome
   const renderCharacter = () => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain" style="height: 20rem; width: 20rem;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain flex-shrink-0" style="height: 10rem; width: 10rem;">`;
     }
-    return `<span class="text-7xl">${escapeForTemplate(metadata.characterEmoji)}</span>`;
+    return `<span class="text-8xl flex-shrink-0">${escapeForTemplate(metadata.characterEmoji)}</span>`;
   };
   
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="welcome">
+    <div class="page min-h-screen p-6 md:p-8" style="background-color: var(--cream);" data-page="welcome">
       <div class="max-w-4xl mx-auto">
-        <div class="flex items-center gap-4 mb-8">
+        <div class="flex items-center gap-4 mb-4">
           ${renderCharacter()}
-          <h1 class="text-4xl md:text-5xl font-title" style="color: var(--dark);">${escapeForTemplate(welcome.heading)}</h1>
+          <h1 class="text-3xl md:text-4xl font-title" style="color: var(--dark);">${escapeForTemplate(welcome.heading)}</h1>
         </div>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white; border-left: 6px solid var(--primary);">
-          ${welcome.paragraphs.map(p => `<p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">${escapeForTemplate(p)}</p>`).join("")}
+        <div class="rounded-3xl shadow-xl p-6 mb-4" style="background-color: white; border-left: 6px solid var(--primary);">
+          ${welcome.paragraphs.map(p => `<p class="text-lg mb-3 last:mb-0 leading-relaxed font-body" style="color: var(--dark);">${escapeForTemplate(p)}</p>`).join("")}
         </div>
         
-        <div class="rounded-xl p-6 text-center" style="background-color: var(--soft-yellow);">
-          <p class="text-xl font-semibold font-body" style="color: var(--dark);">
+        <div class="rounded-xl p-4 text-center" style="background-color: var(--soft-yellow);">
+          <p class="text-lg font-semibold font-body" style="color: var(--dark);">
             "All feelings are okay—even the big ones!" 💛
           </p>
         </div>
@@ -4613,7 +4758,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
             ${[1,2,3,4,5].map(n => `
               <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
                       style="border-color: var(--secondary); color: var(--dark);"
-                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_${starIndex}', '${n}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex';">
+                      onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_${starIndex}', '${n}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex'; const cb = page.querySelector('[data-activity]'); if(cb) cb.disabled = false;">
                 ${n}
               </button>
             `).join("")}
@@ -4683,6 +4828,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
             class="w-8 h-8 rounded cursor-pointer"
             style="accent-color: var(--primary);"
             data-activity="${activityId}"
+            disabled
             onchange="markActivityComplete('${activityId}')"
             
           >

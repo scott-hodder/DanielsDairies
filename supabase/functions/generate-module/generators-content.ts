@@ -52,6 +52,8 @@ import {
   type FeelingsBingoContent,
   type VerificationReport,
   type ModuleSummary,
+  type GrownUpNote,
+  PAGE_TYPE_EVIDENCE_MAP,
   TOKENS_METADATA,
   TOKENS_LESSON_BATCH,
   TOKENS_ACTIVITY,
@@ -234,6 +236,285 @@ Respond with ONLY this JSON:
     correctAnswerIndex: 0,
     followUpText: "That's right! Feelings are like weather - they change and that's okay!",
     mascotComment: `${metadata.characterName} is so proud of your learning!`
+  };
+}
+
+// ====================
+// PEDAGOGICAL PROGRESSION SYSTEM
+// ====================
+
+/**
+ * Defines the learning progression stages
+ * - introduce: First exposure - build awareness, explore the concept
+ * - deepen: Second exposure - practice applying the concept with guidance
+ * - apply: Third exposure - use concept in new contexts, personal reflection
+ */
+type LearningStage = "introduce" | "deepen" | "apply";
+
+/**
+ * Tracks concepts that have been covered and at what stage
+ */
+interface ConceptTracker {
+  coveredConcepts: Map<string, LearningStage[]>;
+  currentModuleThemes: string[];
+}
+
+/**
+ * Creates a concept tracker for managing pedagogical progression
+ */
+function createConceptTracker(moduleTheme: string, brainTownAnalogy: string): ConceptTracker {
+  // Extract key concepts from the module theme and Brain Town analogy
+  const themes = [
+    moduleTheme,
+    // Extract key phrases from Brain Town (e.g., "roads", "buildings", "growing")
+    ...extractKeyConceptsFromAnalogy(brainTownAnalogy)
+  ].filter(Boolean);
+  
+  return {
+    coveredConcepts: new Map(),
+    currentModuleThemes: themes
+  };
+}
+
+/**
+ * Extracts key teachable concepts from the Brain Town analogy
+ */
+function extractKeyConceptsFromAnalogy(analogy: string): string[] {
+  if (!analogy) return [];
+  
+  const concepts: string[] = [];
+  const lowerAnalogy = analogy.toLowerCase();
+  
+  // Common Brain Town metaphors and their teachable concepts
+  const metaphorConcepts: Record<string, string> = {
+    "road": "neural pathways and practice",
+    "building": "skills and abilities",
+    "grow": "brain development",
+    "connect": "learning connections",
+    "bridge": "linking ideas",
+    "traffic": "managing thoughts",
+    "weather": "emotions changing",
+    "garden": "nurturing growth",
+    "map": "self-awareness",
+    "journey": "learning process"
+  };
+  
+  for (const [keyword, concept] of Object.entries(metaphorConcepts)) {
+    if (lowerAnalogy.includes(keyword)) {
+      concepts.push(concept);
+    }
+  }
+  
+  return concepts.slice(0, 3); // Limit to top 3 concepts
+}
+
+/**
+ * Gets the appropriate pedagogical stage based on lesson position
+ * 
+ * Learning progression:
+ * - Lessons 1-2: INTRODUCE (explore, become aware)
+ * - Lessons 3-4: DEEPEN (practice, apply with guidance)
+ * - Lessons 5+: APPLY (personal context, new situations)
+ */
+function getLearningStage(lessonIndex: number, totalLessons: number): LearningStage {
+  const progressRatio = lessonIndex / totalLessons;
+  
+  if (progressRatio < 0.33) return "introduce";
+  if (progressRatio < 0.66) return "deepen";
+  return "apply";
+}
+
+/**
+ * Builds pedagogical guidance for content generation based on learning stage
+ */
+function buildPedagogicalGuidance(
+  stage: LearningStage,
+  lessonIndex: number,
+  totalLessons: number,
+  previousTopics: string[]
+): string {
+  const stageGuidance: Record<LearningStage, string> = {
+    introduce: `LEARNING STAGE: INTRODUCE (Lesson ${lessonIndex + 1} of ${totalLessons})
+This is an INTRODUCTORY lesson. Focus on:
+- Building AWARENESS of the concept (not testing knowledge)
+- Exploring "what is this?" and "why does it matter?"
+- Using relatable examples and stories
+- Gentle, low-pressure activities
+- Open-ended questions that spark curiosity
+DO NOT: Quiz them on knowledge they haven't learned yet. DO NOT assume prior understanding.`,
+
+    deepen: `LEARNING STAGE: DEEPEN (Lesson ${lessonIndex + 1} of ${totalLessons})
+This is a PRACTICE lesson. The child has been introduced to key concepts. Focus on:
+- Applying concepts to specific scenarios
+- Guided practice with feedback
+- Building on what they learned earlier (but approach from a NEW angle)
+- Multiple choice or matching that reinforces (not repeats) earlier content
+- Connecting to their own experiences
+DO NOT: Repeat the exact same questions from earlier lessons. Use DIFFERENT scenarios.`,
+
+    apply: `LEARNING STAGE: APPLY (Lesson ${lessonIndex + 1} of ${totalLessons})
+This is an APPLICATION lesson. The child has learned and practiced. Focus on:
+- Transfer to NEW situations they haven't seen before
+- Personal reflection and self-application
+- Creative activities (drawing, writing, building)
+- Celebrating growth and progress
+- Looking forward: "How will you use this?"
+DO NOT: Re-teach basics. DO NOT ask the same comprehension questions again.`
+  };
+  
+  let guidance = stageGuidance[stage];
+  
+  // Add context about what's already been covered
+  if (previousTopics.length > 0) {
+    guidance += `\n\nALREADY COVERED TOPICS (approach these from a NEW angle if relevant, do NOT repeat):
+${previousTopics.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
+  }
+  
+  return guidance;
+}
+
+// ====================
+// GROWN-UP NOTES GENERATION
+// ====================
+
+/**
+ * Page types that should have grown-up notes
+ * These are pages where parent involvement adds educational value
+ */
+const PAGES_WITH_GROWNUP_NOTES: string[] = [
+  "lesson",
+  "interactive-lesson", 
+  "breathing",
+  "feeling-thermometer",
+  "body-map",
+  "scenario",
+  "thought-bubbles",
+  "affirmation-builder",
+  "calm-den-builder",
+  "warning-signs",
+  "emotion-maze",
+  "weather-controller",
+  "reflection",
+  "monster-tamer",
+  "superhero-creator",
+  "strength-shield",
+  "coping-cards",
+  "gratitude-jar",
+];
+
+/**
+ * Generates grown-up notes for all applicable pages in the module
+ * Returns an object mapping page index to GrownUpNote
+ */
+async function generateGrownUpNotes(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  pageStructure: PageTemplate[]
+): Promise<Record<number, GrownUpNote>> {
+  const grownUpNotes: Record<number, GrownUpNote> = {};
+  
+  // Find pages that should have grown-up notes (every 2nd-3rd applicable page)
+  const applicablePages: { index: number; type: string }[] = [];
+  
+  for (let i = 0; i < pageStructure.length; i++) {
+    const pageType = pageStructure[i].type;
+    if (PAGES_WITH_GROWNUP_NOTES.includes(pageType)) {
+      applicablePages.push({ index: i, type: pageType });
+    }
+  }
+  
+  // Select approximately every 2nd-3rd page to avoid overwhelming with notes
+  // Aim for 4-6 grown-up notes per module
+  const targetNoteCount = Math.min(6, Math.max(4, Math.floor(applicablePages.length / 2.5)));
+  const skipInterval = Math.max(1, Math.floor(applicablePages.length / targetNoteCount));
+  
+  const selectedPages: { index: number; type: string }[] = [];
+  for (let i = 0; i < applicablePages.length && selectedPages.length < targetNoteCount; i += skipInterval) {
+    selectedPages.push(applicablePages[i]);
+  }
+  
+  // Generate notes for selected pages
+  for (const page of selectedPages) {
+    const note = await generateSingleGrownUpNote(apiKey, metadata, contentBrief, page.type);
+    if (note) {
+      grownUpNotes[page.index] = note;
+    }
+  }
+  
+  return grownUpNotes;
+}
+
+/**
+ * Generates a single grown-up note for a specific page type
+ */
+async function generateSingleGrownUpNote(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  pageType: string
+): Promise<GrownUpNote | null> {
+  const evidenceInfo = PAGE_TYPE_EVIDENCE_MAP[pageType];
+  
+  if (!evidenceInfo) {
+    // Fallback for unknown page types
+    return {
+      evidenceBase: "Social-Emotional Learning",
+      briefExplanation: "This activity helps children develop emotional awareness and self-regulation skills.",
+      parentPrompts: [
+        "What did you notice while doing this activity?",
+        "How might you use this at home?"
+      ]
+    };
+  }
+  
+  // Extract the primary theory from the content brief
+  const theoryMatch = contentBrief.match(/PRIMARY THEORY[:\s]+([^\n]+)/i) ||
+                      contentBrief.match(/Core Theory[:\s]+([^\n]+)/i);
+  const primaryTheory = theoryMatch ? theoryMatch[1].trim() : "";
+  
+  const prompt = `Create a brief parent/caregiver note for a ${pageType.replace(/-/g, ' ')} activity in a children's SEL workbook.
+
+Module: "${metadata.title}"
+Theme: ${metadata.theme}
+Age Range: ${metadata.targetAge}
+Evidence Base: ${evidenceInfo.evidenceBase}
+Concept Area: ${evidenceInfo.conceptArea}
+${primaryTheory ? `Primary Theory: ${primaryTheory}` : ''}
+
+Create a BRIEF, practical note for parents/caregivers. Keep it warm and accessible - avoid jargon.
+
+Respond with ONLY this JSON:
+{
+  "evidenceBase": "${evidenceInfo.evidenceBase}",
+  "briefExplanation": "1-2 sentences explaining WHY this activity matters for child development (accessible language)",
+  "parentPrompts": [
+    "Conversation starter 1 (open-ended question to ask the child)",
+    "Conversation starter 2 (how to extend the learning at home)"
+  ]
+}
+
+Keep the explanation under 40 words. Make prompts warm and practical.`;
+
+  try {
+    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, 500);
+    const parsed = safeJsonParse<GrownUpNote>(response);
+    
+    if (parsed && parsed.briefExplanation && parsed.parentPrompts?.length > 0) {
+      return parsed;
+    }
+  } catch (error) {
+    console.error(`[GROWNUP NOTE] Failed to generate note for ${pageType}:`, error);
+  }
+  
+  // Fallback with sensible defaults based on the evidence info
+  return {
+    evidenceBase: evidenceInfo.evidenceBase,
+    briefExplanation: `This activity supports ${evidenceInfo.conceptArea}, helping children develop important social-emotional skills.`,
+    parentPrompts: [
+      "What was your favourite part of this activity?",
+      "When might you use what you learned today?"
+    ]
   };
 }
 
@@ -1453,14 +1734,23 @@ async function generateInteractiveLessons(
   // Track already generated content to prevent duplicates
   const alreadyGenerated: string[] = [];
   
+  // Track topics/angles that have been covered for pedagogical progression
+  const coveredTopics: string[] = [];
+  
   for (let i = 0; i < count; i++) {
-    const lessonType = i === 0 ? "first" : i < 2 ? "early" : "later";
+    // Get the pedagogical learning stage based on position
+    const learningStage = getLearningStage(i, count);
+    const pedagogicalGuidance = buildPedagogicalGuidance(learningStage, i, count, coveredTopics);
     
-    const contextGuidance = {
-      first: "This is the FIRST interactive lesson after the welcome. Build directly on the welcome's concepts. DO NOT reintroduce the module or mascot. Do NOT start with 'Hi, I'm [character name]' or any introduction - the character has already been introduced on the welcome page. Jump straight into teaching content.",
-      early: "This is an early lesson. The reader already knows the mascot and the basics. DO NOT reintroduce the character. Focus on exploring specific aspects or practising skills.",
-      later: "This is a later lesson. Focus on application, deeper understanding, or challenging scenarios. DO NOT reintroduce the character."
-    }[lessonType];
+    // Map interaction types to learning stages for better pedagogy
+    const stageAppropriateTypes: Record<LearningStage, string[]> = {
+      "introduce": ["poll", "rate-scale", "true-false"], // Low-pressure exploration
+      "deepen": ["circle-one", "poll", "fill-blank"],    // Guided practice
+      "apply": ["fill-blank", "rate-scale", "circle-one"] // Personal application
+    };
+    
+    const appropriateTypes = stageAppropriateTypes[learningStage];
+    const suggestedType = appropriateTypes[i % appropriateTypes.length];
     
     // Build duplicate prevention context
     const duplicatePreventionContext = alreadyGenerated.length > 0 
@@ -1476,31 +1766,35 @@ ${context}
 
 ${characterContext}
 
-LESSON CONTEXT: ${contextGuidance}${duplicatePreventionContext}
+${pedagogicalGuidance}
+${duplicatePreventionContext}
 
-CRITICAL: Do NOT start introText with "Hi! I'm [character name]" or any character self-introduction. The character was already introduced on the welcome page. Start directly with the lesson content.
+CRITICAL REQUIREMENTS:
+1. Do NOT start introText with "Hi! I'm [character name]" - the character was already introduced
+2. This is a ${learningStage.toUpperCase()} stage lesson - follow the pedagogical guidance above
+3. Use interaction type "${suggestedType}" (or similar) which suits this learning stage
+4. Each lesson must explore a DIFFERENT ANGLE of the theme - not repeat the same question
 
 Respond with ONLY this JSON:
 {
-  "heading": "Engaging title that shows progression (not 'Welcome' or 'Introduction')",
-  "introText": "Brief intro that builds on previous content (2-3 sentences max)",
-  "interactionType": "poll" | "circle-one" | "fill-blank" | "rate-scale" | "true-false",
-  "interactionPrompt": "Interactive question or task",
+  "heading": "Engaging title appropriate for ${learningStage} stage",
+  "introText": "Brief intro that ${learningStage === 'introduce' ? 'explores and sparks curiosity' : learningStage === 'deepen' ? 'builds on prior learning' : 'connects to personal experience'} (2-3 sentences max)",
+  "interactionType": "${suggestedType}",
+  "interactionPrompt": "Question appropriate for ${learningStage} stage",
   "interactionOptions": ["option1", "option2", "option3", "option4"],
   "correctAnswerIndex": 1,
-  "followUpText": "Brief explanation after interaction (1-2 sentences)",
+  "followUpText": "Brief ${learningStage === 'introduce' ? 'explanation that builds understanding' : learningStage === 'deepen' ? 'feedback that reinforces learning' : 'encouragement for personal application'} (1-2 sentences)",
   "mascotComment": "Encouraging comment from ${metadata.characterName}"
 }
 
 Rules:
-- interactionType must be one of: "poll", "circle-one", "fill-blank", "rate-scale", "true-false"
+- interactionType should be: "${suggestedType}" (appropriate for ${learningStage} stage)
 - For factual questions: provide 3-4 options AND set "correctAnswerIndex" (0-based)
-- For opinion-based questions: omit correctAnswerIndex
+- For opinion/exploration questions (especially in introduce stage): omit correctAnswerIndex
 - For "fill-blank": prompt should have ___ where the child fills in
 - For "rate-scale": prompt asks to rate something 1-5
 - For "true-false": set "correctAnswerIndex" to 0 (Agree) or 1 (Disagree)
-- Vary interaction types across lessons
-- IMPORTANT: Create UNIQUE content that doesn't repeat topics from previous lessons`;
+- CRITICAL: Create content that progresses learning, not repeats it`;
 
     const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
     const parsed = safeJsonParse<InteractiveLessonContent>(response);
@@ -1527,32 +1821,44 @@ Rules:
       const contentSummary = `Title: "${parsed.heading}" | Question: "${parsed.interactionPrompt}" | Options: ${parsed.interactionOptions?.join(', ') || 'N/A'}`;
       alreadyGenerated.push(contentSummary);
       
+      // Track the topic/angle covered for pedagogical progression
+      coveredTopics.push(`[${learningStage.toUpperCase()}] ${parsed.heading}: ${parsed.interactionPrompt}`);
+      
       lessons.push(parsed);
     } else {
-      // Fallback - use varied fallback content based on lesson index to avoid duplicates
-      const fallbackVariants = [
-        { heading: "Let's Explore Together", prompt: "Which of these helps when you're feeling overwhelmed?", options: ["Ignore it", "Take deep breaths", "Get angry", "Hide"] },
-        { heading: "Building Our Skills", prompt: "What's a good way to tell someone how you feel?", options: ["Yell at them", "Use calm words", "Say nothing", "Walk away angry"] },
-        { heading: "Practice Time", prompt: "When you notice a big feeling, what should you do first?", options: ["React quickly", "Pause and breathe", "Hide it", "Blame someone"] },
-        { heading: "Putting It Together", prompt: "How can you help a friend who seems upset?", options: ["Ignore them", "Tell them to stop", "Ask if they're okay", "Walk away"] },
-        { heading: "Your Growing Skills", prompt: "What helps your brain calm down?", options: ["More stress", "Deep breaths", "Loud noises", "Running away"] },
-      ];
-      const variant = fallbackVariants[i % fallbackVariants.length];
-      const type = interactionTypes[i % interactionTypes.length] as InteractiveLessonContent["interactionType"];
+      // Fallback - use varied fallback content based on learning stage
+      const stageFallbacks: Record<LearningStage, Array<{ heading: string; prompt: string; options: string[] }>> = {
+        introduce: [
+          { heading: "Exploring Our Feelings", prompt: "How many different feelings do you think people can have?", options: ["Just a few", "Many different ones", "Only happy and sad", "None"] },
+          { heading: "Getting Curious", prompt: "What makes YOU feel calm?", options: ["Being with friends", "Quiet time alone", "Playing outside", "Something else"] },
+        ],
+        deepen: [
+          { heading: "Building Our Skills", prompt: "What's a good way to tell someone how you feel?", options: ["Yell at them", "Use calm words", "Say nothing", "Walk away angry"] },
+          { heading: "Practice Time", prompt: "When you notice a big feeling, what should you do first?", options: ["React quickly", "Pause and breathe", "Hide it", "Blame someone"] },
+        ],
+        apply: [
+          { heading: "Using What You've Learned", prompt: "Think of a time you felt a big emotion. What helped you feel better?", options: ["Taking deep breaths", "Talking to someone", "Doing something fun", "All of these could help!"] },
+          { heading: "Your Personal Toolkit", prompt: "Which calming strategy will YOU try this week?", options: ["Deep breathing", "Talking to someone", "Drawing or writing", "Going for a walk"] },
+        ]
+      };
+      
+      const fallbackOptions = stageFallbacks[learningStage];
+      const variant = fallbackOptions[i % fallbackOptions.length];
       
       const fallbackLesson = {
         heading: variant.heading,
         introText: `${metadata.characterName} wants to explore something important with you.`,
-        interactionType: type === "poll" || type === "circle-one" ? type : "poll" as const,
+        interactionType: suggestedType as InteractiveLessonContent["interactionType"],
         interactionPrompt: variant.prompt,
         interactionOptions: variant.options,
-        correctAnswerIndex: 1,
-        followUpText: "Great thinking! These skills help us manage big feelings.",
+        correctAnswerIndex: learningStage === "introduce" ? undefined : (variant.options.length - 1), // Last option often best for apply stage
+        followUpText: "Great thinking! You're building important skills.",
         mascotComment: `${metadata.characterName} says: You're doing wonderfully!`
       };
       
       // Track fallback content too
       alreadyGenerated.push(`Title: "${fallbackLesson.heading}" | Question: "${fallbackLesson.interactionPrompt}"`);
+      coveredTopics.push(`[${learningStage.toUpperCase()}] ${fallbackLesson.heading}: ${fallbackLesson.interactionPrompt}`);
       
       lessons.push(fallbackLesson);
     }
@@ -3860,6 +4166,10 @@ async function generateAllContent(
     generateCompletion(apiKey, metadata),
   ]);
 
+  // Generate grown-up notes for select pages
+  await updateProgress("grownup-notes", "Adding parent guidance notes...");
+  const grownUpNotes = await generateGrownUpNotes(apiKey, metadata, contentBrief, pageStructure);
+
   // Build the content object without verification (needed as input for audit)
   const contentWithoutVerification = {
     metadata,
@@ -3911,6 +4221,7 @@ async function generateAllContent(
     feelingsBingos,
     summary,
     completion,
+    grownUpNotes, // NEW: Map of page index to GrownUpNote
   };
 
   // Generate verification report and module summary in parallel
