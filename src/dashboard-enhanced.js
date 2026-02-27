@@ -448,7 +448,7 @@ class AdventureMapV4 {
     css.push('.adventure-node.completed { background: linear-gradient(145deg, #4ADE80 0%, #22C55E 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), 0 0 0 4px rgba(34, 197, 94, 0.2); }');
     css.push('.adventure-node.available { background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); animation: availablePulse 2s ease-in-out infinite; }');
     css.push('@keyframes availablePulse { 0%, 100% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); } 50% { box-shadow: 0 8px 30px rgba(245, 158, 11, 0.7), 0 0 0 8px rgba(245, 158, 11, 0.15); } }');
-    css.push('.adventure-node.locked { background: linear-gradient(145deg, #9CA3AF 0%, #6B7280 100%); border: 4px solid rgba(255,255,255,0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: not-allowed; opacity: 0.8; }');
+    css.push('.adventure-node.locked { background: linear-gradient(145deg, #9CA3AF 0%, #6B7280 100%); border: 4px solid rgba(255,255,255,0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; opacity: 0.8; }');
     css.push('.adventure-node.locked .node-emoji { filter: grayscale(0.7) drop-shadow(0 2px 3px rgba(0,0,0,0.2)); opacity: 0.6; }');
     css.push('.node-number { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2px solid rgba(64,88,120,0.15); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #405878; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-family: "Fredoka", sans-serif; }');
     css.push('.node-badge { position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }');
@@ -719,7 +719,8 @@ class AdventureMapV4 {
       this.allModules = sorted.map(function(m, index) {
         var childModule = childMods.find(function(cm) { return cm.module_id === m.id; }) || null;
         var completed = !!(childModule && childModule.is_completed);
-        var status = completed ? 'completed' : 'available';
+        var isLocked = childModule ? childModule.locked !== false : true;
+        var status = completed ? 'completed' : (isLocked ? 'locked' : 'available');
         var seriesName = (m.series && m.series.label) || m.series_name || m.series || '';
         
         // Get super skill slug - prioritize super_skill_id, fallback to category mapping
@@ -759,7 +760,8 @@ class AdventureMapV4 {
           cycleName: cycleName,
           emoji: self.getModuleEmoji(m, superSkillSlug),
           module: m,
-          childModule: childModule
+          childModule: childModule,
+          locked: isLocked
         };
       });
     }
@@ -803,26 +805,25 @@ class AdventureMapV4 {
       return 0;
     });
 
-    // Sequential unlocking: only the first incomplete module is playable; later ones are locked.
-    // Completed modules stay completed.
-    if (this.currentCategory !== 'all') {
-      var firstIncompleteIndex = -1;
-      for (var i = 0; i < this.modules.length; i++) {
-        if (!this.modules[i].completed) {
-          firstIncompleteIndex = i;
-          break;
-        }
+    // Respect per-child lock state from child_modules.locked and only allow the next locked module to be unlockable.
+    var firstLockedIndex = -1;
+    for (var i = 0; i < this.modules.length; i++) {
+      var moduleForLockCheck = this.modules[i];
+      if (!moduleForLockCheck.completed && moduleForLockCheck.locked && firstLockedIndex === -1) {
+        firstLockedIndex = i;
       }
+    }
 
-      for (var j = 0; j < this.modules.length; j++) {
-        var mod = this.modules[j];
-        if (mod.completed) {
-          mod.status = 'completed';
-        } else if (firstIncompleteIndex === -1 || j === firstIncompleteIndex) {
-          mod.status = 'available';
-        } else {
-          mod.status = 'locked';
-        }
+    for (var j = 0; j < this.modules.length; j++) {
+      var mod = this.modules[j];
+      mod.canUnlock = false;
+      if (mod.completed) {
+        mod.status = 'completed';
+      } else if (mod.locked) {
+        mod.status = 'locked';
+        mod.canUnlock = j === firstLockedIndex;
+      } else {
+        mod.status = 'available';
       }
     }
   }
@@ -1817,22 +1818,42 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = 'Complete previous module';
+        statusText = module.canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — start with the first lock';
         statusClass = 'locked-status';
       }
 
       node.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (module.status !== 'locked') {
-          self.onNodeClick(module);
+        if (module.status === 'locked') {
+          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
+            window.openPurchaseModal(module.module || module);
+          } else if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Almost there!',
+              message: "Let's unlock this path one step at a time. Try the first locked module.",
+              type: 'error'
+            });
+          }
+          return;
         }
+        self.onNodeClick(module);
       });
 
       node.addEventListener('touchend', function(e) {
         e.stopPropagation();
-        if (module.status !== 'locked') {
-          self.onNodeClick(module);
+        if (module.status === 'locked') {
+          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
+            window.openPurchaseModal(module.module || module);
+          } else if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Almost there!',
+              message: "Let's unlock this path one step at a time. Try the first locked module.",
+              type: 'error'
+            });
+          }
+          return;
         }
+        self.onNodeClick(module);
       });
 
       node.style.pointerEvents = 'auto';

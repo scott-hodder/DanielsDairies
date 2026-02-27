@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -11,6 +11,11 @@ import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
 
 const LEVEL_XP = 100
+
+let currentCreditSummary = null
+let currentBillingPeriod = getCurrentBillingPeriod()
+let currentSubscription = null
+let subscriptionTiers = []
 
 // Make supabase available to non-module scripts and inline dashboard.html code
 window.supabase = supabase
@@ -50,6 +55,8 @@ const logoutButton = document.getElementById('logoutButton')
 const dashboardHomeButton = document.getElementById('dashboardHomeButton')
 const profileButton = document.getElementById('profileButton')
 const billingButton = document.getElementById('billingButton')
+const creditWalletBadge = document.getElementById('creditWalletBadge')
+const creditWalletValue = document.getElementById('creditWalletValue')
 const moreModulesButton = document.getElementById('moreModulesButton')
 const moreModulesModal = document.getElementById('moreModulesModal')
 const closeMoreModulesButton = document.getElementById('closeMoreModulesButton')
@@ -70,6 +77,11 @@ const purchaseModalBody = document.getElementById('purchaseModalBody')
 const purchaseModalCost = document.getElementById('purchaseModalCost')
 const cancelPurchaseButton = document.getElementById('cancelPurchaseButton')
 const confirmPurchaseButton = document.getElementById('confirmPurchaseButton')
+const unlockResultModal = document.getElementById('unlockResultModal')
+const unlockResultTitle = document.getElementById('unlockResultTitle')
+const unlockResultMessage = document.getElementById('unlockResultMessage')
+const unlockResultIcon = document.getElementById('unlockResultIcon')
+const unlockResultCloseButton = document.getElementById('unlockResultCloseButton')
 const childPasswordModal = document.getElementById('childPasswordModal')
 const childPasswordModalTitle = document.getElementById('childPasswordModalTitle')
 const childPasswordForm = document.getElementById('childPasswordForm')
@@ -137,8 +149,6 @@ const avatarOptions = [
 ]
 let triggerOptions = ['Anger', 'Overwhelm', 'Worry/Anxiety', 'Sadness', 'Frustration']
 const selectedTriggers = new Set()
-let currentBillingPeriod = getCurrentBillingPeriod()
-let currentCreditSummary = null
 
 async function loadCheckinOptions() {
   try {
@@ -284,6 +294,68 @@ function parseModulePrice(module) {
   return numeric
 }
 
+function getSafeAgeRange(module) {
+  const rawAgeRange = module?.age_range ?? module?.age_label ?? module?.age_band ?? ''
+  if (!rawAgeRange) return ''
+  const ageText = String(rawAgeRange).trim()
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (uuidPattern.test(ageText)) return ''
+  if (ageText.length > 32) return ''
+  return ageText
+}
+
+function getModuleSequenceOrder(module) {
+  if (!module) return Number.MAX_SAFE_INTEGER
+  const candidates = [module.pathway_order, module.week_number, module.order, module.position, module.sort_order]
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === '') continue
+    const numeric = Number(candidate)
+    if (!Number.isNaN(numeric)) return numeric
+  }
+  return Number.MAX_SAFE_INTEGER
+}
+
+function getOrderedActiveModulesForSequence(referenceModule = null) {
+  const baseModules = (state.modules || []).filter((module) => module?.is_active !== false)
+
+  const cohortModules = referenceModule
+    ? baseModules.filter((module) => {
+        const sameCycle = String(module.cycle_id || '') === String(referenceModule.cycle_id || '')
+        const sameSuperSkill = String(module.super_skill_id || '') === String(referenceModule.super_skill_id || '')
+        const sameCategory = String(module.category || '') === String(referenceModule.category || '')
+        const sameSeries = String(module.series || '') === String(referenceModule.series || '')
+
+        return sameCycle && (sameSuperSkill || sameCategory || sameSeries)
+      })
+    : baseModules
+
+  const modulesToSort = cohortModules.length > 0 ? cohortModules : baseModules
+
+  return modulesToSort
+    .slice()
+    .sort((a, b) => {
+      const orderDiff = getModuleSequenceOrder(a) - getModuleSequenceOrder(b)
+      if (orderDiff !== 0) return orderDiff
+      return Number(a.id || 0) - Number(b.id || 0)
+    })
+}
+
+function getNextUnlockableModule(referenceModule = null) {
+  const orderedModules = getOrderedActiveModulesForSequence(referenceModule)
+  const childModuleLockMap = new Map()
+  ;(state.childModules || []).forEach((cm) => {
+    childModuleLockMap.set(cm.module_id, cm.locked !== false)
+  })
+
+  return orderedModules.find((module) => childModuleLockMap.get(module.id) !== false) || null
+}
+
+function isModuleNextUnlockable(module) {
+  if (!module) return false
+  const nextUnlockableModule = getNextUnlockableModule(module)
+  return Boolean(nextUnlockableModule && String(nextUnlockableModule.id) === String(module.id))
+}
+
 function getModulePriceLabel(module) {
   const priceValue = parseModulePrice(module)
   const currency = module?.price_currency || module?.currency || 'AUD'
@@ -312,8 +384,9 @@ function buildModuleHighlights(module) {
   if (module?.series) {
     highlights.push(`Part of ${module.series} collection`)
   }
-  if (module?.age_range) {
-    highlights.push(`Ages ${module.age_range}`)
+  const ageRange = getSafeAgeRange(module)
+  if (ageRange) {
+    highlights.push(`Ages ${ageRange}`)
   }
   highlights.push('Includes parent coaching scripts')
   highlights.push('Real-life practice missions')
@@ -334,13 +407,14 @@ function createSalesSlideMarkup(module) {
   const highlightItems = highlights.map(item => `<li><span>⭐</span>${item}</li>`).join('')
   const heroLabel = module?.series || module?.category || 'Featured'
   const description = module.long_description || module.short_description || 'Build emotional strength with guided stories, games, and parent scripts.'
+  const ageRange = getSafeAgeRange(module)
 
   return `
     <div class="sales-card">
       <div class="sales-card-header">
         <div class="sales-badge">✨ ${heroLabel}</div>
         <h3 class="sales-title">${module.title}</h3>
-        ${module.age_range ? `<p class="sales-age">Perfect for ages ${module.age_range}</p>` : ''}
+        ${ageRange ? `<p class="sales-age">Perfect for ages ${ageRange}</p>` : ''}
         <p class="sales-description">${description}</p>
       </div>
       <div class="sales-card-body">
@@ -561,7 +635,7 @@ function createAllModulesCard(module) {
         ${module?.category && module?.category !== heroLabel ? `<span class="module-tag module-tag--soft">${module.category}</span>` : ''}
       </div>
       <h3>${module.title}</h3>
-      ${module.age_range ? `<p class="module-age">Ages ${module.age_range}</p>` : ''}
+      ${ageRange ? `<p class="module-age">Ages ${ageRange}</p>` : ''}
       <p class="module-description">${shortDesc}</p>
       <ul class="module-benefits">${highlightItems}</ul>
       <div class="all-module-card__footer">
@@ -1058,7 +1132,9 @@ async function init() {
       creditSummaryResult,
       categoryColorsResult,
       childrenResult,
-      adminResult
+      adminResult,
+      subscriptionResult,
+      tiersResult
     ] = await Promise.allSettled([
       // Load modules
       getModules(),
@@ -1078,7 +1154,10 @@ async function init() {
       // Load children
       getChildren(state.currentUser.id),
       // Check admin status (non-blocking)
-      isUserAdmin(state.currentUser.id)
+      isUserAdmin(state.currentUser.id),
+      // Load subscription details for credit messaging
+      getParentSubscription(state.currentUser.id),
+      getSubscriptionTiers()
     ])
     
     // Process modules
@@ -1121,6 +1200,9 @@ async function init() {
     setParentModules(Array.from(mergedParentModulesMap.values()))
 
     currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
+    currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
+    subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
+    updateCreditWalletBadge()
     
     // Process category colors
     if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
@@ -1220,28 +1302,110 @@ async function init() {
 function openPurchaseModal(module) {
   if (!purchaseModal || !purchaseModalTitle || !purchaseModalBody || !purchaseModalCost) return
 
+  if (!isModuleNextUnlockable(module)) {
+    showUnlockResultModal({
+      title: 'Almost there!',
+      message: "Let's unlock this path one step at a time. Try the first locked module.",
+      type: 'error'
+    })
+    return
+  }
+
   setCurrentPurchaseModule(module)
 
   purchaseModalTitle.textContent = `Unlock Module: ${module.title}`
 
-  const ageRange = module.age_range ? `Ages ${module.age_range}. ` : ''
+  const safeAgeRange = getSafeAgeRange(module)
+  const ageRange = safeAgeRange ? `Ages ${safeAgeRange}. ` : ''
   const description = module.short_description || 'This workbook helps support your child with emotional regulation and practical activities.'
   const walletValue = currentCreditSummary?.credits_available ?? 0
-  purchaseModalBody.innerHTML = `
-    <span>${ageRange}${description}</span>
-    <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">Unlock cost: 1 credit this month.</span>
-    <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">Credits available: ${walletValue}</span>
-  `
+  const tierConfig = subscriptionTiers.find((tier) => tier.tier === currentSubscription?.tier)
+  const tierCreditCount = tierConfig?.modules_per_month ?? null
+  const nextCreditDate = getNextCreditRefreshDateLabel()
 
-  purchaseModalCost.textContent = 'Cost: 1 credit'
+  if (walletValue > 0) {
+    purchaseModalBody.innerHTML = `
+      <span>${ageRange}${description}</span>
+      <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">Spend 1 credit to unlock this workbook for your family.</span>
+      <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">Credits available right now: ${walletValue}</span>
+    `
+    if (confirmPurchaseButton) {
+      confirmPurchaseButton.disabled = false
+      confirmPurchaseButton.textContent = 'Spend 1 Credit'
+    }
+  } else {
+    const renewalLine = nextCreditDate
+      ? `Your next refill is on <strong>${nextCreditDate}</strong>.`
+      : 'Your next refill date will appear once your subscription is active.'
+    const tierLine = tierCreditCount !== null
+      ? `You'll receive <strong>${tierCreditCount}</strong> new credits for that billing period.`
+      : 'Your monthly credit amount will appear once a tier is selected.'
+
+    purchaseModalBody.innerHTML = `
+      <span>${ageRange}${description}</span>
+      <span style="display:block; margin-top: 10px; color: #b45309; font-size: 13px;">You do not have any credits available right now.</span>
+      <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">${renewalLine}</span>
+      <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">${tierLine}</span>
+      <span style="display:block; margin-top: 8px; color: #4c6c96; font-size: 13px;">Review your unlocked modules anytime from the dashboard and billing pages.</span>
+    `
+
+    if (confirmPurchaseButton) {
+      confirmPurchaseButton.disabled = true
+      confirmPurchaseButton.textContent = 'No Credits Available'
+    }
+  }
+
+  purchaseModalCost.textContent = 'Unlock cost: 1 credit'
 
   showElement(purchaseModal)
 }
 
+window.openPurchaseModal = openPurchaseModal
+
 function closePurchaseModal() {
   if (!purchaseModal) return
   setCurrentPurchaseModule(null)
+  if (confirmPurchaseButton) {
+    confirmPurchaseButton.disabled = false
+    confirmPurchaseButton.textContent = 'Spend 1 Credit'
+  }
   hideElement(purchaseModal)
+}
+
+function showUnlockResultModal({ title, message, type = 'success' }) {
+  if (!unlockResultModal || !unlockResultTitle || !unlockResultMessage || !unlockResultIcon) return
+
+  unlockResultTitle.textContent = title
+  unlockResultMessage.textContent = message
+
+  unlockResultIcon.classList.remove('success', 'error')
+  if (type === 'error') {
+    unlockResultIcon.classList.add('error')
+    unlockResultIcon.textContent = '⚠️'
+  } else {
+    unlockResultIcon.classList.add('success')
+    unlockResultIcon.textContent = '🎉'
+  }
+
+  showElement(unlockResultModal)
+}
+
+window.showUnlockResultModal = showUnlockResultModal
+
+function getNextCreditRefreshDateLabel() {
+  if (!currentSubscription?.current_period_end) return null
+  const nextDate = new Date(`${currentSubscription.current_period_end}T00:00:00Z`)
+  nextDate.setUTCDate(nextDate.getUTCDate() + 1)
+  return nextDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function updateCreditWalletBadge() {
+  if (!creditWalletValue) return
+  const creditsAvailable = currentCreditSummary?.credits_available ?? 0
+  creditWalletValue.textContent = String(creditsAvailable)
+  if (creditWalletBadge) {
+    creditWalletBadge.classList.toggle('credit-wallet--empty', creditsAvailable <= 0)
+  }
 }
 
 // Load children
@@ -1997,7 +2161,7 @@ function renderParentModulesOverview() {
     const card = document.createElement('div')
     card.className = `module-card ${options.locked ? 'locked' : ''}`
 
-    const ageRange = module.age_range || ''
+    const ageRange = getSafeAgeRange(module)
     const shortDescription = module.short_description || ''
 
     // Use category colors like other sections
@@ -2347,22 +2511,14 @@ function renderModules() {
   const selectedCategory = dashboardCategoryFilter ? dashboardCategoryFilter.value : 'all'
   const selectedSeries = dashboardSeriesFilter ? dashboardSeriesFilter.value : 'all'
   
-  // Filter to only show modules that the parent owns
-  const parentModuleIds = state.parentModules.map(pm => pm.module_id)
-  const parentOwnedModules = state.modules.filter(m => parentModuleIds.includes(m.id))
-  
-  // If a child is selected, further filter to only show modules active for that child
-  let availableModules = parentOwnedModules
+  const childModuleLockMap = new Map()
+  state.childModules.forEach((cm) => {
+    childModuleLockMap.set(cm.module_id, cm.locked !== false)
+  })
 
-    
-    const activeChildModuleIds = state.childModules
-      .filter(cm => cm.is_active === true) // Explicitly check for true
-      .map(cm => cm.module_id)
-    
-    
-    availableModules = parentOwnedModules.filter(m => activeChildModuleIds.includes(m.id))
+  // All modules are shown, but locked until a credit unlocks them for this child
+  const availableModules = state.modules.filter((m) => m.is_active !== false)
 
-  
   // Apply filters
   let visibleModules = availableModules.filter(m => {
     const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory
@@ -2380,18 +2536,29 @@ function renderModules() {
     return
   }
 
-  const activeModules = visibleModules.filter(m => m.is_active)
+  const unlockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) === false)
+  const lockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) !== false)
 
-  // Separate completed and incomplete modules
-  const incompleteModules = activeModules.filter(module => {
+  // Separate completed and incomplete modules for modules the family has unlocked
+  const incompleteModules = unlockedModules.filter(module => {
     const childModule = state.childModules.find(cm => cm.module_id === module.id)
     return !childModule || childModule.is_completed !== true
   })
 
-  const completedModules = activeModules.filter(module => {
+  const completedModules = unlockedModules.filter(module => {
     const childModule = state.childModules.find(cm => cm.module_id === module.id)
     return childModule && childModule.is_completed === true
   })
+
+  if (unlockedModules.length === 0 && lockedModules.length > 0) {
+    const emptyUnlockedMessage = document.createElement('div')
+    emptyUnlockedMessage.style.gridColumn = '1 / -1'
+    emptyUnlockedMessage.style.textAlign = 'center'
+    emptyUnlockedMessage.style.padding = '16px'
+    emptyUnlockedMessage.style.color = '#4c6c96'
+    emptyUnlockedMessage.innerHTML = '<p style="font-size: 16px; margin: 0;">All modules are currently locked. Spend a credit on any module below to unlock it.</p>'
+    modulesGrid.appendChild(emptyUnlockedMessage)
+  }
   
   // Find the oldest incomplete module (created first)
   let oldestIncompleteModule = null
@@ -2526,32 +2693,74 @@ function renderModules() {
     completedSection.appendChild(completedGrid)
     modulesGrid.appendChild(completedSection)
   }
+
+  if (lockedModules.length > 0) {
+    const lockedSection = document.createElement('div')
+    lockedSection.style.gridColumn = '1 / -1'
+
+    const lockedHeader = document.createElement('div')
+    lockedHeader.style.display = 'flex'
+    lockedHeader.style.alignItems = 'center'
+    lockedHeader.style.gap = '8px'
+    lockedHeader.style.marginBottom = '16px'
+    lockedHeader.style.marginTop = '12px'
+    lockedHeader.innerHTML = `
+      <span style="font-size: 24px;">🔒</span>
+      <h3 style="font-size: 18px; color: #405878; font-weight: 700; margin: 0;">Locked Modules</h3>
+      <span style="color: #4c6c96; font-size: 14px; margin-left: 8px;">(${lockedModules.length})</span>
+    `
+
+    const lockedHint = document.createElement('p')
+    lockedHint.className = 'module-subtitle'
+    lockedHint.style.margin = '0 0 14px 0'
+    lockedHint.textContent = "Let's go in order! Unlock the first locked module to keep the adventure going."
+
+    const lockedGrid = document.createElement('div')
+    lockedGrid.className = 'modules-grid'
+    lockedGrid.style.display = 'grid'
+    lockedGrid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))'
+    lockedGrid.style.gap = '20px'
+
+    lockedModules.forEach((module) => {
+      lockedGrid.appendChild(createModuleCard(module, { locked: true, canUnlock: isModuleNextUnlockable(module) }))
+    })
+
+    lockedSection.appendChild(lockedHeader)
+    lockedSection.appendChild(lockedHint)
+    lockedSection.appendChild(lockedGrid)
+    modulesGrid.appendChild(lockedSection)
+  }
 }
 
 // Create module card
-function createModuleCard(module) {
+function createModuleCard(module, options = {}) {
   const card = document.createElement('div')
+
+  const isLocked = Boolean(options.locked)
+  const canUnlock = options.canUnlock !== false
 
   // Check if module is completed
   const childModule = state.childModules.find(cm => cm.module_id === module.id)
-  const isCompleted = childModule && childModule.is_completed === true
+  const isCompleted = !isLocked && childModule && childModule.is_completed === true
 
-  card.className = `module-card ${isCompleted ? 'completed' : ''}`
+  card.className = `module-card ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`
 
-  const iconHtml = isCompleted ? '✓' : '📖'
-  const iconClass = isCompleted ? 'completed' : 'default'
-  const buttonHtml = isCompleted 
-    ? '<button class="btn-module completed">✓ Completed</button>'
-    : `<button class="btn-module start">Start Module →</button>`
+  const iconHtml = isLocked ? '🔒' : (isCompleted ? '✓' : '📖')
+  const iconClass = isLocked ? 'default' : (isCompleted ? 'completed' : 'default')
+  const buttonHtml = isLocked
+    ? `<button class="btn-module locked ${canUnlock ? '' : 'locked-disabled'}" ${canUnlock ? '' : 'disabled'}>${canUnlock ? 'Unlock with 1 Credit' : 'Unlock the first lock first'}</button>`
+    : isCompleted
+      ? '<button class="btn-module completed">✓ Completed</button>'
+      : `<button class="btn-module start">Start Module →</button>`
 
-  const ageRange = module.age_range || ''
+  const ageRange = getSafeAgeRange(module)
   const shortDescription = module.short_description || ''
   const category = module.category || ''
   const series = module.series || ''
 
   // Use category color from database, fallback to default
   const categoryColor = state.categoryColors[category] || '#4c6c96'
-  card.style.borderLeftColor = isCompleted ? '#2e7d32' : categoryColor
+  card.style.borderLeftColor = isLocked ? '#9ca3af' : (isCompleted ? '#2e7d32' : categoryColor)
 
   // Build category/series badges
   let badges = ''
@@ -2571,17 +2780,22 @@ function createModuleCard(module) {
         ${ageRange ? `<div class="module-subtitle" style="font-weight: 600;">Ages ${ageRange}</div>` : ''}
         ${shortDescription ? `<p class="module-subtitle" style="margin-top: 4px;">${shortDescription}</p>` : ''}
         <p class="module-subtitle" style="margin-top: 8px;">
-          ${isCompleted ? 'Completed' : 'Ready to start'}
+          ${isLocked ? (canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — start with the first lock') : (isCompleted ? 'Completed' : 'Ready to start')}
         </p>
       </div>
     </div>
     ${buttonHtml}
   `
   
-  // Add click handler for start button
-  if (!isCompleted) {
+  // Add click handler for start/unlock button
+  if (isLocked) {
+    const unlockButton = card.querySelector('.btn-module.locked')
+    if (canUnlock) {
+      unlockButton?.addEventListener('click', () => openPurchaseModal(module))
+    }
+  } else if (!isCompleted) {
     const startButton = card.querySelector('.btn-module.start')
-    startButton.addEventListener('click', () => startModule(module))
+    startButton?.addEventListener('click', () => startModule(module))
   }
   
   return card
@@ -2801,20 +3015,59 @@ if (cancelPurchaseButton) {
   })
 }
 
+
+if (unlockResultCloseButton) {
+  unlockResultCloseButton.addEventListener('click', () => {
+    hideElement(unlockResultModal)
+  })
+}
+
+if (unlockResultModal) {
+  unlockResultModal.addEventListener('click', (event) => {
+    if (event.target === unlockResultModal) hideElement(unlockResultModal)
+  })
+}
+
 if (confirmPurchaseButton) {
   confirmPurchaseButton.addEventListener('click', async () => {
     if (!state.currentPurchaseModule || !state.currentUser) return
+
+    if (!isModuleNextUnlockable(state.currentPurchaseModule)) {
+      showUnlockResultModal({
+        title: 'Unlock in order',
+        message: 'Please unlock the next module in sequence first.',
+        type: 'error'
+      })
+      closePurchaseModal()
+      return
+    }
 
     try {
       confirmPurchaseButton.disabled = true
       confirmPurchaseButton.textContent = 'Unlocking...'
 
       await unlockModuleWithCredit(state.currentPurchaseModule.id, currentBillingPeriod.periodStart)
+
+      if (state.selectedChild?.id) {
+        const { error: childUnlockError } = await supabase
+          .from('child_modules')
+          .upsert([
+            {
+              child_id: state.selectedChild.id,
+              module_id: state.currentPurchaseModule.id,
+              locked: false
+            }
+          ], { onConflict: 'child_id,module_id' })
+
+        if (childUnlockError) throw childUnlockError
+      }
+
       currentCreditSummary = await getCreditSummary(
         state.currentUser.id,
         currentBillingPeriod.periodStart,
         currentBillingPeriod.periodEnd
       )
+      updateCreditWalletBadge()
 
       const refreshedLegacy = await supabase
         .from('parent_modules')
@@ -2846,13 +3099,21 @@ if (confirmPurchaseButton) {
       }
 
       closePurchaseModal()
-      alert('Module unlocked with 1 credit!')
+      createConfettiCelebration()
+      showUnlockResultModal({
+        title: 'Module Unlocked!',
+        message: 'Your module is now active and ready for your child to start.'
+      })
     } catch (error) {
       console.error('Unlock error:', error)
-      alert(error.message || 'Failed to unlock module. Please ensure you have credits available for this period.')
+      showUnlockResultModal({
+        title: 'Could not unlock module',
+        message: error.message || 'We could not unlock this module right now. Please check your credits and try again.',
+        type: 'error'
+      })
     } finally {
       confirmPurchaseButton.disabled = false
-      confirmPurchaseButton.textContent = 'Unlock Module'
+      confirmPurchaseButton.textContent = 'Spend 1 Credit'
     }
   })
 }
@@ -4062,7 +4323,7 @@ getUniqueSuperSkills() {
         var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
         var title = module.title || module.name || 'Untitled';
         var shortDesc = module.short_description || module.description || '';
-        var ageRange = module.age_range || '';
+        var ageRange = getSafeAgeRange(module);
         
         var statusClass = 'active';
         var statusText = 'Ready to start';
@@ -4203,7 +4464,7 @@ getUniqueSuperSkills() {
         var title = module.title || module.name || 'Untitled';
         var shortDesc = module.short_description || '';
         var description = module.description || 'No description available.';
-        var ageRange = module.age_range || 'All ages';
+        var ageRange = getSafeAgeRange(module) || 'All ages';
         var code = module.code || '';
         var pathway = module.pathway || '';
         var emotions = module.emotions || [];
