@@ -3997,14 +3997,46 @@ async function renderLeaderboard() {
     }
     
     leaderboardList.innerHTML = ''
-    
+
     // Random avatars for variety
     const avatars = ['🌟', '🚀', '⭐', '🌈', '🎯', '💫', '🎨', '🎭', '🎪', '🎬']
-    
-    allChildren.forEach((child, index) => {
+    const fakeFirstNames = ['Oliver', 'Amelia', 'Noah', 'Ava', 'Leo', 'Isla', 'Mason', 'Mia', 'Ethan', 'Lily', 'Lucas', 'Ella']
+    const fakeLastInitials = ['A.', 'B.', 'C.', 'D.', 'E.', 'F.', 'G.', 'H.', 'J.', 'K.', 'L.', 'M.']
+
+    const getStableHash = (value = '') => {
+      return value.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+    }
+
+    const toDisplayName = (child, index) => {
+      if (child.id === state.selectedChild.id) {
+        return child.name
+      }
+
+      const hash = getStableHash(child.id || `${index}`)
+      const firstName = fakeFirstNames[hash % fakeFirstNames.length]
+      const lastInitial = fakeLastInitials[Math.floor(hash / fakeFirstNames.length) % fakeLastInitials.length]
+      return `${firstName} ${lastInitial}`
+    }
+
+    const displayChildren = [...allChildren]
+    const currentChildPosition = displayChildren.findIndex(child => child.id === state.selectedChild.id)
+
+    // Add supportive practice buddies below the current child if they'd otherwise appear last.
+    if (currentChildPosition === displayChildren.length - 1) {
+      const currentStars = state.selectedChild.stars || 0
+      displayChildren.push(
+        { id: '__practice_buddy_1__', name: 'Practice Buddy', stars: Math.max(currentStars - 1, 0) },
+        { id: '__practice_buddy_2__', name: 'Practice Buddy', stars: Math.max(currentStars - 2, 0) }
+      )
+    }
+
+    displayChildren.forEach((child, index) => {
       const rank = index + 1
       const isCurrentUser = child.id === state.selectedChild.id
       const avatar = avatars[index % avatars.length]
+      const displayName = child.id.startsWith('__practice_buddy_')
+        ? toDisplayName({ ...child, id: `${child.id}_${index}` }, index)
+        : toDisplayName(child, index)
       
       const item = document.createElement('div')
       item.className = `leaderboard-item ${isCurrentUser ? 'current-user' : ''}`
@@ -4020,7 +4052,7 @@ async function renderLeaderboard() {
           <div class="user-avatar">${avatar}</div>
           <div>
             <div class="user-name">
-              ${child.name}
+              ${displayName}
               ${isCurrentUser ? '<span class="user-badge">YOU</span>' : ''}
             </div>
           </div>
