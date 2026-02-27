@@ -38,7 +38,7 @@ create table if not exists public.subscription_credit_ledger (
   period_end date not null,
   entry_type text not null check (entry_type in ('grant', 'adjustment', 'spend', 'refund', 'expire')),
   credits_delta integer not null,
-  module_id bigint references public.modules(id) on delete set null,
+  module_id uuid references public.modules(id) on delete set null,
   notes text,
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -51,7 +51,7 @@ create index if not exists idx_subscription_credit_ledger_parent_period
 create table if not exists public.module_unlocks (
   id bigserial primary key,
   parent_id uuid not null references auth.users(id) on delete cascade,
-  module_id bigint not null references public.modules(id) on delete cascade,
+  module_id uuid not null references public.modules(id) on delete cascade,
   unlock_source text not null default 'subscription_credit' check (unlock_source in ('subscription_credit', 'manual_admin', 'legacy_purchase')),
   credits_spent integer not null default 1 check (credits_spent >= 0),
   period_start date,
@@ -90,39 +90,49 @@ alter table public.subscription_credit_ledger enable row level security;
 alter table public.module_unlocks enable row level security;
 
 -- Policies: users can read their own subscription + ledger + unlocks
-create policy if not exists "Users can view active tiers"
+-- Note: CREATE POLICY does not support IF NOT EXISTS on all Postgres versions,
+-- so we drop/recreate for idempotency.
+
+drop policy if exists "Users can view active tiers" on public.subscription_tiers;
+create policy "Users can view active tiers"
   on public.subscription_tiers
   for select
   using (is_active = true);
 
-create policy if not exists "Users can view own subscription"
+drop policy if exists "Users can view own subscription" on public.parent_subscriptions;
+create policy "Users can view own subscription"
   on public.parent_subscriptions
   for select
   using (auth.uid() = parent_id);
 
-create policy if not exists "Users can upsert own subscription (testing)"
+drop policy if exists "Users can upsert own subscription (testing)" on public.parent_subscriptions;
+create policy "Users can upsert own subscription (testing)"
   on public.parent_subscriptions
   for insert
   with check (auth.uid() = parent_id);
 
-create policy if not exists "Users can update own subscription (testing)"
+drop policy if exists "Users can update own subscription (testing)" on public.parent_subscriptions;
+create policy "Users can update own subscription (testing)"
   on public.parent_subscriptions
   for update
   using (auth.uid() = parent_id)
   with check (auth.uid() = parent_id);
 
-create policy if not exists "Users can view own credit ledger"
+drop policy if exists "Users can view own credit ledger" on public.subscription_credit_ledger;
+create policy "Users can view own credit ledger"
   on public.subscription_credit_ledger
   for select
   using (auth.uid() = parent_id);
 
-create policy if not exists "Users can view own module unlocks"
+drop policy if exists "Users can view own module unlocks" on public.module_unlocks;
+create policy "Users can view own module unlocks"
   on public.module_unlocks
   for select
   using (auth.uid() = parent_id);
 
 -- Manual testing support: users can add positive credits for themselves.
-create policy if not exists "Users can insert self credit adjustments"
+drop policy if exists "Users can insert self credit adjustments" on public.subscription_credit_ledger;
+create policy "Users can insert self credit adjustments"
   on public.subscription_credit_ledger
   for insert
   with check (
@@ -143,12 +153,11 @@ select
 from public.subscription_credit_ledger l
 group by l.parent_id, l.period_start, l.period_end;
 
--- Security barrier through base-table RLS; expose via invoker view grants.
 grant select on public.v_parent_credit_summary to authenticated;
 
 -- RPC: unlock a module with one credit for the active period
 create or replace function public.unlock_module_with_credit(
-  p_module_id bigint,
+  p_module_id uuid,
   p_period_start date default date_trunc('month', now())::date
 )
 returns jsonb
@@ -242,4 +251,3 @@ begin
     'period_end', v_period_end
   );
 end;
-$$;
