@@ -89,6 +89,154 @@ CRITICAL RULES:
    For nature/plant themes use: 🌿 🍃 🌸 🌻 🌺 🌹 🌷 — NOT newer botanical emojis.
    When in doubt, use a text label instead of an emoji.`;
 
+// ====================
+// DUPLICATE DETECTION UTILITIES
+// ====================
+
+/**
+ * Normalizes text for comparison by removing punctuation, converting to lowercase,
+ * and removing common filler words
+ */
+function normalizeForComparison(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '') // Remove punctuation
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
+
+/**
+ * Calculates similarity between two strings using Jaccard similarity on word sets
+ * Returns a value between 0 (completely different) and 1 (identical)
+ */
+function calculateSimilarity(text1: string, text2: string): number {
+  const words1 = new Set(normalizeForComparison(text1).split(' ').filter(w => w.length > 2));
+  const words2 = new Set(normalizeForComparison(text2).split(' ').filter(w => w.length > 2));
+  
+  if (words1.size === 0 || words2.size === 0) return 0;
+  
+  const intersection = new Set([...words1].filter(x => words2.has(x)));
+  const union = new Set([...words1, ...words2]);
+  
+  return intersection.size / union.size;
+}
+
+/**
+ * Extracts key content from an interactive lesson for comparison
+ */
+function extractInteractiveLessonKey(lesson: InteractiveLessonContent): string {
+  const parts = [
+    lesson.heading || '',
+    lesson.interactionPrompt || '',
+    ...(lesson.interactionOptions || [])
+  ];
+  return parts.join(' ');
+}
+
+/**
+ * Checks if any two interactive lessons are too similar (>60% word overlap)
+ * Returns array of duplicate pairs found
+ */
+function findDuplicateInteractiveLessons(
+  lessons: InteractiveLessonContent[]
+): Array<{ index1: number; index2: number; similarity: number }> {
+  const duplicates: Array<{ index1: number; index2: number; similarity: number }> = [];
+  const SIMILARITY_THRESHOLD = 0.6; // 60% similarity is considered a duplicate
+  
+  for (let i = 0; i < lessons.length; i++) {
+    for (let j = i + 1; j < lessons.length; j++) {
+      const key1 = extractInteractiveLessonKey(lessons[i]);
+      const key2 = extractInteractiveLessonKey(lessons[j]);
+      const similarity = calculateSimilarity(key1, key2);
+      
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        duplicates.push({ index1: i, index2: j, similarity });
+        console.warn(`[DUPLICATE DETECTED] Interactive lessons ${i + 1} and ${j + 1} are ${Math.round(similarity * 100)}% similar`);
+      }
+    }
+  }
+  
+  return duplicates;
+}
+
+/**
+ * Regenerates a single interactive lesson with explicit avoidance instructions
+ */
+async function regenerateInteractiveLesson(
+  apiKey: string,
+  metadata: ModuleMetadata,
+  contentBrief: string,
+  existingLessons: InteractiveLessonContent[],
+  indexToReplace: number,
+  seriesInfo?: SeriesInfo | null
+): Promise<InteractiveLessonContent> {
+  const context = buildCondensedContext(contentBrief, metadata);
+  const characterContext = buildCharacterContext(metadata, seriesInfo);
+  
+  // Build detailed avoidance list from ALL existing lessons
+  const avoidanceList = existingLessons.map((lesson, idx) => 
+    `Lesson ${idx + 1}: "${lesson.heading}" - Question: "${lesson.interactionPrompt}"`
+  ).join('\n');
+  
+  const prompt = `Create a REPLACEMENT interactive lesson for a child's workbook. This lesson must be COMPLETELY DIFFERENT from existing lessons.
+
+${context}
+
+${characterContext}
+
+EXISTING LESSONS TO AVOID (DO NOT CREATE ANYTHING SIMILAR):
+${avoidanceList}
+
+CRITICAL REQUIREMENTS:
+1. Create content on a COMPLETELY DIFFERENT topic/concept than any lesson above
+2. Use a DIFFERENT question type and subject matter
+3. Do NOT ask about maps, comparisons, growth journeys, or progress if those are in existing lessons
+4. Focus on a FRESH aspect of the module theme that hasn't been covered
+
+Respond with ONLY this JSON:
+{
+  "heading": "Unique engaging title (must be different from existing)",
+  "introText": "Brief intro (2-3 sentences max)",
+  "interactionType": "poll" | "circle-one" | "fill-blank" | "rate-scale" | "true-false",
+  "interactionPrompt": "A completely unique interactive question",
+  "interactionOptions": ["option1", "option2", "option3", "option4"],
+  "correctAnswerIndex": 1,
+  "followUpText": "Brief explanation (1-2 sentences)",
+  "mascotComment": "Encouraging comment from ${metadata.characterName}"
+}`;
+
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
+  const parsed = safeJsonParse<InteractiveLessonContent>(response);
+  
+  if (parsed) {
+    // Shuffle options
+    if (parsed.interactionOptions && typeof parsed.correctAnswerIndex === 'number' && 
+        (parsed.interactionType === 'poll' || parsed.interactionType === 'circle-one')) {
+      const options = [...parsed.interactionOptions];
+      const correctAnswer = options[parsed.correctAnswerIndex];
+      for (let j = options.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [options[j], options[k]] = [options[k], options[j]];
+      }
+      parsed.interactionOptions = options;
+      parsed.correctAnswerIndex = options.indexOf(correctAnswer);
+    }
+    return parsed;
+  }
+  
+  // Fallback with unique content
+  return {
+    heading: "Discovering New Skills",
+    introText: `${metadata.characterName} has something special to share with you today!`,
+    interactionType: "poll",
+    interactionPrompt: "What's one thing you've learned about feelings?",
+    interactionOptions: ["They come and go", "They're all the same", "Only some people have them", "They never change"],
+    correctAnswerIndex: 0,
+    followUpText: "That's right! Feelings are like weather - they change and that's okay!",
+    mascotComment: `${metadata.characterName} is so proud of your learning!`
+  };
+}
+
 // Build a condensed context block from the full content brief for use in all generators.
 // This ensures every activity (not just lessons) stays aligned with the module's theory,
 // Brain Town analogy, Australian English rules, and diagnosis adaptations.
@@ -1302,6 +1450,9 @@ async function generateInteractiveLessons(
   const characterContext = buildCharacterContext(metadata, seriesInfo);
   const includeDaniel = shouldIncludeDaniel(metadata, seriesInfo);
   
+  // Track already generated content to prevent duplicates
+  const alreadyGenerated: string[] = [];
+  
   for (let i = 0; i < count; i++) {
     const lessonType = i === 0 ? "first" : i < 2 ? "early" : "later";
     
@@ -1311,13 +1462,21 @@ async function generateInteractiveLessons(
       later: "This is a later lesson. Focus on application, deeper understanding, or challenging scenarios. DO NOT reintroduce the character."
     }[lessonType];
     
+    // Build duplicate prevention context
+    const duplicatePreventionContext = alreadyGenerated.length > 0 
+      ? `\n\nALREADY GENERATED CONTENT (DO NOT REPEAT OR CREATE SIMILAR):
+${alreadyGenerated.map((item, idx) => `${idx + 1}. ${item}`).join('\n')}
+
+CRITICAL: Your new lesson MUST cover a COMPLETELY DIFFERENT topic, question, and activity from the above. Do NOT ask about the same concepts, comparisons, or reflections. Each lesson must be unique.`
+      : '';
+    
     const prompt = `Create interactive lesson ${i + 1} of ${count} for a child's workbook.
 
 ${context}
 
 ${characterContext}
 
-LESSON CONTEXT: ${contextGuidance}
+LESSON CONTEXT: ${contextGuidance}${duplicatePreventionContext}
 
 CRITICAL: Do NOT start introText with "Hi! I'm [character name]" or any character self-introduction. The character was already introduced on the welcome page. Start directly with the lesson content.
 
@@ -1340,7 +1499,8 @@ Rules:
 - For "fill-blank": prompt should have ___ where the child fills in
 - For "rate-scale": prompt asks to rate something 1-5
 - For "true-false": set "correctAnswerIndex" to 0 (Agree) or 1 (Disagree)
-- Vary interaction types across lessons`;
+- Vary interaction types across lessons
+- IMPORTANT: Create UNIQUE content that doesn't repeat topics from previous lessons`;
 
     const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
     const parsed = safeJsonParse<InteractiveLessonContent>(response);
@@ -1362,26 +1522,39 @@ Rules:
         parsed.interactionOptions = options;
         parsed.correctAnswerIndex = options.indexOf(correctAnswer);
       }
+      
+      // Track this content to prevent duplicates in subsequent lessons
+      const contentSummary = `Title: "${parsed.heading}" | Question: "${parsed.interactionPrompt}" | Options: ${parsed.interactionOptions?.join(', ') || 'N/A'}`;
+      alreadyGenerated.push(contentSummary);
+      
       lessons.push(parsed);
     } else {
-      // Fallback
+      // Fallback - use varied fallback content based on lesson index to avoid duplicates
+      const fallbackVariants = [
+        { heading: "Let's Explore Together", prompt: "Which of these helps when you're feeling overwhelmed?", options: ["Ignore it", "Take deep breaths", "Get angry", "Hide"] },
+        { heading: "Building Our Skills", prompt: "What's a good way to tell someone how you feel?", options: ["Yell at them", "Use calm words", "Say nothing", "Walk away angry"] },
+        { heading: "Practice Time", prompt: "When you notice a big feeling, what should you do first?", options: ["React quickly", "Pause and breathe", "Hide it", "Blame someone"] },
+        { heading: "Putting It Together", prompt: "How can you help a friend who seems upset?", options: ["Ignore them", "Tell them to stop", "Ask if they're okay", "Walk away"] },
+        { heading: "Your Growing Skills", prompt: "What helps your brain calm down?", options: ["More stress", "Deep breaths", "Loud noises", "Running away"] },
+      ];
+      const variant = fallbackVariants[i % fallbackVariants.length];
       const type = interactionTypes[i % interactionTypes.length] as InteractiveLessonContent["interactionType"];
-      lessons.push({
-        heading: lessonType === "first" ? "Let's Explore Together" : "Building Our Skills",
-        introText: lessonType === "first" 
-          ? `Now that we've met, let's dive deeper! Daniel has been thinking about this too.` 
-          : `Daniel and I have discovered something interesting to share with you.`,
-        interactionType: type,
-        interactionPrompt: type === "poll" ? "Which of these helps when you're feeling overwhelmed?" :
-                           type === "fill-blank" ? "When I feel worried, I can ___" :
-                           type === "rate-scale" ? "How comfortable are you talking about your feelings?" :
-                           type === "true-false" ? "It's okay to feel scared sometimes" :
-                           "What helps you feel calm?",
-        interactionOptions: (type === "poll" || type === "circle-one") ? ["Ignore it", "Take deep breaths", "Get angry", "Hide"] : undefined,
-        correctAnswerIndex: (type === "poll" || type === "circle-one") ? 1 : (type === "true-false" ? 0 : undefined),
-        followUpText: "Taking deep breaths helps calm our body and mind!",
-        mascotComment: `${metadata.characterName} says: Great thinking! Daniel is proud of you!`
-      });
+      
+      const fallbackLesson = {
+        heading: variant.heading,
+        introText: `${metadata.characterName} wants to explore something important with you.`,
+        interactionType: type === "poll" || type === "circle-one" ? type : "poll" as const,
+        interactionPrompt: variant.prompt,
+        interactionOptions: variant.options,
+        correctAnswerIndex: 1,
+        followUpText: "Great thinking! These skills help us manage big feelings.",
+        mascotComment: `${metadata.characterName} says: You're doing wonderfully!`
+      };
+      
+      // Track fallback content too
+      alreadyGenerated.push(`Title: "${fallbackLesson.heading}" | Question: "${fallbackLesson.interactionPrompt}"`);
+      
+      lessons.push(fallbackLesson);
     }
   }
   
@@ -3550,10 +3723,63 @@ async function generateAllContent(
   ]);
   
   await updateProgress("lessons", "Creating lesson content...");
-  const [lessons, interactiveLessons] = await Promise.all([
+  const [lessons, rawInteractiveLessons] = await Promise.all([
     counts.lessons > 0 ? generateLessons(apiKey, metadata, contentBrief, counts.lessons, seriesInfo) : Promise.resolve([]),
     counts.interactiveLessons > 0 ? generateInteractiveLessons(apiKey, metadata, contentBrief, counts.interactiveLessons, seriesInfo) : Promise.resolve([]),
   ]);
+  
+  // DUPLICATE DETECTION & REMEDIATION for interactive lessons
+  let interactiveLessons = rawInteractiveLessons;
+  if (interactiveLessons.length > 1) {
+    const duplicates = findDuplicateInteractiveLessons(interactiveLessons);
+    
+    if (duplicates.length > 0) {
+      await updateProgress("dedup", "Fixing duplicate content...");
+      console.log(`[DEDUP] Found ${duplicates.length} duplicate pair(s) in interactive lessons. Regenerating...`);
+      
+      // Create a mutable copy of the lessons array
+      const fixedLessons = [...interactiveLessons];
+      
+      // Track which indices we've already regenerated to avoid infinite loops
+      const regeneratedIndices = new Set<number>();
+      
+      for (const dup of duplicates) {
+        // Always regenerate the later lesson (higher index) to preserve lesson flow
+        const indexToFix = dup.index2;
+        
+        if (!regeneratedIndices.has(indexToFix)) {
+          console.log(`[DEDUP] Regenerating lesson ${indexToFix + 1} (was ${Math.round(dup.similarity * 100)}% similar to lesson ${dup.index1 + 1})`);
+          
+          try {
+            const newLesson = await regenerateInteractiveLesson(
+              apiKey,
+              metadata,
+              contentBrief,
+              fixedLessons, // Pass ALL current lessons for context
+              indexToFix,
+              seriesInfo
+            );
+            
+            fixedLessons[indexToFix] = newLesson;
+            regeneratedIndices.add(indexToFix);
+          } catch (error) {
+            console.error(`[DEDUP] Failed to regenerate lesson ${indexToFix + 1}:`, error);
+            // Keep the original if regeneration fails
+          }
+        }
+      }
+      
+      interactiveLessons = fixedLessons;
+      
+      // Verify fix worked
+      const remainingDuplicates = findDuplicateInteractiveLessons(interactiveLessons);
+      if (remainingDuplicates.length > 0) {
+        console.warn(`[DEDUP] Warning: ${remainingDuplicates.length} duplicate(s) remain after fix attempt`);
+      } else {
+        console.log(`[DEDUP] Successfully resolved all duplicates`);
+      }
+    }
+  }
   
   await updateProgress("activities", "Designing interactive activities...");
   const [checklists, reflections, quizzes, drawings, scenarios, breathing] = await Promise.all([

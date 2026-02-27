@@ -164,6 +164,14 @@ function capitalizeFirstLetter(str) {
 // Helper function to get icon for category
 function getCategoryIcon(categoryName) {
   const iconMap = {
+    'regulation': '🎯',
+    'thinking & planning': '🧠',
+    'body & sensory': '�',
+    'social connection': '👫',
+    'big feelings': '�🔥',
+    'wellbeing & energy': '🌟',
+    'safety & supports': '🛡️',
+    // Legacy mappings
     'anger': '🔥',
     'anxiety': '🌧️',
     'sadness': '🌙',
@@ -183,13 +191,13 @@ function getCategoryIcon(categoryName) {
 // Fallback categories if database fetch fails
 function getFallbackCategories() {
   return [
-    { id: 'anger', name: 'Anger', icon: '🔥', short_description: 'Managing angry feelings' },
-    { id: 'anxiety', name: 'Anxiety', icon: '🌧️', short_description: 'Handling worry and fear' },
-    { id: 'depression', name: 'Sadness', icon: '🌙', short_description: 'Working through sad feelings' },
-    { id: 'emotions', name: 'Emotions', icon: '💭', short_description: 'Understanding all feelings' },
-    { id: 'body', name: 'Body Awareness', icon: '💪', short_description: 'Connecting with your body' },
-    { id: 'social', name: 'Social Skills', icon: '👫', short_description: 'Making friends and connections' },
-    { id: 'cognitive', name: 'Thinking Skills', icon: '🧠', short_description: 'Training your brain' }
+    { id: 'regulation', name: 'Regulation', icon: '🎯', short_description: 'Managing emotions and impulses' },
+    { id: 'thinking-planning', name: 'Thinking & Planning', icon: '🧠', short_description: 'Building focus and problem-solving' },
+    { id: 'body-sensory', name: 'Body & Sensory', icon: '💪', short_description: 'Connecting with your body' },
+    { id: 'social-connection', name: 'Social Connection', icon: '�', short_description: 'Making friends and connections' },
+    { id: 'big-feelings', name: 'Big Feelings', icon: '�', short_description: 'Working through intense emotions' },
+    { id: 'wellbeing-energy', name: 'Wellbeing & Energy', icon: '🌟', short_description: 'Building resilience and energy' },
+    { id: 'safety-supports', name: 'Safety & Supports', icon: '🛡️', short_description: 'Creating safety and support networks' }
   ]
 }
 
