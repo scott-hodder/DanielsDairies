@@ -315,9 +315,23 @@ function getModuleSequenceOrder(module) {
   return Number.MAX_SAFE_INTEGER
 }
 
-function getOrderedActiveModulesForSequence() {
-  return (state.modules || [])
-    .filter((module) => module?.is_active !== false)
+function getOrderedActiveModulesForSequence(referenceModule = null) {
+  const baseModules = (state.modules || []).filter((module) => module?.is_active !== false)
+
+  const cohortModules = referenceModule
+    ? baseModules.filter((module) => {
+        const sameCycle = String(module.cycle_id || '') === String(referenceModule.cycle_id || '')
+        const sameSuperSkill = String(module.super_skill_id || '') === String(referenceModule.super_skill_id || '')
+        const sameCategory = String(module.category || '') === String(referenceModule.category || '')
+        const sameSeries = String(module.series || '') === String(referenceModule.series || '')
+
+        return sameCycle && (sameSuperSkill || sameCategory || sameSeries)
+      })
+    : baseModules
+
+  const modulesToSort = cohortModules.length > 0 ? cohortModules : baseModules
+
+  return modulesToSort
     .slice()
     .sort((a, b) => {
       const orderDiff = getModuleSequenceOrder(a) - getModuleSequenceOrder(b)
@@ -326,8 +340,8 @@ function getOrderedActiveModulesForSequence() {
     })
 }
 
-function getNextUnlockableModule() {
-  const orderedModules = getOrderedActiveModulesForSequence()
+function getNextUnlockableModule(referenceModule = null) {
+  const orderedModules = getOrderedActiveModulesForSequence(referenceModule)
   const childModuleLockMap = new Map()
   ;(state.childModules || []).forEach((cm) => {
     childModuleLockMap.set(cm.module_id, cm.locked !== false)
@@ -338,7 +352,7 @@ function getNextUnlockableModule() {
 
 function isModuleNextUnlockable(module) {
   if (!module) return false
-  const nextUnlockableModule = getNextUnlockableModule()
+  const nextUnlockableModule = getNextUnlockableModule(module)
   return Boolean(nextUnlockableModule && String(nextUnlockableModule.id) === String(module.id))
 }
 
@@ -1291,8 +1305,8 @@ function openPurchaseModal(module) {
 
   if (!isModuleNextUnlockable(module)) {
     showUnlockResultModal({
-      title: 'Unlock in order',
-      message: 'Please unlock the next module in sequence first.',
+      title: 'Almost there!',
+      message: "Let's unlock this path one step at a time. Try the first locked module.",
       type: 'error'
     })
     return
@@ -2700,7 +2714,7 @@ function renderModules() {
     const lockedHint = document.createElement('p')
     lockedHint.className = 'module-subtitle'
     lockedHint.style.margin = '0 0 14px 0'
-    lockedHint.textContent = 'Modules unlock in order. Spend 1 credit on the next module to continue.'
+    lockedHint.textContent = "Let's go in order! Unlock the first locked module to keep the adventure going."
 
     const lockedGrid = document.createElement('div')
     lockedGrid.className = 'modules-grid'
@@ -2735,7 +2749,7 @@ function createModuleCard(module, options = {}) {
   const iconHtml = isLocked ? '🔒' : (isCompleted ? '✓' : '📖')
   const iconClass = isLocked ? 'default' : (isCompleted ? 'completed' : 'default')
   const buttonHtml = isLocked
-    ? `<button class="btn-module locked ${canUnlock ? '' : 'locked-disabled'}" ${canUnlock ? '' : 'disabled'}>${canUnlock ? 'Unlock with 1 Credit' : 'Unlock previous module first'}</button>`
+    ? `<button class="btn-module locked ${canUnlock ? '' : 'locked-disabled'}" ${canUnlock ? '' : 'disabled'}>${canUnlock ? 'Unlock with 1 Credit' : 'Unlock the first lock first'}</button>`
     : isCompleted
       ? '<button class="btn-module completed">✓ Completed</button>'
       : `<button class="btn-module start">Start Module →</button>`
@@ -2767,7 +2781,7 @@ function createModuleCard(module, options = {}) {
         ${ageRange ? `<div class="module-subtitle" style="font-weight: 600;">Ages ${ageRange}</div>` : ''}
         ${shortDescription ? `<p class="module-subtitle" style="margin-top: 4px;">${shortDescription}</p>` : ''}
         <p class="module-subtitle" style="margin-top: 8px;">
-          ${isLocked ? (canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — unlock previous modules first') : (isCompleted ? 'Completed' : 'Ready to start')}
+          ${isLocked ? (canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — start with the first lock') : (isCompleted ? 'Completed' : 'Ready to start')}
         </p>
       </div>
     </div>

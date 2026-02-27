@@ -1818,7 +1818,7 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = module.canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — unlock previous modules first';
+        statusText = module.canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — start with the first lock';
         statusClass = 'locked-status';
       }
 
@@ -1829,8 +1829,8 @@ class AdventureMapV4 {
             window.openPurchaseModal(module.module || module);
           } else if (typeof window.showUnlockResultModal === 'function') {
             window.showUnlockResultModal({
-              title: 'Unlock in order',
-              message: 'Please unlock the next module in sequence first.',
+              title: 'Almost there!',
+              message: "Let's unlock this path one step at a time. Try the first locked module.",
               type: 'error'
             });
           }
@@ -1846,8 +1846,8 @@ class AdventureMapV4 {
             window.openPurchaseModal(module.module || module);
           } else if (typeof window.showUnlockResultModal === 'function') {
             window.showUnlockResultModal({
-              title: 'Unlock in order',
-              message: 'Please unlock the next module in sequence first.',
+              title: 'Almost there!',
+              message: "Let's unlock this path one step at a time. Try the first locked module.",
               type: 'error'
             });
           }
