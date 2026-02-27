@@ -627,6 +627,7 @@ function createAllModulesCard(module) {
   const description = module.long_description || module.short_description || 'Build emotional strength with guided stories, games, and parent scripts.'
   // Truncate description for grid view
   const shortDesc = description.length > 100 ? description.substring(0, 100) + '...' : description
+  const ageRange = getSafeAgeRange(module)
 
   return `
     <div class="all-module-card">
