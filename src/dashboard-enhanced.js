@@ -805,14 +805,25 @@ class AdventureMapV4 {
       return 0;
     });
 
-    // Respect per-child lock state from child_modules.locked.
-    // Completed modules stay completed, unlocked modules are available, and locked ones remain locked/greyed out.
+    // Respect per-child lock state from child_modules.locked and only allow the next locked module to be unlockable.
+    var firstLockedIndex = -1;
     for (var i = 0; i < this.modules.length; i++) {
-      var mod = this.modules[i];
+      var moduleForLockCheck = this.modules[i];
+      if (!moduleForLockCheck.completed && moduleForLockCheck.locked && firstLockedIndex === -1) {
+        firstLockedIndex = i;
+      }
+    }
+
+    for (var j = 0; j < this.modules.length; j++) {
+      var mod = this.modules[j];
+      mod.canUnlock = false;
       if (mod.completed) {
         mod.status = 'completed';
+      } else if (mod.locked) {
+        mod.status = 'locked';
+        mod.canUnlock = j === firstLockedIndex;
       } else {
-        mod.status = mod.locked ? 'locked' : 'available';
+        mod.status = 'available';
       }
     }
   }
@@ -1807,15 +1818,21 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = 'Locked — spend 1 credit to unlock';
+        statusText = module.canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — unlock previous modules first';
         statusClass = 'locked-status';
       }
 
       node.addEventListener('click', function(e) {
         e.stopPropagation();
         if (module.status === 'locked') {
-          if (typeof window.openPurchaseModal === 'function') {
+          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
             window.openPurchaseModal(module.module || module);
+          } else if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Unlock in order',
+              message: 'Please unlock the next module in sequence first.',
+              type: 'error'
+            });
           }
           return;
         }
@@ -1825,8 +1842,14 @@ class AdventureMapV4 {
       node.addEventListener('touchend', function(e) {
         e.stopPropagation();
         if (module.status === 'locked') {
-          if (typeof window.openPurchaseModal === 'function') {
+          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
             window.openPurchaseModal(module.module || module);
+          } else if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Unlock in order',
+              message: 'Please unlock the next module in sequence first.',
+              type: 'error'
+            });
           }
           return;
         }

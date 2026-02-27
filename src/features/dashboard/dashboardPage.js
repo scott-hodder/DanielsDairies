@@ -304,6 +304,44 @@ function getSafeAgeRange(module) {
   return ageText
 }
 
+function getModuleSequenceOrder(module) {
+  if (!module) return Number.MAX_SAFE_INTEGER
+  const candidates = [module.pathway_order, module.week_number, module.order, module.position, module.sort_order]
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === '') continue
+    const numeric = Number(candidate)
+    if (!Number.isNaN(numeric)) return numeric
+  }
+  return Number.MAX_SAFE_INTEGER
+}
+
+function getOrderedActiveModulesForSequence() {
+  return (state.modules || [])
+    .filter((module) => module?.is_active !== false)
+    .slice()
+    .sort((a, b) => {
+      const orderDiff = getModuleSequenceOrder(a) - getModuleSequenceOrder(b)
+      if (orderDiff !== 0) return orderDiff
+      return Number(a.id || 0) - Number(b.id || 0)
+    })
+}
+
+function getNextUnlockableModule() {
+  const orderedModules = getOrderedActiveModulesForSequence()
+  const childModuleLockMap = new Map()
+  ;(state.childModules || []).forEach((cm) => {
+    childModuleLockMap.set(cm.module_id, cm.locked !== false)
+  })
+
+  return orderedModules.find((module) => childModuleLockMap.get(module.id) !== false) || null
+}
+
+function isModuleNextUnlockable(module) {
+  if (!module) return false
+  const nextUnlockableModule = getNextUnlockableModule()
+  return Boolean(nextUnlockableModule && String(nextUnlockableModule.id) === String(module.id))
+}
+
 function getModulePriceLabel(module) {
   const priceValue = parseModulePrice(module)
   const currency = module?.price_currency || module?.currency || 'AUD'
@@ -1251,6 +1289,15 @@ async function init() {
 function openPurchaseModal(module) {
   if (!purchaseModal || !purchaseModalTitle || !purchaseModalBody || !purchaseModalCost) return
 
+  if (!isModuleNextUnlockable(module)) {
+    showUnlockResultModal({
+      title: 'Unlock in order',
+      message: 'Please unlock the next module in sequence first.',
+      type: 'error'
+    })
+    return
+  }
+
   setCurrentPurchaseModule(module)
 
   purchaseModalTitle.textContent = `Unlock Module: ${module.title}`
@@ -1269,7 +1316,8 @@ function openPurchaseModal(module) {
       <span style="display:block; margin-top: 10px; color: #2e7d32; font-size: 13px;">Spend 1 credit to unlock this workbook for your family.</span>
       <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">Credits available right now: ${walletValue}</span>
     `
-if (confirmPurchaseButton) {      confirmPurchaseButton.disabled = false
+    if (confirmPurchaseButton) {
+      confirmPurchaseButton.disabled = false
       confirmPurchaseButton.textContent = 'Spend 1 Credit'
     }
   } else {
@@ -1328,6 +1376,8 @@ function showUnlockResultModal({ title, message, type = 'success' }) {
 
   showElement(unlockResultModal)
 }
+
+window.showUnlockResultModal = showUnlockResultModal
 
 function getNextCreditRefreshDateLabel() {
   if (!currentSubscription?.current_period_end) return null
@@ -2650,7 +2700,7 @@ function renderModules() {
     const lockedHint = document.createElement('p')
     lockedHint.className = 'module-subtitle'
     lockedHint.style.margin = '0 0 14px 0'
-    lockedHint.textContent = 'Click a locked module to spend 1 credit and unlock it.'
+    lockedHint.textContent = 'Modules unlock in order. Spend 1 credit on the next module to continue.'
 
     const lockedGrid = document.createElement('div')
     lockedGrid.className = 'modules-grid'
@@ -2659,7 +2709,7 @@ function renderModules() {
     lockedGrid.style.gap = '20px'
 
     lockedModules.forEach((module) => {
-      lockedGrid.appendChild(createModuleCard(module, { locked: true }))
+      lockedGrid.appendChild(createModuleCard(module, { locked: true, canUnlock: isModuleNextUnlockable(module) }))
     })
 
     lockedSection.appendChild(lockedHeader)
@@ -2674,6 +2724,7 @@ function createModuleCard(module, options = {}) {
   const card = document.createElement('div')
 
   const isLocked = Boolean(options.locked)
+  const canUnlock = options.canUnlock !== false
 
   // Check if module is completed
   const childModule = state.childModules.find(cm => cm.module_id === module.id)
@@ -2684,7 +2735,7 @@ function createModuleCard(module, options = {}) {
   const iconHtml = isLocked ? '🔒' : (isCompleted ? '✓' : '📖')
   const iconClass = isLocked ? 'default' : (isCompleted ? 'completed' : 'default')
   const buttonHtml = isLocked
-    ? '<button class="btn-module locked">Unlock with 1 Credit</button>'
+    ? `<button class="btn-module locked ${canUnlock ? '' : 'locked-disabled'}" ${canUnlock ? '' : 'disabled'}>${canUnlock ? 'Unlock with 1 Credit' : 'Unlock previous module first'}</button>`
     : isCompleted
       ? '<button class="btn-module completed">✓ Completed</button>'
       : `<button class="btn-module start">Start Module →</button>`
@@ -2716,7 +2767,7 @@ function createModuleCard(module, options = {}) {
         ${ageRange ? `<div class="module-subtitle" style="font-weight: 600;">Ages ${ageRange}</div>` : ''}
         ${shortDescription ? `<p class="module-subtitle" style="margin-top: 4px;">${shortDescription}</p>` : ''}
         <p class="module-subtitle" style="margin-top: 8px;">
-          ${isLocked ? 'Locked — spend 1 credit to unlock' : (isCompleted ? 'Completed' : 'Ready to start')}
+          ${isLocked ? (canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — unlock previous modules first') : (isCompleted ? 'Completed' : 'Ready to start')}
         </p>
       </div>
     </div>
@@ -2726,7 +2777,9 @@ function createModuleCard(module, options = {}) {
   // Add click handler for start/unlock button
   if (isLocked) {
     const unlockButton = card.querySelector('.btn-module.locked')
-    unlockButton?.addEventListener('click', () => openPurchaseModal(module))
+    if (canUnlock) {
+      unlockButton?.addEventListener('click', () => openPurchaseModal(module))
+    }
   } else if (!isCompleted) {
     const startButton = card.querySelector('.btn-module.start')
     startButton?.addEventListener('click', () => startModule(module))
@@ -2965,6 +3018,16 @@ if (unlockResultModal) {
 if (confirmPurchaseButton) {
   confirmPurchaseButton.addEventListener('click', async () => {
     if (!state.currentPurchaseModule || !state.currentUser) return
+
+    if (!isModuleNextUnlockable(state.currentPurchaseModule)) {
+      showUnlockResultModal({
+        title: 'Unlock in order',
+        message: 'Please unlock the next module in sequence first.',
+        type: 'error'
+      })
+      closePurchaseModal()
+      return
+    }
 
     try {
       confirmPurchaseButton.disabled = true
