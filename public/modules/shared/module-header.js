@@ -155,48 +155,40 @@
   }
 
   function collectPagesFromRenderedDom(pageCount, printContainer) {
-    if (typeof window.goToPage !== 'function') {
-      return Promise.resolve(0);
-    }
-
     var pageContainer = document.getElementById('pageContainer');
     if (!pageContainer) {
       return Promise.resolve(0);
     }
 
-    var originalPageIndex = getCurrentPageIndexFromHeader();
+    var headerState = getHeaderPageState();
+    if (!headerState) {
+      return Promise.resolve(0);
+    }
+
+    var totalPages = Math.min(pageCount || headerState.total, headerState.total);
+    var originalPageIndex = headerState.current - 1;
     var successCount = 0;
 
-    return sequence(0, pageCount - 1, function(pageIndex) {
-      return new Promise(function(resolve) {
-        try {
-          window.goToPage(pageIndex);
-        } catch (error) {
-          console.warn('[Print] goToPage failed at index ' + pageIndex + ':', error);
-          resolve();
-          return;
-        }
-
-        waitForPageRenderReady(pageContainer, pageIndex).then(function(renderedPage) {
+    return goToPageUsingNavigation(0).then(function() {
+      return sequence(0, totalPages - 1, function(pageIndex) {
+        return waitForPageRenderReady(pageContainer, pageIndex).then(function(renderedPage) {
           if (renderedPage) {
             printContainer.insertAdjacentHTML('beforeend', renderedPage.outerHTML);
             successCount++;
           }
-          resolve();
-        }).catch(function(error) {
-          console.warn('[Print] Failed waiting for rendered page ' + pageIndex + ':', error);
-          resolve();
+
+          if (pageIndex < totalPages - 1) {
+            return goToPageUsingNavigation(pageIndex + 1);
+          }
         });
       });
     }).then(function() {
       if (originalPageIndex >= 0) {
-        try {
-          window.goToPage(originalPageIndex);
-        } catch (restoreError) {
+        return goToPageUsingNavigation(originalPageIndex).catch(function(restoreError) {
           console.warn('[Print] Failed to restore original page index:', restoreError);
-        }
+        });
       }
-
+    }).then(function() {
       return successCount;
     });
   }
@@ -219,6 +211,68 @@
     }
 
     return current - 1;
+  }
+
+  function getHeaderPageState() {
+    var pageDisplay = document.querySelector('.module-header__page');
+    if (!pageDisplay) {
+      return null;
+    }
+
+    var text = pageDisplay.textContent || '';
+    var match = text.match(/(?:Page\s+)?(\d+)\s+of\s+(\d+)/i);
+    if (!match) {
+      return null;
+    }
+
+    var current = parseInt(match[1], 10);
+    var total = parseInt(match[2], 10);
+    if (isNaN(current) || isNaN(total) || current < 1 || total < 1) {
+      return null;
+    }
+
+    return { current: current, total: total };
+  }
+
+  function goToPageUsingNavigation(targetIndex) {
+    var target = Math.max(0, targetIndex || 0);
+
+    return new Promise(function(resolve, reject) {
+      var start = Date.now();
+
+      (function step() {
+        var state = getHeaderPageState();
+        if (!state) {
+          resolve();
+          return;
+        }
+
+        var currentIndex = state.current - 1;
+        if (currentIndex === target) {
+          resolve();
+          return;
+        }
+
+        if (Date.now() - start > 4000) {
+          reject(new Error('Timed out navigating to page ' + (target + 1)));
+          return;
+        }
+
+        var buttons = document.querySelectorAll('.module-header__nav .module-header__btn--nav');
+        var prevBtn = buttons[0];
+        var nextBtn = buttons[1];
+        var shouldMoveForward = currentIndex < target;
+        var navButton = shouldMoveForward ? nextBtn : prevBtn;
+
+        if (!navButton || navButton.disabled) {
+          resolve();
+          return;
+        }
+
+        navButton.click();
+        setTimeout(step, 120);
+      })();
+    });
   }
 
   function sequence(start, end, callback) {
