@@ -999,23 +999,6 @@ This fixes:
         </div>
 
         <form id="addModuleForm" onsubmit="saveNewModule(event); return false;">
-            <!-- Module Blueprint Selection -->
-            <div class="form-group" style="border: 2px solid #6366F1; border-radius: 12px; padding: 16px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.02)); margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <span style="font-size: 20px;">📋</span>
-                    <label class="form-label" style="margin: 0; font-weight: 600;">Load from Module Blueprint</label>
-                </div>
-                <p style="font-size: 13px; color: #6b7c8f; margin-bottom: 12px;">
-                    Select a pre-defined module blueprint to auto-populate the form fields and AI prompt.
-                </p>
-                <select class="form-select" id="moduleBlueprintSelect" onchange="loadModuleBlueprintIntoForm()" style="width: 100%;">
-                    <option value="">-- Select a pending blueprint --</option>
-                </select>
-                <p id="blueprintLoadedStatus" style="display: none; font-size: 12px; color: #10B981; margin-top: 8px; font-weight: 600;">
-                    ✓ Blueprint loaded! Fields have been auto-populated.
-                </p>
-            </div>
-
             <!-- Title -->
             <div class="form-group">
                 <label class="form-label required-label">Title</label>

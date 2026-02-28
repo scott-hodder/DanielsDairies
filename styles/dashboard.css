@@ -3826,6 +3826,10 @@ box-shadow: 0 8px 20px rgba(0,0,0,0.25);
     width: 100%;
     height: 100%;
     object-fit: contain;
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
     filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.1));
     animation: float 3s ease-in-out infinite;
 }
@@ -5667,12 +5671,10 @@ button:active, .btn:active {
 
 /* Daniel character in loading */
 .loading-character {
-    background: linear-gradient(145deg, #f8f9ff 0%, #eef1f8 100%) !important;
-    border-radius: 24px !important;
-    padding: 10px !important;
-    box-shadow: 
-        0 8px 25px rgba(64, 88, 120, 0.1),
-        inset 0 2px 0 rgba(255, 255, 255, 0.9) !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
 }
 
 .loading-spinner {
