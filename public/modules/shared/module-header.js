@@ -80,50 +80,28 @@
         
         // Clear the print container
         printContainer.innerHTML = '';
-        
-        // Generate and add each page
-        var successCount = 0;
-        for (var i = 0; i < pagesArray.length; i++) {
-          try {
-            var pageFunction = pagesArray[i];
-            var pageHTML = '';
-            
-            if (typeof pageFunction === 'function') {
-              pageHTML = pageFunction();
-            } else if (typeof pageFunction === 'string') {
-              pageHTML = pageFunction;
-            }
-            
-            if (pageHTML) {
-              // Insert HTML directly without extra wrapper to avoid double min-height
-              // The generated HTML already has a .page div with proper styling
-              printContainer.insertAdjacentHTML('beforeend', pageHTML);
-              successCount++;
-            }
-          } catch (err) {
-            console.error('[Print] Error generating page ' + i + ':', err);
-          }
-        }
-        
-        console.log('[Print] Successfully generated ' + successCount + ' pages');
-        
-        // Step 4: Show the print container
-        printContainer.style.display = 'block';
-        
-        // Step 5: Inject print-specific styles if not already present
-        injectPrintStyles();
-        
-        // Step 6: Wait a moment for rendering, then print
-        setTimeout(function() {
-          console.log('[Print] Triggering print dialog...');
-          window.print();
-          
-          // After printing (or cancel), hide the print container
-          setTimeout(function() {
-            printContainer.style.display = 'none';
-            console.log('[Print] Print container hidden');
-          }, 1000);
-        }, 300);
+
+        collectPagesForPrint(pagesArray, printContainer).then(function(successCount) {
+          console.log('[Print] Successfully generated ' + successCount + ' pages');
+
+          // Step 4: Show the print container
+          printContainer.style.display = 'block';
+
+          // Step 5: Inject print-specific styles if not already present
+          injectPrintStyles();
+
+          // Step 6: Wait for images/fonts/layout, then print
+          waitForPrintReady(printContainer).then(function() {
+            console.log('[Print] Triggering print dialog...');
+            window.print();
+
+            // After printing (or cancel), hide the print container
+            setTimeout(function() {
+              printContainer.style.display = 'none';
+              console.log('[Print] Print container hidden');
+            }, 1000);
+          });
+        });
         
       } else {
         console.log('[Print] No pages array found, trying fallback methods...');
@@ -164,6 +142,186 @@
     }
   }
 
+  function collectPagesForPrint(pagesArray, printContainer) {
+    return collectPagesFromRenderedDom(pagesArray.length, printContainer).then(function(domCount) {
+      if (domCount > 0) {
+        console.log('[Print] SUCCESS: Collected ' + domCount + ' pages from rendered DOM');
+        return domCount;
+      }
+
+      console.log('[Print] Falling back to direct page generator output');
+      return generatePagesForPrint(pagesArray, printContainer);
+    });
+  }
+
+  function collectPagesFromRenderedDom(pageCount, printContainer) {
+    if (typeof window.goToPage !== 'function') {
+      return Promise.resolve(0);
+    }
+
+    var pageContainer = document.getElementById('pageContainer');
+    if (!pageContainer) {
+      return Promise.resolve(0);
+    }
+
+    var originalPageIndex = getCurrentPageIndexFromHeader();
+    var successCount = 0;
+
+    return sequence(0, pageCount - 1, function(pageIndex) {
+      return new Promise(function(resolve) {
+        try {
+          window.goToPage(pageIndex);
+        } catch (error) {
+          console.warn('[Print] goToPage failed at index ' + pageIndex + ':', error);
+          resolve();
+          return;
+        }
+
+        setTimeout(function() {
+          var renderedPage = pageContainer.querySelector('.page, .module-page, [data-module-page], [data-page]');
+          if (renderedPage) {
+            printContainer.insertAdjacentHTML('beforeend', renderedPage.outerHTML);
+            successCount++;
+          }
+          resolve();
+        }, 80);
+      });
+    }).then(function() {
+      if (originalPageIndex >= 0) {
+        try {
+          window.goToPage(originalPageIndex);
+        } catch (restoreError) {
+          console.warn('[Print] Failed to restore original page index:', restoreError);
+        }
+      }
+
+      return successCount;
+    });
+  }
+
+  function getCurrentPageIndexFromHeader() {
+    var pageDisplay = document.querySelector('.module-header__page');
+    if (!pageDisplay) {
+      return -1;
+    }
+
+    var text = pageDisplay.textContent || '';
+    var match = text.match(/(\d+)\s+of\s+(\d+)/i);
+    if (!match) {
+      return -1;
+    }
+
+    var current = parseInt(match[1], 10);
+    if (isNaN(current) || current < 1) {
+      return -1;
+    }
+
+    return current - 1;
+  }
+
+  function sequence(start, end, callback) {
+    var chain = Promise.resolve();
+    for (var i = start; i <= end; i++) {
+      (function(index) {
+        chain = chain.then(function() {
+          return callback(index);
+        });
+      })(i);
+    }
+    return chain;
+  }
+
+  function generatePagesForPrint(pagesArray, printContainer) {
+    var successCount = 0;
+
+    return pagesArray.reduce(function(chain, pageFunction, index) {
+      return chain.then(function() {
+        return resolvePageHtml(pageFunction, index).then(function(pageHTML) {
+          if (!pageHTML) {
+            return;
+          }
+
+          // Insert HTML directly without extra wrapper to avoid double min-height
+          // The generated HTML already has a .page div with proper styling
+          printContainer.insertAdjacentHTML('beforeend', pageHTML);
+          successCount++;
+        });
+      });
+    }, Promise.resolve()).then(function() {
+      return successCount;
+    });
+  }
+
+  function resolvePageHtml(pageFunction, index) {
+    return new Promise(function(resolve) {
+      try {
+        var pageResult = pageFunction;
+        if (typeof pageFunction === 'function') {
+          pageResult = pageFunction();
+        }
+
+        if (pageResult && typeof pageResult.then === 'function') {
+          pageResult.then(function(resolvedHtml) {
+            resolve(typeof resolvedHtml === 'string' ? resolvedHtml : '');
+          }).catch(function(err) {
+            console.error('[Print] Error generating page ' + index + ':', err);
+            resolve('');
+          });
+          return;
+        }
+
+        resolve(typeof pageResult === 'string' ? pageResult : '');
+      } catch (err) {
+        console.error('[Print] Error generating page ' + index + ':', err);
+        resolve('');
+      }
+    });
+  }
+
+  function waitForPrintReady(printContainer) {
+    var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready.catch(function() {}) : Promise.resolve();
+    var imageReady = waitForImages(printContainer);
+
+    return Promise.all([fontsReady, imageReady]).then(function() {
+      return new Promise(function(resolve) {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(resolve);
+        });
+      });
+    });
+  }
+
+  function waitForImages(printContainer) {
+    var images = printContainer.querySelectorAll('img');
+    if (!images.length) {
+      return Promise.resolve();
+    }
+
+    var loaders = Array.prototype.map.call(images, function(image) {
+      if (image.complete && image.naturalWidth > 0) {
+        return Promise.resolve();
+      }
+
+      return new Promise(function(resolve) {
+        var settled = false;
+        var finish = function() {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          resolve();
+        };
+
+        image.addEventListener('load', finish, { once: true });
+        image.addEventListener('error', finish, { once: true });
+
+        setTimeout(finish, 2000);
+      });
+    });
+
+    return Promise.all(loaders).then(function() {});
+  }
+
   // Inject CSS styles needed for multi-page printing
   function injectPrintStyles() {
     if (document.getElementById('moduleHeaderPrintStyles')) {
@@ -190,6 +348,7 @@
       
       /* Print styles */
       '@media print {' +
+        '@page { margin: 0.5in; }' +
         /* Hide everything except print container */
         'body > *:not(#printContainer) { display: none !important; }' +
         
@@ -207,8 +366,11 @@
         '#printContainer > .page {' +
           'page-break-after: always;' +
           'page-break-inside: avoid;' +
-          'min-height: auto !important;' +  /* KEY FIX: Remove min-height */
+          'break-after: page;' +
+          'min-height: 100vh !important;' +
           'height: auto !important;' +
+          'width: 100% !important;' +
+          'box-sizing: border-box !important;' +
           'display: block !important;' +
           'padding: 0.5in !important;' +
           'margin: 0 !important;' +
