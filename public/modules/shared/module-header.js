@@ -177,14 +177,16 @@
           return;
         }
 
-        setTimeout(function() {
-          var renderedPage = pageContainer.querySelector('.page, .module-page, [data-module-page], [data-page]');
+        waitForPageRenderReady(pageContainer, pageIndex).then(function(renderedPage) {
           if (renderedPage) {
             printContainer.insertAdjacentHTML('beforeend', renderedPage.outerHTML);
             successCount++;
           }
           resolve();
-        }, 80);
+        }).catch(function(error) {
+          console.warn('[Print] Failed waiting for rendered page ' + pageIndex + ':', error);
+          resolve();
+        });
       });
     }).then(function() {
       if (originalPageIndex >= 0) {
@@ -230,6 +232,48 @@
     }
     return chain;
   }
+
+  function waitForPageRenderReady(pageContainer, pageIndex) {
+    return waitForExpectedPage(pageIndex, 2500).then(function() {
+      return new Promise(function(resolve) {
+        setTimeout(function() {
+          var renderedPage = pageContainer.querySelector('.page, .module-page, [data-module-page], [data-page]');
+          if (!renderedPage) {
+            resolve(null);
+            return;
+          }
+
+          waitForImages(renderedPage).then(function() {
+            resolve(renderedPage);
+          }).catch(function() {
+            resolve(renderedPage);
+          });
+        }, 180);
+      });
+    });
+  }
+
+  function waitForExpectedPage(expectedIndex, timeoutMs) {
+    var start = Date.now();
+
+    return new Promise(function(resolve) {
+      (function poll() {
+        var currentIndex = getCurrentPageIndexFromHeader();
+        if (currentIndex === expectedIndex) {
+          resolve();
+          return;
+        }
+
+        if (Date.now() - start >= timeoutMs) {
+          resolve();
+          return;
+        }
+
+        setTimeout(poll, 50);
+      })();
+    });
+  }
+
 
   function generatePagesForPrint(pagesArray, printContainer) {
     var successCount = 0;
