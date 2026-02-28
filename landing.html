@@ -153,7 +153,7 @@
 
     <script type="module">
         import { checkAuth, signOut } from './src/auth.js'
-        import { getChildren, getModules, getChildModules, getParentProfile, createChild, setChildPassword, updateChildModuleStatus } from './src/database.js'
+        import { getChildren, getModules, getChildModules, getParentProfile, createChild, updateChildModuleStatus } from './src/database.js'
         import { supabase } from './src/supabaseClient.js'
 
         let currentUser = null
@@ -583,11 +583,9 @@ function showAddChildModal() {
     
     const childNameInput = document.getElementById('childName');
     const childDobInput = document.getElementById('childDob');
-    const childPasswordInput = document.getElementById('childPassword');
     
     if (childNameInput) childNameInput.value = '';
     if (childDobInput) childDobInput.value = '';
-    if (childPasswordInput) childPasswordInput.value = '';
     document.getElementById('modalError')?.classList.add('hidden');
     
     renderEnhancedAddAvatarPicker('🦊');
@@ -652,13 +650,6 @@ function getEnhancedAddModalHTML() {
                 <input type="date" id="childDob" class="form-input-fun" required>
             </div>
 
-            <div class="form-group-fun">
-                <label class="form-label-fun">
-                    <span class="form-label-icon">🔐</span>
-                    Child's Secret Password
-                </label>
-                <input type="password" id="childPassword" class="form-input-fun" placeholder="Create a secret password..." required>
-            </div>
 
             <div class="avatar-section-fun" id="addAvatarSectionFun">
                 <h3 class="avatar-section-title"><span>🎭</span> Pick Their Avatar!</h3>
@@ -778,11 +769,10 @@ function setupAddModalListeners() {
         
         const childName = document.getElementById('childName').value;
         const childDob = document.getElementById('childDob').value;
-        const childPassword = document.getElementById('childPassword').value;
         const avatar = document.getElementById('addChildAvatar').value || '🦊';
         const errorEl = document.getElementById('modalError');
 
-        if (!childName || !childDob || !childPassword) {
+        if (!childName || !childDob) {
             if (errorEl) {
                 errorEl.textContent = 'Please fill in all fields';
                 errorEl.classList.remove('hidden');
@@ -792,7 +782,6 @@ function setupAddModalListeners() {
 
         try {
             const newChild = await createChild(currentUser.id, childName, childDob, avatar);
-            await setChildPassword(newChild.id, childPassword);
             
             createConfettiCelebration();
             hideAddChildModal();
