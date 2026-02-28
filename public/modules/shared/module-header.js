@@ -143,191 +143,8 @@
   }
 
   function collectPagesForPrint(pagesArray, printContainer) {
-    return collectPagesFromRenderedDom(pagesArray.length, printContainer).then(function(domCount) {
-      if (domCount > 0) {
-        console.log('[Print] SUCCESS: Collected ' + domCount + ' pages from rendered DOM');
-        return domCount;
-      }
-
-      console.log('[Print] Falling back to direct page generator output');
-      return generatePagesForPrint(pagesArray, printContainer);
-    });
+    return generatePagesForPrint(pagesArray, printContainer);
   }
-
-  function collectPagesFromRenderedDom(pageCount, printContainer) {
-    var pageContainer = document.getElementById('pageContainer');
-    if (!pageContainer) {
-      return Promise.resolve(0);
-    }
-
-    var headerState = getHeaderPageState();
-    if (!headerState) {
-      return Promise.resolve(0);
-    }
-
-    var totalPages = Math.min(pageCount || headerState.total, headerState.total);
-    var originalPageIndex = headerState.current - 1;
-    var successCount = 0;
-
-    return goToPageUsingNavigation(0).then(function() {
-      return sequence(0, totalPages - 1, function(pageIndex) {
-        return waitForPageRenderReady(pageContainer, pageIndex).then(function(renderedPage) {
-          if (renderedPage) {
-            printContainer.insertAdjacentHTML('beforeend', renderedPage.outerHTML);
-            successCount++;
-          }
-
-          if (pageIndex < totalPages - 1) {
-            return goToPageUsingNavigation(pageIndex + 1);
-          }
-        });
-      });
-    }).then(function() {
-      if (originalPageIndex >= 0) {
-        return goToPageUsingNavigation(originalPageIndex).catch(function(restoreError) {
-          console.warn('[Print] Failed to restore original page index:', restoreError);
-        });
-      }
-    }).then(function() {
-      return successCount;
-    });
-  }
-
-  function getCurrentPageIndexFromHeader() {
-    var pageDisplay = document.querySelector('.module-header__page');
-    if (!pageDisplay) {
-      return -1;
-    }
-
-    var text = pageDisplay.textContent || '';
-    var match = text.match(/(\d+)\s+of\s+(\d+)/i);
-    if (!match) {
-      return -1;
-    }
-
-    var current = parseInt(match[1], 10);
-    if (isNaN(current) || current < 1) {
-      return -1;
-    }
-
-    return current - 1;
-  }
-
-  function getHeaderPageState() {
-    var pageDisplay = document.querySelector('.module-header__page');
-    if (!pageDisplay) {
-      return null;
-    }
-
-    var text = pageDisplay.textContent || '';
-    var match = text.match(/(?:Page\s+)?(\d+)\s+of\s+(\d+)/i);
-    if (!match) {
-      return null;
-    }
-
-    var current = parseInt(match[1], 10);
-    var total = parseInt(match[2], 10);
-    if (isNaN(current) || isNaN(total) || current < 1 || total < 1) {
-      return null;
-    }
-
-    return { current: current, total: total };
-  }
-
-  function goToPageUsingNavigation(targetIndex) {
-    var target = Math.max(0, targetIndex || 0);
-
-    return new Promise(function(resolve, reject) {
-      var start = Date.now();
-
-      (function step() {
-        var state = getHeaderPageState();
-        if (!state) {
-          resolve();
-          return;
-        }
-
-        var currentIndex = state.current - 1;
-        if (currentIndex === target) {
-          resolve();
-          return;
-        }
-
-        if (Date.now() - start > 4000) {
-          reject(new Error('Timed out navigating to page ' + (target + 1)));
-          return;
-        }
-
-        var buttons = document.querySelectorAll('.module-header__nav .module-header__btn--nav');
-        var prevBtn = buttons[0];
-        var nextBtn = buttons[1];
-        var shouldMoveForward = currentIndex < target;
-        var navButton = shouldMoveForward ? nextBtn : prevBtn;
-
-        if (!navButton || navButton.disabled) {
-          resolve();
-          return;
-        }
-
-        navButton.click();
-        setTimeout(step, 120);
-      })();
-    });
-  }
-
-  function sequence(start, end, callback) {
-    var chain = Promise.resolve();
-    for (var i = start; i <= end; i++) {
-      (function(index) {
-        chain = chain.then(function() {
-          return callback(index);
-        });
-      })(i);
-    }
-    return chain;
-  }
-
-  function waitForPageRenderReady(pageContainer, pageIndex) {
-    return waitForExpectedPage(pageIndex, 2500).then(function() {
-      return new Promise(function(resolve) {
-        setTimeout(function() {
-          var renderedPage = pageContainer.querySelector('.page, .module-page, [data-module-page], [data-page]');
-          if (!renderedPage) {
-            resolve(null);
-            return;
-          }
-
-          waitForImages(renderedPage).then(function() {
-            resolve(renderedPage);
-          }).catch(function() {
-            resolve(renderedPage);
-          });
-        }, 180);
-      });
-    });
-  }
-
-  function waitForExpectedPage(expectedIndex, timeoutMs) {
-    var start = Date.now();
-
-    return new Promise(function(resolve) {
-      (function poll() {
-        var currentIndex = getCurrentPageIndexFromHeader();
-        if (currentIndex === expectedIndex) {
-          resolve();
-          return;
-        }
-
-        if (Date.now() - start >= timeoutMs) {
-          resolve();
-          return;
-        }
-
-        setTimeout(poll, 50);
-      })();
-    });
-  }
-
 
   function generatePagesForPrint(pagesArray, printContainer) {
     var successCount = 0;
@@ -339,15 +156,44 @@
             return;
           }
 
-          // Insert HTML directly without extra wrapper to avoid double min-height
-          // The generated HTML already has a .page div with proper styling
-          printContainer.insertAdjacentHTML('beforeend', pageHTML);
+          appendPageHtmlForPrint(pageHTML, printContainer, index);
           successCount++;
         });
       });
     }, Promise.resolve()).then(function() {
       return successCount;
     });
+  }
+
+  function appendPageHtmlForPrint(pageHTML, printContainer, index) {
+    if (!pageHTML) {
+      return;
+    }
+
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = pageHTML;
+
+    // Ensure inline scripts execute when inserted into DOM.
+    var scripts = wrapper.querySelectorAll('script');
+    Array.prototype.forEach.call(scripts, function(oldScript) {
+      var newScript = document.createElement('script');
+      Array.prototype.forEach.call(oldScript.attributes, function(attr) {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      if (oldScript.textContent) {
+        newScript.textContent = oldScript.textContent;
+      }
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+
+    var pageNode = wrapper.firstElementChild;
+    if (pageNode && pageNode.classList) {
+      pageNode.setAttribute('data-print-page-index', String(index));
+    }
+
+    while (wrapper.firstChild) {
+      printContainer.appendChild(wrapper.firstChild);
+    }
   }
 
   function resolvePageHtml(pageFunction, index) {
