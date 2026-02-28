@@ -81,7 +81,7 @@
         // Clear the print container
         printContainer.innerHTML = '';
 
-        generatePagesForPrint(pagesArray, printContainer).then(function(successCount) {
+        collectPagesForPrint(pagesArray, printContainer).then(function(successCount) {
           console.log('[Print] Successfully generated ' + successCount + ' pages');
 
           // Step 4: Show the print container
@@ -140,6 +140,95 @@
       console.error('[Print] FATAL ERROR:', error);
       window.print();
     }
+  }
+
+  function collectPagesForPrint(pagesArray, printContainer) {
+    return collectPagesFromRenderedDom(pagesArray.length, printContainer).then(function(domCount) {
+      if (domCount > 0) {
+        console.log('[Print] SUCCESS: Collected ' + domCount + ' pages from rendered DOM');
+        return domCount;
+      }
+
+      console.log('[Print] Falling back to direct page generator output');
+      return generatePagesForPrint(pagesArray, printContainer);
+    });
+  }
+
+  function collectPagesFromRenderedDom(pageCount, printContainer) {
+    if (typeof window.goToPage !== 'function') {
+      return Promise.resolve(0);
+    }
+
+    var pageContainer = document.getElementById('pageContainer');
+    if (!pageContainer) {
+      return Promise.resolve(0);
+    }
+
+    var originalPageIndex = getCurrentPageIndexFromHeader();
+    var successCount = 0;
+
+    return sequence(0, pageCount - 1, function(pageIndex) {
+      return new Promise(function(resolve) {
+        try {
+          window.goToPage(pageIndex);
+        } catch (error) {
+          console.warn('[Print] goToPage failed at index ' + pageIndex + ':', error);
+          resolve();
+          return;
+        }
+
+        setTimeout(function() {
+          var renderedPage = pageContainer.querySelector('.page, .module-page, [data-module-page], [data-page]');
+          if (renderedPage) {
+            printContainer.insertAdjacentHTML('beforeend', renderedPage.outerHTML);
+            successCount++;
+          }
+          resolve();
+        }, 80);
+      });
+    }).then(function() {
+      if (originalPageIndex >= 0) {
+        try {
+          window.goToPage(originalPageIndex);
+        } catch (restoreError) {
+          console.warn('[Print] Failed to restore original page index:', restoreError);
+        }
+      }
+
+      return successCount;
+    });
+  }
+
+  function getCurrentPageIndexFromHeader() {
+    var pageDisplay = document.querySelector('.module-header__page');
+    if (!pageDisplay) {
+      return -1;
+    }
+
+    var text = pageDisplay.textContent || '';
+    var match = text.match(/(\d+)\s+of\s+(\d+)/i);
+    if (!match) {
+      return -1;
+    }
+
+    var current = parseInt(match[1], 10);
+    if (isNaN(current) || current < 1) {
+      return -1;
+    }
+
+    return current - 1;
+  }
+
+  function sequence(start, end, callback) {
+    var chain = Promise.resolve();
+    for (var i = start; i <= end; i++) {
+      (function(index) {
+        chain = chain.then(function() {
+          return callback(index);
+        });
+      })(i);
+    }
+    return chain;
   }
 
   function generatePagesForPrint(pagesArray, printContainer) {
