@@ -1,7 +1,54 @@
 import { getSupabaseClient } from '../supabaseClient.js'
 import { setChildPasswordServer, verifyChildPasswordServer } from './childCredentials.js'
 
-const LEVEL_XP = 100
+// Get level information from levels table
+export async function getLevelInfo(level) {
+  const { data, error } = await getSupabaseClient()
+    .from('levels')
+    .select('*')
+    .eq('level', level)
+    .single()
+  
+  if (error) {
+    throw error
+  }
+  
+  return data
+}
+
+// Get level for a given XP amount
+export async function getLevelForXp(totalXp) {
+  const { data, error } = await getSupabaseClient()
+    .from('levels')
+    .select('level')
+    .lte('xp_required', totalXp)
+    .order('xp_required', { ascending: false })
+    .limit(1)
+    .single()
+  
+  if (error) {
+    throw error
+  }
+  
+  return data?.level || 1
+}
+
+// Get XP required for next level
+export async function getXpForNextLevel(currentLevel) {
+  const { data, error } = await getSupabaseClient()
+    .from('levels')
+    .select('xp_required')
+    .eq('level', currentLevel + 1)
+    .single()
+  
+  if (error) {
+    // If no next level exists, return current level's XP requirement * 1.5 as estimate
+    const currentLevelInfo = await getLevelInfo(currentLevel)
+    return Math.floor(currentLevelInfo.xp_required * 1.5)
+  }
+  
+  return data.xp_required
+}
 
 // Get all children for a parent
 export async function getChildren(parentUserId) {
@@ -519,7 +566,9 @@ async function awardModuleXp(childId, moduleId) {
 
   const currentXp = child?.total_xp || 0
   const newTotalXp = currentXp + xpReward
-  const newLevel = Math.max(1, Math.floor(newTotalXp / LEVEL_XP) + 1)
+  
+  // Calculate new level based on total XP using the levels table
+  const newLevel = await getLevelForXp(newTotalXp)
 
   const { error: updateError } = await getSupabaseClient()
     .from('children')

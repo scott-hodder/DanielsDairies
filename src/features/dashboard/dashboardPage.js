@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, getLevelInfo, getXpForNextLevel } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -10,7 +10,6 @@ import { setAppState, getAppState } from '../../services/appState.js'
 import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
 
-const LEVEL_XP = 100
 
 let currentCreditSummary = null
 let currentBillingPeriod = getCurrentBillingPeriod()
@@ -3507,6 +3506,13 @@ if (adminButtonDesktop) {
   })
 }
 
+const adminButton = document.getElementById('adminButton')
+if (adminButton) {
+  adminButton.addEventListener('click', () => {
+    window.location.href = '/admin.html'
+  })
+}
+
 if (closeMoreModulesButton) {
   closeMoreModulesButton.addEventListener('click', closeMoreModulesModal)
 }
@@ -3711,15 +3717,36 @@ async function updateDashboardStats() {
   if (totalModulesEl) totalModulesEl.textContent = totalCount
 
   const totalXp = state.selectedChild.total_xp || 0
-  const currentLevel = state.selectedChild.level || Math.floor(totalXp / LEVEL_XP) + 1
-  const levelProgress = totalXp % LEVEL_XP
-  const levelPercent = Math.min(100, Math.round((levelProgress / LEVEL_XP) * 100))
+  const currentLevel = state.selectedChild.level || 1
+  
+  // Get XP required for next level
+  let nextLevelXp = 0
+  let currentLevelXp = 0
+  
+  try {
+    // Get XP required for current level (to show progress from)
+    const currentLevelInfo = await getLevelInfo(currentLevel)
+    currentLevelXp = currentLevelInfo?.xp_required || 0
+    
+    // Get XP required for next level
+    nextLevelXp = await getXpForNextLevel(currentLevel)
+  } catch (error) {
+    console.error('Error getting level info:', error)
+    // Fallback to simple calculation
+    nextLevelXp = currentLevelXp + 500
+  }
+  
+  // Calculate progress within current level
+  const levelProgress = totalXp - currentLevelXp
+  const xpNeededForNextLevel = nextLevelXp - currentLevelXp
+  const levelPercent = xpNeededForNextLevel > 0 ? Math.min(100, Math.round((levelProgress / xpNeededForNextLevel) * 100)) : 0
+  
   const levelValueEl = document.getElementById('childLevel')
   const levelProgressBarEl = document.getElementById('levelProgressBar')
   const levelProgressTextEl = document.getElementById('levelProgressText')
   if (levelValueEl) levelValueEl.textContent = currentLevel
   if (levelProgressBarEl) levelProgressBarEl.style.width = `${levelPercent}%`
-  if (levelProgressTextEl) levelProgressTextEl.textContent = `${levelProgress} / ${LEVEL_XP} XP`
+  if (levelProgressTextEl) levelProgressTextEl.textContent = `${levelProgress} / ${xpNeededForNextLevel} XP`
   
   // Get rank from leaderboard
   try {

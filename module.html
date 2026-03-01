@@ -518,6 +518,9 @@
         
         if (existingRecord) {
           console.log('[completeModuleDB] Updating existing record:', existingRecord.id);
+          console.log('[completeModuleDB] Existing record is_completed:', existingRecord.is_completed);
+          console.log('[completeModuleDB] XP reward for module:', xpReward);
+          
           if (!existingRecord.is_completed) {
             const { error: updateError } = await supabase
               .from('child_modules')
@@ -533,6 +536,8 @@
             }
             completionRecorded = true;
             console.log('[completeModuleDB] Successfully marked as complete');
+          } else {
+            console.log('[completeModuleDB] Module already completed, not awarding XP again');
           }
         } else {
           console.log('[completeModuleDB] Creating new record');
@@ -566,6 +571,9 @@
     };
 
     async function awardModuleXp(childIdValue, xpReward) {
+      console.log(`[awardModuleXp] Starting: Awarding ${xpReward} XP to child ${childIdValue}`);
+      
+      // Try RPC first
       try {
         const { error: rpcError } = await supabase.rpc('increment_child_rewards', {
           p_child_id: childIdValue,
@@ -574,13 +582,31 @@
         });
         
         if (!rpcError) {
-          return;
+          console.log(`[awardModuleXp] RPC successful - verifying update...`);
+          // Verify the RPC actually updated the database
+          const { data: verifyChild } = await supabase
+            .from('children')
+            .select('total_xp, level')
+            .eq('id', childIdValue)
+            .single();
+          
+          if (verifyChild && verifyChild.total_xp > 0) {
+            console.log(`[awardModuleXp] RPC verified: New XP = ${verifyChild.total_xp}, Level = ${verifyChild.level}`);
+            return;
+          } else {
+            console.warn('[awardModuleXp] RPC claimed success but no update found, falling back to direct update');
+          }
+        } else {
+          console.warn('[awardModuleXp] RPC failed, falling back to direct update:', rpcError);
         }
-        console.warn('[awardModuleXp] RPC failed, falling back to direct update:', rpcError);
       } catch (rpcError) {
         console.warn('[awardModuleXp] RPC error, falling back to direct update:', rpcError);
       }
       
+      // Fallback: Direct update
+      console.log('[awardModuleXp] Performing direct database update...');
+      
+      // Get current child data
       const { data: child, error: childError } = await supabase
         .from('children')
         .select('total_xp, level')
@@ -588,21 +614,46 @@
         .single();
       
       if (childError) {
+        console.error('[awardModuleXp] Error fetching child data:', childError);
         throw childError;
       }
       
       const currentXp = child?.total_xp || 0;
       const newTotalXp = currentXp + xpReward;
-      const newLevel = Math.max(1, Math.floor(newTotalXp / LEVEL_XP) + 1);
+      console.log(`[awardModuleXp] Current XP: ${currentXp}, Adding: ${xpReward}, New Total: ${newTotalXp}`);
       
-      const { error: updateError } = await supabase
+      // Calculate new level using the levels table
+      let newLevel = 1;
+      try {
+        const { data: levelData } = await supabase
+          .from('levels')
+          .select('level')
+          .lte('xp_required', newTotalXp)
+          .order('xp_required', { ascending: false })
+          .limit(1)
+          .single();
+        
+        newLevel = levelData?.level || 1;
+        console.log(`[awardModuleXp] New level calculated: ${newLevel}`);
+      } catch (levelError) {
+        console.warn('[awardModuleXp] Error getting level from table, using fallback:', levelError);
+        newLevel = Math.max(1, Math.floor(newTotalXp / 500) + 1);
+      }
+      
+      // Perform the update
+      const { data: updateResult, error: updateError } = await supabase
         .from('children')
         .update({ total_xp: newTotalXp, level: newLevel })
-        .eq('id', childIdValue);
+        .eq('id', childIdValue)
+        .select()
+        .single();
       
       if (updateError) {
+        console.error('[awardModuleXp] Database update failed:', updateError);
         throw updateError;
       }
+      
+      console.log(`[awardModuleXp] SUCCESS: Awarded ${xpReward} XP, new total: ${updateResult.total_xp}, new level: ${updateResult.level}`);
     }
     
     // =========================================
@@ -654,7 +705,10 @@
     async function completeModuleAndCelebrate() {
       try {
         await window.completeModuleDB();
-        window.showCompletionCelebration();
+        // Wait a moment for the database to update, then show celebration with fresh data
+        setTimeout(() => {
+          window.showCompletionCelebration();
+        }, 100);
       } catch (error) {
         window.showCompletionCelebration();
       }
@@ -666,25 +720,197 @@
       }
       
       try {
-        const celebrationModal = document.createElement('div');
-        celebrationModal.className = 'module-completion-modal';
-        celebrationModal.innerHTML = `
-          <div class="module-completion-content">
-            <div class="completion-emoji">🎉</div>
-            <h2 class="completion-title">Module Complete!</h2>
-            <p class="completion-message">Congratulations! You've finished this module and learned valuable emotional skills.</p>
-            <div class="completion-confetti" id="completionConfetti"></div>
-            <button class="completion-btn" onclick="window.closeCompletionModal()">Continue Journey</button>
-          </div>
-        `;
+        // Get XP information for display
+        const getXpInfo = async () => {
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const moduleId = params.get('moduleId');
+            const moduleCode = params.get('code');
+            
+            let xpReward = 0;
+            let moduleTitle = 'this module';
+            
+            // Get module info and XP reward
+            if (moduleId) {
+              const { data: mod } = await supabase
+                .from('modules')
+                .select('title, xp_reward')
+                .eq('id', moduleId)
+                .single();
+              
+              if (mod) {
+                moduleTitle = mod.title;
+                xpReward = mod.xp_reward || 0;
+              }
+            } else if (moduleCode) {
+              const { data: mod } = await supabase
+                .from('modules')
+                .select('title, xp_reward')
+                .eq('code', moduleCode)
+                .single();
+              
+              if (mod) {
+                moduleTitle = mod.title;
+                xpReward = mod.xp_reward || 0;
+              }
+            }
+            
+            // Get child's current XP and level info
+            const { data: child } = await supabase
+              .from('children')
+              .select('total_xp, level')
+              .eq('id', _state.childId)
+              .single();
+            
+            const currentXp = child?.total_xp || 0;
+            const currentLevel = child?.level || 1;
+            const newTotalXp = currentXp + xpReward;
+            
+            // Get XP needed for next level
+            let nextLevelXp = 0;
+            let currentLevelXp = 0;
+            let newLevel = currentLevel;
+            
+            try {
+              // Get current level XP requirement
+              const { data: currentLevelInfo } = await supabase
+                .from('levels')
+                .select('xp_required')
+                .eq('level', currentLevel)
+                .single();
+              
+              currentLevelXp = currentLevelInfo?.xp_required || 0;
+              
+              // Get next level XP requirement
+              const { data: nextLevelInfo } = await supabase
+                .from('levels')
+                .select('xp_required')
+                .eq('level', currentLevel + 1)
+                .single();
+              
+              if (nextLevelInfo) {
+                nextLevelXp = nextLevelInfo.xp_required;
+                
+                // Check if leveled up
+                const { data: newLevelData } = await supabase
+                  .from('levels')
+                  .select('level')
+                  .lte('xp_required', newTotalXp)
+                  .order('xp_required', { ascending: false })
+                  .limit(1)
+                  .single();
+                
+                newLevel = newLevelData?.level || currentLevel;
+              } else {
+                // No next level, use current level XP * 1.5 as estimate
+                nextLevelXp = Math.floor(currentLevelXp * 1.5);
+              }
+            } catch (levelError) {
+              console.warn('[showCompletionCelebration] Error getting level info:', levelError);
+              // Fallback calculation
+              nextLevelXp = currentLevelXp + 500;
+            }
+            
+            const xpNeededForNextLevel = nextLevelXp - currentLevelXp;
+            const currentLevelProgress = currentXp - currentLevelXp;
+            const newLevelProgress = newTotalXp - currentLevelXp;
+            
+            return {
+              xpReward,
+              moduleTitle,
+              currentXp,
+              newTotalXp,
+              currentLevel,
+              newLevel,
+              xpNeededForNextLevel,
+              currentLevelProgress,
+              newLevelProgress,
+              leveledUp: newLevel > currentLevel
+            };
+          } catch (error) {
+            console.error('[showCompletionCelebration] Error getting XP info:', error);
+            return {
+              xpReward: 0,
+              moduleTitle: 'this module',
+              currentXp: 0,
+              newTotalXp: 0,
+              currentLevel: 1,
+              newLevel: 1,
+              xpNeededForNextLevel: 100,
+              currentLevelProgress: 0,
+              newLevelProgress: 0,
+              leveledUp: false
+            };
+          }
+        };
         
-        document.body.appendChild(celebrationModal);
-        generateCompletionConfetti();
+        // Create and show modal
+        const createModal = async () => {
+          const xpInfo = await getXpInfo();
+          
+          const celebrationModal = document.createElement('div');
+          celebrationModal.className = 'module-completion-modal';
+          
+          // XP progress bar HTML
+          const progressBarHtml = xpInfo.xpReward > 0 ? `
+            <div style="margin: 24px 0; padding: 20px; background: rgba(255, 255, 255, 0.3); border-radius: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 20px;">⭐</span>
+                <span style="font-size: 14px; font-weight: 700; color: #405878;">XP Earned: +${xpInfo.xpReward}</span>
+              </div>
+              
+              ${xpInfo.leveledUp ? `
+                <div style="background: #4ade80; color: white; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-weight: 700;">
+                  🎉 LEVEL UP! You reached Level ${xpInfo.newLevel}!
+                </div>
+              ` : ''}
+              
+              <div style="margin-bottom: 8px;">
+                <div style="font-size: 12px; color: #405878; margin-bottom: 4px;">
+                  Progress to Level ${xpInfo.currentLevel + (xpInfo.leveledUp ? 2 : 1)}
+                </div>
+                <div style="background: rgba(64, 88, 120, 0.2); border-radius: 999px; height: 8px; overflow: hidden; margin-bottom: 4px;">
+                  <div style="height: 100%; width: ${Math.min(100, (xpInfo.newLevelProgress / xpInfo.xpNeededForNextLevel) * 100)}%; background: linear-gradient(90deg, #4c6c96, #79a7d3); transition: width 0.5s ease;"></div>
+                </div>
+                <div style="font-size: 11px; color: #6d86a8; font-weight: 600;">
+                  ${xpInfo.newLevelProgress} / ${xpInfo.xpNeededForNextLevel} XP
+                  ${xpInfo.xpNeededForNextLevel - xpInfo.newLevelProgress > 0 ? 
+                    `(${xpInfo.xpNeededForNextLevel - xpInfo.newLevelProgress} XP to next level)` : 
+                    '(Level complete!)'
+                  }
+                </div>
+              </div>
+            </div>
+          ` : '';
+          
+          celebrationModal.innerHTML = `
+            <div class="module-completion-content">
+              <div class="completion-emoji">${xpInfo.leveledUp ? '🎉' : '🎊'}</div>
+              <h2 class="completion-title">${xpInfo.leveledUp ? 'Level Up!' : 'Fantastic Work!'}</h2>
+              <p class="completion-message">
+                ${xpInfo.leveledUp ? 
+                  `Amazing! You completed "${xpInfo.moduleTitle}" and reached Level ${xpInfo.newLevel}!` :
+                  `Congratulations! You've completed "${xpInfo.moduleTitle}" and learned valuable emotional skills.`
+                }
+              </p>
+              ${progressBarHtml}
+              <div class="completion-confetti" id="completionConfetti"></div>
+              <button class="completion-btn" onclick="window.closeCompletionModal()">Continue Journey</button>
+            </div>
+          `;
+          
+          document.body.appendChild(celebrationModal);
+          generateCompletionConfetti();
+          
+          setTimeout(() => {
+            window.closeCompletionModal();
+          }, 10000); // Give more time to read XP info
+        };
         
-        setTimeout(() => {
-          window.closeCompletionModal();
-        }, 8000);
-      } catch (e) {}
+        createModal();
+      } catch (e) {
+        console.error('[showCompletionCelebration] Error:', e);
+      }
     };
 
     function generateCompletionConfetti() {

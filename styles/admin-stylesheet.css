@@ -1535,6 +1535,131 @@
         }
 
         @media (max-width: 768px) {
+            /* Header responsive */
+            .header-content {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+            
+            .header-title {
+                font-size: 24px;
+            }
+            
+            .container {
+                padding: 20px 16px;
+            }
+            
+            /* Tabs responsive */
+            .tabs {
+                flex-wrap: wrap;
+                gap: 4px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .tab {
+                padding: 8px 16px;
+                font-size: 14px;
+                white-space: nowrap;
+                min-width: fit-content;
+            }
+            
+            /* Main grid responsive */
+            .admin-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            /* Stats responsive */
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            /* Form responsive */
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            /* Search and filter responsive */
+            .search-filter-container {
+                margin-bottom: 12px;
+            }
+            
+            .filter-buttons {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            
+            .filter-btn {
+                flex: 1 1 calc(50% - 3px);
+                min-width: 120px;
+            }
+            
+            /* Bulk actions responsive */
+            .bulk-actions {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 8px;
+            }
+            
+            .bulk-btn {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+            
+            /* Module items responsive */
+            .module-item {
+                padding: 12px;
+            }
+            
+            .module-header {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            /* Panels responsive */
+            .modules-panel,
+            .form-panel,
+            .rewards-panel {
+                padding: 16px;
+                max-height: none;
+                overflow-y: visible;
+            }
+            
+            /* Modal responsive */
+            .modal-content {
+                padding: 20px;
+                width: 95%;
+                max-height: 85vh;
+            }
+            
+            .modal-header {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+            
+            /* Skills grid responsive */
+            .skills-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            /* Reward grid responsive */
+            .reward-list {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .add-reward-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            /* Pipeline responsive */
             .pipeline-steps {
                 padding: 0 10px;
             }
@@ -1566,5 +1691,125 @@
             
             .quality-indicators {
                 flex-direction: column;
+            }
+            
+            /* Button responsive */
+            .btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            
+            .btn-save {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            
+            .btn-delete {
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+            
+            /* Form inputs responsive */
+            .form-input,
+            .form-textarea,
+            .form-select {
+                padding: 10px 14px;
+                font-size: 14px;
+            }
+            
+            /* Panel title responsive */
+            .panel-title {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
+            
+            /* Module list responsive */
+            .module-list-item {
+                padding: 12px;
+            }
+            
+            .module-list-title {
+                font-size: 15px;
+            }
+            
+            .module-list-meta {
+                font-size: 12px;
+            }
+            
+            /* Status badge responsive */
+            .status-badge {
+                padding: 3px 8px;
+                font-size: 11px;
+            }
+            
+            /* Parent's Modules tab specific responsive */
+            #parentModulesTab > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+                height: auto !important;
+                gap: 16px !important;
+            }
+            
+            #parentModulesTab .card,
+            #parentModulesTab .modules-panel {
+                height: auto !important;
+                overflow: visible !important;
+                margin-bottom: 16px;
+            }
+            
+            #parentModulesTab .card-body,
+            #parentModulesTab .modules-panel > div:not(.panel-title) {
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            
+            #parentModulesTab .search-filter-container > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Extra small mobile adjustments */
+            .header-title {
+                font-size: 20px;
+            }
+            
+            .container {
+                padding: 16px 12px;
+            }
+            
+            .tab {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            
+            .panel-title {
+                font-size: 16px;
+            }
+            
+            .modules-panel,
+            .form-panel,
+            .rewards-panel {
+                padding: 12px;
+            }
+            
+            .filter-btn {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            
+            .bulk-btn {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+            
+            .btn-save {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .btn-delete {
+                padding: 8px 16px;
+                font-size: 12px;
             }
         }
