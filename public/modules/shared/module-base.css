@@ -16,6 +16,7 @@
   --gradient-secondary: linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--secondary) 70%, #fff) 100%);
   --gradient-accent: linear-gradient(145deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 85%, #000) 100%);
   --gradient-hero: linear-gradient(160deg, var(--dark) 0%, color-mix(in srgb, var(--dark) 70%, var(--primary)) 50%, var(--primary) 100%);
+  --gradient-hero: linear-gradient(160deg, var(--dark) 0%, color-mix(in srgb, var(--dark) 70%, var(--primary)) 50%, var(--primary) 100%);
   
   /* Glass Effect Variables */
   --glass-bg: rgba(255, 255, 255, 0.7);
