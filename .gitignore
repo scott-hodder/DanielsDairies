@@ -24,3 +24,6 @@ pnpm-debug.log*
 # optional caches
 .eslintcache
 *.tsbuildinfo
+
+# debug files
+ExampleModule.html

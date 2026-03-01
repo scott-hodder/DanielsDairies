@@ -16,7 +16,8 @@ export default defineConfig({
         dashboard: resolve(__dirname, 'dashboard.html'),
         admin: resolve(__dirname, 'admin.html'),
         module: resolve(__dirname, 'module.html'),
-        parentInsights: resolve(__dirname, 'parent-insights.html')
+        parentInsights: resolve(__dirname, 'parent-insights.html'),
+        billing: resolve(__dirname, 'billing.html')
       }
     }
   },
