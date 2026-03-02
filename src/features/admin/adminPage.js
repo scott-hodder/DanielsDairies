@@ -610,27 +610,22 @@ async function loadCoreTheories() {
     try {
         console.log('[Psychology] Loading core theories...');
         
-        const response = await fetch(
-            `${requireSupabaseEnv().url}/functions/v1/generate-module/core-theories`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${requireSupabaseEnv().key}`,
-                    'apikey': requireSupabaseEnv().key
-                }
-            }
-        );
+        const { data: coreTheoriesData, error } = await supabase
+            .from('core_theories')
+            .select('id, theory_name, theory_code, description, category')
+            .eq('is_active', true)
+            .order('category', { ascending: true })
+            .order('theory_name', { ascending: true });
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+        if (error) {
+            console.error('[Psychology] Core theories error:', error);
+            throw new Error(`Database error: ${error.message}`);
         }
         
-        const data = await response.json();
-        console.log('[Psychology] Core theories response:', data);
+        console.log('[Psychology] Core theories loaded:', coreTheoriesData);
         
-        if (data.coreTheories && data.coreTheories.length > 0) {
-            coreTheories = data.coreTheories;
+        if (coreTheoriesData && coreTheoriesData.length > 0) {
+            coreTheories = coreTheoriesData;
             const selects = [select, editSelect].filter(Boolean);
             selects.forEach(targetSelect => {
                 targetSelect.innerHTML = '<option value="">Select psychological theory...</option>';

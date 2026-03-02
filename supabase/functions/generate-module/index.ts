@@ -141,7 +141,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   // Helper function to render character (image or emoji)
   const renderCharacter = (size: string = 'text-6xl') => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto" style="max-height: 8rem; max-width: 8rem; display: block;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto m-character-img">`;
     }
     return `<span class="${size}">${escapeForTemplate(metadata.characterEmoji)}</span>`;
   };
@@ -163,8 +163,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
         <button 
           onclick="toggleGrownUpNote('${accordionId}')"
-          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors"
-          style="color: var(--secondary);"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
         >
           <span class="flex items-center gap-2 font-semibold text-sm">
             <span>👨‍👩‍👧</span>
@@ -175,16 +174,16 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
           </svg>
         </button>
         <div id="${accordionId}" class="hidden px-4 pb-4">
-          <div class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--secondary);">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
             ${escapeForTemplate(note.evidenceBase)}
           </div>
-          <p class="text-sm mb-3" style="color: var(--dark);">
+          <p class="text-sm mb-3 m-color-dark">
             ${escapeForTemplate(note.briefExplanation)}
           </p>
-          <div class="text-xs font-semibold uppercase tracking-wide mb-1" style="color: var(--secondary);">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
             Try asking:
           </div>
-          <ul class="text-sm list-disc list-inside" style="color: var(--dark);">
+          <ul class="text-sm list-disc list-inside m-color-dark">
             ${promptsHtml}
           </ul>
         </div>
@@ -552,6 +551,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   <link rel="stylesheet" href="./modules/shared/module-theme.css">
   <link rel="stylesheet" href="./modules/shared/module-header.css">
   <link rel="stylesheet" href="./modules/shared/module-base.css">
+  <link rel="stylesheet" href="./modules/shared/module-utilities.css">
   
   <style>
     /* Brand Colors - Dynamic based on category */
@@ -864,7 +864,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
                     border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); 
                     z-index: 9999; font-family: var(--font-body); font-size: 1rem;
                     display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.5rem;">✨</span>
+          <span class="m-toast__emoji">✨</span>
           <span>Complete the activity first to continue!</span>
         </div>
       \`;
@@ -1594,8 +1594,8 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
           feedbackEl.style.display = 'block';
           feedbackEl.style.backgroundColor = isCorrect ? 'var(--success)' : '#fecaca';
           feedbackEl.innerHTML = isCorrect 
-            ? '<span class="font-body" style="color: var(--dark);">✓ Great choice! That is right!</span>'
-            : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
+            ? '<span class="font-body m-color-dark">✓ Great choice! That is right!</span>'
+            : '<span class="font-body m-color-dark">✗ Not quite - try again or tap another option!</span>';
         }
         
         // Only show followup and mascot feedback on correct answer, and enable completion
@@ -2798,37 +2798,37 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
   // Helper function to render character (image or emoji) - made bigger for cover
   const renderCharacter = () => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto drop-shadow-2xl" style="height: 280px; width: 280px; display: block;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto drop-shadow-2xl m-character-img--cover">`;
     }
-    return `<span style="font-size: 180px; line-height: 1; display: block;">${escapeForTemplate(metadata.characterEmoji)}</span>`;
+    return `<span class="m-character-emoji--cover">${escapeForTemplate(metadata.characterEmoji)}</span>`;
   };
   
   return `
-    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream)); padding-top: 20px;" data-page="cover">
-      <div class="text-center max-w-4xl" style="margin-top: -80px;">
+    <div class="page min-h-screen flex items-center justify-center p-8 m-page-cover" data-page="cover">
+      <div class="text-center max-w-4xl m-cover-center">
         <!-- Big Character Front and Center -->
         <div class="mb-4 animate-bounce-slow">
           ${renderCharacter()}
         </div>
         
         <!-- Character Name Badge -->
-        <div class="inline-block px-6 py-2 rounded-full mb-4" style="background-color: var(--primary);">
+        <div class="inline-block px-6 py-2 rounded-full mb-4 m-bg-primary">
           <span class="text-white font-title text-xl">Meet ${escapeForTemplate(metadata.characterName)}!</span>
         </div>
         
-        <h1 class="text-5xl md:text-6xl mb-3 font-title" style="color: var(--dark);">${escapeForTemplate(metadata.title)}</h1>
-        <h2 class="text-2xl md:text-3xl mb-6 font-title" style="color: var(--primary);">${escapeForTemplate(metadata.subtitle)}</h2>
-        <div class="text-xl mb-6 font-body" style="color: var(--secondary);">
+        <h1 class="text-5xl md:text-6xl mb-3 font-title m-color-dark">${escapeForTemplate(metadata.title)}</h1>
+        <h2 class="text-2xl md:text-3xl mb-6 font-title m-color-primary">${escapeForTemplate(metadata.subtitle)}</h2>
+        <div class="text-xl mb-6 font-body m-color-secondary">
           <p class="mb-2">An Interactive Adventure for Ages ${escapeForTemplate(metadata.targetAge)}</p>
         </div>
-        <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
-          <p class="font-semibold mb-2 font-body text-lg" style="color: var(--dark);">This adventure belongs to:</p>
-          <div class="text-3xl font-title" style="color: var(--primary);" id="childNameDisplay">
+        <div class="border-4 rounded-3xl p-6 inline-block animate-glow m-border-primary m-bg-white">
+          <p class="font-semibold mb-2 font-body text-lg m-color-dark">This adventure belongs to:</p>
+          <div class="text-3xl font-title m-color-primary" id="childNameDisplay">
             Friend
           </div>
         </div>
         <div class="mt-6">
-          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
+          <p class="text-lg font-body m-color-secondary">⭐ Earn stars by completing activities! ⭐</p>
         </div>
       </div>
     </div>`;
@@ -2840,25 +2840,25 @@ function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | 
   // Helper function to render character (image or emoji) - sized well for welcome
   const renderCharacter = () => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain flex-shrink-0" style="height: 10rem; width: 10rem;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain flex-shrink-0 m-character-img--welcome">`;
     }
     return `<span class="text-8xl flex-shrink-0">${escapeForTemplate(metadata.characterEmoji)}</span>`;
   };
   
   return `
-    <div class="page min-h-screen p-6 md:p-8" style="background-color: var(--cream);" data-page="welcome">
+    <div class="page min-h-screen p-6 md:p-8 m-bg-cream" data-page="welcome">
       <div class="max-w-4xl mx-auto">
         <div class="flex items-center gap-4 mb-4">
           ${renderCharacter()}
-          <h1 class="text-3xl md:text-4xl font-title" style="color: var(--dark);">${escapeForTemplate(welcome.heading)}</h1>
+          <h1 class="text-3xl md:text-4xl font-title m-color-dark">${escapeForTemplate(welcome.heading)}</h1>
         </div>
         
         <div class="rounded-3xl shadow-xl p-6 mb-4" style="background-color: white; border-left: 6px solid var(--primary);">
-          ${welcome.paragraphs.map(p => `<p class="text-lg mb-3 last:mb-0 leading-relaxed font-body" style="color: var(--dark);">${escapeForTemplate(p)}</p>`).join("")}
+          ${welcome.paragraphs.map(p => `<p class="text-lg mb-3 last:mb-0 leading-relaxed font-body m-color-dark">${escapeForTemplate(p)}</p>`).join("")}
         </div>
         
-        <div class="rounded-xl p-4 text-center" style="background-color: var(--soft-yellow);">
-          <p class="text-lg font-semibold font-body" style="color: var(--dark);">
+        <div class="rounded-xl p-4 text-center m-bg-soft-yellow">
+          <p class="text-lg font-semibold font-body m-color-dark">
             "All feelings are okay—even the big ones!" 💛
           </p>
         </div>
@@ -3033,7 +3033,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
   const scene = ch <= 1 ? hillsOnly : ch === 2 ? smallVillage : brainTownCity;
 
   return `
-    <div class="page chapter-scene-page" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;" data-page="chapter">
+    <div class="page chapter-scene-page m-chapter-scene" data-page="chapter">
 
       <!-- Daytime sky -->
       <div style="position:absolute;inset:0;background:linear-gradient(180deg,
@@ -3044,10 +3044,10 @@ function renderChapterDivider(chapter: ChapterDivider): string {
       );"></div>
 
       <!-- Sun glow -->
-      <div style="position:absolute;top:6%;right:12%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle, var(--soft-yellow) 0%, color-mix(in srgb, var(--soft-yellow) 40%, transparent) 50%, transparent 70%);opacity:0.7;"></div>
+      <div class="m-chapter-sun"></div>
 
       <!-- Soft clouds (pure CSS) -->
-      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">
+      <div class="m-chapter-stars">
         <div class="ch-cloud ch-cloud-1"></div>
         <div class="ch-cloud ch-cloud-2"></div>
         <div class="ch-cloud ch-cloud-3"></div>
@@ -3055,8 +3055,8 @@ function renderChapterDivider(chapter: ChapterDivider): string {
       </div>
 
       <!-- Landscape at bottom — 280px -->
-      <div style="position:absolute;bottom:0;left:0;right:0;height:280px;z-index:1;">
-        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" style="width:100%;height:100%;">
+      <div class="m-chapter-hills">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
           ${scene}
           <!-- Road surface -->
           <rect x="0" y="185" width="1200" height="15" fill="color-mix(in srgb, var(--dark) 85%, var(--primary))" rx="0"/>
@@ -3066,34 +3066,34 @@ function renderChapterDivider(chapter: ChapterDivider): string {
       </div>
 
       <!-- Content — centred above scene -->
-      <div style="position:relative;z-index:10;text-align:center;padding:0 24px;max-width:640px;margin:0 auto;padding-bottom:300px;">
+      <div class="m-chapter-content">
         <!-- Journey badge -->
-        <div style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--primary) 12%, white);border:1px solid color-mix(in srgb, var(--primary) 25%, transparent);border-radius:20px;padding:5px 14px;margin-bottom:20px;backdrop-filter:blur(8px);">
-          <span style="font-size:13px;">${journeyEmoji}</span>
-          <span style="color:var(--primary);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">${escapeForTemplate(journeyLabel)}</span>
+        <div class="m-chapter-badge">
+          <span class="m-chapter-badge__emoji">${journeyEmoji}</span>
+          <span class="m-chapter-badge__label">${escapeForTemplate(journeyLabel)}</span>
         </div>
 
         <!-- Chapter number + title -->
-        <div style="display:flex;align-items:baseline;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
-          <h1 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(32px,7vw,52px);font-weight:800;color:var(--primary);margin:0;line-height:1.1;text-shadow:0 2px 12px color-mix(in srgb, var(--primary) 25%, transparent);">
+        <div class="m-chapter-title-wrap">
+          <h1 class="m-chapter-number">
             Chapter ${chapter.chapterNumber}
           </h1>
-          <h2 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(24px,5vw,38px);font-weight:800;color:var(--dark);margin:0;line-height:1.15;">
+          <h2 class="m-chapter-heading">
             ${escapeForTemplate(chapter.chapterTitle)}
           </h2>
         </div>
 
         <!-- Decorative dashes in accent colour -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px;">
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:24px;height:3px;background:var(--accent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+        <div class="m-chapter-dots">
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot--active"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
         </div>
 
         <!-- Subtitle -->
-        <p style="font-family:'Nunito',sans-serif;font-size:clamp(15px,3vw,20px);font-weight:600;color:color-mix(in srgb, var(--dark) 70%, var(--secondary));margin:0;line-height:1.5;max-width:460px;margin-left:auto;margin-right:auto;">
+        <p class="m-chapter-subtitle">
           ${escapeForTemplate(chapter.chapterSubtitle)}
         </p>
       </div>
@@ -3134,24 +3134,24 @@ function renderChapterDivider(chapter: ChapterDivider): string {
 
 function renderLessonPage(lesson: LessonContent, metadata: ModuleMetadata): string {
   const calloutHtml = lesson.calloutTitle && lesson.calloutText ? `
-    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 ${escapeForTemplate(lesson.calloutTitle)}</h3>
-      <p class="font-body" style="color: var(--dark);">${escapeForTemplate(lesson.calloutText)}</p>
+    <div class="rounded-2xl p-6 mb-6 m-bg-soft-yellow">
+      <h3 class="text-xl font-title mb-2 m-color-dark">💡 ${escapeForTemplate(lesson.calloutTitle)}</h3>
+      <p class="font-body m-color-dark">${escapeForTemplate(lesson.calloutText)}</p>
     </div>` : "";
     
   const tipHtml = lesson.tipText ? `
-    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+    <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
       <span class="text-3xl">${escapeForTemplate(metadata.characterEmoji)}</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.tipText)}</p>
+      <p class="font-body font-semibold m-color-dark">${escapeForTemplate(lesson.tipText)}</p>
     </div>` : "";
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(lesson.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(lesson.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          ${lesson.paragraphs.map(p => `<p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">${escapeForTemplate(p)}</p>`).join("")}
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          ${lesson.paragraphs.map(p => `<p class="text-lg mb-4 leading-relaxed font-body m-color-dark">${escapeForTemplate(p)}</p>`).join("")}
         </div>
         
         ${calloutHtml}
@@ -3164,33 +3164,32 @@ function renderChecklistPage(checklist: ChecklistContent, starIndex: number): st
   const activityId = `checklist_${starIndex}`;
   const itemsHtml = checklist.items.map((item, i) => `
     <label class="flex items-center gap-3 p-3 rounded-xl bg-white cursor-pointer hover:shadow-md transition-all">
-      <input type="checkbox" class="checklist-item w-6 h-6 rounded" style="accent-color: var(--primary);">
-      <span class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(item)}</span>
+      <input type="checkbox" class="checklist-item w-6 h-6 rounded m-accent-primary">
+      <span class="font-body text-lg m-color-dark">${escapeForTemplate(item)}</span>
     </label>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="checklist">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="checklist">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(checklist.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(checklist.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(checklist.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(checklist.instructions)}</p>
           
           <div class="space-y-3 mb-6">
             ${itemsHtml}
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               disabled
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed this activity! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I completed this activity! ⭐</label>
           </div>
         </div>
       </div>
@@ -3200,32 +3199,30 @@ function renderChecklistPage(checklist: ChecklistContent, starIndex: number): st
 function renderReflectionPage(reflection: ReflectionContent, starIndex: number): string {
   const activityId = `reflection_${starIndex}`;
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="reflection">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="reflection">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(reflection.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(reflection.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(reflection.prompt)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(reflection.prompt)}</p>
           
           <textarea 
-            class="reflection-input w-full rounded-xl p-4 border-3 font-body text-lg mb-6" 
-            style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 150px;"
+            class="reflection-input w-full rounded-xl p-4 border-3 font-body text-lg mb-6 m-input-cream"
             placeholder="${escapeForTemplate(reflection.placeholder)}"
             data-form-key="reflection_${starIndex}"
             onchange="saveFormData('reflection_${starIndex}', this.value)"
           ></textarea>
           
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               disabled
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I finished my reflection! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I finished my reflection! ⭐</label>
           </div>
         </div>
       </div>
@@ -3236,8 +3233,7 @@ function renderQuizPage(quiz: QuizContent, starIndex: number): string {
   const activityId = `quiz_${starIndex}`;
   const answersHtml = quiz.answers.map((ans) => `
     <button 
-      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer"
-      style="border-color: var(--secondary); background-color: white; color: var(--dark);"
+      class="quiz-answer w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer m-option-secondary"
       data-correct="${ans.isCorrect}"
       data-feedback="${escapeForTemplate(ans.feedback)}"
     >
@@ -3245,12 +3241,12 @@ function renderQuizPage(quiz: QuizContent, starIndex: number): string {
     </button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="quiz">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="quiz">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(quiz.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(quiz.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(quiz.question)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-xl mb-6 font-body font-semibold m-color-dark">${escapeForTemplate(quiz.question)}</p>
           
           <div class="space-y-3 mb-6">
             ${answersHtml}
@@ -3258,17 +3254,16 @@ function renderQuizPage(quiz: QuizContent, starIndex: number): string {
           
           <p class="quiz-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--soft-yellow); color: var(--dark);"></p>
           
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               disabled
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed the quiz! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I completed the quiz! ⭐</label>
           </div>
         </div>
       </div>
@@ -3279,14 +3274,14 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
   const activityId = `drawing_${starIndex}`;
   const drawingCacheKey = `drawing_canvas_${starIndex}`;
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="drawing">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="drawing">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(drawing.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(drawing.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(drawing.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(drawing.instructions)}</p>
           
-          <div class="border-4 rounded-xl mb-4 overflow-hidden" style="border-color: var(--primary); background-color: white;">
+          <div class="border-4 rounded-xl mb-4 overflow-hidden m-border-primary m-bg-white">
             <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" data-drawing-key="${drawingCacheKey}" style="touch-action: none; display: block;"></canvas>
           </div>
           
@@ -3302,27 +3297,25 @@ function renderDrawingPage(drawing: DrawingContent, starIndex: number): string {
           </div>
           
           <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(drawing.promptQuestion)}</label>
+            <label class="block font-semibold mb-2 font-body m-color-dark">${escapeForTemplate(drawing.promptQuestion)}</label>
             <input 
               type="text" 
-              class="w-full rounded-xl p-3 font-body text-lg" 
-              style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);"
+              class="w-full rounded-xl p-3 font-body text-lg m-input-cream" style="min-height: auto;"
               placeholder="Type your answer here..."
               data-form-key="drawing_answer_${starIndex}"
               onchange="saveFormData('drawing_answer_${starIndex}', this.value)"
             >
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I completed my drawing! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I completed my drawing! ⭐</label>
           </div>
         </div>
       </div>
@@ -3333,12 +3326,12 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
   const activityId = `breathing_${starIndex}`;
   const breathingId = `breathingExercise_${starIndex}`;
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="breathing">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="breathing">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(breathing.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(breathing.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(breathing.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body text-center m-color-dark">${escapeForTemplate(breathing.instructions)}</p>
           
           <!-- Animated Breathing Circle -->
           <div class="text-center mb-6">
@@ -3347,7 +3340,7 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
                  onclick="window.toggleBreathing('${breathingId}')">
               <div class="text-center">
                 <div class="breathing-emoji text-5xl mb-1">🌬️</div>
-                <div class="breathing-text font-title text-lg" style="color: var(--dark);">Tap to Start</div>
+                <div class="breathing-text font-title text-lg m-color-dark">Tap to Start</div>
               </div>
             </div>
             <div class="mt-3 font-body text-sm" style="color: var(--dark); opacity: 0.7;">Tap the circle to begin</div>
@@ -3357,42 +3350,41 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
           <div class="grid md:grid-cols-3 gap-4 mb-6">
             <div id="${breathingId}_inhale" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--light-green); opacity: 0.5; transform: scale(0.95);">
               <div class="text-3xl mb-2">😤</div>
-              <h3 class="font-title text-lg mb-1" style="color: var(--dark);">Breathe In</h3>
-              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(breathing.inhaleText)}</p>
-              <div class="breathing-timer font-title text-2xl mt-2" style="color: var(--primary); display: none;">4</div>
+              <h3 class="font-title text-lg mb-1 m-color-dark">Breathe In</h3>
+              <p class="font-body text-sm m-color-dark">${escapeForTemplate(breathing.inhaleText)}</p>
+              <div class="breathing-timer font-title text-2xl mt-2 m-feedback-hidden-primary">4</div>
             </div>
             <div id="${breathingId}_hold" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--soft-yellow); opacity: 0.5; transform: scale(0.95);">
               <div class="text-3xl mb-2">😊</div>
-              <h3 class="font-title text-lg mb-1" style="color: var(--dark);">Hold</h3>
-              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(breathing.holdText)}</p>
-              <div class="breathing-timer font-title text-2xl mt-2" style="color: var(--primary); display: none;">4</div>
+              <h3 class="font-title text-lg mb-1 m-color-dark">Hold</h3>
+              <p class="font-body text-sm m-color-dark">${escapeForTemplate(breathing.holdText)}</p>
+              <div class="breathing-timer font-title text-2xl mt-2 m-feedback-hidden-primary">4</div>
             </div>
             <div id="${breathingId}_exhale" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--primary); opacity: 0.5; transform: scale(0.95);">
               <div class="text-3xl mb-2">😌</div>
-              <h3 class="font-title text-lg mb-1" style="color: white;">Breathe Out</h3>
-              <p class="font-body text-sm" style="color: white;">${escapeForTemplate(breathing.exhaleText)}</p>
+              <h3 class="font-title text-lg mb-1 m-color-white">Breathe Out</h3>
+              <p class="font-body text-sm m-color-white">${escapeForTemplate(breathing.exhaleText)}</p>
               <div class="breathing-timer font-title text-2xl mt-2" style="color: white; display: none;">4</div>
             </div>
           </div>
           
           <!-- Breath Counter -->
           <div class="text-center mb-6">
-            <span class="font-body" style="color: var(--dark);">Breaths completed: </span>
-            <span id="${breathingId}_count" class="font-title text-xl" style="color: var(--primary);">0</span>
-            <span class="font-body" style="color: var(--dark);"> / 3</span>
+            <span class="font-body m-color-dark">Breaths completed: </span>
+            <span id="${breathingId}_count" class="font-title text-xl m-color-primary">0</span>
+            <span class="font-body m-color-dark"> / 3</span>
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
             <input 
               type="checkbox" 
               id="${activityId}_checkbox"
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             />
-            <label class="font-title text-xl" style="color: var(--dark);">I practiced calm breathing! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I practiced calm breathing! ⭐</label>
           </div>
         </div>
       </div>
@@ -3403,19 +3395,19 @@ function renderBreathingPage(breathing: BreathingContent, starIndex: number): st
 function renderScenarioPage(scenario: ScenarioContent, starIndex: number): string {
   const activityId = `scenario_${starIndex}`;
   const optionsHtml = scenario.options.map((opt) => `
-    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white; color: var(--dark);" data-good="${opt.isGood}" data-feedback="${escapeForTemplate(opt.feedback)}">${escapeForTemplate(opt.text)}</button>`).join("");
+    <button class="scenario-option w-full text-left p-4 rounded-xl border-2 font-body text-lg transition-all hover:shadow-md cursor-pointer m-option-secondary" data-good="${opt.isGood}" data-feedback="${escapeForTemplate(opt.feedback)}">${escapeForTemplate(opt.text)}</button>`).join("");
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="scenario">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="scenario">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(scenario.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);"><p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(scenario.scenario)}</p></div>
-          <p class="text-xl mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(scenario.question)}</p>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(scenario.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <div class="rounded-2xl p-6 mb-6 m-bg-soft-yellow"><p class="text-lg font-body m-color-dark">${escapeForTemplate(scenario.scenario)}</p></div>
+          <p class="text-xl mb-6 font-body font-semibold m-color-dark">${escapeForTemplate(scenario.question)}</p>
           <div class="space-y-3 mb-6">${optionsHtml}</div>
           <p class="scenario-feedback text-lg font-body mb-6 p-4 rounded-xl" style="display: none; background-color: var(--light-green); color: var(--dark);"></p>
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I thought about this scenario! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I thought about this scenario! ⭐</label>
           </div>
         </div>
       </div>
@@ -3425,26 +3417,26 @@ function renderScenarioPage(scenario: ScenarioContent, starIndex: number): strin
 function renderFeelingThermometerPage(thermometer: FeelingThermometerContent, starIndex: number): string {
   const activityId = `thermometer_${starIndex}`;
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-thermometer">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="feeling-thermometer">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(thermometer.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(thermometer.instructions)}</p>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(thermometer.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(thermometer.instructions)}</p>
           <div class="mb-8">
             <div class="flex justify-between mb-2">
-              <span class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(thermometer.lowLabel)}</span>
-              <span class="font-body text-sm" style="color: var(--accent);">${escapeForTemplate(thermometer.highLabel)}</span>
+              <span class="font-body text-sm m-color-secondary">${escapeForTemplate(thermometer.lowLabel)}</span>
+              <span class="font-body text-sm m-color-accent">${escapeForTemplate(thermometer.highLabel)}</span>
             </div>
             <input type="range" min="1" max="10" value="5" class="thermometer-slider w-full" oninput="this.parentElement.querySelector('.thermometer-value').textContent = this.value; saveFormData('thermometer_${starIndex}', this.value)">
-            <div class="text-center mt-4"><span class="thermometer-value text-4xl font-title" style="color: var(--primary);">5</span></div>
+            <div class="text-center mt-4"><span class="thermometer-value text-4xl font-title m-color-primary">5</span></div>
           </div>
           <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(thermometer.followUpQuestion)}</label>
-            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="thermometer_followup_${starIndex}" onchange="saveFormData('thermometer_followup_${starIndex}', this.value)"></textarea>
+            <label class="block font-semibold mb-2 font-body m-color-dark">${escapeForTemplate(thermometer.followUpQuestion)}</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg m-input-cream" style="min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="thermometer_followup_${starIndex}" onchange="saveFormData('thermometer_followup_${starIndex}', this.value)"></textarea>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I checked my feelings thermometer! ⭐</label>
           </div>
         </div>
       </div>
@@ -3454,25 +3446,25 @@ function renderFeelingThermometerPage(thermometer: FeelingThermometerContent, st
 function renderBodyMapPage(bodyMap: BodyMapContent, starIndex: number): string {
   const activityId = `bodymap_${starIndex}`;
   const partsHtml = bodyMap.bodyParts.map((part) => `
-    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left" style="border-color: var(--secondary); background-color: white; color: var(--dark);" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left m-option-secondary" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
       <span class="text-3xl">${escapeForTemplate(part.emoji)}</span>
       <div>
         <span class="font-title text-lg">${escapeForTemplate(part.name)}</span>
-        <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(part.description)}</p>
+        <p class="font-body text-sm m-color-secondary">${escapeForTemplate(part.description)}</p>
       </div>
     </button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="body-map">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="body-map">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(bodyMap.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(bodyMap.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(bodyMap.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(bodyMap.instructions)}</p>
           <div class="grid gap-3 mb-6">${partsHtml}</div>
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I explored my body map! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I explored my body map! ⭐</label>
           </div>
         </div>
       </div>
@@ -3484,24 +3476,24 @@ function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: 
   const feelingsHtml = selector.feelings.map((f) => `
     <button class="feeling-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: ${f.color}; background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? '${f.color}' : 'white'; var followUp = this.closest('.page').querySelector('.feeling-followup'); if(followUp) followUp.style.display = 'block';">
       <span class="text-4xl">${escapeForTemplate(f.emoji)}</span>
-      <span class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(f.name)}</span>
+      <span class="font-body font-semibold m-color-dark">${escapeForTemplate(f.name)}</span>
     </button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-selector">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="feeling-selector">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(selector.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(selector.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(selector.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(selector.instructions)}</p>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${feelingsHtml}</div>
-          <div class="feeling-followup mb-6" style="display: none;">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(selector.followUpQuestion)}</label>
-            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="feeling_followup_${starIndex}" onchange="saveFormData('feeling_followup_${starIndex}', this.value)"></textarea>
+          <div class="feeling-followup mb-6 m-hidden">
+            <label class="block font-semibold mb-2 font-body m-color-dark">${escapeForTemplate(selector.followUpQuestion)}</label>
+            <textarea class="w-full rounded-xl p-4 font-body text-lg m-input-cream" style="min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="feeling_followup_${starIndex}" onchange="saveFormData('feeling_followup_${starIndex}', this.value)"></textarea>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I identified my feelings! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I identified my feelings! ⭐</label>
           </div>
         </div>
       </div>
@@ -3511,30 +3503,30 @@ function renderFeelingSelectorPage(selector: FeelingSelectorContent, starIndex: 
 function renderCalmDenBuilderPage(denBuilder: CalmDenBuilderContent, starIndex: number, metadata: ModuleMetadata): string {
   const activityId = `calmden_${starIndex}`;
   const itemsHtml = denBuilder.items.map((item) => `
-    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer" style="border-color: var(--secondary); background-color: white;" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+    <button class="den-item-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer m-card-bordered" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
       <span class="text-4xl">${escapeForTemplate(item.emoji)}</span>
-      <span class="font-body font-semibold text-center" style="color: var(--dark);">${escapeForTemplate(item.name)}</span>
+      <span class="font-body font-semibold text-center m-color-dark">${escapeForTemplate(item.name)}</span>
     </button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="calm-den-builder">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="calm-den-builder">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(denBuilder.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(denBuilder.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <div class="rounded-2xl p-6 mb-6 flex items-start gap-4" style="background-color: var(--soft-yellow);">
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <div class="rounded-2xl p-6 mb-6 flex items-start gap-4 m-bg-soft-yellow">
             <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
-            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(denBuilder.storyText)}</p>
+            <p class="text-lg font-body m-color-dark">${escapeForTemplate(denBuilder.storyText)}</p>
           </div>
-          <p class="text-lg mb-6 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(denBuilder.instructions)}</p>
+          <p class="text-lg mb-6 font-body font-semibold m-color-dark">${escapeForTemplate(denBuilder.instructions)}</p>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${itemsHtml}</div>
           <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">${escapeForTemplate(denBuilder.locationQuestion)}</label>
-            <input type="text" class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark);" placeholder="e.g., My bedroom, under my blanket..." data-form-key="calmden_location_${starIndex}" onchange="saveFormData('calmden_location_${starIndex}', this.value)">
+            <label class="block font-semibold mb-2 font-body m-color-dark">${escapeForTemplate(denBuilder.locationQuestion)}</label>
+            <input type="text" class="w-full rounded-xl p-4 font-body text-lg m-input-cream" style="min-height: auto;" placeholder="e.g., My bedroom, under my blanket..." data-form-key="calmden_location_${starIndex}" onchange="saveFormData('calmden_location_${starIndex}', this.value)">
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I built my calm-down den! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I built my calm-down den! ⭐</label>
           </div>
         </div>
       </div>
@@ -3544,26 +3536,26 @@ function renderCalmDenBuilderPage(denBuilder: CalmDenBuilderContent, starIndex: 
 function renderActionPlanPage(actionPlan: ActionPlanContent, starIndex: number): string {
   const activityId = `actionplan_${starIndex}`;
   const stepsHtml = actionPlan.steps.map((step) => `
-    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+    <div class="rounded-xl p-4 mb-4 m-bg-soft-yellow">
       <div class="flex items-center gap-3 mb-2">
-        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${step.stepNumber}</span>
-        <h3 class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(step.title)}</h3>
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white m-bg-primary">${step.stepNumber}</span>
+        <h3 class="font-title text-xl m-color-dark">${escapeForTemplate(step.title)}</h3>
       </div>
-      <p class="font-body mb-2" style="color: var(--dark);">${escapeForTemplate(step.prompt)}</p>
+      <p class="font-body mb-2 m-color-dark">${escapeForTemplate(step.prompt)}</p>
       <input type="text" class="w-full rounded-lg p-3 font-body" style="background-color: white; border: 2px solid var(--primary); color: var(--dark);" placeholder="${escapeForTemplate(step.placeholder)}" data-form-key="actionplan_step${step.stepNumber}_${starIndex}" onchange="saveFormData('actionplan_step${step.stepNumber}_${starIndex}', this.value)">
     </div>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="action-plan">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="action-plan">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(actionPlan.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(actionPlan.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(actionPlan.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(actionPlan.instructions)}</p>
           ${stepsHtml}
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I created my action plan! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I created my action plan! ⭐</label>
           </div>
         </div>
       </div>
@@ -3573,41 +3565,40 @@ function renderActionPlanPage(actionPlan: ActionPlanContent, starIndex: number):
 function renderWarningSignsPage(warningSigns: WarningSingsContent, starIndex: number): string {
   const activityId = `warningsigns_${starIndex}`;
   const categoriesHtml = warningSigns.categories.map((cat) => `
-    <div class="rounded-xl p-4 mb-4" style="background-color: var(--soft-yellow);">
+    <div class="rounded-xl p-4 mb-4 m-bg-soft-yellow">
       <div class="flex items-center gap-2 mb-3">
         <span class="text-2xl">${escapeForTemplate(cat.emoji)}</span>
-        <h3 class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(cat.category)}</h3>
+        <h3 class="font-title text-xl m-color-dark">${escapeForTemplate(cat.category)}</h3>
       </div>
       <div class="space-y-2">
         ${cat.examples.map((ex, i) => `
           <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
-            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded" style="accent-color: var(--primary);">
-            <span class="font-body" style="color: var(--dark);">${escapeForTemplate(ex)}</span>
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">${escapeForTemplate(ex)}</span>
           </label>
         `).join("")}
       </div>
     </div>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="warning-signs">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="warning-signs">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(warningSigns.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(warningSigns.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(warningSigns.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(warningSigns.instructions)}</p>
           
           ${categoriesHtml}
           
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I identified my warning signs! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I identified my warning signs! ⭐</label>
           </div>
         </div>
       </div>
@@ -3625,7 +3616,7 @@ function renderBalloonPopPage(balloon: BalloonPopContent, starIndex: number, met
          onclick="window.popBalloon('${b.id}', '${activityId}', ${balloon.balloons.length})">
       <span class="text-5xl mb-2 animate-bounce-slow">🎈</span>
       <span class="text-2xl mb-1">${b.emoji}</span>
-      <p class="font-body text-sm text-center" style="color: var(--dark);">"${escapeForTemplate(b.worryText)}"</p>
+      <p class="font-body text-sm text-center m-color-dark">"${escapeForTemplate(b.worryText)}"</p>
     </div>
   `).join("");
   
@@ -3634,53 +3625,53 @@ function renderBalloonPopPage(balloon: BalloonPopContent, starIndex: number, met
             style="background-color: var(--light-green); border-color: var(--secondary);"
             onclick="window.useCalmingTool('${t.id}', ${t.power}, '${escapeForOnclick(t.tool)}')">
       <span class="text-3xl">${t.emoji}</span>
-      <span class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(t.tool)}</span>
-      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+${t.power}</span>
+      <span class="font-body text-sm m-color-dark">${escapeForTemplate(t.tool)}</span>
+      <span class="text-xs px-2 py-1 rounded-full m-bg-soft-yellow">+${t.power}</span>
     </button>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="balloon-pop" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="balloon-pop" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(balloon.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(balloon.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(balloon.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(balloon.instructions)}</p>
           
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center" style="color: var(--dark);">${escapeForTemplate(balloon.scenario)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center m-color-dark">${escapeForTemplate(balloon.scenario)}</p>
           </div>
           
-          <div class="mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+          <div class="mb-6 p-4 rounded-xl m-bg-cream">
             <div class="flex justify-between mb-2">
-              <span class="font-title" style="color: var(--dark);">Calming Power:</span>
-              <span class="font-title text-xl" id="balloonPower_${starIndex}" style="color: var(--primary);">0%</span>
+              <span class="font-title m-color-dark">Calming Power:</span>
+              <span class="font-title text-xl" id="balloonPower_${starIndex}" class="m-color-primary">0%</span>
             </div>
-            <div class="h-6 rounded-full overflow-hidden" style="background-color: #e5e7eb;">
+            <div class="h-6 rounded-full overflow-hidden m-bg-gray">
               <div class="h-full rounded-full transition-all duration-500" id="balloonPowerBar_${starIndex}" style="width: 0%; background: linear-gradient(90deg, var(--light-green), var(--primary));"></div>
             </div>
           </div>
           
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Step 1: Build Calming Power 🧰</p>
-          <p class="font-body text-sm text-center mb-3" style="color: var(--secondary);">Tap the calming tools to fill your power bar!</p>
+          <p class="font-title text-lg text-center mb-3 m-color-dark">Step 1: Build Calming Power 🧰</p>
+          <p class="font-body text-sm text-center mb-3 m-color-secondary">Tap the calming tools to fill your power bar!</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${toolsHtml}</div>
           
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Step 2: Pop the Worry Balloons 🎈</p>
-          <p class="font-body text-sm text-center mb-3" style="color: var(--secondary);">Once you have enough calming power, tap each balloon to pop it!</p>
+          <p class="font-title text-lg text-center mb-3 m-color-dark">Step 2: Pop the Worry Balloons 🎈</p>
+          <p class="font-body text-sm text-center mb-3 m-color-secondary">Once you have enough calming power, tap each balloon to pop it!</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="balloons_${starIndex}">${balloonsHtml}</div>
           
-          <div class="p-4 rounded-xl text-center mb-4" id="balloonFeedback_${starIndex}" style="display: none; background-color: var(--light-green);">
+          <div class="p-4 rounded-xl text-center mb-4" id="balloonFeedback_${starIndex}" class="m-feedback-hidden-green">
             <p class="font-body text-lg" id="balloonFeedbackText_${starIndex}"></p>
           </div>
           
-          <div class="p-6 rounded-2xl text-center" id="balloonVictory_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="balloonVictory_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🎉</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(balloon.victoryMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(balloon.victoryMessage)}</p>
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="balloonComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I popped all my worries! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="balloonComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I popped all my worries! ⭐</label>
           </div>
         </div>
       </div>
@@ -3696,50 +3687,50 @@ function renderTreasureHuntPage(hunt: TreasureHuntContent, starIndex: number, me
   const activityId = `treasure_${starIndex}`;
   
   const locationsHtml = hunt.locations.map(loc => `
-    <div class="treasure-location p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105" id="loc_${starIndex}_${loc.id}" style="background-color: white; border-color: var(--secondary);" onclick="window.exploreTreasure('${starIndex}', '${loc.id}', ${hunt.locations.length})">
+    <div class="treasure-location p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105" id="loc_${starIndex}_${loc.id}" class="m-card-bordered" onclick="window.exploreTreasure('${starIndex}', '${loc.id}', ${hunt.locations.length})">
       <div class="flex items-center gap-3 mb-2">
         <span class="text-4xl">${loc.emoji}</span>
         <div>
-          <h3 class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(loc.name)}</h3>
-          <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(loc.description)}</p>
+          <h3 class="font-title text-lg m-color-dark">${escapeForTemplate(loc.name)}</h3>
+          <p class="font-body text-sm m-color-secondary">${escapeForTemplate(loc.description)}</p>
         </div>
       </div>
-      <div class="treasure-content" id="tc_${starIndex}_${loc.id}" style="display: none;">
-        <div class="p-3 rounded-xl my-3" style="background-color: var(--soft-yellow);">
+      <div class="treasure-content" id="tc_${starIndex}_${loc.id}" class="m-hidden">
+        <div class="p-3 rounded-xl my-3 m-bg-soft-yellow">
           <div class="flex items-center gap-2 mb-2">
             <span class="text-2xl">${loc.treasure.emoji}</span>
-            <span class="font-title" style="color: var(--dark);">Found: ${escapeForTemplate(loc.treasure.name)}!</span>
+            <span class="font-title m-color-dark">Found: ${escapeForTemplate(loc.treasure.name)}!</span>
           </div>
-          <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(loc.treasure.lesson)}</p>
+          <p class="font-body text-sm m-color-dark">${escapeForTemplate(loc.treasure.lesson)}</p>
         </div>
-        <p class="font-body text-sm mb-2" style="color: var(--dark);">${escapeForTemplate(loc.question)}</p>
-        <textarea class="w-full p-2 rounded-lg border-2 font-body text-sm" style="border-color: var(--primary); min-height: 60px;" placeholder="${escapeForTemplate(loc.placeholder)}" onchange="saveFormData('treasure_${starIndex}_${loc.id}', this.value)"></textarea>
+        <p class="font-body text-sm mb-2 m-color-dark">${escapeForTemplate(loc.question)}</p>
+        <textarea class="w-full p-2 rounded-lg border-2 font-body text-sm m-input-bordered-primary" placeholder="${escapeForTemplate(loc.placeholder)}" onchange="saveFormData('treasure_${starIndex}_${loc.id}', this.value)"></textarea>
       </div>
-      <div class="explore-btn mt-2 text-center"><span class="font-body text-sm px-4 py-2 rounded-full" style="background-color: var(--primary); color: white;">🔍 Explore</span></div>
+      <div class="explore-btn mt-2 text-center"><span class="font-body text-sm px-4 py-2 rounded-full m-btn-primary">🔍 Explore</span></div>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="treasure-hunt" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="treasure-hunt" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(hunt.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(hunt.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
           <div class="flex items-center justify-center gap-2 mb-4">
             <span class="text-4xl">${hunt.mapEmoji}</span>
-            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(hunt.storyIntro)}</p>
+            <p class="text-lg font-body m-color-dark">${escapeForTemplate(hunt.storyIntro)}</p>
           </div>
-          <p class="text-center mb-6 font-body" style="color: var(--secondary);">${escapeForTemplate(hunt.instructions)}</p>
-          <div class="mb-6 p-3 rounded-xl text-center" style="background-color: var(--cream);">
-            <p class="font-title" style="color: var(--dark);">Treasures: <span id="treasureCount_${starIndex}">0</span>/${hunt.locations.length}</p>
+          <p class="text-center mb-6 font-body m-color-secondary">${escapeForTemplate(hunt.instructions)}</p>
+          <div class="mb-6 p-3 rounded-xl text-center m-bg-cream">
+            <p class="font-title m-color-dark">Treasures: <span id="treasureCount_${starIndex}">0</span>/${hunt.locations.length}</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">${locationsHtml}</div>
-          <div class="p-6 rounded-2xl text-center" id="treasureVictory_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="treasureVictory_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🏆</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(hunt.completionMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(hunt.completionMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="treasureComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I found all treasures! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="treasureComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I found all treasures! ⭐</label>
           </div>
         </div>
       </div>
@@ -3755,10 +3746,10 @@ function renderMonsterTamerPage(tamer: MonsterTamerContent, starIndex: number, m
   const activityId = `monster_${starIndex}`;
   
   const actionsHtml = tamer.tamingActions.map(a => `
-    <button class="taming-action p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2" style="background-color: white; border-color: var(--secondary);" onclick="window.tameMonster('${starIndex}', ${a.shrinkPower}, '${escapeForOnclick(a.message)}')">
+    <button class="taming-action p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2 m-card-bordered" onclick="window.tameMonster('${starIndex}', ${a.shrinkPower}, '${escapeForOnclick(a.message)}')">
       <span class="text-3xl">${a.emoji}</span>
-      <span class="font-body text-sm text-center" style="color: var(--dark);">${escapeForTemplate(a.action)}</span>
-      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--light-green);">-${a.shrinkPower}</span>
+      <span class="font-body text-sm text-center m-color-dark">${escapeForTemplate(a.action)}</span>
+      <span class="text-xs px-2 py-1 rounded-full m-bg-light-green">-${a.shrinkPower}</span>
     </button>
   `).join("");
 
@@ -3770,38 +3761,38 @@ function renderMonsterTamerPage(tamer: MonsterTamerContent, starIndex: number, m
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="monster-tamer" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="monster-tamer" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(tamer.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(tamer.instructions)}</p>
-          <div class="flex flex-col items-center mb-6 p-6 rounded-2xl" style="background-color: var(--cream);">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(tamer.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(tamer.instructions)}</p>
+          <div class="flex flex-col items-center mb-6 p-6 rounded-2xl m-bg-cream">
             <div class="transition-all duration-500" id="monsterVisual_${starIndex}" style="font-size: 8rem;">${tamer.monster.emoji}</div>
-            <h3 class="font-title text-xl mt-2" style="color: var(--dark);">${escapeForTemplate(tamer.monster.name)}</h3>
-            <p class="font-body text-sm text-center" style="color: var(--secondary);">${escapeForTemplate(tamer.monster.description)}</p>
+            <h3 class="font-title text-xl mt-2 m-color-dark">${escapeForTemplate(tamer.monster.name)}</h3>
+            <p class="font-body text-sm text-center m-color-secondary">${escapeForTemplate(tamer.monster.description)}</p>
             <div class="mt-4 w-full">
               <div class="flex justify-between mb-1">
                 <span class="font-body text-sm">Monster Size:</span>
-                <span class="font-title" id="monsterSize_${starIndex}" style="color: var(--accent);">100%</span>
+                <span class="font-title" id="monsterSize_${starIndex}" class="m-color-accent">100%</span>
               </div>
-              <div class="h-4 rounded-full overflow-hidden" style="background-color: #e5e7eb;">
+              <div class="h-4 rounded-full overflow-hidden m-bg-gray">
                 <div class="h-full rounded-full transition-all duration-500" id="monsterBar_${starIndex}" style="width: 100%; background: linear-gradient(90deg, var(--accent), #ef4444);"></div>
               </div>
             </div>
           </div>
           <div class="flex justify-center gap-2 mb-6">${stagesHtml}</div>
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Taming Powers 💫</p>
+          <p class="font-title text-lg text-center mb-3 m-color-dark">Taming Powers 💫</p>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${actionsHtml}</div>
           <div class="p-4 rounded-xl text-center mb-4" id="monsterFeedback_${starIndex}" style="display: none; background-color: var(--soft-yellow);">
             <p class="font-body text-lg" id="monsterFeedbackText_${starIndex}"></p>
           </div>
-          <div class="p-6 rounded-2xl text-center" id="monsterFriend_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="monsterFriend_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">😊🤝👾</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(tamer.friendMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(tamer.friendMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="monsterComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I tamed the monster! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="monsterComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I tamed the monster! ⭐</label>
           </div>
         </div>
       </div>
@@ -3818,39 +3809,39 @@ function renderGardenGrowerPage(garden: GardenGrowerContent, starIndex: number, 
   const plantsHtml = garden.plants.map(p => {
     const stagesAttr = p.growthStages.map(s => escapeForTemplate(s)).join('|');
     return `
-    <div class="garden-plant p-4 rounded-2xl border-2 transition-all" id="plant_${starIndex}_${p.id}" style="background-color: white; border-color: var(--secondary);">
+    <div class="garden-plant p-4 rounded-2xl border-2 transition-all" id="plant_${starIndex}_${p.id}" class="m-card-bordered">
       <div class="text-center mb-2"><span class="text-5xl" id="plantEmoji_${starIndex}_${p.id}">${p.growthStages[0]}</span></div>
-      <h3 class="font-title text-center mb-1" style="color: var(--dark);">${escapeForTemplate(p.name)}</h3>
-      <p class="font-body text-xs text-center mb-2" style="color: var(--secondary);">${escapeForTemplate(p.feeling)}</p>
-      <p class="font-body text-sm text-center mb-3 p-2 rounded-lg" id="plantAction_${starIndex}_${p.id}" style="background-color: var(--cream);">${escapeForTemplate(p.nurturingAction)}</p>
+      <h3 class="font-title text-center mb-1 m-color-dark">${escapeForTemplate(p.name)}</h3>
+      <p class="font-body text-xs text-center mb-2 m-color-secondary">${escapeForTemplate(p.feeling)}</p>
+      <p class="font-body text-sm text-center mb-3 p-2 rounded-lg" id="plantAction_${starIndex}_${p.id}" class="m-bg-cream">${escapeForTemplate(p.nurturingAction)}</p>
       <div class="flex justify-center gap-1 mb-2">
         ${p.growthStages.map((_, i) => `<div class="w-3 h-3 rounded-full" id="growth_${starIndex}_${p.id}_${i}" style="background-color: ${i === 0 ? 'var(--primary)' : '#e5e7eb'};"></div>`).join("")}
       </div>
-      <button class="w-full py-2 rounded-lg font-title cursor-pointer hover:scale-105 transition-all" style="background-color: var(--light-green);" data-stages="${stagesAttr}" data-plant-id="${p.id}" data-star-index="${starIndex}" data-total="${garden.plants.length}" onclick="window.waterPlant(this.dataset.starIndex, this.dataset.plantId, this.dataset.stages.split('|'), parseInt(this.dataset.total))">💧 Water!</button>
+      <button class="w-full py-2 rounded-lg font-title cursor-pointer hover:scale-105 transition-all m-bg-light-green" data-stages="${stagesAttr}" data-plant-id="${p.id}" data-star-index="${starIndex}" data-total="${garden.plants.length}" onclick="window.waterPlant(this.dataset.starIndex, this.dataset.plantId, this.dataset.stages.split('|'), parseInt(this.dataset.total))">💧 Water!</button>
     </div>`;
   }).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="garden-grower" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="garden-grower" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(garden.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(garden.instructions)}</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center" style="color: var(--dark);">${escapeForTemplate(garden.gardenStory)}</p>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(garden.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(garden.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center m-color-dark">${escapeForTemplate(garden.gardenStory)}</p>
           </div>
           <div class="text-center mb-4"><span class="text-6xl animate-bounce-slow">${garden.wateringCan.emoji}</span></div>
-          <div class="mb-6 p-3 rounded-xl text-center" style="background-color: var(--cream);">
+          <div class="mb-6 p-3 rounded-xl text-center m-bg-cream">
             <p class="font-title">Plants Grown: <span id="gardenProgress_${starIndex}">0</span>/${garden.plants.length}</p>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">${plantsHtml}</div>
-          <div class="p-6 rounded-2xl text-center" id="gardenHarvest_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="gardenHarvest_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🌸🌻🌹🌷</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(garden.harvestMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(garden.harvestMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="gardenComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">My garden blooms! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="gardenComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">My garden blooms! ⭐</label>
           </div>
         </div>
       </div>
@@ -3865,17 +3856,17 @@ function renderGardenGrowerPage(garden: GardenGrowerContent, starIndex: number, 
 function renderSuperheroCreatorPage(hero: SuperheroCreatorContent, starIndex: number, metadata: ModuleMetadata): string {
   const activityId = `superhero_${starIndex}`;
   
-  const powersHtml = hero.heroElements.powers.map(p => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('${starIndex}', 'power', '${p.emoji}')"><span class="text-2xl">${p.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(p.name)}</p></button>`).join("");
+  const powersHtml = hero.heroElements.powers.map(p => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('${starIndex}', 'power', '${p.emoji}')"><span class="text-2xl">${p.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(p.name)}</p></button>`).join("");
   const costumesHtml = hero.heroElements.costumes.map(c => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: ${c.color}20; border-color: transparent;" onclick="window.selectHero('${starIndex}', 'costume', '${c.emoji}')"><span class="text-2xl">${c.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(c.name)}</p></button>`).join("");
-  const sidekicksHtml = hero.heroElements.sidekicks.map(s => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: transparent;" onclick="window.selectHero('${starIndex}', 'sidekick', '${s.emoji}')"><span class="text-2xl">${s.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(s.name)}</p></button>`).join("");
+  const sidekicksHtml = hero.heroElements.sidekicks.map(s => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('${starIndex}', 'sidekick', '${s.emoji}')"><span class="text-2xl">${s.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(s.name)}</p></button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="superhero-creator" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="superhero-creator" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(hero.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(hero.instructions)}</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(hero.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(hero.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
             <p class="font-body text-center">${escapeForTemplate(hero.storyIntro)}</p>
           </div>
           <div class="p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(135deg, var(--cream), var(--soft-yellow));">
@@ -3885,22 +3876,22 @@ function renderSuperheroCreatorPage(hero: SuperheroCreatorContent, starIndex: nu
               <span id="hero_${starIndex}_power">❓</span>
               <span id="hero_${starIndex}_sidekick">❓</span>
             </div>
-            <input type="text" class="mt-4 p-2 rounded-lg border-2 font-title text-center text-xl w-full max-w-xs" style="border-color: var(--primary);" placeholder="Hero name..." onchange="saveFormData('hero_name_${starIndex}', this.value); checkHeroComplete('${starIndex}')">
+            <input type="text" class="mt-4 p-2 rounded-lg border-2 font-title text-center text-xl w-full max-w-xs m-border-primary" placeholder="Hero name..." onchange="saveFormData('hero_name_${starIndex}', this.value); checkHeroComplete('${starIndex}')">
           </div>
           <div class="mb-4"><p class="font-title mb-2">⚡ Power:</p><div class="flex flex-wrap gap-2">${powersHtml}</div></div>
           <div class="mb-4"><p class="font-title mb-2">🦸 Costume:</p><div class="flex flex-wrap gap-2">${costumesHtml}</div></div>
           <div class="mb-4"><p class="font-title mb-2">🐾 Sidekick:</p><div class="flex flex-wrap gap-2">${sidekicksHtml}</div></div>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
+          <div class="p-4 rounded-xl mb-6 m-bg-cream">
             <p class="font-title mb-2">${escapeForTemplate(hero.missionPrompt)}</p>
-            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My hero will..." onchange="saveFormData('hero_mission_${starIndex}', this.value); checkHeroComplete('${starIndex}')"></textarea>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body m-input-bordered-secondary" placeholder="My hero will..." onchange="saveFormData('hero_mission_${starIndex}', this.value); checkHeroComplete('${starIndex}')"></textarea>
           </div>
-          <div class="p-6 rounded-2xl text-center" id="heroDone_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="heroDone_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🦸‍♂️✨🦸‍♀️</p>
             <p class="font-title text-2xl">${escapeForTemplate(hero.completionMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="heroComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">My superhero is ready! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="heroComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">My superhero is ready! ⭐</label>
           </div>
         </div>
       </div>
@@ -3918,34 +3909,34 @@ function renderFeelingsOrchestraPage(orchestra: FeelingsOrchestraContent, starIn
     <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: ${i.color}20; border-color: ${i.color};" onclick="window.playInstrument('${starIndex}', '${i.emoji}', '${escapeForOnclick(i.sound)}', '${escapeForOnclick(i.feeling)}', '${escapeForOnclick(i.name)}')">
       <span class="text-5xl">${i.emoji}</span>
       <p class="font-title text-sm mt-2">${escapeForTemplate(i.name)}</p>
-      <p class="font-body text-xs" style="color: var(--secondary);">${escapeForTemplate(i.feeling)}</p>
+      <p class="font-body text-xs m-color-secondary">${escapeForTemplate(i.feeling)}</p>
     </button>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feelings-orchestra" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="feelings-orchestra" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(orchestra.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(orchestra.instructions)}</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(orchestra.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(orchestra.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
             <p class="font-body text-center">${escapeForTemplate(orchestra.orchestraStory)}</p>
           </div>
           <div class="p-4 rounded-xl mb-6 text-center" id="soundDisplay_${starIndex}" style="background-color: var(--cream); min-height: 80px;">
             <p class="font-body">🎵 Tap an instrument to play!</p>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">${instrumentsHtml}</div>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
+          <div class="p-4 rounded-xl mb-6 m-bg-cream">
             <p class="font-title mb-2">${escapeForTemplate(orchestra.compositionPrompt)}</p>
-            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My feelings music is..." onchange="saveFormData('orchestra_${starIndex}', this.value)"></textarea>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body m-input-bordered-secondary" placeholder="My feelings music is..." onchange="saveFormData('orchestra_${starIndex}', this.value)"></textarea>
           </div>
-          <div class="p-6 rounded-2xl text-center" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center m-bg-callout-gradient">
             <p class="text-4xl mb-2">🎶</p>
             <p class="font-title text-xl">${escapeForTemplate(orchestra.performanceMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I made music! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I made music! ⭐</label>
           </div>
         </div>
       </div>
@@ -3959,22 +3950,22 @@ function renderFeelingsOrchestraPage(orchestra: FeelingsOrchestraContent, starIn
 function renderCalmAquariumPage(aquarium: CalmAquariumContent, starIndex: number, metadata: ModuleMetadata): string {
   const activityId = `aquarium_${starIndex}`;
   
-  const creaturesHtml = aquarium.creatures.map(c => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addToAquarium('${starIndex}', 'creature', '${c.emoji}', '${escapeForOnclick(c.calmingTrait)}')"><span class="text-3xl">${c.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(c.name)}</p></button>`).join("");
-  const decorationsHtml = aquarium.decorations.map(d => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addToAquarium('${starIndex}', 'decor', '${d.emoji}', '${escapeForOnclick(d.calmingEffect)}')"><span class="text-3xl">${d.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(d.name)}</p></button>`).join("");
+  const creaturesHtml = aquarium.creatures.map(c => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer m-card-bordered" onclick="window.addToAquarium('${starIndex}', 'creature', '${c.emoji}', '${escapeForOnclick(c.calmingTrait)}')"><span class="text-3xl">${c.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(c.name)}</p></button>`).join("");
+  const decorationsHtml = aquarium.decorations.map(d => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer m-card-bordered" onclick="window.addToAquarium('${starIndex}', 'decor', '${d.emoji}', '${escapeForOnclick(d.calmingEffect)}')"><span class="text-3xl">${d.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(d.name)}</p></button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="calm-aquarium" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="calm-aquarium" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(aquarium.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(aquarium.instructions)}</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(aquarium.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(aquarium.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
             <p class="font-body text-center">${escapeForTemplate(aquarium.aquariumStory)}</p>
           </div>
           <div class="aquarium-tank p-6 rounded-2xl mb-6 min-h-48 flex flex-wrap items-center justify-center gap-2" id="tank_${starIndex}" style="background: linear-gradient(180deg, #a8d8ea, #3b82f6);">
             <p class="font-body text-white">🌊 Your peaceful aquarium 🌊</p>
           </div>
-          <div class="p-4 rounded-xl mb-4 text-center" style="background-color: var(--light-green);">
+          <div class="p-4 rounded-xl mb-4 text-center m-bg-light-green">
             <p class="font-title mb-2">${escapeForTemplate(aquarium.breathingBubbles.message)}</p>
             <div class="flex justify-center gap-4">
               <span>Breathe in: ${aquarium.breathingBubbles.inhaleTime}s 💭</span>
@@ -3983,13 +3974,13 @@ function renderCalmAquariumPage(aquarium: CalmAquariumContent, starIndex: number
           </div>
           <div class="mb-4"><p class="font-title mb-2">🐠 Add Creatures:</p><div class="flex flex-wrap gap-2">${creaturesHtml}</div></div>
           <div class="mb-4"><p class="font-title mb-2">🌊 Add Decorations:</p><div class="flex flex-wrap gap-2">${decorationsHtml}</div></div>
-          <div class="p-6 rounded-2xl text-center" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center m-bg-callout-gradient">
             <p class="text-4xl mb-2">🌊</p>
             <p class="font-title text-xl">${escapeForTemplate(aquarium.peaceMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">My aquarium is peaceful! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">My aquarium is peaceful! ⭐</label>
           </div>
         </div>
       </div>
@@ -4003,37 +3994,37 @@ function renderCalmAquariumPage(aquarium: CalmAquariumContent, starIndex: number
 function renderRocketLauncherPage(rocket: RocketLauncherContent, starIndex: number, metadata: ModuleMetadata): string {
   const activityId = `rocket_${starIndex}`;
   
-  const fuelHtml = rocket.fuelActions.map(f => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addFuel('${starIndex}', ${f.fuelAmount})"><span class="text-2xl">${f.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(f.action)}</p><span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+${f.fuelAmount}%</span></button>`).join("");
-  const planetsHtml = rocket.planets.map(p => `<div class="p-4 rounded-2xl border-2" id="planet_${starIndex}_${p.id}" style="background-color: ${p.color}20; border-color: ${p.color};"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">${p.emoji}</span><span class="font-title">${escapeForTemplate(p.name)}</span></div><p class="font-body text-sm mb-2">${escapeForTemplate(p.activity)}</p><p class="font-body text-xs" style="color: var(--secondary);">Reward: ${escapeForTemplate(p.reward)}</p></div>`).join("");
+  const fuelHtml = rocket.fuelActions.map(f => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-card-bordered" onclick="window.addFuel('${starIndex}', ${f.fuelAmount})"><span class="text-2xl">${f.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(f.action)}</p><span class="text-xs px-2 py-1 rounded-full m-bg-soft-yellow">+${f.fuelAmount}%</span></button>`).join("");
+  const planetsHtml = rocket.planets.map(p => `<div class="p-4 rounded-2xl border-2" id="planet_${starIndex}_${p.id}" style="background-color: ${p.color}20; border-color: ${p.color};"><div class="flex items-center gap-2 mb-2"><span class="text-3xl">${p.emoji}</span><span class="font-title">${escapeForTemplate(p.name)}</span></div><p class="font-body text-sm mb-2">${escapeForTemplate(p.activity)}</p><p class="font-body text-xs m-color-secondary">Reward: ${escapeForTemplate(p.reward)}</p></div>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="rocket-launcher" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="rocket-launcher" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(rocket.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(rocket.instructions)}</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(rocket.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(rocket.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
             <p class="font-body text-center">${escapeForTemplate(rocket.missionBriefing)}</p>
           </div>
           <div class="text-center mb-4"><span class="text-8xl" id="rocketEmoji_${starIndex}">🚀</span></div>
-          <div class="mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
-            <div class="flex justify-between mb-2"><span class="font-title">Fuel:</span><span class="font-title text-xl" id="fuelDisplay_${starIndex}" style="color: var(--primary);">0%</span></div>
-            <div class="h-6 rounded-full overflow-hidden" style="background-color: #e5e7eb;"><div class="h-full rounded-full transition-all duration-500" id="fuelBar_${starIndex}" style="width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));"></div></div>
+          <div class="mb-6 p-4 rounded-xl m-bg-cream">
+            <div class="flex justify-between mb-2"><span class="font-title">Fuel:</span><span class="font-title text-xl" id="fuelDisplay_${starIndex}" class="m-color-primary">0%</span></div>
+            <div class="h-6 rounded-full overflow-hidden m-bg-gray"><div class="h-full rounded-full transition-all duration-500" id="fuelBar_${starIndex}" style="width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));"></div></div>
           </div>
           <p class="font-title text-lg text-center mb-3">Fuel Actions ⚡</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${fuelHtml}</div>
-          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105" id="launchBtn_${starIndex}" style="background-color: var(--primary); color: white;" onclick="window.launchRocket('${starIndex}')">🚀 LAUNCH!</button>
-          <div class="mt-6" id="planets_${starIndex}" style="display: none;">
+          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105" id="launchBtn_${starIndex}" class="m-btn-primary" onclick="window.launchRocket('${starIndex}')">🚀 LAUNCH!</button>
+          <div class="mt-6" id="planets_${starIndex}" class="m-hidden">
             <p class="font-title text-lg text-center mb-3">Feeling Planets 🪐</p>
             <div class="grid grid-cols-2 gap-4">${planetsHtml}</div>
           </div>
-          <div class="p-6 rounded-2xl text-center mt-4" id="rocketReturn_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center mt-4" id="rocketReturn_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🏠🚀</p>
             <p class="font-title text-2xl">${escapeForTemplate(rocket.returnMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="rocketComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">Space explorer! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="rocketComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">Space explorer! ⭐</label>
           </div>
         </div>
       </div>
@@ -4047,16 +4038,16 @@ function renderRocketLauncherPage(rocket: RocketLauncherContent, starIndex: numb
 function renderMagicPotionPage(potion: MagicPotionContent, starIndex: number, metadata: ModuleMetadata): string {
   const activityId = `potion_${starIndex}`;
   
-  const ingredientsHtml = potion.ingredients.map(i => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer" style="background-color: white; border-color: var(--secondary);" onclick="window.addIngredient('${starIndex}', '${i.id}', '${i.emoji}', '${escapeForOnclick(i.name)}')"><span class="text-3xl">${i.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(i.name)}</p><p class="font-body text-xs" style="color: var(--secondary);">${escapeForTemplate(i.feeling)}</p></button>`).join("");
+  const ingredientsHtml = potion.ingredients.map(i => `<button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer m-card-bordered" onclick="window.addIngredient('${starIndex}', '${i.id}', '${i.emoji}', '${escapeForOnclick(i.name)}')"><span class="text-3xl">${i.emoji}</span><p class="font-body text-xs mt-1">${escapeForTemplate(i.name)}</p><p class="font-body text-xs m-color-secondary">${escapeForTemplate(i.feeling)}</p></button>`).join("");
   const recipesHtml = potion.recipes.map(r => `<div class="p-3 rounded-xl" style="background-color: ${r.color}20; border: 2px solid ${r.color};"><div class="flex items-center gap-2 mb-1"><span class="text-2xl">${r.emoji}</span><span class="font-title text-sm">${escapeForTemplate(r.potionName)}</span></div><p class="font-body text-xs">${escapeForTemplate(r.effect)}</p></div>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="magic-potion" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="magic-potion" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(potion.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(potion.instructions)}</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(potion.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(potion.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
             <p class="font-body text-center">${escapeForTemplate(potion.cauldronStory)}</p>
           </div>
           <div class="cauldron p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(180deg, #4a1d96, #7c3aed);">
@@ -4065,18 +4056,18 @@ function renderMagicPotionPage(potion: MagicPotionContent, starIndex: number, me
               <span class="font-body text-white">Add ingredients...</span>
             </div>
           </div>
-          <button class="w-full py-3 rounded-xl font-title text-lg cursor-pointer mb-6" style="background-color: var(--primary); color: white;" onclick="window.brewPotion('${starIndex}')">✨ Brew Potion!</button>
+          <button class="w-full py-3 rounded-xl font-title text-lg cursor-pointer mb-6 m-btn-primary" onclick="window.brewPotion('${starIndex}')">✨ Brew Potion!</button>
           <p class="font-title text-lg text-center mb-3">Magical Ingredients ✨</p>
           <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">${ingredientsHtml}</div>
           <p class="font-title text-lg text-center mb-3">Recipe Book 📖</p>
           <div class="grid grid-cols-2 gap-3 mb-6">${recipesHtml}</div>
-          <div class="p-6 rounded-2xl text-center" id="potionResult_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="potionResult_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2" id="potionEmoji_${starIndex}">✨</p>
             <p class="font-title text-2xl" id="potionMessage_${starIndex}">${escapeForTemplate(potion.magicMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="potionComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I'm a potion master! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="potionComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I'm a potion master! ⭐</label>
           </div>
         </div>
       </div>
@@ -4091,31 +4082,31 @@ function renderFeelingsBingoPage(bingo: FeelingsBingoContent, starIndex: number,
   const activityId = `bingo_${starIndex}`;
   
   // Create 3x3 grid (8 squares + 1 free space in middle)
-  const squaresHtml = bingo.squares.slice(0, 4).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" style="background-color: white; border-color: var(--secondary);" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("") +
+  const squaresHtml = bingo.squares.slice(0, 4).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" class="m-card-bordered" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("") +
     `<div class="bingo-square p-3 rounded-xl border-2 flex flex-col items-center justify-center" style="background-color: var(--soft-yellow); border-color: var(--primary);"><span class="text-3xl">${bingo.freeSpace.emoji}</span><p class="font-title text-sm">FREE!</p><p class="font-body text-xs text-center">${escapeForTemplate(bingo.freeSpace.message)}</p></div>` +
-    bingo.squares.slice(4, 8).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" style="background-color: white; border-color: var(--secondary);" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("");
+    bingo.squares.slice(4, 8).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" class="m-card-bordered" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feelings-bingo" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="feelings-bingo" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(bingo.heading)}</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(bingo.instructions)}</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(bingo.heading)}</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(bingo.instructions)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
             <p class="font-body text-center">${escapeForTemplate(bingo.bingoStory)}</p>
           </div>
           <div class="grid grid-cols-3 gap-3 mb-6 max-w-md mx-auto">${squaresHtml}</div>
-          <div class="p-4 rounded-xl mb-6 text-center" style="background-color: var(--cream);">
+          <div class="p-4 rounded-xl mb-6 text-center m-bg-cream">
             <p class="font-title mb-2">Win Patterns:</p>
             <p class="font-body text-sm">${bingo.bingoPatterns.join(' • ')}</p>
           </div>
-          <div class="p-6 rounded-2xl text-center" id="bingoWin_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="bingoWin_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🎉</p>
             <p class="font-title text-2xl">${escapeForTemplate(bingo.winMessage)}</p>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">Bingo champion! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">Bingo champion! ⭐</label>
           </div>
         </div>
       </div>
@@ -4134,21 +4125,21 @@ function renderSpinTheWheelPage(wheel: SpinTheWheelContent, starIndex: number, m
          onclick="window.selectWheelSegment('${starIndex}', '${seg.id}', '${escapeForOnclick(seg.response)}')">
       <div class="flex items-center gap-2">
         <span class="text-3xl">${seg.emoji}</span>
-        <span class="font-body" style="color: var(--dark);">${escapeForTemplate(seg.label)}</span>
+        <span class="font-body m-color-dark">${escapeForTemplate(seg.label)}</span>
       </div>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="spin-the-wheel" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="spin-the-wheel" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(wheel.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(wheel.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(wheel.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(wheel.instructions)}</p>
           
-          <div class="p-4 rounded-xl mb-6 text-center" style="background-color: var(--soft-yellow);">
-            <p class="font-title text-xl" style="color: var(--dark);">🎯 ${escapeForTemplate(wheel.wheelQuestion)}</p>
+          <div class="p-4 rounded-xl mb-6 text-center m-bg-soft-yellow">
+            <p class="font-title text-xl m-color-dark">🎯 ${escapeForTemplate(wheel.wheelQuestion)}</p>
           </div>
           
           <!-- Wheel Display -->
@@ -4163,32 +4154,32 @@ function renderSpinTheWheelPage(wheel: SpinTheWheelContent, starIndex: number, m
           
           <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105 mb-6" 
                   id="spinBtn_${starIndex}"
-                  style="background-color: var(--primary); color: white;"
+                  class="m-btn-primary"
                   onclick="window.spinWheel('${starIndex}', ${wheel.segments.length})">
             🎡 SPIN THE WHEEL!
           </button>
           
           <!-- Segment Options -->
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Or tap to choose:</p>
+          <p class="font-title text-lg text-center mb-3 m-color-dark">Or tap to choose:</p>
           <div class="grid grid-cols-2 gap-3 mb-6">
             ${segmentsHtml}
           </div>
           
           <!-- Result Display -->
-          <div class="p-4 rounded-xl text-center mb-4" id="wheelResult_${starIndex}" style="display: none; background-color: var(--light-green);">
+          <div class="p-4 rounded-xl text-center mb-4" id="wheelResult_${starIndex}" class="m-feedback-hidden-green">
             <p class="text-4xl mb-2" id="wheelResultEmoji_${starIndex}"></p>
             <p class="font-body text-lg" id="wheelResultText_${starIndex}"></p>
           </div>
           
           <!-- Celebration -->
-          <div class="p-6 rounded-2xl text-center" id="wheelCelebration_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="wheelCelebration_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🎉</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(wheel.celebrationMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(wheel.celebrationMessage)}</p>
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="wheelComplete_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I spun the wheel! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="wheelComplete_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I spun the wheel! ⭐</label>
           </div>
         </div>
       </div>
@@ -4201,37 +4192,37 @@ function renderStickerCollectorPage(sticker: StickerCollectorContent, starIndex:
   const challengesHtml = sticker.challenges.map(ch => `
     <div class="sticker-challenge p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105"
          id="challenge_${starIndex}_${ch.id}"
-         style="background-color: white; border-color: var(--secondary);"
+         class="m-card-bordered"
          onclick="window.collectSticker('${starIndex}', '${ch.id}', '${ch.emoji}', ${sticker.challenges.length})">
       <div class="flex items-center gap-3">
         <span class="text-4xl sticker-emoji" id="stickerEmoji_${starIndex}_${ch.id}">${ch.emoji}</span>
         <div>
-          <h3 class="font-title" style="color: var(--dark);">${escapeForTemplate(ch.title)}</h3>
-          <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(ch.description)}</p>
+          <h3 class="font-title m-color-dark">${escapeForTemplate(ch.title)}</h3>
+          <p class="font-body text-sm m-color-secondary">${escapeForTemplate(ch.description)}</p>
         </div>
       </div>
       <div class="collect-btn mt-2 text-center">
-        <span class="font-body text-sm px-4 py-1 rounded-full" style="background-color: var(--soft-yellow);">Tap to collect!</span>
+        <span class="font-body text-sm px-4 py-1 rounded-full m-bg-soft-yellow">Tap to collect!</span>
       </div>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sticker-collector" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="sticker-collector" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(sticker.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(sticker.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body" style="color: var(--dark);">${escapeForTemplate(sticker.storyText)}</p>
-          <p class="text-center mb-6 font-body" style="color: var(--secondary);">${escapeForTemplate(sticker.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body m-color-dark">${escapeForTemplate(sticker.storyText)}</p>
+          <p class="text-center mb-6 font-body m-color-secondary">${escapeForTemplate(sticker.instructions)}</p>
           
           <!-- Sticker Collection Display -->
-          <div class="mb-6 p-4 rounded-xl text-center" style="background-color: var(--soft-yellow);">
-            <p class="font-title mb-2" style="color: var(--dark);">Your Sticker Collection:</p>
+          <div class="mb-6 p-4 rounded-xl text-center m-bg-soft-yellow">
+            <p class="font-title mb-2 m-color-dark">Your Sticker Collection:</p>
             <div class="flex justify-center gap-2 flex-wrap min-h-12" id="stickerCollection_${starIndex}">
-              <span class="font-body text-sm" style="color: var(--secondary);">Tap challenges to collect stickers!</span>
+              <span class="font-body text-sm m-color-secondary">Tap challenges to collect stickers!</span>
             </div>
-            <p class="font-title mt-2" style="color: var(--primary);"><span id="stickerCount_${starIndex}">0</span> / ${sticker.totalStickers}</p>
+            <p class="font-title mt-2 m-color-primary"><span id="stickerCount_${starIndex}">0</span> / ${sticker.totalStickers}</p>
           </div>
           
           <!-- Challenges Grid -->
@@ -4240,14 +4231,14 @@ function renderStickerCollectorPage(sticker: StickerCollectorContent, starIndex:
           </div>
           
           <!-- Completion Message -->
-          <div class="p-6 rounded-2xl text-center" id="stickerComplete_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="stickerComplete_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🏆</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(sticker.completionMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(sticker.completionMessage)}</p>
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="stickerDone_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I collected all stickers! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="stickerDone_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">I collected all stickers! ⭐</label>
           </div>
         </div>
       </div>
@@ -4264,49 +4255,48 @@ function renderMindfulAdventurePage(adventure: MindfulAdventureContent, starInde
   const scenesHtml = adventure.scenes.map((scene, idx) => `
     <div class="adventure-scene p-4 rounded-2xl border-2 mb-4" 
          id="scene_${starIndex}_${scene.id}"
-         style="background-color: white; border-color: var(--secondary);">
+         class="m-card-bordered">
       <div class="flex items-center gap-3 mb-3">
         <span class="text-4xl">${scene.emoji}</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(scene.sceneName)}</h3>
+        <h3 class="font-title text-lg m-color-dark">${escapeForTemplate(scene.sceneName)}</h3>
       </div>
-      <p class="font-body mb-3" style="color: var(--dark);">${escapeForTemplate(scene.description)}</p>
-      <div class="p-3 rounded-lg mb-3" style="background-color: var(--soft-yellow);">
-        <p class="font-body text-sm" style="color: var(--dark);">🧘 ${escapeForTemplate(scene.mindfulPrompt)}</p>
+      <p class="font-body mb-3 m-color-dark">${escapeForTemplate(scene.description)}</p>
+      <div class="p-3 rounded-lg mb-3 m-bg-soft-yellow">
+        <p class="font-body text-sm m-color-dark">🧘 ${escapeForTemplate(scene.mindfulPrompt)}</p>
       </div>
-      <textarea class="w-full p-2 rounded-lg border-2 font-body text-sm" 
-                style="border-color: var(--primary); min-height: 60px;" 
+      <textarea class="w-full p-2 rounded-lg border-2 font-body text-sm m-input-bordered-primary" 
                 placeholder="${escapeForTemplate(scene.placeholder)}"
                 onchange="saveFormData('adventure_${starIndex}_${scene.id}', this.value); window.checkAdventureComplete('${starIndex}', ${adventure.scenes.length})"></textarea>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="mindful-adventure" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="mindful-adventure" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(adventure.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(adventure.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center" style="color: var(--dark);">${escapeForTemplate(adventure.introText)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center m-color-dark">${escapeForTemplate(adventure.introText)}</p>
           </div>
           
           <!-- Progress -->
-          <div class="mb-6 p-3 rounded-xl text-center" style="background-color: var(--cream);">
-            <p class="font-title" style="color: var(--dark);">Scenes Explored: <span id="adventureProgress_${starIndex}">0</span> / ${adventure.scenes.length}</p>
+          <div class="mb-6 p-3 rounded-xl text-center m-bg-cream">
+            <p class="font-title m-color-dark">Scenes Explored: <span id="adventureProgress_${starIndex}">0</span> / ${adventure.scenes.length}</p>
           </div>
           
           <!-- Scenes -->
           ${scenesHtml}
           
           <!-- Closing Message -->
-          <div class="p-6 rounded-2xl text-center" id="adventureClosing_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="adventureClosing_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🌟</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(adventure.closingMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(adventure.closingMessage)}</p>
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="adventureDone_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">Adventure complete! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="adventureDone_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">Adventure complete! ⭐</label>
           </div>
         </div>
       </div>
@@ -4317,64 +4307,63 @@ function renderEmotionDetectivePage(detective: EmotionDetectiveContent, starInde
   const activityId = `detective_${starIndex}`;
   
   const cluesHtml = detective.clues.map(clue => `
-    <div class="clue-card p-3 rounded-xl border-2" style="background-color: white; border-color: var(--secondary);">
+    <div class="clue-card p-3 rounded-xl border-2 m-card-bordered">
       <div class="flex items-center gap-2">
         <span class="text-2xl">${clue.clueEmoji}</span>
-        <p class="font-body" style="color: var(--dark);">${escapeForTemplate(clue.clueText)}</p>
+        <p class="font-body m-color-dark">${escapeForTemplate(clue.clueText)}</p>
       </div>
     </div>
   `).join("");
   
   const optionsHtml = detective.emotionOptions.map((opt, idx) => `
-    <button class="detective-option p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-105 flex items-center gap-3"
-            style="background-color: white; border-color: var(--secondary);"
+    <button class="detective-option p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-105 flex items-center gap-3 m-card-bordered"
             data-correct="${opt.isCorrect}"
             data-explanation="${escapeForTemplate(opt.explanation)}"
             onclick="window.solveCase('${starIndex}', ${idx}, ${opt.isCorrect}, '${escapeForOnclick(opt.explanation)}')">
       <span class="text-3xl">${opt.emoji}</span>
-      <span class="font-title" style="color: var(--dark);">${escapeForTemplate(opt.emotion)}</span>
+      <span class="font-title m-color-dark">${escapeForTemplate(opt.emotion)}</span>
     </button>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emotion-detective" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="emotion-detective" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">${escapeForTemplate(detective.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(detective.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
           <div class="flex items-center gap-3 mb-4">
             <span class="text-5xl">🔍</span>
-            <p class="text-lg font-body" style="color: var(--dark);">${escapeForTemplate(detective.caseDescription)}</p>
+            <p class="text-lg font-body m-color-dark">${escapeForTemplate(detective.caseDescription)}</p>
           </div>
           
-          <p class="text-center mb-6 font-body" style="color: var(--secondary);">${escapeForTemplate(detective.instructions)}</p>
+          <p class="text-center mb-6 font-body m-color-secondary">${escapeForTemplate(detective.instructions)}</p>
           
           <!-- Clues -->
-          <p class="font-title text-lg mb-3" style="color: var(--dark);">🔎 The Clues:</p>
+          <p class="font-title text-lg mb-3 m-color-dark">🔎 The Clues:</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
             ${cluesHtml}
           </div>
           
           <!-- Emotion Options -->
-          <p class="font-title text-lg mb-3" style="color: var(--dark);">🎯 What emotion is this person feeling?</p>
+          <p class="font-title text-lg mb-3 m-color-dark">🎯 What emotion is this person feeling?</p>
           <div class="grid grid-cols-2 gap-3 mb-6">
             ${optionsHtml}
           </div>
           
           <!-- Feedback -->
-          <div class="p-4 rounded-xl text-center mb-4" id="detectiveFeedback_${starIndex}" style="display: none;">
+          <div class="p-4 rounded-xl text-center mb-4" id="detectiveFeedback_${starIndex}" class="m-hidden">
             <p class="font-body text-lg" id="detectiveFeedbackText_${starIndex}"></p>
           </div>
           
           <!-- Revelation -->
-          <div class="p-6 rounded-2xl text-center" id="detectiveReveal_${starIndex}" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="p-6 rounded-2xl text-center" id="detectiveReveal_${starIndex}" class="m-feedback-hidden">
             <p class="text-5xl mb-2">🎉</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">${escapeForTemplate(detective.revelationMessage)}</p>
+            <p class="font-title text-2xl m-color-dark">${escapeForTemplate(detective.revelationMessage)}</p>
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="detectiveDone_${starIndex}">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
-            <label class="font-title text-xl" style="color: var(--dark);">Case solved! ⭐</label>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="detectiveDone_${starIndex}">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="${activityId}" onchange="markActivityComplete('${activityId}')" >
+            <label class="font-title text-xl m-color-dark">Case solved! ⭐</label>
           </div>
         </div>
       </div>
@@ -4402,14 +4391,14 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="matching-activity">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="matching-activity">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(matching.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(matching.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(matching.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(matching.instructions)}</p>
           <div class="matching-activity" data-activity-id="${activityId}">
-            <div class="matching-board rounded-2xl p-4" style="background-color: var(--soft-yellow);">
+            <div class="matching-board rounded-2xl p-4 m-bg-soft-yellow">
               <svg class="matching-lines" aria-hidden="true"></svg>
               <div class="matching-columns">
                 <div class="matching-column match-column-left">
@@ -4420,19 +4409,18 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
                 </div>
               </div>
             </div>
-            <p class="matching-status mt-4 font-body text-center" style="color: var(--secondary);">Tap a left item, then a right item to draw a line.</p>
+            <p class="matching-status mt-4 font-body text-center m-color-secondary">Tap a left item, then a right item to draw a line.</p>
           </div>
           
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I matched the feelings! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I matched the feelings! ⭐</label>
           </div>
         </div>
       </div>
@@ -4443,7 +4431,7 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
 
 function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): string {
   const takeawaysHtml = summary.takeaways.map(t => `
-    <li class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(t)}</li>`).join('');
+    <li class="font-body text-lg m-color-dark">${escapeForTemplate(t)}</li>`).join('');
 
   return `
     <div class="page min-h-screen p-8" style="background: linear-gradient(135deg, #fef9e7, #edf7f2);" data-page="summary">
@@ -4451,35 +4439,35 @@ function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): s
         <div class="rounded-3xl shadow-2xl p-8 md:p-10 border-4" style="background-color: white; border-color: #e6c777;">
           <div class="text-center mb-6">
             <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF ACHIEVEMENT</p>
-            <h1 class="text-3xl md:text-4xl mt-2 font-title" style="color: var(--dark);">${escapeForTemplate(summary.heading)}</h1>
-            <p class="font-body text-lg mt-2" style="color: var(--secondary);">Awarded to <strong id="childNameDisplay">Friend</strong></p>
+            <h1 class="text-3xl md:text-4xl mt-2 font-title m-color-dark">${escapeForTemplate(summary.heading)}</h1>
+            <p class="font-body text-lg mt-2 m-color-secondary">Awarded to <strong id="childNameDisplay">Friend</strong></p>
           </div>
 
           <div class="p-5 rounded-2xl mb-6" style="background-color: var(--cream); border: 2px dashed var(--primary);">
-            <p class="font-title text-xl mb-2" style="color: var(--dark);">Sub-skill focus</p>
-            <p class="font-body text-lg" style="color: var(--dark);">In this module, you practiced <strong>${escapeForTemplate(metadata.theme)}</strong> by spotting feelings, choosing calming actions, and using kind self-talk in tricky moments.</p>
+            <p class="font-title text-xl mb-2 m-color-dark">Sub-skill focus</p>
+            <p class="font-body text-lg m-color-dark">In this module, you practiced <strong>${escapeForTemplate(metadata.theme)}</strong> by spotting feelings, choosing calming actions, and using kind self-talk in tricky moments.</p>
           </div>
 
           <div class="mb-6">
-            <p class="font-title text-xl mb-2" style="color: var(--dark);">What you learned</p>
+            <p class="font-title text-xl mb-2 m-color-dark">What you learned</p>
             <ul class="list-disc pl-6 space-y-2">${takeawaysHtml}</ul>
           </div>
 
           <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-4" style="border-top: 2px solid #f2e1a8;">
             <div>
-              <p class="font-body text-sm" style="color: var(--secondary);">Completed on</p>
-              <p class="font-title text-2xl" id="certificateDate" style="color: var(--dark);"></p>
+              <p class="font-body text-sm m-color-secondary">Completed on</p>
+              <p class="font-title text-2xl" id="certificateDate" class="m-color-dark"></p>
             </div>
             <div class="text-right">
-              <p class="font-body text-sm" style="color: var(--secondary);">Guide</p>
-              <p class="font-title text-xl" style="color: var(--dark);">${escapeForTemplate(metadata.characterName)} ${escapeForTemplate(metadata.characterEmoji)}</p>
+              <p class="font-body text-sm m-color-secondary">Guide</p>
+              <p class="font-title text-xl m-color-dark">${escapeForTemplate(metadata.characterName)} ${escapeForTemplate(metadata.characterEmoji)}</p>
             </div>
           </div>
         </div>
 
-        <div class="rounded-xl p-6 flex items-center gap-4 mt-6" style="background-color: var(--soft-yellow);">
+        <div class="rounded-xl p-6 flex items-center gap-4 mt-6 m-bg-soft-yellow">
           <span class="text-5xl">${escapeForTemplate(metadata.characterEmoji)}</span>
-          <p class="font-body text-lg font-semibold" style="color: var(--dark);">${escapeForTemplate(summary.encouragement)}</p>
+          <p class="font-body text-lg font-semibold m-color-dark">${escapeForTemplate(summary.encouragement)}</p>
         </div>
       </div>
     </div>`;
@@ -4490,11 +4478,11 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
     <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
       <div class="text-center max-w-2xl">
         <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
-        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(completion.heading)}</h1>
+        <h1 class="text-4xl md:text-5xl mb-6 font-title m-color-dark">${escapeForTemplate(completion.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
-          <p class="text-xl mb-4 font-body" style="color: var(--dark);">${escapeForTemplate(completion.celebrationText)}</p>
-          <p class="text-lg font-body" style="color: var(--secondary);">${escapeForTemplate(completion.nextStepsText)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-8 m-bg-white">
+          <p class="text-xl mb-4 font-body m-color-dark">${escapeForTemplate(completion.celebrationText)}</p>
+          <p class="text-lg font-body m-color-secondary">${escapeForTemplate(completion.nextStepsText)}</p>
         </div>
         
         <div class="flex flex-col gap-4">
@@ -4517,7 +4505,7 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
         
         <div class="mt-8 flex items-center justify-center gap-2">
           <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
-          <p class="font-body text-lg" style="color: var(--dark);">
+          <p class="font-body text-lg m-color-dark">
             ${escapeForTemplate(metadata.characterName)} is proud of you!
           </p>
         </div>
@@ -4567,11 +4555,11 @@ function renderAdminVerificationPage(report: VerificationReport | undefined, mod
 
   const flaggedItems = r.flaggedIssues.length > 0
     ? r.flaggedIssues.map(f => `<li style="margin-bottom: 4px; color: #DC2626;">${escapeForTemplate(f)}</li>`).join("")
-    : '<li style="color: #10B981;">No issues flagged</li>';
+    : '<li class="m-color-success">No issues flagged</li>';
 
   const unselectedItems = r.unselectedConceptsIntroduced.length > 0
     ? r.unselectedConceptsIntroduced.map(c => `<li style="margin-bottom: 4px; color: #F59E0B;">${escapeForTemplate(c)}</li>`).join("")
-    : '<li style="color: #10B981;">None - all concepts were specified</li>';
+    : '<li class="m-color-success">None - all concepts were specified</li>';
 
   return `
     <div class="page min-h-screen p-8" style="background-color: #1a1a2e;" data-page="admin-verification" data-admin-only="true">
@@ -4597,14 +4585,14 @@ function renderAdminVerificationPage(report: VerificationReport | undefined, mod
 
         <!-- Theories Used -->
         <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
+          <h3 class="m-grownup-title--lg">
             📚 Theories Used & Where Operationalised
           </h3>
           <table style="width: 100%; border-collapse: collapse; font-family: 'Nunito', sans-serif; font-size: 14px;">
             <thead>
               <tr style="background: #f3f4f6;">
-                <th style="padding: 8px 12px; text-align: left; font-weight: 700;">Theory</th>
-                <th style="padding: 8px 12px; text-align: left; font-weight: 700;">Where Operationalised</th>
+                <th class="m-table-header">Theory</th>
+                <th class="m-table-header">Where Operationalised</th>
               </tr>
             </thead>
             <tbody>${theoriesRows}</tbody>
@@ -4612,44 +4600,44 @@ function renderAdminVerificationPage(report: VerificationReport | undefined, mod
         </div>
 
         <!-- Alignment Checks -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🎯 Age Range Alignment</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.ageRangeTheoriesApplied)}</p>
+        <div class="m-grid-2col">
+          <div class="m-option-card">
+            <h4 class="m-grownup-title">🎯 Age Range Alignment</h4>
+            <p class="m-grownup-body">${escapeForTemplate(r.ageRangeTheoriesApplied)}</p>
           </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🧩 Sub-Skill Alignment</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.subSkillAlignment)}</p>
+          <div class="m-option-card">
+            <h4 class="m-grownup-title">🧩 Sub-Skill Alignment</h4>
+            <p class="m-grownup-body">${escapeForTemplate(r.subSkillAlignment)}</p>
           </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🏆 Super Skill Alignment</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.superSkillAlignment)}</p>
+          <div class="m-option-card">
+            <h4 class="m-grownup-title">🏆 Super Skill Alignment</h4>
+            <p class="m-grownup-body">${escapeForTemplate(r.superSkillAlignment)}</p>
           </div>
         </div>
 
         <!-- Tone & Language -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🗣️ Tone Compliance</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.toneComplianceNotes)}</p>
+        <div class="m-grid-2col">
+          <div class="m-option-card">
+            <h4 class="m-grownup-title">🗣️ Tone Compliance</h4>
+            <p class="m-grownup-body">${escapeForTemplate(r.toneComplianceNotes)}</p>
           </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🇦🇺 Australian English Check</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.australianEnglishCheck)}</p>
+          <div class="m-option-card">
+            <h4 class="m-grownup-title">🇦🇺 Australian English Check</h4>
+            <p class="m-grownup-body">${escapeForTemplate(r.australianEnglishCheck)}</p>
           </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">📋 Claim Types</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">${escapeForTemplate(r.claimTypes)}</p>
+          <div class="m-option-card">
+            <h4 class="m-grownup-title">📋 Claim Types</h4>
+            <p class="m-grownup-body">${escapeForTemplate(r.claimTypes)}</p>
           </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">⚠️ Unselected Concepts</h4>
+          <div class="m-option-card">
+            <h4 class="m-grownup-title">⚠️ Unselected Concepts</h4>
             <ul style="font-family: 'Nunito', sans-serif; font-size: 13px; margin: 0; padding-left: 20px;">${unselectedItems}</ul>
           </div>
         </div>
 
         <!-- Flagged Issues -->
         <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 6px solid ${r.flaggedIssues.length > 0 ? '#EF4444' : '#10B981'};">
-          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
+          <h3 class="m-grownup-title--lg">
             🚩 Flagged Issues
           </h3>
           <ul style="font-family: 'Nunito', sans-serif; font-size: 14px; margin: 0; padding-left: 20px;">${flaggedItems}</ul>
@@ -4657,7 +4645,7 @@ function renderAdminVerificationPage(report: VerificationReport | undefined, mod
 
         <!-- Module Summary (for next week) -->
         <div style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 2px solid #10B981;">
-          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
+          <h3 class="m-grownup-title--lg">
             📝 Module Summary (for next week's continuity)
           </h3>
           <p style="font-family: 'Nunito', sans-serif; font-size: 14px; color: #374151; margin-bottom: 12px;">
@@ -4665,17 +4653,17 @@ function renderAdminVerificationPage(report: VerificationReport | undefined, mod
           </p>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div>
-              <strong style="font-size: 13px; color: #1a1a2e;">Key Concepts:</strong>
-              <p style="font-size: 13px; color: #374151;">${ms.keyConceptsCovered.map(c => escapeForTemplate(c)).join(", ") || "None listed"}</p>
+              <strong class="m-grownup-body--heading">Key Concepts:</strong>
+              <p class="m-grownup-body--sm">${ms.keyConceptsCovered.map(c => escapeForTemplate(c)).join(", ") || "None listed"}</p>
             </div>
             <div>
-              <strong style="font-size: 13px; color: #1a1a2e;">Skills Introduced:</strong>
-              <p style="font-size: 13px; color: #374151;">${ms.skillsIntroduced.map(s => escapeForTemplate(s)).join(", ") || "None listed"}</p>
+              <strong class="m-grownup-body--heading">Skills Introduced:</strong>
+              <p class="m-grownup-body--sm">${ms.skillsIntroduced.map(s => escapeForTemplate(s)).join(", ") || "None listed"}</p>
             </div>
           </div>
           <div style="margin-top: 8px;">
-            <strong style="font-size: 13px; color: #1a1a2e;">Character Progression:</strong>
-            <p style="font-size: 13px; color: #374151;">${escapeForTemplate(ms.characterProgressionNotes)}</p>
+            <strong class="m-grownup-body--heading">Character Progression:</strong>
+            <p class="m-grownup-body--sm">${escapeForTemplate(ms.characterProgressionNotes)}</p>
           </div>
         </div>
       </div>
@@ -4713,7 +4701,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
       
       interactionHtml = `
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.interactionPrompt)}</p>
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">${escapeForTemplate(lesson.interactionPrompt)}</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             ${indexedOptions.map((opt, i) => `
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
@@ -4725,7 +4713,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
               </button>
             `).join("")}
           </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
         </div>`;
       break;
     }
@@ -4745,7 +4733,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
       
       interactionHtml = `
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body leading-relaxed" style="color: var(--dark);">${promptWithInputs}</p>
+          <p class="text-lg mb-4 font-body leading-relaxed m-color-dark">${promptWithInputs}</p>
         </div>`;
       break;
     }
@@ -4753,17 +4741,16 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
     case "rate-scale":
       interactionHtml = `
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.interactionPrompt)}</p>
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">${escapeForTemplate(lesson.interactionPrompt)}</p>
           <div class="flex justify-between gap-2 mb-4">
             ${[1,2,3,4,5].map(n => `
-              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); color: var(--dark);"
+              <button class="interactive-option w-14 h-14 rounded-full border-2 font-title text-xl flex items-center justify-center cursor-pointer transition-all m-border-secondary m-color-dark"
                       onclick="this.parentElement.querySelectorAll('.interactive-option').forEach(b => b.classList.remove('option-selected')); this.classList.add('option-selected'); saveFormData('rate_${starIndex}', '${n}'); const page = this.closest('.page'); const ff = page.querySelector('.followup-feedback'); if(ff) ff.style.display = 'block'; const mf = page.querySelector('.mascot-feedback'); if(mf) mf.style.display = 'flex'; const cb = page.querySelector('[data-activity]'); if(cb) cb.disabled = false;">
                 ${n}
               </button>
             `).join("")}
           </div>
-          <div class="flex justify-between text-sm font-body" style="color: var(--secondary);">
+          <div class="flex justify-between text-sm font-body m-color-secondary">
             <span>Not at all</span>
             <span>Very much!</span>
           </div>
@@ -4777,12 +4764,11 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
       const correctIdx = lesson.correctAnswerIndex ?? 1; // Default to "I Disagree" for myth-busting statements if not specified
       interactionHtml = `
         <div class="interactive-group">
-          <div class="rounded-2xl p-6 mb-4" style="background-color: var(--soft-yellow);">
-            <p class="text-xl font-body font-semibold text-center" style="color: var(--dark);">"${escapeForTemplate(lesson.interactionPrompt)}"</p>
+          <div class="rounded-2xl p-6 mb-4 m-bg-soft-yellow">
+            <p class="text-xl font-body font-semibold text-center m-color-dark">"${escapeForTemplate(lesson.interactionPrompt)}"</p>
           </div>
           <div class="flex gap-4 justify-center">
-            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all" 
-                    style="border-color: var(--secondary); color: var(--dark);"
+            <button class="interactive-option px-8 py-4 rounded-xl border-2 font-title text-xl cursor-pointer transition-all m-border-secondary m-color-dark"
                     data-correct="${hasCorrectAnswer ? (0 === correctIdx ? 'true' : 'false') : 'opinion'}"
                     data-index="0"
                     onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${correctIdx})">
@@ -4796,43 +4782,42 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
               I Disagree
             </button>
           </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
         </div>`;
       break;
     }
   }
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(lesson.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(lesson.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">${escapeForTemplate(lesson.introText)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 leading-relaxed font-body m-color-dark">${escapeForTemplate(lesson.introText)}</p>
           
           ${interactionHtml}
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">${escapeForTemplate(lesson.followUpText)}</p>
+            <p class="font-body m-color-dark">${escapeForTemplate(lesson.followUpText)}</p>
           </div>
         </div>
         
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
           <span class="text-3xl">${escapeForTemplate(metadata.characterEmoji)}</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(lesson.mascotComment)}</p>
+          <p class="font-body font-semibold m-color-dark">${escapeForTemplate(lesson.mascotComment)}</p>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-soft-yellow">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             disabled
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+          <label class="font-title text-xl m-color-dark">I participated!</label>
         </div>
       </div>
     </div>`;
@@ -4853,33 +4838,32 @@ function renderFillInStoryPage(story: FillInStoryContent, starIndex: number, met
   });
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="fill-in-story">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="fill-in-story">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(story.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(story.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(story.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(story.instructions)}</p>
           
-          <div class="p-6 rounded-2xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="text-xl leading-loose font-body" style="color: var(--dark);">${storyHtml}</p>
+          <div class="p-6 rounded-2xl mb-6 m-bg-soft-yellow">
+            <p class="text-xl leading-loose font-body m-color-dark">${storyHtml}</p>
           </div>
           
-          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">${escapeForTemplate(story.reflection)}</p>
+          <div class="p-4 rounded-xl m-bg-cream">
+            <p class="font-body font-semibold mb-3 m-color-dark">${escapeForTemplate(story.reflection)}</p>
             <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 80px;" placeholder="Write your thoughts..." onchange="saveFormData('story_reflection_${starIndex}', this.value)"></textarea>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I completed my story!</label>
+          <label class="font-title text-xl m-color-dark">I completed my story!</label>
         </div>
       </div>
     </div>`;
@@ -4890,7 +4874,7 @@ function renderCopingCardsPage(cards: CopingCardsContent, starIndex: number): st
   
   const categoriesHtml = cards.categories.map(cat => `
     <div class="rounded-xl p-4 mb-4" style="background-color: ${cat.color};">
-      <h3 class="font-title text-lg mb-3" style="color: var(--dark);">${cat.emoji} ${escapeForTemplate(cat.name)}</h3>
+      <h3 class="font-title text-lg mb-3 m-color-dark">${cat.emoji} ${escapeForTemplate(cat.name)}</h3>
       <div class="flex flex-wrap gap-2">
         ${cat.strategies.map(strat => `
           <button class="coping-strategy px-3 py-2 rounded-lg font-body text-sm cursor-pointer transition-all" 
@@ -4904,31 +4888,30 @@ function renderCopingCardsPage(cards: CopingCardsContent, starIndex: number): st
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="coping-cards">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="coping-cards">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(cards.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(cards.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(cards.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(cards.instructions)}</p>
           
           ${categoriesHtml}
           
-          <div class="mt-6 p-4 rounded-xl" style="background-color: var(--soft-yellow);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">${escapeForTemplate(cards.personalCardPrompt)}</p>
-            <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary);" placeholder="My personal coping strategy..." onchange="saveFormData('coping_personal_${starIndex}', this.value)">
+          <div class="mt-6 p-4 rounded-xl m-bg-soft-yellow">
+            <p class="font-body font-semibold mb-3 m-color-dark">${escapeForTemplate(cards.personalCardPrompt)}</p>
+            <input type="text" class="w-full p-3 rounded-lg border-2 font-body m-border-primary" placeholder="My personal coping strategy..." onchange="saveFormData('coping_personal_${starIndex}', this.value)">
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I built my coping cards!</label>
+          <label class="font-title text-xl m-color-dark">I built my coping cards!</label>
         </div>
       </div>
     </div>`;
@@ -4969,32 +4952,31 @@ function renderGratitudeJarPage(jar: GratitudeJarContent, starIndex: number): st
   }).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="gratitude-jar">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="gratitude-jar">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(jar.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(jar.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(jar.introText)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(jar.introText)}</p>
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 28px; justify-items: center;">
             ${promptsHtml}
           </div>
           
-          <div class="mt-6 p-4 rounded-xl text-center" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(jar.encouragement)}</p>
+          <div class="mt-6 p-4 rounded-xl text-center m-bg-light-green">
+            <p class="font-body font-semibold m-color-dark">${escapeForTemplate(jar.encouragement)}</p>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I filled my gratitude jar!</label>
+          <label class="font-title text-xl m-color-dark">I filled my gratitude jar!</label>
         </div>
       </div>
     </div>`;
@@ -5005,7 +4987,7 @@ function renderSortingActivityPage(sorting: SortingActivityContent, starIndex: n
   
   const categoriesHtml = sorting.categories.map((cat, ci) => `
     <div class="sort-category rounded-xl p-4 min-h-[150px] border-3 cursor-pointer" style="background-color: ${cat.color}; border-color: var(--dark);" data-category="${escapeForTemplate(cat.name)}" data-category-index="${ci}" onclick="sortSelectedItem(this, '${escapeForTemplate(cat.name)}', ${starIndex})">
-      <h3 class="font-title text-lg mb-3 text-center" style="color: var(--dark);">${cat.emoji} ${escapeForTemplate(cat.name)}</h3>
+      <h3 class="font-title text-lg mb-3 text-center m-color-dark">${cat.emoji} ${escapeForTemplate(cat.name)}</h3>
       <div class="dropped-items space-y-2"></div>
     </div>
   `).join("");
@@ -5017,35 +4999,34 @@ function renderSortingActivityPage(sorting: SortingActivityContent, starIndex: n
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="sorting-activity">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="sorting-activity">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(sorting.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(sorting.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(sorting.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(sorting.instructions)}</p>
           
           <div class="grid md:grid-cols-2 gap-4 mb-6">
             ${categoriesHtml}
           </div>
           
-          <div class="sort-items-container p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">Items to sort (tap item, then tap a category):</p>
+          <div class="sort-items-container p-4 rounded-xl m-bg-cream">
+            <p class="font-body font-semibold mb-3 m-color-dark">Items to sort (tap item, then tap a category):</p>
             <div class="sort-items-list space-y-2">
               ${itemsHtml}
             </div>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I sorted everything!</label>
+          <label class="font-title text-xl m-color-dark">I sorted everything!</label>
         </div>
       </div>
     </div>`;
@@ -5055,46 +5036,45 @@ function renderThoughtBubblesPage(thought: ThoughtBubblesContent, starIndex: num
   const activityId = `thought_${starIndex}`;
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="thought-bubbles">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="thought-bubbles">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(thought.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(thought.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-lg" style="color: var(--dark);"><strong>Scenario:</strong> ${escapeForTemplate(thought.scenario)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-lg m-color-dark"><strong>Scenario:</strong> ${escapeForTemplate(thought.scenario)}</p>
           </div>
           
           <div class="flex items-start gap-4 mb-6">
             <span class="text-5xl">${thought.characterEmoji}</span>
             <div class="flex-1 p-4 rounded-2xl relative" style="background-color: #fecaca; border: 2px solid var(--accent);">
-              <p class="font-body text-lg" style="color: var(--dark);"><strong>Unhelpful thought:</strong> "${escapeForTemplate(thought.unhelpfulThought)}"</p>
+              <p class="font-body text-lg m-color-dark"><strong>Unhelpful thought:</strong> "${escapeForTemplate(thought.unhelpfulThought)}"</p>
             </div>
           </div>
           
-          <div class="p-4 rounded-xl mb-4" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold mb-3" style="color: var(--dark);">${escapeForTemplate(thought.helpfulPrompt)}</p>
+          <div class="p-4 rounded-xl mb-4 m-bg-light-green">
+            <p class="font-body font-semibold mb-3 m-color-dark">${escapeForTemplate(thought.helpfulPrompt)}</p>
             <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 80px;" placeholder="Write a helpful thought..." onchange="saveFormData('helpful_thought_${starIndex}', this.value)"></textarea>
           </div>
           
-          <div class="p-3 rounded-lg text-sm" style="background-color: var(--cream);">
-            <p class="font-body" style="color: var(--secondary);"><strong>Example:</strong> "${escapeForTemplate(thought.exampleHelpful)}"</p>
+          <div class="p-3 rounded-lg text-sm m-bg-cream">
+            <p class="font-body m-color-secondary"><strong>Example:</strong> "${escapeForTemplate(thought.exampleHelpful)}"</p>
           </div>
           
-          <div class="mt-6 p-4 rounded-xl" style="background-color: var(--soft-yellow);">
-            <p class="font-body" style="color: var(--dark);">${escapeForTemplate(thought.reflection)}</p>
+          <div class="mt-6 p-4 rounded-xl m-bg-soft-yellow">
+            <p class="font-body m-color-dark">${escapeForTemplate(thought.reflection)}</p>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I challenged my thoughts!</label>
+          <label class="font-title text-xl m-color-dark">I challenged my thoughts!</label>
         </div>
       </div>
     </div>`;
@@ -5106,7 +5086,7 @@ function renderEmojiCheckInPage(checkIn: EmojiCheckInContent, starIndex: number)
   const moodGrid = checkIn.timePoints.map((time, ti) => `
     <div class="text-center">
       <div class="text-2xl mb-2">${time.emoji}</div>
-      <p class="font-title text-sm mb-3" style="color: var(--dark);">${escapeForTemplate(time.label)}</p>
+      <p class="font-title text-sm mb-3 m-color-dark">${escapeForTemplate(time.label)}</p>
       <div class="flex flex-wrap justify-center gap-2">
         ${checkIn.moodOptions.map((mood, mi) => `
           <button class="mood-option w-14 h-14 rounded-full text-2xl flex items-center justify-center cursor-pointer transition-all border-3 hover:scale-125" 
@@ -5125,47 +5105,46 @@ function renderEmojiCheckInPage(checkIn: EmojiCheckInContent, starIndex: number)
           </button>
         `).join("")}
       </div>
-      <p class="mood-selected-label font-body text-xs mt-2 font-semibold" style="color: var(--primary); display: none;"></p>
+      <p class="mood-selected-label font-body text-xs mt-2 font-semibold m-feedback-hidden-primary"></p>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emoji-check-in">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="emoji-check-in">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(checkIn.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(checkIn.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(checkIn.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(checkIn.instructions)}</p>
           
           <div class="grid md:grid-cols-3 gap-6 mb-6">
             ${moodGrid}
           </div>
           
-          <div class="flex flex-wrap justify-center gap-4 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
+          <div class="flex flex-wrap justify-center gap-4 mb-6 p-3 rounded-lg m-bg-cream">
             ${checkIn.moodOptions.map(mood => `
               <div class="flex items-center gap-2">
                 <span class="text-xl">${mood.emoji}</span>
-                <span class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(mood.label)}</span>
+                <span class="font-body text-sm m-color-dark">${escapeForTemplate(mood.label)}</span>
               </div>
             `).join("")}
           </div>
           
-          <div class="p-4 rounded-xl" style="background-color: var(--soft-yellow);">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">${escapeForTemplate(checkIn.patternQuestion)}</p>
-            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 60px;" placeholder="I noticed..." onchange="saveFormData('mood_pattern_${starIndex}', this.value)"></textarea>
+          <div class="p-4 rounded-xl m-bg-soft-yellow">
+            <p class="font-body font-semibold mb-2 m-color-dark">${escapeForTemplate(checkIn.patternQuestion)}</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body m-input-bordered-primary" placeholder="I noticed..." onchange="saveFormData('mood_pattern_${starIndex}', this.value)"></textarea>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I tracked my moods!</label>
+          <label class="font-title text-xl m-color-dark">I tracked my moods!</label>
         </div>
       </div>
     </div>`;
@@ -5175,42 +5154,41 @@ function renderWordScramblePage(scramble: WordScrambleContent, starIndex: number
   const activityId = `scramble_${starIndex}`;
   
   const wordsHtml = scramble.words.map((word, wi) => `
-    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="${word.answer}">
+    <div class="scramble-word p-4 rounded-xl mb-4 m-bg-soft-yellow" data-answer="${word.answer}">
       <div class="flex items-center gap-2 mb-3">
         <span class="text-2xl">${word.emoji}</span>
-        <span class="font-body text-sm" style="color: var(--secondary);">Hint: ${escapeForTemplate(word.hint)}</span>
+        <span class="font-body text-sm m-color-secondary">Hint: ${escapeForTemplate(word.hint)}</span>
       </div>
-      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">${word.scrambled}</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === '${word.answer}'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_${starIndex}_${wi}', this.value);">
+      <p class="font-title text-2xl text-center mb-3 m-color-dark">${word.scrambled}</p>
+      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center m-border-primary" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === '${word.answer}'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_${starIndex}_${wi}', this.value);">
       <p class="word-feedback text-center font-title mt-2"></p>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="word-scramble">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="word-scramble">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(scramble.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(scramble.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(scramble.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(scramble.instructions)}</p>
           
           ${wordsHtml}
           
-          <div class="p-4 rounded-xl text-center" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(scramble.completionMessage)}</p>
+          <div class="p-4 rounded-xl text-center m-bg-light-green">
+            <p class="font-body font-semibold m-color-dark">${escapeForTemplate(scramble.completionMessage)}</p>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I solved all the scrambles!</label>
+          <label class="font-title text-xl m-color-dark">I solved all the scrambles!</label>
         </div>
       </div>
     </div>`;
@@ -5220,11 +5198,10 @@ function renderAgreeDisagreePage(activity: AgreeDisagreeContent, starIndex: numb
   const activityId = `agree_${starIndex}`;
   
   const statementsHtml = activity.statements.map((stmt, si) => `
-    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
-      <p class="font-body text-lg mb-3" style="color: var(--dark);">"${escapeForTemplate(stmt.statement)}"</p>
+    <div class="statement-card p-4 rounded-xl mb-4 m-bg-soft-yellow">
+      <p class="font-body text-lg mb-3 m-color-dark">"${escapeForTemplate(stmt.statement)}"</p>
       <div class="flex gap-3 mb-3">
-        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
+        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2 m-bg-light-green-flat"
                 onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_${starIndex}_${si}', 'agree');">
           I Agree
         </button>
@@ -5235,37 +5212,36 @@ function renderAgreeDisagreePage(activity: AgreeDisagreeContent, starIndex: numb
         </button>
       </div>
       <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
-        <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(stmt.insight)}</p>
+        <p class="font-body text-sm m-color-secondary">${escapeForTemplate(stmt.insight)}</p>
       </div>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="agree-disagree">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="agree-disagree">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(activity.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(activity.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(activity.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(activity.instructions)}</p>
           
           ${statementsHtml}
           
-          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">${escapeForTemplate(activity.reflection)}</p>
-            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 60px;" placeholder="Write your thoughts..." onchange="saveFormData('agree_reflection_${starIndex}', this.value)"></textarea>
+          <div class="p-4 rounded-xl m-bg-cream">
+            <p class="font-body font-semibold mb-2 m-color-dark">${escapeForTemplate(activity.reflection)}</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body m-input-bordered-primary" placeholder="Write your thoughts..." onchange="saveFormData('agree_reflection_${starIndex}', this.value)"></textarea>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I shared my opinions!</label>
+          <label class="font-title text-xl m-color-dark">I shared my opinions!</label>
         </div>
       </div>
     </div>`;
@@ -5277,45 +5253,44 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
   const panelsHtml = comic.panels.map(panel => `
     <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
       <div class="flex items-center gap-2 mb-2">
-        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${panel.panelNumber}</span>
-        <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(panel.prompt)}</p>
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white m-bg-primary">${panel.panelNumber}</span>
+        <p class="font-body text-sm m-color-dark">${escapeForTemplate(panel.prompt)}</p>
       </div>
       <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
         <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" data-drawing-key="comic_canvas_${starIndex}_${panel.panelNumber}" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
       </div>
-      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm" style="border-color: var(--secondary);" placeholder="${escapeForTemplate(panel.placeholder)}" onchange="saveFormData('comic_${starIndex}_${panel.panelNumber}', this.value)">
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm m-border-secondary" placeholder="${escapeForTemplate(panel.placeholder)}" onchange="saveFormData('comic_${starIndex}_${panel.panelNumber}', this.value)">
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="comic-strip">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="comic-strip">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(comic.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(comic.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(comic.scenario)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-lg m-color-dark">${escapeForTemplate(comic.scenario)}</p>
           </div>
           
           <div class="grid md:grid-cols-2 gap-4 mb-6">
             ${panelsHtml}
           </div>
           
-          <div class="p-4 rounded-xl" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold" style="color: var(--dark);">${escapeForTemplate(comic.sharePrompt)}</p>
+          <div class="p-4 rounded-xl m-bg-light-green">
+            <p class="font-body font-semibold m-color-dark">${escapeForTemplate(comic.sharePrompt)}</p>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I created my comic!</label>
+          <label class="font-title text-xl m-color-dark">I created my comic!</label>
         </div>
       </div>
     </div>`;
@@ -5324,59 +5299,58 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
 function renderAffirmationBuilderPage(builder: AffirmationBuilderContent, starIndex: number): string {
   const activityId = `affirm_${starIndex}`;
   
-  const startersHtml = builder.starters.map(s => `<button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--light-green); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(s)}</button>`).join("");
+  const startersHtml = builder.starters.map(s => `<button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1 m-bg-light-green-flat" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(s)}</button>`).join("");
   const middlesHtml = builder.middles.map(m => `<button class="affirmation-part middle px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(m)}</button>`).join("");
   const endingsHtml = builder.endings.map(e => `<button class="affirmation-part ending px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(e)}</button>`).join("");
   const emojisHtml = builder.decorationEmojis.map(e => `<button class="emoji-decoration text-2xl p-1 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '${e} ' + display.textContent + ' ${e}';">${e}</button>`).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="affirmation-builder">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="affirmation-builder">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(builder.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(builder.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6 affirmation-container" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">${escapeForTemplate(builder.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 affirmation-container m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(builder.instructions)}</p>
           
           <div class="mb-4">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 1: Pick a starter</p>
+            <p class="font-body font-semibold mb-2 m-color-dark">Step 1: Pick a starter</p>
             <div class="flex flex-wrap">${startersHtml}</div>
           </div>
           
           <div class="mb-4">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 2: Pick a middle</p>
+            <p class="font-body font-semibold mb-2 m-color-dark">Step 2: Pick a middle</p>
             <div class="flex flex-wrap">${middlesHtml}</div>
           </div>
           
           <div class="mb-4">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 3: Pick an ending</p>
+            <p class="font-body font-semibold mb-2 m-color-dark">Step 3: Pick an ending</p>
             <div class="flex flex-wrap">${endingsHtml}</div>
           </div>
           
           <div class="mb-6">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Decorate with emojis:</p>
+            <p class="font-body font-semibold mb-2 m-color-dark">Decorate with emojis:</p>
             <div class="flex flex-wrap gap-1">${emojisHtml}</div>
           </div>
           
-          <div class="p-6 rounded-2xl text-center mb-4" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="font-body text-sm mb-2" style="color: var(--secondary);">Your affirmation:</p>
-            <p class="affirmation-display font-title text-2xl" style="color: var(--dark);">Tap the words above!</p>
+          <div class="p-6 rounded-2xl text-center mb-4 m-bg-callout-gradient">
+            <p class="font-body text-sm mb-2 m-color-secondary">Your affirmation:</p>
+            <p class="affirmation-display font-title text-2xl m-color-dark">Tap the words above!</p>
           </div>
           
-          <div class="p-4 rounded-xl" style="background-color: var(--soft-yellow);">
-            <p class="font-body" style="color: var(--dark);">${escapeForTemplate(builder.savePrompt)}</p>
+          <div class="p-4 rounded-xl m-bg-soft-yellow">
+            <p class="font-body m-color-dark">${escapeForTemplate(builder.savePrompt)}</p>
           </div>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I built my power phrase!</label>
+          <label class="font-title text-xl m-color-dark">I built my power phrase!</label>
         </div>
       </div>
     </div>`;
@@ -5390,14 +5364,13 @@ function renderWeatherControllerPage(weather: WeatherControllerContent, starInde
   const activityId = `weather_${starIndex}`;
   
   const actionsHtml = weather.calmingActions.map(action => `
-    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            style="background-color: white; border-color: var(--secondary);"
+    <button class="weather-action flex flex-col items-center gap-2 p-4 rounded-2xl border-3 transition-all hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed m-card-bordered"
             data-action-id="${action.id}"
             data-points="${action.points}"
             data-feedback="${escapeForTemplate(action.feedbackText)}"
             onclick="handleWeatherAction(this, '${activityId}', ${action.points})">
       <span class="text-4xl">${action.emoji}</span>
-      <span class="font-title text-lg text-center" style="color: var(--dark);">${escapeForTemplate(action.label)}</span>
+      <span class="font-title text-lg text-center m-color-dark">${escapeForTemplate(action.label)}</span>
     </button>
   `).join("");
 
@@ -5409,12 +5382,12 @@ function renderWeatherControllerPage(weather: WeatherControllerContent, starInde
                         weather.weatherType === "fog" ? "from-gray-300 to-gray-500" : "from-orange-400 to-red-500";
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="weather-controller" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="weather-controller" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(weather.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(weather.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(weather.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body text-center m-color-dark">${escapeForTemplate(weather.instructions)}</p>
           
           <!-- Weather Scene -->
           <div class="weather-scene relative rounded-2xl overflow-hidden mb-6" style="height: 200px; background: linear-gradient(to-b, ${weatherColors});">
@@ -5433,13 +5406,13 @@ function renderWeatherControllerPage(weather: WeatherControllerContent, starInde
           <!-- Calm Meter -->
           <div class="mb-6">
             <div class="flex justify-between mb-2">
-              <span class="font-body text-sm" style="color: var(--accent);">Stormy</span>
-              <span class="font-body text-sm" style="color: var(--secondary);">Calm</span>
+              <span class="font-body text-sm m-color-accent">Stormy</span>
+              <span class="font-body text-sm m-color-secondary">Calm</span>
             </div>
-            <div class="h-8 rounded-full overflow-hidden" style="background-color: var(--soft-yellow);">
+            <div class="h-8 rounded-full overflow-hidden m-bg-soft-yellow">
               <div class="calm-meter h-full rounded-full transition-all duration-500" id="calmMeter" style="width: 0%; background: linear-gradient(to-r, var(--accent), var(--primary), var(--secondary), var(--light-green));"></div>
             </div>
-            <p class="text-center font-title text-2xl mt-2" style="color: var(--primary);"><span id="calmPercent">0</span>% Calm</p>
+            <p class="text-center font-title text-2xl mt-2 m-color-primary"><span id="calmPercent">0</span>% Calm</p>
           </div>
           
           <!-- Action Buttons -->
@@ -5448,28 +5421,27 @@ function renderWeatherControllerPage(weather: WeatherControllerContent, starInde
           </div>
           
           <!-- Feedback Area -->
-          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all" id="weatherFeedback" style="background-color: var(--light-green); display: none;">
-            <p class="font-body text-lg" style="color: var(--dark);" id="feedbackText"></p>
+          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all" id="weatherFeedback" class="m-feedback-hidden-green">
+            <p class="font-body text-lg m-color-dark" id="feedbackText"></p>
           </div>
           
           <!-- Win Message (hidden initially) -->
-          <div class="weather-win p-6 rounded-2xl text-center" id="weatherWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="weather-win p-6 rounded-2xl text-center" id="weatherWin" class="m-feedback-hidden">
             <p class="text-4xl mb-2">☀️</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(weather.winText)}</p>
-            <p class="font-body" style="color: var(--secondary);">${escapeForTemplate(weather.encouragement)}</p>
+            <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(weather.winText)}</p>
+            <p class="font-body m-color-secondary">${escapeForTemplate(weather.encouragement)}</p>
           </div>
           
           <!-- Completion Checkbox (appears after win) -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="weatherComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="weatherComplete">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I calmed the storm! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I calmed the storm! ⭐</label>
           </div>
         </div>
       </div>
@@ -5498,30 +5470,30 @@ function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starInde
             data-name="${escapeForTemplate(pu.name)}"
             onclick="handlePowerUpClick(this, '${activityId}', ${collector.targetCount})">
       <div class="text-4xl mb-2">${pu.emoji}</div>
-      <p class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(pu.name)}</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">${escapeForTemplate(pu.description)}</p>
+      <p class="font-title text-lg m-color-dark">${escapeForTemplate(pu.name)}</p>
+      <p class="font-body text-sm m-color-secondary">${escapeForTemplate(pu.description)}</p>
     </button>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="power-up-collector" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="power-up-collector" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(collector.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(collector.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(collector.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body text-center m-color-dark">${escapeForTemplate(collector.instructions)}</p>
           
           <!-- Collection Progress -->
           <div class="flex justify-center items-center gap-4 mb-6">
-            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl" style="background-color: var(--soft-yellow);">
+            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl m-bg-soft-yellow">
               <span class="text-3xl">🎒</span>
-              <span class="font-title text-2xl" style="color: var(--dark);"><span id="collectedCount">0</span> / ${collector.targetCount}</span>
+              <span class="font-title text-2xl m-color-dark"><span id="collectedCount">0</span> / ${collector.targetCount}</span>
             </div>
           </div>
           
           <!-- Collected Items Display -->
-          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl" style="background-color: var(--cream);" id="collectedDisplay">
-            <p class="font-body text-sm self-center" style="color: var(--secondary);">Your collected power-ups will appear here!</p>
+          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl m-bg-cream" id="collectedDisplay">
+            <p class="font-body text-sm self-center m-color-secondary">Your collected power-ups will appear here!</p>
           </div>
           
           <!-- Power-Up Grid -->
@@ -5530,28 +5502,27 @@ function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starInde
           </div>
           
           <!-- Feedback Area -->
-          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" style="display: none;">
+          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" class="m-hidden">
             <p class="font-body text-lg" id="powerupFeedbackText"></p>
           </div>
           
           <!-- Win Message (hidden initially) -->
-          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" class="m-feedback-hidden">
             <p class="text-4xl mb-2">🎉</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(collector.winText)}</p>
-            <p class="font-body" style="color: var(--secondary);">${escapeForTemplate(collector.tipText)}</p>
+            <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(collector.winText)}</p>
+            <p class="font-body m-color-secondary">${escapeForTemplate(collector.tipText)}</p>
           </div>
           
           <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);" id="powerupComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-light-green" id="powerupComplete">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I collected my power-ups! ⭐</label>
           </div>
         </div>
       </div>
@@ -5575,49 +5546,48 @@ function renderEmotionMazePage(maze: EmotionMazeContent, starIndex: number, meta
   const stepsHtml = maze.pathChoices.map((choice, idx) => `
     <div class="maze-step rounded-2xl p-6 mb-4 transition-all" id="mazeStep${idx}" style="background-color: var(--soft-yellow); display: ${idx === 0 ? 'block' : 'none'};">
       <div class="flex items-center gap-2 mb-3">
-        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white" style="background-color: var(--primary);">${choice.step}</span>
-        <p class="font-body text-lg" style="color: var(--dark);">${escapeForTemplate(choice.situation)}</p>
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white m-bg-primary">${choice.step}</span>
+        <p class="font-body text-lg m-color-dark">${escapeForTemplate(choice.situation)}</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         ${choice.options.map((opt, oi) => `
-          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left"
-                  style="background-color: white; border-color: var(--secondary);"
+          <button class="maze-option p-4 rounded-xl border-2 transition-all hover:scale-102 cursor-pointer text-left m-card-bordered"
                   data-correct="${opt.isCorrect}"
                   data-feedback="${escapeForTemplate(opt.feedback)}"
                   data-step="${idx}"
                   onclick="handleMazeChoice(this, ${idx}, ${maze.pathChoices.length}, '${activityId}')">
             <span class="text-2xl mr-2">${opt.emoji}</span>
-            <span class="font-body" style="color: var(--dark);">${escapeForTemplate(opt.text)}</span>
+            <span class="font-body m-color-dark">${escapeForTemplate(opt.text)}</span>
           </button>
         `).join("")}
       </div>
-      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback${idx}" style="display: none;"></div>
+      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback${idx}" class="m-hidden"></div>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="emotion-maze" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="emotion-maze" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(maze.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(maze.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(maze.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body text-center m-color-dark">${escapeForTemplate(maze.instructions)}</p>
           
           <!-- Journey Progress -->
-          <div class="flex justify-between items-center mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
+          <div class="flex justify-between items-center mb-6 p-4 rounded-xl m-bg-cream">
             <div class="text-center">
               <span class="text-4xl">${maze.startEmotion.emoji}</span>
-              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(maze.startEmotion.name)}</p>
+              <p class="font-body text-sm m-color-dark">${escapeForTemplate(maze.startEmotion.name)}</p>
             </div>
             <div class="flex-1 mx-4 relative">
-              <div class="h-3 rounded-full" style="background-color: var(--soft-yellow);">
+              <div class="h-3 rounded-full m-bg-soft-yellow">
                 <div class="maze-progress h-full rounded-full transition-all duration-500" id="mazeProgress" style="width: 0%; background-color: var(--light-green);"></div>
               </div>
               <div class="maze-marker absolute top-1/2 -translate-y-1/2 text-2xl transition-all duration-500" id="mazeMarker" style="left: 0%;">🚶</div>
             </div>
             <div class="text-center">
               <span class="text-4xl">${maze.goalEmotion.emoji}</span>
-              <p class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(maze.goalEmotion.name)}</p>
+              <p class="font-body text-sm m-color-dark">${escapeForTemplate(maze.goalEmotion.name)}</p>
             </div>
           </div>
           
@@ -5625,22 +5595,21 @@ function renderEmotionMazePage(maze: EmotionMazeContent, starIndex: number, meta
           ${stepsHtml}
           
           <!-- Win Message -->
-          <div class="maze-win p-6 rounded-2xl text-center" id="mazeWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="maze-win p-6 rounded-2xl text-center" id="mazeWin" class="m-feedback-hidden">
             <p class="text-4xl mb-2">${maze.goalEmotion.emoji}</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(maze.completionMessage)}</p>
+            <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(maze.completionMessage)}</p>
           </div>
           
           <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="mazeComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="mazeComplete">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I navigated the maze! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I navigated the maze! ⭐</label>
           </div>
         </div>
       </div>
@@ -5661,11 +5630,10 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
     <div class="shield-section p-4 rounded-xl transition-all" style="background-color: ${['var(--light-green)', 'var(--soft-yellow)', 'var(--primary)', '#a8d8ea'][idx % 4]};">
       <div class="flex items-center gap-2 mb-2">
         <span class="text-2xl">${section.emoji}</span>
-        <h3 class="font-title text-lg" style="color: var(--dark);">${escapeForTemplate(section.title)}</h3>
+        <h3 class="font-title text-lg m-color-dark">${escapeForTemplate(section.title)}</h3>
       </div>
-      <p class="font-body text-sm mb-2" style="color: var(--dark);">${escapeForTemplate(section.prompt)}</p>
-      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body" 
-             style="border-color: var(--secondary); background-color: white;"
+      <p class="font-body text-sm mb-2 m-color-dark">${escapeForTemplate(section.prompt)}</p>
+      <input type="text" class="shield-input w-full p-2 rounded-lg border-2 font-body m-card-bordered"
              placeholder="${escapeForTemplate(section.placeholder)}"
              data-section="${section.id}"
              data-form-key="shield_${starIndex}_${section.id}"
@@ -5678,12 +5646,12 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="strength-shield" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="strength-shield" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(shield.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(shield.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">${escapeForTemplate(shield.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body text-center m-color-dark">${escapeForTemplate(shield.instructions)}</p>
           
           <!-- Shield Visual -->
           <div class="flex justify-center mb-6">
@@ -5705,8 +5673,8 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
           </div>
           
           <!-- Decoration Buttons -->
-          <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg" style="background-color: var(--cream);">
-            <span class="font-body text-sm self-center mr-2" style="color: var(--dark);">Add decorations:</span>
+          <div class="flex justify-center gap-2 mb-6 p-3 rounded-lg m-bg-cream">
+            <span class="font-body text-sm self-center mr-2 m-color-dark">Add decorations:</span>
             ${decorationsHtml}
           </div>
           
@@ -5717,26 +5685,25 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
           
           <!-- Progress Indicator -->
           <div class="text-center mb-4">
-            <p class="font-body" style="color: var(--secondary);">Sections filled: <span id="shieldProgress">0</span> / ${shield.shieldSections.length}</p>
+            <p class="font-body m-color-secondary">Sections filled: <span id="shieldProgress">0</span> / ${shield.shieldSections.length}</p>
           </div>
           
           <!-- Win Message -->
-          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" class="m-feedback-hidden">
             <p class="text-4xl mb-2">🛡️</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(shield.completionMessage)}</p>
+            <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(shield.completionMessage)}</p>
           </div>
           
           <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="shieldComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="shieldComplete">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I built my strength shield! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I built my strength shield! ⭐</label>
           </div>
         </div>
       </div>
@@ -5749,33 +5716,33 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
   const actionsHtml = volcano.coolingActions.map(action => `
     <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab"
             draggable="true"
-            style="background-color: white; border-color: var(--secondary);"
+            class="m-card-bordered"
             data-cooling="${action.coolingPower}"
             data-power="${action.coolingPower}"
             data-action="${escapeForTemplate(action.action)}">
       <span class="text-3xl">${action.emoji}</span>
-      <span class="font-body text-sm text-center" style="color: var(--dark);">${escapeForTemplate(action.action)}</span>
+      <span class="font-body text-sm text-center m-color-dark">${escapeForTemplate(action.action)}</span>
     </button>
   `).join("");
 
   const levelsHtml = volcano.levels.map(level => `
     <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel${level.level}" style="background-color: ${level.color}20;">
       <span class="text-xl">${level.emoji}</span>
-      <span class="font-body text-sm" style="color: var(--dark);">${escapeForTemplate(level.label)}</span>
+      <span class="font-body text-sm m-color-dark">${escapeForTemplate(level.label)}</span>
     </div>
   `).join("");
 
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-volcano" data-activity="${activityId}">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="feeling-volcano" data-activity="${activityId}">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">${escapeForTemplate(volcano.heading)}</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(volcano.heading)}</h1>
         
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">${escapeForTemplate(volcano.instructions)}</p>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">${escapeForTemplate(volcano.instructions)}</p>
           
           <!-- Scenario -->
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center" style="color: var(--dark);"><strong>The situation:</strong> ${escapeForTemplate(volcano.triggerScenario)}</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center m-color-dark"><strong>The situation:</strong> ${escapeForTemplate(volcano.triggerScenario)}</p>
           </div>
           
           <!-- Volcano Visual -->
@@ -5808,39 +5775,38 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
             
             <!-- Temperature Display -->
             <div class="text-center">
-              <p class="font-title text-3xl" style="color: var(--accent);"><span id="volcanoTemp">100</span>°</p>
-              <p class="font-body text-sm" style="color: var(--dark);">Heat Level</p>
+              <p class="font-title text-3xl m-color-accent"><span id="volcanoTemp">100</span>°</p>
+              <p class="font-body text-sm m-color-dark">Heat Level</p>
             </div>
           </div>
           
           <!-- Cooling Actions -->
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Drag your cooling tools into the volcano! 🧊</p>
+          <p class="font-title text-lg text-center mb-3 m-color-dark">Drag your cooling tools into the volcano! 🧊</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${actionsHtml}
           </div>
           
           <!-- Feedback -->
-          <div class="volcano-feedback p-4 rounded-xl text-center mb-4" id="volcanoFeedback" style="display: none;">
+          <div class="volcano-feedback p-4 rounded-xl text-center mb-4" id="volcanoFeedback" class="m-hidden">
             <p class="font-body text-lg" id="volcanoFeedbackText"></p>
           </div>
           
           <!-- Safe Message -->
-          <div class="volcano-safe p-6 rounded-2xl text-center" id="volcanoSafe" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
+          <div class="volcano-safe p-6 rounded-2xl text-center" id="volcanoSafe" class="m-feedback-hidden">
             <p class="text-4xl mb-2">😌</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">${escapeForTemplate(volcano.safeMessage)}</p>
+            <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(volcano.safeMessage)}</p>
           </div>
           
           <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="volcanoComplete">
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="volcanoComplete">
             <input 
               type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
               
             >
-            <label class="font-title text-xl" style="color: var(--dark);">I cooled the volcano! ⭐</label>
+            <label class="font-title text-xl m-color-dark">I cooled the volcano! ⭐</label>
           </div>
         </div>
       </div>

@@ -1,0 +1,501 @@
+/**
+ * Module Utilities CSS — Replaces ALL inline styles from index.ts
+ * ================================================================
+ * 
+ * PURPOSE: Every inline `style="..."` in the HTML generator has been
+ * replaced with a semantic CSS class defined here. To change colours,
+ * fonts, spacing, or any visual property across all modules, edit
+ * THIS FILE — not the TypeScript generator.
+ *
+ * NAMING CONVENTION:
+ *   .m-{property}-{value}   — module utility (e.g. .m-color-dark)
+ *   .m-{component}          — module component  (e.g. .m-page, .m-card)
+ *   .m-{component}--{mod}   — modifier          (e.g. .m-card--callout)
+ *
+ * PALETTE VARIABLES (set per-module via :root in <style>):
+ *   --primary, --secondary, --accent, --dark, --cream,
+ *   --light-green, --soft-yellow, --success
+ *
+ * ================================================================ */
+
+
+/* ============================================
+   1. COLOR UTILITIES
+   ============================================ */
+
+/* Text colours */
+.m-color-dark       { color: var(--dark); }
+.m-color-primary    { color: var(--primary); }
+.m-color-secondary  { color: var(--secondary); }
+.m-color-accent     { color: var(--accent); }
+.m-color-white      { color: #fff; }
+.m-color-muted      { color: #374151; }
+.m-color-heading    { color: #1a1a2e; }
+.m-color-success    { color: #10B981; }
+
+/* Background colours */
+.m-bg-cream         { background-color: var(--cream); }
+.m-bg-white         { background-color: white; }
+.m-bg-primary       { background-color: var(--primary); }
+.m-bg-secondary     { background-color: var(--secondary); }
+.m-bg-accent        { background-color: var(--accent); }
+.m-bg-soft-yellow   { background-color: var(--soft-yellow); }
+.m-bg-light-green   { background-color: var(--light-green); }
+.m-bg-gray          { background-color: #e5e7eb; }
+.m-bg-transparent   { background-color: transparent; }
+
+/* Border colours */
+.m-border-primary   { border-color: var(--primary); }
+.m-border-secondary { border-color: var(--secondary); }
+.m-border-accent    { border-color: var(--accent); }
+.m-border-dark      { border-color: var(--dark); }
+.m-border-transparent { border-color: transparent; }
+
+/* Accent-color (for checkboxes etc.) */
+.m-accent-primary   { accent-color: var(--primary); }
+
+
+/* ============================================
+   2. COMPOUND COLOR COMBINATIONS
+   ============================================ */
+
+/* Primary button style */
+.m-btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+/* White card with secondary border */
+.m-card-bordered {
+  background-color: white;
+  border-color: var(--secondary);
+}
+
+/* White card with primary border */
+.m-card-bordered-primary {
+  background-color: white;
+  border-color: var(--primary);
+}
+
+/* Light green with transparent border */
+.m-bg-light-green-flat {
+  background-color: var(--light-green);
+  border-color: transparent;
+  color: var(--dark);
+}
+
+/* Callout gradient */
+.m-bg-callout-gradient {
+  background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));
+}
+
+/* Feedback hidden state */
+.m-feedback-hidden {
+  display: none;
+  background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));
+}
+
+/* Feedback hidden simple */
+.m-feedback-hidden-green {
+  background-color: var(--light-green);
+  display: none;
+}
+
+/* Feedback hidden for primary-coloured text */
+.m-feedback-hidden-primary {
+  color: var(--primary);
+  display: none;
+}
+
+/* Cream input with primary border */
+.m-input-cream {
+  background-color: var(--cream);
+  border: 3px solid var(--primary);
+  color: var(--dark);
+  min-height: 150px;
+}
+
+/* Secondary bordered with dark text */
+.m-option-secondary {
+  border-color: var(--secondary);
+  background-color: white;
+  color: var(--dark);
+}
+
+/* Primary bordered input area */
+.m-input-bordered-primary {
+  border-color: var(--primary);
+  min-height: 60px;
+}
+
+/* Secondary bordered input area */
+.m-input-bordered-secondary {
+  border-color: var(--secondary);
+  min-height: 60px;
+}
+
+
+/* ============================================
+   3. PAGE LAYOUT COMPONENTS
+   ============================================ */
+
+/* Standard page background */
+.m-page {
+  background-color: var(--cream);
+}
+
+/* Cover page */
+.m-page-cover {
+  background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream));
+  padding-top: 20px;
+}
+
+.m-cover-center {
+  margin-top: -80px;
+}
+
+/* White card container */
+.m-card {
+  background-color: white;
+}
+
+/* Card with left primary border */
+.m-card--primary-left {
+  background-color: white;
+  border-left: 6px solid var(--primary);
+}
+
+/* Callout box (soft yellow) */
+.m-card--callout {
+  background-color: var(--soft-yellow);
+}
+
+/* Tip box (light green) */
+.m-card--tip {
+  background-color: var(--light-green);
+}
+
+/* Soft yellow highlight box */
+.m-highlight-box {
+  background-color: var(--soft-yellow);
+}
+
+/* Primary badge pill */
+.m-badge-primary {
+  background-color: var(--primary);
+}
+
+/* Name ownership box on cover */
+.m-name-box {
+  border-color: var(--primary);
+  background-color: white;
+}
+
+/* Grown-up note accordion */
+.m-grownup-note {
+  border-color: var(--secondary);
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.m-grownup-note__toggle {
+  color: var(--secondary);
+}
+
+.m-grownup-note__label {
+  color: var(--secondary);
+}
+
+
+/* ============================================
+   4. CHAPTER DIVIDER / SCENE PAGE
+   ============================================ */
+
+.m-chapter-scene {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.m-chapter-sky {
+  position: absolute;
+  inset: 0;
+}
+
+.m-chapter-sun {
+  position: absolute;
+  top: 6%;
+  right: 12%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--soft-yellow) 0%, color-mix(in srgb, var(--soft-yellow) 40%, transparent) 50%, transparent 70%);
+  opacity: 0.7;
+}
+
+.m-chapter-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.m-chapter-hills {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 280px;
+  z-index: 1;
+}
+
+.m-chapter-hills svg {
+  width: 100%;
+  height: 100%;
+}
+
+.m-chapter-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 0 24px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-bottom: 300px;
+}
+
+.m-chapter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--primary) 12%, white);
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  border-radius: 20px;
+  padding: 5px 14px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.m-chapter-badge__emoji {
+  font-size: 13px;
+}
+
+.m-chapter-badge__label {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.m-chapter-title-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.m-chapter-number {
+  font-family: 'Fredoka One', 'Baloo 2', cursive;
+  font-size: clamp(32px, 7vw, 52px);
+  font-weight: 800;
+  color: var(--primary);
+  margin: 0;
+  line-height: 1.1;
+  text-shadow: 0 2px 12px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.m-chapter-heading {
+  font-family: 'Fredoka One', 'Baloo 2', cursive;
+  font-size: clamp(24px, 5vw, 38px);
+  font-weight: 800;
+  color: var(--dark);
+  margin: 0;
+  line-height: 1.15;
+}
+
+.m-chapter-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.m-chapter-dot {
+  width: 16px;
+  height: 3px;
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 2px;
+}
+
+.m-chapter-dot--active {
+  width: 24px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.m-chapter-subtitle {
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(15px, 3vw, 20px);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--dark) 70%, var(--secondary));
+  margin: 0;
+  line-height: 1.5;
+  max-width: 460px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+/* ============================================
+   5. CHARACTER DISPLAY
+   ============================================ */
+
+.m-character-img {
+  max-height: 8rem;
+  max-width: 8rem;
+  display: block;
+}
+
+.m-character-img--cover {
+  height: 280px;
+  width: 280px;
+  display: block;
+}
+
+.m-character-img--welcome {
+  height: 10rem;
+  width: 10rem;
+}
+
+.m-character-emoji--cover {
+  font-size: 180px;
+  line-height: 1;
+  display: block;
+}
+
+
+/* ============================================
+   6. GROWN-UP NOTE FONT OVERRIDES
+   ============================================ */
+
+.m-grownup-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.95rem;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.m-grownup-title--lg {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+}
+
+.m-grownup-body {
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  color: #374151;
+}
+
+.m-grownup-body--sm {
+  font-size: 13px;
+  color: #374151;
+}
+
+.m-grownup-body--heading {
+  font-size: 13px;
+  color: #1a1a2e;
+}
+
+
+/* ============================================
+   7. INTERACTIVE ACTIVITY COMPONENTS
+   ============================================ */
+
+/* White rounded card for options/items */
+.m-option-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+/* Grid layout for 2-column */
+.m-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Table header cell */
+.m-table-header {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 700;
+}
+
+
+/* ============================================
+   8. TOAST / NOTIFICATION
+   ============================================ */
+
+.m-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideUp 0.5s ease-out;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+}
+
+.m-toast__emoji {
+  font-size: 1.5rem;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+
+/* ============================================
+   9. HIDDEN / DISPLAY UTILITIES
+   ============================================ */
+
+.m-hidden { display: none; }
+
+
+/* ============================================
+   10. COMPLETION CELEBRATION
+   ============================================ */
+
+.m-celebration-box {
+  background-color: white;
+  border-color: var(--primary);
+}

@@ -1304,17 +1304,23 @@ class AdventureMapV4 {
     }
   }
 
-  getZoneForCompletedCount(completedCount) {
-    if (completedCount >= 9) return 4;
-    if (completedCount >= 6) return 3;
-    if (completedCount >= 3) return 2;
-    return 1;
+  getZoneForChildLevel(childLevel) {
+    if (childLevel >= 10) return 4;  // Level 10+ = Metropolis
+    if (childLevel >= 7) return 3;   // Level 7-9 = City
+    if (childLevel >= 4) return 2;   // Level 4-6 = Village
+    return 1;                        // Level 1-3 = Nature
   }
 
   applyZoneBackground() {
     if (!this.viewport) return;
-    var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    var newZone = this.getZoneForCompletedCount(completedCount);
+    
+    // Get child's level from dashboard data
+    var childLevel = 1;
+    if (dashboardSelectedChild && dashboardSelectedChild.level) {
+      childLevel = dashboardSelectedChild.level;
+    }
+    
+    var newZone = this.getZoneForChildLevel(childLevel);
     var previousZone = this.currentZone;
     this.viewport.dataset.zone = newZone;
     this.currentZone = newZone;
@@ -1324,17 +1330,16 @@ class AdventureMapV4 {
       var self = this;
       // Small delay so the background image loads before the celebration plays
       setTimeout(function() {
-        self.showZoneUpgradeBanner(newZone, completedCount);
+        self.showZoneUpgradeBanner(newZone, childLevel);
       }, 400);
     } else if (previousZone === null && newZone > 1) {
       // First render after selecting a child — check if this zone was already celebrated
-      var child = window.state && window.state.selectedChild;
-      var childId = child ? child.id : 'unknown';
-      var storageKey = 'zoneUpgradeSeen_child_' + childId + '_zone_' + newZone;
+      var storageKey = 'zone-celebrated-' + (dashboardSelectedChild ? dashboardSelectedChild.id : 'unknown') + '-' + newZone;
+      
       if (localStorage.getItem(storageKey) !== 'true') {
         var self = this;
         setTimeout(function() {
-          self.showZoneUpgradeBanner(newZone, completedCount);
+          self.showZoneUpgradeBanner(newZone, childLevel);
         }, 800);
       }
     }
