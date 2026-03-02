@@ -1,3 +1,6 @@
+# Claude Code worktrees / internal tooling
+.claude/
+
 # dependencies
 node_modules/
 
