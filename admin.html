@@ -47,7 +47,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab(event, 'moduleCustomisation')">Module Customisation</button>
             <button class="tab" onclick="switchTab(event, 'childModules')">Parent's Modules</button>
-            <button class="tab" onclick="switchTab(event, 'theories')">Theories</button>
+            <button class="tab" onclick="switchTab(event, 'theories')">Reference Data</button>
             <button class="tab" onclick="switchTab(event, 'rewards')">Rewards</button>
             <button class="tab" onclick="switchTab(event, 'parentToolkit')">Parent Toolkit</button>
             <button class="tab" onclick="switchTab(event, 'generalSettings')">Check Ins</button>
@@ -498,25 +498,51 @@
         </div>
         <!-- End Parent's Modules Tab -->
 
-        <!-- Tab Content: Theories -->
+        <!-- Tab Content: Reference Data (was Theories) -->
         <div id="theoriesTab" class="tab-content">
-            <div class="rewards-panel" style="max-width: 1400px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="rewards-panel" style="max-width: 1500px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     <div>
-                        <h2 class="panel-title" style="margin-bottom: 4px;">🧩 AI Module Configuration</h2>
-                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Manage theories, age ranges, super skills, and sub-skills sent to AI for module generation</p>
+                        <h2 class="panel-title" style="margin-bottom: 4px;">📋 Reference Data — Backend Architecture</h2>
+                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">All reference data that drives AI module generation. Matches the DD_Backend_Data_Architecture document.</p>
                     </div>
                 </div>
 
-                <!-- Theories Section -->
-                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <!-- Reference Data Sub-tabs -->
+                <div id="refDataTabs" style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
+                    <button class="ref-tab active" onclick="switchRefTab(event, 'refSuperSkills')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #405878; color: white; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">1. Super Skills</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refSubSkills')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">2. Sub-Skills</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refTheories')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">3. Theory Spine</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refDxProfiles')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">4. Dx Profiles</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refNdis')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">5. NDIS</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refSedi')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">6. SEDI</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refAgeBands')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">7. Age Bands</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refLevels')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">8. Levels</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refVocabulary')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">9. Vocabulary</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refSequencing')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">10. Sequencing</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refFasd')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">FASD Domains</button>
+                </div>
+
+                <!-- All ref-panel sections -->
+                <div id="refSuperSkillsPanel" class="ref-panel"></div>
+                <div id="refSubSkillsPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refTheoriesPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refDxProfilesPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refNdisPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refSediPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refAgeBandsPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refLevelsPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refVocabularyPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refSequencingPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refFasdPanel" class="ref-panel" style="display:none;"></div>
+
+            <!-- Keep old hidden sections for backward compatibility with existing modal functions -->
+            <div style="display: none;">
+                <!-- Theories Section (hidden, data loading still happens) -->
+                <div id="theoriesLegacySection">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                         <div>
                             <h3 style="font-size: 16px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">📖 Core Theories</h3>
-                            <p style="font-size: 12px; color: #6b7c8f; margin: 4px 0 0 0;">Description and Key Theorists are sent to AI</p>
-                        </div>
-                        <button class="btn-save" onclick="addNewTheory()">+ Add New Theory</button>
-                    </div>
 
                     <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px;">
                         <div>
@@ -1620,5 +1646,6 @@ This fixes:
     <script type="module" src="/src/admin.js"></script>
     <script type="module" src="/src/module-builder-integration.js"></script>
     <script src="/src/module-content-creator.js"></script>
+    <script src="/src/features/admin/reference-data-grids.js"></script>
 </body>
 </html>
