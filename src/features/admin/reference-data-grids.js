@@ -18,14 +18,14 @@ function _waitSB() {
 }
 
 // --- Data caches ---
-var _ss = [], _sub = [], _th = [], _age = [], _ndis = [], _sedi = [], _fasd = [], _chars = [];
+var _ss = [], _sub = [], _th = [], _age = [], _ndis = [], _sedi = [], _fasd = [], _chars = [], _cycles = [], _connections = [];
 var _dataLoaded = false;
 
 async function _loadAll() {
     var sb = window.supabase;
     if (!sb) return;
     try {
-        var [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
+        var [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10] = await Promise.all([
             sb.from('super_skills').select('*, characters:character_id(id, name, species, personality_nd, image_url)').order('sort_order'),
             sb.from('sub_skills').select('*, super_skills:super_skill_id(id, name, slug, emoji)').order('sort_order'),
             sb.from('core_theories').select('*').eq('is_active', true).order('theory_name'),
@@ -33,14 +33,17 @@ async function _loadAll() {
             sb.from('ndis_domains').select('*').eq('is_active', true).order('sort_order'),
             sb.from('dss_sedi_categories').select('*').eq('is_active', true).order('sort_order'),
             sb.from('fasd_domains').select('*').eq('is_active', true).order('domain_number'),
-            sb.from('characters').select('*').eq('is_active', true).order('sort_order')
+            sb.from('characters').select('*').eq('is_active', true).order('sort_order'),
+            sb.from('cycles').select('*').order('cycle_number'),
+            sb.from('theory_connections').select('*, super_skills:super_skill_id(id, name), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name)').order('sort_order')
         ]);
         _ss = r1.data || []; _sub = r2.data || []; _th = r3.data || [];
         _age = r4.data || []; _ndis = r5.data || []; _sedi = r6.data || [];
         _fasd = r7.data || []; _chars = r8.data || [];
-        _fasd = r7.data || [];
+        _cycles = r9.data || [];
+        _connections = r10.data || [];
         _dataLoaded = true;
-        console.log('[RefGrids] Loaded:', _ss.length, 'skills,', _sub.length, 'sub-skills,', _th.length, 'theories,', _age.length, 'age bands');
+        console.log('[RefGrids] Loaded:', _ss.length, 'skills,', _sub.length, 'sub-skills,', _th.length, 'theories,', _connections.length, 'connections,', _age.length, 'age bands');
     } catch (e) { console.error('[RefGrids] Load error:', e); }
 }
 
@@ -184,6 +187,18 @@ var _editConfigs = {
             { key: '_active', get: function(d) { return d.is_active ? 'Active' : 'Inactive'; } }
         ]
     },
+    Conn: {
+        dbTable: 'theory_connections',
+        getData: function() { return _connections; },
+        render: rConn,
+        fields: [
+            { key: 'super_skill_id', type: 'select', get: function(d) { return d.super_skills ? d.super_skills.name : ''; }, selectValue: function(d) { return d.super_skill_id || ''; }, options: function() { return _ss.map(function(s) { return { v: s.id, t: s.name }; }); } },
+            { key: 'cycle_id', type: 'select', get: function(d) { return d.cycles ? ('C' + d.cycles.cycle_number + ': ' + d.cycles.name) : ''; }, selectValue: function(d) { return d.cycle_id || ''; }, options: function() { return _cycles.map(function(c) { return { v: c.id, t: 'C' + c.cycle_number + ': ' + c.name }; }); } },
+            { key: 'primary_theory_id', type: 'select', get: function(d) { return d.core_theories ? d.core_theories.theory_name : ''; }, selectValue: function(d) { return d.primary_theory_id || ''; }, options: function() { return _th.map(function(t) { return { v: t.id, t: t.theory_name }; }); } },
+            { key: 'citation', get: function(d) { return d.citation || ''; } },
+            { key: 'brain_town_application', get: function(d) { return d.brain_town_application || ''; } }
+        ]
+    },
     Ndis: {
         dbTable: 'ndis_domains',
         getData: function() { return _ndis; },
@@ -228,7 +243,7 @@ window.switchRefTab = function(ev, id) {
 
 function _render(id) {
     var map = {
-        refSuperSkills: rSS, refSubSkills: rSub, refTheories: rTh, refDxProfiles: rDx,
+        refSuperSkills: rSS, refSubSkills: rSub, refTheories: rTh, refConnections: rConn, refDxProfiles: rDx,
         refNdis: rNdis, refSedi: rSedi, refAgeBands: rAge, refLevels: rLev,
         refVocabulary: rVocab, refSequencing: rSeq, refFasd: rFasd
     };
@@ -298,7 +313,23 @@ function rTh() {
 }
 
 // ============================
-// 4. DX PROFILES (static)
+// 4. THEORY CONNECTIONS
+// ============================
+function rConn() {
+    var p = document.getElementById('refConnectionsPanel'); if (!p) return;
+    var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div><h3 style="font-size:16px;margin:0;font-weight:700;">🔗 Theory Connections (' + _connections.length + ')</h3><p style="font-size:12px;color:#6b7c8f;margin:4px 0 0;">Links Super Skill + Cycle + Primary Theory with citation and Brain Town application.</p></div><button class="btn-save" onclick="refInlineAdd(\'Conn\')">+ Add Connection</button></div>';
+    h += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#405878;color:white;">' + TH('Super Skill') + TH('Cycle', 'min-width:140px;') + TH('Primary Theory', 'min-width:180px;') + TH('Citation', 'min-width:170px;') + TH('Brain Town Application', 'min-width:280px;') + TH('', 'text-align:center;width:50px;') + '</tr></thead><tbody id="tbConn">';
+    _connections.forEach(function(c, i) {
+        var cycleLabel = c.cycles ? ('C' + c.cycles.cycle_number + ': ' + c.cycles.name) : '';
+        h += '<tr><td style="' + td(i, 'font-weight:600;') + '">' + E(c.super_skills ? c.super_skills.name : '') + '</td><td style="' + td(i) + '">' + E(cycleLabel) + '</td><td style="' + td(i, 'font-weight:600;') + '">' + E(c.core_theories ? c.core_theories.theory_name : '') + '</td><td style="' + td(i, 'font-style:italic;font-size:11px;') + '">' + E(c.citation || '') + '</td><td style="' + td(i, 'font-size:11px;') + '">' + E(c.brain_town_application || '') + '</td><td style="' + td(i, 'text-align:center;') + '">' + editBtn("refEditRow('Conn','" + c.id + "',this)") + '</td></tr>';
+    });
+    if (!_connections.length) h += '<tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7c8f;">No theory connections found.</td></tr>';
+    h += '</tbody></table></div>';
+    p.innerHTML = h;
+}
+
+// ============================
+// 5. DX PROFILES (static)
 // ============================
 var SDX = [
     { c: "FASD", n: "Foetal Alcohol Spectrum Disorder", t: "CORE", a: "Concrete anchoring, visual support, single steps, high repetition", b: "FASD brains process best through body and vision." },
@@ -330,7 +361,7 @@ function rDx() {
 }
 
 // ============================
-// 5. NDIS
+// 6. NDIS
 // ============================
 function rNdis() {
     var p = document.getElementById('refNdisPanel'); if (!p) return;
@@ -342,7 +373,7 @@ function rNdis() {
 }
 
 // ============================
-// 6. SEDI
+// 7. SEDI
 // ============================
 function rSedi() {
     var p = document.getElementById('refSediPanel'); if (!p) return;
@@ -354,7 +385,7 @@ function rSedi() {
 }
 
 // ============================
-// 7. AGE BANDS
+// 8. AGE BANDS
 // ============================
 function rAge() {
     var p = document.getElementById('refAgeBandsPanel'); if (!p) return;
@@ -366,7 +397,7 @@ function rAge() {
 }
 
 // ============================
-// 8. LEVELS (static)
+// 9. LEVELS (static)
 // ============================
 var LV = [
     { n: "Seed", w: "1, 2, 3", s: "Cognitive Stage", v: "identify, name, label, point to, recognise, notice, watch", xp: 50, st: 10, ind: "Minimal. The child observes.", col: "#38A169" },
@@ -383,7 +414,7 @@ function rLev() {
 }
 
 // ============================
-// 9. VOCABULARY (static)
+// 10. VOCABULARY (static)
 // ============================
 var VOC = [
     { r: "Brain / neural system", b: "Town / Brain Town", u: "Your brain is a town, and you are the town planner." },
@@ -407,7 +438,7 @@ function rVocab() {
 }
 
 // ============================
-// 10. SEQUENCING (static)
+// 11. SEQUENCING (static)
 // ============================
 var SEQ = [
     { t: "FOUNDATION", s: "BB", r: "Must complete BB C1 before any other skill unlocks." },
@@ -496,6 +527,28 @@ var _inlineConfigs = {
             await window.supabase.from('core_theories').insert([{ theory_name: vals.Name, theory_code: code, primary_researchers: vals.Researchers || null, description: vals.Desc || null, is_active: true }]);
         },
         after: async function() { await _loadAll(); rTh(); }
+    },
+    Conn: {
+        tbId: 'tbConn',
+        cols: [
+            { id: 'SuperSkill', ph: 'Super Skill', w: '', req: true, type: 'select', options: function() { return _ss.map(function(ss) { return { v: ss.id, t: ss.name }; }); } },
+            { id: 'Cycle', ph: 'Cycle', w: '', req: true, type: 'select', options: function() { return _cycles.map(function(c) { return { v: c.id, t: 'C' + c.cycle_number + ': ' + c.name }; }); } },
+            { id: 'Theory', ph: 'Primary Theory', w: '', req: true, type: 'select', options: function() { return _th.map(function(t) { return { v: t.id, t: t.theory_name }; }); } },
+            { id: 'Citation', ph: 'e.g. Hebb, 1949', w: 'min-width:150px;' },
+            { id: 'Application', ph: 'Brain Town application', w: 'min-width:220px;' }
+        ],
+        save: async function(vals) {
+            await window.supabase.from('theory_connections').insert([{
+                super_skill_id: vals.SuperSkill,
+                cycle_id: vals.Cycle,
+                primary_theory_id: vals.Theory,
+                citation: vals.Citation || null,
+                brain_town_application: vals.Application || null,
+                is_active: true,
+                sort_order: (_connections.length + 1) * 10
+            }]);
+        },
+        after: async function() { await _loadAll(); rConn(); }
     },
     Ndis: {
         tbId: 'tbNdis',
