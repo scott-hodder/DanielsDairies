@@ -1,59 +1,56 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;1,6..12,400&family=Baloo+2:wght@500;600;700;800&display=swap");
 
 :root{
-  /* Typography */
+  /* Typography — Baloo 2 for display, Nunito Sans for body (refined, not too thick) */
   --module-font-display: "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
   --module-font-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Shape / depth */
+  /* Shape / depth — softer, rounder */
   --module-radius-xl: 26px;
   --module-radius-lg: 20px;
   --module-radius-sm: 14px;
 
-  --module-shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.10);
-  --module-shadow-card: 0 10px 22px rgba(15, 23, 42, 0.08);
+  --module-shadow-soft: 0 4px 20px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --module-shadow-card: 0 6px 24px rgba(15, 23, 42, 0.07);
 
-  /* Header sizing (single source of truth) */
+  /* Header sizing */
   --module-header-height: 75px;
 
-  /* Default (Daniel-ish fallback) */
-  --theme-primary: #1d3564;
-  --theme-secondary: #f9c92d;
-  --theme-accent: #ffb347;
-  --theme-surface: #f5f7fb;
+  /* Neutral base palette — the super skill colour is introduced subtly via --primary */
+  --theme-primary: #264653;
+  --theme-secondary: #2A9D8F;
+  --theme-accent: #F4A261;
+  --theme-surface: #F8F6F1;
   --theme-card: #ffffff;
-  --theme-card-border: rgba(15, 23, 42, 0.10);
-  --theme-text: #1f2937;
-  --theme-muted: #4b5563;
+  --theme-card-border: rgba(38, 70, 83, 0.08);
+  --theme-text: #1E3A4A;
+  --theme-muted: #3D5A6E;
 
-  /* Softer hero */
-  --theme-hero: linear-gradient(135deg, rgba(35,59,115,0.92), rgba(65,93,190,0.92));
+  /* Softer warm neutrals (from mockup's sand/cream tokens) */
+  --sand: #F5EFDF;
+  --sand-light: #FBF7EF;
+  --cream-warm: #FFFAF3;
 
-  /* Header theme */
-  --module-header-bg: rgba(255, 251, 235, 0.95);
-  --module-header-border: rgba(29, 53, 100, 0.18);
-  --module-header-text: #1d3564;
-  --module-header-accent: #1d3564;
+  /* Hero — muted gradient, not overpowering */
+  --theme-hero: linear-gradient(135deg, rgba(38,70,83,0.88), rgba(42,157,143,0.88));
 
-  /* Response tracking styles */
-  --response-tracked-bg: rgba(76, 175, 80, 0.1);
-  --response-tracked-border: #4caf50;
-  --response-hover-bg: rgba(33, 150, 243, 0.1);
-  --response-hover-border: #2196f3;
+  /* Header theme — light, airy, frosted glass feel */
+  --module-header-bg: rgba(251, 247, 239, 0.88);
+  --module-header-border: rgba(38, 70, 83, 0.06);
+  --module-header-text: #1E3A4A;
+  --module-header-accent: #264653;
+
+  /* Response tracking */
+  --response-tracked-bg: rgba(138, 177, 125, 0.12);
+  --response-tracked-border: #8AB17D;
+  --response-hover-bg: rgba(42, 157, 143, 0.1);
+  --response-hover-border: #2A9D8F;
 }
 
 
 
 /* ============================================
    AGE RANGE VARIABLES
-   ============================================
-   Usage: Add data-age-range="6-8" to body element
-   
-   Age Ranges:
-   - 6-8:   Early Childhood (Concrete Learners) - Largest, most playful
-   - 9-11:  Late Childhood (Bridge Thinkers) - Large, friendly
-   - 12-14: Early Adolescence (Transition Thinkers) - Medium, balanced
-   - 15-18: Mid to Late Adolescence (Abstract Integrators) - Standard, mature
    ============================================ */
 
 /* 6-8 Years: Early Childhood (Concrete Learners) */
@@ -61,12 +58,12 @@ body.module-theme[data-age-range="6-8"] {
   --age-font-size-base: 1.35rem;
   --age-font-size-lg: 1.55rem;
   --age-font-size-xl: 1.85rem;
-  --age-font-size-h1: 2.8rem;
-  --age-font-size-h2: 2.2rem;
-  --age-font-size-h3: 1.85rem;
+  --age-font-size-h1: 2.6rem;
+  --age-font-size-h2: 2rem;
+  --age-font-size-h3: 1.7rem;
   
-  --age-line-height: 1.9;
-  --age-line-height-heading: 1.35;
+  --age-line-height: 1.85;
+  --age-line-height-heading: 1.3;
   
   --age-spacing-sm: 1rem;
   --age-spacing-md: 1.5rem;
@@ -85,7 +82,6 @@ body.module-theme[data-age-range="6-8"] {
   --age-icon-size: 56px;
   --age-emoji-size: 48px;
   
-  /* Override module radius for friendlier look */
   --module-radius-xl: 32px;
   --module-radius-lg: 28px;
   --module-radius-sm: 16px;
@@ -96,12 +92,12 @@ body.module-theme[data-age-range="9-11"] {
   --age-font-size-base: 1.15rem;
   --age-font-size-lg: 1.3rem;
   --age-font-size-xl: 1.5rem;
-  --age-font-size-h1: 2.4rem;
-  --age-font-size-h2: 1.9rem;
-  --age-font-size-h3: 1.55rem;
+  --age-font-size-h1: 2.2rem;
+  --age-font-size-h2: 1.75rem;
+  --age-font-size-h3: 1.45rem;
   
-  --age-line-height: 1.8;
-  --age-line-height-heading: 1.3;
+  --age-line-height: 1.75;
+  --age-line-height-heading: 1.25;
   
   --age-spacing-sm: 0.875rem;
   --age-spacing-md: 1.25rem;
@@ -121,7 +117,7 @@ body.module-theme[data-age-range="9-11"] {
   --age-emoji-size: 40px;
 }
 
-/* 12-14 Years: Early Adolescence (Transition Thinkers) */
+/* 12-14 Years: Early Adolescence */
 body.module-theme[data-age-range="12-14"] {
   --age-font-size-base: 1.125rem;
   --age-font-size-lg: 1.25rem;
@@ -130,8 +126,8 @@ body.module-theme[data-age-range="12-14"] {
   --age-font-size-h2: 1.65rem;
   --age-font-size-h3: 1.35rem;
   
-  --age-line-height: 1.75;
-  --age-line-height-heading: 1.25;
+  --age-line-height: 1.7;
+  --age-line-height-heading: 1.2;
   
   --age-spacing-sm: 0.75rem;
   --age-spacing-md: 1rem;
@@ -151,7 +147,7 @@ body.module-theme[data-age-range="12-14"] {
   --age-emoji-size: 36px;
 }
 
-/* 15-18 Years: Mid to Late Adolescence (Abstract Integrators) */
+/* 15-18 Years: Mid to Late Adolescence */
 body.module-theme[data-age-range="15-18"] {
   --age-font-size-base: 1.125rem;
   --age-font-size-lg: 1.1rem;
@@ -160,8 +156,8 @@ body.module-theme[data-age-range="15-18"] {
   --age-font-size-h2: 2.4rem;
   --age-font-size-h3: 1.35rem;
   
-  --age-line-height: 1.7;
-  --age-line-height-heading: 1.2;
+  --age-line-height: 1.65;
+  --age-line-height-heading: 1.15;
   
   --age-spacing-sm: 0.625rem;
   --age-spacing-md: 0.875rem;
@@ -192,10 +188,17 @@ html,body{ height:100%; }
 body.module-theme{
   margin:0;
   font-family: var(--module-font-body);
-  background: var(--theme-surface);
+  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.65;
   color: var(--theme-text);
-  line-height: 1.6;
+  background: var(--theme-surface);
   letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background 0.4s ease;
+
+  /* Default age vars (fallback) */
   --age-font-size-base: 1.4rem;
   --age-font-size-lg: 1.8rem;
   --age-font-size-xl: 2rem;
@@ -219,17 +222,222 @@ body.module-theme{
   --age-emoji-size: 32px;
 }
 
-/* Background gradient fades — top-left brand tint + bottom-right warm fade */
+/* ============================================
+   SUBTLE BACKGROUND ATMOSPHERE
+   Soft radial tint from top-left (skill colour)
+   + warm amber fade bottom-right (colour psychology)
+   + grain overlay for depth
+   ============================================ */
+
 body.module-theme::before{
   content:"";
   position:fixed;
   inset:0;
   pointer-events:none;
-  z-index:-1;
+  z-index:-2;
+  /* Sky gradient — lighter top, warmer bottom */
   background:
-    radial-gradient(ellipse 70% 55% at -5% 0%, color-mix(in srgb, var(--theme-primary) 9%, transparent) 0%, transparent 65%),
-    radial-gradient(ellipse 55% 45% at 108% 95%, color-mix(in srgb, var(--theme-secondary) 11%, transparent) 0%, transparent 60%),
-    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.25) 0%, transparent 80%);
+    linear-gradient(180deg, 
+      color-mix(in srgb, var(--primary) 2%, #EDF2EE) 0%, 
+      color-mix(in srgb, var(--primary) 1%, #F4F1EB) 50%,
+      color-mix(in srgb, var(--primary) 4%, #F0EDE4) 100%);
+  transition: all 0.4s ease;
+}
+
+/* Remove the ::after — world is now injected as real DOM */
+body.module-theme::after {
+  display: none;
+}
+
+
+/* ============================================
+   IMMERSIVE WORLD BACKGROUND
+   Fixed behind all content. Contains:
+   - Floating SVG clouds
+   - Soft sun glow
+   - Rolling hills at bottom
+   ============================================ */
+
+.module-world-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+/* Sun — warm glow, upper-right */
+.module-world-bg__sun {
+  position: absolute;
+  top: 6%;
+  right: 12%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, 
+    rgba(233, 196, 106, 0.55) 0%, 
+    rgba(233, 196, 106, 0.2) 40%, 
+    transparent 70%);
+  z-index: 1;
+  animation: sunPulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes sunPulse {
+  0%   { transform: scale(1); opacity: 0.75; }
+  100% { transform: scale(1.1); opacity: 0.9; }
+}
+
+
+/* ============================================
+   FLOATING CLOUDS — Real SVG shapes
+   ============================================ */
+
+.module-world-bg__cloud {
+  position: absolute;
+  z-index: 2;
+  will-change: transform;
+}
+
+/* Cloud shape — child div with inline SVG background */
+.module-world-bg__cloud-shape {
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80'%3E%3Cellipse cx='70' cy='50' rx='58' ry='24' fill='white' opacity='0.9'/%3E%3Cellipse cx='115' cy='46' rx='48' ry='22' fill='white' opacity='0.9'/%3E%3Cellipse cx='90' cy='36' rx='42' ry='23' fill='white' opacity='0.95'/%3E%3Cellipse cx='50' cy='44' rx='30' ry='17' fill='white' opacity='0.85'/%3E%3Cellipse cx='135' cy='52' rx='32' ry='16' fill='white' opacity='0.85'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Cloud 1 — large, slow, top-left */
+.module-world-bg__cloud--1 {
+  width: 240px;
+  height: 90px;
+  top: 5%;
+  left: 2%;
+  opacity: 0.75;
+  animation: cloudFloat1 50s ease-in-out infinite alternate;
+}
+
+/* Cloud 2 — medium, top-right */
+.module-world-bg__cloud--2 {
+  width: 180px;
+  height: 70px;
+  top: 3%;
+  right: 8%;
+  opacity: 0.6;
+  animation: cloudFloat2 60s ease-in-out infinite alternate;
+}
+
+/* Cloud 3 — small, mid-left */
+.module-world-bg__cloud--3 {
+  width: 130px;
+  height: 50px;
+  top: 18%;
+  left: 12%;
+  opacity: 0.5;
+  animation: cloudFloat3 42s ease-in-out infinite alternate;
+}
+
+/* Cloud 4 — wide, upper-centre */
+.module-world-bg__cloud--4 {
+  width: 200px;
+  height: 75px;
+  top: 8%;
+  left: 40%;
+  opacity: 0.55;
+  animation: cloudFloat4 55s ease-in-out infinite alternate;
+}
+
+/* Cloud 5 — tiny accent, far right */
+.module-world-bg__cloud--5 {
+  width: 110px;
+  height: 42px;
+  top: 14%;
+  right: 20%;
+  opacity: 0.45;
+  animation: cloudFloat5 38s ease-in-out infinite alternate;
+}
+
+@keyframes cloudFloat1 {
+  0%   { transform: translateX(0) translateY(0); }
+  100% { transform: translateX(70px) translateY(-10px); }
+}
+
+@keyframes cloudFloat2 {
+  0%   { transform: translateX(0) translateY(0); }
+  100% { transform: translateX(-60px) translateY(8px); }
+}
+
+@keyframes cloudFloat3 {
+  0%   { transform: translateX(0) translateY(0); }
+  100% { transform: translateX(45px) translateY(-6px); }
+}
+
+@keyframes cloudFloat4 {
+  0%   { transform: translateX(0) translateY(0); }
+  100% { transform: translateX(-40px) translateY(5px); }
+}
+
+@keyframes cloudFloat5 {
+  0%   { transform: translateX(0) translateY(0); }
+  100% { transform: translateX(35px) translateY(-7px); }
+}
+
+
+/* ============================================
+   ROLLING HILLS — Bottom of viewport
+   Multi-layered SVG hills tinted with primary colour
+   ============================================ */
+
+.module-world-bg__hills {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 180px;
+  z-index: 3;
+}
+
+.module-world-bg__hills svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+
+/* Grain texture — barely visible depth */
+.module-world-bg__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 4;
+}
+
+
+/* ============================================
+   MOBILE — Smaller clouds, shorter hills
+   ============================================ */
+@media (max-width: 768px) {
+  .module-world-bg__cloud--1 { width: 160px; height: 60px; }
+  .module-world-bg__cloud--2 { width: 120px; height: 46px; }
+  .module-world-bg__cloud--3 { width: 90px; height: 35px; }
+  .module-world-bg__cloud--4 { width: 140px; height: 52px; }
+  .module-world-bg__cloud--5 { display: none; }
+  
+  .module-world-bg__hills { height: 120px; }
+  .module-world-bg__sun { width: 65px; height: 65px; }
+}
+
+
+/* ============================================
+   PRINT — Hide entire world
+   ============================================ */
+@media print {
+  .module-world-bg {
+    display: none !important;
+  }
 }
 
 /* Make anchor jumps not hide behind header */
@@ -239,10 +447,34 @@ body.module-theme::before{
 
 
 /* ============================================
+   CONSISTENT VERTICAL RHYTHM
+   Standardise gaps between headings and cards
+   ============================================ */
+
+/* Page title to card gap — consistent across all pages */
+body.module-theme h1.font-title + div,
+body.module-theme h1.font-title + .rounded-3xl,
+body.module-theme .text-3xl.font-title + div,
+body.module-theme .text-4xl.font-title + div {
+  margin-top: var(--age-spacing-lg, 1.5rem);
+}
+
+/* Card internal padding — standardised */
+body.module-theme .rounded-3xl.shadow-xl {
+  padding: var(--age-spacing-xl, 2rem);
+}
+
+/* Standardise card-to-card gap */
+body.module-theme .max-w-4xl > .rounded-3xl + .rounded-3xl,
+body.module-theme .max-w-4xl > div + .rounded-3xl {
+  margin-top: var(--age-spacing-lg, 1.5rem);
+}
+
+
+/* ============================================
    AGE-BASED TYPOGRAPHY
    ============================================ */
 
-/* Base body text with age support */
 body.module-theme[data-age-range] {
   font-size: var(--age-font-size-base);
   line-height: var(--age-line-height);
@@ -255,7 +487,6 @@ body.module-theme[data-age-range] li {
   color: var(--theme-muted);
 }
 
-/* Headings with age support */
 body.module-theme[data-age-range] h1,
 body.module-theme[data-age-range] .text-4xl {
   font-size: var(--age-font-size-h1) !important;
@@ -277,7 +508,7 @@ body.module-theme[data-age-range] .text-xl {
   margin-bottom: var(--age-spacing-sm);
 }
 
-/* Age-specific font weights */
+/* Age-specific font weights — slightly lighter for modern feel */
 body.module-theme[data-age-range="6-8"] p,
 body.module-theme[data-age-range="6-8"] li {
   font-weight: 500;
@@ -296,573 +527,170 @@ body.module-theme[data-age-range="9-11"] li {
 
 /* Age-specific letter spacing */
 body.module-theme[data-age-range="6-8"] {
-  letter-spacing: 0.02em;
-}
-
-body.module-theme[data-age-range="9-11"] {
   letter-spacing: 0.01em;
 }
 
 
 /* ============================================
-   LAYOUT WIDTHS
+   HEADINGS — REFINED
    ============================================ */
 
-.module-hero,
-.module-page{
-  max-width: 1040px;
-  margin-left:auto;
-  margin-right:auto;
-}
-
-
-/* ============================================
-   HERO SECTION
-   ============================================ */
-
-.module-hero{
-  border-radius: var(--module-radius-xl);
-  padding: 34px clamp(20px, 3.5vw, 44px);
-  margin-bottom: 22px;
-  box-shadow: var(--module-shadow-soft);
-  color: black;
-  background: var(--theme-hero);
-  position:relative;
-  overflow:hidden;
-}
-
-.module-hero::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(ellipse at 18% 20%, rgba(255,255,255,0.28) 0%, transparent 48%),
-    radial-gradient(ellipse at 82% 72%, rgba(255,255,255,0.13) 0%, transparent 42%),
-    radial-gradient(ellipse at 50% 110%, rgba(0,0,0,0.08) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.module-hero > *{ position:relative; }
-
-.module-hero h1{
+body.module-theme h1,
+body.module-theme h2,
+body.module-theme h3,
+body.module-theme h4,
+body.module-theme h5,
+body.module-theme h6,
+body.module-theme .font-title {
   font-family: var(--module-font-display);
-  font-size: clamp(1.9rem, 2.7vw, 2.6rem);
-  margin: 0 0 8px;
-  letter-spacing: -0.04em;
-}
-
-.module-hero p{
-  margin: 0;
-  font-size: 1.05rem;
-  color: black;
-}
-
-/* Age-specific hero adjustments */
-body.module-theme[data-age-range] .module-hero h1 {
-  font-size: clamp(var(--age-font-size-h2), 4vw, var(--age-font-size-h1)) !important;
-}
-
-body.module-theme[data-age-range] .module-hero p {
-  font-size: var(--age-font-size-lg) !important;
-}
-
-
-/* ============================================
-   PAGES / CARDS
-   ============================================ */
-
-.module-page{ margin: 0 auto 22px; }
-
-.page-inner{
-  background: var(--theme-card);
-  border: 1px solid var(--theme-card-border);
-  border-radius: var(--module-radius-lg);
-  padding: 26px clamp(18px, 3vw, 42px);
-  box-shadow: var(--module-shadow-card);
-}
-
-/* Age-specific card padding */
-body.module-theme[data-age-range] .page-inner {
-  padding: var(--age-spacing-xl) clamp(var(--age-spacing-lg), 4vw, var(--age-spacing-xl));
-  border-radius: var(--age-radius-lg);
-}
-
-/* Titles */
-.page-heading{
-  font-family: var(--module-font-display);
-  font-size: clamp(1.45rem, 2.2vw, 2.05rem);
-  margin: 0 0 14px;
-  color: var(--theme-primary);
-}
-
-body.module-theme[data-age-range] .page-heading {
-  font-size: var(--age-font-size-h2) !important;
-  margin-bottom: var(--age-spacing-md);
-}
-
-p, li{
-  color: var(--theme-muted);
-  font-size: var(--age-font-size-base);
-}
-
-
-/* ============================================
-   BUTTONS
-   ============================================ */
-
-.primary-btn,
-.secondary-btn{
-  padding: 12px 18px;
-  border-radius: 999px;
-  border: 0;
-  font-weight: 800;
-  cursor:pointer;
-  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-  font-family: var(--module-font-body);
-}
-
-.primary-btn{
-  background: var(--theme-primary);
-  color: #fff;
-  box-shadow: 0 10px 18px rgba(0,0,0,0.14);
-}
-
-.primary-btn:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 16px 26px rgba(0,0,0,0.16);
-}
-
-.secondary-btn{
-  background: rgba(0,0,0,0.05);
-  color: var(--theme-text);
-}
-
-.secondary-btn:hover{ transform: translateY(-1px); }
-
-/* Age-specific button styles */
-body.module-theme[data-age-range] .primary-btn,
-body.module-theme[data-age-range] .secondary-btn {
-  padding: var(--age-btn-padding);
-  font-size: var(--age-btn-font-size);
-  border-radius: var(--age-radius-md);
-}
-
-/* Extra large touch targets for youngest */
-body.module-theme[data-age-range="6-8"] .primary-btn,
-body.module-theme[data-age-range="6-8"] .secondary-btn {
-  min-height: 56px;
-  min-width: 120px;
-  font-weight: 800;
-}
-
-
-/* ============================================
-   INPUTS
-   ============================================ */
-
-textarea,
-select,
-input[type="text"],
-input[type="number"]{
-  width:100%;
-  border-radius: var(--module-radius-sm);
-  border: 1.5px solid rgba(15, 23, 42, 0.12);
-  padding: 12px 14px;
-  font-size: 1rem;
-  font-family: var(--module-font-body);
-  background: #fff;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-textarea:focus,
-select:focus,
-input:focus{
-  outline:none;
-  border-color: color-mix(in srgb, var(--theme-primary) 65%, white);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-primary) 14%, transparent);
-}
-
-/* Age-specific input styles */
-body.module-theme[data-age-range] input[type="text"],
-body.module-theme[data-age-range] input[type="number"],
-body.module-theme[data-age-range] textarea,
-body.module-theme[data-age-range] select {
-  padding: var(--age-input-padding);
-  font-size: var(--age-input-font-size);
-  border-radius: var(--age-radius-sm);
-}
-
-
-/* ============================================
-   CALLOUTS / SECTIONS
-   ============================================ */
-
-.callout{
-  border-radius: var(--module-radius-lg);
-  border: 1px dashed color-mix(in srgb, var(--theme-primary) 28%, transparent);
-  background: color-mix(in srgb, var(--theme-card) 82%, var(--theme-accent) 18%);
-  padding: 16px 18px;
-  margin-bottom: 16px;
-}
-
-body.module-theme[data-age-range] .callout {
-  padding: var(--age-spacing-md) var(--age-spacing-lg);
-  border-radius: var(--age-radius-md);
-  margin-bottom: var(--age-spacing-md);
-}
-
-
-/* ============================================
-   QUIZ OPTIONS
-   ============================================ */
-
-.quiz-options{
-  display:grid;
-  gap: 12px;
-  margin: 16px 0;
-}
-
-.quiz-option{
-  border-radius: var(--module-radius-sm);
-  border: 1px solid rgba(0,0,0,0.10);
-  padding: 14px 16px;
   font-weight: 700;
-  cursor:pointer;
-  background:#fff;
-  transition: transform .12s ease, border-color .12s ease, background .12s ease;
+  color: var(--theme-text);
+  line-height: var(--age-line-height-heading, 1.25);
 }
 
-.quiz-option:hover{ transform: translateY(-1px); }
 
-.quiz-option.selected{
-  border-color: color-mix(in srgb, var(--theme-primary) 70%, white);
-  background: color-mix(in srgb, var(--theme-primary) 10%, white);
-}
+/* ============================================
+   AGE-BASED INTERACTIVE ELEMENTS
+   ============================================ */
 
-/* Age-specific quiz options */
-body.module-theme[data-age-range] .quiz-options {
-  gap: var(--age-spacing-md);
-  margin: var(--age-spacing-lg) 0;
-}
-
-body.module-theme[data-age-range] .quiz-option {
-  padding: var(--age-spacing-md) var(--age-spacing-lg);
-  font-size: var(--age-font-size-base);
+body.module-theme[data-age-range="6-8"] button:not(.module-header__btn),
+body.module-theme[data-age-range="6-8"] .quiz-answer,
+body.module-theme[data-age-range="6-8"] .interactive-option,
+body.module-theme[data-age-range="6-8"] .scenario-option {
+  font-size: var(--age-btn-font-size);
+  padding: var(--age-btn-padding);
   border-radius: var(--age-radius-md);
-  min-height: calc(var(--age-font-size-base) * 3);
 }
 
-/* Playful style for youngest */
-body.module-theme[data-age-range="6-8"] .quiz-option {
-  border-width: 3px;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+body.module-theme[data-age-range="9-11"] button:not(.module-header__btn),
+body.module-theme[data-age-range="9-11"] .quiz-answer,
+body.module-theme[data-age-range="9-11"] .interactive-option,
+body.module-theme[data-age-range="9-11"] .scenario-option {
+  font-size: var(--age-btn-font-size);
+  padding: var(--age-btn-padding);
+  border-radius: var(--age-radius-md);
 }
 
-body.module-theme[data-age-range="6-8"] .quiz-option:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 8px 0 rgba(0,0,0,0.06);
+body.module-theme[data-age-range="12-14"] button:not(.module-header__btn),
+body.module-theme[data-age-range="12-14"] .quiz-answer,
+body.module-theme[data-age-range="12-14"] .interactive-option,
+body.module-theme[data-age-range="12-14"] .scenario-option {
+  font-size: var(--age-btn-font-size);
+  padding: var(--age-btn-padding);
+  border-radius: var(--age-radius-md);
 }
 
-
-/* ============================================
-   CHECKLIST
-   ============================================ */
-
-.checklist{
-  display:flex;
-  flex-direction:column;
-  gap: 12px;
-  margin: 14px 0 22px;
+body.module-theme[data-age-range="15-18"] button:not(.module-header__btn),
+body.module-theme[data-age-range="15-18"] .quiz-answer,
+body.module-theme[data-age-range="15-18"] .interactive-option,
+body.module-theme[data-age-range="15-18"] .scenario-option {
+  font-size: var(--age-btn-font-size);
+  padding: var(--age-btn-padding);
+  border-radius: var(--age-radius-md);
 }
 
-.check-item{
-  display:flex;
-  align-items:flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: var(--module-radius-sm);
-  background: color-mix(in srgb, var(--theme-card) 92%, var(--theme-accent) 8%);
-  border: 1px solid rgba(0,0,0,0.08);
+/* Age-based input sizing */
+body.module-theme[data-age-range] textarea,
+body.module-theme[data-age-range] input[type="text"],
+body.module-theme[data-age-range] .reflection-input {
+  font-size: var(--age-input-font-size);
+  padding: var(--age-input-padding);
+  border-radius: var(--age-radius-md);
 }
 
-.check-item input[type="checkbox"]{
-  margin-top: 2px;
-  width: 18px;
-  height: 18px;
-  accent-color: var(--theme-primary);
-}
-
-/* Age-specific checklist */
-body.module-theme[data-age-range] .checklist {
-  gap: var(--age-spacing-md);
-  margin: var(--age-spacing-md) 0 var(--age-spacing-xl);
-}
-
-body.module-theme[data-age-range] .check-item {
-  padding: var(--age-spacing-md);
-  border-radius: var(--age-radius-sm);
-  gap: var(--age-spacing-md);
-}
-
-body.module-theme[data-age-range] .check-item input[type="checkbox"] {
-  width: calc(var(--age-font-size-base) * 1.4);
-  height: calc(var(--age-font-size-base) * 1.4);
-  min-width: 20px;
-  min-height: 20px;
-}
-
-
-/* ============================================
-   DRAWING
-   ============================================ */
-
-.draw-canvas{
-  width:100%;
-  border-radius: var(--module-radius-lg);
-  background:#fff;
-  border: 2px dashed rgba(0,0,0,0.12);
-  min-height: 280px;
-}
-
-.draw-controls{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-}
-
-/* Age-specific drawing canvas */
-body.module-theme[data-age-range="6-8"] .draw-canvas {
-  min-height: 350px;
-  border-width: 4px;
-}
-
-body.module-theme[data-age-range="6-8"] .draw-controls button {
-  min-width: 100px;
-  min-height: 48px;
-}
-
-
-/* ============================================
-   TAKEAWAYS
-   ============================================ */
-
-.takeaways{
-  list-style:none;
-  padding:0;
-  margin:0;
-  display:grid;
-  gap: 10px;
-}
-
-.takeaways li{
-  padding: 12px 14px;
-  border-radius: var(--module-radius-sm);
-  background: color-mix(in srgb, var(--theme-card) 92%, var(--theme-accent) 8%);
-  border: 1px solid rgba(0,0,0,0.08);
-}
-
-body.module-theme[data-age-range] .takeaways {
-  gap: var(--age-spacing-md);
-}
-
-body.module-theme[data-age-range] .takeaways li {
-  padding: var(--age-spacing-md);
-}
-
-
-/* ============================================
-   RESPONSE TRACKING STYLES
-   ============================================ */
-
-.response-tracked {
-  background: var(--response-tracked-bg) !important;
-  border-color: var(--response-tracked-border) !important;
-  position: relative;
-}
-
-.response-tracked::after {
-  content: "✓";
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--response-tracked-border);
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.response-hover:hover {
-  background: var(--response-hover-bg) !important;
-  border-color: var(--response-hover-border) !important;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-/* Question tracking indicators */
-[data-question] {
-  position: relative;
-}
-
-[data-question].tracked {
-  border-left: 4px solid var(--response-tracked-border);
-  padding-left: 12px;
-}
-
-
-/* ============================================
-   RATING STYLES
-   ============================================ */
-
-.rating-container {
-  display: flex;
-  gap: 8px;
-  margin: 16px 0;
-}
-
-.rating-star {
-  font-size: 24px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #ddd;
-}
-
-.rating-star:hover,
-.rating-star.active {
-  color: #ffd700;
-  transform: scale(1.1);
-}
-
-/* Age-specific rating */
-body.module-theme[data-age-range] .rating-star {
-  font-size: calc(var(--age-emoji-size) * 0.65);
-}
-
-body.module-theme[data-age-range="6-8"] .rating-container {
-  gap: 16px;
-}
-
-body.module-theme[data-age-range="6-8"] .rating-star {
-  font-size: 36px;
-  padding: 8px;
-}
-
-body.module-theme[data-age-range="6-8"] .rating-star:hover,
-body.module-theme[data-age-range="6-8"] .rating-star.active {
-  transform: scale(1.2);
-}
-
-
-/* ============================================
-   EMOJI SELECTOR
-   ============================================ */
-
-.emoji-selector {
-  display: flex;
-  gap: 12px;
-  margin: 16px 0;
-  flex-wrap: wrap;
-}
-
-.emoji-option {
-  font-size: 32px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  border: 2px solid transparent;
-}
-
-.emoji-option:hover {
-  background: rgba(0,0,0,0.05);
-  transform: scale(1.1);
-}
-
-.emoji-option.selected {
-  border-color: var(--theme-primary);
-  background: var(--response-tracked-bg);
-}
-
-/* Age-specific emoji selector */
-body.module-theme[data-age-range] .emoji-option {
+/* Age-based emoji sizing */
+body.module-theme[data-age-range="6-8"] .emoji-selector .emoji-option {
   font-size: var(--age-emoji-size);
 }
 
-body.module-theme[data-age-range="6-8"] .emoji-selector {
-  gap: 20px;
-}
-
-body.module-theme[data-age-range="6-8"] .emoji-option {
-  font-size: 48px;
-  padding: 14px;
-  border-radius: 16px;
-  border-width: 3px;
-}
-
-body.module-theme[data-age-range="9-11"] .emoji-selector {
-  gap: 14px;
-}
-
-body.module-theme[data-age-range="9-11"] .emoji-option {
-  font-size: 38px;
-  padding: 10px;
+body.module-theme[data-age-range="9-11"] .emoji-selector .emoji-option {
+  font-size: var(--age-emoji-size);
 }
 
 
 /* ============================================
-   PROGRESS INDICATOR
+   AGE-BASED QUIZ OPTIONS
    ============================================ */
 
+body.module-theme[data-age-range="6-8"] .quiz-option {
+  border-radius: var(--age-radius-lg) !important;
+  padding: var(--age-spacing-md) var(--age-spacing-lg) !important;
+  font-size: var(--age-font-size-base);
+  min-height: 56px;
+  border-width: 3px;
+}
+
+body.module-theme[data-age-range="9-11"] .quiz-option {
+  border-radius: var(--age-radius-md) !important;
+  padding: var(--age-spacing-sm) var(--age-spacing-md) !important;
+  font-size: var(--age-font-size-base);
+  border-width: 2px;
+}
+
+body.module-theme[data-age-range="12-14"] .quiz-option {
+  padding: 10px 14px !important;
+}
+
+
+/* ============================================
+   AGE-BASED RATING
+   ============================================ */
+
+body.module-theme[data-age-range="6-8"] .rating-star {
+  font-size: 32px;
+  cursor: pointer;
+}
+
+body.module-theme[data-age-range="9-11"] .rating-star {
+  font-size: 26px;
+}
+
+body.module-theme[data-age-range="12-14"] .rating-star {
+  font-size: 22px;
+}
+
+
+/* ============================================
+   RESPONSE TRACKING
+   ============================================ */
+
+.response-tracked {
+  background-color: var(--response-tracked-bg);
+  border-color: var(--response-tracked-border);
+}
+
+.response-hover {
+  background-color: var(--response-hover-bg);
+  border-color: var(--response-hover-border);
+}
+
+/* Progress bar styling */
 .response-progress {
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 99px;
   height: 10px;
-  margin: 20px 0;
+  border-radius: 99px;
+  background-color: rgba(38, 70, 83, 0.08);
   overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .response-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--theme-primary), color-mix(in srgb, var(--theme-primary) 60%, var(--theme-secondary)));
-  transition: width 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
   border-radius: 99px;
-  position: relative;
-  overflow: hidden;
+  background: linear-gradient(90deg, var(--primary), var(--secondary, var(--primary)));
+  transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-.response-progress-bar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.32) 50%, transparent 100%);
-  animation: progressShimmer 2.2s ease-in-out infinite;
-}
-
-@keyframes progressShimmer {
-  0%   { transform: translateX(-120%); }
-  100% { transform: translateX(250%); }
-}
-
-/* Age-specific progress */
 body.module-theme[data-age-range="6-8"] .response-progress {
-  height: 16px;
+  height: 14px;
   border-radius: 99px;
 }
 
 body.module-theme[data-age-range="9-11"] .response-progress {
-  height: 13px;
+  height: 12px;
   border-radius: 99px;
 }
 
 body.module-theme[data-age-range="12-14"] .response-progress {
-  height: 11px;
+  height: 10px;
 }
 
 
@@ -987,31 +815,18 @@ body.module-theme[data-age-range="6-8"] .shield-input {
   .module-hero{ padding: 26px 18px; }
   .page-inner{ padding: 20px; }
   
-  .rating-container {
-    gap: 6px;
-  }
-
-  
-  .rating-star {
-    font-size: 20px;
-  }
-  
-  .emoji-selector {
-    gap: 8px;
-  }
-  
-  .emoji-option {
-    font-size: 28px;
-    padding: 6px;
-  }
+  .rating-container { gap: 6px; }
+  .rating-star { font-size: 20px; }
+  .emoji-selector { gap: 8px; }
+  .emoji-option { font-size: 28px; padding: 6px; }
   
   /* 6-8 mobile adjustments */
   body.module-theme[data-age-range="6-8"] {
     --age-font-size-base: 1.2rem;
     --age-font-size-lg: 1.35rem;
-    --age-font-size-h1: 2.2rem;
-    --age-font-size-h2: 1.8rem;
-    --age-font-size-h3: 1.5rem;
+    --age-font-size-h1: 2rem;
+    --age-font-size-h2: 1.65rem;
+    --age-font-size-h3: 1.4rem;
     --age-btn-padding: 14px 22px;
     --age-btn-font-size: 1.15rem;
     --age-emoji-size: 40px;
@@ -1027,7 +842,6 @@ body.module-theme[data-age-range="6-8"] .shield-input {
     padding: 10px;
   }
   
-  /* 9-11 mobile adjustments */
   body.module-theme[data-age-range="9-11"] {
     --age-font-size-base: 1.05rem;
     --age-font-size-lg: 1.15rem;
@@ -1036,20 +850,16 @@ body.module-theme[data-age-range="6-8"] .shield-input {
     --age-btn-padding: 12px 20px;
   }
   
-  /* 12-14 mobile adjustments */
   body.module-theme[data-age-range="12-14"] {
     --age-font-size-base: 0.95rem;
     --age-font-size-h1: 1.7rem;
   }
   
-  /* 15-18 mobile adjustments */
   body.module-theme[data-age-range="15-18"] {
     --age-font-size-base: 0.9rem;
     --age-font-size-h1: 1.5rem;
   }
 
-
-  /* Reorder welcome page layout on mobile - put panda above heading */
   .page[data-page="welcome"] .flex {
     flex-direction: column;
     text-align: center;
@@ -1066,13 +876,11 @@ body.module-theme[data-age-range="6-8"] .shield-input {
     margin-top: 0 !important;
   }
 
-  /* Fix page 2 - reduce space around character */
   .page:not([data-page="welcome"]) img[alt*="Professor Panda"],
   .page:not([data-page="welcome"]) img[alt*="Panda"] {
     margin-bottom: 0.3rem !important;
   }
 
-  /* Fix page 1 - prevent heading from overlapping character */
   .page[data-page="cover"] {
     padding-top: 2rem;
   }
@@ -1148,5 +956,13 @@ body.module-theme[data-age-range="6-8"] .shield-input {
 @media (prefers-reduced-motion: reduce) {
   body.module-theme[data-age-range="6-8"] .quiz-option:hover {
     transform: none;
+  }
+  
+  .module-world-bg__cloud {
+    animation: none !important;
+  }
+  
+  .module-world-bg__sun {
+    animation: none !important;
   }
 }

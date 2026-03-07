@@ -6236,21 +6236,26 @@ serve(async (req) => {
       }
       
       // Fetch age range data - only fetch simplified fields sent to AI
+      console.log("[DEBUG] ageRangeRef value:", ageRangeRef, "type:", typeof ageRangeRef);
+      console.log("[DEBUG] body.adminAge:", body.adminAge, "body.ageRangeId:", body.ageRangeId, "body.age_range_id:", body.age_range_id);
+      
       let ageQuery = supabaseClient
         .from("age_ranges")
         .select("id, age_range, display_name, language_guidelines, developmental_stage")
         .eq("is_active", true);
 
       if (typeof ageRangeRef === "string" && /^[0-9a-fA-F-]{32,36}$/.test(ageRangeRef)) {
+        console.log("[DEBUG] Using UUID lookup for age range");
         ageQuery = ageQuery.eq("id", ageRangeRef);
       } else {
+        console.log("[DEBUG] Using name lookup for age range:", ageRangeRef);
         ageQuery = ageQuery.or(`age_range.eq.${ageRangeRef},display_name.eq.${ageRangeRef}`);
       }
 
       const { data: ageData, error: ageError } = await ageQuery.single();
       
       if (ageError || !ageData) {
-        console.error("[API] Age range lookup failed:", ageError);
+        console.error("[API] Age range lookup failed:", ageError, "ageRangeRef was:", ageRangeRef);
         return jsonResponse({ error: "Invalid or inactive age range" }, 400);
       }
       

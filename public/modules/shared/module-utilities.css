@@ -1,39 +1,31 @@
 /**
- * Module Utilities CSS — Replaces ALL inline styles from index.ts
- * ================================================================
+ * Module Utilities CSS — Refined Pastel Edition
+ * ===============================================
  * 
- * PURPOSE: Every inline `style="..."` in the HTML generator has been
- * replaced with a semantic CSS class defined here. To change colours,
- * fonts, spacing, or any visual property across all modules, edit
- * THIS FILE — not the TypeScript generator.
+ * PURPOSE: Same semantic classes, softer colour application.
+ * Super skill colours are introduced as tints and accents
+ * rather than bold primaries. Warm neutrals dominate.
  *
- * NAMING CONVENTION:
- *   .m-{property}-{value}   — module utility (e.g. .m-color-dark)
- *   .m-{component}          — module component  (e.g. .m-page, .m-card)
- *   .m-{component}--{mod}   — modifier          (e.g. .m-card--callout)
- *
- * PALETTE VARIABLES (set per-module via :root in <style>):
- *   --primary, --secondary, --accent, --dark, --cream,
- *   --light-green, --soft-yellow, --success
- *
- * ================================================================ */
+ * NAMING CONVENTION: unchanged from original
+ * PALETTE VARIABLES: same --primary, --secondary, --accent etc.
+ */
 
 
 /* ============================================
    1. COLOR UTILITIES
    ============================================ */
 
-/* Text colours */
+/* Text colours — warmer, softer */
 .m-color-dark       { color: var(--dark); }
 .m-color-primary    { color: var(--primary); }
 .m-color-secondary  { color: var(--secondary); }
 .m-color-accent     { color: var(--accent); }
 .m-color-white      { color: #fff; }
-.m-color-muted      { color: #374151; }
-.m-color-heading    { color: #1a1a2e; }
-.m-color-success    { color: #10B981; }
+.m-color-muted      { color: #3D5A6E; }
+.m-color-heading    { color: #1E3A4A; }
+.m-color-success    { color: #8AB17D; }
 
-/* Background colours */
+/* Background colours — pastels: mix with white for softness */
 .m-bg-cream         { background-color: var(--cream); }
 .m-bg-white         { background-color: white; }
 .m-bg-primary       { background-color: var(--primary); }
@@ -41,17 +33,17 @@
 .m-bg-accent        { background-color: var(--accent); }
 .m-bg-soft-yellow   { background-color: var(--soft-yellow); }
 .m-bg-light-green   { background-color: var(--light-green); }
-.m-bg-gray          { background-color: #e5e7eb; }
+.m-bg-gray          { background-color: #eee8df; }
 .m-bg-transparent   { background-color: transparent; }
 
-/* Border colours */
+/* Border colours — lighter */
 .m-border-primary   { border-color: var(--primary); }
 .m-border-secondary { border-color: var(--secondary); }
 .m-border-accent    { border-color: var(--accent); }
 .m-border-dark      { border-color: var(--dark); }
 .m-border-transparent { border-color: transparent; }
 
-/* Accent-color (for checkboxes etc.) */
+/* Accent-color */
 .m-accent-primary   { accent-color: var(--primary); }
 
 
@@ -59,78 +51,81 @@
    2. COMPOUND COLOR COMBINATIONS
    ============================================ */
 
-/* Primary button style */
+/* Primary button — with subtle gradient */
 .m-btn-primary {
-  background-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 85%, #000));
   color: #fff;
 }
 
-/* White card with secondary border */
+/* White card with soft secondary border */
 .m-card-bordered {
   background-color: white;
-  border-color: var(--secondary);
+  border-color: color-mix(in srgb, var(--secondary) 30%, transparent);
 }
 
-/* White card with primary border */
+/* White card with soft primary border */
 .m-card-bordered-primary {
   background-color: white;
-  border-color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
-/* Light green with transparent border */
+/* Light green — softer tint */
 .m-bg-light-green-flat {
-  background-color: var(--light-green);
+  background-color: color-mix(in srgb, var(--light-green) 50%, white);
   border-color: transparent;
   color: var(--dark);
 }
 
-/* Callout gradient */
+/* Callout gradient — gentler */
 .m-bg-callout-gradient {
-  background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--soft-yellow) 50%, white), 
+    color-mix(in srgb, var(--light-green) 50%, white)
+  );
 }
 
-/* Feedback hidden state */
+/* Feedback hidden states */
 .m-feedback-hidden {
   display: none;
-  background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--soft-yellow) 50%, white), 
+    color-mix(in srgb, var(--light-green) 50%, white)
+  );
 }
 
-/* Feedback hidden simple */
 .m-feedback-hidden-green {
-  background-color: var(--light-green);
+  background-color: color-mix(in srgb, var(--light-green) 50%, white);
   display: none;
 }
 
-/* Feedback hidden for primary-coloured text */
 .m-feedback-hidden-primary {
   color: var(--primary);
   display: none;
 }
 
-/* Cream input with primary border */
+/* Cream input with soft primary border */
 .m-input-cream {
-  background-color: var(--cream);
-  border: 3px solid var(--primary);
+  background-color: color-mix(in srgb, var(--cream) 80%, white);
+  border: 2px solid color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--dark);
   min-height: 150px;
 }
 
-/* Secondary bordered with dark text */
+/* Option — soft bordered */
 .m-option-secondary {
-  border-color: var(--secondary);
+  border-color: color-mix(in srgb, var(--secondary) 25%, transparent);
   background-color: white;
   color: var(--dark);
 }
 
-/* Primary bordered input area */
+/* Input areas — softer borders */
 .m-input-bordered-primary {
-  border-color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
   min-height: 60px;
 }
 
-/* Secondary bordered input area */
 .m-input-bordered-secondary {
-  border-color: var(--secondary);
+  border-color: color-mix(in srgb, var(--secondary) 25%, transparent);
   min-height: 60px;
 }
 
@@ -144,9 +139,13 @@
   background-color: var(--cream);
 }
 
-/* Cover page */
+/* Cover page — gentler gradient */
 .m-page-cover {
-  background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream));
+  background: linear-gradient(170deg, 
+    color-mix(in srgb, var(--soft-yellow) 35%, white) 0%, 
+    var(--cream) 60%,
+    color-mix(in srgb, var(--primary) 5%, var(--cream)) 100%
+  );
   padding-top: 20px;
 }
 
@@ -159,25 +158,25 @@
   background-color: white;
 }
 
-/* Card with left primary border */
+/* Card with left primary border — thinner */
 .m-card--primary-left {
   background-color: white;
-  border-left: 6px solid var(--primary);
+  border-left: 4px solid color-mix(in srgb, var(--primary) 50%, transparent);
 }
 
-/* Callout box (soft yellow) */
+/* Callout box — softer yellow tint */
 .m-card--callout {
-  background-color: var(--soft-yellow);
+  background-color: color-mix(in srgb, var(--soft-yellow) 45%, white);
 }
 
-/* Tip box (light green) */
+/* Tip box — softer green tint */
 .m-card--tip {
-  background-color: var(--light-green);
+  background-color: color-mix(in srgb, var(--light-green) 45%, white);
 }
 
-/* Soft yellow highlight box */
+/* Soft yellow highlight */
 .m-highlight-box {
-  background-color: var(--soft-yellow);
+  background-color: color-mix(in srgb, var(--soft-yellow) 40%, white);
 }
 
 /* Primary badge pill */
@@ -185,16 +184,24 @@
   background-color: var(--primary);
 }
 
-/* Name ownership box on cover */
+/* Name ownership box — softer, inviting */
 .m-name-box {
-  border-color: var(--primary);
+  border: 2px dashed color-mix(in srgb, var(--primary) 25%, transparent);
   background-color: white;
+  border-radius: 20px;
+  box-shadow: inset 0 2px 8px rgba(38, 70, 83, 0.04);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Grown-up note accordion */
+.m-name-box:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  box-shadow: inset 0 2px 8px rgba(38, 70, 83, 0.06), 0 2px 12px rgba(38, 70, 83, 0.05);
+}
+
+/* Grown-up note accordion — lighter */
 .m-grownup-note {
-  border-color: var(--secondary);
-  background-color: rgba(255, 255, 255, 0.7);
+  border-color: color-mix(in srgb, var(--secondary) 20%, transparent);
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 .m-grownup-note__toggle {
@@ -233,7 +240,7 @@
   height: 90px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--soft-yellow) 0%, color-mix(in srgb, var(--soft-yellow) 40%, transparent) 50%, transparent 70%);
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .m-chapter-stars {
@@ -264,30 +271,46 @@
   padding: 0 24px;
   max-width: 640px;
   margin: 0 auto;
+  padding-top: 16px;
   padding-bottom: 300px;
+}
+
+/* Warm frosted wash behind chapter text for warmth in empty space */
+.m-chapter-content::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  height: 280px;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--cream-warm, var(--cream, #FFFAF3)) 60%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .m-chapter-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: color-mix(in srgb, var(--primary) 12%, white);
-  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
-  border-radius: 20px;
-  padding: 5px 14px;
-  margin-bottom: 20px;
+  gap: 7px;
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  border: 1.5px solid color-mix(in srgb, var(--primary) 18%, transparent);
+  border-radius: 99px;
+  padding: 6px 18px;
+  margin-bottom: 16px;
   backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(38, 70, 83, 0.06);
 }
 
 .m-chapter-badge__emoji {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .m-chapter-badge__label {
   color: var(--primary);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -302,19 +325,19 @@
 }
 
 .m-chapter-number {
-  font-family: 'Fredoka One', 'Baloo 2', cursive;
-  font-size: clamp(32px, 7vw, 52px);
-  font-weight: 800;
+  font-family: 'Baloo 2', cursive;
+  font-size: clamp(32px, 7vw, 48px);
+  font-weight: 700;
   color: var(--primary);
   margin: 0;
   line-height: 1.1;
-  text-shadow: 0 2px 12px color-mix(in srgb, var(--primary) 25%, transparent);
+  text-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .m-chapter-heading {
-  font-family: 'Fredoka One', 'Baloo 2', cursive;
-  font-size: clamp(24px, 5vw, 38px);
-  font-weight: 800;
+  font-family: 'Baloo 2', cursive;
+  font-size: clamp(22px, 5vw, 34px);
+  font-weight: 700;
   color: var(--dark);
   margin: 0;
   line-height: 1.15;
@@ -329,24 +352,24 @@
 }
 
 .m-chapter-dot {
-  width: 16px;
+  width: 14px;
   height: 3px;
-  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
   border-radius: 2px;
 }
 
 .m-chapter-dot--active {
-  width: 24px;
+  width: 22px;
   height: 3px;
-  background: var(--accent);
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
   border-radius: 2px;
 }
 
 .m-chapter-subtitle {
-  font-family: 'Nunito', sans-serif;
-  font-size: clamp(15px, 3vw, 20px);
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: clamp(14px, 3vw, 18px);
   font-weight: 600;
-  color: color-mix(in srgb, var(--dark) 70%, var(--secondary));
+  color: color-mix(in srgb, var(--dark) 65%, var(--secondary));
   margin: 0;
   line-height: 1.5;
   max-width: 460px;
@@ -356,7 +379,7 @@
 
 
 /* ============================================
-   5. CHARACTER DISPLAY
+   5. CHARACTER DISPLAY — Integrated, not placed
    ============================================ */
 
 .m-character-img {
@@ -365,19 +388,28 @@
   display: block;
 }
 
+/* Cover page mascot — overlaps into content below, halo behind */
 .m-character-img--cover {
-  height: 280px;
-  width: 280px;
+  height: 260px;
+  width: 260px;
   display: block;
+  position: relative;
+  z-index: 5;
+  margin-bottom: -20px;
+  filter: drop-shadow(0 6px 16px rgba(38, 70, 83, 0.10));
 }
 
+/* Welcome page mascot — anchored beside text */
 .m-character-img--welcome {
   height: 10rem;
   width: 10rem;
+  position: relative;
+  z-index: 5;
+  filter: drop-shadow(0 4px 12px rgba(38, 70, 83, 0.10));
 }
 
 .m-character-emoji--cover {
-  font-size: 180px;
+  font-size: 160px;
   line-height: 1;
   display: block;
 }
@@ -388,33 +420,35 @@
    ============================================ */
 
 .m-grownup-title {
-  font-family: 'Fredoka One', cursive;
+  font-family: 'Baloo 2', cursive;
   font-size: 0.95rem;
-  color: #1a1a2e;
+  font-weight: 700;
+  color: #1E3A4A;
   margin-bottom: 8px;
 }
 
 .m-grownup-title--lg {
-  font-family: 'Fredoka One', cursive;
+  font-family: 'Baloo 2', cursive;
   font-size: 1.1rem;
-  color: #1a1a2e;
+  font-weight: 700;
+  color: #1E3A4A;
   margin-bottom: 12px;
 }
 
 .m-grownup-body {
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   font-size: 13px;
-  color: #374151;
+  color: #3D5A6E;
 }
 
 .m-grownup-body--sm {
   font-size: 13px;
-  color: #374151;
+  color: #3D5A6E;
 }
 
 .m-grownup-body--heading {
   font-size: 13px;
-  color: #1a1a2e;
+  color: #1E3A4A;
 }
 
 
@@ -422,14 +456,15 @@
    7. INTERACTIVE ACTIVITY COMPONENTS
    ============================================ */
 
-/* White rounded card for options/items */
+/* White rounded card for options */
 .m-option-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px;
+  border: 1px solid rgba(38, 70, 83, 0.06);
 }
 
-/* Grid layout for 2-column */
+/* Grid layout */
 .m-grid-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -446,7 +481,7 @@
 
 
 /* ============================================
-   8. TOAST / NOTIFICATION
+   8. TOAST / NOTIFICATION — Softer
    ============================================ */
 
 .m-toast {
@@ -456,26 +491,27 @@
   transform: translateX(-50%);
   background: var(--primary);
   color: white;
-  padding: 16px 24px;
+  padding: 14px 22px;
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 24px rgba(38, 70, 83, 0.18);
   z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 12px;
-  animation: slideUp 0.5s ease-out;
-  font-family: 'Nunito', sans-serif;
+  gap: 10px;
+  animation: slideUp 0.4s ease-out;
+  font-family: 'Nunito Sans', sans-serif;
   font-weight: 700;
+  font-size: 14px;
 }
 
 .m-toast__emoji {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateX(-50%) translateY(16px);
   }
   to {
     opacity: 1;
@@ -497,5 +533,5 @@
 
 .m-celebration-box {
   background-color: white;
-  border-color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
 }

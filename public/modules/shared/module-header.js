@@ -731,6 +731,18 @@
     inner.appendChild(actionsSection);
     header.appendChild(inner);
 
+    // Create road-style progress bar
+    var roadContainer = document.createElement('div');
+    roadContainer.className = 'module-header__road';
+    var roadFill = document.createElement('div');
+    roadFill.className = 'module-header__road-fill idle';
+    roadFill.style.width = '0%';
+    roadContainer.appendChild(roadFill);
+    header.appendChild(roadContainer);
+
+    // Dash animation timeout
+    var dashIdleTimer = null;
+
     // Insert into DOM
     var root = document.getElementById('moduleHeaderRoot');
     if (root) {
@@ -745,6 +757,59 @@
     spacer.className = 'module-header-spacer no-print';
     header.parentNode.insertBefore(spacer, header.nextSibling);
 
+    // ============================================================
+    // IMMERSIVE WORLD BACKGROUND
+    // Inject floating clouds, sun, rolling hills behind all content
+    // ============================================================
+    if (!document.querySelector('.module-world-bg')) {
+      var worldBg = document.createElement('div');
+      worldBg.className = 'module-world-bg no-print';
+      worldBg.setAttribute('aria-hidden', 'true');
+
+      // Sun
+      var sun = document.createElement('div');
+      sun.className = 'module-world-bg__sun';
+      worldBg.appendChild(sun);
+
+      // Clouds
+      for (var c = 1; c <= 5; c++) {
+        var cloud = document.createElement('div');
+        cloud.className = 'module-world-bg__cloud module-world-bg__cloud--' + c;
+        var cloudInner = document.createElement('div');
+        cloudInner.className = 'module-world-bg__cloud-shape';
+        cloud.appendChild(cloudInner);
+        worldBg.appendChild(cloud);
+      }
+
+      // Rolling hills — multi-layered SVG
+      var hills = document.createElement('div');
+      hills.className = 'module-world-bg__hills';
+      
+      // Get the primary colour for hill tinting — use CSS var or fallback
+      var primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#2A9D8F';
+      
+      hills.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 200" preserveAspectRatio="none">' +
+        '<!-- Far hills — lightest -->' +
+        '<path d="M0,120 C200,60 400,100 600,70 C800,40 1000,90 1200,65 C1300,55 1400,80 1440,75 L1440,200 L0,200 Z" ' +
+        'fill="' + primaryColor + '" opacity="0.06"/>' +
+        '<!-- Mid hills -->' +
+        '<path d="M0,150 C150,100 350,130 500,110 C700,85 850,125 1050,100 C1200,80 1350,115 1440,105 L1440,200 L0,200 Z" ' +
+        'fill="' + primaryColor + '" opacity="0.09"/>' +
+        '<!-- Near hills — most visible -->' +
+        '<path d="M0,170 C120,140 280,160 450,145 C620,130 780,155 950,140 C1100,128 1280,150 1440,138 L1440,200 L0,200 Z" ' +
+        'fill="' + primaryColor + '" opacity="0.13"/>' +
+        '</svg>';
+      worldBg.appendChild(hills);
+
+      // Grain overlay
+      var grain = document.createElement('div');
+      grain.className = 'module-world-bg__grain';
+      worldBg.appendChild(grain);
+
+      // Insert as first child of body so it's behind everything
+      document.body.insertBefore(worldBg, document.body.firstChild);
+    }
+
     // State
     var moduleCompleted = false;
     var currentLabels = labels;
@@ -758,8 +823,22 @@
       
       var mobile = window.innerWidth <= 768;
       pageDisplay.textContent = mobile 
-        ? safeCurrent + ' of ' + safeTotal
-        : 'Page ' + safeCurrent + ' of ' + safeTotal;
+        ? safeCurrent + '/' + safeTotal
+        : safeCurrent + ' of ' + safeTotal;
+      
+      // Update road progress bar
+      var progressPercent = safeTotal > 1 
+        ? Math.round(((safeCurrent - 1) / (safeTotal - 1)) * 100) 
+        : 0;
+      if (safeCurrent >= safeTotal) progressPercent = 100;
+      roadFill.style.width = progressPercent + '%';
+      
+      // Animate dashes briefly on page change, then idle
+      roadFill.classList.remove('idle');
+      clearTimeout(dashIdleTimer);
+      dashIdleTimer = setTimeout(function() {
+        roadFill.classList.add('idle');
+      }, 1200);
       
       prevBtn.disabled = safeCurrent <= 1;
       nextBtn.disabled = safeCurrent >= safeTotal;
@@ -777,7 +856,30 @@
 
     function updateStarCount(value) {
       var countEl = starButton.querySelector('[data-role="star-count"]');
-      if (countEl) countEl.textContent = value;
+      if (countEl) {
+        var oldValue = parseInt(countEl.textContent, 10) || 0;
+        var newValue = parseInt(value, 10) || 0;
+        countEl.textContent = newValue;
+        
+        // Animate if star count increased
+        if (newValue > oldValue) {
+          // Pulse the star button
+          starButton.classList.remove('star-earned');
+          void starButton.offsetWidth; // force reflow
+          starButton.classList.add('star-earned');
+          
+          // Pop the number
+          countEl.classList.remove('counting');
+          void countEl.offsetWidth;
+          countEl.classList.add('counting');
+          
+          // Clean up animation classes
+          setTimeout(function() {
+            starButton.classList.remove('star-earned');
+            countEl.classList.remove('counting');
+          }, 700);
+        }
+      }
     }
 
     function updateButtonLabels() {
@@ -828,12 +930,22 @@
       resizeTimeout = setTimeout(function() {
         updateButtonLabels();
         var text = pageDisplay.textContent;
-        var match = text.match(/(\d+)\s*(?:of)\s*(\d+)/i);
+        var match = text.match(/(\d+)\s*(?:of|\/)\s*(\d+)/i);
         if (match) {
           updatePageDisplay(parseInt(match[1], 10), parseInt(match[2], 10));
         }
       }, 150);
     });
+
+    // Handle scroll — add .scrolled class for opaque header
+    var scrollThreshold = 10;
+    window.addEventListener('scroll', function() {
+      if (window.scrollY > scrollThreshold) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    }, { passive: true });
 
     // Initialize
     updatePageDisplay(initialPage.current, initialPage.total);
@@ -849,7 +961,7 @@
       },
       setParentMode: function(enabled) {
         if (parentModeButton) {
-          parentModeButton.textContent = enabled ? '👨‍👩‍👧 ON' : '👨‍👩‍👧';
+          parentModeButton.textContent = enabled ? '\u{1F468}\u200D\u{1F469}\u200D\u{1F467} ON' : '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
         }
       },
       destroy: function() {
