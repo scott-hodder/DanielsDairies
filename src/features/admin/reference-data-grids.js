@@ -80,7 +80,7 @@ window.refEditRow = function(table, id, btn) {
         var cell = cells[idx];
         var val = f.get(item) || '';
         if (f.type === 'select' && f.options) {
-            var opts = typeof f.options === 'function' ? f.options() : [];
+            var opts = typeof f.options === 'function' ? f.options(item, row) : [];
             var onchangeAttr = f.onchange ? ' onchange="' + f.onchange + '(this,\'' + table + '\',\'' + id + '\')"' : '';
             var html = '<select data-field="' + f.key + '"' + onchangeAttr + ' style="width:100%;padding:4px 6px;border:1px solid #c7d2fe;border-radius:4px;font-size:12px;"><option value="">Select...</option>';
             var currentVal = f.selectValue ? f.selectValue(item) : val;
@@ -96,6 +96,10 @@ window.refEditRow = function(table, id, btn) {
 
     // Replace edit button with save/cancel
     lastCell.innerHTML = '<button onclick="refSaveRow(\'' + table + '\',\'' + id + '\',this)" style="background:#10b981;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:600;margin-right:2px;">Save</button><button onclick="refCancelRow(this)" style="background:#6b7c8f;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;">✕</button>';
+
+    if (table === 'Conn') {
+        _setConnCycleOptionsForEditRow(row, item.super_skill_id || '', item.cycle_id || '');
+    }
 };
 
 window.refCancelRow = function(btn) {
@@ -192,8 +196,8 @@ var _editConfigs = {
         getData: function() { return _connections; },
         render: rConn,
         fields: [
-            { key: 'super_skill_id', type: 'select', get: function(d) { return d.super_skills ? d.super_skills.name : ''; }, selectValue: function(d) { return d.super_skill_id || ''; }, options: function() { return _ss.map(function(s) { return { v: s.id, t: s.name }; }); } },
-            { key: 'cycle_id', type: 'select', get: function(d) { return d.cycles ? ('C' + d.cycles.cycle_number + ': ' + d.cycles.name) : ''; }, selectValue: function(d) { return d.cycle_id || ''; }, options: function() { return _cycles.map(function(c) { return { v: c.id, t: 'C' + c.cycle_number + ': ' + c.name }; }); } },
+            { key: 'super_skill_id', type: 'select', get: function(d) { return d.super_skills ? d.super_skills.name : ''; }, selectValue: function(d) { return d.super_skill_id || ''; }, options: function() { return _ss.map(function(s) { return { v: s.id, t: s.name }; }); }, onchange: '_onConnSuperSkillEditSelect' },
+            { key: 'cycle_id', type: 'select', get: function(d) { return d.cycles ? ('C' + d.cycles.cycle_number + ': ' + d.cycles.name) : ''; }, selectValue: function(d) { return d.cycle_id || ''; }, options: function(d) { return _getCyclesForSuperSkill(d ? d.super_skill_id : '').map(function(c) { return { v: c.id, t: 'C' + c.cycle_number + ': ' + c.name }; }); } },
             { key: 'primary_theory_id', type: 'select', get: function(d) { return d.core_theories ? d.core_theories.theory_name : ''; }, selectValue: function(d) { return d.primary_theory_id || ''; }, options: function() { return _th.map(function(t) { return { v: t.id, t: t.theory_name }; }); } },
             { key: 'citation', get: function(d) { return d.citation || ''; } },
             { key: 'brain_town_application', get: function(d) { return d.brain_town_application || ''; } }
@@ -531,8 +535,8 @@ var _inlineConfigs = {
     Conn: {
         tbId: 'tbConn',
         cols: [
-            { id: 'SuperSkill', ph: 'Super Skill', w: '', req: true, type: 'select', options: function() { return _ss.map(function(ss) { return { v: ss.id, t: ss.name }; }); } },
-            { id: 'Cycle', ph: 'Cycle', w: '', req: true, type: 'select', options: function() { return _cycles.map(function(c) { return { v: c.id, t: 'C' + c.cycle_number + ': ' + c.name }; }); } },
+            { id: 'SuperSkill', ph: 'Super Skill', w: '', req: true, type: 'select', options: function() { return _ss.map(function(ss) { return { v: ss.id, t: ss.name }; }); }, onchange: '_onConnSuperSkillSelect' },
+            { id: 'Cycle', ph: 'Cycle', w: '', req: true, type: 'select', options: function() { return []; } },
             { id: 'Theory', ph: 'Primary Theory', w: '', req: true, type: 'select', options: function() { return _th.map(function(t) { return { v: t.id, t: t.theory_name }; }); } },
             { id: 'Citation', ph: 'e.g. Hebb, 1949', w: 'min-width:150px;' },
             { id: 'Application', ph: 'Brain Town application', w: 'min-width:220px;' }
@@ -639,6 +643,7 @@ window.refInlineAdd = function(key) {
     cells += '<td style="padding:6px 8px;text-align:center;white-space:nowrap;"><button onclick="refInlineSave(\'' + key + '\')" style="background:#10b981;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:600;margin-right:2px;">Save</button><button onclick="document.getElementById(\'' + rowId + '\')?.remove()" style="background:#6b7c8f;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;">✕</button></td>';
     tr.innerHTML = cells;
     tb.insertBefore(tr, tb.firstChild);
+    if (key === 'Conn') _setConnCycleOptionsForInline('');
     tr.querySelector('input,select')?.focus();
 };
 
@@ -681,6 +686,44 @@ window._onCharEditSelect = function(selectEl, table, itemId) {
     if (!charId) { persInput.value = ''; return; }
     var ch = _chars.find(function(c) { return c.id === charId; });
     persInput.value = ch ? (ch.personality_nd || '') : '';
+};
+
+
+function _getCyclesForSuperSkill(superSkillId) {
+    if (!superSkillId) return [];
+    return _cycles.filter(function(c) { return c.super_skill_id === superSkillId; });
+}
+
+function _setSelectOptions(selectEl, options, selectedValue) {
+    if (!selectEl) return;
+    var html = '<option value="">Select...</option>';
+    options.forEach(function(o) {
+        html += '<option value="' + o.v + '"' + (selectedValue && selectedValue === o.v ? ' selected' : '') + '>' + E(o.t) + '</option>';
+    });
+    selectEl.innerHTML = html;
+}
+
+function _setConnCycleOptionsForInline(superSkillId) {
+    var cycleSelect = document.getElementById('refI_Conn_Cycle');
+    var options = _getCyclesForSuperSkill(superSkillId).map(function(c) { return { v: c.id, t: 'C' + c.cycle_number + ': ' + c.name }; });
+    _setSelectOptions(cycleSelect, options, '');
+}
+
+function _setConnCycleOptionsForEditRow(row, superSkillId, selectedCycleId) {
+    if (!row) return;
+    var cycleSelect = row.querySelector('select[data-field="cycle_id"]');
+    var options = _getCyclesForSuperSkill(superSkillId).map(function(c) { return { v: c.id, t: 'C' + c.cycle_number + ': ' + c.name }; });
+    var validSelected = options.some(function(o) { return o.v === selectedCycleId; }) ? selectedCycleId : '';
+    _setSelectOptions(cycleSelect, options, validSelected);
+}
+
+window._onConnSuperSkillSelect = function(selectEl, key) {
+    _setConnCycleOptionsForInline(selectEl ? selectEl.value : '');
+};
+
+window._onConnSuperSkillEditSelect = function(selectEl, table, itemId) {
+    var row = selectEl ? selectEl.closest('tr') : null;
+    _setConnCycleOptionsForEditRow(row, selectEl ? selectEl.value : '', '');
 };
 
 // ============================
