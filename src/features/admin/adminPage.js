@@ -630,28 +630,12 @@ async function loadCoreTheories() {
             selects.forEach(targetSelect => {
                 targetSelect.innerHTML = '<option value="">Select psychological theory...</option>';
 
-                // Group by category
-                const grouped = {};
                 coreTheories.forEach(theory => {
-                    const cat = theory.category || 'Other';
-                    if (!grouped[cat]) grouped[cat] = [];
-                    grouped[cat].push(theory);
-                });
-
-                // Add optgroups and options
-                Object.keys(grouped).sort().forEach(category => {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = category;
-
-                    grouped[category].forEach(theory => {
-                        const option = document.createElement('option');
-                        option.value = theory.id;
-                        option.textContent = theory.theory_name;
-                        option.dataset.description = theory.description || '';
-                        optgroup.appendChild(option);
-                    });
-
-                    targetSelect.appendChild(optgroup);
+                    const option = document.createElement('option');
+                    option.value = theory.id;
+                    option.textContent = theory.theory_name;
+                    option.dataset.description = theory.description || '';
+                    targetSelect.appendChild(option);
                 });
             });
 
@@ -1779,6 +1763,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             cycleSelect.value = opt.value;
                             break;
                         }
+                    }
+                    if (typeof onModuleCycleChange === 'function') {
+                        onModuleCycleChange();
                     }
                 }
                 
@@ -6789,6 +6776,7 @@ if (data.status === "running") {
         let superSkillsData = [];
         let subSkillsData = [];
         let cyclesData = [];
+        let theoryConnectionsData = [];
         
         // Load Super Skills into dropdown
         async function populateSuperSkillsDropdown() {
@@ -6842,12 +6830,64 @@ if (data.status === "running") {
                     // .eq('is_active', true)  // Removed - show all cycles
                     .order('cycle_number', { ascending: true });
                 cyclesData = cycleData || [];
+
+                const { data: theoryConnectionData } = await supabase
+                    .from('theory_connections')
+                    .select('id, super_skill_id, cycle_id, primary_theory_id, brain_town_application')
+                    .eq('is_active', true);
+                theoryConnectionsData = theoryConnectionData || [];
                 
             } catch (error) {
                 console.error('[Admin] Error loading Super Skills:', error);
             }
         }
         
+        function clearConnectionAutofillFields() {
+            const theorySelect = document.getElementById('coreTheorySelect');
+            const brainTownField = document.getElementById('brainTownAnalogy');
+            if (theorySelect) theorySelect.value = '';
+            if (brainTownField) brainTownField.value = '';
+            updateTheoryPreview({
+                selectId: 'coreTheorySelect',
+                previewId: 'theoryPreview',
+                nameId: 'theoryPreviewName',
+                descriptionId: 'theoryPreviewDescription'
+            });
+        }
+
+        function applyTheoryConnectionAutofill() {
+            const superSkillId = document.getElementById('newModuleSuperSkill')?.value || '';
+            const cycleId = document.getElementById('newModuleCycle')?.value || '';
+            const theorySelect = document.getElementById('coreTheorySelect');
+            const brainTownField = document.getElementById('brainTownAnalogy');
+
+            if (!theorySelect || !brainTownField) return;
+            if (!superSkillId || !cycleId) {
+                clearConnectionAutofillFields();
+                return;
+            }
+
+            const connection = theoryConnectionsData.find(c => c.super_skill_id === superSkillId && c.cycle_id === cycleId);
+            if (!connection) {
+                clearConnectionAutofillFields();
+                return;
+            }
+
+            theorySelect.value = connection.primary_theory_id || '';
+            brainTownField.value = connection.brain_town_application || '';
+
+            updateTheoryPreview({
+                selectId: 'coreTheorySelect',
+                previewId: 'theoryPreview',
+                nameId: 'theoryPreviewName',
+                descriptionId: 'theoryPreviewDescription'
+            });
+        }
+
+        window.onModuleCycleChange = function() {
+            applyTheoryConnectionAutofill();
+        }
+
         // Handle Super Skill change - update character, sub-skills, and cycles
         window.onSuperSkillChange = function() {
             const superSkillSelect = document.getElementById('newModuleSuperSkill');
@@ -6891,6 +6931,8 @@ if (data.status === "running") {
                 option.textContent = `Cycle ${cycle.cycle_number}: ${cycle.name}`;
                 cycleSelect.appendChild(option);
             });
+
+            applyTheoryConnectionAutofill();
         }
 
         window.onEditSuperSkillChange = function() {
