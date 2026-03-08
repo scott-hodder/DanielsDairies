@@ -6057,10 +6057,14 @@ serve(async (req) => {
     let seriesInfo: SeriesInfo | null = null;
     let superSkillName: string | undefined;
     let superSkillDescription: string | undefined;
+    let superSkillDomain: string | undefined;
+    let superSkillPersonality: string | undefined;
+    let superSkillNdAffirmation: string | undefined;
+    let superSkillRelevantTheories: string | undefined;
     if (superSkillId) {
       const { data: superSkillData, error: superSkillError } = await supabaseClient
         .from("super_skills")
-        .select("name, description, emoji, theme_color, character_name, character_image_url")
+        .select("name, description, domain, personality, nd_affirmation, relevant_theories, emoji, theme_color, character_name, character_image_url")
         .eq("id", superSkillId)
         .single();
       
@@ -6068,6 +6072,10 @@ serve(async (req) => {
         themeColor = superSkillData.theme_color;
         superSkillName = superSkillData.name;
         superSkillDescription = superSkillData.description;
+        superSkillDomain = superSkillData.domain || superSkillData.description;
+        superSkillPersonality = superSkillData.personality;
+        superSkillNdAffirmation = superSkillData.nd_affirmation;
+        superSkillRelevantTheories = superSkillData.relevant_theories;
         
         if (superSkillData.character_name) {
           let cleanName = superSkillData.character_name;
@@ -6294,6 +6302,39 @@ serve(async (req) => {
       
       // superSkillName and superSkillDescription were already fetched above
       // (in the super_skills lookup that runs before the enhanced/legacy mode check)
+
+      const lookupContext = body.lookupContext || body.lookup_context || {};
+      const lookupSuperSkill = lookupContext?.superSkill || {};
+      const lookupSubSkill = lookupContext?.subSkill || {};
+      const lookupCycle = lookupContext?.cycle || {};
+      const lookupTheoryConnection = lookupContext?.theoryConnection || {};
+      const lookupCoreTheory = lookupContext?.coreTheory || {};
+      const lookupSecondaryTheories = Array.isArray(lookupContext?.secondaryTheories) ? lookupContext.secondaryTheories : [];
+      const lookupNdisDomain = lookupContext?.ndisDomain || {};
+      const lookupSediCategory = lookupContext?.dssSediCategory || {};
+
+      const referenceContextLines = [
+        '=== SELECTED REFERENCE DATA (AUTHORITATIVE CONTEXT) ===',
+        `Super Skill Domain: ${superSkillDomain || lookupSuperSkill.domain || 'Not provided'}`,
+        `Character Personality: ${superSkillPersonality || lookupSuperSkill.personality || 'Not provided'}`,
+        `ND-Affirmation Guidance: ${superSkillNdAffirmation || lookupSuperSkill.ndAffirmation || 'Not provided'}`,
+        `Relevant Theories for Super Skill: ${superSkillRelevantTheories || lookupSuperSkill.relevantTheories || 'Not provided'}`,
+        `Sub-Skill Description: ${subSkillDescription || lookupSubSkill.description || 'Not provided'}`,
+        `Cycle Context: ${lookupCycle?.cycleNumber ? `Cycle ${lookupCycle.cycleNumber}: ${lookupCycle.name || ''}`.trim() : (cycleId || 'Not provided')}`,
+        `Cycle Focus: ${lookupCycle.focus || lookupCycle.objective || lookupCycle.evidenceFocus || 'Not provided'}`,
+        `Theory Description: ${theoryData.description || lookupCoreTheory.description || 'Not provided'}`,
+        `Primary Researchers/Citation: ${theoryData.primary_researchers || lookupCoreTheory.primaryResearchers || lookupTheoryConnection.citation || 'Not provided'}`,
+        `Age Language Guidelines: ${ageData.language_guidelines || lookupContext?.ageBand?.languageGuidelines || 'Not provided'}`,
+        `Age Developmental Stage: ${ageData.developmental_stage || lookupContext?.ageBand?.developmentalStage || 'Not provided'}`,
+        `Theory Connection Brain Town Application: ${lookupTheoryConnection.brainTownApplication || 'Not provided'}`,
+        lookupSecondaryTheories.length > 0
+          ? `Secondary Theory Descriptions: ${lookupSecondaryTheories.map((t: any) => `${t?.name || 'Unknown'}${t?.description ? ` — ${t.description}` : ''}`).join(' | ')}`
+          : 'Secondary Theory Descriptions: Not provided',
+        `Neuroscience concept detail: ${neuroscienceConcept || lookupContext?.neuroscienceConcept || 'Not provided'}`,
+        diagnosisPathways?.length ? `Diagnosis pathways selected: ${diagnosisPathways.join(', ')}` : 'Diagnosis pathways selected: None',
+        `NDIS context: ${ndisDomain || lookupNdisDomain.name || 'Not provided'}`,
+        `DSS SEDI context: ${dssSedi || [lookupSediCategory.code, lookupSediCategory.name].filter(Boolean).join(': ') || 'Not provided'}`,
+      ];
       
       // Build the enhanced content brief
       contentBrief = buildEnhancedContentBrief({
@@ -6305,8 +6346,9 @@ serve(async (req) => {
         additionalContext: [
           superSkillBrief ? `Super Skill Focus: ${superSkillBrief}` : "",
           subSkillBrief ? `Sub Skill Focus: ${subSkillBrief}` : "",
+          referenceContextLines.join("\n"),
           additionalContext || ""
-        ].filter(Boolean).join("\n"),
+        ].filter(Boolean).join("\n\n"),
         secondaryTheories,
         neuroscienceConcept,
         diagnosisPathways,

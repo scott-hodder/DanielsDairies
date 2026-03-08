@@ -713,7 +713,103 @@ function initPsychologyDropdowns() {
 // ================================================================================
 // Replace your existing generateModuleWithAI function with this one
 
+function buildAIGenerationLookupContext({
+    superSkillId,
+    subSkillId,
+    cycleId,
+    ageRangeId,
+    coreTheoryId,
+    secondaryTheoryIds,
+    diagnosisPathways,
+    neuroscienceConcept,
+    ndisDomainId,
+    dssSediId
+}) {
+    const selectedSuperSkill = superSkillsData.find(s => s.id === superSkillId) || null;
+    const selectedSubSkill = subSkillsData.find(s => s.id === subSkillId) || null;
+    const selectedCycle = cyclesData.find(c => c.id === cycleId) || null;
+    const selectedAgeRange = ageRanges.find(a => a.id === ageRangeId) || null;
+    const selectedCoreTheory = coreTheories.find(t => t.id === coreTheoryId) || null;
+    const selectedSecondaryTheories = (secondaryTheoryIds || []).map(id => coreTheories.find(t => t.id === id)).filter(Boolean);
+    const selectedNdisDomain = (window.enhancedModuleModal?.ndisDomains || []).find(d => d.id === ndisDomainId) || null;
+    const selectedSediCategory = (window.enhancedModuleModal?.sediCategories || []).find(sc => sc.id === dssSediId) || null;
+    const selectedTheoryConnection = theoryConnectionsData.find(c => c.super_skill_id === superSkillId && c.cycle_id === cycleId) || null;
+
+    return {
+        superSkill: selectedSuperSkill ? {
+            id: selectedSuperSkill.id,
+            name: selectedSuperSkill.name,
+            code: selectedSuperSkill.code,
+            slug: selectedSuperSkill.slug,
+            domain: selectedSuperSkill.domain || selectedSuperSkill.description || null,
+            characterName: selectedSuperSkill.character_name || null,
+            species: selectedSuperSkill.species || null,
+            personality: selectedSuperSkill.personality || null,
+            ndAffirmation: selectedSuperSkill.nd_affirmation || null,
+            relevantTheories: selectedSuperSkill.relevant_theories || null
+        } : null,
+        subSkill: selectedSubSkill ? {
+            id: selectedSubSkill.id,
+            name: selectedSubSkill.name,
+            description: selectedSubSkill.description || null
+        } : null,
+        cycle: selectedCycle ? {
+            id: selectedCycle.id,
+            cycleNumber: selectedCycle.cycle_number,
+            name: selectedCycle.name,
+            objective: selectedCycle.objective || null,
+            focus: selectedCycle.focus || null,
+            evidenceFocus: selectedCycle.evidence_focus || null,
+            superSkillId: selectedCycle.super_skill_id
+        } : null,
+        ageBand: selectedAgeRange ? {
+            id: selectedAgeRange.id,
+            ageRange: selectedAgeRange.age_range,
+            displayName: selectedAgeRange.display_name,
+            languageGuidelines: selectedAgeRange.language_guidelines || null,
+            developmentalStage: selectedAgeRange.developmental_stage || null,
+            vocabularyLevel: selectedAgeRange.vocabulary_level || null
+        } : null,
+        coreTheory: selectedCoreTheory ? {
+            id: selectedCoreTheory.id,
+            name: selectedCoreTheory.theory_name,
+            code: selectedCoreTheory.theory_code,
+            category: selectedCoreTheory.category || null,
+            description: selectedCoreTheory.description || null,
+            primaryResearchers: selectedCoreTheory.primary_researchers || null
+        } : null,
+        secondaryTheories: selectedSecondaryTheories.map(t => ({
+            id: t.id,
+            name: t.theory_name,
+            code: t.theory_code,
+            category: t.category || null,
+            description: t.description || null,
+            primaryResearchers: t.primary_researchers || null
+        })),
+        theoryConnection: selectedTheoryConnection ? {
+            id: selectedTheoryConnection.id,
+            citation: selectedTheoryConnection.citation || null,
+            brainTownApplication: selectedTheoryConnection.brain_town_application || null,
+            superSkillId: selectedTheoryConnection.super_skill_id,
+            cycleId: selectedTheoryConnection.cycle_id,
+            primaryTheoryId: selectedTheoryConnection.primary_theory_id
+        } : null,
+        neuroscienceConcept: neuroscienceConcept || null,
+        diagnosisPathways: diagnosisPathways || [],
+        ndisDomain: selectedNdisDomain ? {
+            id: selectedNdisDomain.id,
+            name: selectedNdisDomain.domain_name || null
+        } : null,
+        dssSediCategory: selectedSediCategory ? {
+            id: selectedSediCategory.id,
+            code: selectedSediCategory.sedi_code || null,
+            name: selectedSediCategory.sedi_name || null
+        } : null
+    };
+}
+
 window.generateModuleWithAI = async function() {
+
     const statusEl = document.getElementById('aiGenerationStatus');
     const generateBtn = document.getElementById('generateModuleBtn');
     const previewContainer = document.getElementById('aiGeneratedResult');
@@ -734,6 +830,17 @@ window.generateModuleWithAI = async function() {
     const coreTheoryId = document.getElementById('coreTheorySelect')?.value || '';
     const brainTownAnalogy = document.getElementById('brainTownAnalogy')?.value?.trim() || '';
     const additionalContext = document.getElementById('newModuleContentBrief')?.value?.trim() || '';
+    const subSkillId = document.getElementById('newModuleSubSkill')?.value || '';
+    const cycleId = document.getElementById('newModuleCycle')?.value || '';
+    const weekNumber = document.getElementById('newModuleOrder')?.value || '';
+    const xpReward = document.getElementById('newModuleXPReward')?.value || '';
+    const starsReward = document.getElementById('newModuleStarsReward')?.value || '';
+    const neuroscienceConcept = document.getElementById('neuroscienceConcept')?.value || '';
+    const diagnosisPathways = window.enhancedModuleModal?.diagnosisPathways || [];
+    const secondaryTheoryIds = window.enhancedModuleModal?.secondaryTheoryIds || [];
+    const fasdStrategies = document.getElementById('fasdStrategies')?.value || '';
+    const ndisDomainId = document.getElementById('ndisDomain')?.value || '';
+    const dssSediId = document.getElementById('dssSedi')?.value || '';
 
     // Reset UI
     previewContainer.style.display = 'none';
@@ -800,27 +907,43 @@ window.generateModuleWithAI = async function() {
                         'apikey': requireSupabaseEnv().key
                     },
                     body: JSON.stringify({
-                        // Enhanced psychology mode
+                        // Primary selected IDs/text inputs
+                        title,
+                        superSkillId,
+                        subSkillId: subSkillId || undefined,
+                        cycleId: cycleId || undefined,
                         ageRangeId,
                         coreTheoryId,
                         brainTownAnalogy,
                         additionalContext,
-                        title,
-                        
+                        weekNumber: weekNumber || undefined,
+                        xpReward: xpReward || undefined,
+                        starsReward: starsReward || undefined,
+
                         // Enhanced modal fields
-                        neuroscienceConcept: document.getElementById('neuroscienceConcept')?.value || undefined,
-                        secondaryTheoryIds: window.enhancedModuleModal?.secondaryTheoryIds || [],
-                        diagnosisPathways: window.enhancedModuleModal?.diagnosisPathways || [],
-                        fasdStrategies: document.getElementById('fasdStrategies')?.value || undefined,
-                        ndisDomainId: document.getElementById('ndisDomain')?.value || undefined,
-                        dssSediId: document.getElementById('dssSedi')?.value || undefined,
-                        
-                        // Existing fields
-                        superSkillId,
-                        subSkillId: document.getElementById('newModuleSubSkill')?.value || undefined,
+                        neuroscienceConcept: neuroscienceConcept || undefined,
+                        secondaryTheoryIds,
+                        diagnosisPathways,
+                        fasdStrategies: fasdStrategies || undefined,
+                        ndisDomainId: ndisDomainId || undefined,
+                        dssSediId: dssSediId || undefined,
+
+                        // Rich lookup context for theoretical quality
+                        lookupContext: buildAIGenerationLookupContext({
+                            superSkillId,
+                            subSkillId,
+                            cycleId,
+                            ageRangeId,
+                            coreTheoryId,
+                            secondaryTheoryIds,
+                            diagnosisPathways,
+                            neuroscienceConcept,
+                            ndisDomainId,
+                            dssSediId
+                        }),
                         seriesId: seriesId || undefined,
                         category: category || undefined,
-                        
+
                         // Use async mode
                         async: true
                     })
@@ -6833,7 +6956,7 @@ if (data.status === "running") {
 
                 const { data: theoryConnectionData } = await supabase
                     .from('theory_connections')
-                    .select('id, super_skill_id, cycle_id, primary_theory_id, brain_town_application')
+                    .select('id, super_skill_id, cycle_id, primary_theory_id, citation, brain_town_application')
                     .eq('is_active', true);
                 theoryConnectionsData = theoryConnectionData || [];
                 
