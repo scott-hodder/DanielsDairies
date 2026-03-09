@@ -19,13 +19,14 @@ function _waitSB() {
 
 // --- Data caches ---
 var _ss = [], _sub = [], _th = [], _age = [], _ndis = [], _sedi = [], _fasd = [], _chars = [], _cycles = [], _connections = [], _forbidden = [], _auditSections = [], _auditRules = [];
+var _settings = null;
 var _dataLoaded = false;
 
 async function _loadAll() {
     var sb = window.supabase;
     if (!sb) return;
     try {
-        var [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13] = await Promise.all([
+        var [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14] = await Promise.all([
             sb.from('super_skills').select('*, characters:character_id(id, name, species, personality_nd, image_url)').order('sort_order'),
             sb.from('sub_skills').select('*, super_skills:super_skill_id(id, name, slug, emoji)').order('sort_order'),
             sb.from('core_theories').select('*').eq('is_active', true).order('theory_name'),
@@ -38,7 +39,8 @@ async function _loadAll() {
             sb.from('theory_connections').select('*, super_skills:super_skill_id(id, name), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name)').order('sort_order'),
             sb.from('forbidden_terms').select('*').eq('is_active', true).order('term_type,term'),
             sb.from('audit_sections').select('*').eq('is_active', true).order('section_number'),
-            sb.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order')
+            sb.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order'),
+            sb.from('settings').select('id, ai_prompt_template').maybeSingle()
         ]);
         _ss = r1.data || []; _sub = r2.data || []; _th = r3.data || [];
         _age = r4.data || []; _ndis = r5.data || []; _sedi = r6.data || [];
@@ -48,6 +50,7 @@ async function _loadAll() {
         _forbidden = r11.data || [];
         _auditSections = r12.data || [];
         _auditRules = r13.data || [];
+        _settings = r14.data || null;
         _dataLoaded = true;
         
         // Expose data caches globally for module-audit.js
@@ -290,7 +293,7 @@ function _render(id) {
     var map = {
         refSuperSkills: rSS, refSubSkills: rSub, refTheories: rTh, refConnections: rConn, refDxProfiles: rDx,
         refNdis: rNdis, refSedi: rSedi, refAgeBands: rAge, refLevels: rLev,
-        refVocabulary: rVocab, refSequencing: rSeq, refFasd: rFasd, refAuditRules: rAuditRules
+        refVocabulary: rVocab, refSequencing: rSeq, refFasd: rFasd, refAuditRules: rAuditRules, refAiPrompt: rAiPrompt
     };
     if (map[id]) map[id]();
 }
@@ -610,6 +613,49 @@ function rAuditRules() {
     
     p.innerHTML = h;
 }
+
+
+function rAiPrompt() {
+    var p = document.getElementById('refAiPromptPanel'); if (!p) return;
+    var template = (_settings && _settings.ai_prompt_template) ? _settings.ai_prompt_template : '';
+    var h = '<div style="background:#fff;border-radius:10px;border:1px solid #E2E8F0;padding:18px;">';
+    h += '<h3 style="font-size:16px;margin:0 0 6px;font-weight:700;">🤖 AI Prompt Template</h3>';
+    h += '<p style="font-size:12px;color:#6b7c8f;margin:0 0 12px;">This prompt is sent as the system prompt to module generation requests. Content sections are still controlled by existing reference data and page generators.</p>';
+    h += '<textarea id="aiPromptTemplateInput" style="width:100%;min-height:360px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.45;">' + E(template) + '</textarea>';
+    h += '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;">';
+    h += '<button class="btn-save" onclick="saveAiPromptTemplate()">💾 Save AI Prompt</button>';
+    h += '<span id="aiPromptTemplateStatus" style="font-size:12px;color:#6b7c8f;"></span>';
+    h += '</div></div>';
+    p.innerHTML = h;
+}
+
+window.saveAiPromptTemplate = async function() {
+    var input = document.getElementById('aiPromptTemplateInput');
+    var status = document.getElementById('aiPromptTemplateStatus');
+    if (!input) return;
+    var value = (input.value || '').trim();
+    if (!value) {
+        alert('Please provide an AI prompt template before saving.');
+        return;
+    }
+    if (status) { status.textContent = 'Saving...'; status.style.color = '#6b7c8f'; }
+    try {
+        var existingId = _settings && _settings.id ? _settings.id : null;
+        var res;
+        if (existingId) {
+            res = await window.supabase.from('settings').update({ ai_prompt_template: value }).eq('id', existingId).select('id, ai_prompt_template').single();
+        } else {
+            res = await window.supabase.from('settings').insert([{ ai_prompt_template: value }]).select('id, ai_prompt_template').single();
+        }
+        if (res.error) throw res.error;
+        _settings = res.data || { id: existingId, ai_prompt_template: value };
+        if (status) { status.textContent = 'Saved'; status.style.color = '#2a8f8f'; }
+    } catch (e) {
+        console.error('Failed to save AI prompt template:', e);
+        if (status) { status.textContent = 'Save failed'; status.style.color = '#C53030'; }
+        alert('Error saving AI prompt template: ' + (e.message || JSON.stringify(e)));
+    }
+};
 
 // Scroll to audit section
 window.scrollToAuditSection = function(id) {
