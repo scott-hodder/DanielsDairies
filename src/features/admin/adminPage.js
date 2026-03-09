@@ -559,6 +559,7 @@ async function loadAgeRanges() {
         
         if (data.ageRanges && data.ageRanges.length > 0) {
             ageRanges = data.ageRanges;
+            window._dd_ageRanges = ageRanges;
             const selects = [select, editSelect].filter(Boolean);
             selects.forEach(targetSelect => {
                 targetSelect.innerHTML = '<option value="">Select age range...</option>';
@@ -626,6 +627,7 @@ async function loadCoreTheories() {
         
         if (coreTheoriesData && coreTheoriesData.length > 0) {
             coreTheories = coreTheoriesData;
+            window._dd_coreTheories = coreTheories;
             const selects = [select, editSelect].filter(Boolean);
             selects.forEach(targetSelect => {
                 targetSelect.innerHTML = '<option value="">Select psychological theory...</option>';
@@ -6913,6 +6915,7 @@ if (data.status === "running") {
                 if (error) throw error;
                 
                 superSkillsData = data || [];
+                window._dd_superSkillsData = superSkillsData;
                 
                 const superSkillSelect = document.getElementById('newModuleSuperSkill');
                 const editSuperSkillSelect = document.getElementById('editSuperSkill');
@@ -6945,6 +6948,7 @@ if (data.status === "running") {
                     // .eq('is_active', true)  // Removed - show all sub-skills
                     .order('sort_order', { ascending: true });
                 subSkillsData = subData || [];
+                window._dd_subSkillsData = subSkillsData;
                 
                 // Load all cycles
                 const { data: cycleData } = await supabase
@@ -6953,12 +6957,14 @@ if (data.status === "running") {
                     // .eq('is_active', true)  // Removed - show all cycles
                     .order('cycle_number', { ascending: true });
                 cyclesData = cycleData || [];
+                window._dd_cyclesData = cyclesData;
 
                 const { data: theoryConnectionData } = await supabase
                     .from('theory_connections')
                     .select('id, super_skill_id, cycle_id, primary_theory_id, citation, brain_town_application')
                     .eq('is_active', true);
                 theoryConnectionsData = theoryConnectionData || [];
+                window._dd_theoryConnectionsData = theoryConnectionsData;
                 
             } catch (error) {
                 console.error('[Admin] Error loading Super Skills:', error);
@@ -7440,7 +7446,10 @@ if (data.status === "running") {
             }
             
             await loadEnhancedModalData();
-            setTimeout(() => injectEnhancedFields(), 100);
+            setTimeout(() => {
+                injectEnhancedFields();
+                if (typeof updateDecisionLogic === 'function') updateDecisionLogic();
+            }, 100);
         };
 
         async function loadEnhancedModalData() {
@@ -7459,19 +7468,27 @@ if (data.status === "running") {
             const brainTownField = document.getElementById('brainTownAnalogy');
             if (!brainTownField || document.getElementById('secondaryTheoriesSection')) return;
             
-            const formGroup = brainTownField.closest('.form-group');
+            // Try new layout first (.gm-step-group), then fallback to old (.form-group)
+            const formGroup = brainTownField.closest('.gm-step-group') || brainTownField.closest('.form-group');
             if (!formGroup) return;
             
+            // Inject into the Dx area container if it exists (new layout)
+            const dxContainer = document.getElementById('gmDxCheckboxes');
+            
             const enhancedHTML = `
-                <div class="form-group" id="secondaryTheoriesSection" style="margin-top: 20px;">
-                    <label class="form-label">Secondary Theories (Max 3)</label>
-                    <div id="secondaryTheoriesContainer" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: white; border: 1px solid #d1d5db; border-radius: 8px; min-height: 50px;"></div>
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Selected: <span id="secondaryTheoryCount">0</span>/3</p>
+                <div class="gm-step-group" id="secondaryTheoriesSection" style="margin-top: 12px;">
+                    <div class="gm-step-label">Step 11 — Secondary Theories (Max 3)</div>
+                    <div style="position: relative; margin-bottom: 6px;">
+                        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:#A0AEC0;pointer-events:none;">🔍</span>
+                        <input type="text" id="secondaryTheorySearch" placeholder="Search theories..." style="width:100%;padding:7px 10px 7px 28px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:11px;font-family:inherit;background:#fff;color:#1B3A5C;" oninput="filterSecondaryTheories(this.value)">
+                    </div>
+                    <div id="secondaryTheoriesContainer" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; background: white; border: 1px solid #E2E8F0; border-radius: 8px; min-height: 40px; max-height: 120px; overflow-y: auto;"></div>
+                    <p style="font-size: 10px; color: #718096; margin-top: 3px;">Selected: <span id="secondaryTheoryCount">0</span>/3</p>
                 </div>
                 
-                <div class="form-group" style="margin-top: 16px;">
-                    <label class="form-label">Neuroscience Concept</label>
-                    <select id="neuroscienceConcept" class="form-select">
+                <div class="gm-step-group" style="margin-top: 8px;">
+                    <div class="gm-step-label">Neuroscience Concept</div>
+                    <select id="neuroscienceConcept" class="gm-select form-select" onchange="updateDecisionLogic()">
                         <option value="">Optional</option>
                         <option value="Neuroplasticity">Neuroplasticity</option>
                         <option value="Prefrontal Cortex">Prefrontal Cortex</option>
@@ -7481,53 +7498,64 @@ if (data.status === "running") {
                     </select>
                 </div>
                 
-                <div class="form-group" style="margin-top: 16px;">
-                    <label class="form-label">Diagnosis Adaptations</label>
-                    <div style="display: grid; gap: 8px; margin-top: 8px;">
-                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
-                            <input type="checkbox" value="fasd" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
-                            <span style="font-weight: 600;">FASD</span>
-                        </label>
-                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
-                            <input type="checkbox" value="adhd" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
-                            <span style="font-weight: 600;">ADHD</span>
-                        </label>
-                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
-                            <input type="checkbox" value="asd" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
-                            <span style="font-weight: 600;">ASD</span>
-                        </label>
-                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
-                            <input type="checkbox" value="pda" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
-                            <span style="font-weight: 600;">PDA</span>
-                        </label>
-                        <label class="diagnosis-toggle" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
-                            <input type="checkbox" value="trauma" class="diagnosis-checkbox" style="width: 18px; height: 18px;">
-                            <span style="font-weight: 600;">Complex Trauma</span>
-                        </label>
+                <div class="gm-row" style="margin-top: 8px;">
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">NDIS Domain</div>
+                        <select id="ndisDomain" class="gm-select form-select" onchange="updateDecisionLogic()"></select>
                     </div>
-                    <div id="fasdStrategiesContainer" style="display: none; margin-top: 12px; padding: 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px;">
-                        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">FASD Strategies</label>
-                        <textarea id="fasdStrategies" rows="2" class="form-textarea" placeholder="Concrete visual supports, one-step instructions..."></textarea>
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">DSS SEDI</div>
+                        <select id="dssSedi" class="gm-select form-select" onchange="updateDecisionLogic()"></select>
                     </div>
                 </div>
-                
-                <div class="form-row" style="margin-top: 16px;">
-                    <div class="form-group">
-                        <label class="form-label">NDIS Domain</label>
-                        <select id="ndisDomain" class="form-select"></select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">DSS SEDI</label>
-                        <select id="dssSedi" class="form-select"></select>
-                    </div>
-                </div>
-                
             `;
+            
+            // Dx checkboxes go into the Dx container area (compact pill style for new layout)
+            if (dxContainer && !dxContainer.querySelector('.diagnosis-checkbox')) {
+                dxContainer.innerHTML = `
+                    <div class="gm-dx-grid" style="margin-bottom: 4px;">
+                        <label class="diagnosis-toggle" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:#fff;border:1.5px solid #E2E8F0;border-radius:14px;cursor:pointer;font-size:10px;font-weight:600;color:#4A5568;">
+                            <input type="checkbox" value="fasd" class="diagnosis-checkbox" style="width:12px;height:12px;margin:0;">FASD
+                        </label>
+                        <label class="diagnosis-toggle" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:#fff;border:1.5px solid #E2E8F0;border-radius:14px;cursor:pointer;font-size:10px;font-weight:600;color:#4A5568;">
+                            <input type="checkbox" value="adhd" class="diagnosis-checkbox" style="width:12px;height:12px;margin:0;">ADHD
+                        </label>
+                        <label class="diagnosis-toggle" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:#fff;border:1.5px solid #E2E8F0;border-radius:14px;cursor:pointer;font-size:10px;font-weight:600;color:#4A5568;">
+                            <input type="checkbox" value="asd" class="diagnosis-checkbox" style="width:12px;height:12px;margin:0;">ASD
+                        </label>
+                        <label class="diagnosis-toggle" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:#fff;border:1.5px solid #E2E8F0;border-radius:14px;cursor:pointer;font-size:10px;font-weight:600;color:#4A5568;">
+                            <input type="checkbox" value="pda" class="diagnosis-checkbox" style="width:12px;height:12px;margin:0;">PDA
+                        </label>
+                        <label class="diagnosis-toggle" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:#fff;border:1.5px solid #E2E8F0;border-radius:14px;cursor:pointer;font-size:10px;font-weight:600;color:#4A5568;">
+                            <input type="checkbox" value="trauma" class="diagnosis-checkbox" style="width:12px;height:12px;margin:0;">Trauma
+                        </label>
+                    </div>
+                    <div id="fasdStrategiesContainer" style="display: none; margin-top: 6px; padding: 8px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px;">
+                        <label style="display: block; font-size: 10px; font-weight: 600; margin-bottom: 4px;">FASD Strategies</label>
+                        <textarea id="fasdStrategies" rows="2" class="gm-textarea form-textarea" placeholder="Concrete visual supports, one-step instructions..." style="font-size:11px;"></textarea>
+                    </div>
+                `;
+            }
             
             formGroup.insertAdjacentHTML('afterend', enhancedHTML);
             populateSecondaryTheories();
             populateNdisAndSedi();
             attachEnhancedListeners();
+            
+            // Add the search filter function
+            if (!window.filterSecondaryTheories) {
+                window.filterSecondaryTheories = function(query) {
+                    const chips = document.querySelectorAll('.secondary-theory-chip');
+                    const q = (query || '').toLowerCase().trim();
+                    chips.forEach(chip => {
+                        if (!q || chip.textContent.toLowerCase().includes(q)) {
+                            chip.style.display = '';
+                        } else {
+                            chip.style.display = 'none';
+                        }
+                    });
+                };
+            }
         }
 
         async function populateSecondaryTheories() {
@@ -7536,7 +7564,7 @@ if (data.status === "running") {
             if (!container || !primarySelect) return;
             
             const theories = Array.from(primarySelect.options).filter(opt => opt.value).map(opt => ({ id: opt.value, name: opt.textContent }));
-            container.innerHTML = theories.map(t => `<div class="secondary-theory-chip" data-theory-id="${t.id}" style="padding: 6px 12px; background: #f3f4f6; color: #374151; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none;">${t.name}</div>`).join('');
+            container.innerHTML = theories.map(t => `<div class="secondary-theory-chip" data-theory-id="${t.id}" style="padding: 4px 10px; background: #f3f4f6; color: #374151; border-radius: 14px; font-size: 10px; font-weight: 600; cursor: pointer; user-select: none; transition: all 0.12s; border: 1.5px solid transparent;">${t.name}</div>`).join('');
         }
 
         function populateNdisAndSedi() {
@@ -7559,11 +7587,11 @@ if (data.status === "running") {
                     const index = window.enhancedModuleModal.secondaryTheoryIds.indexOf(theoryId);
                     if (index > -1) {
                         window.enhancedModuleModal.secondaryTheoryIds.splice(index, 1);
-                        this.style.background = '#f3f4f6'; this.style.color = '#374151';
+                        this.style.background = '#f3f4f6'; this.style.color = '#374151'; this.style.borderColor = 'transparent';
                     } else {
                         if (window.enhancedModuleModal.secondaryTheoryIds.length >= 3) { alert('Max 3'); return; }
                         window.enhancedModuleModal.secondaryTheoryIds.push(theoryId);
-                        this.style.background = '#10b981'; this.style.color = 'white';
+                        this.style.background = '#2A8F8F'; this.style.color = 'white'; this.style.borderColor = '#2A8F8F';
                     }
                     document.getElementById('secondaryTheoryCount').textContent = window.enhancedModuleModal.secondaryTheoryIds.length;
                 });
@@ -7575,14 +7603,15 @@ if (data.status === "running") {
                     const toggle = this.closest('.diagnosis-toggle');
                     if (this.checked) {
                         window.enhancedModuleModal.diagnosisPathways.push(dx);
-                        toggle.style.borderColor = '#6366f1'; toggle.style.background = '#eef2ff';
+                        toggle.style.borderColor = '#D4725C'; toggle.style.background = '#FFF5F5'; toggle.style.color = '#D4725C';
                         if (dx === 'fasd') document.getElementById('fasdStrategiesContainer').style.display = 'block';
                     } else {
                         const idx = window.enhancedModuleModal.diagnosisPathways.indexOf(dx);
                         if (idx > -1) window.enhancedModuleModal.diagnosisPathways.splice(idx, 1);
-                        toggle.style.borderColor = '#e5e7eb'; toggle.style.background = 'white';
+                        toggle.style.borderColor = '#E2E8F0'; toggle.style.background = '#fff'; toggle.style.color = '#4A5568';
                         if (dx === 'fasd') document.getElementById('fasdStrategiesContainer').style.display = 'none';
                     }
+                    if (typeof updateDecisionLogic === 'function') setTimeout(updateDecisionLogic, 50);
                 });
             });
         }

@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="/styles/admin-stylesheet.css" rel="stylesheet">
     
     <!-- External JS modules (loaded at end of body) -->
@@ -1010,183 +1011,547 @@
         </div>
     </div>
 
-    <!-- Add Module Modal -->
-<!--
-================================================================================
-CORRECTED ADD NEW MODULE MODAL
-================================================================================
-Replace lines 673-920 (approximately) in your admin.html with this content.
-This fixes:
-1. Removes duplicate Age Range field
-2. Moves Core Theory and Brain Town Analogy OUTSIDE the AI generation box
-3. Properly structures the form
-================================================================================
--->
+    <!-- Add Module Modal — Redesigned Generator Layout -->
+<style>
+/* ═══════ MODULE GENERATOR MODAL STYLES ═══════ */
+.gen-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(27, 58, 92, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    align-items: stretch;
+    justify-content: center;
+}
+.gen-modal-overlay.active {
+    display: flex;
+}
+.gen-modal-shell {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--gen-bg, #F5F1EB);
+}
+.gen-modal-header {
+    background: #1B3A5C;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+}
+.gen-modal-header .gm-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.gen-modal-header .gm-brand .gm-icon { font-size: 18px; }
+.gen-modal-header .gm-brand .gm-title { color: #fff; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; }
+.gen-modal-header .gm-brand .gm-sub { color: #DFDBCA; font-size: 12px; font-weight: 500; }
+.gen-modal-header .gm-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+.gen-modal-header .gm-close:hover { background: rgba(255,255,255,0.2); }
 
-<div class="modal" id="addModuleModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 class="modal-title">Add New Module</h2>
-            <button class="modal-close" onclick="closeAddModuleModal()">×</button>
+.gen-modal-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    overflow: hidden;
+}
+.gen-left-panel {
+    background: #fff;
+    border-right: 1px solid #E2E8F0;
+    padding: 18px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.gen-right-panel {
+    overflow-y: auto;
+    padding: 22px;
+    background: var(--gen-bg, #F5F1EB);
+}
+
+/* ═══════ LEFT PANEL ELEMENTS ═══════ */
+.gm-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1B3A5C;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+}
+.gm-step-group { margin-bottom: 12px; }
+.gm-step-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #4A5568;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+.gm-select {
+    width: 100%;
+    padding: 9px 11px;
+    border: 2px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    background: #fff;
+    color: #1B3A5C;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    appearance: auto;
+}
+.gm-select:focus { border-color: #2A8F8F; outline: none; }
+.gm-input {
+    width: 100%;
+    padding: 9px 11px;
+    border: 2px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    background: #fff;
+    color: #1B3A5C;
+    transition: border-color 0.15s;
+}
+.gm-input:focus { border-color: #2A8F8F; outline: none; }
+.gm-input[readonly] { background: #F7FAFC; cursor: not-allowed; opacity: 0.7; }
+.gm-textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 2px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: #1B3A5C;
+    resize: vertical;
+    transition: border-color 0.15s;
+}
+.gm-textarea:focus { border-color: #2A8F8F; outline: none; }
+
+.gm-info-card {
+    margin-top: 5px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.45;
+    animation: gmFadeSlide 0.2s ease-out;
+}
+@keyframes gmFadeSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.gm-info-card .gm-info-title { font-weight: 700; }
+.gm-info-card .gm-info-detail { color: #4A5568; margin-top: 1px; font-size: 10px; }
+.gm-info-card .gm-info-quote { color: #2D3748; margin-top: 3px; font-style: italic; font-size: 10px; }
+
+.gm-status-badge {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+}
+.gm-status-confirmed { background: #C6F6D5; color: #22543D; }
+.gm-status-review { background: #FEFCBF; color: #744210; }
+
+.gm-module-id-bar {
+    padding: 9px 13px;
+    background: #1B3A5C;
+    border-radius: 8px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: gmFadeSlide 0.2s ease-out;
+}
+.gm-module-id-bar .gm-id {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2A8F8F;
+    letter-spacing: 1px;
+}
+.gm-module-id-bar .gm-id-label {
+    font-size: 10px;
+    color: #A0AEC0;
+    font-weight: 600;
+}
+
+.gm-row { display: flex; gap: 8px; }
+.gm-row > * { flex: 1; }
+
+/* Dx section */
+.gm-dx-section { margin-bottom: 10px; }
+.gm-dx-tier-label { font-size: 10px; color: #718096; margin-bottom: 4px; font-weight: 600; }
+.gm-dx-grid { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+.gm-dx-btn {
+    padding: 3px 9px;
+    border-radius: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s;
+    border: 1.5px solid #E2E8F0;
+    background: #fff;
+    color: #4A5568;
+    font-family: inherit;
+}
+.gm-dx-btn:hover { border-color: #A0AEC0; }
+.gm-dx-btn.active { background: #D4725C; color: #fff; border-color: #D4725C; }
+
+/* Secondary theories search */
+.gm-theory-search-wrap { position: relative; margin-bottom: 8px; }
+.gm-theory-search {
+    width: 100%;
+    padding: 7px 10px 7px 30px;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: inherit;
+    background: #fff;
+    color: #1B3A5C;
+}
+.gm-theory-search:focus { border-color: #2A8F8F; outline: none; }
+.gm-theory-search-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #A0AEC0;
+    pointer-events: none;
+}
+.gm-theory-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+.gm-theory-chip-item { /* inherits from secondary-theory-chip but with our look */ }
+
+/* Button row */
+.gm-btn-row { display: flex; gap: 6px; margin-top: 10px; }
+.gm-btn {
+    padding: 11px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+    flex: 1;
+    text-align: center;
+}
+.gm-btn-generate { background: #2A8F8F; color: #fff; box-shadow: 0 3px 12px rgba(42,143,143,0.3); }
+.gm-btn-generate:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(42,143,143,0.35); }
+.gm-btn-generate:disabled { background: #CBD5E0; color: #fff; cursor: not-allowed; transform: none; box-shadow: none; }
+.gm-btn-save-module { background: #1B3A5C; color: #fff; }
+.gm-btn-save-module:hover { background: #405878; }
+.gm-btn-save-module:disabled { background: #CBD5E0; cursor: not-allowed; }
+.gm-btn-audit { background: #D4A843; color: #fff; }
+.gm-btn-audit:hover { background: #C09A3D; }
+.gm-btn-audit:disabled { background: #CBD5E0; cursor: not-allowed; }
+.gm-btn-preview { background: #4C6C96; color: #fff; }
+.gm-btn-preview:hover { background: #405878; }
+.gm-btn-cancel { background: #E2E8F0; color: #4A5568; }
+.gm-btn-cancel:hover { background: #CBD5E0; }
+
+/* ═══════ RIGHT PANEL — DECISION LOGIC ═══════ */
+.gm-decision-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.gm-decision-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1B3A5C;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.gm-decision-card {
+    background: #fff;
+    border-radius: 9px;
+    padding: 14px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 10px;
+    animation: gmFadeSlide 0.25s ease-out;
+}
+.gm-decision-card-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 7px;
+}
+.gm-step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #1B3A5C;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.gm-step-title-text { font-size: 12px; font-weight: 700; color: #1B3A5C; }
+.gm-step-value { font-size: 11px; color: #2A8F8F; font-weight: 600; }
+.gm-auto-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+.gm-auto-item {
+    font-size: 11px;
+    color: #2D3748;
+    padding: 2px 0 2px 11px;
+    border-left: 2px solid #E2E8F0;
+    margin-bottom: 2px;
+    line-height: 1.4;
+}
+
+.gm-empty-state {
+    background: #fff;
+    border-radius: 12px;
+    padding: 36px;
+    text-align: center;
+    border: 1px solid #E2E8F0;
+}
+.gm-empty-state .gm-es-icon { font-size: 36px; margin-bottom: 10px; }
+.gm-empty-state .gm-es-title { font-size: 15px; font-weight: 700; color: #1B3A5C; margin-bottom: 7px; }
+.gm-empty-state .gm-es-desc { font-size: 12px; color: #718096; max-width: 380px; margin: 0 auto; line-height: 1.5; }
+
+/* AI Generation section in right panel */
+.gm-ai-box {
+    background: #fff;
+    border: 2px solid #2A8F8F;
+    border-radius: 9px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+.gm-ai-box .gm-ai-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.gm-ai-box .gm-ai-title { font-size: 12px; font-weight: 700; color: #1B3A5C; }
+.gm-ai-box .gm-ai-desc { font-size: 11px; color: #718096; margin-bottom: 10px; line-height: 1.4; }
+
+.gm-result-box {
+    background: #fff;
+    border-radius: 9px;
+    padding: 14px;
+    border: 2px solid #38A169;
+    margin-bottom: 10px;
+    animation: gmFadeSlide 0.3s ease-out;
+}
+
+@media (max-width: 900px) {
+    .gen-modal-body { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="gen-modal-overlay" id="addModuleModal">
+    <div class="gen-modal-shell">
+        <!-- Header -->
+        <div class="gen-modal-header">
+            <div class="gm-brand">
+                <span class="gm-icon">🏗️</span>
+                <span class="gm-title">Add New Module</span>
+                <span class="gm-sub">Module Generator</span>
+            </div>
+            <button class="gm-close" onclick="closeAddModuleModal()">×</button>
         </div>
 
-        <form id="addModuleForm" onsubmit="saveNewModule(event); return false;">
-            <!-- Title -->
-            <div class="form-group">
-                <label class="form-label required-label">Title</label>
-                <input type="text" class="form-input" id="newModuleTitle" required placeholder="e.g., Daniel's Diaries: My Big Feelings">
+        <!-- Two-panel body -->
+        <div class="gen-modal-body">
+            <!-- ═══════ LEFT PANEL: Parameters ═══════ -->
+            <div class="gen-left-panel">
+                <form id="addModuleForm" onsubmit="saveNewModule(event); return false;" style="display:flex; flex-direction:column; flex:1;">
+                    <div class="gm-section-label">Module Parameters</div>
+
+                    <!-- STEP 1 — Title -->
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">Step 1 — Module Title</div>
+                        <input type="text" class="gm-input form-input" id="newModuleTitle" required placeholder="e.g., Daniel's Diaries: My Big Feelings" oninput="updateDecisionLogic()">
+                    </div>
+
+                    <!-- STEP 2 — Super Skill -->
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">Step 2 — Super Skill</div>
+                        <select class="gm-select form-select" id="newModuleSuperSkill" required onchange="onSuperSkillChange(); updateDecisionLogic();">
+                            <option value="">Select Super Skill...</option>
+                        </select>
+                        <div id="gmInfoSuperSkill"></div>
+                    </div>
+
+                    <!-- STEP 3 — Age Range -->
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">Step 3 — Age Range</div>
+                        <select id="ageRangeSelect" class="gm-select form-select" required onchange="updateDecisionLogic()">
+                            <option value="">Select age range...</option>
+                        </select>
+                        <div id="gmInfoAge"></div>
+                    </div>
+
+                    <!-- STEP 4 — Character (auto) -->
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">Step 4 — Character</div>
+                        <input type="text" class="gm-input form-input" id="newModuleCharacter" readonly placeholder="Auto-populated from Super Skill">
+                    </div>
+
+                    <!-- STEP 5 — Sub-Skill & Cycle -->
+                    <div class="gm-row">
+                        <div class="gm-step-group">
+                            <div class="gm-step-label">Step 5 — Sub-Skill</div>
+                            <select class="gm-select form-select" id="newModuleSubSkill" onchange="updateDecisionLogic()">
+                                <option value="">Select sub-skill...</option>
+                            </select>
+                        </div>
+                        <div class="gm-step-group">
+                            <div class="gm-step-label">Step 6 — Cycle</div>
+                            <select class="gm-select form-select" id="newModuleCycle" onchange="onModuleCycleChange(); updateDecisionLogic();">
+                                <option value="">Select cycle...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- STEP 7 — Week & XP/Stars -->
+                    <div class="gm-row">
+                        <div class="gm-step-group">
+                            <div class="gm-step-label">Step 7 — Week</div>
+                            <input type="number" class="gm-input form-input" id="newModuleOrder" min="1" max="12" placeholder="1-12" oninput="updateDecisionLogic()">
+                        </div>
+                        <div class="gm-step-group">
+                            <div class="gm-step-label">XP</div>
+                            <input type="number" class="gm-input form-input" id="newModuleXPReward" min="0" value="100" placeholder="100">
+                        </div>
+                        <div class="gm-step-group">
+                            <div class="gm-step-label">Stars</div>
+                            <input type="number" class="gm-input form-input" id="newModuleStarsReward" min="0" value="10" placeholder="10">
+                        </div>
+                    </div>
+
+                    <!-- STEP 8 — Core Theory -->
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">Step 8 — Core Theory</div>
+                        <select id="coreTheorySelect" class="gm-select form-select" required onchange="updateDecisionLogic(); if(typeof updateTheoryPreview==='function'){updateTheoryPreview({selectId:'coreTheorySelect',previewId:'theoryPreview',nameId:'theoryPreviewName',descriptionId:'theoryPreviewDescription'});}">
+                            <option value="">Select psychological theory...</option>
+                        </select>
+                        <div id="theoryPreview" style="display: none; margin-top: 6px; padding: 7px 9px; background: #EBF8FF; border-left: 3px solid #2A8F8F; border-radius: 6px;">
+                            <p id="theoryPreviewName" style="margin: 0 0 3px; font-weight: 700; color: #1B3A5C; font-size: 11px;"></p>
+                            <p id="theoryPreviewDescription" style="margin: 0; font-size: 10px; color: #4A5568; line-height: 1.4;"></p>
+                        </div>
+                    </div>
+
+                    <!-- STEP 9 — Brain Town Analogy -->
+                    <div class="gm-step-group">
+                        <div class="gm-step-label">Step 9 — Brain Town Analogy</div>
+                        <textarea 
+                            class="gm-textarea form-textarea" 
+                            id="brainTownAnalogy" 
+                            placeholder="e.g., In Brain Town, your feelings are like weather..."
+                            rows="2"
+                            required
+                            oninput="updateDecisionLogic()"
+                        ></textarea>
+                    </div>
+
+                    <!-- STEP 10 — Dx Adjustments (injected by enhanced modal) -->
+                    <div class="gm-dx-section">
+                        <div class="gm-step-label">Step 10 — Dx Adjustments</div>
+                        <div id="gmDxCheckboxes"></div>
+                    </div>
+
+                    <!-- Hidden fields for backward compatibility -->
+                    <input type="hidden" id="newModuleCode" value="">
+                    <input type="hidden" id="newModuleCategory" value="">
+                    <input type="hidden" id="newModuleSeries" value="">
+                    <input type="hidden" id="newModulePathway" value="">
+
+                    <!-- Module ID display -->
+                    <div id="gmModuleIdBar" style="display:none;"></div>
+
+                    <!-- Button Row -->
+                    <div style="flex:1;"></div>
+                    <div class="gm-btn-row">
+                        <button type="button" id="generateModuleBtn" class="gm-btn gm-btn-generate" onclick="generateModuleWithAI()">⚡ Generate</button>
+                        <button type="submit" class="gm-btn gm-btn-save-module">💾 Save</button>
+                        <button type="button" id="gmAuditBtnLeft" class="gm-btn gm-btn-audit" onclick="runModuleAudit()" style="display:none;">🔍 Audit</button>
+                    </div>
+                    <div class="gm-btn-row" style="margin-top:4px;">
+                        <button type="button" class="gm-btn gm-btn-cancel" onclick="closeAddModuleModal()">Cancel</button>
+                    </div>
+                </form>
             </div>
 
-            <!-- Super Skill & Age Range Row -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label required-label">Super Skill</label>
-                    <select class="form-select" id="newModuleSuperSkill" required style="width: 100%;" onchange="onSuperSkillChange()">
-                        <option value="">Select Super Skill...</option>
-                    </select>
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">The core skill this module teaches</p>
+            <!-- ═══════ RIGHT PANEL: Decision Logic ═══════ -->
+            <div class="gen-right-panel">
+                <div class="gm-decision-header">
+                    <div class="gm-decision-title" id="gmRightTitle">Decision Logic</div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label required-label">Age Range</label>
-                    <select id="ageRangeSelect" class="form-select" required style="width: 100%;">
-                        <option value="">Select age range...</option>
-                    </select>
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Language complexity will be adjusted automatically</p>
-                </div>
-            </div>
+                <!-- Decision Logic Cards (auto-populated) — hidden after generation -->
+                <div id="gmDecisionLogWrapper">
+                    <div id="gmDecisionLog"></div>
 
-            <!-- Character & Sub-Skill Row -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Character</label>
-                    <input type="text" class="form-input" id="newModuleCharacter" readonly style="background: #f8f9fa; cursor: not-allowed;" placeholder="Auto-populated from Super Skill">
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Character is set by the selected Super Skill</p>
+                    <!-- Output / Generation area -->
+                    <div id="gmOutputArea">
+                        <div class="gm-empty-state">
+                            <div class="gm-es-icon">🏗️</div>
+                            <div class="gm-es-title">Select all parameters</div>
+                            <div class="gm-es-desc">Each dropdown locks parameters from the clinical architecture. The decision logic panel will show what will be sent to the AI generator.</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Sub-Skill</label>
-                    <select class="form-select" id="newModuleSubSkill">
-                        <option value="">Select sub-skill...</option>
-                    </select>
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Optional: specific sub-skill focus</p>
-                </div>
-            </div>
-
-            <!-- Cycle & Week Number Row -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Cycle</label>
-                    <select class="form-select" id="newModuleCycle" onchange="onModuleCycleChange()">
-                        <option value="">Select cycle...</option>
-                    </select>
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Which 12-week cycle this module belongs to</p>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Order (Week Number)</label>
-                    <input type="number" class="form-input" id="newModuleOrder" min="1" max="12" placeholder="e.g., 1, 2, 3... (1-12)">
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Week number within the cycle (1-12)</p>
-                </div>
-            </div>
-
-            <!-- XP & Stars Row -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">XP Reward</label>
-                    <input type="number" class="form-input" id="newModuleXPReward" min="0" value="100" placeholder="100">
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">XP awarded on completion</p>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Stars Reward</label>
-                    <input type="number" class="form-input" id="newModuleStarsReward" min="0" value="10" placeholder="10">
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">Stars awarded on completion</p>
-                </div>
-            </div>
-
-            <!-- ========== PSYCHOLOGY SECTION (OUTSIDE AI BOX) ========== -->
-            
-            <!-- Core Theory Dropdown -->
-            <div class="form-group">
-                <label class="form-label required-label">Core Theory</label>
-                <select id="coreTheorySelect" class="form-select" required style="width: 100%;">
-                    <option value="">Select psychological theory...</option>
-                </select>
-                <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">The psychological theory that forms the evidence base for this module</p>
-                
-                <!-- Theory Preview Panel -->
-                <div id="theoryPreview" style="display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-left: 3px solid #6366F1; border-radius: 8px;">
-                    <p id="theoryPreviewName" style="margin: 0 0 6px; font-weight: 600; color: #4338CA;"></p>
-                    <p id="theoryPreviewDescription" style="margin: 0; font-size: 13px; color: #4b5563; line-height: 1.5;"></p>
-                </div>
-            </div>
-
-            <!-- Brain Town Analogy -->
-            <div class="form-group">
-                <label class="form-label required-label">Brain Town Analogy</label>
-                <textarea 
-                    class="form-textarea" 
-                    id="brainTownAnalogy" 
-                    placeholder="e.g., In Brain Town, your feelings are like weather - sometimes sunny, sometimes rainy. The Weather Watchers help you notice what's happening in your emotional sky and choose the right tools to help..."
-                    rows="3"
-                    style="font-size: 13px;"
-                    required
-                ></textarea>
-                <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">
-                    This metaphor will be woven throughout the module to explain concepts to children
-                </p>
-            </div>
-
-            <!-- Hidden fields for backward compatibility -->
-            <input type="hidden" id="newModuleCode" value="">
-            <input type="hidden" id="newModuleCategory" value="">
-            <input type="hidden" id="newModuleSeries" value="">
-            <input type="hidden" id="newModulePathway" value="">
-
-            <!-- ========== AI MODULE GENERATION BOX ========== -->
-            <div class="form-group" style="border: 2px solid #7b3ff2; border-radius: 12px; padding: 20px; background: linear-gradient(135deg, rgba(123, 63, 242, 0.05), rgba(0, 180, 216, 0.05));">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                    <span style="font-size: 24px;">🤖</span>
-                    <label class="form-label" style="margin: 0;">AI Module Generation</label>
-                </div>
-                <p style="font-size: 13px; color: #6b7c8f; margin-bottom: 16px;">
-                    The AI will use the Age Range, Core Theory, and Brain Town Analogy above to generate an evidence-based module.
-                </p>
-                
-                <!-- Additional Context (Optional) -->
-                <div style="margin-bottom: 16px;">
-                    <label class="form-label">Additional Context (Optional)</label>
+                <!-- AI Additional Context (moved here) -->
+                <div id="gmAiContextBox" class="gm-ai-box" style="margin-top: 12px;">
+                    <div class="gm-ai-header">
+                        <span style="font-size: 18px;">🤖</span>
+                        <span class="gm-ai-title">AI Additional Context (Optional)</span>
+                    </div>
+                    <div class="gm-ai-desc">The AI already receives guidance from all selected parameters. Add extra instructions if needed.</div>
                     <textarea 
-                        class="form-textarea" 
+                        class="gm-textarea form-textarea" 
                         id="newModuleContentBrief" 
-                        placeholder="Any additional instructions for the AI, e.g.:
-- Specific scenarios to include
-- Character preferences (Maya uses they/them pronouns)
-- Particular activities to focus on
-- Custom completion message"
-                        rows="4"
-                        style="font-family: monospace; font-size: 13px;"
+                        placeholder="Any additional instructions for the AI..."
+                        rows="3"
                     ></textarea>
-                    <p style="font-size: 12px; color: #6b7c8f; margin-top: 4px;">
-                        💡 The AI already receives detailed guidance from the fields above.
-                    </p>
-                </div>
-                
-                <div style="display: flex; gap: 12px; margin-top: 12px; align-items: center;">
-                    <button 
-                        type="button" 
-                        id="generateModuleBtn"
-                        onclick="generateModuleWithAI()" 
-                        class="btn"
-                        style="background: linear-gradient(to right, #7b3ff2, #00b4d8); color: white; flex: 1;"
-                    >
-                        ✨ Generate Module with AI
-                    </button>
-                    <span id="aiGenerationStatus" style="font-size: 13px; color: #6b7c8f;"></span>
+                    <span id="aiGenerationStatus" style="font-size: 11px; color: #718096; margin-top: 4px; display: block;"></span>
                 </div>
 
-                <!-- Generation Loading Modal -->
+                <!-- Generation Loading Modal (kept for backward compat) -->
                 <div id="generationLoadingModal" class="generation-loading-modal">
                     <div class="generation-loading-content">
                         <div class="spinner-container">
@@ -1197,50 +1562,345 @@ This fixes:
                     </div>
                 </div>
 
-                <!-- Results Panel -->
-                <div id="aiGeneratedResult" style="display: none; margin-top: 18px; border: 1px solid rgba(123,63,242,0.25); border-radius: 12px; padding: 16px; background: rgba(123,63,242,0.05);">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                        <span style="font-size: 22px;">✅</span>
+                <!-- Results Panel — replaces decision logic after generation -->
+                <div id="aiGeneratedResult" style="display: none;">
+                    <!-- Success banner -->
+                    <div style="background:#F0FFF4; border:2px solid #38A169; border-radius:9px; padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">✅</span>
                         <div>
-                            <p style="margin: 0; font-weight: 600; color: #1f2937;">AI module ready!</p>
-                            <p id="aiGeneratedSummary" style="margin: 2px 0 0; font-size: 13px; color: #4b5563;"></p>
+                            <p style="margin:0; font-weight:700; color:#22543D; font-size:13px;">AI module generated successfully!</p>
+                            <p id="aiGeneratedSummary" style="margin:2px 0 0; font-size:11px; color:#4A5568;"></p>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-                        <div id="aiGeneratedStats" style="background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; font-size: 13px; color: #374151;"></div>
+                    <!-- Module preview iframe area -->
+                    <div style="background:#fff; border:1px solid #E2E8F0; border-radius:9px; overflow:hidden; margin-bottom:12px;">
+                        <div style="padding:10px 14px; background:#1B3A5C; display:flex; align-items:center; justify-content:space-between;">
+                            <span style="color:#fff; font-size:12px; font-weight:700;">📱 Module Preview</span>
+                            <button type="button" onclick="showPreviewModal()" style="background:rgba(255,255,255,0.15); border:none; color:#fff; padding:4px 10px; border-radius:5px; font-size:10px; font-weight:600; cursor:pointer;">↗ Full Preview</button>
+                        </div>
+                        <div id="gmInlinePreviewContainer" style="height:400px; overflow:auto; background:#f9fafb;">
+                            <!-- Will hold an iframe or the generated HTML preview -->
+                            <iframe id="gmInlinePreviewFrame" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Stats & raw output -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                        <div id="aiGeneratedStats" style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:10px; font-size:12px; color:#2D3748;"></div>
                         <textarea 
                             id="aiGeneratedPreview" 
                             readonly 
-                            style="display: block; width: 100%; min-height: 160px; font-family: 'Fira Code', monospace; font-size: 12px; padding: 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: white;"></textarea>
+                            style="display:block; width:100%; min-height:120px; font-family:'JetBrains Mono',monospace; font-size:10px; padding:10px; border:1px solid #E2E8F0; border-radius:8px; background:#F7FAFC;"></textarea>
                     </div>
 
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px;">
-                        <button 
-                            type="button" 
-                            id="saveAiGeneratedModuleBtn"
-                            class="btn" 
-                            style="background: #10b981; color: white;"
-                            onclick="saveGeneratedModule()"
-                            disabled
-                        >
-                            💾 Create Module
-                        </button>
-                        <button type="button" class="btn" style="background: #4c6c96; color: white;" onclick="showPreviewModal()">👁️ Preview Module</button>
-                        <button type="button" class="btn" style="background: #D4A843; color: white;" onclick="runModuleAudit()">🔍 Audit Module</button>
-                        <button type="button" class="btn" style="background: #f97316; color: white;" onclick="copyGeneratedModuleHTML()">📋 Copy HTML</button>
+                    <!-- Action buttons -->
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <button type="button" id="saveAiGeneratedModuleBtn" class="gm-btn" style="background:#10b981;color:#fff;flex:none;padding:10px 18px;font-size:12px;" onclick="saveGeneratedModule()" disabled>💾 Create Module</button>
+                        <button type="button" class="gm-btn gm-btn-preview" style="flex:none;padding:10px 14px;font-size:12px;" onclick="showPreviewModal()">👁️ Full Preview</button>
+                        <button type="button" class="gm-btn gm-btn-audit" style="flex:none;padding:10px 14px;font-size:12px;" onclick="runModuleAudit()">🔍 Audit</button>
+                        <button type="button" class="gm-btn" style="background:#f97316;color:#fff;flex:none;padding:10px 14px;font-size:12px;" onclick="copyGeneratedModuleHTML()">📋 Copy HTML</button>
+                        <button type="button" class="gm-btn" style="background:#E2E8F0;color:#4A5568;flex:none;padding:10px 14px;font-size:12px;" onclick="showDecisionLogicAgain()">← Back to Parameters</button>
                     </div>
                 </div>
             </div>
-
-            <!-- Form Submit Button -->
-            <div class="form-actions" style="margin-top: 20px; display: flex; gap: 12px;">
-                <button type="submit" class="btn-save" style="flex: 1;">💾 Save Module</button>
-                <button type="button" class="btn" onclick="closeAddModuleModal()" style="background: #6b7c8f; color: white;">Cancel</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
+
+<!-- Decision Logic Update Script -->
+<script>
+function updateDecisionLogic() {
+    var logContainer = document.getElementById('gmDecisionLog');
+    var outputArea = document.getElementById('gmOutputArea');
+    if (!logContainer) return;
+
+    // Data store accessors
+    var ssData = window._dd_superSkillsData || [];
+    var arData = window._dd_ageRanges || [];
+    var cyData = window._dd_cyclesData || [];
+    var ctData = window._dd_coreTheories || [];
+    var subData = window._dd_subSkillsData || [];
+    var tcData = window._dd_theoryConnectionsData || [];
+
+    var cards = '';
+    var stepNum = 0;
+
+    function tr(s, max) { if (!s) return ''; return s.length > (max||200) ? s.substring(0, max||200) + '\u2026' : s; }
+    function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function card(n, title, val, items) {
+        var h = '<div class="gm-auto-label">AUTO POPULATED:</div>';
+        for (var i = 0; i < items.length; i++) {
+            h += '<div class="gm-auto-item"><strong>' + esc(items[i][0]) + ':</strong> ' + esc(items[i][1]) + '</div>';
+        }
+        return '<div class="gm-decision-card"><div class="gm-decision-card-header"><div class="gm-step-num">' + n + '</div><span class="gm-step-title-text">' + esc(title) + '</span>' + (val ? '<span style="margin-left:auto" class="gm-step-value">' + esc(val) + '</span>' : '') + '</div>' + h + '</div>';
+    }
+    function selText(id) { var el = document.getElementById(id); return el && el.selectedOptions && el.selectedOptions[0] ? el.selectedOptions[0].text.trim() : ''; }
+    function selVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    function inpVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+
+    // ── 1. Module Title ──
+    var title = inpVal('newModuleTitle');
+    if (title) { stepNum++; cards += card(stepNum, 'Module Title', '', [['Title', title]]); }
+
+    // ── 2. Super Skill ──
+    var ssId = selVal('newModuleSuperSkill');
+    if (ssId) {
+        stepNum++;
+        var ss = null;
+        for (var i = 0; i < ssData.length; i++) { if (ssData[i].id === ssId) { ss = ssData[i]; break; } }
+        var items = [['Super Skill', (ss && ss.emoji ? ss.emoji + ' ' : '') + (ss ? ss.name : selText('newModuleSuperSkill'))]];
+        if (ss && ss.domain) items.push(['Domain', ss.domain]);
+        if (ss && ss.description && !ss.domain) items.push(['Description', ss.description]);
+        if (ss && ss.character_name) items.push(['Character', ss.character_name + (ss.species ? ' (' + ss.species + ')' : '')]);
+        if (ss && ss.personality) items.push(['Personality', ss.personality]);
+        if (ss && ss.nd_affirmation) items.push(['ND Affirmation', ss.nd_affirmation]);
+        var subs = [];
+        for (var i = 0; i < subData.length; i++) { if (subData[i].super_skill_id === ssId) subs.push(subData[i].name); }
+        if (subs.length) items.push(['Sub Skills', subs.join(', ')]);
+        if (ss && ss.relevant_theories) items.push(['Relevant Theories', ss.relevant_theories]);
+        cards += card(stepNum, 'Skill', '\u2192 ' + (ss ? ss.name : selText('newModuleSuperSkill')), items);
+    }
+
+    // ── 3. Age Range ──
+    var ageId = selVal('ageRangeSelect');
+    if (ageId) {
+        stepNum++;
+        var ar = null;
+        for (var i = 0; i < arData.length; i++) { if (arData[i].id === ageId) { ar = arData[i]; break; } }
+        var ageName = ar ? (ar.display_name || ar.age_range) : selText('ageRangeSelect');
+        var items = [['Age Range', ageName]];
+        if (ar && ar.language_guidelines) items.push(['Language Guidelines', tr(ar.language_guidelines, 200)]);
+        if (ar && ar.developmental_stage) items.push(['Developmental Stage', ar.developmental_stage]);
+        if (ar && ar.piaget_stage) items.push(['Piaget Stage', ar.piaget_stage]);
+        if (ar && ar.erikson_stage) items.push(['Erikson Stage', ar.erikson_stage]);
+        if (ar && ar.vocabulary_level) items.push(['Vocabulary Level', ar.vocabulary_level]);
+        if (ar && ar.language_register) items.push(['Language Register', ar.language_register]);
+        if (ar && ar.duration_minutes) items.push(['Duration', ar.duration_minutes + ' minutes']);
+        if (ar && ar.cognitive_abilities) items.push(['Cognitive Abilities', tr(ar.cognitive_abilities, 150)]);
+        if (ar && ar.attention_span) items.push(['Attention Span', ar.attention_span]);
+        if (ar && ar.abstract_thinking) items.push(['Abstract Thinking', ar.abstract_thinking]);
+        if (ar && ar.neurodivergent_adaptations) items.push(['ND Adaptations', tr(ar.neurodivergent_adaptations, 150)]);
+        cards += card(stepNum, 'Age Range', '\u2192 ' + ageName, items);
+    }
+
+    // ── 4. Character ──
+    var charVal = inpVal('newModuleCharacter');
+    if (charVal) {
+        stepNum++;
+        var ss2 = null;
+        if (ssId) { for (var i = 0; i < ssData.length; i++) { if (ssData[i].id === ssId) { ss2 = ssData[i]; break; } } }
+        var items = [['Character', charVal]];
+        if (ss2 && ss2.species) items.push(['Species', ss2.species]);
+        cards += card(stepNum, 'Character', '\u2192 ' + charVal, items);
+    }
+
+    // ── 5. Sub-Skill ──
+    var subId = selVal('newModuleSubSkill');
+    if (subId) {
+        stepNum++;
+        var sub = null;
+        for (var i = 0; i < subData.length; i++) { if (subData[i].id === subId) { sub = subData[i]; break; } }
+        var subName = sub ? sub.name : selText('newModuleSubSkill');
+        var items = [['Sub-Skill', subName]];
+        if (sub && sub.description) items.push(['Description', sub.description]);
+        if (sub && sub.brain_town_description) items.push(['Brain Town', sub.brain_town_description]);
+        cards += card(stepNum, 'Sub-Skill', '\u2192 ' + subName, items);
+    }
+
+    // ── 6. Cycle ──
+    var cycId = selVal('newModuleCycle');
+    if (cycId) {
+        stepNum++;
+        var cyc = null;
+        for (var i = 0; i < cyData.length; i++) { if (cyData[i].id === cycId) { cyc = cyData[i]; break; } }
+        var cycName = cyc ? cyc.name : selText('newModuleCycle');
+        var items = [['Cycle', (cyc && cyc.cycle_number ? 'Cycle ' + cyc.cycle_number + ': ' : '') + cycName]];
+        if (cyc && cyc.description) items.push(['Description', cyc.description]);
+        if (ssId && cycId) {
+            var tc = null;
+            for (var i = 0; i < tcData.length; i++) { if (tcData[i].super_skill_id === ssId && tcData[i].cycle_id === cycId) { tc = tcData[i]; break; } }
+            if (tc && tc.citation) items.push(['Citation', tc.citation]);
+            if (tc && tc.brain_town_application) items.push(['Brain Town Application', tc.brain_town_application]);
+        }
+        cards += card(stepNum, 'Cycle', '\u2192 ' + cycName, items);
+    }
+
+    // ── 7. Week ──
+    var weekVal = inpVal('newModuleOrder');
+    if (weekVal) {
+        stepNum++;
+        cards += card(stepNum, 'Week', '\u2192 Week ' + weekVal, [
+            ['Week Number', weekVal],
+            ['XP Reward', inpVal('newModuleXPReward') || '100'],
+            ['Stars Reward', inpVal('newModuleStarsReward') || '10']
+        ]);
+    }
+
+    // ── 8. Core Theory ──
+    var thId = selVal('coreTheorySelect');
+    if (thId) {
+        stepNum++;
+        var th = null;
+        for (var i = 0; i < ctData.length; i++) { if (ctData[i].id === thId) { th = ctData[i]; break; } }
+        var thName = th ? th.theory_name : selText('coreTheorySelect');
+        var items = [['Theory', thName]];
+        if (th && th.category) items.push(['Category', th.category]);
+        if (th && th.description) items.push(['Description', tr(th.description, 250)]);
+        if (th && (th.primary_researchers || th.key_theorists)) items.push(['Key Theorists', th.primary_researchers || th.key_theorists]);
+        if (th && th.key_mechanism) items.push(['Key Mechanism', tr(th.key_mechanism, 200)]);
+        if (th && th.how_to_apply) items.push(['How to Apply', tr(th.how_to_apply, 200)]);
+        if (th && th.brain_town_application) items.push(['Brain Town Application', tr(th.brain_town_application, 200)]);
+        if (th && th.citation) items.push(['Citation', th.citation]);
+        if (th && th.cycle_theme) items.push(['Cycle Theme', th.cycle_theme]);
+        if (th && th.status) items.push(['Status', th.status === 'confirmed' ? '\u2705 Confirmed' : '\u26a0\ufe0f ' + th.status]);
+        cards += card(stepNum, 'Core Theory', '\u2192 ' + thName, items);
+    }
+
+    // ── 9. Brain Town Analogy ──
+    var btVal = inpVal('brainTownAnalogy');
+    if (btVal && btVal.trim()) {
+        stepNum++;
+        cards += card(stepNum, 'Brain Town Analogy', '', [['Brain Town', btVal]]);
+    }
+
+    // ── 10. Dx Adjustments ──
+    var dxEls = document.querySelectorAll('.diagnosis-checkbox:checked');
+    if (dxEls.length > 0) {
+        stepNum++;
+        var dxItems = [];
+        for (var i = 0; i < dxEls.length; i++) {
+            var lbl = dxEls[i].closest('label');
+            dxItems.push(['Dx', lbl ? lbl.textContent.trim() : dxEls[i].value]);
+        }
+        cards += card(stepNum, 'Dx Adjustments', dxEls.length + ' selected', dxItems);
+    }
+
+    // ── 11. Secondary Theories ──
+    var secIds = (window.enhancedModuleModal && window.enhancedModuleModal.secondaryTheoryIds) ? window.enhancedModuleModal.secondaryTheoryIds : [];
+    if (secIds.length > 0) {
+        stepNum++;
+        var secItems = [];
+        for (var j = 0; j < secIds.length; j++) {
+            var sid = secIds[j];
+            var sth = null;
+            for (var i = 0; i < ctData.length; i++) { if (ctData[i].id === sid) { sth = ctData[i]; break; } }
+            var chip = document.querySelector('.secondary-theory-chip[data-theory-id="' + sid + '"]');
+            var sname = sth ? sth.theory_name : (chip ? chip.textContent.trim() : sid);
+            secItems.push(['Theory', sname]);
+            if (sth && sth.description) secItems.push(['  Description', tr(sth.description, 120)]);
+        }
+        cards += card(stepNum, 'Secondary Theories', secIds.length + ' selected', secItems);
+    }
+
+    // ── 12. Neuroscience Concept ──
+    var neuroVal = selVal('neuroscienceConcept');
+    if (neuroVal) {
+        stepNum++;
+        cards += card(stepNum, 'Neuroscience Concept', '\u2192 ' + neuroVal, [['Concept', neuroVal]]);
+    }
+
+    // ── 13. NDIS Domain ──
+    var ndisVal = selVal('ndisDomain');
+    if (ndisVal) {
+        stepNum++;
+        cards += card(stepNum, 'NDIS Domain', '\u2192 ' + selText('ndisDomain'), [['Domain', selText('ndisDomain')]]);
+    }
+
+    // ── 14. DSS SEDI ──
+    var sediVal = selVal('dssSedi');
+    if (sediVal) {
+        stepNum++;
+        cards += card(stepNum, 'DSS SEDI Category', '\u2192 ' + selText('dssSedi'), [['SEDI', selText('dssSedi')]]);
+    }
+
+    logContainer.innerHTML = cards;
+
+    if (stepNum >= 2 && outputArea) {
+        outputArea.innerHTML = '';
+    } else if (outputArea && !outputArea.querySelector('.gm-empty-state')) {
+        outputArea.innerHTML = '<div class="gm-empty-state"><div class="gm-es-icon">\ud83c\udfd7\ufe0f</div><div class="gm-es-title">Select parameters</div><div class="gm-es-desc">Each dropdown locks parameters from the clinical architecture. The decision logic panel will show what will be sent to the AI generator.</div></div>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('diagnosis-checkbox')) {
+            setTimeout(updateDecisionLogic, 50);
+        }
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('secondary-theory-chip')) {
+            setTimeout(updateDecisionLogic, 50);
+        }
+    });
+});
+
+// Show generated result and hide decision logic
+function showGeneratedResult() {
+    var wrapper = document.getElementById('gmDecisionLogWrapper');
+    var aiBox = document.getElementById('gmAiContextBox');
+    var result = document.getElementById('aiGeneratedResult');
+    var auditBtn = document.getElementById('gmAuditBtnLeft');
+    var genBtn = document.getElementById('generateModuleBtn');
+    if (wrapper) wrapper.style.display = 'none';
+    if (aiBox) aiBox.style.display = 'none';
+    if (result) result.style.display = 'block';
+    if (auditBtn) auditBtn.style.display = '';
+    if (genBtn) genBtn.innerHTML = '🔄 Regenerate';
+    // Load preview with a small delay to ensure HTML is populated
+    setTimeout(loadInlinePreview, 200);
+}
+
+function showDecisionLogicAgain() {
+    var wrapper = document.getElementById('gmDecisionLogWrapper');
+    var aiBox = document.getElementById('gmAiContextBox');
+    var result = document.getElementById('aiGeneratedResult');
+    if (wrapper) wrapper.style.display = '';
+    if (aiBox) aiBox.style.display = '';
+    if (result) result.style.display = 'none';
+}
+
+function loadInlinePreview() {
+    var iframe = document.getElementById('gmInlinePreviewFrame');
+    if (!iframe) return;
+    var html = window.generatedModuleHTML || '';
+    if (!html) {
+        // Fallback: try the textarea
+        var ta = document.getElementById('aiGeneratedPreview');
+        html = ta ? ta.value : '';
+    }
+    if (!html.trim()) {
+        // Retry after a short delay (HTML may not be set yet)
+        setTimeout(loadInlinePreview, 300);
+        return;
+    }
+    try {
+        var doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+    } catch(e) { console.warn('Inline preview error:', e); }
+}
+
+// Watch for aiGeneratedResult becoming visible and trigger layout switch
+var _gmResultObserver = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === 'style') {
+            var el = document.getElementById('aiGeneratedResult');
+            if (el && window.getComputedStyle(el).display !== 'none') {
+                showGeneratedResult();
+            }
+        }
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var resultEl = document.getElementById('aiGeneratedResult');
+    if (resultEl) {
+        _gmResultObserver.observe(resultEl, { attributes: true, attributeFilter: ['style'] });
+    }
+});
+</script>
 
     <!-- AI Generation Loading Overlay -->
     <div id="aiLoadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; justify-content: center; align-items: center;">

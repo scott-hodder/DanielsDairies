@@ -52,7 +52,7 @@ async function _loadAuditData() {
             window.supabase.from('super_skills').select('*, characters:character_id(id, name, species)').eq('is_active', true),
             window.supabase.from('theory_connections').select('*, super_skills:super_skill_id(id, code), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name, primary_researchers)').eq('is_active', true),
             window.supabase.from('age_ranges').select('*').eq('is_active', true),
-            window.supabase.from('levels').select('*').eq('is_active', true).order('level_number'),
+            window.supabase.from('levels').select('*').order('level'),
             window.supabase.from('forbidden_terms').select('term, term_type').eq('is_active', true),
             window.supabase.from('audit_sections').select('*').eq('is_active', true).order('section_number'),
             window.supabase.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order'),
