@@ -66,7 +66,7 @@ import {
 // CONTENT GENERATION
 // ====================
 
-const SYSTEM_PROMPT = `You are an expert child psychologist creating Daniel's Diaries modules — trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
+const DEFAULT_SYSTEM_PROMPT = `You are an expert child psychologist creating Daniel's Diaries modules — trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
 
 === DANIEL'S DIARIES FRAMEWORK ===
 Daniel is a friendly narrator who guides children through Brain Town — a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town.
@@ -110,6 +110,8 @@ CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor
    BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 — and ANY emoji you are unsure about.
 11. GENUINE CHOICE: Always offer the child choices. Use "you could", "you might", "choose", "option" language.
 12. STRENGTHS-BASED: Frame neurodiversity as difference, not deficit. Never use pathologising language.`;
+
+let ACTIVE_SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT;
 
 // ====================
 // DUPLICATE DETECTION UTILITIES
@@ -227,7 +229,7 @@ Respond with ONLY this JSON:
   "mascotComment": "Encouraging comment from ${metadata.characterName}"
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
   const parsed = safeJsonParse<InteractiveLessonContent>(response);
   
   if (parsed) {
@@ -517,7 +519,7 @@ Respond with ONLY this JSON:
 Keep the explanation under 40 words. Make prompts warm and practical.`;
 
   try {
-    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, 500);
+    const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, 500);
     const parsed = safeJsonParse<GrownUpNote>(response);
     
     if (parsed && parsed.briefExplanation && parsed.parentPrompts?.length > 0) {
@@ -751,7 +753,7 @@ Respond with ONLY this JSON structure:
   "characterEmoji": "${seriesInfo?.emoji || 'Single emoji representing the mascot'}"
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<ModuleMetadata>(response);
   
   // ALWAYS force-override admin-specified title and age (never trust AI for these)
@@ -950,7 +952,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<{ heading: string; paragraphs: string[] }>(response);
   
   return parsed || {
@@ -991,7 +993,7 @@ Respond with ONLY this JSON:
 
 Create exactly ${count} chapters.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_METADATA);
   const parsed = safeJsonParse<{ chapters: ChapterDivider[] }>(response);
   
   const chapters = parsed?.chapters || [];
@@ -1042,7 +1044,7 @@ Respond with ONLY this JSON:
 
 Create exactly ${count} unique lessons. Each should focus on a different aspect of ${metadata.theme}, ordered from simple awareness to practise and real-life application.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
   const parsed = safeJsonParse<{ lessons: LessonContent[] }>(response);
   
   const lessons = parsed?.lessons || [];
@@ -1092,7 +1094,7 @@ Respond with ONLY this JSON:
 
 Create exactly ${count} different checklists, each focusing on different skills or actions.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ checklists: ChecklistContent[] }>(response);
   
   const checklists = parsed?.checklists || [];
@@ -1136,7 +1138,7 @@ Respond with ONLY this JSON:
 
 Create exactly ${count} different reflection prompts.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ reflections: ReflectionContent[] }>(response);
   
   const reflections = parsed?.reflections || [];
@@ -1179,7 +1181,7 @@ Respond with ONLY this JSON:
 
 Create exactly ${count} different quiz questions.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ quizzes: QuizContent[] }>(response);
   
   const quizzes = parsed?.quizzes || [];
@@ -1233,7 +1235,7 @@ Respond with ONLY this JSON:
 
 Create exactly ${count} different drawing activities.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ drawings: DrawingContent[] }>(response);
   
   const drawings = parsed?.drawings || [];
@@ -1269,7 +1271,7 @@ Respond with ONLY this JSON:
   "exhaleText": "What to think/say while breathing out (short)"
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<BreathingContent>(response);
   
   return parsed || {
@@ -1311,7 +1313,7 @@ Respond with ONLY this JSON:
 
 Create exactly ${count} different scenarios.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ scenarios: ScenarioContent[] }>(response);
   
   const scenarios = parsed?.scenarios || [];
@@ -1354,7 +1356,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ thermometers: FeelingThermometerContent[] }>(response);
   
   const thermometers = parsed?.thermometers || [];
@@ -1399,7 +1401,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ bodyMaps: BodyMapContent[] }>(response);
   
   const bodyMaps = parsed?.bodyMaps || [];
@@ -1450,7 +1452,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ selectors: FeelingSelectorContent[] }>(response);
   
   const selectors = parsed?.selectors || [];
@@ -1504,7 +1506,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ denBuilders: CalmDenBuilderContent[] }>(response);
   
   const denBuilders = parsed?.denBuilders || [];
@@ -1555,7 +1557,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ actionPlans: ActionPlanContent[] }>(response);
   
   const actionPlans = parsed?.actionPlans || [];
@@ -1601,7 +1603,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ warningSigns: WarningSingsContent[] }>(response);
   
   const warningSigns = parsed?.warningSigns || [];
@@ -1647,7 +1649,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ matchingActivities: MatchingActivityContent[] }>(response);
   
   const matchingActivities = parsed?.matchingActivities || [];
@@ -1691,7 +1693,7 @@ Respond with ONLY this JSON:
   "encouragement": "Final encouraging message from the mascot"
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<SummaryContent>(response);
   
   return parsed || {
@@ -1724,7 +1726,7 @@ Respond with ONLY this JSON:
   "nextStepsText": "What to do next (1-2 sentences)"
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<CompletionContent>(response);
   
   return parsed || {
@@ -1816,7 +1818,7 @@ Rules:
 - For "true-false": set "correctAnswerIndex" to 0 (Agree) or 1 (Disagree)
 - CRITICAL: Create content that progresses learning, not repeats it`;
 
-    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
+    const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
     const parsed = safeJsonParse<InteractiveLessonContent>(response);
     
     if (parsed) {
@@ -1917,7 +1919,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ fillInStories: FillInStoryContent[] }>(response);
   
   const stories = parsed?.fillInStories || [];
@@ -1965,7 +1967,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ copingCards: CopingCardsContent[] }>(response);
   
   const cards = parsed?.copingCards || [];
@@ -2013,7 +2015,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ gratitudeJars: GratitudeJarContent[] }>(response);
   
   const jars = parsed?.gratitudeJars || [];
@@ -2063,7 +2065,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ sortingActivities: SortingActivityContent[] }>(response);
   
   const activities = parsed?.sortingActivities || [];
@@ -2114,7 +2116,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ thoughtBubbles: ThoughtBubblesContent[] }>(response);
   
   const bubbles = parsed?.thoughtBubbles || [];
@@ -2169,7 +2171,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ emojiCheckIns: EmojiCheckInContent[] }>(response);
   
   const checkIns = parsed?.emojiCheckIns || [];
@@ -2222,7 +2224,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ wordScrambles: WordScrambleContent[] }>(response);
   
   const scrambles = parsed?.wordScrambles || [];
@@ -2269,7 +2271,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ agreeDisagrees: AgreeDisagreeContent[] }>(response);
   
   const activities = parsed?.agreeDisagrees || [];
@@ -2318,7 +2320,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ comicStrips: ComicStripContent[] }>(response);
   
   const comics = parsed?.comicStrips || [];
@@ -2379,7 +2381,7 @@ Respond with ONLY this JSON:
 
 IMPORTANT: Use actual emoji characters in decorationEmojis, not text names!`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ affirmationBuilders: AffirmationBuilderContent[] }>(response);
   
   const builders = parsed?.affirmationBuilders || [];
@@ -2442,7 +2444,7 @@ Respond with ONLY this JSON:
 IMPORTANT: weatherType must be one of: "storm", "rain", "fog", "heat"
 Make the content relevant to ${metadata.theme}.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ weatherControllers: WeatherControllerContent[] }>(response);
   
   const controllers = parsed?.weatherControllers || [];
@@ -2500,7 +2502,7 @@ Respond with ONLY this JSON:
 Include 6-8 powerUps with a mix of positive (true) and negative (false) options.
 Make the content relevant to ${metadata.theme}.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ powerUpCollectors: PowerUpCollectorContent[] }>(response);
   
   const collectors = parsed?.powerUpCollectors || [];
@@ -2574,7 +2576,7 @@ Respond with ONLY this JSON:
 Include 3 pathChoices steps with 2 options each.
 Make the content relevant to ${metadata.theme}.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ emotionMazes: EmotionMazeContent[] }>(response);
   
   const mazes = parsed?.emotionMazes || [];
@@ -2650,7 +2652,7 @@ Respond with ONLY this JSON:
 
 Make the content relevant to ${metadata.theme}.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ strengthShields: StrengthShieldContent[] }>(response);
   
   const shields = parsed?.strengthShields || [];
@@ -2712,7 +2714,7 @@ Respond with ONLY this JSON:
 
 Make the content relevant to ${metadata.theme}.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ feelingVolcanoes: FeelingVolcanoContent[] }>(response);
   
   const volcanoes = parsed?.feelingVolcanoes || [];
@@ -2780,7 +2782,7 @@ Respond with ONLY this JSON:
 
 Make the content age-appropriate for ${metadata.targetAge} year olds.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ spinTheWheels: SpinTheWheelContent[] }>(response);
   
   const wheels = parsed?.spinTheWheels || [];
@@ -2839,7 +2841,7 @@ Respond with ONLY this JSON:
 
 Make the content age-appropriate for ${metadata.targetAge} year olds.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ stickerCollectors: StickerCollectorContent[] }>(response);
   
   const collectors = parsed?.stickerCollectors || [];
@@ -2894,7 +2896,7 @@ Respond with ONLY this JSON:
 
 Make the content calming, sensory-rich, and age-appropriate for ${metadata.targetAge} year olds.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ mindfulAdventures: MindfulAdventureContent[] }>(response);
   
   const adventures = parsed?.mindfulAdventures || [];
@@ -2972,7 +2974,7 @@ Respond with ONLY this JSON:
 
 Make it fun, like a real mystery game, and appropriate for children.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ emotionDetectives: EmotionDetectiveContent[] }>(response);
   
   const detectives = parsed?.emotionDetectives || [];
@@ -3054,7 +3056,7 @@ Respond with ONLY this JSON:
 
 Make the worries relatable to children and the pop responses encouraging.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ balloonPops: BalloonPopContent[] }>(response);
   
   const activities = parsed?.balloonPops || [];
@@ -3127,7 +3129,7 @@ Respond with ONLY this JSON:
 
 Include 4 diverse locations with unique emotional treasures.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ treasureHunts: TreasureHuntContent[] }>(response);
   
   const activities = parsed?.treasureHunts || [];
@@ -3229,7 +3231,7 @@ Respond with ONLY this JSON:
 
 Make the monster relatable and the taming process empowering.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ monsterTamers: MonsterTamerContent[] }>(response);
   
   const activities = parsed?.monsterTamers || [];
@@ -3315,7 +3317,7 @@ Respond with ONLY this JSON:
 
 Include 4 different plants representing positive emotions/skills.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ gardenGrowers: GardenGrowerContent[] }>(response);
   
   const activities = parsed?.gardenGrowers || [];
@@ -3415,7 +3417,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ superheroCreators: SuperheroCreatorContent[] }>(response);
   
   const activities = parsed?.superheroCreators || [];
@@ -3493,7 +3495,7 @@ Respond with ONLY this JSON:
 
 Include 5-6 instruments representing different emotions.`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ feelingsOrchestras: FeelingsOrchestraContent[] }>(response);
   
   const activities = parsed?.feelingsOrchestras || [];
@@ -3559,7 +3561,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ calmAquariums: CalmAquariumContent[] }>(response);
   
   const activities = parsed?.calmAquariums || [];
@@ -3632,7 +3634,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ rocketLaunchers: RocketLauncherContent[] }>(response);
   
   const activities = parsed?.rocketLaunchers || [];
@@ -3699,7 +3701,7 @@ Respond with ONLY this JSON:
   ]
 }`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ magicPotions: MagicPotionContent[] }>(response);
   
   const activities = parsed?.magicPotions || [];
@@ -3769,7 +3771,7 @@ Respond with ONLY this JSON:
 
 Include 8 unique squares (plus free space = 9 total for 3x3 grid).`;
 
-  const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+  const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ feelingsBingos: FeelingsBingoContent[] }>(response);
   
   const activities = parsed?.feelingsBingos || [];
@@ -3902,7 +3904,7 @@ Respond with ONLY this JSON:
 }`;
 
   try {
-    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
+    const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
     const parsed = safeJsonParse<VerificationReport>(response);
     if (parsed && parsed.overallAssessment) {
       return parsed;
@@ -3960,7 +3962,7 @@ Respond with ONLY this JSON:
 }`;
 
   try {
-    const response = await callClaude(apiKey, SYSTEM_PROMPT, prompt, TOKENS_METADATA);
+    const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_METADATA);
     const parsed = safeJsonParse<ModuleSummary>(response);
     if (parsed && parsed.summary) {
       return parsed;
@@ -3985,9 +3987,11 @@ async function generateAllContent(
   contentBrief: string,
   pageStructure: PageTemplate[],
   updateProgress: (step: string, message: string) => Promise<void>,
-  seriesInfo?: SeriesInfo | null
+  seriesInfo?: SeriesInfo | null,
+  systemPromptTemplate?: string | null
 ): Promise<GeneratedContent> {
-  
+  ACTIVE_SYSTEM_PROMPT = buildSystemPrompt(systemPromptTemplate);
+
   // Count how many of each type we need
   const counts = {
     chapters: pageStructure.filter(p => p.type === "chapter-divider").length,
@@ -4261,12 +4265,21 @@ async function generateAllContent(
   return dehyphenateObject(rawContent);
 }
 
+
+
+function buildSystemPrompt(customTemplate?: string | null): string {
+  if (typeof customTemplate === "string" && customTemplate.trim().length > 0) {
+    return customTemplate.trim();
+  }
+  return DEFAULT_SYSTEM_PROMPT;
+}
 // ====================
 // EXPORTS
 // ====================
 
 export {
-  SYSTEM_PROMPT,
+  DEFAULT_SYSTEM_PROMPT,
+  buildSystemPrompt,
   extractAgeRange,
   generateAllContent,
 };
