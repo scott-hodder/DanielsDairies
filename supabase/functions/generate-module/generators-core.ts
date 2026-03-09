@@ -943,7 +943,7 @@ interface GeneratedContent {
 }
 
 // Cache
-let cachedSettings: { claude_api_key: string; fetchedAt: number } | null = null;
+let cachedSettings: { claude_api_key: string; ai_prompt_template?: string | null; fetchedAt: number } | null = null;
 
 // ====================
 // UTILITIES
@@ -1621,14 +1621,18 @@ async function getSettings(supabaseClient: any) {
   
   const { data: settings, error } = await supabaseClient
     .from("settings")
-    .select("claude_api_key")
+    .select("claude_api_key, ai_prompt_template")
     .single();
     
   if (error || !settings?.claude_api_key) {
     throw new Error("Claude API key not configured in settings");
   }
   
-  cachedSettings = { claude_api_key: settings.claude_api_key, fetchedAt: Date.now() };
+  cachedSettings = {
+    claude_api_key: settings.claude_api_key,
+    ai_prompt_template: settings.ai_prompt_template ?? null,
+    fetchedAt: Date.now(),
+  };
   return cachedSettings;
 }
 

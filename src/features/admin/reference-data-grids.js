@@ -19,13 +19,105 @@ function _waitSB() {
 
 // --- Data caches ---
 var _ss = [], _sub = [], _th = [], _age = [], _ndis = [], _sedi = [], _fasd = [], _chars = [], _cycles = [], _connections = [], _forbidden = [], _auditSections = [], _auditRules = [];
+var _settings = null;
+const DEFAULT_AI_PROMPT_TEMPLATE = `You are an expert child psychologist creating Daniel's Diaries modules — trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
+
+=== DANIEL'S DIARIES FRAMEWORK ===
+Daniel is a friendly narrator who guides children through Brain Town — a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town.
+
+=== MANDATORY CONTENT REQUIREMENTS ===
+1. THEORY & CITATION: Every module MUST mention the primary theory name AND the researcher's surname (e.g., "Operant Learning Foundations" AND "Skinner").
+2. BRAIN TOWN VOCABULARY - MUST USE: town, road, roads, street, streets, main street, motorway, highway, traffic, traffic light, traffic signal, building, buildings, town planner, brain town
+3. CHILD AS TOWN PLANNER: Always frame the child as the "town planner" of their Brain Town. Use phrases like "As the town planner of your Brain Town..." or "You're the town planner here..."
+4. DANIEL NARRATES: Daniel must appear as narrator (use "Daniel" by name at least once).
+5. LEARNING OUTCOME: Include at least one statement starting with "Child can..." to describe what the child will learn.
+
+=== ABSOLUTELY FORBIDDEN - NEVER USE ===
+FORBIDDEN WORDS (deficit language): broken, damaged, wrong, faulty, disordered, deficit, dysfunction, abnormal, sick, diseased, problem brain, bad roads, wrong roads, messed up, not working properly, hard wired, set in stone, permanent
+FORBIDDEN METAPHORS (use Brain Town equivalents instead): computer, hard drive, processor, muscle, empty vessel, blank slate, machine, engine, wires, circuits, channels, weather, waves, colours for emotions, seeds, driver, passenger, captain, pilot, volume dial, thermostat, meter, garden
+DIRECTIVE LANGUAGE (use invitation framing instead): you need to, you must, you have to, you should, do this now, tell your parent, share your feelings, tell us about, you will
+EVALUATION LANGUAGE (Daniel never scores or judges): good job, well done, great work, you got it right, correct answer, wrong answer, try harder, you scored, points, you only, you failed, score
+TIME PRESSURE (child works at own pace): hurry, quick, before time, minutes to complete, time is up, countdown, race against, faster
+
+=== INVITATION FRAMING (USE INSTEAD OF DIRECTIVES) ===
+✅ "You might like to..." ✅ "You could try..." ✅ "Some children find it helpful to..." ✅ "One option is..." ✅ "If you'd like, you can..."
+❌ "You need to..." ❌ "You must..." ❌ "You have to..." ❌ "You should..."
+
+=== LEVEL-APPROPRIATE VERBS ===
+SEED LEVEL (Weeks 1-3): ONLY use: identify, name, label, point to, recognise, notice, watch
+STREET LEVEL (Weeks 4-6): ONLY use: demonstrate, practise, sort, categorise, compare, try, choose
+MOTORWAY LEVEL (Weeks 7-9): ONLY use: apply, use independently, self correct, adapt, transfer, extend
+CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor, redesign, lead, integrate
+
+=== CRITICAL RULES ===
+1. Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.
+2. If a specific character/mascot is mentioned, you MUST use EXACTLY that character name and type throughout. Never substitute a different animal or character.
+3. The mascot emoji must match the character type exactly.
+4. When creating multiple items, sequence them as a learning journey: start with simple awareness, then practise skills, then apply in real-life scenarios.
+5. Treat the age range and language guidelines as hard requirements.
+6. Use Australian English spelling throughout (colour, behaviour, favourite, organise, centre, mum, learnt). NEVER use: behavior, color, organization, recognize, organize, center, analyze, generalize.
+7. NEVER use em dashes, "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
+8. Write as a warm, experienced educator, not a marketing copywriter.
+9. NEVER use hyphens or en dashes to join compound words. Use spaces instead (e.g., "thought feeling" not "thought-feeling").
+10. EMOJI SAFETY: Only use well-supported, common emojis from Unicode 12.0 or earlier.
+   SAFE emojis: 😊 😢 😡 😨 😌 🤩 😳 😤 🤔 😴 🥰 😎 🤗 😮 🙂 😞 😰 ⭐ 💛 ❤ 🌟 🎯 🎨 📝 💡 🏠 🌈 🐕 🐱 🦁 🐻 🌸 🌻 🎵 🎶 💪 🧠 ❓ ✅ ✓ ❌ 🐢 🐠 🐟 🐙 🐚 🌊 🐬 🐳 🐋 🦈 🐡 🦀 🌿 🍃 💎 ⚡ 🔥 💧 🌙 ☀ 🌤 ⛅ 🌧 ⛈ 🌪 🌞 🎈 🎉 🏆 🎪 🎭 🎬 🎹 🥁 🎸 🎺 🎻 📖 📚 ✏ 🖍 🖌 👀 👂 🤝 👍 👏 🙌 💭 💬 🔍 🧩
+   BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 — and ANY emoji you are unsure about.
+11. GENUINE CHOICE: Always offer the child choices. Use "you could", "you might", "choose", "option" language.
+12. STRENGTHS-BASED: Frame neurodiversity as difference, not deficit. Never use pathologising language.`;
+
+
+function estimatePromptTokens(text) {
+    return Math.ceil(((text || '').length) / 4);
+}
+
+function validateAiPromptTemplate(template) {
+    var value = (template || '').trim();
+    var errors = [];
+    var warnings = [];
+
+    if (!value) {
+        errors.push('Prompt template cannot be empty.');
+    }
+
+    if (value.length > 24000) {
+        errors.push('Prompt is too large (' + value.length + ' chars). Keep under 24,000 chars.');
+    } else if (value.length > 16000) {
+        warnings.push('Prompt is very large (' + value.length + ' chars) and may increase cost and latency.');
+    }
+
+    var estimatedTokens = estimatePromptTokens(value);
+    if (estimatedTokens > 5000) {
+        warnings.push('Estimated prompt tokens are high (~' + estimatedTokens + '). Consider reducing bloat.');
+    }
+
+    var duplicateHeadingMatches = value.match(/^===\s+(.+?)\s+===$/gm) || [];
+    var headingNames = duplicateHeadingMatches.map(function(h) { return h.replace(/^===\s+|\s+===$/g, ''); });
+    var duplicateNames = headingNames.filter(function(name, idx) { return headingNames.indexOf(name) !== idx; });
+    if (duplicateNames.length) {
+        var uniqueDupes = Array.from(new Set(duplicateNames));
+        warnings.push('Duplicate section headings detected: ' + uniqueDupes.join(', '));
+    }
+
+    if ((new RegExp("\\byou must\\b", "i")).test(value)) warnings.push('Contains "you must" which may conflict with invitation framing.');
+    if ((new RegExp("\\byou have to\\b", "i")).test(value)) warnings.push('Contains "you have to" which may conflict with invitation framing.');
+    if ((new RegExp("\\btime is up\\b", "i")).test(value)) warnings.push('Contains "time is up" which may conflict with child-paced guidance.');
+
+    return {
+        valid: errors.length === 0,
+        errors: errors,
+        warnings: warnings,
+        estimatedTokens: estimatedTokens,
+        characterCount: value.length
+    };
+}
+
 var _dataLoaded = false;
 
 async function _loadAll() {
     var sb = window.supabase;
     if (!sb) return;
     try {
-        var [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13] = await Promise.all([
+        var [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14] = await Promise.all([
             sb.from('super_skills').select('*, characters:character_id(id, name, species, personality_nd, image_url)').order('sort_order'),
             sb.from('sub_skills').select('*, super_skills:super_skill_id(id, name, slug, emoji)').order('sort_order'),
             sb.from('core_theories').select('*').eq('is_active', true).order('theory_name'),
@@ -38,7 +130,8 @@ async function _loadAll() {
             sb.from('theory_connections').select('*, super_skills:super_skill_id(id, name), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name)').order('sort_order'),
             sb.from('forbidden_terms').select('*').eq('is_active', true).order('term_type,term'),
             sb.from('audit_sections').select('*').eq('is_active', true).order('section_number'),
-            sb.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order')
+            sb.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order'),
+            sb.from('settings').select('id, ai_prompt_template').maybeSingle()
         ]);
         _ss = r1.data || []; _sub = r2.data || []; _th = r3.data || [];
         _age = r4.data || []; _ndis = r5.data || []; _sedi = r6.data || [];
@@ -48,6 +141,7 @@ async function _loadAll() {
         _forbidden = r11.data || [];
         _auditSections = r12.data || [];
         _auditRules = r13.data || [];
+        _settings = r14.data || null;
         _dataLoaded = true;
         
         // Expose data caches globally for module-audit.js
@@ -290,7 +384,7 @@ function _render(id) {
     var map = {
         refSuperSkills: rSS, refSubSkills: rSub, refTheories: rTh, refConnections: rConn, refDxProfiles: rDx,
         refNdis: rNdis, refSedi: rSedi, refAgeBands: rAge, refLevels: rLev,
-        refVocabulary: rVocab, refSequencing: rSeq, refFasd: rFasd, refAuditRules: rAuditRules
+        refVocabulary: rVocab, refSequencing: rSeq, refFasd: rFasd, refAuditRules: rAuditRules, refAiPrompt: rAiPrompt
     };
     if (map[id]) map[id]();
 }
@@ -317,6 +411,9 @@ function rSS() {
     if (!_ss.length) h += '<tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7c8f;">No super skills found.</td></tr>';
     h += '</tbody></table></div>';
     p.innerHTML = h;
+    var input = document.getElementById('aiPromptTemplateInput');
+    if (input) input.oninput = function() { window.renderAiPromptLint(input.value); };
+    renderAiPromptLint(template);
 }
 
 // ============================
@@ -610,6 +707,87 @@ function rAuditRules() {
     
     p.innerHTML = h;
 }
+
+
+function rAiPrompt() {
+    var p = document.getElementById('refAiPromptPanel'); if (!p) return;
+    var template = (_settings && _settings.ai_prompt_template) ? _settings.ai_prompt_template : DEFAULT_AI_PROMPT_TEMPLATE;
+    var h = '<div style="background:#fff;border-radius:10px;border:1px solid #E2E8F0;padding:18px;">';
+    h += '<h3 style="font-size:16px;margin:0 0 6px;font-weight:700;">🤖 AI Prompt Template</h3>';
+    h += '<p style="font-size:12px;color:#6b7c8f;margin:0 0 12px;">This prompt is sent as the system prompt to module generation requests. Content sections are still controlled by existing reference data and page generators.</p>';
+    h += '<textarea id="aiPromptTemplateInput" style="width:100%;min-height:360px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.45;">' + E(template) + '</textarea>';
+    h += '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;">';
+    h += '<button class="btn-save" onclick="saveAiPromptTemplate()">💾 Save AI Prompt</button>';
+    h += '<button class="btn" style="background:#6b7c8f;color:white;" onclick="restoreDefaultAiPromptTemplate()">↩ Restore Safe Default</button>';
+    h += '<span id="aiPromptTemplateStatus" style="font-size:12px;color:#6b7c8f;"></span>';
+    h += '</div>';
+    h += '<div id="aiPromptTemplateLint" style="font-size:12px;color:#6b7c8f;margin-top:8px;"></div>';
+    h += '</div>';
+    p.innerHTML = h;
+    var input = document.getElementById('aiPromptTemplateInput');
+    if (input) input.oninput = function() { window.renderAiPromptLint(input.value); };
+    renderAiPromptLint(template);
+}
+
+window.restoreDefaultAiPromptTemplate = function() {
+    var input = document.getElementById('aiPromptTemplateInput');
+    if (!input) return;
+    input.value = DEFAULT_AI_PROMPT_TEMPLATE;
+    renderAiPromptLint(input.value);
+};
+
+window.renderAiPromptLint = function(template) {
+    var lintEl = document.getElementById('aiPromptTemplateLint');
+    if (!lintEl) return;
+    var result = validateAiPromptTemplate(template || '');
+    var parts = [];
+    parts.push('Chars: ' + result.characterCount + ' • Est. tokens: ~' + result.estimatedTokens);
+    if (result.errors.length) {
+        parts.push('Errors: ' + result.errors.join(' | '));
+        lintEl.style.color = '#C53030';
+    } else if (result.warnings.length) {
+        parts.push('Warnings: ' + result.warnings.join(' | '));
+        lintEl.style.color = '#D97706';
+    } else {
+        parts.push('No lint issues detected.');
+        lintEl.style.color = '#2a8f8f';
+    }
+    lintEl.textContent = parts.join(' — ');
+};
+
+window.saveAiPromptTemplate = async function() {
+    var input = document.getElementById('aiPromptTemplateInput');
+    var status = document.getElementById('aiPromptTemplateStatus');
+    if (!input) return;
+    var value = (input.value || '').trim();
+    var validation = validateAiPromptTemplate(value);
+    renderAiPromptLint(value);
+    if (!validation.valid) {
+        alert('Cannot save AI prompt template:\n' + validation.errors.join('\n'));
+        return;
+    }
+    if (!value) {
+        alert('Please provide an AI prompt template before saving.');
+        return;
+    }
+    if (status) { status.textContent = 'Saving...'; status.style.color = '#6b7c8f'; }
+    try {
+        var existingId = _settings && _settings.id ? _settings.id : null;
+        var res;
+        if (existingId) {
+            res = await window.supabase.from('settings').update({ ai_prompt_template: value }).eq('id', existingId).select('id, ai_prompt_template').single();
+        } else {
+            res = await window.supabase.from('settings').insert([{ ai_prompt_template: value }]).select('id, ai_prompt_template').single();
+        }
+        if (res.error) throw res.error;
+        _settings = res.data || { id: existingId, ai_prompt_template: value };
+        if (status) { status.textContent = 'Saved'; status.style.color = '#2a8f8f'; }
+    } catch (e) {
+        console.error('Failed to save AI prompt template:', e);
+        if (status) { status.textContent = 'Save failed'; status.style.color = '#C53030'; }
+        alert('Error saving AI prompt template: ' + (e.message || JSON.stringify(e)));
+    }
+};
 
 // Scroll to audit section
 window.scrollToAuditSection = function(id) {
