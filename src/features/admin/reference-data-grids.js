@@ -18,14 +18,14 @@ function _waitSB() {
 }
 
 // --- Data caches ---
-var _ss = [], _sub = [], _th = [], _age = [], _ndis = [], _sedi = [], _fasd = [], _chars = [], _cycles = [], _connections = [];
+var _ss = [], _sub = [], _th = [], _age = [], _ndis = [], _sedi = [], _fasd = [], _chars = [], _cycles = [], _connections = [], _forbidden = [], _auditSections = [], _auditRules = [];
 var _dataLoaded = false;
 
 async function _loadAll() {
     var sb = window.supabase;
     if (!sb) return;
     try {
-        var [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10] = await Promise.all([
+        var [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13] = await Promise.all([
             sb.from('super_skills').select('*, characters:character_id(id, name, species, personality_nd, image_url)').order('sort_order'),
             sb.from('sub_skills').select('*, super_skills:super_skill_id(id, name, slug, emoji)').order('sort_order'),
             sb.from('core_theories').select('*').eq('is_active', true).order('theory_name'),
@@ -35,15 +35,38 @@ async function _loadAll() {
             sb.from('fasd_domains').select('*').eq('is_active', true).order('domain_number'),
             sb.from('characters').select('*').eq('is_active', true).order('sort_order'),
             sb.from('cycles').select('*').order('cycle_number'),
-            sb.from('theory_connections').select('*, super_skills:super_skill_id(id, name), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name)').order('sort_order')
+            sb.from('theory_connections').select('*, super_skills:super_skill_id(id, name), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name)').order('sort_order'),
+            sb.from('forbidden_terms').select('*').eq('is_active', true).order('term_type,term'),
+            sb.from('audit_sections').select('*').eq('is_active', true).order('section_number'),
+            sb.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order')
         ]);
         _ss = r1.data || []; _sub = r2.data || []; _th = r3.data || [];
         _age = r4.data || []; _ndis = r5.data || []; _sedi = r6.data || [];
         _fasd = r7.data || []; _chars = r8.data || [];
         _cycles = r9.data || [];
         _connections = r10.data || [];
+        _forbidden = r11.data || [];
+        _auditSections = r12.data || [];
+        _auditRules = r13.data || [];
         _dataLoaded = true;
-        console.log('[RefGrids] Loaded:', _ss.length, 'skills,', _sub.length, 'sub-skills,', _th.length, 'theories,', _connections.length, 'connections,', _age.length, 'age bands');
+        
+        // Expose data caches globally for module-audit.js
+        window._ss = _ss;
+        window._sub = _sub;
+        window._th = _th;
+        window._age = _age;
+        window._ndis = _ndis;
+        window._sedi = _sedi;
+        window._fasd = _fasd;
+        window._chars = _chars;
+        window._cycles = _cycles;
+        window._connections = _connections;
+        window._forbidden = _forbidden;
+        window._auditSections = _auditSections;
+        window._auditRules = _auditRules;
+        window._levels = []; // Will be loaded separately if needed
+        
+        console.log('[RefGrids] Loaded:', _ss.length, 'skills,', _sub.length, 'sub-skills,', _th.length, 'theories,', _connections.length, 'connections,', _age.length, 'age bands,', _forbidden.length, 'forbidden terms,', _auditSections.length, 'audit sections');
     } catch (e) { console.error('[RefGrids] Load error:', e); }
 }
 
@@ -232,6 +255,24 @@ var _editConfigs = {
             { key: 'domain_name', get: function(d) { return d.domain_name; } },
             { key: 'description', get: function(d) { return d.description || ''; } }
         ]
+    },
+    ForbiddenWord: {
+        dbTable: 'forbidden_terms',
+        getData: function() { return _forbidden.filter(function(f) { return f.term_type === 'word'; }); },
+        render: rVocab,
+        fields: [
+            { key: 'term', get: function(d) { return d.term; } },
+            { key: 'brain_town_alternative', get: function(d) { return d.brain_town_alternative || ''; } }
+        ]
+    },
+    ForbiddenMetaphor: {
+        dbTable: 'forbidden_terms',
+        getData: function() { return _forbidden.filter(function(f) { return f.term_type === 'metaphor'; }); },
+        render: rVocab,
+        fields: [
+            { key: 'term', get: function(d) { return d.term; } },
+            { key: 'brain_town_alternative', get: function(d) { return d.brain_town_alternative || ''; } }
+        ]
     }
 };
 
@@ -249,7 +290,7 @@ function _render(id) {
     var map = {
         refSuperSkills: rSS, refSubSkills: rSub, refTheories: rTh, refConnections: rConn, refDxProfiles: rDx,
         refNdis: rNdis, refSedi: rSedi, refAgeBands: rAge, refLevels: rLev,
-        refVocabulary: rVocab, refSequencing: rSeq, refFasd: rFasd
+        refVocabulary: rVocab, refSequencing: rSeq, refFasd: rFasd, refAuditRules: rAuditRules
     };
     if (map[id]) map[id]();
 }
@@ -418,7 +459,7 @@ function rLev() {
 }
 
 // ============================
-// 10. VOCABULARY (static)
+// 10. VOCABULARY (static core terms + dynamic forbidden terms)
 // ============================
 var VOC = [
     { r: "Brain / neural system", b: "Town / Brain Town", u: "Your brain is a town, and you are the town planner." },
@@ -429,17 +470,214 @@ var VOC = [
     { r: "Strong habits / automatic patterns", b: "Main Streets / Motorways", u: "Roads you walk on a lot become main streets." },
     { r: "Emotional regulation / nervous system", b: "Traffic Lights", u: "Traffic lights help you check how your traffic is flowing." }
 ];
-var FW = "broken, damaged, wrong, faulty, disordered, deficit, dysfunction, abnormal, sick, diseased, problem brain, bad roads, wrong roads, messed up, not working properly, hard wired, set in stone, permanent";
-var FM = "computer, machine, engine, wires, circuits, channels, weather, waves, colours (for emotions), seeds (standalone), driver, passenger, captain, pilot, volume dial, thermostat, meter, garden";
 
 function rVocab() {
     var p = document.getElementById('refVocabularyPanel'); if (!p) return;
+    
+    // Separate forbidden words and metaphors from database
+    var forbiddenWords = _forbidden.filter(function(f) { return f.term_type === 'word'; });
+    var forbiddenMetaphors = _forbidden.filter(function(f) { return f.term_type === 'metaphor'; });
+    
     var h = '<h3 style="font-size:16px;margin:0 0 12px;font-weight:700;">🏘️ Brain Town Vocabulary Reference</h3><h4 style="font-size:14px;color:#2a8f8f;margin:0 0 8px;">Approved Core Terms</h4>';
     h += '<div style="overflow-x:auto;margin-bottom:24px;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#2a8f8f;color:white;">' + TH('Real Concept') + TH('Brain Town Term') + TH('Correct Usage', 'min-width:300px;') + '</tr></thead><tbody>';
     VOC.forEach(function(v, i) { h += '<tr><td style="' + td(i) + '">' + v.r + '</td><td style="' + td(i, 'font-weight:700;color:#2a8f8f;') + '">' + v.b + '</td><td style="' + td(i, 'font-style:italic;') + '">' + v.u + '</td></tr>'; });
-    h += '</tbody></table></div><h4 style="font-size:14px;color:#C53030;margin:0 0 8px;">⛔ Forbidden Terms — Auto Critical Fail at Audit</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><div><h5 style="font-size:12px;font-weight:700;margin:0 0 6px;">Forbidden Words</h5><div style="background:#FFF5F5;padding:12px;border-radius:8px;border-left:3px solid #C53030;font-size:12px;line-height:1.8;color:#742A2A;">' + FW + '</div></div><div><h5 style="font-size:12px;font-weight:700;margin:0 0 6px;">Forbidden Metaphors</h5><div style="background:#FFF5F5;padding:12px;border-radius:8px;border-left:3px solid #C53030;font-size:12px;line-height:1.8;color:#742A2A;">' + FM + '</div></div></div>';
+    h += '</tbody></table></div>';
+    
+    // Forbidden Terms Section - now with editable grids
+    h += '<h4 style="font-size:14px;color:#C53030;margin:0 0 8px;">⛔ Forbidden Terms — Auto Critical Fail at Audit</h4>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
+    
+    // Forbidden Words Grid
+    h += '<div>';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><h5 style="font-size:12px;font-weight:700;margin:0;">Forbidden Words (' + forbiddenWords.length + ')</h5><button class="btn-save" style="font-size:11px;padding:4px 10px;" onclick="refInlineAdd(\'ForbiddenWord\')">+ Add</button></div>';
+    h += '<div style="overflow-x:auto;max-height:400px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:#C53030;color:white;">' + TH('Term') + TH('Alternative') + TH('', 'width:60px;') + '</tr></thead><tbody id="tbForbiddenWord">';
+    forbiddenWords.forEach(function(f, i) {
+        h += '<tr><td style="' + td(i, 'color:#742A2A;font-weight:600;') + '">' + E(f.term) + '</td>';
+        h += '<td style="' + td(i, 'color:#2a8f8f;font-style:italic;') + '">' + E(f.brain_town_alternative || '—') + '</td>';
+        h += '<td style="' + td(i, 'text-align:center;') + '">' + editBtn("refEditRow('ForbiddenWord','" + f.id + "',this)") + '<button onclick="refDeleteForbidden(\'' + f.id + '\')" style="background:none;border:none;cursor:pointer;font-size:14px;" title="Delete">🗑️</button></td></tr>';
+    });
+    if (!forbiddenWords.length) h += '<tr><td colspan="3" style="padding:12px;text-align:center;color:#6b7c8f;">No forbidden words.</td></tr>';
+    h += '</tbody></table></div></div>';
+    
+    // Forbidden Metaphors Grid
+    h += '<div>';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><h5 style="font-size:12px;font-weight:700;margin:0;">Forbidden Metaphors (' + forbiddenMetaphors.length + ')</h5><button class="btn-save" style="font-size:11px;padding:4px 10px;" onclick="refInlineAdd(\'ForbiddenMetaphor\')">+ Add</button></div>';
+    h += '<div style="overflow-x:auto;max-height:400px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:#C53030;color:white;">' + TH('Metaphor') + TH('Brain Town Alternative') + TH('', 'width:60px;') + '</tr></thead><tbody id="tbForbiddenMetaphor">';
+    forbiddenMetaphors.forEach(function(f, i) {
+        h += '<tr><td style="' + td(i, 'color:#742A2A;font-weight:600;') + '">' + E(f.term) + '</td>';
+        h += '<td style="' + td(i, 'color:#2a8f8f;font-style:italic;') + '">' + E(f.brain_town_alternative || '—') + '</td>';
+        h += '<td style="' + td(i, 'text-align:center;') + '">' + editBtn("refEditRow('ForbiddenMetaphor','" + f.id + "',this)") + '<button onclick="refDeleteForbidden(\'' + f.id + '\')" style="background:none;border:none;cursor:pointer;font-size:14px;" title="Delete">🗑️</button></td></tr>';
+    });
+    if (!forbiddenMetaphors.length) h += '<tr><td colspan="3" style="padding:12px;text-align:center;color:#6b7c8f;">No forbidden metaphors.</td></tr>';
+    h += '</tbody></table></div></div>';
+    
+    h += '</div>';
     p.innerHTML = h;
 }
+
+// Delete forbidden term
+window.refDeleteForbidden = async function(id) {
+    if (!confirm('Delete this forbidden term?')) return;
+    try {
+        await window.supabase.from('forbidden_terms').delete().eq('id', id);
+        await _loadAll();
+        rVocab();
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+// ============================
+// 12. AUDIT RULES (dynamic from database)
+// ============================
+function rAuditRules() {
+    var p = document.getElementById('refAuditRulesPanel'); if (!p) return;
+    
+    // Calculate total weight
+    var totalWeight = _auditSections.reduce(function(sum, s) { return sum + (s.weight || 0); }, 0);
+    var weightColor = totalWeight === 100 ? '#38A169' : '#C53030';
+    
+    var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
+    h += '<div><h3 style="font-size:16px;margin:0;font-weight:700;">🔍 Audit Rules — Sent to AI & Validated After Generation</h3>';
+    h += '<p style="font-size:12px;color:#6b7c8f;margin:4px 0 0;">These rules are sent to the AI during module generation and then validated by the audit system.</p></div>';
+    h += '<div style="text-align:right;"><div style="font-size:24px;font-weight:800;color:' + weightColor + ';">' + totalWeight + '%</div>';
+    h += '<div style="font-size:10px;color:' + weightColor + ';">Total Weight' + (totalWeight !== 100 ? ' (must = 100%)' : ' ✓') + '</div></div></div>';
+    
+    // Sections overview
+    h += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;">';
+    _auditSections.forEach(function(sec) {
+        var sevCol = sec.severity === 'CRITICAL' ? '#C53030' : sec.severity === 'IMPORTANT' ? '#D69E2E' : '#718096';
+        var sevBg = sec.severity === 'CRITICAL' ? '#FFF5F5' : sec.severity === 'IMPORTANT' ? '#FFFFF0' : '#F7FAFC';
+        var rulesCount = _auditRules.filter(function(r) { return r.section_id === sec.id; }).length;
+        h += '<div style="padding:12px;border-radius:8px;background:' + sevBg + ';border:1px solid ' + sevCol + '30;cursor:pointer;" onclick="scrollToAuditSection(\'' + sec.id + '\')">';
+        h += '<div style="font-size:11px;font-weight:700;color:' + sevCol + ';">' + sec.section_number + '. ' + E(sec.section_name) + '</div>';
+        h += '<div style="display:flex;justify-content:space-between;margin-top:6px;">';
+        h += '<span style="font-size:10px;color:#718096;">' + rulesCount + ' rules</span>';
+        h += '<span style="font-size:12px;font-weight:700;color:' + sevCol + ';">' + sec.weight + '%</span>';
+        h += '</div></div>';
+    });
+    h += '</div>';
+    
+    // Detailed sections with rules
+    _auditSections.forEach(function(sec, si) {
+        var sevCol = sec.severity === 'CRITICAL' ? '#C53030' : sec.severity === 'IMPORTANT' ? '#D69E2E' : '#718096';
+        var sevBg = sec.severity === 'CRITICAL' ? '#FED7D7' : sec.severity === 'IMPORTANT' ? '#FEFCBF' : '#E2E8F0';
+        var sectionRules = _auditRules.filter(function(r) { return r.section_id === sec.id; }).sort(function(a,b) { return (a.sort_order||0) - (b.sort_order||0); });
+        
+        h += '<div id="auditSection_' + sec.id + '" style="background:#fff;border-radius:10px;border:1px solid #E2E8F0;margin-bottom:16px;overflow:hidden;">';
+        
+        // Section header
+        h += '<div style="padding:14px 18px;background:linear-gradient(135deg,' + sevBg + ',' + sevBg + '80);display:flex;justify-content:space-between;align-items:center;">';
+        h += '<div style="display:flex;align-items:center;gap:10px;">';
+        h += '<span style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;text-transform:uppercase;background:' + sevCol + ';color:white;">' + sec.severity + '</span>';
+        h += '<span style="font-size:14px;font-weight:700;color:#1B3A5C;">' + sec.section_number + '. ' + E(sec.section_name) + '</span>';
+        h += '</div>';
+        h += '<div style="display:flex;align-items:center;gap:12px;">';
+        h += '<input type="number" value="' + sec.weight + '" min="0" max="100" style="width:50px;padding:4px 6px;border:1px solid #c7d2fe;border-radius:4px;font-size:12px;font-weight:700;text-align:center;" onchange="updateSectionWeight(\'' + sec.id + '\',this.value)">';
+        h += '<span style="font-size:11px;color:#718096;">% weight</span>';
+        h += '</div></div>';
+        
+        // AI Instruction
+        h += '<div style="padding:12px 18px;background:#f0f4ff;border-bottom:1px solid #E2E8F0;">';
+        h += '<div style="font-size:10px;font-weight:700;color:#6366F1;margin-bottom:4px;">📤 AI INSTRUCTION (sent to generator)</div>';
+        h += '<textarea style="width:100%;padding:8px;border:1px solid #c7d2fe;border-radius:6px;font-size:11px;line-height:1.5;resize:vertical;min-height:60px;" onchange="updateSectionInstruction(\'' + sec.id + '\',this.value)">' + E(sec.ai_instruction || '') + '</textarea>';
+        h += '</div>';
+        
+        // Rules table
+        h += '<div style="padding:12px 18px;">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+        h += '<span style="font-size:11px;font-weight:700;color:#405878;">Rules (' + sectionRules.length + ')</span>';
+        h += '<button class="btn-save" style="font-size:10px;padding:4px 10px;" onclick="addAuditRule(\'' + sec.id + '\')">+ Add Rule</button>';
+        h += '</div>';
+        
+        if (sectionRules.length) {
+            h += '<table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:#405878;color:white;">';
+            h += TH('#', 'width:40px;') + TH('Rule Name') + TH('AI Instruction', 'min-width:250px;') + TH('Check Type', 'width:100px;') + TH('', 'width:50px;');
+            h += '</tr></thead><tbody id="tbAuditRules_' + sec.id + '">';
+            sectionRules.forEach(function(rule, ri) {
+                h += '<tr>';
+                h += '<td style="' + td(ri, 'font-weight:600;') + '">' + E(rule.rule_number) + '</td>';
+                h += '<td style="' + td(ri) + '">' + E(rule.rule_name) + '</td>';
+                h += '<td style="' + td(ri, 'font-size:10px;color:#4b5563;') + '">' + E((rule.ai_instruction || '').substring(0, 80)) + (rule.ai_instruction && rule.ai_instruction.length > 80 ? '...' : '') + '</td>';
+                h += '<td style="' + td(ri, 'font-size:10px;') + '"><span style="padding:2px 6px;border-radius:3px;background:#E2E8F0;">' + E(rule.check_type) + '</span></td>';
+                h += '<td style="' + td(ri, 'text-align:center;') + '">' + editBtn("editAuditRule('" + rule.id + "')") + '<button onclick="deleteAuditRule(\'' + rule.id + '\')" style="background:none;border:none;cursor:pointer;font-size:14px;" title="Delete">🗑️</button></td>';
+                h += '</tr>';
+            });
+            h += '</tbody></table>';
+        } else {
+            h += '<div style="padding:20px;text-align:center;color:#6b7c8f;background:#f8f9fa;border-radius:6px;">No rules in this section yet.</div>';
+        }
+        h += '</div></div>';
+    });
+    
+    p.innerHTML = h;
+}
+
+// Scroll to audit section
+window.scrollToAuditSection = function(id) {
+    var el = document.getElementById('auditSection_' + id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+// Update section weight
+window.updateSectionWeight = async function(id, value) {
+    try {
+        await window.supabase.from('audit_sections').update({ weight: parseInt(value) || 0 }).eq('id', id);
+        await _loadAll();
+        rAuditRules();
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+// Update section AI instruction
+window.updateSectionInstruction = async function(id, value) {
+    try {
+        await window.supabase.from('audit_sections').update({ ai_instruction: value }).eq('id', id);
+        var sec = _auditSections.find(function(s) { return s.id === id; });
+        if (sec) sec.ai_instruction = value;
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+// Add new audit rule
+window.addAuditRule = async function(sectionId) {
+    var sec = _auditSections.find(function(s) { return s.id === sectionId; });
+    if (!sec) return;
+    var existingRules = _auditRules.filter(function(r) { return r.section_id === sectionId; });
+    var nextNum = sec.section_number + '.' + (existingRules.length + 1);
+    var name = prompt('Rule name:', 'New Rule');
+    if (!name) return;
+    try {
+        await window.supabase.from('audit_rules').insert([{
+            section_id: sectionId,
+            rule_number: nextNum,
+            rule_name: name,
+            check_type: 'manual_review',
+            ai_instruction: 'Describe what the AI should do...',
+            is_active: true,
+            sort_order: (existingRules.length + 1) * 10
+        }]);
+        await _loadAll();
+        rAuditRules();
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+// Edit audit rule (opens modal or inline)
+window.editAuditRule = function(id) {
+    var rule = _auditRules.find(function(r) { return r.id === id; });
+    if (!rule) return;
+    var newInstruction = prompt('AI Instruction for "' + rule.rule_name + '":', rule.ai_instruction || '');
+    if (newInstruction === null) return;
+    window.supabase.from('audit_rules').update({ ai_instruction: newInstruction }).eq('id', id)
+        .then(function() { _loadAll().then(rAuditRules); })
+        .catch(function(e) { alert('Error: ' + e.message); });
+};
+
+// Delete audit rule
+window.deleteAuditRule = async function(id) {
+    if (!confirm('Delete this rule?')) return;
+    try {
+        await window.supabase.from('audit_rules').delete().eq('id', id);
+        await _loadAll();
+        rAuditRules();
+    } catch (e) { alert('Error: ' + e.message); }
+};
 
 // ============================
 // 11. SEQUENCING (static)
@@ -615,6 +853,28 @@ var _inlineConfigs = {
             await window.supabase.from('diagnosis_profiles').insert([{ code: vals.Code, name: vals.Name, tier: vals.Tier || 'core', adjustment_principles: vals.Adj || '', brain_town_note: vals.BT || null, is_active: true, sort_order: (SDX.length + 1) * 10 }]);
         },
         after: async function() { alert('Saved! Run migration SQL if you haven\'t created the diagnosis_profiles table yet.'); }
+    },
+    ForbiddenWord: {
+        tbId: 'tbForbiddenWord',
+        cols: [
+            { id: 'Term', ph: 'Forbidden word', w: '', req: true },
+            { id: 'Alt', ph: 'Brain Town alternative', w: '' }
+        ],
+        save: async function(vals) {
+            await window.supabase.from('forbidden_terms').insert([{ term: vals.Term, term_type: 'word', brain_town_alternative: vals.Alt || null, is_active: true }]);
+        },
+        after: async function() { await _loadAll(); rVocab(); }
+    },
+    ForbiddenMetaphor: {
+        tbId: 'tbForbiddenMetaphor',
+        cols: [
+            { id: 'Term', ph: 'Forbidden metaphor', w: '', req: true },
+            { id: 'Alt', ph: 'Brain Town alternative', w: '' }
+        ],
+        save: async function(vals) {
+            await window.supabase.from('forbidden_terms').insert([{ term: vals.Term, term_type: 'metaphor', brain_town_alternative: vals.Alt || null, is_active: true }]);
+        },
+        after: async function() { await _loadAll(); rVocab(); }
     }
 };
 

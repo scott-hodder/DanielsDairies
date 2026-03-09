@@ -1322,15 +1322,30 @@ ${facilitatorTip}
 
 === GENERATION RULES ===
 1. Keep ALL paragraphs SHORT (2-4 sentences MAX)
-2. Use Daniel SPARINGLY - 2-3 brief appearances per module
+2. Use Daniel SPARINGLY - 2-3 brief appearances per module, but ALWAYS mention "Daniel" by name at least once
 3. Focus on ACTIVITIES over explanations
 4. Break content into SMALL chunks
 5. More DOING, less READING
 6. Apply "${theoryData.theory_name}" theory correctly — this is the PRIMARY framework for ALL content
 7. Use the Brain Town analogy throughout (introduce early, reference in lessons and activities)
-${superSkillName ? `8. Align all content with the Super Skill: "${superSkillName}"` : ''}
-${subSkillName ? `9. Focus on building the Sub-Skill: "${subSkillName}"` : ''}
-${additionalContext ? `10. HIGH PRIORITY: Strictly follow the HIGH-PRIORITY CREATOR INSTRUCTIONS above.` : ''}
+8. CHILD AS TOWN PLANNER: Frame the child as the "town planner" of their Brain Town at least once
+9. THEORY CITATION: Mention the primary theory name AND include the researcher's surname in the content
+10. LEARNING OUTCOME: Include at least one "Child can..." statement describing what the child will learn
+${superSkillName ? `11. Align all content with the Super Skill: "${superSkillName}"` : ''}
+${subSkillName ? `12. Focus on building the Sub-Skill: "${subSkillName}"` : ''}
+${additionalContext ? `13. HIGH PRIORITY: Strictly follow the HIGH-PRIORITY CREATOR INSTRUCTIONS above.` : ''}
+
+=== ABSOLUTELY FORBIDDEN CONTENT ===
+NEVER use these words/phrases (they violate trauma-informed and ND-affirming principles):
+- DEFICIT LANGUAGE: broken, damaged, wrong, faulty, disordered, deficit, dysfunction, abnormal, sick, diseased, problem brain, bad roads, wrong roads, messed up, not working properly, hard wired, set in stone, permanent
+- FORBIDDEN METAPHORS: computer, hard drive, processor, muscle, empty vessel, blank slate, machine, engine, wires, circuits, channels, weather, waves, colours for emotions, seeds, driver, passenger, captain, pilot, volume dial, thermostat, meter, garden
+- DIRECTIVE LANGUAGE: you need to, you must, you have to, you should, do this now, tell your parent, share your feelings, tell us about, you will
+- EVALUATION LANGUAGE: good job, well done, great work, you got it right, correct answer, wrong answer, try harder, you scored, points, you only, you failed, score
+
+USE INSTEAD:
+- Invitation framing: "You might like to...", "You could try...", "Some children find it helpful to...", "One option is...", "If you'd like, you can..."
+- Brain Town vocabulary: town, road, roads, street, streets, main street, motorway, highway, traffic, traffic light, traffic signal, building, buildings, town planner, brain town
+- Strengths-based language: difference (not deficit), unique (not abnormal), developing (not broken)
 
 === AUSTRALIAN ENGLISH (MANDATORY) ===
 All content MUST use Australian English spelling and conventions:

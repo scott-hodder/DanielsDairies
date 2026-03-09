@@ -522,6 +522,7 @@
                     <button class="ref-tab" onclick="switchRefTab(event, 'refVocabulary')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">10. Vocabulary</button>
                     <button class="ref-tab" onclick="switchRefTab(event, 'refSequencing')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">11. Sequencing</button>
                     <button class="ref-tab" onclick="switchRefTab(event, 'refFasd')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #405878; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">FASD Domains</button>
+                    <button class="ref-tab" onclick="switchRefTab(event, 'refAuditRules')" style="padding: 6px 14px; border: 1px solid #e5e7eb; border-radius: 6px 6px 0 0; background: #f8f9fa; color: #D4A843; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;">🔍 Audit Rules</button>
                 </div>
 
                 <!-- All ref-panel sections -->
@@ -537,6 +538,7 @@
                 <div id="refVocabularyPanel" class="ref-panel" style="display:none;"></div>
                 <div id="refSequencingPanel" class="ref-panel" style="display:none;"></div>
                 <div id="refFasdPanel" class="ref-panel" style="display:none;"></div>
+                <div id="refAuditRulesPanel" class="ref-panel" style="display:none;"></div>
 
             <!-- Keep old hidden sections for backward compatibility with existing modal functions -->
             <div style="display: none;">
@@ -1223,6 +1225,7 @@ This fixes:
                             💾 Create Module
                         </button>
                         <button type="button" class="btn" style="background: #4c6c96; color: white;" onclick="showPreviewModal()">👁️ Preview Module</button>
+                        <button type="button" class="btn" style="background: #D4A843; color: white;" onclick="runModuleAudit()">🔍 Audit Module</button>
                         <button type="button" class="btn" style="background: #f97316; color: white;" onclick="copyGeneratedModuleHTML()">📋 Copy HTML</button>
                     </div>
                 </div>
@@ -1293,6 +1296,28 @@ This fixes:
         </div>
     </div>
 </div>
+
+    <!-- 🔍 Audit Modal -->
+    <div id="auditModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; justify-content:center; align-items:center;">
+        <div style="background:#F5F1EB; border-radius:16px; width:90%; max-width:900px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#1B3A5C; border-radius:16px 16px 0 0;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:20px;">🔍</span>
+                    <div>
+                        <h2 style="margin:0; font-size:16px; font-weight:700; color:#fff;">Module Audit Report</h2>
+                        <p style="margin:0; font-size:11px; color:#DFDBCA;">10-section automated validation against backend architecture</p>
+                    </div>
+                </div>
+                <button onclick="closeAuditModal()" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer; padding:4px 8px;">&times;</button>
+            </div>
+            <div id="auditResultsContainer" style="flex:1; overflow-y:auto; padding:20px 24px;"></div>
+            <div style="padding:14px 24px; border-top:1px solid #E2E8F0; display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="closeAuditModal()" style="padding:8px 20px; background:#6b7c8f; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Close</button>
+                <button onclick="closeAuditModal(); regenerateModule();" style="padding:8px 20px; background:#D4725C; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">🔄 Regenerate</button>
+                <button onclick="closeAuditModal(); saveGeneratedModule();" style="padding:8px 20px; background:#10b981; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">💾 Save Module</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Quick Add Category Modal -->
     <div class="modal" id="quickAddCategoryModal">
@@ -1649,5 +1674,6 @@ This fixes:
     <script type="module" src="/src/module-builder-integration.js"></script>
     <script src="/src/module-content-creator.js"></script>
     <script src="/src/features/admin/reference-data-grids.js"></script>
+    <script src="/src/features/admin/module-audit.js"></script>
 </body>
 </html>

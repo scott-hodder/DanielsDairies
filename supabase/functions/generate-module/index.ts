@@ -6243,6 +6243,42 @@ serve(async (req) => {
         dssSedi = sediData ? `${sediData.sedi_code}: ${sediData.sedi_name}` : undefined;
       }
       
+      // Fetch audit rules from database to include in AI prompt
+      let auditRulesPrompt = "";
+      try {
+        const { data: auditSections } = await supabaseClient
+          .from("audit_sections")
+          .select("section_number, section_name, severity, ai_instruction")
+          .eq("is_active", true)
+          .order("section_number");
+        
+        if (auditSections && auditSections.length > 0) {
+          auditRulesPrompt = `
+
+═══════════════════════════════════════════════════════════════
+⚠️  MANDATORY AUDIT COMPLIANCE RULES - READ CAREFULLY  ⚠️
+═══════════════════════════════════════════════════════════════
+
+Your generated content will be AUTOMATICALLY VALIDATED against these rules.
+Failure to comply will result in the module being REJECTED.
+Follow EVERY rule precisely. There are no exceptions.
+
+`;
+          auditSections.forEach((sec: { section_number: number; section_name: string; severity: string; ai_instruction: string }) => {
+            if (sec.ai_instruction) {
+              const sevLabel = sec.severity === 'CRITICAL' ? '🚨 CRITICAL (MUST PASS)' : sec.severity === 'IMPORTANT' ? '⚠️ IMPORTANT' : 'ℹ️ ADVISORY';
+              auditRulesPrompt += `${sevLabel} — ${sec.section_number}. ${sec.section_name}:\n${sec.ai_instruction}\n\n`;
+            }
+          });
+          auditRulesPrompt += `═══════════════════════════════════════════════════════════════
+REMINDER: All CRITICAL rules must pass or the module will be rejected.
+═══════════════════════════════════════════════════════════════\n`;
+          console.log("[AI] Loaded", auditSections.length, "audit sections for prompt");
+        }
+      } catch (auditErr) {
+        console.warn("[AI] Could not load audit rules:", auditErr);
+      }
+      
       // Fetch age range data - only fetch simplified fields sent to AI
       console.log("[DEBUG] ageRangeRef value:", ageRangeRef, "type:", typeof ageRangeRef);
       console.log("[DEBUG] body.adminAge:", body.adminAge, "body.ageRangeId:", body.ageRangeId, "body.age_range_id:", body.age_range_id);
@@ -6366,6 +6402,11 @@ serve(async (req) => {
         subSkillName,
         subSkillDescription,
       });
+      
+      // Append audit rules to content brief if loaded
+      if (auditRulesPrompt) {
+        contentBrief += auditRulesPrompt;
+      }
       
       console.log("[AI] Using enhanced psychology-based content brief");
       
