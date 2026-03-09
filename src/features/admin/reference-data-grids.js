@@ -64,6 +64,53 @@ CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor
    BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 — and ANY emoji you are unsure about.
 11. GENUINE CHOICE: Always offer the child choices. Use "you could", "you might", "choose", "option" language.
 12. STRENGTHS-BASED: Frame neurodiversity as difference, not deficit. Never use pathologising language.`;
+
+
+function estimatePromptTokens(text) {
+    return Math.ceil(((text || '').length) / 4);
+}
+
+function validateAiPromptTemplate(template) {
+    var value = (template || '').trim();
+    var errors = [];
+    var warnings = [];
+
+    if (!value) {
+        errors.push('Prompt template cannot be empty.');
+    }
+
+    if (value.length > 24000) {
+        errors.push('Prompt is too large (' + value.length + ' chars). Keep under 24,000 chars.');
+    } else if (value.length > 16000) {
+        warnings.push('Prompt is very large (' + value.length + ' chars) and may increase cost and latency.');
+    }
+
+    var estimatedTokens = estimatePromptTokens(value);
+    if (estimatedTokens > 5000) {
+        warnings.push('Estimated prompt tokens are high (~' + estimatedTokens + '). Consider reducing bloat.');
+    }
+
+    var duplicateHeadingMatches = value.match(/^===\s+(.+?)\s+===$/gm) || [];
+    var headingNames = duplicateHeadingMatches.map(function(h) { return h.replace(/^===\s+|\s+===$/g, ''); });
+    var duplicateNames = headingNames.filter(function(name, idx) { return headingNames.indexOf(name) !== idx; });
+    if (duplicateNames.length) {
+        var uniqueDupes = Array.from(new Set(duplicateNames));
+        warnings.push('Duplicate section headings detected: ' + uniqueDupes.join(', '));
+    }
+
+    if ((new RegExp("\\byou must\\b", "i")).test(value)) warnings.push('Contains "you must" which may conflict with invitation framing.');
+    if ((new RegExp("\\byou have to\\b", "i")).test(value)) warnings.push('Contains "you have to" which may conflict with invitation framing.');
+    if ((new RegExp("\\btime is up\\b", "i")).test(value)) warnings.push('Contains "time is up" which may conflict with child-paced guidance.');
+
+    return {
+        valid: errors.length === 0,
+        errors: errors,
+        warnings: warnings,
+        estimatedTokens: estimatedTokens,
+        characterCount: value.length
+    };
+}
+
 var _dataLoaded = false;
 
 async function _loadAll() {
@@ -364,6 +411,9 @@ function rSS() {
     if (!_ss.length) h += '<tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7c8f;">No super skills found.</td></tr>';
     h += '</tbody></table></div>';
     p.innerHTML = h;
+    var input = document.getElementById('aiPromptTemplateInput');
+    if (input) input.oninput = function() { window.renderAiPromptLint(input.value); };
+    renderAiPromptLint(template);
 }
 
 // ============================
@@ -666,18 +716,56 @@ function rAiPrompt() {
     h += '<h3 style="font-size:16px;margin:0 0 6px;font-weight:700;">🤖 AI Prompt Template</h3>';
     h += '<p style="font-size:12px;color:#6b7c8f;margin:0 0 12px;">This prompt is sent as the system prompt to module generation requests. Content sections are still controlled by existing reference data and page generators.</p>';
     h += '<textarea id="aiPromptTemplateInput" style="width:100%;min-height:360px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.45;">' + E(template) + '</textarea>';
-    h += '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;">';
+    h += '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;">';
     h += '<button class="btn-save" onclick="saveAiPromptTemplate()">💾 Save AI Prompt</button>';
+    h += '<button class="btn" style="background:#6b7c8f;color:white;" onclick="restoreDefaultAiPromptTemplate()">↩ Restore Safe Default</button>';
     h += '<span id="aiPromptTemplateStatus" style="font-size:12px;color:#6b7c8f;"></span>';
-    h += '</div></div>';
+    h += '</div>';
+    h += '<div id="aiPromptTemplateLint" style="font-size:12px;color:#6b7c8f;margin-top:8px;"></div>';
+    h += '</div>';
     p.innerHTML = h;
+    var input = document.getElementById('aiPromptTemplateInput');
+    if (input) input.oninput = function() { window.renderAiPromptLint(input.value); };
+    renderAiPromptLint(template);
 }
+
+window.restoreDefaultAiPromptTemplate = function() {
+    var input = document.getElementById('aiPromptTemplateInput');
+    if (!input) return;
+    input.value = DEFAULT_AI_PROMPT_TEMPLATE;
+    renderAiPromptLint(input.value);
+};
+
+window.renderAiPromptLint = function(template) {
+    var lintEl = document.getElementById('aiPromptTemplateLint');
+    if (!lintEl) return;
+    var result = validateAiPromptTemplate(template || '');
+    var parts = [];
+    parts.push('Chars: ' + result.characterCount + ' • Est. tokens: ~' + result.estimatedTokens);
+    if (result.errors.length) {
+        parts.push('Errors: ' + result.errors.join(' | '));
+        lintEl.style.color = '#C53030';
+    } else if (result.warnings.length) {
+        parts.push('Warnings: ' + result.warnings.join(' | '));
+        lintEl.style.color = '#D97706';
+    } else {
+        parts.push('No lint issues detected.');
+        lintEl.style.color = '#2a8f8f';
+    }
+    lintEl.textContent = parts.join(' — ');
+};
 
 window.saveAiPromptTemplate = async function() {
     var input = document.getElementById('aiPromptTemplateInput');
     var status = document.getElementById('aiPromptTemplateStatus');
     if (!input) return;
     var value = (input.value || '').trim();
+    var validation = validateAiPromptTemplate(value);
+    renderAiPromptLint(value);
+    if (!validation.valid) {
+        alert('Cannot save AI prompt template:\n' + validation.errors.join('\n'));
+        return;
+    }
     if (!value) {
         alert('Please provide an AI prompt template before saving.');
         return;

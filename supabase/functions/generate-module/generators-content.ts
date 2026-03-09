@@ -61,6 +61,7 @@ import {
   safeJsonParse,
   callClaude,
 } from "./generators-core.ts";
+import { buildSystemPrompt as buildLayeredSystemPrompt, validatePromptTemplate } from "../_shared/prompt-builder.ts";
 
 // ====================
 // CONTENT GENERATION
@@ -3990,7 +3991,7 @@ async function generateAllContent(
   seriesInfo?: SeriesInfo | null,
   systemPromptTemplate?: string | null
 ): Promise<GeneratedContent> {
-  ACTIVE_SYSTEM_PROMPT = buildSystemPrompt(systemPromptTemplate);
+  ACTIVE_SYSTEM_PROMPT = resolveSystemPrompt(systemPromptTemplate, contentBrief);
 
   // Count how many of each type we need
   const counts = {
@@ -4267,11 +4268,33 @@ async function generateAllContent(
 
 
 
-function buildSystemPrompt(customTemplate?: string | null): string {
-  if (typeof customTemplate === "string" && customTemplate.trim().length > 0) {
-    return customTemplate.trim();
+function extractDynamicPromptContext(contentBrief: string): string {
+  const lines = (contentBrief || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 10);
+
+  if (!lines.length) return "";
+  return lines.map((line) => `- ${line}`).join("\n");
+}
+
+function resolveSystemPrompt(customTemplate?: string | null, contentBrief?: string): string {
+  const templateToValidate = (customTemplate || "").trim();
+  const validation = templateToValidate
+    ? validatePromptTemplate(templateToValidate)
+    : { valid: true, errors: [] as string[], warnings: [] as string[] };
+
+  if (!validation.valid) {
+    console.warn("[PromptBuilder] Invalid ai_prompt_template in settings. Falling back to default.", validation.errors);
   }
-  return DEFAULT_SYSTEM_PROMPT;
+
+  return buildLayeredSystemPrompt({
+    adminTemplate: validation.valid ? customTemplate : null,
+    fallbackTemplate: DEFAULT_SYSTEM_PROMPT,
+    dynamicContext: extractDynamicPromptContext(contentBrief || ""),
+    includeSafetyLayer: true,
+  });
 }
 // ====================
 // EXPORTS
@@ -4279,7 +4302,7 @@ function buildSystemPrompt(customTemplate?: string | null): string {
 
 export {
   DEFAULT_SYSTEM_PROMPT,
-  buildSystemPrompt,
+  resolveSystemPrompt,
   extractAgeRange,
   generateAllContent,
 };
