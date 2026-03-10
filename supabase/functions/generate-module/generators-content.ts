@@ -4249,17 +4249,13 @@ async function generateAllContent(
     grownUpNotes, // NEW: Map of page index to GrownUpNote
   };
 
-  // Generate verification report and module summary in parallel
-  await updateProgress("verification", "Running AI self-verification audit...");
-  const [verificationReport, moduleSummary] = await Promise.all([
-    generateVerificationReport(apiKey, metadata, contentBrief, contentWithoutVerification),
-    generateModuleSummary(apiKey, metadata, contentBrief, contentWithoutVerification),
-  ]);
+  // Generate module summary (verification is now handled separately via Admin audit)
+  await updateProgress("summary-audit", "Generating module summary...");
+  const moduleSummary = await generateModuleSummary(apiKey, metadata, contentBrief, contentWithoutVerification);
   
   // Post-process: remove hyphens from compound words in all AI-generated content
   const rawContent = {
     ...contentWithoutVerification,
-    verificationReport,
     moduleSummary,
   };
   

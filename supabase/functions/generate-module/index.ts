@@ -489,9 +489,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       case "completion":
         pageHtml = renderCompletionPage(content.completion, metadata);
         break;
-      case "admin-verification":
-        pageHtml = renderAdminVerificationPage(content.verificationReport, content.moduleSummary, metadata);
-        break;
        
     }
     
@@ -5874,7 +5871,6 @@ async function generateModule(
     pageCount,
     starCount: pageStructure.filter(p => p.starReward).length,
     metadata: content.metadata,
-    verificationReport: content.verificationReport,
     moduleSummary: content.moduleSummary,
     generatedAt: new Date().toISOString(),
   };

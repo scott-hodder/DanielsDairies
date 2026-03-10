@@ -1604,9 +1604,6 @@ function generatePageStructure(): PageTemplate[] {
   structure.push({ type: "summary",    starReward: false });
   structure.push({ type: "completion", starReward: false });
   
-  // Admin-only verification page (always last)
-  structure.push({ type: "admin-verification", starReward: false });
-  
   return structure;
 }
 
