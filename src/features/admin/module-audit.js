@@ -537,6 +537,10 @@ window.openFixErrorsModal = function() {
         logsEl.innerHTML = '';
     }
 
+    // Reset re-audit button
+    var reauditBtn = document.getElementById('fixErrorsReauditBtn');
+    if (reauditBtn) reauditBtn.style.display = 'none';
+
     // Reset submit button
     var submitBtn = document.getElementById('fixErrorsSubmitBtn');
     if (submitBtn) {
@@ -552,6 +556,15 @@ window.openFixErrorsModal = function() {
 window.closeFixErrorsModal = function() {
     var fixModal = document.getElementById('fixErrorsModal');
     if (fixModal) fixModal.style.display = 'none';
+};
+
+
+window.reauditFixedModule = function() {
+    var fixModal = document.getElementById('fixErrorsModal');
+    if (fixModal) fixModal.style.display = 'none';
+    if (typeof window.runModuleAudit === 'function') {
+        window.runModuleAudit();
+    }
 };
 
 window.executeFixErrors = async function() {
@@ -717,8 +730,11 @@ window.executeFixErrors = async function() {
         }
         appendFixLog('Updated module generator preview with fixed HTML. You can now save this version and re-run audit.', 'success');
         if (submitBtn) {
-            submitBtn.textContent = '✅ Fixed!';
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🔁 Fix Again';
         }
+        var reauditBtn = document.getElementById('fixErrorsReauditBtn');
+        if (reauditBtn) reauditBtn.style.display = '';
     } catch (error) {
         console.error('[Fix Errors] Error:', error);
         appendFixLog(error.message || 'Unknown error occurred while fixing audit failures.', 'error');

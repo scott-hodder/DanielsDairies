@@ -2021,6 +2021,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div id="fixErrorsLogs" style="display:none; background:#0f2236; border:1px solid #1B3A5C; border-radius:10px; padding:10px 12px; margin-bottom:12px; max-height:160px; overflow-y:auto; font-size:11px; line-height:1.45; color:#E6EEF6; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;"></div>
             </div>
             <div style="padding:14px 24px; border-top:1px solid #E2E8F0; display:flex; gap:10px; justify-content:flex-end;">
+                <button id="fixErrorsReauditBtn" onclick="window.reauditFixedModule()" style="padding:8px 20px; background:#D4A843; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; display:none;">🔍 Re-audit Fixed HTML</button>
                 <button onclick="window.closeFixErrorsModal()" style="padding:8px 20px; background:#6b7c8f; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
                 <button id="fixErrorsSubmitBtn" onclick="window.executeFixErrors()" style="padding:8px 24px; background:linear-gradient(135deg,#4c6c96 0%,#7b3ff2 100%); color:white; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(76,108,150,0.35);">🛠️ Fix Errors with AI</button>
             </div>
