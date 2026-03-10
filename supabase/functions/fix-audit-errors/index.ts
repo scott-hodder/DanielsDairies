@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 
+type FixOperation = {
+  find: string
+  replace: string
+  replaceAll?: boolean
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -13,14 +19,47 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+function extractTextContent(data: any): string {
+  if (!Array.isArray(data?.content)) return ''
+  let output = ''
+  for (const block of data.content) {
+    if (block?.type === 'text') output += String(block?.text ?? '')
+  }
+  return output.trim()
+}
+
+function extractJsonPayload(raw: string): any {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    // Continue: maybe wrapped in markdown or prefixed text
   }
 
-  if (req.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed' }, 405)
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  if (fenced?.[1]) {
+    try {
+      return JSON.parse(fenced[1])
+    } catch {
+      // Continue to object-slice attempt
+    }
   }
+
+  const firstBrace = trimmed.indexOf('{')
+  const lastBrace = trimmed.lastIndexOf('}')
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const sliced = trimmed.slice(firstBrace, lastBrace + 1)
+    return JSON.parse(sliced)
+  }
+
+  return null
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405)
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -40,9 +79,7 @@ serve(async (req) => {
       error: authError
     } = await authClient.auth.getUser()
 
-    if (authError || !user) {
-      return jsonResponse({ error: 'Unauthorized' }, 401)
-    }
+    if (authError || !user) return jsonResponse({ error: 'Unauthorized' }, 401)
 
     const admin = createClient(supabaseUrl, serviceRoleKey)
 
@@ -51,13 +88,8 @@ serve(async (req) => {
     const failures = Array.isArray(body?.failures) ? body.failures : []
     const customInstructions = String(body?.customInstructions ?? '').trim()
 
-    if (!html) {
-      return jsonResponse({ error: 'Missing html' }, 400)
-    }
-
-    if (!failures.length) {
-      return jsonResponse({ error: 'No failures provided' }, 400)
-    }
+    if (!html) return jsonResponse({ error: 'Missing html' }, 400)
+    if (!failures.length) return jsonResponse({ error: 'No failures provided' }, 400)
 
     const { data: settings, error: settingsError } = await admin
       .from('settings')
@@ -83,24 +115,23 @@ serve(async (req) => {
       .join('\n\n')
 
     const systemPrompt =
-      "You are an expert HTML module editor for a children's therapeutic education platform called Daniel's Diaries. " +
-      'Your job is to fix specific audit failures in the generated HTML module WITHOUT changing the overall structure, design, page count, or working content. ' +
-      'Only make the minimum changes needed to pass the failing audit checks.\n\n' +
-      'RULES:\n' +
-      '1. Return ONLY the complete fixed HTML. No explanations, no markdown, just the raw HTML document.\n' +
-      '2. Do NOT remove or restructure pages that are already working.\n' +
-      '3. Do NOT change CSS styles, JavaScript logic, or the page navigation system.\n' +
-      '4. Focus ONLY on content text changes needed to pass the failing checks.\n' +
-      '5. Use Australian English spelling throughout.\n' +
-      '6. Never use deficit or pathologising language.\n' +
-      '7. Preserve all data-page attributes, onclick handlers, and interactive elements exactly as they are.'
+      "You edit HTML modules for Daniel's Diaries. Return ONLY JSON with minimal textual replacement operations to fix audit failures.\n" +
+      'Do not return full HTML. Do not return markdown.\n' +
+      'Schema: {"operations":[{"find":"exact text","replace":"replacement text","replaceAll":true|false}],"notes":"optional"}\n' +
+      'Rules:\n' +
+      '1) Keep operations minimal and safe.\n' +
+      '2) Preserve structure, CSS, JS, data-page attributes, onclick handlers.\n' +
+      '3) Focus on content wording only unless a missing required phrase needs insertion.\n' +
+      '4) Use Australian English spelling.\n' +
+      '5) If insertion is required, use find/replace on a nearby exact anchor string.'
 
     const userPrompt =
-      'Here is the current module HTML that has audit failures:\n\n' +
-      `--- FAILING AUDIT CHECKS ---\n${errorDescriptions}\n\n` +
-      (customInstructions ? `--- CUSTOM INSTRUCTIONS ---\n${customInstructions}\n\n` : '') +
-      `--- CURRENT HTML ---\n${html}\n\n` +
-      'Please fix ONLY the failing audit checks listed above. Return the complete fixed HTML.'
+      'Failing audit checks:\n' +
+      `${errorDescriptions}\n\n` +
+      (customInstructions ? `Custom instructions:\n${customInstructions}\n\n` : '') +
+      'Current HTML:\n' +
+      `${html}\n\n` +
+      'Return JSON operations only.'
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -111,7 +142,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 64000,
+        max_tokens: 4000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
       })
@@ -123,32 +154,28 @@ serve(async (req) => {
     }
 
     const data = await response.json()
+    const text = extractTextContent(data)
+    const payload = extractJsonPayload(text)
+    const operationsRaw = Array.isArray(payload?.operations) ? payload.operations : []
 
-    if (data?.stop_reason === 'max_tokens') {
-      return jsonResponse({ error: 'Claude hit the max token limit while returning the fixed HTML. Try reducing module size or splitting content before fixing.' }, 400)
-    }
-    let fixedContent = ''
-    if (Array.isArray(data?.content)) {
-      for (const block of data.content) {
-        if (block?.type === 'text') {
-          fixedContent += String(block?.text ?? '')
-        }
-      }
-    }
+    const operations: FixOperation[] = operationsRaw
+      .map((op: any) => ({
+        find: String(op?.find ?? ''),
+        replace: String(op?.replace ?? ''),
+        replaceAll: Boolean(op?.replaceAll)
+      }))
+      .filter((op: FixOperation) => op.find.length > 0)
+      .slice(0, 80)
 
-    fixedContent = fixedContent.trim()
-    if (fixedContent.startsWith('```html')) {
-      fixedContent = fixedContent.replace(/^```html\s*\n?/, '').replace(/\n?```\s*$/, '')
-    } else if (fixedContent.startsWith('```')) {
-      fixedContent = fixedContent.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
-    }
-
-    if (!fixedContent || (!fixedContent.includes('<!DOCTYPE') && !fixedContent.includes('<html') && !fixedContent.includes('<head'))) {
-      return jsonResponse({ error: 'AI did not return valid HTML. The response may have been malformed.' }, 400)
+    if (!operations.length) {
+      return jsonResponse({
+        error:
+          'AI did not return valid replacement operations. Please retry with clearer custom instructions.'
+      }, 400)
     }
 
     return jsonResponse({
-      html: fixedContent,
+      operations,
       usage: data?.usage ?? null,
       stopReason: data?.stop_reason ?? null
     })

@@ -633,18 +633,55 @@ window.executeFixErrors = async function() {
         var invokeResult = await Promise.race([invokePromise, functionTimeout]);
 
         if (!invokeResult || invokeResult.error) {
-            var backendError = invokeResult && invokeResult.error ? invokeResult.error.message : 'Unknown backend error';
+            var backendError = 'Unknown backend error';
+            if (invokeResult && invokeResult.error) {
+                backendError = invokeResult.error.message || backendError;
+                if (invokeResult.error.context) {
+                    backendError += ' | ' + String(invokeResult.error.context);
+                }
+            }
             throw new Error(backendError);
         }
 
-        appendFixLog('Backend function completed successfully. Parsing returned HTML...');
+        appendFixLog('Backend function completed successfully. Applying operations...');
 
-        var fixedContent = (invokeResult.data && invokeResult.data.html ? String(invokeResult.data.html) : '').trim();
-        if (!fixedContent || (!fixedContent.includes('<!DOCTYPE') && !fixedContent.includes('<html') && !fixedContent.includes('<head'))) {
-            throw new Error('Backend did not return valid HTML.');
+        var operations = (invokeResult.data && Array.isArray(invokeResult.data.operations)) ? invokeResult.data.operations : [];
+        if (!operations.length) {
+            throw new Error('Backend did not return any fix operations.');
         }
 
-        appendFixLog('Validated returned HTML (' + fixedContent.length.toLocaleString() + ' characters).', 'success');
+        var fixedContent = html;
+        var appliedCount = 0;
+        operations.forEach(function(op, idx) {
+            var findText = String(op.find || '');
+            var replaceText = String(op.replace || '');
+            var replaceAll = !!op.replaceAll;
+            if (!findText) return;
+
+            if (replaceAll) {
+                if (fixedContent.includes(findText)) {
+                    fixedContent = fixedContent.split(findText).join(replaceText);
+                    appliedCount++;
+                    appendFixLog('Applied operation #' + (idx + 1) + ' (replaceAll).');
+                } else {
+                    appendFixLog('Skipped operation #' + (idx + 1) + ' - anchor not found.', 'error');
+                }
+            } else {
+                if (fixedContent.includes(findText)) {
+                    fixedContent = fixedContent.replace(findText, replaceText);
+                    appliedCount++;
+                    appendFixLog('Applied operation #' + (idx + 1) + '.');
+                } else {
+                    appendFixLog('Skipped operation #' + (idx + 1) + ' - anchor not found.', 'error');
+                }
+            }
+        });
+
+        if (appliedCount === 0) {
+            throw new Error('No fix operations could be applied to the current HTML. Try adding a custom instruction with exact wording to replace.');
+        }
+
+        appendFixLog('Applied ' + appliedCount + ' operation(s).', 'success');
 
         // Apply the fix
         window.generatedModuleHTML = fixedContent;
@@ -678,7 +715,7 @@ window.executeFixErrors = async function() {
             statusEl.style.color = '#22543D';
             statusEl.textContent = '✅ Errors fixed and sent back to the module generator preview. Run audit again to verify.';
         }
-        appendFixLog('Updated module generator preview with fixed HTML. You can now save this version.', 'success');
+        appendFixLog('Updated module generator preview with fixed HTML. You can now save this version and re-run audit.', 'success');
         if (submitBtn) {
             submitBtn.textContent = '✅ Fixed!';
         }
