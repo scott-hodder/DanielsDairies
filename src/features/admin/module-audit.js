@@ -609,153 +609,79 @@ window.executeFixErrors = async function() {
     }
 
     try {
-        // Get Claude API key from settings table (single-row table with claude_api_key column)
-        var apiKey = null;
-        appendFixLog('Loading Claude API key from settings table...');
-        if (window.supabase) {
-            var result = await window.supabase
-                .from('settings')
-                .select('claude_api_key')
-                .single();
-            if (result.data && result.data.claude_api_key) {
-                apiKey = result.data.claude_api_key;
-                appendFixLog('Claude API key loaded successfully.');
+        if (!window.supabase) {
+            throw new Error('Supabase client is not available on this page.');
+        }
+
+        appendFixLog('Sending request to backend fix-audit-errors function...');
+
+        var functionTimeoutMs = 480000;
+        var functionTimeout = new Promise(function(_, reject) {
+            setTimeout(function() {
+                reject(new Error('Request timed out after ' + Math.round(functionTimeoutMs / 1000) + ' seconds while waiting for the backend fix function.'));
+            }, functionTimeoutMs);
+        });
+
+        var invokePromise = window.supabase.functions.invoke('fix-audit-errors', {
+            body: {
+                html: html,
+                failures: failures,
+                customInstructions: customInstructions
             }
+        });
+
+        var invokeResult = await Promise.race([invokePromise, functionTimeout]);
+
+        if (!invokeResult || invokeResult.error) {
+            var backendError = invokeResult && invokeResult.error ? invokeResult.error.message : 'Unknown backend error';
+            throw new Error(backendError);
         }
 
-        if (!apiKey) {
-            throw new Error('Could not retrieve Claude API key from settings table. Ensure the claude_api_key column has a value.');
-        }
+        appendFixLog('Backend function completed successfully. Parsing returned HTML...');
 
-        // Build the error description for the prompt
-        var errorDescriptions = failures.map(function(f, i) {
-            return (i + 1) + '. [' + f.severity + '] ' + f.rule + '\n   ' + f.description +
-                (f.evidence ? '\n   Evidence: ' + f.evidence : '') +
-                (f.remediation ? '\n   Fix: ' + f.remediation : '');
-        }).join('\n\n');
-
-        // Build the fix prompt
-        var systemPrompt = 'You are an expert HTML module editor for a children\'s therapeutic education platform called Daniel\'s Diaries. ' +
-            'Your job is to fix specific audit failures in the generated HTML module WITHOUT changing the overall structure, design, page count, or working content. ' +
-            'Only make the minimum changes needed to pass the failing audit checks.\n\n' +
-            'RULES:\n' +
-            '1. Return ONLY the complete fixed HTML. No explanations, no markdown, just the raw HTML document.\n' +
-            '2. Do NOT remove or restructure pages that are already working.\n' +
-            '3. Do NOT change CSS styles, JavaScript logic, or the page navigation system.\n' +
-            '4. Focus ONLY on content text changes needed to pass the failing checks.\n' +
-            '5. Use Australian English spelling throughout.\n' +
-            '6. Never use deficit or pathologising language.\n' +
-            '7. Preserve all data-page attributes, onclick handlers, and interactive elements exactly as they are.';
-
-        var userPrompt = 'Here is the current module HTML that has audit failures:\n\n' +
-            '--- FAILING AUDIT CHECKS ---\n' + errorDescriptions + '\n\n' +
-            (customInstructions ? '--- CUSTOM INSTRUCTIONS ---\n' + customInstructions + '\n\n' : '') +
-            '--- CURRENT HTML ---\n' + html + '\n\n' +
-            'Please fix ONLY the failing audit checks listed above. Return the complete fixed HTML.';
-
-        appendFixLog('Prompt prepared. Sending request to Claude API...');
-
-        var controller = new AbortController();
-        var requestTimeoutMs = 180000;
-        var timeoutHandle = setTimeout(function() {
-            controller.abort();
-        }, requestTimeoutMs);
-
-        // Call Claude API directly
-        var response;
-        try {
-            response = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true'
-                },
-                body: JSON.stringify({
-                    model: 'claude-sonnet-4-20250514',
-                    max_tokens: 32000,
-                    system: systemPrompt,
-                    messages: [
-                        { role: 'user', content: userPrompt }
-                    ]
-                }),
-                signal: controller.signal
-            });
-        } catch (fetchError) {
-            if (fetchError && fetchError.name === 'AbortError') {
-                throw new Error('Request timed out after ' + Math.round(requestTimeoutMs / 1000) + ' seconds. Check your network/API key and try again.');
-            }
-            throw fetchError;
-        } finally {
-            clearTimeout(timeoutHandle);
-        }
-
-        appendFixLog('Claude API responded with HTTP ' + response.status + '.');
-
-        if (!response.ok) {
-            var errorText = await response.text();
-            appendFixLog('Claude API returned an error payload.', 'error');
-            throw new Error('Claude API error (' + response.status + '): ' + errorText);
-        }
-
-        var data = await response.json();
-        appendFixLog('Received response from Claude. Parsing returned content...');
-        var fixedContent = '';
-        if (data.content && Array.isArray(data.content)) {
-            for (var i = 0; i < data.content.length; i++) {
-                if (data.content[i].type === 'text') {
-                    fixedContent += data.content[i].text;
-                }
-            }
-        }
-
-        // Strip any markdown wrapping if present
-        fixedContent = fixedContent.trim();
-        if (fixedContent.startsWith('```html')) {
-            fixedContent = fixedContent.replace(/^```html\s*\n?/, '').replace(/\n?```\s*$/, '');
-        } else if (fixedContent.startsWith('```')) {
-            fixedContent = fixedContent.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '');
-        }
-
-        // Validate we got HTML back
+        var fixedContent = (invokeResult.data && invokeResult.data.html ? String(invokeResult.data.html) : '').trim();
         if (!fixedContent || (!fixedContent.includes('<!DOCTYPE') && !fixedContent.includes('<html') && !fixedContent.includes('<head'))) {
-            throw new Error('AI did not return valid HTML. The response may have been too long or malformed.');
+            throw new Error('Backend did not return valid HTML.');
         }
 
         appendFixLog('Validated returned HTML (' + fixedContent.length.toLocaleString() + ' characters).', 'success');
 
         // Apply the fix
         window.generatedModuleHTML = fixedContent;
-
         // Update the preview textarea if it exists
         var previewTextarea = document.getElementById('aiGeneratedPreview');
         if (previewTextarea) previewTextarea.value = fixedContent;
 
-        // Update the inline preview
-        if (typeof loadInlinePreview === 'function') {
-            setTimeout(loadInlinePreview, 200);
-        }
+        // Ensure the generated result panel remains visible for saving
+        var previewContainer = document.getElementById('aiGeneratedResult');
+        if (previewContainer) previewContainer.style.display = 'block';
 
         // Update character count in summary
         var previewSummary = document.getElementById('aiGeneratedSummary');
         if (previewSummary) {
             var pageCount = (fixedContent.match(/data-page="/g) || []).length;
             var charCount = fixedContent.length;
-            previewSummary.textContent = 'Approx. ' + (pageCount || '??') + ' pages \u2022 ' + charCount.toLocaleString() + ' characters (fixed)';
+            previewSummary.textContent = 'Approx. ' + (pageCount || '??') + ' pages • ' + charCount.toLocaleString() + ' characters (fixed)';
+        }
+
+        var saveBtn = document.getElementById('saveAiGeneratedModuleBtn');
+        if (saveBtn) saveBtn.disabled = false;
+
+        // Update the inline preview
+        if (typeof loadInlinePreview === 'function') {
+            setTimeout(loadInlinePreview, 200);
         }
 
         // Show success
         if (statusEl) {
             statusEl.style.background = '#F0FFF4';
             statusEl.style.color = '#22543D';
-            statusEl.textContent = '✅ Errors fixed! Close this modal and run the audit again to verify.';
+            statusEl.textContent = '✅ Errors fixed and sent back to the module generator preview. Run audit again to verify.';
         }
-        appendFixLog('Updated preview with fixed HTML. Run audit again to verify all checks.', 'success');
+        appendFixLog('Updated module generator preview with fixed HTML. You can now save this version.', 'success');
         if (submitBtn) {
             submitBtn.textContent = '✅ Fixed!';
         }
-
     } catch (error) {
         console.error('[Fix Errors] Error:', error);
         appendFixLog(error.message || 'Unknown error occurred while fixing audit failures.', 'error');
