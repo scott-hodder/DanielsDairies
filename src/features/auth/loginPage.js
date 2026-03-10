@@ -39,8 +39,9 @@ async function init() {
     }
 
     // Check for password recovery session (only if coming from reset email)
-    const urlParams = new URLSearchParams(window.location.search)
-    const isResetFlow = urlParams.has('access_token') && urlParams.has('refresh_token')
+    // Supabase sends tokens in URL hash (#access_token=...&type=recovery), not query params
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const isResetFlow = hashParams.get('type') === 'recovery'
     
     if (session && isResetFlow && session.user?.app_metadata?.provider === 'email') {
       isRecoverySession = true
