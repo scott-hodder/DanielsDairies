@@ -530,6 +530,13 @@ window.openFixErrorsModal = function() {
     var statusEl = document.getElementById('fixErrorsStatus');
     if (statusEl) statusEl.style.display = 'none';
 
+    // Reset logs
+    var logsEl = document.getElementById('fixErrorsLogs');
+    if (logsEl) {
+        logsEl.style.display = 'none';
+        logsEl.innerHTML = '';
+    }
+
     // Reset submit button
     var submitBtn = document.getElementById('fixErrorsSubmitBtn');
     if (submitBtn) {
@@ -553,6 +560,22 @@ window.executeFixErrors = async function() {
     var customInstructions = (document.getElementById('fixErrorsCustomInstructions')?.value || '').trim();
     var submitBtn = document.getElementById('fixErrorsSubmitBtn');
     var statusEl = document.getElementById('fixErrorsStatus');
+    var logsEl = document.getElementById('fixErrorsLogs');
+
+    function appendFixLog(message, level) {
+        var timestamp = new Date().toLocaleTimeString('en-AU', { hour12: false });
+        var prefix = level === 'error' ? '❌' : level === 'success' ? '✅' : 'ℹ️';
+        var line = '[' + timestamp + '] ' + prefix + ' ' + message;
+        console.log('[Fix Errors]', line);
+        if (logsEl) {
+            var safeLine = line
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            logsEl.innerHTML += '<div style="margin-bottom:4px;">' + safeLine + '</div>';
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+    }
 
     if (!html) {
         alert('No generated module HTML found.');
@@ -574,10 +597,21 @@ window.executeFixErrors = async function() {
         statusEl.style.color = '#2A8F8F';
         statusEl.textContent = '🔄 Sending to AI for fixing... This may take 1-3 minutes.';
     }
+    if (logsEl) {
+        logsEl.style.display = 'block';
+        logsEl.innerHTML = '';
+    }
+
+    appendFixLog('Preparing AI fix request for ' + failures.length + ' failing checks.');
+    appendFixLog('Current HTML size: ' + html.length.toLocaleString() + ' characters.');
+    if (customInstructions) {
+        appendFixLog('Custom instructions supplied (' + customInstructions.length + ' characters).');
+    }
 
     try {
         // Get Claude API key from settings table (single-row table with claude_api_key column)
         var apiKey = null;
+        appendFixLog('Loading Claude API key from settings table...');
         if (window.supabase) {
             var result = await window.supabase
                 .from('settings')
@@ -585,6 +619,7 @@ window.executeFixErrors = async function() {
                 .single();
             if (result.data && result.data.claude_api_key) {
                 apiKey = result.data.claude_api_key;
+                appendFixLog('Claude API key loaded successfully.');
             }
         }
 
@@ -618,31 +653,54 @@ window.executeFixErrors = async function() {
             '--- CURRENT HTML ---\n' + html + '\n\n' +
             'Please fix ONLY the failing audit checks listed above. Return the complete fixed HTML.';
 
+        appendFixLog('Prompt prepared. Sending request to Claude API...');
+
+        var controller = new AbortController();
+        var requestTimeoutMs = 180000;
+        var timeoutHandle = setTimeout(function() {
+            controller.abort();
+        }, requestTimeoutMs);
+
         // Call Claude API directly
-        var response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
-            body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 64000,
-                system: systemPrompt,
-                messages: [
-                    { role: 'user', content: userPrompt }
-                ]
-            })
-        });
+        var response;
+        try {
+            response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true'
+                },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 32000,
+                    system: systemPrompt,
+                    messages: [
+                        { role: 'user', content: userPrompt }
+                    ]
+                }),
+                signal: controller.signal
+            });
+        } catch (fetchError) {
+            if (fetchError && fetchError.name === 'AbortError') {
+                throw new Error('Request timed out after ' + Math.round(requestTimeoutMs / 1000) + ' seconds. Check your network/API key and try again.');
+            }
+            throw fetchError;
+        } finally {
+            clearTimeout(timeoutHandle);
+        }
+
+        appendFixLog('Claude API responded with HTTP ' + response.status + '.');
 
         if (!response.ok) {
             var errorText = await response.text();
+            appendFixLog('Claude API returned an error payload.', 'error');
             throw new Error('Claude API error (' + response.status + '): ' + errorText);
         }
 
         var data = await response.json();
+        appendFixLog('Received response from Claude. Parsing returned content...');
         var fixedContent = '';
         if (data.content && Array.isArray(data.content)) {
             for (var i = 0; i < data.content.length; i++) {
@@ -664,6 +722,8 @@ window.executeFixErrors = async function() {
         if (!fixedContent || (!fixedContent.includes('<!DOCTYPE') && !fixedContent.includes('<html') && !fixedContent.includes('<head'))) {
             throw new Error('AI did not return valid HTML. The response may have been too long or malformed.');
         }
+
+        appendFixLog('Validated returned HTML (' + fixedContent.length.toLocaleString() + ' characters).', 'success');
 
         // Apply the fix
         window.generatedModuleHTML = fixedContent;
@@ -691,12 +751,14 @@ window.executeFixErrors = async function() {
             statusEl.style.color = '#22543D';
             statusEl.textContent = '✅ Errors fixed! Close this modal and run the audit again to verify.';
         }
+        appendFixLog('Updated preview with fixed HTML. Run audit again to verify all checks.', 'success');
         if (submitBtn) {
             submitBtn.textContent = '✅ Fixed!';
         }
 
     } catch (error) {
         console.error('[Fix Errors] Error:', error);
+        appendFixLog(error.message || 'Unknown error occurred while fixing audit failures.', 'error');
         if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.background = '#FFF5F5';
