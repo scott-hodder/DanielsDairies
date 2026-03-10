@@ -27,6 +27,21 @@ async function init() {
   console.log('Success element:', successMessage)
   
   try {
+    // Check for password recovery flow FIRST (before session check)
+    // Supabase sends tokens in URL hash (#access_token=...&type=recovery)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const isResetFlow = hashParams.get('type') === 'recovery'
+    
+    if (isResetFlow) {
+      console.log('🔑 Password recovery flow detected')
+      // Show reset form immediately - Supabase will process the tokens
+      isRecoverySession = true
+      showResetPasswordForm()
+      // Clear the hash to clean up the URL
+      window.history.replaceState(null, '', window.location.pathname)
+      return
+    }
+
     // Check if user is already logged in
     const session = await checkAuth()
     console.log('Session check:', session ? 'Logged in' : 'Not logged in')
@@ -35,17 +50,6 @@ async function init() {
       // Regular session
       console.log('Redirecting to landing page...')
       window.location.href = '/landing.html'
-      return
-    }
-
-    // Check for password recovery session (only if coming from reset email)
-    // Supabase sends tokens in URL hash (#access_token=...&type=recovery), not query params
-    const hashParams = new URLSearchParams(window.location.hash.substring(1))
-    const isResetFlow = hashParams.get('type') === 'recovery'
-    
-    if (session && isResetFlow && session.user?.app_metadata?.provider === 'email') {
-      isRecoverySession = true
-      showResetPasswordForm()
       return
     }
 
