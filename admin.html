@@ -1507,7 +1507,7 @@
                     <div class="gm-btn-row">
                         <button type="button" id="generateModuleBtn" class="gm-btn gm-btn-generate" onclick="generateModuleWithAI()">⚡ Generate</button>
                         <button type="submit" class="gm-btn gm-btn-save-module">💾 Save</button>
-                        <button type="button" id="gmAuditBtnLeft" class="gm-btn gm-btn-audit" onclick="runModuleAudit()" style="display:none;">🔍 Audit</button>
+                        <button type="button" id="gmAuditBtnLeft" class="gm-btn gm-btn-audit" onclick="window.runModuleAudit()" style="display:none;">🔍 Audit</button>
                     </div>
                     <div class="gm-btn-row" style="margin-top:4px;">
                         <button type="button" class="gm-btn gm-btn-cancel" onclick="closeAddModuleModal()">Cancel</button>
@@ -1598,7 +1598,7 @@
                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
                         <button type="button" id="saveAiGeneratedModuleBtn" class="gm-btn" style="background:#10b981;color:#fff;flex:none;padding:10px 18px;font-size:12px;" onclick="saveGeneratedModule()" disabled>💾 Create Module</button>
                         <button type="button" class="gm-btn gm-btn-preview" style="flex:none;padding:10px 14px;font-size:12px;" onclick="showPreviewModal()">👁️ Full Preview</button>
-                        <button type="button" class="gm-btn gm-btn-audit" style="flex:none;padding:10px 14px;font-size:12px;" onclick="runModuleAudit()">🔍 Audit</button>
+                        <button type="button" class="gm-btn gm-btn-audit" style="flex:none;padding:10px 14px;font-size:12px;" onclick="window.runModuleAudit()">🔍 Audit</button>
                         <button type="button" class="gm-btn" style="background:#f97316;color:#fff;flex:none;padding:10px 14px;font-size:12px;" onclick="copyGeneratedModuleHTML()">📋 Copy HTML</button>
                         <button type="button" class="gm-btn" style="background:#E2E8F0;color:#4A5568;flex:none;padding:10px 14px;font-size:12px;" onclick="showDecisionLogicAgain()">← Back to Parameters</button>
                     </div>
@@ -1876,9 +1876,22 @@ function loadInlinePreview() {
         return;
     }
     try {
+        // Process the HTML the same way showPreviewModal does:
+        // Strip ES6 import and add regular script tag for module-header.js
+        var previewContent = html;
+        previewContent = previewContent.replace(
+            /import\s*\{\s*initModuleHeader\s*\}\s*from\s*['"]\.\/modules\/shared\/module-header\.js['"];?\s*/g,
+            '// Module header loaded via regular script for preview\n    '
+        );
+        if (!previewContent.includes('module-header.js')) {
+            previewContent = previewContent.replace(
+                /<\/head>/,
+                '  <script src="/modules/shared/module-header.js"><\/script>\n</head>'
+            );
+        }
         var doc = iframe.contentDocument || iframe.contentWindow.document;
         doc.open();
-        doc.write(html);
+        doc.write(previewContent);
         doc.close();
     } catch(e) { console.warn('Inline preview error:', e); }
 }
@@ -1975,8 +1988,40 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="auditResultsContainer" style="flex:1; overflow-y:auto; padding:20px 24px;"></div>
             <div style="padding:14px 24px; border-top:1px solid #E2E8F0; display:flex; gap:10px; justify-content:flex-end;">
                 <button onclick="closeAuditModal()" style="padding:8px 20px; background:#6b7c8f; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Close</button>
+                <button id="auditFixErrorsBtn" onclick="window.openFixErrorsModal()" style="padding:8px 20px; background:#7b3ff2; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; display:none;">🛠️ Fix Errors</button>
                 <button onclick="closeAuditModal(); regenerateModule();" style="padding:8px 20px; background:#D4725C; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">🔄 Regenerate</button>
                 <button onclick="closeAuditModal(); saveGeneratedModule();" style="padding:8px 20px; background:#10b981; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">💾 Save Module</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🛠️ Fix Errors Modal -->
+    <div id="fixErrorsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10002; justify-content:center; align-items:center;">
+        <div style="background:#F5F1EB; border-radius:16px; width:90%; max-width:700px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#7b3ff2; border-radius:16px 16px 0 0;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:20px;">🛠️</span>
+                    <div>
+                        <h2 style="margin:0; font-size:16px; font-weight:700; color:#fff;">Fix Audit Errors</h2>
+                        <p style="margin:0; font-size:11px; color:#e0d4f5;">AI will attempt to fix the failing checks without regenerating the entire module</p>
+                    </div>
+                </div>
+                <button onclick="window.closeFixErrorsModal()" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer; padding:4px 8px;">&times;</button>
+            </div>
+            <div style="flex:1; overflow-y:auto; padding:20px 24px;">
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:13px; font-weight:700; color:#1B3A5C; display:block; margin-bottom:8px;">Errors to Fix</label>
+                    <div id="fixErrorsList" style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px; max-height:250px; overflow-y:auto; font-size:12px; color:#374151;"></div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:13px; font-weight:700; color:#1B3A5C; display:block; margin-bottom:8px;">Custom Instructions (Optional)</label>
+                    <textarea id="fixErrorsCustomInstructions" rows="4" placeholder="Add any specific instructions for the AI fix, e.g. 'Make sure the character name appears in the welcome page' or 'Use simpler vocabulary'..." style="width:100%; padding:10px 12px; border:2px solid #E2E8F0; border-radius:8px; font-size:13px; font-family:inherit; resize:vertical; color:#1B3A5C;"></textarea>
+                </div>
+                <div id="fixErrorsStatus" style="display:none; padding:12px 16px; border-radius:8px; margin-bottom:12px; font-size:12px; font-weight:600;"></div>
+            </div>
+            <div style="padding:14px 24px; border-top:1px solid #E2E8F0; display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="window.closeFixErrorsModal()" style="padding:8px 20px; background:#6b7c8f; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+                <button id="fixErrorsSubmitBtn" onclick="window.executeFixErrors()" style="padding:8px 24px; background:#7b3ff2; color:white; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">🛠️ Fix Errors with AI</button>
             </div>
         </div>
     </div>

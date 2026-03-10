@@ -2968,7 +2968,7 @@ Respond with ONLY this JSON:
         { "emotion": "Sad", "emoji": "😢", "explanation": "This emotion wouldn't fit with smiling and laughing. Keep investigating!", "isCorrect": false },
         { "emotion": "Scared", "emoji": "😨", "explanation": "The clues show positive feelings, not fear. Try again, detective!", "isCorrect": false }
       ],
-      "revelationMessage": "Case solved! You're a true emotion detective! You can recognize feelings by looking at body language and behavior!"
+      "revelationMessage": "Case solved! You're a true emotion detective! You can recognise feelings by looking at body language and behaviour!"
     }
   ]
 }

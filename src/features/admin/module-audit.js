@@ -465,6 +465,247 @@ window.runModuleAudit = async function() {
     var container = document.getElementById('auditResultsContainer');
     if (container) container.innerHTML = h;
 
+    // Store failed checks for the Fix Errors feature
+    window._lastAuditFailures = [];
+    sections.forEach(function(sec) {
+        sec.checks.forEach(function(ch) {
+            if (!ch.p) {
+                window._lastAuditFailures.push({
+                    section: sec.n,
+                    severity: sec.sev,
+                    rule: ch.n,
+                    description: ch.d,
+                    evidence: ch.e,
+                    remediation: ch.r
+                });
+            }
+        });
+    });
+
+    // Show/hide the Fix Errors button based on failures
+    var fixBtn = document.getElementById('auditFixErrorsBtn');
+    if (fixBtn) {
+        fixBtn.style.display = window._lastAuditFailures.length > 0 ? '' : 'none';
+    }
+
     var modal = document.getElementById('auditModal');
     if (modal) modal.style.display = 'flex';
+};
+
+// ═══ FIX ERRORS FEATURE ═══
+
+window.openFixErrorsModal = function() {
+    var failures = window._lastAuditFailures || [];
+    if (failures.length === 0) {
+        alert('No errors to fix! The audit passed.');
+        return;
+    }
+
+    // Populate the error list
+    var listEl = document.getElementById('fixErrorsList');
+    if (listEl) {
+        listEl.innerHTML = failures.map(function(f) {
+            var sevColor = f.severity === 'CRITICAL' ? '#C53030' : f.severity === 'IMPORTANT' ? '#D69E2E' : '#718096';
+            var sevBg = f.severity === 'CRITICAL' ? '#FFF5F5' : f.severity === 'IMPORTANT' ? '#FFFFF0' : '#F7FAFC';
+            return '<div style="padding:8px 10px; border-bottom:1px solid #E2E8F0; display:flex; gap:8px; align-items:flex-start;">' +
+                '<span style="font-size:13px; flex-shrink:0;">❌</span>' +
+                '<div style="flex:1; min-width:0;">' +
+                    '<div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">' +
+                        '<span style="padding:1px 6px; border-radius:3px; font-size:9px; font-weight:800; text-transform:uppercase; background:' + sevBg + '; color:' + sevColor + ';">' + f.severity + '</span>' +
+                        '<span style="font-size:11px; font-weight:600; color:#1B3A5C;">' + f.rule + '</span>' +
+                    '</div>' +
+                    '<div style="font-size:11px; color:#718096;">' + f.description + '</div>' +
+                    (f.evidence ? '<div style="font-size:10px; color:#C53030; margin-top:2px;">' + f.evidence + '</div>' : '') +
+                    (f.remediation ? '<div style="font-size:10px; color:#7b3ff2; margin-top:2px; font-weight:500;">' + f.remediation + '</div>' : '') +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    // Clear custom instructions
+    var customInput = document.getElementById('fixErrorsCustomInstructions');
+    if (customInput) customInput.value = '';
+
+    // Reset status
+    var statusEl = document.getElementById('fixErrorsStatus');
+    if (statusEl) statusEl.style.display = 'none';
+
+    // Reset submit button
+    var submitBtn = document.getElementById('fixErrorsSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🛠️ Fix Errors with AI';
+    }
+
+    // Show the modal
+    var fixModal = document.getElementById('fixErrorsModal');
+    if (fixModal) fixModal.style.display = 'flex';
+};
+
+window.closeFixErrorsModal = function() {
+    var fixModal = document.getElementById('fixErrorsModal');
+    if (fixModal) fixModal.style.display = 'none';
+};
+
+window.executeFixErrors = async function() {
+    var failures = window._lastAuditFailures || [];
+    var html = window.generatedModuleHTML;
+    var customInstructions = (document.getElementById('fixErrorsCustomInstructions')?.value || '').trim();
+    var submitBtn = document.getElementById('fixErrorsSubmitBtn');
+    var statusEl = document.getElementById('fixErrorsStatus');
+
+    if (!html) {
+        alert('No generated module HTML found.');
+        return;
+    }
+    if (failures.length === 0) {
+        alert('No errors to fix.');
+        return;
+    }
+
+    // Disable button and show loading
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Fixing errors...';
+    }
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = '#EBF8FF';
+        statusEl.style.color = '#2A8F8F';
+        statusEl.textContent = '🔄 Sending to AI for fixing... This may take 1-3 minutes.';
+    }
+
+    try {
+        // Get Claude API key from settings table (single-row table with claude_api_key column)
+        var apiKey = null;
+        if (window.supabase) {
+            var result = await window.supabase
+                .from('settings')
+                .select('claude_api_key')
+                .single();
+            if (result.data && result.data.claude_api_key) {
+                apiKey = result.data.claude_api_key;
+            }
+        }
+
+        if (!apiKey) {
+            throw new Error('Could not retrieve Claude API key from settings table. Ensure the claude_api_key column has a value.');
+        }
+
+        // Build the error description for the prompt
+        var errorDescriptions = failures.map(function(f, i) {
+            return (i + 1) + '. [' + f.severity + '] ' + f.rule + '\n   ' + f.description +
+                (f.evidence ? '\n   Evidence: ' + f.evidence : '') +
+                (f.remediation ? '\n   Fix: ' + f.remediation : '');
+        }).join('\n\n');
+
+        // Build the fix prompt
+        var systemPrompt = 'You are an expert HTML module editor for a children\'s therapeutic education platform called Daniel\'s Diaries. ' +
+            'Your job is to fix specific audit failures in the generated HTML module WITHOUT changing the overall structure, design, page count, or working content. ' +
+            'Only make the minimum changes needed to pass the failing audit checks.\n\n' +
+            'RULES:\n' +
+            '1. Return ONLY the complete fixed HTML. No explanations, no markdown, just the raw HTML document.\n' +
+            '2. Do NOT remove or restructure pages that are already working.\n' +
+            '3. Do NOT change CSS styles, JavaScript logic, or the page navigation system.\n' +
+            '4. Focus ONLY on content text changes needed to pass the failing checks.\n' +
+            '5. Use Australian English spelling throughout.\n' +
+            '6. Never use deficit or pathologising language.\n' +
+            '7. Preserve all data-page attributes, onclick handlers, and interactive elements exactly as they are.';
+
+        var userPrompt = 'Here is the current module HTML that has audit failures:\n\n' +
+            '--- FAILING AUDIT CHECKS ---\n' + errorDescriptions + '\n\n' +
+            (customInstructions ? '--- CUSTOM INSTRUCTIONS ---\n' + customInstructions + '\n\n' : '') +
+            '--- CURRENT HTML ---\n' + html + '\n\n' +
+            'Please fix ONLY the failing audit checks listed above. Return the complete fixed HTML.';
+
+        // Call Claude API directly
+        var response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 64000,
+                system: systemPrompt,
+                messages: [
+                    { role: 'user', content: userPrompt }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            var errorText = await response.text();
+            throw new Error('Claude API error (' + response.status + '): ' + errorText);
+        }
+
+        var data = await response.json();
+        var fixedContent = '';
+        if (data.content && Array.isArray(data.content)) {
+            for (var i = 0; i < data.content.length; i++) {
+                if (data.content[i].type === 'text') {
+                    fixedContent += data.content[i].text;
+                }
+            }
+        }
+
+        // Strip any markdown wrapping if present
+        fixedContent = fixedContent.trim();
+        if (fixedContent.startsWith('```html')) {
+            fixedContent = fixedContent.replace(/^```html\s*\n?/, '').replace(/\n?```\s*$/, '');
+        } else if (fixedContent.startsWith('```')) {
+            fixedContent = fixedContent.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '');
+        }
+
+        // Validate we got HTML back
+        if (!fixedContent || (!fixedContent.includes('<!DOCTYPE') && !fixedContent.includes('<html') && !fixedContent.includes('<head'))) {
+            throw new Error('AI did not return valid HTML. The response may have been too long or malformed.');
+        }
+
+        // Apply the fix
+        window.generatedModuleHTML = fixedContent;
+
+        // Update the preview textarea if it exists
+        var previewTextarea = document.getElementById('aiGeneratedPreview');
+        if (previewTextarea) previewTextarea.value = fixedContent;
+
+        // Update the inline preview
+        if (typeof loadInlinePreview === 'function') {
+            setTimeout(loadInlinePreview, 200);
+        }
+
+        // Update character count in summary
+        var previewSummary = document.getElementById('aiGeneratedSummary');
+        if (previewSummary) {
+            var pageCount = (fixedContent.match(/data-page="/g) || []).length;
+            var charCount = fixedContent.length;
+            previewSummary.textContent = 'Approx. ' + (pageCount || '??') + ' pages \u2022 ' + charCount.toLocaleString() + ' characters (fixed)';
+        }
+
+        // Show success
+        if (statusEl) {
+            statusEl.style.background = '#F0FFF4';
+            statusEl.style.color = '#22543D';
+            statusEl.textContent = '✅ Errors fixed! Close this modal and run the audit again to verify.';
+        }
+        if (submitBtn) {
+            submitBtn.textContent = '✅ Fixed!';
+        }
+
+    } catch (error) {
+        console.error('[Fix Errors] Error:', error);
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.background = '#FFF5F5';
+            statusEl.style.color = '#C53030';
+            statusEl.textContent = '❌ Fix failed: ' + error.message;
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🛠️ Fix Errors with AI';
+        }
+    }
 };
