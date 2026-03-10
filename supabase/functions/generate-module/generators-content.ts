@@ -61,7 +61,7 @@ import {
   safeJsonParse,
   callClaude,
 } from "./generators-core.ts";
-import { buildSystemPrompt as buildLayeredSystemPrompt, validatePromptTemplate } from "../_shared/prompt-builder.ts";
+import { buildSystemPrompt as buildLayeredSystemPrompt, validatePromptTemplate } from "./prompt-builder.ts";
 
 // ====================
 // CONTENT GENERATION
