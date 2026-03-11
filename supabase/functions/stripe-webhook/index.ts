@@ -189,6 +189,57 @@ serve(async (req) => {
     }
   }
 
+  async function grantSubscriptionExtensionCredits(params: {
+    parentId: string
+    months: number
+    tier?: string | null
+    periodStart: string
+    periodEnd: string
+  }) {
+    const { parentId, months, periodStart, periodEnd } = params
+    if (months <= 0) return
+
+    let resolvedTier = params.tier ?? null
+    if (!resolvedTier) {
+      const { data: existing } = await supabase
+        .from('parent_subscriptions')
+        .select('tier')
+        .eq('parent_id', parentId)
+        .maybeSingle()
+      resolvedTier = (existing?.tier as string | null) ?? null
+    }
+
+    if (!resolvedTier) return
+
+    const { data: tierRow, error: tierError } = await supabase
+      .from('subscription_tiers')
+      .select('modules_per_month')
+      .eq('tier', resolvedTier)
+      .single()
+
+    if (tierError || !tierRow) throw tierError ?? new Error('Tier not found')
+
+    const creditsToGrant = tierRow.modules_per_month * months
+    if (creditsToGrant <= 0) return
+
+    const { error: insertError } = await supabase
+      .from('subscription_credit_ledger')
+      .insert({
+        parent_id: parentId,
+        period_start: periodStart,
+        period_end: periodEnd,
+        entry_type: 'grant',
+        credits_delta: creditsToGrant,
+        notes: `Stripe subscription payment grant (${resolvedTier}, ${months} month${months > 1 ? 's' : ''})`,
+        stripe_event_id: event.id,
+        created_at: new Date().toISOString()
+      })
+
+    if (insertError && !insertError.message.toLowerCase().includes('duplicate key')) {
+      throw insertError
+    }
+  }
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -254,6 +305,14 @@ serve(async (req) => {
             console.error('Failed to update subscription after payment:', updateError)
             throw updateError
           }
+
+          await grantSubscriptionExtensionCredits({
+            parentId,
+            months,
+            tier: currentSub?.tier || session.metadata?.tier || 'low',
+            periodStart: periodStart.toISOString().slice(0, 10),
+            periodEnd: periodEnd.toISOString().slice(0, 10)
+          })
 
           console.log(`Subscription extended for ${parentId}: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`)
           break
