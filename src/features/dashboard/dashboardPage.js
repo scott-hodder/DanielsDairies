@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, getLevelInfo, getXpForNextLevel } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -4293,8 +4293,12 @@ class ModuleGallery {
                 '</button>' +
                 '<div class="plan-accordion-panel" ' + (isOpen ? '' : 'hidden') + '>' +
                     '<p>' + this.escapeHtml(tier.description || 'A balanced plan designed for steady emotional growth and family support.') + '</p>' +
-                    featuresList +
-                    '<button type="button" class="profile-select-plan-btn" ' + (isCurrent ? 'disabled' : '') + '>' + (isCurrent ? 'Current Plan' : 'Select ' + this.escapeHtml(tier.tier.toUpperCase())) + '</button>' +
+                    '<ul>' +
+                        '<li><strong>' + tier.modules_per_month + '</strong> modules per month</li>' +
+                        '<li>Includes progress tracking and family dashboard tools</li>' +
+                        '<li>Priority content updates for active subscribers</li>' +
+                    '</ul>' +
+                    '<button type="button" class="profile-select-plan-btn" data-select-tier="' + this.escapeHtml(tier.tier) + '" ' + (isCurrent ? 'disabled' : '') + '>' + (isCurrent ? 'Current Plan' : 'Select ' + this.escapeHtml(tier.tier.toUpperCase())) + '</button>' +
                 '</div>' +
             '</div>';
         }).join('');
@@ -4348,9 +4352,17 @@ class ModuleGallery {
 
             this.changePlanModal.addEventListener('click', (event) => {
                 var trigger = event.target.closest('[data-tier-trigger]');
-                if (!trigger) return;
-                this.expandedTier = trigger.getAttribute('data-tier-trigger');
-                this.refreshAccordion();
+                if (trigger) {
+                    this.expandedTier = trigger.getAttribute('data-tier-trigger');
+                    this.refreshAccordion();
+                    return;
+                }
+
+                var selectButton = event.target.closest('.profile-select-plan-btn');
+                if (selectButton) {
+                    var tierName = selectButton.getAttribute('data-select-tier');
+                    if (tierName) this.handleTierSwitch(tierName, selectButton);
+                }
             });
         }
     }
@@ -4365,6 +4377,32 @@ class ModuleGallery {
         if (!this.changePlanModal) return;
         this.changePlanModal.classList.remove('active');
         document.body.style.overflow = '';
+    }
+
+    async handleTierSwitch(tierName, button) {
+        if (!currentUser?.id) return;
+
+        var targetTier = String(tierName || '').toLowerCase();
+        if (!targetTier) return;
+
+        var originalLabel = button?.textContent || '';
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Redirecting...';
+        }
+
+        try {
+            var result = await switchStripeSubscriptionPlan(targetTier);
+            if (!result?.url) throw new Error('Stripe checkout URL was not returned.');
+            window.location.assign(result.url);
+        } catch (error) {
+            console.error('Failed to switch subscription tier:', error);
+            showToast(error?.message || 'Unable to open Stripe checkout. Please try again.');
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalLabel;
+            }
+        }
     }
 
     escapeHtml(str) {

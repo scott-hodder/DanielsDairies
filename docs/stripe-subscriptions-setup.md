@@ -218,3 +218,55 @@ This keeps Stripe webhook handling deterministic even under retries.
 - [ ] Ledger grants are idempotent
 - [ ] Billing page redirects to Checkout
 - [ ] Test-mode events verified end-to-end
+
+
+## 13) Dashboard "Change Plan" wiring (current app)
+
+The profile modal in `dashboard.html` now calls a Supabase Edge Function named `switch-subscription-plan` when a parent clicks **Select LOW/MID/TOP**.
+
+What it does:
+
+1. Validates authenticated user and requested tier (`low|mid|top`).
+2. Resolves Stripe Price ID (`STRIPE_PRICE_LOW|MID|TOP` or price metadata fallback).
+3. Creates Stripe Checkout Session (`mode=subscription`) for that tier.
+4. Passes metadata:
+   - `parent_id`
+   - `tier`
+   - `previous_subscription_id` (if parent already had one)
+5. Webhook (`checkout.session.completed`) saves the new subscription and cancels previous subscription (if present and different).
+
+### Required new function deploy
+
+```bash
+supabase functions deploy switch-subscription-plan
+```
+
+### Required env vars
+
+Set these for **both** `create-checkout-session` and `switch-subscription-plan`:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_LOW`
+- `STRIPE_PRICE_MID`
+- `STRIPE_PRICE_TOP`
+- `APP_URL` (recommended; e.g. `https://your-domain.com/dashboard.html`)
+
+### Stripe Dashboard checklist for plan switching
+
+1. Create/verify 3 recurring Prices (LOW/MID/TOP).
+2. Copy each Price ID into the matching env var above.
+3. Ensure webhook endpoint includes:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+4. Copy the endpoint signing secret to `STRIPE_WEBHOOK_SECRET`.
+5. Test end-to-end in Stripe test mode:
+   - Start on MID, switch to TOP, complete checkout.
+   - Confirm `parent_subscriptions.tier` and `stripe_subscription_id` update.
+   - Confirm old subscription is canceled in Stripe.
