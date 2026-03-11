@@ -710,7 +710,6 @@ function initPsychologyDropdowns() {
     }
 }
 
-// ================================================================================
 // UPDATED generateModuleWithAI FUNCTION
 // ================================================================================
 // Replace your existing generateModuleWithAI function with this one
@@ -724,8 +723,8 @@ function buildAIGenerationLookupContext({
     secondaryTheoryIds,
     diagnosisPathways,
     neuroscienceConcept,
-    ndisDomainId,
-    dssSediId
+    ndisDomainIds,
+    dssSediIds
 }) {
     const selectedSuperSkill = superSkillsData.find(s => s.id === superSkillId) || null;
     const selectedSubSkill = subSkillsData.find(s => s.id === subSkillId) || null;
@@ -733,8 +732,8 @@ function buildAIGenerationLookupContext({
     const selectedAgeRange = ageRanges.find(a => a.id === ageRangeId) || null;
     const selectedCoreTheory = coreTheories.find(t => t.id === coreTheoryId) || null;
     const selectedSecondaryTheories = (secondaryTheoryIds || []).map(id => coreTheories.find(t => t.id === id)).filter(Boolean);
-    const selectedNdisDomain = (window.enhancedModuleModal?.ndisDomains || []).find(d => d.id === ndisDomainId) || null;
-    const selectedSediCategory = (window.enhancedModuleModal?.sediCategories || []).find(sc => sc.id === dssSediId) || null;
+    const selectedNdisDomains = (ndisDomainIds || []).map(id => (window.enhancedModuleModal?.ndisDomains || []).find(d => d.id === id)).filter(Boolean);
+    const selectedSediCategories = (dssSediIds || []).map(id => (window.enhancedModuleModal?.sediCategories || []).find(sc => sc.id === id)).filter(Boolean);
     const selectedTheoryConnection = theoryConnectionsData.find(c => c.super_skill_id === superSkillId && c.cycle_id === cycleId) || null;
 
     return {
@@ -798,15 +797,15 @@ function buildAIGenerationLookupContext({
         } : null,
         neuroscienceConcept: neuroscienceConcept || null,
         diagnosisPathways: diagnosisPathways || [],
-        ndisDomain: selectedNdisDomain ? {
-            id: selectedNdisDomain.id,
-            name: selectedNdisDomain.domain_name || null
-        } : null,
-        dssSediCategory: selectedSediCategory ? {
-            id: selectedSediCategory.id,
-            code: selectedSediCategory.sedi_code || null,
-            name: selectedSediCategory.sedi_name || null
-        } : null
+        ndisDomains: selectedNdisDomains.map(d => ({
+            id: d.id,
+            name: d.domain_name || null
+        })),
+        dssSediCategories: selectedSediCategories.map(sc => ({
+            id: sc.id,
+            code: sc.sedi_code || null,
+            name: sc.sedi_name || null
+        }))
     };
 }
 
@@ -841,8 +840,8 @@ window.generateModuleWithAI = async function() {
     const diagnosisPathways = window.enhancedModuleModal?.diagnosisPathways || [];
     const secondaryTheoryIds = window.enhancedModuleModal?.secondaryTheoryIds || [];
     const fasdStrategies = document.getElementById('fasdStrategies')?.value || '';
-    const ndisDomainId = document.getElementById('ndisDomain')?.value || '';
-    const dssSediId = document.getElementById('dssSedi')?.value || '';
+    const ndisDomainIds = window.enhancedModuleModal?.selectedNdisDomainIds || [];
+    const dssSediIds = window.enhancedModuleModal?.selectedSediCategoryIds || [];
 
     // Reset UI
     previewContainer.style.display = 'none';
@@ -927,8 +926,8 @@ window.generateModuleWithAI = async function() {
                         secondaryTheoryIds,
                         diagnosisPathways,
                         fasdStrategies: fasdStrategies || undefined,
-                        ndisDomainId: ndisDomainId || undefined,
-                        dssSediId: dssSediId || undefined,
+                        ndisDomainIds: ndisDomainIds.length > 0 ? ndisDomainIds : undefined,
+                        dssSediIds: dssSediIds.length > 0 ? dssSediIds : undefined,
 
                         // Rich lookup context for theoretical quality
                         lookupContext: buildAIGenerationLookupContext({
@@ -940,8 +939,8 @@ window.generateModuleWithAI = async function() {
                             secondaryTheoryIds,
                             diagnosisPathways,
                             neuroscienceConcept,
-                            ndisDomainId,
-                            dssSediId
+                            ndisDomainIds,
+                            dssSediIds
                         }),
                         seriesId: seriesId || undefined,
                         category: category || undefined,
@@ -7433,7 +7432,9 @@ if (data.status === "running") {
             secondaryTheoryIds: [],
             diagnosisPathways: [],
             ndisDomains: [],
-            sediCategories: []
+            sediCategories: [],
+            selectedNdisDomainIds: [],
+            selectedSediCategoryIds: []
         };
 
         // Override openAddModuleModal
@@ -7498,15 +7499,16 @@ if (data.status === "running") {
                     </select>
                 </div>
                 
-                <div class="gm-row" style="margin-top: 8px;">
-                    <div class="gm-step-group">
-                        <div class="gm-step-label">NDIS Domain</div>
-                        <select id="ndisDomain" class="gm-select form-select" onchange="updateDecisionLogic()"></select>
-                    </div>
-                    <div class="gm-step-group">
-                        <div class="gm-step-label">DSS SEDI</div>
-                        <select id="dssSedi" class="gm-select form-select" onchange="updateDecisionLogic()"></select>
-                    </div>
+                <div class="gm-step-group" id="ndisDomainsSection" style="margin-top: 8px;">
+                    <div class="gm-step-label">NDIS Domains (Multiple)</div>
+                    <div id="ndisDomainsContainer" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; background: white; border: 1px solid #E2E8F0; border-radius: 8px; min-height: 40px; max-height: 100px; overflow-y: auto;"></div>
+                    <p style="font-size: 10px; color: #718096; margin-top: 3px;">Selected: <span id="ndisDomainsCount">0</span></p>
+                </div>
+                
+                <div class="gm-step-group" id="sediCategoriesSection" style="margin-top: 8px;">
+                    <div class="gm-step-label">DSS SEDI Categories (Multiple)</div>
+                    <div id="sediCategoriesContainer" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; background: white; border: 1px solid #E2E8F0; border-radius: 8px; min-height: 40px; max-height: 100px; overflow-y: auto;"></div>
+                    <p style="font-size: 10px; color: #718096; margin-top: 3px;">Selected: <span id="sediCategoriesCount">0</span></p>
                 </div>
             `;
             
@@ -7568,13 +7570,19 @@ if (data.status === "running") {
         }
 
         function populateNdisAndSedi() {
-            const ndisSelect = document.getElementById('ndisDomain');
-            if (ndisSelect) {
-                ndisSelect.innerHTML = '<option value="">Optional</option>' + window.enhancedModuleModal.ndisDomains.map(nd => `<option value="${nd.id}">${nd.domain_name}</option>`).join('');
+            // Populate NDIS domains as chips
+            const ndisContainer = document.getElementById('ndisDomainsContainer');
+            if (ndisContainer) {
+                ndisContainer.innerHTML = window.enhancedModuleModal.ndisDomains.map(nd => 
+                    `<div class="ndis-domain-chip" data-ndis-id="${nd.id}" style="padding: 4px 10px; background: #f3f4f6; color: #374151; border-radius: 14px; font-size: 10px; font-weight: 600; cursor: pointer; user-select: none; transition: all 0.12s; border: 1.5px solid transparent;">${nd.domain_name}</div>`
+                ).join('');
             }
-            const sediSelect = document.getElementById('dssSedi');
-            if (sediSelect) {
-                sediSelect.innerHTML = '<option value="">Optional</option>' + window.enhancedModuleModal.sediCategories.map(sc => `<option value="${sc.id}">${sc.sedi_code}: ${sc.sedi_name}</option>`).join('');
+            // Populate SEDI categories as chips
+            const sediContainer = document.getElementById('sediCategoriesContainer');
+            if (sediContainer) {
+                sediContainer.innerHTML = window.enhancedModuleModal.sediCategories.map(sc => 
+                    `<div class="sedi-category-chip" data-sedi-id="${sc.id}" style="padding: 4px 10px; background: #f3f4f6; color: #374151; border-radius: 14px; font-size: 10px; font-weight: 600; cursor: pointer; user-select: none; transition: all 0.12s; border: 1.5px solid transparent;">${sc.sedi_code}: ${sc.sedi_name}</div>`
+                ).join('');
             }
         }
 
@@ -7614,6 +7622,38 @@ if (data.status === "running") {
                     if (typeof updateDecisionLogic === 'function') setTimeout(updateDecisionLogic, 50);
                 });
             });
+            
+            // NDIS domain chip listeners
+            document.querySelectorAll('.ndis-domain-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const ndisId = this.getAttribute('data-ndis-id');
+                    const index = window.enhancedModuleModal.selectedNdisDomainIds.indexOf(ndisId);
+                    if (index > -1) {
+                        window.enhancedModuleModal.selectedNdisDomainIds.splice(index, 1);
+                        this.style.background = '#f3f4f6'; this.style.color = '#374151'; this.style.borderColor = 'transparent';
+                    } else {
+                        window.enhancedModuleModal.selectedNdisDomainIds.push(ndisId);
+                        this.style.background = '#2A8F8F'; this.style.color = 'white'; this.style.borderColor = '#2A8F8F';
+                    }
+                    document.getElementById('ndisDomainsCount').textContent = window.enhancedModuleModal.selectedNdisDomainIds.length;
+                });
+            });
+            
+            // SEDI category chip listeners
+            document.querySelectorAll('.sedi-category-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const sediId = this.getAttribute('data-sedi-id');
+                    const index = window.enhancedModuleModal.selectedSediCategoryIds.indexOf(sediId);
+                    if (index > -1) {
+                        window.enhancedModuleModal.selectedSediCategoryIds.splice(index, 1);
+                        this.style.background = '#f3f4f6'; this.style.color = '#374151'; this.style.borderColor = 'transparent';
+                    } else {
+                        window.enhancedModuleModal.selectedSediCategoryIds.push(sediId);
+                        this.style.background = '#2A8F8F'; this.style.color = 'white'; this.style.borderColor = '#2A8F8F';
+                    }
+                    document.getElementById('sediCategoriesCount').textContent = window.enhancedModuleModal.selectedSediCategoryIds.length;
+                });
+            });
         }
 
         // Fix sub-skills loading
@@ -7638,8 +7678,8 @@ if (data.status === "running") {
                 neuroscience_concept: document.getElementById('neuroscienceConcept')?.value || null,
                 diagnosis_pathways: window.enhancedModuleModal.diagnosisPathways,
                 fasd_strategies: document.getElementById('fasdStrategies')?.value || null,
-                ndis_domain_id: document.getElementById('ndisDomain')?.value || null,
-                dss_sedi_id: document.getElementById('dssSedi')?.value || null
+                ndis_domain_ids: window.enhancedModuleModal.selectedNdisDomainIds,
+                dss_sedi_ids: window.enhancedModuleModal.selectedSediCategoryIds
             };
             if (typeof originalSaveNewModule === 'function') {
                 return originalSaveNewModule(event);

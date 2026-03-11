@@ -6165,8 +6165,8 @@ serve(async (req) => {
       const neuroscienceConcept = firstNonEmptyString(body.neuroscienceConcept, body.neuroscience_concept);
       const diagnosisPathways = body.diagnosisPathways || body.diagnosis_pathways || [];
       const fasdStrategies = firstNonEmptyString(body.fasdStrategies, body.fasd_strategies);
-      const ndisDomainId = firstNonEmptyString(body.ndisDomainId, body.ndis_domain_id);
-      const dssSediId = firstNonEmptyString(body.dssSediId, body.dss_sedi_id);
+      const ndisDomainIds = body.ndisDomainIds || body.ndis_domain_ids || [];
+      const dssSediIds = body.dssSediIds || body.dss_sedi_ids || [];
       const moduleObjective = firstNonEmptyString(body.moduleObjective, body.module_objective);
       const facilitatorTip = firstNonEmptyString(body.facilitatorTip, body.facilitator_tip);
       const reflectionPrompt = firstNonEmptyString(body.reflectionPrompt, body.reflection_prompt);
@@ -6217,27 +6217,27 @@ serve(async (req) => {
         secondaryTheories = secondaryData?.map(t => t.theory_name) || [];
       }
       
-      // Fetch NDIS domain name if provided
-      let ndisDomain: string | undefined;
-      if (ndisDomainId) {
+      // Fetch NDIS domain names if provided (now supports arrays)
+      let ndisDomains: string[] = [];
+      if (ndisDomainIds && Array.isArray(ndisDomainIds) && ndisDomainIds.length > 0) {
         const { data: ndisData } = await supabaseClient
           .from("ndis_domains")
           .select("domain_name")
-          .eq("id", ndisDomainId)
-          .single();
-        ndisDomain = ndisData?.domain_name;
+          .in("id", ndisDomainIds);
+        ndisDomains = ndisData?.map(d => d.domain_name) || [];
       }
+      const ndisDomain = ndisDomains.length > 0 ? ndisDomains.join(', ') : undefined;
       
-      // Fetch SEDI name if provided
-      let dssSedi: string | undefined;
-      if (dssSediId) {
+      // Fetch SEDI names if provided (now supports arrays)
+      let dssSediList: string[] = [];
+      if (dssSediIds && Array.isArray(dssSediIds) && dssSediIds.length > 0) {
         const { data: sediData } = await supabaseClient
           .from("dss_sedi_categories")
           .select("sedi_code, sedi_name")
-          .eq("id", dssSediId)
-          .single();
-        dssSedi = sediData ? `${sediData.sedi_code}: ${sediData.sedi_name}` : undefined;
+          .in("id", dssSediIds);
+        dssSediList = sediData?.map(s => `${s.sedi_code}: ${s.sedi_name}`) || [];
       }
+      const dssSedi = dssSediList.length > 0 ? dssSediList.join(', ') : undefined;
       
       // Fetch audit rules from database to include in AI prompt
       let auditRulesPrompt = "";
@@ -6342,8 +6342,8 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
       const lookupTheoryConnection = lookupContext?.theoryConnection || {};
       const lookupCoreTheory = lookupContext?.coreTheory || {};
       const lookupSecondaryTheories = Array.isArray(lookupContext?.secondaryTheories) ? lookupContext.secondaryTheories : [];
-      const lookupNdisDomain = lookupContext?.ndisDomain || {};
-      const lookupSediCategory = lookupContext?.dssSediCategory || {};
+      const lookupNdisDomains = Array.isArray(lookupContext?.ndisDomains) ? lookupContext.ndisDomains : [];
+      const lookupSediCategories = Array.isArray(lookupContext?.dssSediCategories) ? lookupContext.dssSediCategories : [];
 
       const referenceContextLines = [
         '=== SELECTED REFERENCE DATA (AUTHORITATIVE CONTEXT) ===',
@@ -6364,8 +6364,8 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
           : 'Secondary Theory Descriptions: Not provided',
         `Neuroscience concept detail: ${neuroscienceConcept || lookupContext?.neuroscienceConcept || 'Not provided'}`,
         diagnosisPathways?.length ? `Diagnosis pathways selected: ${diagnosisPathways.join(', ')}` : 'Diagnosis pathways selected: None',
-        `NDIS context: ${ndisDomain || lookupNdisDomain.name || 'Not provided'}`,
-        `DSS SEDI context: ${dssSedi || [lookupSediCategory.code, lookupSediCategory.name].filter(Boolean).join(': ') || 'Not provided'}`,
+        `NDIS context: ${ndisDomain || (lookupNdisDomains.length > 0 ? lookupNdisDomains.map((d: any) => d.name).join(', ') : 'Not provided')}`,
+        `DSS SEDI context: ${dssSedi || (lookupSediCategories.length > 0 ? lookupSediCategories.map((s: any) => `${s.code}: ${s.name}`).join(', ') : 'Not provided')}`,
       ];
       
       // Build the enhanced content brief
