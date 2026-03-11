@@ -4379,8 +4379,21 @@ class ModuleGallery {
         document.body.style.overflow = '';
     }
 
+
+    notifyUser(message) {
+        if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+            window.showToast(message);
+            return;
+        }
+        alert(message);
+    }
+
     async handleTierSwitch(tierName, button) {
-        if (!currentUser?.id) return;
+        var parentUserId = state?.currentUser?.id || window.state?.currentUser?.id;
+        if (!parentUserId) {
+            this.notifyUser('Unable to switch plans right now. Please refresh and try again.');
+            return;
+        }
 
         var targetTier = String(tierName || '').toLowerCase();
         if (!targetTier) return;
@@ -4397,7 +4410,7 @@ class ModuleGallery {
             window.location.assign(result.url);
         } catch (error) {
             console.error('Failed to switch subscription tier:', error);
-            showToast(error?.message || 'Unable to open Stripe checkout. Please try again.');
+            this.notifyUser(error?.message || 'Unable to open Stripe checkout. Please try again.');
             if (button) {
                 button.disabled = false;
                 button.textContent = originalLabel;
