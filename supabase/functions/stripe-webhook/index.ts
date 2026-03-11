@@ -199,6 +199,16 @@ serve(async (req) => {
         const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
         const tier = session.metadata?.tier ?? null
+        const previousSubscriptionId = session.metadata?.previous_subscription_id || null
+
+        if (previousSubscriptionId && previousSubscriptionId !== subscriptionId) {
+          try {
+            await stripe.subscriptions.cancel(previousSubscriptionId)
+          } catch (cancelError) {
+            const message = cancelError instanceof Error ? cancelError.message.toLowerCase() : ''
+            if (!message.includes('no such subscription')) throw cancelError
+          }
+        }
 
         await upsertParentSubscription({
           parentId,
