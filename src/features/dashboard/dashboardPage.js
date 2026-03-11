@@ -4559,6 +4559,11 @@ class ModuleGallery {
         var session = await window.supabase?.auth?.getSession?.();
         var accessToken = session?.data?.session?.access_token || '';
 
+        // Use current origin for redirect URLs (works for both localhost and production)
+        var currentOrigin = window.location.origin;
+        paymentData.success_url = currentOrigin + '/dashboard.html?payment=success';
+        paymentData.cancel_url = currentOrigin + '/dashboard.html?payment=cancelled';
+
         var response = await fetch(supabaseUrl + '/functions/v1/create-checkout-session', {
             method: 'POST',
             headers: {

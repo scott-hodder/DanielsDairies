@@ -416,9 +416,6 @@ function rSS() {
     if (!_ss.length) h += '<tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7c8f;">No super skills found.</td></tr>';
     h += '</tbody></table></div>';
     p.innerHTML = h;
-    var input = document.getElementById('aiPromptTemplateInput');
-    if (input) input.oninput = function() { window.renderAiPromptLint(input.value); };
-    renderAiPromptLint(template);
 }
 
 // ============================
