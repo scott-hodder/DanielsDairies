@@ -2667,7 +2667,7 @@ if (data.status === "running") {
                         age_range: ageRange,
                         short_description: shortDescription,
                         description: description,
-                        html_content: generatedModuleHTML,
+                        html_content: window.generatedModuleHTML,
                         is_active: true,
                         super_skill_id: superSkillId,
                         sub_skill_id: subSkillId,
@@ -2746,7 +2746,7 @@ if (data.status === "running") {
         window.saveGeneratedModule = saveGeneratedModule;
 
         window.previewGeneratedModule = function() {
-            if (!generatedModuleHTML) {
+            if (!window.generatedModuleHTML) {
                 alert('Generate a module first to preview it.');
                 return;
             }
@@ -2758,7 +2758,7 @@ if (data.status === "running") {
             }
 
             // Create a modified version for preview that handles the module header differently
-            let previewContent = generatedModuleHTML;
+            let previewContent = window.generatedModuleHTML;
             
             // Debug: Log the import line we're looking for
             console.log('[Preview] Looking for import line in generated HTML...');
@@ -2796,10 +2796,10 @@ if (data.status === "running") {
 
             try {
                 if (navigator.clipboard?.writeText) {
-                    await navigator.clipboard.writeText(generatedModuleHTML);
+                    await navigator.clipboard.writeText(window.generatedModuleHTML);
                 } else {
                     const tempTextarea = document.createElement('textarea');
-                    tempTextarea.value = generatedModuleHTML;
+                    tempTextarea.value = window.generatedModuleHTML;
                     document.body.appendChild(tempTextarea);
                     tempTextarea.select();
                     document.execCommand('copy');
