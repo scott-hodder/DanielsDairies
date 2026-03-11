@@ -334,14 +334,44 @@ export async function switchStripeSubscriptionPlan(tier) {
   })
 
   if (error) {
+    const response = error?.context
+    let responseStatus = null
+    let responseBody = null
+
+    if (typeof Response !== 'undefined' && response instanceof Response) {
+      responseStatus = response.status
+      try {
+        responseBody = await response.clone().json()
+      } catch (parseJsonError) {
+        try {
+          responseBody = await response.clone().text()
+        } catch (parseTextError) {
+          responseBody = null
+        }
+      }
+    }
+
+    const responseErrorMessage =
+      (responseBody && typeof responseBody === 'object' && (responseBody.error || responseBody.message)) ||
+      (typeof responseBody === 'string' ? responseBody : null)
+
     console.error('[Billing] switch-subscription-plan invocation failed', {
       message: error?.message,
       name: error?.name,
       stack: error?.stack,
       details: error,
-      tier
+      tier,
+      responseStatus,
+      responseBody
     })
-    throw error
+
+    const enrichedMessage =
+      responseErrorMessage ||
+      (responseStatus ? `Switch plan request failed with status ${responseStatus}` : null) ||
+      error?.message ||
+      'Unable to switch plans right now.'
+
+    throw new Error(enrichedMessage)
   }
 
   console.log('[Billing] switch-subscription-plan raw response', data)
