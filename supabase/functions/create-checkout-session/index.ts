@@ -8,9 +8,9 @@ const corsHeaders = {
 }
 
 // Pricing configuration
-const MONTHLY_PRICE = 1900 // $19.00 in cents
+const DEFAULT_MONTHLY_PRICE = 1900 // $19.00 in cents fallback
 const CREDIT_PRICE = 699 // $6.99 in cents per credit
-const DISCOUNT_RATES: Record<number, number> = {
+const DEFAULT_DISCOUNT_RATES: Record<number, number> = {
   1: 0,
   3: 0.05,  // 5% off
   6: 0.10,  // 10% off
@@ -24,9 +24,18 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-function calculateSubscriptionPrice(months: number): number {
-  const basePrice = MONTHLY_PRICE * months
-  const discount = DISCOUNT_RATES[months] || 0
+function normalizeDiscountRate(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 0
+  return value > 1 ? value / 100 : value
+}
+
+function calculateSubscriptionPrice(
+  months: number,
+  monthlyPriceCents: number,
+  discountRates: Record<number, number>
+): number {
+  const basePrice = monthlyPriceCents * months
+  const discount = discountRates[months] || 0
   return Math.round(basePrice * (1 - discount))
 }
 
@@ -98,6 +107,25 @@ serve(async (req) => {
       .eq('parent_id', user.id)
       .maybeSingle()
 
+    const activeTier = currentSub?.tier || 'low'
+    const { data: tierPricing } = await admin
+      .from('subscription_tiers')
+      .select('monthly_price_cents, discount_3_month, discount_6_month, discount_12_month')
+      .eq('tier', activeTier)
+      .maybeSingle()
+
+    const monthlyPriceCents =
+      typeof tierPricing?.monthly_price_cents === 'number' && tierPricing.monthly_price_cents > 0
+        ? tierPricing.monthly_price_cents
+        : DEFAULT_MONTHLY_PRICE
+
+    const discountRates: Record<number, number> = {
+      1: 0,
+      3: normalizeDiscountRate(tierPricing?.discount_3_month) || DEFAULT_DISCOUNT_RATES[3],
+      6: normalizeDiscountRate(tierPricing?.discount_6_month) || DEFAULT_DISCOUNT_RATES[6],
+      12: normalizeDiscountRate(tierPricing?.discount_12_month) || DEFAULT_DISCOUNT_RATES[12]
+    }
+
     let customerId = currentSub?.stripe_customer_id as string | null | undefined
 
     // Create Stripe customer if needed
@@ -142,7 +170,7 @@ serve(async (req) => {
       })
     } else {
       // Subscription payment - calculate price based on months
-      const totalAmount = calculateSubscriptionPrice(months)
+      const totalAmount = calculateSubscriptionPrice(months, monthlyPriceCents, discountRates)
 
       session = await stripe.checkout.sessions.create({
         mode: 'payment',
