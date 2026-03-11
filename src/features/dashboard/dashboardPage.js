@@ -2960,7 +2960,7 @@ function showAddChildModal() {
     document.getElementById('childDob').value = '';
     hideElement(document.getElementById('modalError'))
     
-    renderEnhancedAddAvatarPicker('🦊');
+    renderEnhancedAvatarPicker('🦊');
     
     showElement(addChildModal);
     setTimeout(() => document.getElementById('childName')?.focus(), 100);
