@@ -278,13 +278,13 @@ function _executeRuleCheck(rule, text, lower, context) {
 }
 
 // ═══ MODAL ═══
-window.closeAuditModal = function() {
+function closeAuditModal() {
     var m = document.getElementById('auditModal');
     if (m) m.style.display = 'none';
-};
+}
 
 // ═══ MAIN AUDIT ═══
-window.runModuleAudit = async function() {
+async function runModuleAudit() {
     // Always sync from the Add New Module HTML textarea first (single source of truth in UI)
     var previewTextarea = document.getElementById('aiGeneratedPreview');
     if (previewTextarea && previewTextarea.value && previewTextarea.value !== window.generatedModuleHTML) {
@@ -497,11 +497,11 @@ window.runModuleAudit = async function() {
 
     var modal = document.getElementById('auditModal');
     if (modal) modal.style.display = 'flex';
-};
+}
 
 // ═══ FIX ERRORS FEATURE ═══
 
-window.openFixErrorsModal = function() {
+function openFixErrorsModal() {
     var failures = window._lastAuditFailures || [];
     if (failures.length === 0) {
         alert('No errors to fix! The audit passed.');
@@ -558,23 +558,21 @@ window.openFixErrorsModal = function() {
     // Show the modal
     var fixModal = document.getElementById('fixErrorsModal');
     if (fixModal) fixModal.style.display = 'flex';
-};
+}
 
-window.closeFixErrorsModal = function() {
+function closeFixErrorsModal() {
     var fixModal = document.getElementById('fixErrorsModal');
     if (fixModal) fixModal.style.display = 'none';
-};
+}
 
 
-window.reauditFixedModule = function() {
+function reauditFixedModule() {
     var fixModal = document.getElementById('fixErrorsModal');
     if (fixModal) fixModal.style.display = 'none';
-    if (typeof window.runModuleAudit === 'function') {
-        window.runModuleAudit();
-    }
-};
+    runModuleAudit();
+}
 
-window.executeFixErrors = async function() {
+async function executeFixErrors() {
     var failures = window._lastAuditFailures || [];
     var html = window.generatedModuleHTML;
     var customInstructions = (document.getElementById('fixErrorsCustomInstructions')?.value || '').trim();
@@ -772,7 +770,7 @@ window.executeFixErrors = async function() {
             submitBtn.textContent = '🛠️ Fix Errors with AI';
         }
     }
-};
+}
 
 // Export functions to window object for global access
 if (typeof window !== 'undefined') {
