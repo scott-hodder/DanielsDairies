@@ -326,6 +326,20 @@ export async function upsertParentSubscription(subscriptionPayload) {
   return data
 }
 
+export async function switchStripeSubscriptionPlan(tier) {
+  const { data, error } = await getSupabaseClient().functions.invoke('switch-subscription-plan', {
+    body: { tier }
+  })
+
+  if (error) throw error
+
+  if (data?.error) {
+    throw new Error(data.error)
+  }
+
+  return data
+}
+
 export async function getCreditSummary(parentUserId, periodStart, periodEnd) {
   const { data, error } = await getSupabaseClient()
     .from('v_parent_credit_summary')
