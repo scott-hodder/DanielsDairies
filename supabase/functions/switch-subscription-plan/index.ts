@@ -82,7 +82,15 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
-    const admin = createClient(supabaseUrl, serviceRoleKey)
+
+    // FIX: Explicitly disable auth session handling so the service role key
+    // properly bypasses Row Level Security (RLS) policies
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
 
     const { data: currentSub, error: currentSubError } = await admin
       .from('parent_subscriptions')

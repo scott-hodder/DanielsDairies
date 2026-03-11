@@ -7,7 +7,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 
-type Tier = 'low' | 'mid' | 'top'
+// Pricing configuration
+const MONTHLY_PRICE = 1900 // $19.00 in cents
+const CREDIT_PRICE = 699 // $6.99 in cents per credit
+const DISCOUNT_RATES: Record<number, number> = {
+  1: 0,
+  3: 0.05,  // 5% off
+  6: 0.10,  // 10% off
+  12: 0.17  // 17% off (~2 months free)
+}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -16,27 +24,10 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-function isTier(value: string): value is Tier {
-  return value === 'low' || value === 'mid' || value === 'top'
-}
-
-async function resolvePriceIdForTier(stripe: Stripe, tier: Tier): Promise<string> {
-  const envKeyByTier: Record<Tier, string> = {
-    low: 'STRIPE_PRICE_LOW',
-    mid: 'STRIPE_PRICE_MID',
-    top: 'STRIPE_PRICE_TOP'
-  }
-
-  const envPriceId = Deno.env.get(envKeyByTier[tier])
-  if (envPriceId) return envPriceId
-
-  const prices = await stripe.prices.list({ active: true, limit: 100, type: 'recurring' })
-  const matched = prices.data.find((price) => price.metadata?.tier === tier)
-  if (!matched?.id) {
-    throw new Error(`No Stripe price configured for tier: ${tier}`)
-  }
-
-  return matched.id
+function calculateSubscriptionPrice(months: number): number {
+  const basePrice = MONTHLY_PRICE * months
+  const discount = DISCOUNT_RATES[months] || 0
+  return Math.round(basePrice * (1 - discount))
 }
 
 serve(async (req) => {
@@ -72,75 +63,129 @@ serve(async (req) => {
     }
 
     const body = await req.json()
-    const tier = body?.tier
-    const successUrl = body?.success_url
-    const cancelUrl = body?.cancel_url
+    const paymentType = body?.paymentType || 'subscription'
+    const months = body?.months || 1
+    const credits = body?.credits || 0
+    const newEndDate = body?.newEndDate
+    const appUrl = Deno.env.get('APP_URL') || 'https://danielsdiaries.com.au'
+    const successUrl = body?.success_url || `${appUrl}/dashboard.html?payment=success`
+    const cancelUrl = body?.cancel_url || `${appUrl}/dashboard.html?payment=cancelled`
 
-    if (typeof tier !== 'string' || !isTier(tier)) {
-      return jsonResponse({ error: 'tier must be one of low|mid|top' }, 400)
+    if (!['subscription', 'prepaid'].includes(paymentType)) {
+      return jsonResponse({ error: 'paymentType must be subscription or prepaid' }, 400)
     }
 
-    if (typeof successUrl !== 'string' || typeof cancelUrl !== 'string') {
-      return jsonResponse({ error: 'success_url and cancel_url are required' }, 400)
+    if (paymentType === 'prepaid' && (!credits || credits < 1)) {
+      return jsonResponse({ error: 'credits must be at least 1 for prepaid purchases' }, 400)
+    }
+
+    if (paymentType === 'subscription' && (!months || months < 1)) {
+      return jsonResponse({ error: 'months must be at least 1 for subscription payments' }, 400)
     }
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
-    const admin = createClient(supabaseUrl, serviceRoleKey)
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
 
+    // Get current subscription info
     const { data: currentSub } = await admin
       .from('parent_subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, current_period_end, tier')
       .eq('parent_id', user.id)
       .maybeSingle()
 
     let customerId = currentSub?.stripe_customer_id as string | null | undefined
 
+    // Create Stripe customer if needed
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
-        metadata: {
-          parent_id: user.id
-        }
+        metadata: { parent_id: user.id }
       })
       customerId = customer.id
     }
 
-    const priceId = await resolvePriceIdForTier(stripe, tier)
+    let session: any
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      client_reference_id: user.id,
-      allow_promotion_codes: true,
-      subscription_data: {
+    if (paymentType === 'prepaid') {
+      // Prepaid credits at $6.99 each - create one-time payment with dynamic pricing
+      const totalAmount = credits * CREDIT_PRICE
+
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer: customerId,
+        line_items: [{
+          price_data: {
+            currency: 'aud',
+            product_data: {
+              name: 'Module Credits',
+              description: `${credits} module credit${credits > 1 ? 's' : ''} for Daniel's Diaries`
+            },
+            unit_amount: CREDIT_PRICE
+          },
+          quantity: credits
+        }],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        client_reference_id: user.id,
+        allow_promotion_codes: true,
         metadata: {
           parent_id: user.id,
-          tier
+          payment_type: 'prepaid_credits',
+          credits: String(credits),
+          total_cents: String(totalAmount)
         }
-      },
-      metadata: {
-        parent_id: user.id,
-        tier
+      })
+    } else {
+      // Subscription payment - calculate price based on months
+      const totalAmount = calculateSubscriptionPrice(months)
+
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer: customerId,
+        line_items: [{
+          price_data: {
+            currency: 'aud',
+            product_data: {
+              name: `Daniel's Diaries Subscription`,
+              description: `${months} month${months > 1 ? 's' : ''} subscription access`
+            },
+            unit_amount: totalAmount
+          },
+          quantity: 1
+        }],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        client_reference_id: user.id,
+        allow_promotion_codes: true,
+        metadata: {
+          parent_id: user.id,
+          payment_type: 'subscription_extension',
+          months: String(months),
+          new_end_date: newEndDate || '',
+          total_cents: String(totalAmount)
+        }
+      })
+
+      // Update subscription record with pending payment info
+      const { error: upsertError } = await admin.from('parent_subscriptions').upsert(
+        {
+          parent_id: user.id,
+          tier: currentSub?.tier || 'low',
+          stripe_customer_id: customerId,
+          status: currentSub ? 'active' : 'pending',
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'parent_id' }
+      )
+
+      if (upsertError) {
+        console.warn('Failed to update subscription record:', upsertError)
       }
-    })
-
-    const { error: upsertError } = await admin.from('parent_subscriptions').upsert(
-      {
-        parent_id: user.id,
-        tier,
-        stripe_customer_id: customerId,
-        stripe_price_id: priceId,
-        status: 'inactive',
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'parent_id' }
-    )
-
-    if (upsertError) {
-      return jsonResponse({ error: upsertError.message }, 500)
     }
 
     return jsonResponse({ url: session.url, id: session.id })

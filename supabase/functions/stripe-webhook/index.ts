@@ -200,7 +200,104 @@ serve(async (req) => {
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
         const tier = session.metadata?.tier ?? null
         const previousSubscriptionId = session.metadata?.previous_subscription_id || null
+        const paymentType = session.metadata?.payment_type || null
 
+        // Handle one-time payments for subscription extensions
+        if (session.mode === 'payment' && paymentType === 'subscription_extension') {
+          const months = parseInt(session.metadata?.months || '1')
+          const newEndDateStr = session.metadata?.new_end_date || null
+
+          // Get current subscription to determine start date
+          const { data: currentSub } = await supabase
+            .from('parent_subscriptions')
+            .select('current_period_end, tier')
+            .eq('parent_id', parentId)
+            .maybeSingle()
+
+          const now = new Date()
+          let periodStart: Date
+          let periodEnd: Date
+
+          // If they have a current period end that's in the future, extend from there
+          if (currentSub?.current_period_end) {
+            const existingEnd = new Date(currentSub.current_period_end)
+            periodStart = existingEnd > now ? existingEnd : now
+          } else {
+            periodStart = now
+          }
+
+          // Calculate new end date
+          if (newEndDateStr) {
+            periodEnd = new Date(newEndDateStr)
+          } else {
+            periodEnd = new Date(periodStart)
+            periodEnd.setMonth(periodEnd.getMonth() + months)
+          }
+
+          // Update subscription with new period dates
+          const { error: updateError } = await supabase
+            .from('parent_subscriptions')
+            .upsert({
+              parent_id: parentId,
+              stripe_customer_id: customerId,
+              tier: currentSub?.tier || 'low',
+              status: 'active',
+              current_period_start: periodStart.toISOString().slice(0, 10),
+              current_period_end: periodEnd.toISOString().slice(0, 10),
+              stripe_current_period_start: periodStart.toISOString(),
+              stripe_current_period_end: periodEnd.toISOString(),
+              cancel_at_period_end: false,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'parent_id' })
+
+          if (updateError) {
+            console.error('Failed to update subscription after payment:', updateError)
+            throw updateError
+          }
+
+          console.log(`Subscription extended for ${parentId}: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`)
+          break
+        }
+
+        // Handle prepaid credits purchase
+        if (session.mode === 'payment' && paymentType === 'prepaid_credits') {
+          const credits = parseInt(session.metadata?.credits || '0')
+          if (credits > 0) {
+            // Get current billing period
+            const { data: currentSub } = await supabase
+              .from('parent_subscriptions')
+              .select('current_period_start, current_period_end')
+              .eq('parent_id', parentId)
+              .maybeSingle()
+
+            const now = new Date()
+            const periodStart = currentSub?.current_period_start || now.toISOString().slice(0, 10)
+            const periodEnd = currentSub?.current_period_end || new Date(now.setMonth(now.getMonth() + 1)).toISOString().slice(0, 10)
+
+            // Grant credits to the user
+            const { error: creditError } = await supabase
+              .from('subscription_credit_ledger')
+              .insert({
+                parent_id: parentId,
+                period_start: periodStart,
+                period_end: periodEnd,
+                entry_type: 'prepaid_purchase',
+                credits_delta: credits,
+                notes: `Prepaid ${credits} credits via Stripe checkout`,
+                stripe_event_id: event.id,
+                created_at: new Date().toISOString()
+              })
+
+            if (creditError) {
+              console.error('Failed to grant prepaid credits:', creditError)
+            } else {
+              console.log(`Granted ${credits} prepaid credits to ${parentId}`)
+            }
+          }
+          break
+        }
+
+        // Handle recurring subscription payments (original logic)
         if (previousSubscriptionId && previousSubscriptionId !== subscriptionId) {
           try {
             await stripe.subscriptions.cancel(previousSubscriptionId)

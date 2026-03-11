@@ -4272,6 +4272,12 @@ class ModuleGallery {
                         '<button type="button" id="openChangePlanModal" class="profile-change-plan-btn">Change Plan</button>' +
                     '</div>' +
                 '</article>' +
+                '<article class="profile-hub-card profile-hub-card-full">' +
+                    '<div class="profile-plan-cta">' +
+                        '<div><h3>Make a Payment</h3><p>Pay for your subscription with flexible options - monthly, yearly, or custom dates.</p></div>' +
+                        '<button type="button" id="openMakePaymentModal" class="profile-change-plan-btn" style="background-color: #2A8F8F;">Make Payment</button>' +
+                    '</div>' +
+                '</article>' +
             '</section>';
     }
 
@@ -4347,6 +4353,18 @@ class ModuleGallery {
             });
         }
 
+        var openPaymentButton = document.getElementById('openMakePaymentModal');
+        if (openPaymentButton) {
+            openPaymentButton.addEventListener('click', () => {
+                this.createMakePaymentModal();
+                if (this.makePaymentModal) {
+                    this.makePaymentModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    this.attachPaymentModalListeners();
+                }
+            });
+        }
+
         if (this.changePlanModal) {
             var closeButton = document.getElementById('changePlanCloseBtn');
             if (closeButton) {
@@ -4374,15 +4392,328 @@ class ModuleGallery {
         }
     }
 
+    attachPaymentModalListeners() {
+        if (!this.makePaymentModal) return;
+        var self = this;
+
+        var closeButton = document.getElementById('makePaymentCloseBtn');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => this.closeMakePaymentModal());
+        }
+
+        this.makePaymentModal.addEventListener('click', (event) => {
+            if (event.target === this.makePaymentModal) this.closeMakePaymentModal();
+        });
+
+        // Radio button selection for duration
+        var radioButtons = this.makePaymentModal.querySelectorAll('input[name="paymentDuration"]');
+        radioButtons.forEach((radio) => {
+            radio.addEventListener('change', function() {
+                self.handleDurationSelect(parseInt(this.value));
+            });
+        });
+
+        // Credits amount input
+        var creditsInput = document.getElementById('prepaidCreditsAmount');
+        if (creditsInput) {
+            creditsInput.addEventListener('input', function() {
+                self.updateCreditsPreview(parseInt(this.value) || 0);
+            });
+        }
+
+        // Buy credits button
+        var buyCreditsBtn = document.getElementById('buyCreditsBtn');
+        if (buyCreditsBtn) {
+            buyCreditsBtn.addEventListener('click', () => this.handleBuyCredits());
+        }
+
+        // Proceed payment button
+        var proceedButton = document.getElementById('proceedPaymentBtn');
+        if (proceedButton) {
+            proceedButton.addEventListener('click', () => this.handleProceedPayment());
+        }
+    }
+
+    handleDurationSelect(months) {
+        this.selectedMonths = months;
+        
+        // Update radio option styles
+        var options = this.makePaymentModal.querySelectorAll('.payment-radio-option');
+        options.forEach((opt) => {
+            var radio = opt.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                opt.style.borderColor = '#2A8F8F';
+                opt.style.background = '#F0FDFA';
+            } else {
+                opt.style.borderColor = '#E5E7EB';
+                opt.style.background = 'white';
+            }
+        });
+
+        // Show payment preview
+        var preview = document.getElementById('paymentPreview');
+        var newDateEl = document.getElementById('newPaidToDate');
+        var amountEl = document.getElementById('paymentAmount');
+        var proceedBtn = document.getElementById('proceedPaymentBtn');
+
+        if (preview && newDateEl && amountEl) {
+            var newEndDate = this.calculateNewEndDate(months);
+            var price = this.getPaymentPrice(months);
+
+            preview.style.display = 'block';
+            newDateEl.textContent = this.formatDateDisplay(newEndDate.toISOString());
+            amountEl.textContent = '$' + price.toFixed(2);
+        }
+
+        if (proceedBtn) {
+            proceedBtn.disabled = false;
+            proceedBtn.style.background = '#2A8F8F';
+            proceedBtn.style.cursor = 'pointer';
+            proceedBtn.textContent = 'Pay $' + this.getPaymentPrice(months).toFixed(2);
+        }
+    }
+
+    updateCreditsPreview(credits) {
+        var total = (credits * 6.99).toFixed(2);
+        var preview = document.getElementById('creditsTotalPreview');
+        if (preview) {
+            preview.innerHTML = 'Total: <strong style="color: #F59E0B;">$' + total + '</strong>';
+        }
+    }
+
+    async handleBuyCredits() {
+        var credits = parseInt(document.getElementById('prepaidCreditsAmount')?.value || '5');
+        if (credits < 1) {
+            this.notifyUser('Please enter at least 1 credit.');
+            return;
+        }
+
+        var buyBtn = document.getElementById('buyCreditsBtn');
+        if (buyBtn) {
+            buyBtn.disabled = true;
+            buyBtn.textContent = 'Processing...';
+        }
+
+        try {
+            var response = await this.callPaymentEndpoint({
+                paymentType: 'prepaid',
+                credits: credits,
+                pricePerCredit: 6.99
+            });
+
+            if (response.url) {
+                window.location.assign(response.url);
+            } else {
+                throw new Error('No checkout URL returned');
+            }
+        } catch (error) {
+            console.error('Credits purchase error:', error);
+            this.notifyUser(error?.message || 'Unable to process credits purchase.');
+            if (buyBtn) {
+                buyBtn.disabled = false;
+                buyBtn.textContent = 'Buy';
+            }
+        }
+    }
+
+    async handleProceedPayment() {
+        if (!this.selectedMonths) {
+            this.notifyUser('Please select a payment duration.');
+            return;
+        }
+
+        var proceedButton = document.getElementById('proceedPaymentBtn');
+        if (proceedButton) {
+            proceedButton.disabled = true;
+            proceedButton.textContent = 'Processing...';
+        }
+
+        try {
+            var newEndDate = this.calculateNewEndDate(this.selectedMonths);
+            var price = this.getPaymentPrice(this.selectedMonths);
+
+            var response = await this.callPaymentEndpoint({
+                paymentType: 'subscription',
+                months: this.selectedMonths,
+                newEndDate: newEndDate.toISOString().split('T')[0],
+                amount: price
+            });
+
+            if (response.url) {
+                window.location.assign(response.url);
+            } else {
+                throw new Error('No checkout URL returned');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            this.notifyUser(error?.message || 'Unable to process payment. Please try again.');
+            if (proceedButton) {
+                proceedButton.disabled = false;
+                proceedButton.textContent = 'Pay $' + this.getPaymentPrice(this.selectedMonths).toFixed(2);
+            }
+        }
+    }
+
+    async callPaymentEndpoint(paymentData) {
+        var supabaseUrl = window.supabaseUrl || 'https://wximnkhcpugfyjshgaim.supabase.co';
+        var session = await window.supabase?.auth?.getSession?.();
+        var accessToken = session?.data?.session?.access_token || '';
+
+        var response = await fetch(supabaseUrl + '/functions/v1/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + accessToken
+            },
+            body: JSON.stringify(paymentData)
+        });
+
+        if (!response.ok) {
+            var errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Payment request failed');
+        }
+
+        return await response.json();
+    }
+
     refreshAccordion() {
         var accordion = document.getElementById('changePlanAccordion');
         if (!accordion) return;
         accordion.innerHTML = this.renderTierAccordion(this.getSafeTiers(), this.getCurrentTierName());
     }
 
+    createMakePaymentModal() {
+        var existingModal = document.getElementById('makePaymentModal');
+        if (existingModal) existingModal.remove();
+
+        var currentPaidTo = this.getCurrentPaidToDate();
+        var formattedPaidTo = this.formatDateDisplay(currentPaidTo);
+        var isPastDue = new Date(currentPaidTo) < new Date();
+
+        var modal = document.createElement('div');
+        modal.id = 'makePaymentModal';
+        modal.className = 'module-modal-overlay';
+        modal.innerHTML =
+            '<div class="module-modal change-plan-modal-shell" style="max-width: 480px;">' +
+                '<div class="change-plan-header">' +
+                    '<h2>Make a Payment</h2>' +
+                    '<button type="button" class="modal-close" id="makePaymentCloseBtn">✕</button>' +
+                '</div>' +
+                
+                '<div style="background: ' + (isPastDue ? '#FEF2F2' : '#F0FDF4') + '; border: 1px solid ' + (isPastDue ? '#FECACA' : '#BBF7D0') + '; border-radius: 8px; padding: 16px; margin-bottom: 20px;">' +
+                    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                        '<span style="font-size: 14px; color: #64748B;">Currently Paid To:</span>' +
+                        '<span style="font-size: 16px; font-weight: 700; color: ' + (isPastDue ? '#DC2626' : '#16A34A') + ';">' + formattedPaidTo + '</span>' +
+                    '</div>' +
+                    (isPastDue ? '<p style="font-size: 12px; color: #DC2626; margin-top: 8px; margin-bottom: 0;">Your subscription is past due. Payment will start from today.</p>' : '') +
+                '</div>' +
+                
+                '<div style="margin-bottom: 20px;">' +
+                    '<label style="display: block; font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">Select Payment Duration</label>' +
+                    '<div style="display: flex; flex-direction: column; gap: 8px;">' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="1" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">1 Month</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">$19.00</div>' +
+                            '</div>' +
+                        '</label>' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="3" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">3 Months</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">$54.00 <span style="color: #16A34A;">(Save 5%)</span></div>' +
+                            '</div>' +
+                        '</label>' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="6" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">6 Months</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">$102.00 <span style="color: #16A34A;">(Save 10%)</span></div>' +
+                            '</div>' +
+                        '</label>' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="12" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">12 Months</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">$190.00 <span style="color: #16A34A;">(Save 17%)</span></div>' +
+                            '</div>' +
+                        '</label>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<div id="paymentPreview" style="display: none; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">' +
+                    '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">' +
+                        '<span style="color: #64748B;">New Paid-To Date:</span>' +
+                        '<span id="newPaidToDate" style="font-weight: 600; color: #1F2937;">—</span>' +
+                    '</div>' +
+                    '<div style="display: flex; justify-content: space-between;">' +
+                        '<span style="color: #64748B;">Amount:</span>' +
+                        '<span id="paymentAmount" style="font-weight: 700; color: #2A8F8F; font-size: 18px;">—</span>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<div style="border-top: 1px solid #E5E7EB; padding-top: 20px; margin-top: 8px;">' +
+                    '<label style="display: block; font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">Or Buy Prepaid Credits</label>' +
+                    '<div style="display: flex; gap: 12px; align-items: center;">' +
+                        '<input type="number" id="prepaidCreditsAmount" min="1" max="100" value="5" style="width: 80px; padding: 10px; border: 1.5px solid #E2E8F0; border-radius: 8px; font-size: 14px; text-align: center;">' +
+                        '<div style="flex: 1;">' +
+                            '<div style="font-size: 14px; color: #374151;">credits × $6.99 each</div>' +
+                            '<div style="font-size: 12px; color: #6B7280;">1 credit = 1 module unlock</div>' +
+                        '</div>' +
+                        '<button type="button" id="buyCreditsBtn" style="padding: 10px 20px; background: #F59E0B; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Buy</button>' +
+                    '</div>' +
+                    '<div id="creditsTotalPreview" style="text-align: right; margin-top: 8px; font-size: 14px; color: #64748B;">Total: <strong style="color: #F59E0B;">$34.95</strong></div>' +
+                '</div>' +
+                
+                '<button type="button" id="proceedPaymentBtn" disabled style="width: 100%; margin-top: 20px; padding: 14px; background: #CBD5E1; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: not-allowed;">Select a payment option</button>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+        this.makePaymentModal = modal;
+        this.currentPaidToDate = currentPaidTo;
+    }
+
+    getCurrentPaidToDate() {
+        var sub = currentSubscription || window.currentSubscription;
+        if (sub?.current_period_end) {
+            return sub.current_period_end;
+        }
+        return new Date().toISOString().split('T')[0];
+    }
+
+    formatDateDisplay(dateStr) {
+        try {
+            var date = new Date(dateStr);
+            return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch (e) {
+            return dateStr;
+        }
+    }
+
+    calculateNewEndDate(months) {
+        var currentEnd = new Date(this.currentPaidToDate);
+        var today = new Date();
+        var startFrom = currentEnd > today ? currentEnd : today;
+        var newEnd = new Date(startFrom);
+        newEnd.setMonth(newEnd.getMonth() + months);
+        return newEnd;
+    }
+
+    getPaymentPrice(months) {
+        var prices = { 1: 19.00, 3: 54.00, 6: 102.00, 12: 190.00 };
+        return prices[months] || (months * 19.00);
+    }
+
     closeModal() {
         if (!this.changePlanModal) return;
         this.changePlanModal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    closeMakePaymentModal() {
+        if (!this.makePaymentModal) return;
+        this.makePaymentModal.classList.remove('active');
         document.body.style.overflow = '';
     }
 
