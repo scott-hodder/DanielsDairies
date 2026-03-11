@@ -6,6 +6,21 @@
  * Inline editable "add row" for all sections.
  */
 
+// Export switchRefTab globally for onclick handlers
+export function switchRefTab(ev, id) {
+    document.querySelectorAll('.ref-panel').forEach(function(p) { p.style.display = 'none'; });
+    document.querySelectorAll('#refDataTabs .ref-tab').forEach(function(b) { b.style.background = '#f8f9fa'; b.style.color = '#405878'; });
+    var panel = document.getElementById(id + 'Panel');
+    if (panel) panel.style.display = 'block';
+    if (ev && ev.target) { ev.target.style.background = '#405878'; ev.target.style.color = 'white'; }
+    _render(id);
+}
+
+// Make switchRefTab globally available for onclick handlers
+if (typeof window !== 'undefined') {
+    window.switchRefTab = switchRefTab;
+}
+
 // --- Wait for window.supabase (set by adminPage.js module) ---
 function _waitSB() {
     return new Promise(function(resolve) {
@@ -368,16 +383,6 @@ var _editConfigs = {
             { key: 'brain_town_alternative', get: function(d) { return d.brain_town_alternative || ''; } }
         ]
     }
-};
-
-// --- Sub-tab switching ---
-window.switchRefTab = function(ev, id) {
-    document.querySelectorAll('.ref-panel').forEach(function(p) { p.style.display = 'none'; });
-    document.querySelectorAll('#refDataTabs .ref-tab').forEach(function(b) { b.style.background = '#f8f9fa'; b.style.color = '#405878'; });
-    var panel = document.getElementById(id + 'Panel');
-    if (panel) panel.style.display = 'block';
-    if (ev && ev.target) { ev.target.style.background = '#405878'; ev.target.style.color = 'white'; }
-    _render(id);
 };
 
 function _render(id) {
