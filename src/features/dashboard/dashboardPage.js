@@ -4198,9 +4198,16 @@ class ModuleGallery {
     getNextPaymentDateLabel() {
         var rawDate = currentSubscription?.stripe_current_period_end || currentSubscription?.current_period_end || null;
         if (!rawDate) {
-            return this.formatDateLabel(currentBillingPeriod?.periodEnd);
+            return 'Pending Stripe sync';
         }
         return this.formatDateLabel(rawDate);
+    }
+
+    getBillingCycleLabel() {
+        var start = currentSubscription?.stripe_current_period_start || currentSubscription?.current_period_start || null;
+        var end = currentSubscription?.stripe_current_period_end || currentSubscription?.current_period_end || null;
+        if (!start || !end) return 'Pending Stripe sync';
+        return this.formatDateDDMMYYYY(start) + ' → ' + this.formatDateDDMMYYYY(end);
     }
 
     formatDateLabel(value) {
@@ -4255,7 +4262,7 @@ class ModuleGallery {
                             '<div class="profile-stat-item"><span>Next Payment Due</span><strong>' + this.escapeHtml(this.getNextPaymentDateLabel()) + '</strong></div>' +
                             '<div class="profile-stat-item"><span>Credits Available</span><strong>' + (currentCreditSummary?.credits_available ?? 0) + '</strong></div>' +
                             '<div class="profile-stat-item"><span>Credits Used This Month</span><strong>' + (currentCreditSummary?.credits_used ?? 0) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml(this.formatDateDDMMYYYY(currentBillingPeriod?.periodStart) + ' → ' + this.formatDateDDMMYYYY(currentBillingPeriod?.periodEnd)) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml(this.getBillingCycleLabel()) + '</strong></div>' +
                         '</div>' +
                     '</article>' +
                 '</div>' +
