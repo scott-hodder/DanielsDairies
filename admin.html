@@ -2378,10 +2378,15 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
 
+    <!-- Stub for switchRefTab to prevent undefined errors during page load -->
+    <script>
+        window.switchRefTab = function(ev, id) {
+            console.warn('[Admin] switchRefTab called before reference-data-grids.js loaded');
+        };
+    </script>
     
     <script type="module" src="/src/admin.js"></script>
     <script type="module" src="/src/module-builder-integration.js"></script>
-    <script src="/src/module-content-creator.js"></script>
     <script src="/src/features/admin/reference-data-grids.js"></script>
     <script type="module" src="/src/features/admin/module-audit.js"></script>
 </body>
