@@ -773,3 +773,13 @@ window.executeFixErrors = async function() {
         }
     }
 };
+
+// Export functions to window object for global access
+if (typeof window !== 'undefined') {
+    window.runModuleAudit = runModuleAudit;
+    window.openFixErrorsModal = openFixErrorsModal;
+    window.closeFixErrorsModal = closeFixErrorsModal;
+    window.reauditFixedModule = reauditFixedModule;
+    window.executeFixErrors = executeFixErrors;
+    window.closeAuditModal = closeAuditModal;
+}
