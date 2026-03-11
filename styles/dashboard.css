@@ -6147,3 +6147,126 @@ button:active, .btn:active {
     background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
     box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
 }
+
+/* Profile hub (Parent profile + billing) */
+.profile-hub {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  border-radius: 28px;
+  border: 1px solid #d8e4f7;
+  box-shadow: 0 20px 45px rgba(57, 86, 124, 0.16);
+  overflow: hidden;
+}
+
+.profile-hub-header {
+  background: linear-gradient(135deg, #4e6793 0%, #405878 100%);
+  color: #fff;
+  padding: 28px 30px;
+}
+
+.profile-hub-title { margin: 0; font-size: 34px; }
+.profile-hub-subtitle { margin: 8px 0 0; font-size: 17px; opacity: 0.92; }
+
+.profile-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  padding: 24px;
+}
+
+.profile-hub-card {
+  background: #fff;
+  border: 1px solid #e4ebf8;
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.profile-hub-card h3 { margin-top: 0; color: #334f73; }
+.profile-hub-card-full { margin: 0 24px 24px; }
+
+.profile-stat-list { display: grid; gap: 10px; }
+.profile-stat-item {
+  background: #f6f8fc;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.profile-stat-item span { color: #5d7698; font-weight: 600; }
+.profile-stat-item strong { color: #223958; text-align: right; }
+
+.profile-plan-cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-change-plan-btn,
+.profile-select-plan-btn {
+  border: none;
+  background: linear-gradient(135deg, #1ea7a0 0%, #159188 100%);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-select-plan-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.change-plan-modal-shell { max-width: 760px; }
+.change-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.change-plan-subtitle { margin-top: 0; color: #60799d; }
+
+.plan-accordion-item {
+  border: 1px solid #dce7f7;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.plan-accordion-item.is-current {
+  border-color: #1ea7a0;
+  box-shadow: 0 0 0 2px rgba(30, 167, 160, 0.14);
+}
+
+.plan-accordion-trigger {
+  width: 100%;
+  border: none;
+  padding: 14px 16px;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: #2f496d;
+  cursor: pointer;
+}
+
+.plan-current-badge {
+  margin-left: 10px;
+  background: #e6fbf8;
+  color: #11837e;
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 3px 10px;
+}
+
+.plan-accordion-panel {
+  padding: 0 16px 16px;
+  background: #f9fbff;
+  color: #4c6488;
+}
+
+.plan-accordion-panel ul { padding-left: 18px; }
