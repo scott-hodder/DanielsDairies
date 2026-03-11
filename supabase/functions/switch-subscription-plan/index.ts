@@ -20,6 +20,26 @@ function isTier(value: string): value is Tier {
   return value === 'low' || value === 'mid' || value === 'top'
 }
 
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const decoded = atob(padded)
+    return JSON.parse(decoded)
+  } catch {
+    return null
+  }
+}
+
+function isServiceRoleKey(key: string): boolean {
+  const payload = decodeJwtPayload(key)
+  return payload?.role === 'service_role'
+}
+
 async function resolvePriceIdForTier(stripe: Stripe, tier: Tier): Promise<string> {
   const envKeyByTier: Record<Tier, string> = {
     low: 'STRIPE_PRICE_LOW',
@@ -59,6 +79,13 @@ serve(async (req) => {
       return jsonResponse({ error: 'Missing required environment configuration' }, 500)
     }
 
+    if (!isServiceRoleKey(serviceRoleKey)) {
+      return jsonResponse(
+        { error: 'SUPABASE_SERVICE_ROLE_KEY is invalid. Configure the Edge Function secret with your service role key.' },
+        500
+      )
+    }
+
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } }
     })
@@ -89,7 +116,15 @@ serve(async (req) => {
       .maybeSingle()
 
     if (currentSubError) {
-      return jsonResponse({ error: currentSubError.message }, 500)
+      const isPermissionError = /permission denied/i.test(currentSubError.message || '')
+      return jsonResponse(
+        {
+          error: isPermissionError
+            ? 'Database permission error on parent_subscriptions. Verify SUPABASE_SERVICE_ROLE_KEY is set correctly for this Edge Function.'
+            : currentSubError.message
+        },
+        500
+      )
     }
 
     if (currentSub?.tier === tier) {
@@ -144,7 +179,15 @@ serve(async (req) => {
     )
 
     if (upsertError) {
-      return jsonResponse({ error: upsertError.message }, 500)
+      const isPermissionError = /permission denied/i.test(upsertError.message || '')
+      return jsonResponse(
+        {
+          error: isPermissionError
+            ? 'Database permission error while updating parent_subscriptions. Verify SUPABASE_SERVICE_ROLE_KEY is set correctly for this Edge Function.'
+            : upsertError.message
+        },
+        500
+      )
     }
 
     return jsonResponse({ url: session.url, id: session.id })
