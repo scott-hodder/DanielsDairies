@@ -4380,7 +4380,11 @@ class ModuleGallery {
     }
 
     async handleTierSwitch(tierName, button) {
-        if (!currentUser?.id) return;
+        var parentUserId = state?.currentUser?.id || window.state?.currentUser?.id;
+        if (!parentUserId) {
+            showToast('Unable to switch plans right now. Please refresh and try again.');
+            return;
+        }
 
         var targetTier = String(tierName || '').toLowerCase();
         if (!targetTier) return;
