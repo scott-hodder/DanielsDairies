@@ -327,13 +327,27 @@ export async function upsertParentSubscription(subscriptionPayload) {
 }
 
 export async function switchStripeSubscriptionPlan(tier) {
+  console.log('[Billing] Invoking switch-subscription-plan edge function', { tier })
+
   const { data, error } = await getSupabaseClient().functions.invoke('switch-subscription-plan', {
     body: { tier }
   })
 
-  if (error) throw error
+  if (error) {
+    console.error('[Billing] switch-subscription-plan invocation failed', {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+      details: error,
+      tier
+    })
+    throw error
+  }
+
+  console.log('[Billing] switch-subscription-plan raw response', data)
 
   if (data?.error) {
+    console.error('[Billing] switch-subscription-plan returned application error', data)
     throw new Error(data.error)
   }
 
