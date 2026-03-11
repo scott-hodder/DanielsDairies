@@ -210,13 +210,34 @@ serve(async (req) => {
           }
         }
 
+        let subscriptionDetails: Stripe.Subscription | null = null
+        if (subscriptionId) {
+          subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId, {
+            expand: ['items.data.price']
+          })
+        }
+
+        const subscriptionPrice = subscriptionDetails?.items.data[0]?.price
+        const resolvedTier = tier ?? extractTierFromPrice(subscriptionPrice) ?? subscriptionDetails?.metadata?.tier ?? null
+
         await upsertParentSubscription({
           parentId,
           customerId,
           subscriptionId,
-          tier,
-          stripeStatus: 'active'
+          priceId: subscriptionPrice?.id ?? null,
+          tier: resolvedTier,
+          stripeStatus: subscriptionDetails?.status ?? 'active',
+          currentPeriodStart: subscriptionDetails?.current_period_start ?? null,
+          currentPeriodEnd: subscriptionDetails?.current_period_end ?? null,
+          cancelAtPeriodEnd: subscriptionDetails?.cancel_at_period_end ?? false
         })
+
+        const sessionInvoiceId = typeof session.invoice === 'string' ? session.invoice : session.invoice?.id
+        if (sessionInvoiceId) {
+          const invoice = await stripe.invoices.retrieve(sessionInvoiceId)
+          await grantCreditsFromInvoice(invoice)
+        }
+
         break
       }
 

@@ -4198,9 +4198,16 @@ class ModuleGallery {
     getNextPaymentDateLabel() {
         var rawDate = currentSubscription?.stripe_current_period_end || currentSubscription?.current_period_end || null;
         if (!rawDate) {
-            return this.formatDateLabel(currentBillingPeriod?.periodEnd);
+            return 'Pending Stripe sync';
         }
         return this.formatDateLabel(rawDate);
+    }
+
+    getBillingCycleLabel() {
+        var start = currentSubscription?.stripe_current_period_start || currentSubscription?.current_period_start || null;
+        var end = currentSubscription?.stripe_current_period_end || currentSubscription?.current_period_end || null;
+        if (!start || !end) return 'Pending Stripe sync';
+        return this.formatDateDDMMYYYY(start) + ' → ' + this.formatDateDDMMYYYY(end);
     }
 
     formatDateLabel(value) {
@@ -4255,7 +4262,7 @@ class ModuleGallery {
                             '<div class="profile-stat-item"><span>Next Payment Due</span><strong>' + this.escapeHtml(this.getNextPaymentDateLabel()) + '</strong></div>' +
                             '<div class="profile-stat-item"><span>Credits Available</span><strong>' + (currentCreditSummary?.credits_available ?? 0) + '</strong></div>' +
                             '<div class="profile-stat-item"><span>Credits Used This Month</span><strong>' + (currentCreditSummary?.credits_used ?? 0) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml(this.formatDateDDMMYYYY(currentBillingPeriod?.periodStart) + ' → ' + this.formatDateDDMMYYYY(currentBillingPeriod?.periodEnd)) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml(this.getBillingCycleLabel()) + '</strong></div>' +
                         '</div>' +
                     '</article>' +
                 '</div>' +
@@ -4379,11 +4386,41 @@ class ModuleGallery {
         document.body.style.overflow = '';
     }
 
-    async handleTierSwitch(tierName, button) {
-        if (!currentUser?.id) return;
 
+    notifyUser(message) {
+        if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+            window.showToast(message);
+            return;
+        }
+        alert(message);
+    }
+
+    async handleTierSwitch(tierName, button) {
+        var parentUserId = state?.currentUser?.id || window.state?.currentUser?.id;
         var targetTier = String(tierName || '').toLowerCase();
-        if (!targetTier) return;
+
+        console.log('[ChangePlan] Tier switch requested', {
+            tierName: tierName,
+            targetTier: targetTier,
+            hasButton: Boolean(button),
+            buttonLabel: button?.textContent || null,
+            stateUserId: state?.currentUser?.id || null,
+            windowStateUserId: window.state?.currentUser?.id || null,
+            parentUserId: parentUserId || null,
+            subscriptionTier: currentSubscription?.tier || null,
+            subscriptionStatus: currentSubscription?.status || null
+        });
+
+        if (!parentUserId) {
+            console.warn('[ChangePlan] Missing parent user id. Aborting tier switch.');
+            this.notifyUser('Unable to switch plans right now. Please refresh and try again.');
+            return;
+        }
+
+        if (!targetTier) {
+            console.warn('[ChangePlan] Missing target tier value. Aborting tier switch.', { tierName: tierName });
+            return;
+        }
 
         var originalLabel = button?.textContent || '';
         if (button) {
@@ -4392,12 +4429,24 @@ class ModuleGallery {
         }
 
         try {
+            console.log('[ChangePlan] Calling switchStripeSubscriptionPlan', {
+                parentUserId: parentUserId,
+                targetTier: targetTier
+            });
             var result = await switchStripeSubscriptionPlan(targetTier);
+            console.log('[ChangePlan] switchStripeSubscriptionPlan result', result);
             if (!result?.url) throw new Error('Stripe checkout URL was not returned.');
             window.location.assign(result.url);
         } catch (error) {
-            console.error('Failed to switch subscription tier:', error);
-            showToast(error?.message || 'Unable to open Stripe checkout. Please try again.');
+            console.error('Failed to switch subscription tier:', {
+                message: error?.message,
+                name: error?.name,
+                stack: error?.stack,
+                details: error,
+                targetTier: targetTier,
+                parentUserId: parentUserId
+            });
+            this.notifyUser(error?.message || 'Unable to open Stripe checkout. Please try again.');
             if (button) {
                 button.disabled = false;
                 button.textContent = originalLabel;
