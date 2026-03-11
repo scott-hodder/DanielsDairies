@@ -2387,7 +2387,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     <script type="module" src="/src/admin.js"></script>
     <script type="module" src="/src/module-builder-integration.js"></script>
-    <script src="/src/features/admin/reference-data-grids.js"></script>
+    <script type="module">
+        import('/src/features/admin/reference-data-grids.js').catch(err => {
+            console.error('[Admin] Failed to load reference-data-grids.js:', err);
+        });
+    </script>
     <script type="module" src="/src/features/admin/module-audit.js"></script>
 </body>
 </html>
