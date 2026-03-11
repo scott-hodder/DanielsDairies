@@ -19,6 +19,15 @@ function toIsoTimestamp(unixSeconds?: number | null) {
   return new Date(unixSeconds * 1000).toISOString()
 }
 
+function toCurrentCalendarPeriod(date = new Date()) {
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  const start = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
+  const end = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10)
+  return { start, end }
+}
+
+
 function mapStripeStatus(status?: string): string {
   switch (status) {
     case 'trialing':
@@ -193,10 +202,8 @@ serve(async (req) => {
     parentId: string
     months: number
     tier?: string | null
-    periodStart: string
-    periodEnd: string
   }) {
-    const { parentId, months, periodStart, periodEnd } = params
+    const { parentId, months } = params
     if (months <= 0) return
 
     let resolvedTier = params.tier ?? null
@@ -222,12 +229,14 @@ serve(async (req) => {
     const creditsToGrant = tierRow.modules_per_month * months
     if (creditsToGrant <= 0) return
 
+    const currentPeriod = toCurrentCalendarPeriod(new Date())
+
     const { error: insertError } = await supabase
       .from('subscription_credit_ledger')
       .insert({
         parent_id: parentId,
-        period_start: periodStart,
-        period_end: periodEnd,
+        period_start: currentPeriod.start,
+        period_end: currentPeriod.end,
         entry_type: 'grant',
         credits_delta: creditsToGrant,
         notes: `Stripe subscription payment grant (${resolvedTier}, ${months} month${months > 1 ? 's' : ''})`,
@@ -309,9 +318,7 @@ serve(async (req) => {
           await grantSubscriptionExtensionCredits({
             parentId,
             months,
-            tier: currentSub?.tier || session.metadata?.tier || 'low',
-            periodStart: periodStart.toISOString().slice(0, 10),
-            periodEnd: periodEnd.toISOString().slice(0, 10)
+            tier: currentSub?.tier || session.metadata?.tier || 'low'
           })
 
           console.log(`Subscription extended for ${parentId}: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`)
