@@ -4210,9 +4210,20 @@ class ModuleGallery {
         return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
+    formatDateDDMMYYYY(value) {
+        if (!value) return '-';
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '-';
+        var day = String(date.getDate()).padStart(2, '0');
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var year = date.getFullYear();
+        return day + '/' + month + '/' + year;
+    }
+
     formatCurrency(cents) {
         if (typeof cents !== 'number') return 'Contact support';
-        return '£' + (cents / 100).toFixed(2) + '/month';
+        var formatter = getCurrencyFormatter('AUD');
+        return formatter.format(cents / 100) + '/month';
     }
 
     render() {
@@ -4244,7 +4255,7 @@ class ModuleGallery {
                             '<div class="profile-stat-item"><span>Next Payment Due</span><strong>' + this.escapeHtml(this.getNextPaymentDateLabel()) + '</strong></div>' +
                             '<div class="profile-stat-item"><span>Credits Available</span><strong>' + (currentCreditSummary?.credits_available ?? 0) + '</strong></div>' +
                             '<div class="profile-stat-item"><span>Credits Used This Month</span><strong>' + (currentCreditSummary?.credits_used ?? 0) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml((currentBillingPeriod?.periodStart || '-') + ' → ' + (currentBillingPeriod?.periodEnd || '-')) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml(this.formatDateDDMMYYYY(currentBillingPeriod?.periodStart) + ' → ' + this.formatDateDDMMYYYY(currentBillingPeriod?.periodEnd)) + '</strong></div>' +
                         '</div>' +
                     '</article>' +
                 '</div>' +
@@ -4267,6 +4278,13 @@ class ModuleGallery {
         return tiers.map((tier) => {
             var isCurrent = tier.tier === selectedTierName;
             var isOpen = tier.tier === expandedTier;
+            
+            var featuresList = '<ul class="plan-features-list">' +
+                '<li class="plan-feature-item included"><strong>' + tier.modules_per_month + '</strong>  modules per month</li>' +
+                '<li class="plan-feature-item ' + (tier.includes_parent_insights ? 'included' : 'excluded') + '">Parent insights and progress tracking</li>' +
+                '<li class="plan-feature-item ' + (tier.includes_behavioural_support ? 'included' : 'excluded') + '">Behavioral support resources</li>' +
+                '</ul>';
+            
             return '<div class="plan-accordion-item ' + (isCurrent ? 'is-current' : '') + ' ' + (isOpen ? 'is-open' : '') + '" data-tier="' + this.escapeHtml(tier.tier) + '">' +
                 '<button type="button" class="plan-accordion-trigger" data-tier-trigger="' + this.escapeHtml(tier.tier) + '">' +
                     '<div><span class="plan-tier-name">' + this.escapeHtml(tier.tier.toUpperCase()) + '</span>' +
@@ -4275,11 +4293,7 @@ class ModuleGallery {
                 '</button>' +
                 '<div class="plan-accordion-panel" ' + (isOpen ? '' : 'hidden') + '>' +
                     '<p>' + this.escapeHtml(tier.description || 'A balanced plan designed for steady emotional growth and family support.') + '</p>' +
-                    '<ul>' +
-                        '<li><strong>' + tier.modules_per_month + '</strong> modules per month</li>' +
-                        '<li>Includes progress tracking and family dashboard tools</li>' +
-                        '<li>Priority content updates for active subscribers</li>' +
-                    '</ul>' +
+                    featuresList +
                     '<button type="button" class="profile-select-plan-btn" ' + (isCurrent ? 'disabled' : '') + '>' + (isCurrent ? 'Current Plan' : 'Select ' + this.escapeHtml(tier.tier.toUpperCase())) + '</button>' +
                 '</div>' +
             '</div>';
