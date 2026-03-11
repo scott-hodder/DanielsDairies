@@ -35,18 +35,6 @@
                 </a>
             </div>
             <div class="header-right">
-                <div class="credit-wallet" id="creditWalletBadge" title="Module credits available this billing period">
-                    <svg class="credit-wallet-icon" viewBox="0 0 64 32" aria-hidden="true" focusable="false">
-                        <path d="M8 10c0-3.3 2.7-6 6-6h6l4-3h16l4 3h6c3.3 0 6 2.7 6 6v12c0 3.3-2.7 6-6 6H14c-3.3 0-6-2.7-6-6V10z" fill="#f6c453" stroke="#b36a2d" stroke-width="2"/>
-                        <circle cx="22" cy="16" r="3" fill="#b36a2d"/>
-                        <circle cx="32" cy="16" r="3" fill="#b36a2d"/>
-                        <circle cx="42" cy="16" r="3" fill="#b36a2d"/>
-                    </svg>
-                    <div class="credit-wallet-copy">
-                        <span class="credit-wallet-label">Credits</span>
-                        <span class="credit-wallet-value" id="creditWalletValue">0</span>
-                    </div>
-                </div>
                 <!-- Desktop Navigation Buttons -->
                 <div class="desktop-nav">
                     <button class="btn-header" id="dashboardHomeButtonDesktop">
@@ -301,20 +289,19 @@
 
 <!-- Adventure Map Section -->
 <div class="adventure-map-section">
-    <div class="adventure-header">
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div>
-                <h2 class="adventure-title">🗺️ Your Adventure Map</h2>
-                <p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>
-            </div>
-            <button type="button" id="focusPlanSettingsBtn" class="focus-plan-settings-btn" title="Focus Plan Settings" style="display: none;">
-                ⚙️ Focus Plan
-            </button>
-        </div>
+    <div class="adventure-map-header-fixed">
+        <h2 class="adventure-title">🗺️ Your Adventure Map</h2>
+        <p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>
     </div>
     
     <!-- The map will be rendered here by JavaScript -->
     <div id="adventureMapContainer"></div>
+    
+    <!-- Credits display inside map container -->
+    <div class="credits-display" id="creditsDisplay" title="Module credits available this billing period">
+        <span class="credits-label">Credits:</span>
+        <span class="credits-value" id="creditWalletValue">0</span>
+    </div>
 </div>
 
                 <!-- Module Preview Panel -->

@@ -387,7 +387,8 @@ class AdventureMapV4 {
     if (document.getElementById('adventure-map-v4-styles')) return;
     
     var css = [];
-    css.push('.adventure-map-section { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid rgba(64,88,120,0.08); margin-top: 20px; overflow: hidden; }');
+    css.push('.adventure-map-section { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid rgba(64,88,120,0.08); margin-top: 20px; overflow: visible; position: relative; }');
+    css.push('.adventure-map-header-fixed { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; text-align: center; }');
     css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; }');
     css.push('.adventure-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 26px; margin: 0; color: #405878; display: flex; align-items: center; gap: 10px; }');
     css.push('.adventure-subtitle { margin: 0; color: #6d86a8; font-size: 14px; }');
@@ -1196,8 +1197,8 @@ class AdventureMapV4 {
   }
 
   createMapHTML() {
-    var section = document.querySelector('.adventure-map-section');
-    if (!section) return;
+    var container = document.getElementById('adventureMapContainer');
+    if (!container) return;
 
     this.ensureZoneStyles();
 
@@ -1277,7 +1278,7 @@ class AdventureMapV4 {
         '</div>';
     }
 
-    section.innerHTML = html;
+    container.innerHTML = html;
     this.viewport = document.getElementById('adventureViewport');
     this.canvas = document.getElementById('adventureCanvas');
     this.applyZoneBackground();

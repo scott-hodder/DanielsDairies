@@ -232,6 +232,35 @@ body {
     font-weight: 700;
 }
 
+/* Credits display in map container */
+.credits-display {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.credits-label {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.credits-value {
+    font-size: 18px;
+    font-weight: 800;
+}
+
 /* Hamburger Menu Button - Hidden on desktop, shown on mobile */
 .hamburger-menu {
     display: none;
