@@ -285,6 +285,13 @@ window.closeAuditModal = function() {
 
 // ═══ MAIN AUDIT ═══
 window.runModuleAudit = async function() {
+    // Always sync from the Add New Module HTML textarea first (single source of truth in UI)
+    var previewTextarea = document.getElementById('aiGeneratedPreview');
+    if (previewTextarea && previewTextarea.value && previewTextarea.value !== window.generatedModuleHTML) {
+        window.generatedModuleHTML = previewTextarea.value;
+        console.log('[Audit] Synced HTML from aiGeneratedPreview before running audit');
+    }
+
     // Load all audit data from database
     var loaded = await _loadAuditData();
     if (!loaded) {
@@ -729,6 +736,22 @@ window.executeFixErrors = async function() {
             statusEl.textContent = '✅ Errors fixed and sent back to the module generator preview. Run audit again to verify.';
         }
         appendFixLog('Updated module generator preview with fixed HTML. You can now save this version and re-run audit.', 'success');
+
+        // Refresh the audit report immediately so the next Fix run uses the new HTML failures
+        if (typeof window.runModuleAudit === 'function') {
+            appendFixLog('Refreshing audit report with the updated HTML...');
+            var fixModalEl = document.getElementById('fixErrorsModal');
+            if (fixModalEl) fixModalEl.style.display = 'none';
+            try {
+                await window.runModuleAudit();
+                appendFixLog('Audit report refreshed. Use Re-audit Fixed HTML any time to run it again.', 'success');
+            } catch (refreshError) {
+                appendFixLog('Could not auto-refresh audit report: ' + (refreshError.message || refreshError), 'error');
+            } finally {
+                if (fixModalEl) fixModalEl.style.display = 'flex';
+            }
+        }
+
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = '🔁 Fix Again';
