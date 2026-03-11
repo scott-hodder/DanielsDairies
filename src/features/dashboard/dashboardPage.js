@@ -4160,562 +4160,203 @@ function getStreakMessage(streak) {
 }
 
 // ================================================
-// MODULE GALLERY
-// A warm, card-based display for children's workbooks
+// PROFILE HUB
+// Replaces the workbook gallery with billing + subscription profile info
 // ================================================
 
 class ModuleGallery {
     constructor(containerId, options) {
         this.containerId = containerId;
         this.container = null;
-        this.modules = [];
-        this.filteredModules = [];
-        this.superSkills = [];
-        this.currentCategory = 'all';
-        this.currentSuperSkill = 'all';
-        this.showActiveOnly = true;
-        this.modalElement = null;
         this.options = options || {};
-        
-        this.categoryEmojis = {
-            anger: '🔥',
-            anxiety: '🌧️',
-            depression: '🌙',
-            emotions: '💭',
-            social: '👫',
-            body: '💪',
-            cognitive: '🧠',
-            general: '📚'
-        };
-        
-        this.categoryNames = {
-            anger: 'Anger',
-            anxiety: 'Anxiety',
-            depression: 'Mood',
-            emotions: 'Emotions',
-            social: 'Social',
-            body: 'Body',
-            cognitive: 'Thinking',
-            general: 'General'
-        };
+        this.changePlanModal = null;
+        this.expandedTier = null;
     }
-    
-    init(modules, parentModules, childModules, superSkills) {
+
+    init() {
         this.container = document.getElementById(this.containerId);
         if (!this.container) {
-            console.warn('Module gallery container not found:', this.containerId);
+            console.warn('Profile hub container not found:', this.containerId);
             return;
         }
-        
-        parentModules = parentModules || [];
-        childModules = childModules || [];
-        this.superSkills = superSkills || [];
-        
-        this.modules = this.processModules(modules, parentModules, childModules);
-        this.applyFilters();
+
         this.render();
-        this.createModal();
-    }
-    
-    processModules(modules, parentModules, childModules) {
-        var parentModuleIds = {};
-        parentModules.forEach(function(pm) {
-            // Only mark module as active if parent assignment is active
-            if (pm.is_active === true) {
-                parentModuleIds[pm.module_id] = true;
-            }
-        });
-        
-        var childModuleMap = {};
-        childModules.forEach(function(cm) {
-            childModuleMap[cm.module_id] = cm;
-        });
-        
-        return modules.map(function(module) {
-            var isActive = !!parentModuleIds[module.id];
-            var childProgress = childModuleMap[module.id];
-            var isCompleted = childProgress && childProgress.status === 'completed';
-            
-            return Object.assign({}, module, {
-                isActive: isActive,
-                isCompleted: isCompleted,
-                childProgress: childProgress
-            });
-        });
-    }
-    
-    applyFilters() {
-        var self = this;
-        this.filteredModules = this.modules.filter(function(module) {
-            if (self.currentCategory !== 'all') {
-                var moduleCategory = (module.category || 'general').toLowerCase();
-                if (moduleCategory !== self.currentCategory.toLowerCase()) {
-                    return false;
-                }
-            }
-            
-            if (self.currentSuperSkill !== 'all') {
-                if (module.super_skill_id !== self.currentSuperSkill) {
-                    return false;
-                }
-            }
-            
-            if (self.showActiveOnly && !module.isActive) {
-                return false;
-            }
-            
-            return true;
-        });
-        
-        this.filteredModules.sort(function(a, b) {
-            if (a.isActive && !b.isActive) return -1;
-            if (!a.isActive && b.isActive) return 1;
-            return (a.title || '').localeCompare(b.title || '');
-        });
-    }
-    
-    getUniqueCategories() {
-        var categories = {};
-        this.modules.forEach(function(m) {
-            if (m.category) categories[m.category.toLowerCase()] = true;
-        });
-        return Object.keys(categories).sort();
-    }
-    
-getUniqueSuperSkills() {
-    // Return all Super Skills (sorted by name), independent of module usage
-    var list = this.superSkills.map(function(s) {
-        return {
-            id: s.id,
-            name: s.name,
-            emoji: s.emoji || '🎯'
-        };
-    });
-    return list.sort(function(a, b) { return a.name.localeCompare(b.name); });
-}
-    
-    render() {
-        if (!this.container) return;
-        
-        var self = this;
-        var categories = this.getUniqueCategories();
-        var superSkillsList = this.getUniqueSuperSkills();
-        
-        var categoryOptions = categories.map(function(cat) {
-            var selected = self.currentCategory === cat ? 'selected' : '';
-            var emoji = self.categoryEmojis[cat] || '📖';
-            var name = self.categoryNames[cat] || self.capitalizeFirst(cat);
-            return '<option value="' + cat + '" ' + selected + '>' + emoji + ' ' + name + '</option>';
-        }).join('');
-        
-        var superSkillsOptions = superSkillsList.map(function(superSkill) {
-            var selected = self.currentSuperSkill === superSkill.id ? 'selected' : '';
-            return '<option value="' + superSkill.id + '" ' + selected + '>' + superSkill.emoji + ' ' + superSkill.name + '</option>';
-        }).join('');
-        
-        var activeCount = this.filteredModules.filter(function(m) { return m.isActive; }).length;
-        
-        this.container.innerHTML = 
-            '<div class="module-gallery">' +
-                '<div class="gallery-header">' +
-                    '<h2 class="gallery-title">' +
-                        '<span class="gallery-title-icon">📚</span>' +
-                        'Your Workbook Library' +
-                    '</h2>' +
-                    '<p class="gallery-subtitle">' +
-                        'Explore your collection of learning adventures' +
-                    '</p>' +
-                '</div>' +
-                
-                '<div class="gallery-filters">' +
-                    '<div class="gallery-filter-group">' +
-                        '<span class="gallery-filter-label">Category</span>' +
-                        '<select class="gallery-filter-select" id="galleryCategoryFilter">' +
-                            '<option value="all">All Categories</option>' +
-                            categoryOptions +
-                        '</select>' +
-                    '</div>' +
-                    
-                    '<div class="gallery-filter-group">' +
-                        '<span class="gallery-filter-label">Super Skill</span>' +
-                        '<select class="gallery-filter-select" id="gallerySuperSkillFilter">' +
-                            '<option value="all">All Super Skills</option>' +
-                            superSkillsOptions +
-                        '</select>' +
-                    '</div>' +
-                    
-                    '<label class="gallery-toggle">' +
-                        '<input type="checkbox" id="galleryActiveOnly" ' + (this.showActiveOnly ? 'checked' : '') + '>' +
-                        '<span>Active Only</span>' +
-                    '</label>' +
-                    
-                    '<div class="gallery-count">' +
-                        '<span>📖</span> ' + this.filteredModules.length + ' workbook' + (this.filteredModules.length !== 1 ? 's' : '') +
-                    '</div>' +
-                '</div>' +
-                
-                '<div class="gallery-grid" id="galleryGrid">' +
-                    this.renderCards() +
-                '</div>' +
-            '</div>';
-        
+        this.createChangePlanModal();
         this.attachEventListeners();
     }
-    
-    renderCards() {
-        if (this.filteredModules.length === 0) {
-            return '<div class="gallery-empty">' +
-                '<div class="gallery-empty-icon">📭</div>' +
-                '<h3 class="gallery-empty-title">No workbooks found</h3>' +
-                '<p class="gallery-empty-text">Try adjusting your filters to see more workbooks.</p>' +
-            '</div>';
+
+    getSafeTiers() {
+        return (subscriptionTiers || []).filter(function(tier) {
+            return tier && tier.is_active !== false;
+        });
+    }
+
+    getCurrentTierName() {
+        return (currentSubscription?.tier || 'mid').toLowerCase();
+    }
+
+    getNextPaymentDateLabel() {
+        var rawDate = currentSubscription?.stripe_current_period_end || currentSubscription?.current_period_end || null;
+        if (!rawDate) {
+            return this.formatDateLabel(currentBillingPeriod?.periodEnd);
         }
-        
-        var self = this;
-        return this.filteredModules.map(function(module) {
-            return self.renderCard(module);
+        return this.formatDateLabel(rawDate);
+    }
+
+    formatDateLabel(value) {
+        if (!value) return 'Not available';
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'Not available';
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    formatCurrency(cents) {
+        if (typeof cents !== 'number') return 'Contact support';
+        return '£' + (cents / 100).toFixed(2) + '/month';
+    }
+
+    render() {
+        if (!this.container) return;
+
+        var tiers = this.getSafeTiers();
+        var currentTierName = this.getCurrentTierName();
+        var activeTier = tiers.find(function(t) { return t.tier === currentTierName; }) || null;
+
+        this.container.innerHTML =
+            '<section class="profile-hub">' +
+                '<div class="profile-hub-header">' +
+                    '<h2 class="profile-hub-title">👤 Your Profile & Plan</h2>' +
+                    '<p class="profile-hub-subtitle">Manage billing, subscription details, and your current family learning tier.</p>' +
+                '</div>' +
+                '<div class="profile-hub-grid">' +
+                    '<article class="profile-hub-card">' +
+                        '<h3>Subscription Overview</h3>' +
+                        '<div class="profile-stat-list">' +
+                            '<div class="profile-stat-item"><span>Current Tier</span><strong>' + this.escapeHtml((activeTier?.tier || currentTierName).toUpperCase()) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Monthly Modules</span><strong>' + (activeTier?.modules_per_month || 0) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Monthly Cost</span><strong>' + this.escapeHtml(this.formatCurrency(activeTier?.monthly_price_cents)) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Status</span><strong>' + this.escapeHtml((currentSubscription?.status || 'active').toUpperCase()) + '</strong></div>' +
+                        '</div>' +
+                    '</article>' +
+                    '<article class="profile-hub-card">' +
+                        '<h3>Billing Snapshot</h3>' +
+                        '<div class="profile-stat-list">' +
+                            '<div class="profile-stat-item"><span>Next Payment Due</span><strong>' + this.escapeHtml(this.getNextPaymentDateLabel()) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Credits Available</span><strong>' + (currentCreditSummary?.credits_available ?? 0) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Credits Used This Month</span><strong>' + (currentCreditSummary?.credits_used ?? 0) + '</strong></div>' +
+                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml((currentBillingPeriod?.periodStart || '-') + ' → ' + (currentBillingPeriod?.periodEnd || '-')) + '</strong></div>' +
+                        '</div>' +
+                    '</article>' +
+                '</div>' +
+                '<article class="profile-hub-card profile-hub-card-full">' +
+                    '<div class="profile-plan-cta">' +
+                        '<div><h3>Need a different tier?</h3><p>Compare plans and switch to the level that best supports your family.</p></div>' +
+                        '<button type="button" id="openChangePlanModal" class="profile-change-plan-btn">Change Plan</button>' +
+                    '</div>' +
+                '</article>' +
+            '</section>';
+    }
+
+    renderTierAccordion(tiers, selectedTierName) {
+        if (!tiers.length) {
+            return '<p class="change-plan-empty">No plans available right now. Please contact support.</p>';
+        }
+
+        var expandedTier = this.expandedTier || selectedTierName || tiers[0].tier;
+
+        return tiers.map((tier) => {
+            var isCurrent = tier.tier === selectedTierName;
+            var isOpen = tier.tier === expandedTier;
+            return '<div class="plan-accordion-item ' + (isCurrent ? 'is-current' : '') + ' ' + (isOpen ? 'is-open' : '') + '" data-tier="' + this.escapeHtml(tier.tier) + '">' +
+                '<button type="button" class="plan-accordion-trigger" data-tier-trigger="' + this.escapeHtml(tier.tier) + '">' +
+                    '<div><span class="plan-tier-name">' + this.escapeHtml(tier.tier.toUpperCase()) + '</span>' +
+                    (isCurrent ? '<span class="plan-current-badge">Current Plan</span>' : '') + '</div>' +
+                    '<span class="plan-tier-price">' + this.escapeHtml(this.formatCurrency(tier.monthly_price_cents)) + '</span>' +
+                '</button>' +
+                '<div class="plan-accordion-panel" ' + (isOpen ? '' : 'hidden') + '>' +
+                    '<p>' + this.escapeHtml(tier.description || 'A balanced plan designed for steady emotional growth and family support.') + '</p>' +
+                    '<ul>' +
+                        '<li><strong>' + tier.modules_per_month + '</strong> modules per month</li>' +
+                        '<li>Includes progress tracking and family dashboard tools</li>' +
+                        '<li>Priority content updates for active subscribers</li>' +
+                    '</ul>' +
+                    '<button type="button" class="profile-select-plan-btn" ' + (isCurrent ? 'disabled' : '') + '>' + (isCurrent ? 'Current Plan' : 'Select ' + this.escapeHtml(tier.tier.toUpperCase())) + '</button>' +
+                '</div>' +
+            '</div>';
         }).join('');
     }
-    
-    renderCard(module) {
-        var category = (module.category || 'general').toLowerCase();
-        var emoji = this.categoryEmojis[category] || '📖';
-        var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
-        var title = module.title || module.name || 'Untitled';
-        var shortDesc = module.short_description || module.description || '';
-        var ageRange = getSafeAgeRange(module);
-        
-        var statusClass = 'active';
-        var statusText = 'Ready to start';
-        var statusIcon = '●';
-        
-        if (!module.isActive) {
-            statusClass = 'locked';
-            statusText = 'Locked';
-            statusIcon = '🔒';
-        } else if (module.isCompleted) {
-            statusClass = 'completed';
-            statusText = 'Completed';
-            statusIcon = '✓';
-        }
-        
-        var actionText = module.isActive ? 'View Details →' : 'Learn More';
-        
-        return '<div class="module-card ' + (!module.isActive ? 'locked' : '') + '" ' +
-                    'data-category="' + category + '" ' +
-                    'data-module-id="' + module.id + '">' +
-                '<div class="card-stripe"></div>' +
-                '<div class="card-content">' +
-                    '<div class="card-header">' +
-                        '<div class="card-emoji">' + emoji + '</div>' +
-                        '<div class="card-badges">' +
-                            '<span class="card-category">' + categoryName + '</span>' +
-                            (ageRange ? '<span class="card-age">Ages ' + ageRange + '</span>' : '') +
-                        '</div>' +
-                    '</div>' +
-                    '<h3 class="card-title">' + this.escapeHtml(title) + '</h3>' +
-                    '<p class="card-description">' + this.escapeHtml(shortDesc) + '</p>' +
-                    '<div class="card-footer">' +
-                        '<span class="card-status ' + statusClass + '">' +
-                            '<span class="card-status-dot"></span>' +
-                            statusText +
-                        '</span>' +
-                        '<span class="card-action ' + (module.isActive ? '' : 'locked') + '">' +
-                            actionText +
-                        '</span>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
-    }
-    
-    createModal() {
-        var existingModal = document.getElementById('moduleDetailModal');
+
+    createChangePlanModal() {
+        var existingModal = document.getElementById('changePlanModal');
         if (existingModal) existingModal.remove();
-        
+
+        var tiers = this.getSafeTiers();
+        var selectedTierName = this.getCurrentTierName();
+        this.expandedTier = selectedTierName;
+
         var modal = document.createElement('div');
-        modal.id = 'moduleDetailModal';
+        modal.id = 'changePlanModal';
         modal.className = 'module-modal-overlay';
-        modal.innerHTML = 
-            '<div class="module-modal" id="moduleModalContent">' +
-                '<div class="modal-header">' +
-                    '<button class="modal-close" id="modalCloseBtn">✕</button>' +
-                    '<div class="modal-emoji" id="modalEmoji">📚</div>' +
-                    '<h2 class="modal-title" id="modalTitle">Module Title</h2>' +
-                    '<div class="modal-meta">' +
-                        '<span class="modal-meta-badge" id="modalCategory">📖 Category</span>' +
-                        '<span class="modal-meta-badge" id="modalAge">👶 Ages 7-12</span>' +
-                        '<span class="modal-meta-badge" id="modalStatus">✨ Active</span>' +
-                    '</div>' +
+        modal.innerHTML =
+            '<div class="module-modal change-plan-modal-shell">' +
+                '<div class="change-plan-header">' +
+                    '<h2>Change your plan</h2>' +
+                    '<button type="button" class="modal-close" id="changePlanCloseBtn">✕</button>' +
                 '</div>' +
-                
-                '<div class="modal-body">' +
-                    '<p class="modal-short-desc" id="modalShortDesc">Short description...</p>' +
-                    
-                    '<div class="modal-section">' +
-                        '<h4 class="modal-section-title"><span>📖</span> About This Workbook</h4>' +
-                        '<p class="modal-description" id="modalDescription">Full description...</p>' +
-                    '</div>' +
-                    
-                    '<div class="modal-section" id="modalEmotionsSection">' +
-                        '<h4 class="modal-section-title"><span>💭</span> Emotions Explored</h4>' +
-                        '<div class="modal-tags" id="modalEmotions"></div>' +
-                    '</div>' +
-                    
-                    '<div class="modal-section" id="modalSkillsSection">' +
-                        '<h4 class="modal-section-title"><span>🎯</span> Skills You\'ll Learn</h4>' +
-                        '<div class="modal-tags" id="modalSkills"></div>' +
-                    '</div>' +
-                    
-                    '<div class="modal-section" id="modalPathwaySection">' +
-                        '<div class="modal-pathway">' +
-                            '<div class="modal-pathway-label">Learning Pathway</div>' +
-                            '<div class="modal-pathway-name" id="modalPathway">🗺️ Pathway Name</div>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>' +
-                
-                '<div class="modal-footer">' +
-                    '<button class="modal-btn secondary" id="modalCancelBtn">Close</button>' +
-                    '<button class="modal-btn primary" id="modalStartBtn">🚀 Start Learning</button>' +
-                '</div>' +
+                '<p class="change-plan-subtitle">Choose the best tier for your family. Your current plan is highlighted.</p>' +
+                '<div id="changePlanAccordion">' + this.renderTierAccordion(tiers, selectedTierName) + '</div>' +
             '</div>';
-        
+
         document.body.appendChild(modal);
-        this.modalElement = modal;
-        
-        var self = this;
-        
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) self.closeModal();
-        });
-        
-        document.getElementById('modalCloseBtn').addEventListener('click', function() {
-            self.closeModal();
-        });
-        
-        document.getElementById('modalCancelBtn').addEventListener('click', function() {
-            self.closeModal();
-        });
-        
-        document.getElementById('modalStartBtn').addEventListener('click', function() {
-            var moduleId = modal.dataset.moduleId;
-            var code = modal.dataset.code;
-            var isLocked = modal.dataset.locked === 'true';
-            
-            if (!isLocked) {
-                self.startModule(moduleId, code);
-            }
-        });
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && self.modalElement && self.modalElement.classList.contains('active')) {
-                self.closeModal();
-            }
-        });
+        this.changePlanModal = modal;
     }
-    
-    openModal(module) {
-        if (!this.modalElement) return;
-        
-        var category = (module.category || 'general').toLowerCase();
-        var emoji = this.categoryEmojis[category] || '📖';
-        var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
-        
-        var title = module.title || module.name || 'Untitled';
-        var shortDesc = module.short_description || '';
-        var description = module.description || 'No description available.';
-        var ageRange = getSafeAgeRange(module) || 'All ages';
-        var code = module.code || '';
-        var pathway = module.pathway || '';
-        var emotions = module.emotions || [];
-        var skills = module.skills || [];
-        
-        this.modalElement.dataset.moduleId = module.id;
-        this.modalElement.dataset.code = code;
-        this.modalElement.dataset.locked = !module.isActive;
-        
-        var modalContent = document.getElementById('moduleModalContent');
-        modalContent.setAttribute('data-category', category);
-        
-        document.getElementById('modalEmoji').textContent = emoji;
-        document.getElementById('modalTitle').textContent = title;
-        document.getElementById('modalCategory').innerHTML = emoji + ' ' + categoryName;
-        document.getElementById('modalAge').textContent = '👶 Ages ' + ageRange;
-        
-        var statusBadge = document.getElementById('modalStatus');
-        if (!module.isActive) {
-            statusBadge.textContent = '🔒 Locked';
-        } else if (module.isCompleted) {
-            statusBadge.textContent = '✅ Completed';
-        } else {
-            statusBadge.textContent = '✨ Active';
-        }
-        
-        document.getElementById('modalShortDesc').textContent = shortDesc || 'An interactive learning workbook designed to help children develop emotional skills.';
-        document.getElementById('modalDescription').textContent = description;
-        
-        var pathwaySection = document.getElementById('modalPathwaySection');
-        var pathwayName = document.getElementById('modalPathway');
-        if (pathway) {
-            pathwaySection.style.display = 'block';
-            pathwayName.textContent = '🗺️ ' + pathway;
-        } else {
-            pathwaySection.style.display = 'none';
-        }
-        
-        var emotionsSection = document.getElementById('modalEmotionsSection');
-        var emotionsContainer = document.getElementById('modalEmotions');
-        if (emotions && emotions.length > 0) {
-            emotionsSection.style.display = 'block';
-            var self = this;
-            emotionsContainer.innerHTML = emotions.map(function(e) {
-                return '<span class="modal-tag emotion">' + self.escapeHtml(e) + '</span>';
-            }).join('');
-        } else {
-            emotionsSection.style.display = 'none';
-        }
-        
-        var skillsSection = document.getElementById('modalSkillsSection');
-        var skillsContainer = document.getElementById('modalSkills');
-        if (skills && skills.length > 0) {
-            skillsSection.style.display = 'block';
-            var self = this;
-            skillsContainer.innerHTML = skills.map(function(s) {
-                return '<span class="modal-tag skill">' + self.escapeHtml(s) + '</span>';
-            }).join('');
-        } else {
-            skillsSection.style.display = 'none';
-        }
-        
-        var startBtn = document.getElementById('modalStartBtn');
-        if (!module.isActive) {
-            startBtn.disabled = true;
-            startBtn.textContent = '🔒 Locked';
-        } else {
-            startBtn.disabled = false;
-            startBtn.innerHTML = '🚀 Start Learning';
-        }
-        
-        this.modalElement.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-    
-    closeModal() {
-        if (this.modalElement) {
-            this.modalElement.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    }
-    
+
     attachEventListeners() {
-        var self = this;
-        
-        var categoryFilter = document.getElementById('galleryCategoryFilter');
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', function(e) {
-                self.currentCategory = e.target.value;
-                self.applyFilters();
-                self.updateGrid();
-            });
-        }
-        
-        var superSkillFilter = document.getElementById('gallerySuperSkillFilter');
-        if (superSkillFilter) {
-            superSkillFilter.addEventListener('change', function(e) {
-                self.currentSuperSkill = e.target.value;
-                self.applyFilters();
-                self.updateGrid();
-            });
-        }
-        
-        var activeToggle = document.getElementById('galleryActiveOnly');
-        if (activeToggle) {
-            activeToggle.addEventListener('change', function(e) {
-                self.showActiveOnly = e.target.checked;
-                self.applyFilters();
-                self.updateGrid();
-            });
-        }
-        
-        this.attachCardClickHandlers();
-    }
-    
-    attachCardClickHandlers() {
-        var self = this;
-        var cards = this.container.querySelectorAll('.module-card');
-        
-        cards.forEach(function(card) {
-            card.addEventListener('click', function() {
-                var moduleId = card.dataset.moduleId;
-                var module = self.modules.find(function(m) {
-                    return m.id == moduleId;
-                });
-                
-                if (module) {
-                    self.openModal(module);
+        var openButton = document.getElementById('openChangePlanModal');
+        if (openButton) {
+            openButton.addEventListener('click', () => {
+                if (this.changePlanModal) {
+                    this.changePlanModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
                 }
             });
-        });
-    }
-    
-    updateGrid() {
-        var grid = document.getElementById('galleryGrid');
-        if (grid) {
-            grid.innerHTML = this.renderCards();
-            this.attachCardClickHandlers();
         }
-        
-        // Update count
-        var countEl = this.container.querySelector('.gallery-count');
-        if (countEl) {
-            countEl.innerHTML = '<span>📖</span> ' + this.filteredModules.length + ' workbook' + (this.filteredModules.length !== 1 ? 's' : '');
-        }
-    }
-    
-    async startModule(moduleId, code) {
-        var child = window.state.selectedChild;
-        if (!child) {
-            alert('Please select a child first.');
-            return;
-        }
-        
-        this.closeModal();
-        
-        var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + moduleId + '&code=' + code + '&childName=' + encodeURIComponent(child.name || '');
-        
-        // Check-in intercept for weeks 1, 4, 7, 10
-        var CHECKIN_WEEKS = [1, 4, 7, 10];
-        var mod = (window.modules || []).find(function(m) { return m.id === moduleId; });
-        if (mod && typeof window.showCheckinPopup === 'function') {
-            var week = Number(mod.week_number || mod.pathway_order || 0);
-            if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
-                try {
-                    var alreadyDone = await hasExistingCheckin(child.id, mod.id);
-                    if (!alreadyDone) {
-                        var popupModule = Object.assign({}, mod, { code: code });
-                        window.showCheckinPopup(popupModule, function() {
-                            window.location.href = moduleUrl;
-                        });
-                        return;
-                    }
-                } catch (e) {
-                    console.error('Error checking checkin:', e);
-                }
+
+        if (this.changePlanModal) {
+            var closeButton = document.getElementById('changePlanCloseBtn');
+            if (closeButton) {
+                closeButton.addEventListener('click', () => this.closeModal());
             }
+
+            this.changePlanModal.addEventListener('click', (event) => {
+                if (event.target === this.changePlanModal) this.closeModal();
+            });
+
+            this.changePlanModal.addEventListener('click', (event) => {
+                var trigger = event.target.closest('[data-tier-trigger]');
+                if (!trigger) return;
+                this.expandedTier = trigger.getAttribute('data-tier-trigger');
+                this.refreshAccordion();
+            });
         }
-        
-        window.location.href = moduleUrl;
     }
-    
-    capitalizeFirst(str) {
-        if (!str) return '';
-        return str.charAt(0).toUpperCase() + str.slice(1);
+
+    refreshAccordion() {
+        var accordion = document.getElementById('changePlanAccordion');
+        if (!accordion) return;
+        accordion.innerHTML = this.renderTierAccordion(this.getSafeTiers(), this.getCurrentTierName());
     }
-    
+
+    closeModal() {
+        if (!this.changePlanModal) return;
+        this.changePlanModal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
     escapeHtml(str) {
-        if (!str) return '';
+        if (str === null || str === undefined) return '';
         var div = document.createElement('div');
-        div.textContent = str;
+        div.textContent = String(str);
         return div.innerHTML;
     }
 }
@@ -4725,30 +4366,17 @@ window.ModuleGallery = ModuleGallery;
 
 // Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    var checkAndInit = async function() {
+    var checkAndInit = function() {
         var container = document.getElementById('moduleGalleryContainer');
-        if (container && window.modules && window.parentModules) {
-            try {
-                var superSkills = await getSuperSkills();
-                window.superSkills = superSkills || [];
-            } catch {
-                window.superSkills = [];
-            }
-
+        if (container) {
             var gallery = new ModuleGallery('moduleGalleryContainer');
-            gallery.init(
-                window.modules || [],
-                window.parentModules || [],
-                window.childModules || [],
-                window.superSkills || []
-            );
+            gallery.init();
             window.moduleGallery = gallery;
             return true;
         }
         return false;
     };
 
-    // Always listen for the data-ready event, and also try once immediately
     window.addEventListener('dashboardDataReady', checkAndInit);
     checkAndInit();
 });
