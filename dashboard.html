@@ -88,22 +88,19 @@
         <!-- Children List View -->
         <div id="childrenView" class="hidden">
             <!-- Welcome Header -->
-            <div style="text-align: center; margin-bottom: 40px;">
+            <div id="childrenWelcomeHeader" style="text-align: center; margin-bottom: 40px;">
                 <h1 style="font-size: 32px; color: #405878; font-weight: 700; margin-bottom: 8px;">Welcome to Your Family Dashboard</h1>
-                <p style="color: #4c6c96; font-size: 16px;">Select a child to view their progress and continue their learning journey</p>
+                <p style="color: #4c6c96; font-size: 16px;">Manage your family learning journey</p>
             </div>
 
-            <!-- Children Cards -->
-            <div style="margin-bottom: 48px;">
+
+            <!-- Child Selection (shown only when needed) -->
+            <div id="childrenSelectionSection" style="margin-bottom: 48px; display: none;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                     <h2 style="font-size: 20px; color: #405878; font-weight: 700; margin: 0;">Your Children</h2>
-                    <button id="addChildQuickBtn" class="add-child-quick-btn" type="button" title="Add new child">
-                        <span>➕ Add Child</span>
-                    </button>
                 </div>
                 <div class="children-grid" id="childrenGrid"></div>
             </div>
-
             <!-- Profile Hub -->
             <div id="moduleGalleryContainer">
                 <section class="profile-hub">

@@ -23,6 +23,31 @@ const state = dashboardState
 
 window.state = window.state || {}
 
+const SELECTED_CHILD_STORAGE_PREFIX = 'dashboard:selectedChild:'
+
+function getSelectedChildStorageKey() {
+  if (!state.currentUser || !state.currentUser.id) return null
+  return `${SELECTED_CHILD_STORAGE_PREFIX}${state.currentUser.id}`
+}
+
+function rememberSelectedChildId(childId) {
+  const key = getSelectedChildStorageKey()
+  if (!key || !childId) return
+  localStorage.setItem(key, String(childId))
+}
+
+function getRememberedChildId() {
+  const key = getSelectedChildStorageKey()
+  if (!key) return null
+  return localStorage.getItem(key)
+}
+
+function clearRememberedChildId() {
+  const key = getSelectedChildStorageKey()
+  if (!key) return
+  localStorage.removeItem(key)
+}
+
 // Helper function to check if streak popup was shown today (per child)
 function hasStreakPopupBeenShownToday(childId) {
   const today = new Date().toISOString().split('T')[0]
@@ -1273,6 +1298,24 @@ async function init() {
       }
     }
 
+    // No childId in URL: restore remembered child or auto-select the only child.
+    if (state.children && state.children.length === 1) {
+      await selectChild(state.children[0])
+      clearTimeout(loadingTimeout)
+      return
+    }
+
+    const rememberedChildId = getRememberedChildId()
+    if (rememberedChildId && state.children && state.children.length > 1) {
+      const rememberedChild = state.children.find(c => String(c.id) === String(rememberedChildId))
+      if (rememberedChild) {
+        await selectChild(rememberedChild)
+        clearTimeout(loadingTimeout)
+        return
+      }
+      clearRememberedChildId()
+    }
+
     // Default: show children/profile view
     showChildrenView()
     hideLoadingScreen()
@@ -1455,8 +1498,10 @@ function createChildCard(child) {
   }
 
   card.innerHTML = `
-    <button class="child-card-edit-btn" type="button" title="Edit child">✏️</button>
-    <div class="child-avatar">${avatar}</div>
+    <div class="child-avatar-wrap">
+      <button class="child-card-edit-btn" type="button" title="Edit child" aria-label="Edit ${child.name}">✏️</button>
+      <div class="child-avatar">${avatar}</div>
+    </div>
     <div class="child-name">${child.name}</div>
     <div class="child-stars">
       <span>⭐</span>
@@ -1897,6 +1942,7 @@ async function selectChild(child) {
   
   setSelectedChild(child)
   setAppState('selectedChild', child)
+  rememberSelectedChildId(child.id)
   
   try {
     // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
@@ -2022,7 +2068,9 @@ async function loadLatestWeeklyPlanData(childId) {
 // Show children view
 function showChildrenView() {
   const welcomeLandingPage = document.getElementById('welcomeLandingPage')
-  
+  const childrenWelcomeHeader = document.getElementById('childrenWelcomeHeader')
+  const childrenSelectionSection = document.getElementById('childrenSelectionSection')
+
   if (loadingState) {
     hideElement(loadingState)
   }
@@ -2033,6 +2081,16 @@ function showChildrenView() {
     } else {
       hideElement(welcomeLandingPage)
     }
+  }
+
+  const hasDefaultChild = Boolean(state.selectedChild)
+  const shouldShowSelector = !hasDefaultChild && Array.isArray(state.children) && state.children.length > 1
+
+  if (childrenWelcomeHeader) {
+    childrenWelcomeHeader.style.display = shouldShowSelector ? '' : 'none'
+  }
+  if (childrenSelectionSection) {
+    childrenSelectionSection.style.display = shouldShowSelector ? '' : 'none'
   }
   
   showElement(childrenView)
@@ -3468,8 +3526,12 @@ const adminButtonDesktop = document.getElementById('adminButtonDesktop')
 
 if (dashboardHomeButtonDesktop) {
   dashboardHomeButtonDesktop.addEventListener('click', () => {
-    if (state.selectedChild) {
-      window.location.href = `/dashboard.html?childId=${state.selectedChild.id}`
+    const fallbackChild = state.selectedChild ||
+      (state.children && state.children.length === 1 ? state.children[0] : null) ||
+      (state.children && state.children.find(child => String(child.id) === String(getRememberedChildId())))
+
+    if (fallbackChild) {
+      window.location.href = `/dashboard.html?childId=${fallbackChild.id}`
     } else {
       window.location.href = '/dashboard.html'
     }
@@ -3491,6 +3553,7 @@ if (billingButtonDesktop) {
 if (logoutButtonDesktop) {
   logoutButtonDesktop.addEventListener('click', async () => {
     try {
+      clearRememberedChildId()
       await signOut()
       window.location.href = '/'
     } catch (error) {
@@ -3574,7 +3637,15 @@ if (moreModulesNextButton) {
 
 if (dashboardHomeButton) {
   dashboardHomeButton.addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+    const fallbackChild = state.selectedChild ||
+      (state.children && state.children.length === 1 ? state.children[0] : null) ||
+      (state.children && state.children.find(child => String(child.id) === String(getRememberedChildId())))
+
+    if (fallbackChild) {
+      window.location.href = `/dashboard.html?childId=${fallbackChild.id}`
+    } else {
+      window.location.href = '/dashboard.html'
+    }
   })
 }
 
@@ -3594,6 +3665,7 @@ if (billingButton) {
 if (logoutButton) {
   logoutButton.addEventListener('click', async () => {
     try {
+      clearRememberedChildId()
       await signOut()
       window.location.href = '/'
     } catch (error) {
@@ -4284,13 +4356,31 @@ class ModuleGallery {
     renderChildrenSection() {
         var self = this;
         var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
-        
+        var selectedChildId = (typeof dashboardState !== 'undefined' && dashboardState.selectedChild && dashboardState.selectedChild.id) || null;
+
         if (!children || children.length === 0) {
-            return '<p class="profile-empty-state">No children added yet. Add your first child to get started!</p>';
+            return '<div class="profile-children-actions">' +
+                '<button type="button" class="profile-action-btn profile-action-btn-primary" id="profileAddChildBtn">➕ Add Child</button>' +
+            '</div>' +
+            '<p class="profile-empty-state">No children added yet. Add your first child to get started!</p>';
         }
 
-        return '<div class="children-profile-grid">' +
-            children.map(function(child) {
+        var profileChildren = children;
+        if (selectedChildId) {
+            profileChildren = children.filter(function(child) {
+                return child.id === selectedChildId;
+            });
+        }
+
+        if (!profileChildren.length) {
+            profileChildren = [children[0]];
+        }
+
+        return '<div class="profile-children-actions">' +
+                '<button type="button" class="profile-action-btn profile-action-btn-primary" id="profileAddChildBtn">➕ Add Child</button>' +
+            '</div>' +
+            '<div class="children-profile-grid">' +
+            profileChildren.map(function(child) {
                 var unlockedCount = 0;
                 var completedCount = 0;
                 var starsEarned = child.stars || 0;
@@ -4308,7 +4398,10 @@ class ModuleGallery {
                 }
 
                 return '<div class="child-profile-card">' +
-                    '<div class="child-profile-avatar">' + self.escapeHtml(child.avatar || '👶') + '</div>' +
+                    '<div class="child-profile-avatar-wrap">' +
+                        '<button type="button" class="child-profile-edit-btn" data-edit-child-id="' + self.escapeHtml(String(child.id)) + '" title="Edit child" aria-label="Edit ' + self.escapeHtml(child.name) + '">✏️</button>' +
+                        '<div class="child-profile-avatar">' + self.escapeHtml(child.avatar || '👶') + '</div>' +
+                    '</div>' +
                     '<div class="child-profile-info">' +
                         '<h4 class="child-profile-name">' + self.escapeHtml(child.name) + '</h4>' +
                         '<p class="child-profile-path">Current Path: ' + self.escapeHtml(currentPath) + '</p>' +
@@ -4439,19 +4532,49 @@ class ModuleGallery {
     }
 
     attachSectionListeners() {
+        var self = this;
         var toggles = this.container.querySelectorAll('.profile-section-toggle');
         toggles.forEach(function(toggle) {
-            toggle.addEventListener('click', function(e) {
-                var section = toggle.getAttribute('data-section');
-                var content = toggle.nextElementSibling;
-                var arrow = toggle.querySelector('.profile-section-arrow');
-                
+            var content = toggle.nextElementSibling;
+            var arrow = toggle.querySelector('.profile-section-arrow');
+            if (content) {
+                content.style.display = 'none';
+            }
+            if (arrow) {
+                arrow.style.transform = 'rotate(0deg)';
+            }
+
+            toggle.addEventListener('click', function() {
+                if (!content || !arrow) return;
                 if (content.style.display === 'none' || !content.style.display) {
                     content.style.display = 'block';
                     arrow.style.transform = 'rotate(180deg)';
                 } else {
                     content.style.display = 'none';
                     arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+
+        var addChildButton = this.container.querySelector('#profileAddChildBtn');
+        if (addChildButton) {
+            addChildButton.addEventListener('click', function(event) {
+                event.stopPropagation();
+                if (typeof showAddChildModal === 'function') {
+                    showAddChildModal();
+                }
+            });
+        }
+
+        var editButtons = this.container.querySelectorAll('.child-profile-edit-btn');
+        editButtons.forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                var childId = button.getAttribute('data-edit-child-id');
+                var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
+                var child = children.find(function(item) { return String(item.id) === String(childId); });
+                if (child) {
+                    promptEditChild(child);
                 }
             });
         });
