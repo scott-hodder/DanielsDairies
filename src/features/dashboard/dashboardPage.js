@@ -2025,7 +2025,6 @@ async function loadLatestWeeklyPlanData(childId) {
 function showChildrenView() {
   const welcomeLandingPage = document.getElementById('welcomeLandingPage')
   const childrenWelcomeHeader = document.getElementById('childrenWelcomeHeader')
-  const childrenSelectionSection = document.getElementById('childrenSelectionSection')
 
   if (loadingState) {
     hideElement(loadingState)
@@ -2042,9 +2041,6 @@ function showChildrenView() {
   const hasDefaultChild = Boolean(state.selectedChild)
   if (childrenWelcomeHeader) {
     childrenWelcomeHeader.style.display = hasDefaultChild ? 'none' : ''
-  }
-  if (childrenSelectionSection) {
-    childrenSelectionSection.style.display = hasDefaultChild ? 'none' : ''
   }
   
   showElement(childrenView)
@@ -4299,7 +4295,10 @@ class ModuleGallery {
         var selectedChildId = (typeof dashboardState !== 'undefined' && dashboardState.selectedChild && dashboardState.selectedChild.id) || null;
 
         if (!children || children.length === 0) {
-            return '<p class="profile-empty-state">No children added yet. Add your first child to get started!</p>';
+            return '<div class="profile-children-actions">' +
+                '<button type="button" class="profile-action-btn profile-action-btn-primary" id="profileAddChildBtn">➕ Add Child</button>' +
+            '</div>' +
+            '<p class="profile-empty-state">No children added yet. Add your first child to get started!</p>';
         }
 
         var profileChildren = children;
@@ -4313,7 +4312,10 @@ class ModuleGallery {
             profileChildren = [children[0]];
         }
 
-        return '<div class="children-profile-grid">' +
+        return '<div class="profile-children-actions">' +
+                '<button type="button" class="profile-action-btn profile-action-btn-primary" id="profileAddChildBtn">➕ Add Child</button>' +
+            '</div>' +
+            '<div class="children-profile-grid">' +
             profileChildren.map(function(child) {
                 var unlockedCount = 0;
                 var completedCount = 0;
@@ -4489,6 +4491,16 @@ class ModuleGallery {
                 }
             });
         });
+
+        var addChildButton = this.container.querySelector('#profileAddChildBtn');
+        if (addChildButton) {
+            addChildButton.addEventListener('click', function(event) {
+                event.stopPropagation();
+                if (typeof showAddChildModal === 'function') {
+                    showAddChildModal();
+                }
+            });
+        }
 
         var editButtons = this.container.querySelectorAll('.child-profile-edit-btn');
         editButtons.forEach(function(button) {

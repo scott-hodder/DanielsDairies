@@ -6472,6 +6472,12 @@ button:active, .btn:active {
 }
 
 /* Children Section */
+
+.profile-children-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
 .children-profile-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
