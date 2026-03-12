@@ -4560,7 +4560,27 @@ class ModuleGallery {
         paymentData.success_url = currentOrigin + '/dashboard.html?payment=success';
         paymentData.cancel_url = currentOrigin + '/dashboard.html?payment=cancelled';
 
+        var sessionResult = await supabase.auth.getSession();
+        var session = sessionResult?.data?.session || null;
+
+        if (!session?.access_token) {
+            throw new Error('Your session has expired. Please sign in again.');
+        }
+
+        var nowEpoch = Math.floor(Date.now() / 1000);
+        if (session.expires_at && session.expires_at <= nowEpoch + 30) {
+            var refreshResult = await supabase.auth.refreshSession();
+            session = refreshResult?.data?.session || session;
+        }
+
+        if (!session?.access_token) {
+            throw new Error('Unable to validate your session. Please sign in again.');
+        }
+
         var result = await supabase.functions.invoke('create-checkout-session', {
+            headers: {
+                Authorization: 'Bearer ' + session.access_token
+            },
             body: paymentData
         });
 
