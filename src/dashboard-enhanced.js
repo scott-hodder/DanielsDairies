@@ -627,19 +627,31 @@ class AdventureMapV4 {
         requestAnimationFrame(function() {
           self.renderDecorations();
           self.renderNodes();
-          self.renderRoadblocks(); // NEW: Render roadblocks on the map
           self.updateProgress();
           
-          // Add a small delay to ensure module data is fully processed before centering
-          setTimeout(function() {
-            self.centerOnCurrentModule();
-          }, 100);
-          
-          // Signal that the dashboard map has finished rendering
-          if (typeof window._dashboardRenderComplete === 'function') {
-            window._dashboardRenderComplete();
-            window._dashboardRenderComplete = null;
-          }
+          // Render roadblocks asynchronously to avoid blocking
+          self.renderRoadblocks().then(function() {
+            // Add a small delay to ensure module data is fully processed before centering
+            setTimeout(function() {
+              self.centerOnCurrentModule();
+            }, 100);
+            
+            // Signal that the dashboard map has finished rendering
+            if (typeof window._dashboardRenderComplete === 'function') {
+              window._dashboardRenderComplete();
+              window._dashboardRenderComplete = null;
+            }
+          }).catch(function(err) {
+            console.log('Roadblock rendering error:', err);
+            // Still signal completion even if roadblocks fail
+            setTimeout(function() {
+              self.centerOnCurrentModule();
+            }, 100);
+            if (typeof window._dashboardRenderComplete === 'function') {
+              window._dashboardRenderComplete();
+              window._dashboardRenderComplete = null;
+            }
+          });
         });
       } else {
         // No modules to render - still signal completion
