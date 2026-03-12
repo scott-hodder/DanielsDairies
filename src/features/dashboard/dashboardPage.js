@@ -4581,12 +4581,34 @@ class ModuleGallery {
             body: JSON.stringify(paymentData)
         });
 
-        if (!response.ok) {
-            var errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Payment request failed');
+        if (result.error) {
+            var response = result.error?.context;
+            var errorMessage = 'Payment request failed';
+
+            if (typeof Response !== 'undefined' && response instanceof Response) {
+                var responseBody = await response.clone().json().catch(async function() {
+                    return await response.clone().text().catch(function() {
+                        return null;
+                    });
+                });
+
+                if (responseBody && typeof responseBody === 'object') {
+                    errorMessage = responseBody.error || responseBody.message || errorMessage;
+                } else if (typeof responseBody === 'string' && responseBody) {
+                    errorMessage = responseBody;
+                }
+            } else if (result.error?.message) {
+                errorMessage = result.error.message;
+            }
+
+            if (String(errorMessage).toLowerCase().includes('invalid jwt')) {
+                errorMessage = 'Your session is no longer valid. Please sign in again and retry payment.';
+            }
+
+            throw new Error(errorMessage);
         }
 
-        return await response.json();
+        return result.data || {};
     }
 
     refreshAccordion() {
