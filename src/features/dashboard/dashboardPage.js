@@ -4567,6 +4567,15 @@ class ModuleGallery {
             throw new Error('Your session has expired. Please sign in again.');
         }
 
+        async function invokeCheckout(accessToken) {
+            return await supabase.functions.invoke('create-checkout-session', {
+                headers: {
+                    Authorization: 'Bearer ' + accessToken
+                },
+                body: paymentData
+            });
+        }
+
         var nowEpoch = Math.floor(Date.now() / 1000);
         if (session.expires_at && session.expires_at <= nowEpoch + 30) {
             var refreshResult = await supabase.auth.refreshSession();
@@ -4577,12 +4586,20 @@ class ModuleGallery {
             throw new Error('Unable to validate your session. Please sign in again.');
         }
 
-        var result = await supabase.functions.invoke('create-checkout-session', {
-            headers: {
-                Authorization: 'Bearer ' + session.access_token
-            },
-            body: paymentData
-        });
+        var result = await invokeCheckout(session.access_token);
+
+        var responseStatus = result.error?.context instanceof Response ? result.error.context.status : null;
+        var message = String(result.error?.message || '').toLowerCase();
+        var shouldRetryWithRefresh = Boolean(result.error) && (responseStatus === 401 || message.includes('invalid jwt'));
+
+        if (shouldRetryWithRefresh) {
+            var retryRefreshResult = await supabase.auth.refreshSession();
+            var refreshedSession = retryRefreshResult?.data?.session || null;
+
+            if (refreshedSession?.access_token) {
+                result = await invokeCheckout(refreshedSession.access_token);
+            }
+        }
 
         if (result.error) {
             var response = result.error?.context;
@@ -4602,6 +4619,10 @@ class ModuleGallery {
                 }
             } else if (result.error?.message) {
                 errorMessage = result.error.message;
+            }
+
+            if (String(errorMessage).toLowerCase().includes('invalid jwt')) {
+                errorMessage = 'Your session is no longer valid. Please sign in again and retry payment.';
             }
 
             throw new Error(errorMessage);
