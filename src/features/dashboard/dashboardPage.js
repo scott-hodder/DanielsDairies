@@ -4555,47 +4555,30 @@ class ModuleGallery {
     }
 
     async callPaymentEndpoint(paymentData) {
+        var supabaseUrl = window.supabaseUrl || supabase?.supabaseUrl || '';
+        if (!supabaseUrl) {
+            throw new Error('Supabase URL is not configured for payments.');
+        }
+
+        var session = await supabase.auth.getSession();
+        var accessToken = session?.data?.session?.access_token || '';
+
         // Use current origin for redirect URLs (works for both localhost and production)
         var currentOrigin = window.location.origin;
         paymentData.success_url = currentOrigin + '/dashboard.html?payment=success';
         paymentData.cancel_url = currentOrigin + '/dashboard.html?payment=cancelled';
 
-        async function ensureValidSession() {
-            var sessionResult = await supabase.auth.getSession();
-            var currentSession = sessionResult?.data?.session || null;
-
-            if (!currentSession?.access_token) {
-                throw new Error('Your session has expired. Please sign in again.');
-            }
-
-            var userResult = await supabase.auth.getUser(currentSession.access_token);
-            if (!userResult?.error) {
-                return currentSession;
-            }
-
-            var shouldRefresh = String(userResult.error?.message || '').toLowerCase().includes('jwt');
-            if (!shouldRefresh || !currentSession.refresh_token) {
-                throw new Error('Your session is no longer valid. Please sign in again and retry payment.');
-            }
-
-            var refreshed = await supabase.auth.refreshSession({ refresh_token: currentSession.refresh_token });
-            var refreshedSession = refreshed?.data?.session || null;
-            if (!refreshedSession?.access_token) {
-                throw new Error('Your session is no longer valid. Please sign in again and retry payment.');
-            }
-
-            var refreshedUserResult = await supabase.auth.getUser(refreshedSession.access_token);
-            if (refreshedUserResult?.error) {
-                throw new Error('Your session is no longer valid. Please sign in again and retry payment.');
-            }
-
-            return refreshedSession;
+        if (!accessToken) {
+            throw new Error('Your session has expired. Please sign in again.');
         }
 
-        await ensureValidSession();
-
-        var result = await supabase.functions.invoke('create-checkout-session', {
-            body: paymentData
+        var response = await fetch(supabaseUrl + '/functions/v1/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + accessToken
+            },
+            body: JSON.stringify(paymentData)
         });
 
         if (result.error) {
