@@ -4555,30 +4555,39 @@ class ModuleGallery {
     }
 
     async callPaymentEndpoint(paymentData) {
-        var supabaseUrl = window.supabaseUrl || 'https://wximnkhcpugfyjshgaim.supabase.co';
-        var session = await window.supabase?.auth?.getSession?.();
-        var accessToken = session?.data?.session?.access_token || '';
-
         // Use current origin for redirect URLs (works for both localhost and production)
         var currentOrigin = window.location.origin;
         paymentData.success_url = currentOrigin + '/dashboard.html?payment=success';
         paymentData.cancel_url = currentOrigin + '/dashboard.html?payment=cancelled';
 
-        var response = await fetch(supabaseUrl + '/functions/v1/create-checkout-session', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + accessToken
-            },
-            body: JSON.stringify(paymentData)
+        var result = await supabase.functions.invoke('create-checkout-session', {
+            body: paymentData
         });
 
-        if (!response.ok) {
-            var errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Payment request failed');
+        if (result.error) {
+            var response = result.error?.context;
+            var errorMessage = 'Payment request failed';
+
+            if (typeof Response !== 'undefined' && response instanceof Response) {
+                var responseBody = await response.clone().json().catch(async function() {
+                    return await response.clone().text().catch(function() {
+                        return null;
+                    });
+                });
+
+                if (responseBody && typeof responseBody === 'object') {
+                    errorMessage = responseBody.error || responseBody.message || errorMessage;
+                } else if (typeof responseBody === 'string' && responseBody) {
+                    errorMessage = responseBody;
+                }
+            } else if (result.error?.message) {
+                errorMessage = result.error.message;
+            }
+
+            throw new Error(errorMessage);
         }
 
-        return await response.json();
+        return result.data || {};
     }
 
     refreshAccordion() {
