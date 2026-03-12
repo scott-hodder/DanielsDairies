@@ -4560,46 +4560,43 @@ class ModuleGallery {
         paymentData.success_url = currentOrigin + '/dashboard.html?payment=success';
         paymentData.cancel_url = currentOrigin + '/dashboard.html?payment=cancelled';
 
-        var sessionResult = await supabase.auth.getSession();
-        var session = sessionResult?.data?.session || null;
+        async function ensureValidSession() {
+            var sessionResult = await supabase.auth.getSession();
+            var currentSession = sessionResult?.data?.session || null;
 
-        if (!session?.access_token) {
-            throw new Error('Your session has expired. Please sign in again.');
-        }
-
-        async function invokeCheckout(accessToken) {
-            return await supabase.functions.invoke('create-checkout-session', {
-                headers: {
-                    Authorization: 'Bearer ' + accessToken
-                },
-                body: paymentData
-            });
-        }
-
-        var nowEpoch = Math.floor(Date.now() / 1000);
-        if (session.expires_at && session.expires_at <= nowEpoch + 30) {
-            var refreshResult = await supabase.auth.refreshSession();
-            session = refreshResult?.data?.session || session;
-        }
-
-        if (!session?.access_token) {
-            throw new Error('Unable to validate your session. Please sign in again.');
-        }
-
-        var result = await invokeCheckout(session.access_token);
-
-        var responseStatus = result.error?.context instanceof Response ? result.error.context.status : null;
-        var message = String(result.error?.message || '').toLowerCase();
-        var shouldRetryWithRefresh = Boolean(result.error) && (responseStatus === 401 || message.includes('invalid jwt'));
-
-        if (shouldRetryWithRefresh) {
-            var retryRefreshResult = await supabase.auth.refreshSession();
-            var refreshedSession = retryRefreshResult?.data?.session || null;
-
-            if (refreshedSession?.access_token) {
-                result = await invokeCheckout(refreshedSession.access_token);
+            if (!currentSession?.access_token) {
+                throw new Error('Your session has expired. Please sign in again.');
             }
+
+            var userResult = await supabase.auth.getUser(currentSession.access_token);
+            if (!userResult?.error) {
+                return currentSession;
+            }
+
+            var shouldRefresh = String(userResult.error?.message || '').toLowerCase().includes('jwt');
+            if (!shouldRefresh || !currentSession.refresh_token) {
+                throw new Error('Your session is no longer valid. Please sign in again and retry payment.');
+            }
+
+            var refreshed = await supabase.auth.refreshSession({ refresh_token: currentSession.refresh_token });
+            var refreshedSession = refreshed?.data?.session || null;
+            if (!refreshedSession?.access_token) {
+                throw new Error('Your session is no longer valid. Please sign in again and retry payment.');
+            }
+
+            var refreshedUserResult = await supabase.auth.getUser(refreshedSession.access_token);
+            if (refreshedUserResult?.error) {
+                throw new Error('Your session is no longer valid. Please sign in again and retry payment.');
+            }
+
+            return refreshedSession;
         }
+
+        await ensureValidSession();
+
+        var result = await supabase.functions.invoke('create-checkout-session', {
+            body: paymentData
+        });
 
         if (result.error) {
             var response = result.error?.context;
