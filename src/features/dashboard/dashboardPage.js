@@ -4192,11 +4192,11 @@ class ModuleGallery {
     }
 
     getCurrentTierName() {
-        return (currentSubscription?.tier || 'mid').toLowerCase();
+        return (currentSubscription && currentSubscription.tier || 'mid').toLowerCase();
     }
 
     getNextPaymentDateLabel() {
-        var rawDate = currentSubscription?.stripe_current_period_end || currentSubscription?.current_period_end || null;
+        var rawDate = (currentSubscription && currentSubscription.stripe_current_period_end) || (currentSubscription && currentSubscription.current_period_end) || null;
         if (!rawDate) {
             return 'Pending Stripe sync';
         }
@@ -4204,8 +4204,8 @@ class ModuleGallery {
     }
 
     getBillingCycleLabel() {
-        var start = currentSubscription?.stripe_current_period_start || currentSubscription?.current_period_start || null;
-        var end = currentSubscription?.stripe_current_period_end || currentSubscription?.current_period_end || null;
+        var start = (currentSubscription && currentSubscription.stripe_current_period_start) || (currentSubscription && currentSubscription.current_period_start) || null;
+        var end = (currentSubscription && currentSubscription.stripe_current_period_end) || (currentSubscription && currentSubscription.current_period_end) || null;
         if (!start || !end) return 'Pending Stripe sync';
         return this.formatDateDDMMYYYY(start) + ' → ' + this.formatDateDDMMYYYY(end);
     }
@@ -4243,42 +4243,218 @@ class ModuleGallery {
         this.container.innerHTML =
             '<section class="profile-hub">' +
                 '<div class="profile-hub-header">' +
-                    '<h2 class="profile-hub-title">👤 Your Profile & Plan</h2>' +
-                    '<p class="profile-hub-subtitle">Manage billing, subscription details, and your current family learning tier.</p>' +
+                    '<h2 class="profile-hub-title">👤 Your Profile</h2>' +
+                    '<p class="profile-hub-subtitle">Manage your family learning journey</p>' +
                 '</div>' +
-                '<div class="profile-hub-grid">' +
-                    '<article class="profile-hub-card">' +
-                        '<h3>Subscription Overview</h3>' +
-                        '<div class="profile-stat-list">' +
-                            '<div class="profile-stat-item"><span>Current Tier</span><strong>' + this.escapeHtml((activeTier?.tier || currentTierName).toUpperCase()) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Monthly Modules</span><strong>' + (activeTier?.modules_per_month || 0) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Monthly Cost</span><strong>' + this.escapeHtml(this.formatCurrency(activeTier?.monthly_price_cents)) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Status</span><strong>' + this.escapeHtml((currentSubscription?.status || 'active').toUpperCase()) + '</strong></div>' +
+                '<div class="profile-sections">' +
+                    '<div class="profile-section">' +
+                        '<button type="button" class="profile-section-toggle" data-section="children">' +
+                            '<span class="profile-section-title">Children</span>' +
+                            '<span class="profile-section-arrow">▼</span>' +
+                        '</button>' +
+                        '<div class="profile-section-content" id="profile-children-content">' +
+                            this.renderChildrenSection() +
                         '</div>' +
-                    '</article>' +
-                    '<article class="profile-hub-card">' +
-                        '<h3>Billing Snapshot</h3>' +
-                        '<div class="profile-stat-list">' +
-                            '<div class="profile-stat-item"><span>Next Payment Due</span><strong>' + this.escapeHtml(this.getNextPaymentDateLabel()) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Credits Available</span><strong>' + (currentCreditSummary?.credits_available ?? 0) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Credits Used This Month</span><strong>' + (currentCreditSummary?.credits_used ?? 0) + '</strong></div>' +
-                            '<div class="profile-stat-item"><span>Billing Cycle</span><strong>' + this.escapeHtml(this.getBillingCycleLabel()) + '</strong></div>' +
+                    '</div>' +
+                    '<div class="profile-section">' +
+                        '<button type="button" class="profile-section-toggle" data-section="plan">' +
+                            '<span class="profile-section-title">Plan</span>' +
+                            '<span class="profile-section-arrow">▼</span>' +
+                        '</button>' +
+                        '<div class="profile-section-content" id="profile-plan-content">' +
+                            this.renderPlanSection(activeTier, currentTierName) +
                         '</div>' +
-                    '</article>' +
+                    '</div>' +
+                    '<div class="profile-section">' +
+                        '<button type="button" class="profile-section-toggle" data-section="modules">' +
+                            '<span class="profile-section-title">Modules</span>' +
+                            '<span class="profile-section-arrow">▼</span>' +
+                        '</button>' +
+                        '<div class="profile-section-content" id="profile-modules-content">' +
+                            this.renderModulesSection() +
+                        '</div>' +
+                    '</div>' +
                 '</div>' +
-                '<article class="profile-hub-card profile-hub-card-full">' +
-                    '<div class="profile-plan-cta">' +
-                        '<div><h3>Need a different tier?</h3><p>Compare plans and switch to the level that best supports your family.</p></div>' +
-                        '<button type="button" id="openChangePlanModal" class="profile-change-plan-btn">Change Plan</button>' +
-                    '</div>' +
-                '</article>' +
-                '<article class="profile-hub-card profile-hub-card-full">' +
-                    '<div class="profile-plan-cta">' +
-                        '<div><h3>Make a Payment</h3><p>Pay for your subscription with flexible options - monthly, yearly, or custom dates.</p></div>' +
-                        '<button type="button" id="openMakePaymentModal" class="profile-change-plan-btn" style="background-color: #2A8F8F;">Make Payment</button>' +
-                    '</div>' +
-                '</article>' +
             '</section>';
+
+        // Add event listeners for collapsible sections
+        this.attachSectionListeners();
+    }
+
+    renderChildrenSection() {
+        var self = this;
+        var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
+        
+        if (!children || children.length === 0) {
+            return '<p class="profile-empty-state">No children added yet. Add your first child to get started!</p>';
+        }
+
+        return '<div class="children-profile-grid">' +
+            children.map(function(child) {
+                var unlockedCount = 0;
+                var completedCount = 0;
+                var starsEarned = child.stars || 0;
+                var currentPath = 'Not Started';
+
+                if (window.childModuleStats && window.childModuleStats[child.id]) {
+                    var stats = window.childModuleStats[child.id];
+                    unlockedCount = stats.unlockedCount || 0;
+                    completedCount = stats.completedCount || 0;
+                    starsEarned = stats.totalStars || child.stars || 0;
+                }
+
+                if (window.childLearningPaths && window.childLearningPaths[child.id]) {
+                    currentPath = window.childLearningPaths[child.id].name || 'Not Started';
+                }
+
+                return '<div class="child-profile-card">' +
+                    '<div class="child-profile-avatar">' + self.escapeHtml(child.avatar || '👶') + '</div>' +
+                    '<div class="child-profile-info">' +
+                        '<h4 class="child-profile-name">' + self.escapeHtml(child.name) + '</h4>' +
+                        '<p class="child-profile-path">Current Path: ' + self.escapeHtml(currentPath) + '</p>' +
+                        '<div class="child-profile-stats">' +
+                            '<div class="child-stat">' +
+                                '<span class="child-stat-value">' + unlockedCount + '</span>' +
+                                '<span class="child-stat-label">Unlocked</span>' +
+                            '</div>' +
+                            '<div class="child-stat">' +
+                                '<span class="child-stat-value">' + completedCount + '</span>' +
+                                '<span class="child-stat-label">Completed</span>' +
+                            '</div>' +
+                            '<div class="child-stat">' +
+                                '<span class="child-stat-value">' + starsEarned + '</span>' +
+                                '<span class="child-stat-label">Stars</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('') +
+        '</div>';
+    }
+
+    renderPlanSection(activeTier, currentTierName) {
+        return '<div class="plan-overview">' +
+            '<div class="plan-current-info">' +
+                '<div class="plan-tier-badge">' + this.escapeHtml(((activeTier && activeTier.tier) || currentTierName).toUpperCase()) + '</div>' +
+                '<h3>Current Plan Details</h3>' +
+                '<div class="plan-stats">' +
+                    '<div class="plan-stat">' +
+                        '<span class="plan-stat-label">Monthly Modules</span>' +
+                        '<span class="plan-stat-value">' + ((activeTier && activeTier.modules_per_month) || 0) + '</span>' +
+                    '</div>' +
+                    '<div class="plan-stat">' +
+                        '<span class="plan-stat-label">Monthly Cost</span>' +
+                        '<span class="plan-stat-value">' + this.escapeHtml(this.formatCurrency(activeTier && activeTier.monthly_price_cents)) + '</span>' +
+                    '</div>' +
+                    '<div class="plan-stat">' +
+                        '<span class="plan-stat-label">Status</span>' +
+                        '<span class="plan-stat-value">' + this.escapeHtml(((currentSubscription && currentSubscription.status) || 'active').toUpperCase()) + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="plan-billing-info">' +
+                '<h4>Billing Snapshot</h4>' +
+                '<div class="billing-stats">' +
+                    '<div class="billing-stat">' +
+                        '<span class="billing-stat-label">Next Payment</span>' +
+                        '<span class="billing-stat-value">' + this.escapeHtml(this.getNextPaymentDateLabel()) + '</span>' +
+                    '</div>' +
+                    '<div class="billing-stat">' +
+                        '<span class="billing-stat-label">Credits Available</span>' +
+                        '<span class="billing-stat-value">' + ((currentCreditSummary && currentCreditSummary.credits_available) || 0) + '</span>' +
+                    '</div>' +
+                    '<div class="billing-stat">' +
+                        '<span class="billing-stat-label">Credits Used</span>' +
+                        '<span class="billing-stat-value">' + ((currentCreditSummary && currentCreditSummary.credits_used) || 0) + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="plan-actions">' +
+                '<button type="button" id="openChangePlanModal" class="profile-action-btn">Change Plan</button>' +
+                '<button type="button" id="openMakePaymentModal" class="profile-action-btn profile-action-btn-primary">Make Payment</button>' +
+            '</div>' +
+        '</div>';
+    }
+
+    renderModulesSection() {
+        var self = this;
+        var unlockedModules = [];
+        var completedModules = [];
+        var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
+        var modules = (typeof dashboardState !== 'undefined' && dashboardState.modules) || [];
+
+        if (children && children.length > 0) {
+            children.forEach(function(child) {
+                if (window.childModuleAssignments && window.childModuleAssignments[child.id]) {
+                    Object.values(window.childModuleAssignments[child.id]).forEach(function(assignment) {
+                        if (assignment.is_active) {
+                            var module = modules.find(function(m) { return m.id === assignment.module_id; });
+                            if (module) {
+                                if (!unlockedModules.find(function(m) { return m.id === module.id; })) {
+                                    unlockedModules.push(module);
+                                }
+                                if (assignment.is_completed) {
+                                    if (!completedModules.find(function(m) { return m.id === module.id; })) {
+                                        completedModules.push(module);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        return '<div class="modules-overview">' +
+            '<div class="modules-category">' +
+                '<h4>📖 Unlocked Modules (' + unlockedModules.length + ')</h4>' +
+                '<div class="modules-grid">' +
+                    (unlockedModules.length > 0 ? 
+                        unlockedModules.map(function(module) {
+                            return '<div class="module-tile">' +
+                                '<div class="module-tile-emoji">' + self.escapeHtml(module.emoji || '📚') + '</div>' +
+                                '<div class="module-tile-title">' + self.escapeHtml(module.title) + '</div>' +
+                            '</div>';
+                        }).join('') :
+                        '<p class="modules-empty">No modules unlocked yet</p>'
+                    ) +
+                '</div>' +
+            '</div>' +
+            '<div class="modules-category">' +
+                '<h4>✅ Completed Modules (' + completedModules.length + ')</h4>' +
+                '<div class="modules-grid">' +
+                    (completedModules.length > 0 ?
+                        completedModules.map(function(module) {
+                            return '<div class="module-tile completed">' +
+                                '<div class="module-tile-emoji">' + self.escapeHtml(module.emoji || '📚') + '</div>' +
+                                '<div class="module-tile-title">' + self.escapeHtml(module.title) + '</div>' +
+                                '<div class="module-tile-check">✓</div>' +
+                            '</div>';
+                        }).join('') :
+                        '<p class="modules-empty">No modules completed yet</p>'
+                    ) +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
+    attachSectionListeners() {
+        var toggles = this.container.querySelectorAll('.profile-section-toggle');
+        toggles.forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                var section = toggle.getAttribute('data-section');
+                var content = toggle.nextElementSibling;
+                var arrow = toggle.querySelector('.profile-section-arrow');
+                
+                if (content.style.display === 'none' || !content.style.display) {
+                    content.style.display = 'block';
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    content.style.display = 'none';
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
     }
 
     renderTierAccordion(tiers, selectedTierName) {
@@ -4536,7 +4712,8 @@ class ModuleGallery {
                 paymentType: 'subscription',
                 months: this.selectedMonths,
                 newEndDate: newEndDate.toISOString().split('T')[0],
-                amount: price
+                amount: price,
+                tier: this.getCurrentTierName()
             });
 
             if (response.url) {
@@ -4555,7 +4732,7 @@ class ModuleGallery {
     }
 
     async callPaymentEndpoint(paymentData) {
-        var supabaseUrl = window.supabaseUrl || supabase?.supabaseUrl || '';
+        var supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
         if (!supabaseUrl) {
             throw new Error('Supabase URL is not configured for payments.');
         }
@@ -4581,24 +4758,18 @@ class ModuleGallery {
             body: JSON.stringify(paymentData)
         });
 
-        if (result.error) {
-            var response = result.error?.context;
+        if (!response.ok) {
             var errorMessage = 'Payment request failed';
 
-            if (typeof Response !== 'undefined' && response instanceof Response) {
-                var responseBody = await response.clone().json().catch(async function() {
-                    return await response.clone().text().catch(function() {
-                        return null;
-                    });
-                });
-
-                if (responseBody && typeof responseBody === 'object') {
-                    errorMessage = responseBody.error || responseBody.message || errorMessage;
-                } else if (typeof responseBody === 'string' && responseBody) {
-                    errorMessage = responseBody;
+            try {
+                var errorBody = await response.json();
+                errorMessage = errorBody.error || errorBody.message || errorMessage;
+            } catch (e) {
+                try {
+                    errorMessage = await response.text() || errorMessage;
+                } catch (e2) {
+                    // Use default error message
                 }
-            } else if (result.error?.message) {
-                errorMessage = result.error.message;
             }
 
             if (String(errorMessage).toLowerCase().includes('invalid jwt')) {
@@ -4608,7 +4779,8 @@ class ModuleGallery {
             throw new Error(errorMessage);
         }
 
-        return result.data || {};
+        var result = await response.json();
+        return result || {};
     }
 
     refreshAccordion() {

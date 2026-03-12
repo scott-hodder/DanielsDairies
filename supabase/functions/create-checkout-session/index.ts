@@ -80,6 +80,7 @@ serve(async (req) => {
     const months = body?.months || 1
     const credits = body?.credits || 0
     const newEndDate = body?.newEndDate
+    const requestedTier = body?.tier || ''
     const appUrl = Deno.env.get('APP_URL') || 'https://danielsdiaries.com.au'
     const successUrl = body?.success_url || `${appUrl}/dashboard.html?payment=success`
     const cancelUrl = body?.cancel_url || `${appUrl}/dashboard.html?payment=cancelled`
@@ -111,10 +112,11 @@ serve(async (req) => {
       .eq('parent_id', user.id)
       .maybeSingle()
 
-    const activeTier = normalizeTierCode(currentSub?.tier) || 'low'
+    const activeTier = normalizeTierCode(currentSub?.tier) || normalizeTierCode(requestedTier) || 'low'
+    
     const { data: tierPricing } = await admin
       .from('subscription_tiers')
-      .select('monthly_price_cents, discount_3_month, discount_6_month, discount_12_month')
+      .select('monthly_price_cents')
       .eq('tier', activeTier)
       .maybeSingle()
 
@@ -123,11 +125,12 @@ serve(async (req) => {
         ? tierPricing.monthly_price_cents
         : DEFAULT_MONTHLY_PRICE
 
+    // Use default discount rates since discount columns don't exist in the table yet
     const discountRates: Record<number, number> = {
       1: 0,
-      3: normalizeDiscountRate(tierPricing?.discount_3_month) || DEFAULT_DISCOUNT_RATES[3],
-      6: normalizeDiscountRate(tierPricing?.discount_6_month) || DEFAULT_DISCOUNT_RATES[6],
-      12: normalizeDiscountRate(tierPricing?.discount_12_month) || DEFAULT_DISCOUNT_RATES[12]
+      3: DEFAULT_DISCOUNT_RATES[3],
+      6: DEFAULT_DISCOUNT_RATES[6],
+      12: DEFAULT_DISCOUNT_RATES[12]
     }
 
     let customerId = currentSub?.stripe_customer_id as string | null | undefined

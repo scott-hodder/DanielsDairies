@@ -1491,10 +1491,10 @@ class AdventureMapV4 {
 
   getTownStageMeta() {
     return [
-      { label: 'Trailhead', emoji: '🌱', minComplete: 0, maxComplete: 2, milestone: 3, rangeLabel: '0-2' },
-      { label: 'Village', emoji: '🏡', minComplete: 3, maxComplete: 5, milestone: 6, rangeLabel: '3-5' },
-      { label: 'Town Center', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '6-8' },
-      { label: 'City', emoji: '🏙️', minComplete: 9, maxComplete: 99, milestone: null, rangeLabel: '9+' }
+      { label: 'Trailhead', emoji: '🌱', minComplete: 0, maxComplete: 2, milestone: 3, rangeLabel: '1-3' },
+      { label: 'Village', emoji: '🏡', minComplete: 3, maxComplete: 5, milestone: 6, rangeLabel: '4-6' },
+      { label: 'Town Center', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '7-9' },
+      { label: 'City', emoji: '🏙️', minComplete: 9, maxComplete: 99, milestone: null, rangeLabel: '10+' }
     ];
   }
 

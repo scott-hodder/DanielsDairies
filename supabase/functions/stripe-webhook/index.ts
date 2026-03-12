@@ -88,7 +88,12 @@ serve(async (req) => {
     })
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey)
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
 
   async function findParentId(customerId?: string | null, subscriptionId?: string | null) {
     if (subscriptionId) {
@@ -466,7 +471,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
+    console.error('Webhook error:', error)
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', stack: error instanceof Error ? error.stack : null }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
