@@ -23,6 +23,31 @@ const state = dashboardState
 
 window.state = window.state || {}
 
+const SELECTED_CHILD_STORAGE_PREFIX = 'dashboard:selectedChild:'
+
+function getSelectedChildStorageKey() {
+  if (!state.currentUser || !state.currentUser.id) return null
+  return `${SELECTED_CHILD_STORAGE_PREFIX}${state.currentUser.id}`
+}
+
+function rememberSelectedChildId(childId) {
+  const key = getSelectedChildStorageKey()
+  if (!key || !childId) return
+  localStorage.setItem(key, String(childId))
+}
+
+function getRememberedChildId() {
+  const key = getSelectedChildStorageKey()
+  if (!key) return null
+  return localStorage.getItem(key)
+}
+
+function clearRememberedChildId() {
+  const key = getSelectedChildStorageKey()
+  if (!key) return
+  localStorage.removeItem(key)
+}
+
 // Helper function to check if streak popup was shown today (per child)
 function hasStreakPopupBeenShownToday(childId) {
   const today = new Date().toISOString().split('T')[0]
@@ -1273,6 +1298,24 @@ async function init() {
       }
     }
 
+    // No childId in URL: restore remembered child or auto-select the only child.
+    if (state.children && state.children.length === 1) {
+      await selectChild(state.children[0])
+      clearTimeout(loadingTimeout)
+      return
+    }
+
+    const rememberedChildId = getRememberedChildId()
+    if (rememberedChildId && state.children && state.children.length > 1) {
+      const rememberedChild = state.children.find(c => String(c.id) === String(rememberedChildId))
+      if (rememberedChild) {
+        await selectChild(rememberedChild)
+        clearTimeout(loadingTimeout)
+        return
+      }
+      clearRememberedChildId()
+    }
+
     // Default: show children/profile view
     showChildrenView()
     hideLoadingScreen()
@@ -1901,6 +1944,7 @@ async function selectChild(child) {
   
   setSelectedChild(child)
   setAppState('selectedChild', child)
+  rememberSelectedChildId(child.id)
   
   try {
     // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
@@ -2027,6 +2071,7 @@ async function loadLatestWeeklyPlanData(childId) {
 function showChildrenView() {
   const welcomeLandingPage = document.getElementById('welcomeLandingPage')
   const childrenWelcomeHeader = document.getElementById('childrenWelcomeHeader')
+  const childrenSelectionSection = document.getElementById('childrenSelectionSection')
 
   if (loadingState) {
     hideElement(loadingState)
@@ -2041,8 +2086,13 @@ function showChildrenView() {
   }
 
   const hasDefaultChild = Boolean(state.selectedChild)
+  const shouldShowSelector = !hasDefaultChild && Array.isArray(state.children) && state.children.length > 1
+
   if (childrenWelcomeHeader) {
-    childrenWelcomeHeader.style.display = hasDefaultChild ? 'none' : ''
+    childrenWelcomeHeader.style.display = shouldShowSelector ? '' : 'none'
+  }
+  if (childrenSelectionSection) {
+    childrenSelectionSection.style.display = shouldShowSelector ? '' : 'none'
   }
   
   showElement(childrenView)
@@ -3478,8 +3528,12 @@ const adminButtonDesktop = document.getElementById('adminButtonDesktop')
 
 if (dashboardHomeButtonDesktop) {
   dashboardHomeButtonDesktop.addEventListener('click', () => {
-    if (state.selectedChild) {
-      window.location.href = `/dashboard.html?childId=${state.selectedChild.id}`
+    const fallbackChild = state.selectedChild ||
+      (state.children && state.children.length === 1 ? state.children[0] : null) ||
+      (state.children && state.children.find(child => String(child.id) === String(getRememberedChildId())))
+
+    if (fallbackChild) {
+      window.location.href = `/dashboard.html?childId=${fallbackChild.id}`
     } else {
       window.location.href = '/dashboard.html'
     }
@@ -3501,6 +3555,7 @@ if (billingButtonDesktop) {
 if (logoutButtonDesktop) {
   logoutButtonDesktop.addEventListener('click', async () => {
     try {
+      clearRememberedChildId()
       await signOut()
       window.location.href = '/'
     } catch (error) {
@@ -3584,7 +3639,15 @@ if (moreModulesNextButton) {
 
 if (dashboardHomeButton) {
   dashboardHomeButton.addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+    const fallbackChild = state.selectedChild ||
+      (state.children && state.children.length === 1 ? state.children[0] : null) ||
+      (state.children && state.children.find(child => String(child.id) === String(getRememberedChildId())))
+
+    if (fallbackChild) {
+      window.location.href = `/dashboard.html?childId=${fallbackChild.id}`
+    } else {
+      window.location.href = '/dashboard.html'
+    }
   })
 }
 
@@ -3604,6 +3667,7 @@ if (billingButton) {
 if (logoutButton) {
   logoutButton.addEventListener('click', async () => {
     try {
+      clearRememberedChildId()
       await signOut()
       window.location.href = '/'
     } catch (error) {
