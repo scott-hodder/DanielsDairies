@@ -47,6 +47,12 @@ function mapStripeStatus(status?: string): string {
   }
 }
 
+function normalizeTierCode(tier: unknown): string | null {
+  if (typeof tier !== 'string') return null
+  const normalized = tier.trim().toLowerCase()
+  return normalized || null
+}
+
 function extractTierFromPrice(price: Stripe.Price | null | undefined): Tier | null {
   const tier = price?.metadata?.tier
   if (tier === 'low' || tier === 'mid' || tier === 'top') return tier
@@ -119,7 +125,7 @@ serve(async (req) => {
   }) {
     const payload = {
       parent_id: params.parentId,
-      tier: params.tier ?? null,
+      tier: normalizeTierCode(params.tier),
       status: mapStripeStatus(params.stripeStatus ?? undefined),
       stripe_customer_id: params.customerId ?? null,
       stripe_subscription_id: params.subscriptionId ?? null,
@@ -149,14 +155,14 @@ serve(async (req) => {
     const price = subscription.items.data[0]?.price
     const tier = extractTierFromPrice(price)
 
-    let resolvedTier: string | null = tier
+    let resolvedTier: string | null = normalizeTierCode(tier)
     if (!resolvedTier) {
       const { data: existing } = await supabase
         .from('parent_subscriptions')
         .select('tier')
         .eq('parent_id', parentId)
         .maybeSingle()
-      resolvedTier = (existing?.tier as string | null) ?? null
+      resolvedTier = normalizeTierCode(existing?.tier)
     }
 
     if (!resolvedTier) return
@@ -206,14 +212,14 @@ serve(async (req) => {
     const { parentId, months } = params
     if (months <= 0) return
 
-    let resolvedTier = params.tier ?? null
+    let resolvedTier = normalizeTierCode(params.tier)
     if (!resolvedTier) {
       const { data: existing } = await supabase
         .from('parent_subscriptions')
         .select('tier')
         .eq('parent_id', parentId)
         .maybeSingle()
-      resolvedTier = (existing?.tier as string | null) ?? null
+      resolvedTier = normalizeTierCode(existing?.tier)
     }
 
     if (!resolvedTier) return
@@ -300,7 +306,7 @@ serve(async (req) => {
             .upsert({
               parent_id: parentId,
               stripe_customer_id: customerId,
-              tier: currentSub?.tier || 'low',
+              tier: normalizeTierCode(currentSub?.tier) || 'low',
               status: 'active',
               current_period_start: periodStart.toISOString().slice(0, 10),
               current_period_end: periodEnd.toISOString().slice(0, 10),

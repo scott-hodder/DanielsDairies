@@ -29,6 +29,10 @@ function normalizeDiscountRate(value: unknown): number {
   return value > 1 ? value / 100 : value
 }
 
+function normalizeTierCode(tier: unknown): string {
+  return typeof tier === 'string' ? tier.trim().toLowerCase() : ''
+}
+
 function calculateSubscriptionPrice(
   months: number,
   monthlyPriceCents: number,
@@ -107,7 +111,7 @@ serve(async (req) => {
       .eq('parent_id', user.id)
       .maybeSingle()
 
-    const activeTier = currentSub?.tier || 'low'
+    const activeTier = normalizeTierCode(currentSub?.tier) || 'low'
     const { data: tierPricing } = await admin
       .from('subscription_tiers')
       .select('monthly_price_cents, discount_3_month, discount_6_month, discount_12_month')
@@ -203,7 +207,7 @@ serve(async (req) => {
       const { error: upsertError } = await admin.from('parent_subscriptions').upsert(
         {
           parent_id: user.id,
-          tier: currentSub?.tier || 'low',
+          tier: activeTier,
           stripe_customer_id: customerId,
           status: currentSub ? 'active' : 'pending',
           updated_at: new Date().toISOString()
