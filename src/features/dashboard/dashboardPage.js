@@ -4555,14 +4555,22 @@ class ModuleGallery {
     }
 
     async callPaymentEndpoint(paymentData) {
-        var supabaseUrl = window.supabaseUrl || 'https://wximnkhcpugfyjshgaim.supabase.co';
-        var session = await window.supabase?.auth?.getSession?.();
+        var supabaseUrl = window.supabaseUrl || supabase?.supabaseUrl || '';
+        if (!supabaseUrl) {
+            throw new Error('Supabase URL is not configured for payments.');
+        }
+
+        var session = await supabase.auth.getSession();
         var accessToken = session?.data?.session?.access_token || '';
 
         // Use current origin for redirect URLs (works for both localhost and production)
         var currentOrigin = window.location.origin;
         paymentData.success_url = currentOrigin + '/dashboard.html?payment=success';
         paymentData.cancel_url = currentOrigin + '/dashboard.html?payment=cancelled';
+
+        if (!accessToken) {
+            throw new Error('Your session has expired. Please sign in again.');
+        }
 
         var response = await fetch(supabaseUrl + '/functions/v1/create-checkout-session', {
             method: 'POST',
@@ -4594,6 +4602,10 @@ class ModuleGallery {
         var currentPaidTo = this.getCurrentPaidToDate();
         var formattedPaidTo = this.formatDateDisplay(currentPaidTo);
         var isPastDue = new Date(currentPaidTo) < new Date();
+        var oneMonthLabel = this.getDurationPriceLabel(1);
+        var threeMonthLabel = this.getDurationPriceLabel(3);
+        var sixMonthLabel = this.getDurationPriceLabel(6);
+        var twelveMonthLabel = this.getDurationPriceLabel(12);
 
         var modal = document.createElement('div');
         modal.id = 'makePaymentModal';
@@ -4620,28 +4632,28 @@ class ModuleGallery {
                             '<input type="radio" name="paymentDuration" value="1" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
                             '<div style="flex: 1;">' +
                                 '<div style="font-weight: 600; color: #1F2937;">1 Month</div>' +
-                                '<div style="font-size: 12px; color: #6B7280;">$19.00</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(oneMonthLabel) + '</div>' +
                             '</div>' +
                         '</label>' +
                         '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
                             '<input type="radio" name="paymentDuration" value="3" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
                             '<div style="flex: 1;">' +
                                 '<div style="font-weight: 600; color: #1F2937;">3 Months</div>' +
-                                '<div style="font-size: 12px; color: #6B7280;">$54.00 <span style="color: #16A34A;">(Save 5%)</span></div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(threeMonthLabel) + '</div>' +
                             '</div>' +
                         '</label>' +
                         '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
                             '<input type="radio" name="paymentDuration" value="6" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
                             '<div style="flex: 1;">' +
                                 '<div style="font-weight: 600; color: #1F2937;">6 Months</div>' +
-                                '<div style="font-size: 12px; color: #6B7280;">$102.00 <span style="color: #16A34A;">(Save 10%)</span></div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(sixMonthLabel) + '</div>' +
                             '</div>' +
                         '</label>' +
                         '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
                             '<input type="radio" name="paymentDuration" value="12" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
                             '<div style="flex: 1;">' +
                                 '<div style="font-weight: 600; color: #1F2937;">12 Months</div>' +
-                                '<div style="font-size: 12px; color: #6B7280;">$190.00 <span style="color: #16A34A;">(Save 17%)</span></div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(twelveMonthLabel) + '</div>' +
                             '</div>' +
                         '</label>' +
                     '</div>' +
@@ -4705,9 +4717,47 @@ class ModuleGallery {
         return newEnd;
     }
 
+    getCurrentTierConfig() {
+        var tiers = this.getSafeTiers();
+        var currentTierName = this.getCurrentTierName();
+        return tiers.find(function(t) { return t.tier === currentTierName; }) || null;
+    }
+
+    getMonthlyTierPrice() {
+        var tierConfig = this.getCurrentTierConfig();
+        var monthlyPriceCents = Number(tierConfig?.monthly_price_cents);
+        return Number.isFinite(monthlyPriceCents) && monthlyPriceCents > 0 ? (monthlyPriceCents / 100) : 19;
+    }
+
+    getDiscountRateForMonths(months) {
+        var tierConfig = this.getCurrentTierConfig();
+        var fallback = { 1: 0, 3: 0.05, 6: 0.10, 12: 0.17 };
+        var rawValue = months === 3
+            ? tierConfig?.discount_3_month
+            : months === 6
+                ? tierConfig?.discount_6_month
+                : months === 12
+                    ? tierConfig?.discount_12_month
+                    : 0;
+
+        var value = Number(rawValue);
+        if (!Number.isFinite(value) || value <= 0) return fallback[months] || 0;
+        return value > 1 ? value / 100 : value;
+    }
+
     getPaymentPrice(months) {
-        var prices = { 1: 19.00, 3: 54.00, 6: 102.00, 12: 190.00 };
-        return prices[months] || (months * 19.00);
+        var monthlyPrice = this.getMonthlyTierPrice();
+        var discountRate = this.getDiscountRateForMonths(months);
+        return Number((monthlyPrice * months * (1 - discountRate)).toFixed(2));
+    }
+
+    getDurationPriceLabel(months) {
+        var price = this.getPaymentPrice(months);
+        var discountRate = this.getDiscountRateForMonths(months);
+        if (discountRate > 0) {
+            return '$' + price.toFixed(2) + ' (Save ' + Math.round(discountRate * 100) + '%)';
+        }
+        return '$' + price.toFixed(2);
     }
 
     closeModal() {
