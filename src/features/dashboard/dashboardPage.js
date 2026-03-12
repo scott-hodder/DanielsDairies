@@ -4555,7 +4555,7 @@ class ModuleGallery {
     }
 
     async callPaymentEndpoint(paymentData) {
-        var supabaseUrl = window.supabaseUrl || supabase?.supabaseUrl || '';
+        var supabaseUrl = supabase?.supabaseUrl || window.supabaseUrl || '';
         if (!supabaseUrl) {
             throw new Error('Supabase URL is not configured for payments.');
         }
