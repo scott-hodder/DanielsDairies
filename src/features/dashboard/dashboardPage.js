@@ -1455,8 +1455,10 @@ function createChildCard(child) {
   }
 
   card.innerHTML = `
-    <button class="child-card-edit-btn" type="button" title="Edit child">✏️</button>
-    <div class="child-avatar">${avatar}</div>
+    <div class="child-avatar-wrap">
+      <button class="child-card-edit-btn" type="button" title="Edit child" aria-label="Edit ${child.name}">✏️</button>
+      <div class="child-avatar">${avatar}</div>
+    </div>
     <div class="child-name">${child.name}</div>
     <div class="child-stars">
       <span>⭐</span>
@@ -2022,7 +2024,9 @@ async function loadLatestWeeklyPlanData(childId) {
 // Show children view
 function showChildrenView() {
   const welcomeLandingPage = document.getElementById('welcomeLandingPage')
-  
+  const childrenWelcomeHeader = document.getElementById('childrenWelcomeHeader')
+  const childrenSelectionSection = document.getElementById('childrenSelectionSection')
+
   if (loadingState) {
     hideElement(loadingState)
   }
@@ -2033,6 +2037,14 @@ function showChildrenView() {
     } else {
       hideElement(welcomeLandingPage)
     }
+  }
+
+  const hasDefaultChild = Boolean(state.selectedChild)
+  if (childrenWelcomeHeader) {
+    childrenWelcomeHeader.style.display = hasDefaultChild ? 'none' : ''
+  }
+  if (childrenSelectionSection) {
+    childrenSelectionSection.style.display = hasDefaultChild ? 'none' : ''
   }
   
   showElement(childrenView)
@@ -4284,13 +4296,25 @@ class ModuleGallery {
     renderChildrenSection() {
         var self = this;
         var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
-        
+        var selectedChildId = (typeof dashboardState !== 'undefined' && dashboardState.selectedChild && dashboardState.selectedChild.id) || null;
+
         if (!children || children.length === 0) {
             return '<p class="profile-empty-state">No children added yet. Add your first child to get started!</p>';
         }
 
+        var profileChildren = children;
+        if (selectedChildId) {
+            profileChildren = children.filter(function(child) {
+                return child.id === selectedChildId;
+            });
+        }
+
+        if (!profileChildren.length) {
+            profileChildren = [children[0]];
+        }
+
         return '<div class="children-profile-grid">' +
-            children.map(function(child) {
+            profileChildren.map(function(child) {
                 var unlockedCount = 0;
                 var completedCount = 0;
                 var starsEarned = child.stars || 0;
@@ -4308,7 +4332,10 @@ class ModuleGallery {
                 }
 
                 return '<div class="child-profile-card">' +
-                    '<div class="child-profile-avatar">' + self.escapeHtml(child.avatar || '👶') + '</div>' +
+                    '<div class="child-profile-avatar-wrap">' +
+                        '<button type="button" class="child-profile-edit-btn" data-edit-child-id="' + self.escapeHtml(String(child.id)) + '" title="Edit child" aria-label="Edit ' + self.escapeHtml(child.name) + '">✏️</button>' +
+                        '<div class="child-profile-avatar">' + self.escapeHtml(child.avatar || '👶') + '</div>' +
+                    '</div>' +
                     '<div class="child-profile-info">' +
                         '<h4 class="child-profile-name">' + self.escapeHtml(child.name) + '</h4>' +
                         '<p class="child-profile-path">Current Path: ' + self.escapeHtml(currentPath) + '</p>' +
@@ -4439,19 +4466,39 @@ class ModuleGallery {
     }
 
     attachSectionListeners() {
+        var self = this;
         var toggles = this.container.querySelectorAll('.profile-section-toggle');
         toggles.forEach(function(toggle) {
-            toggle.addEventListener('click', function(e) {
-                var section = toggle.getAttribute('data-section');
-                var content = toggle.nextElementSibling;
-                var arrow = toggle.querySelector('.profile-section-arrow');
-                
+            var content = toggle.nextElementSibling;
+            var arrow = toggle.querySelector('.profile-section-arrow');
+            if (content) {
+                content.style.display = 'none';
+            }
+            if (arrow) {
+                arrow.style.transform = 'rotate(0deg)';
+            }
+
+            toggle.addEventListener('click', function() {
+                if (!content || !arrow) return;
                 if (content.style.display === 'none' || !content.style.display) {
                     content.style.display = 'block';
                     arrow.style.transform = 'rotate(180deg)';
                 } else {
                     content.style.display = 'none';
                     arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+
+        var editButtons = this.container.querySelectorAll('.child-profile-edit-btn');
+        editButtons.forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                var childId = button.getAttribute('data-edit-child-id');
+                var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
+                var child = children.find(function(item) { return String(item.id) === String(childId); });
+                if (child) {
+                    promptEditChild(child);
                 }
             });
         });
