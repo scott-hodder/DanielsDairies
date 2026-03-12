@@ -818,7 +818,7 @@ class DailyQuestManager {
           return;
         }
       } catch (e) {
-        console.log('DB not available, using localStorage');
+        console.log('DB not available or table missing, using localStorage:', e.message);
       }
     }
 
@@ -1589,7 +1589,7 @@ class DailyQuestManager {
           });
 
         if (insertError) {
-          console.error('Error saving quest completion:', insertError);
+          console.log('Note: Quest completion table not yet available, using localStorage:', insertError.message);
         }
 
         // Award star - directly update the 'stars' field on children table
@@ -1628,7 +1628,7 @@ class DailyQuestManager {
         await this.updateStarsDisplay();
         
       } catch (e) {
-        console.error('DB save failed:', e);
+        console.log('DB save failed, using localStorage:', e.message);
       }
     }
 

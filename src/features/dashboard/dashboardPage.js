@@ -1470,6 +1470,8 @@ function renderChildren() {
   
   if (loadingState) hideElement(loadingState)
   
+  if (!childrenGrid) return
+  
   childrenGrid.innerHTML = ''
   
   // Render each child
