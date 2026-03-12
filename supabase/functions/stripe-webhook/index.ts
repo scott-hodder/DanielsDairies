@@ -19,6 +19,15 @@ function toIsoTimestamp(unixSeconds?: number | null) {
   return new Date(unixSeconds * 1000).toISOString()
 }
 
+function toCurrentCalendarPeriod(date = new Date()) {
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  const start = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
+  const end = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10)
+  return { start, end }
+}
+
+
 function mapStripeStatus(status?: string): string {
   switch (status) {
     case 'trialing':
@@ -36,6 +45,12 @@ function mapStripeStatus(status?: string): string {
     default:
       return 'inactive'
   }
+}
+
+function normalizeTierCode(tier: unknown): string | null {
+  if (typeof tier !== 'string') return null
+  const normalized = tier.trim().toLowerCase()
+  return normalized || null
 }
 
 function extractTierFromPrice(price: Stripe.Price | null | undefined): Tier | null {
@@ -110,7 +125,7 @@ serve(async (req) => {
   }) {
     const payload = {
       parent_id: params.parentId,
-      tier: params.tier ?? null,
+      tier: normalizeTierCode(params.tier),
       status: mapStripeStatus(params.stripeStatus ?? undefined),
       stripe_customer_id: params.customerId ?? null,
       stripe_subscription_id: params.subscriptionId ?? null,
@@ -140,14 +155,14 @@ serve(async (req) => {
     const price = subscription.items.data[0]?.price
     const tier = extractTierFromPrice(price)
 
-    let resolvedTier: string | null = tier
+    let resolvedTier: string | null = normalizeTierCode(tier)
     if (!resolvedTier) {
       const { data: existing } = await supabase
         .from('parent_subscriptions')
         .select('tier')
         .eq('parent_id', parentId)
         .maybeSingle()
-      resolvedTier = (existing?.tier as string | null) ?? null
+      resolvedTier = normalizeTierCode(existing?.tier)
     }
 
     if (!resolvedTier) return
@@ -183,6 +198,57 @@ serve(async (req) => {
       stripe_event_id: event.id,
       created_at: new Date().toISOString()
     })
+
+    if (insertError && !insertError.message.toLowerCase().includes('duplicate key')) {
+      throw insertError
+    }
+  }
+
+  async function grantSubscriptionExtensionCredits(params: {
+    parentId: string
+    months: number
+    tier?: string | null
+  }) {
+    const { parentId, months } = params
+    if (months <= 0) return
+
+    let resolvedTier = normalizeTierCode(params.tier)
+    if (!resolvedTier) {
+      const { data: existing } = await supabase
+        .from('parent_subscriptions')
+        .select('tier')
+        .eq('parent_id', parentId)
+        .maybeSingle()
+      resolvedTier = normalizeTierCode(existing?.tier)
+    }
+
+    if (!resolvedTier) return
+
+    const { data: tierRow, error: tierError } = await supabase
+      .from('subscription_tiers')
+      .select('modules_per_month')
+      .eq('tier', resolvedTier)
+      .single()
+
+    if (tierError || !tierRow) throw tierError ?? new Error('Tier not found')
+
+    const creditsToGrant = tierRow.modules_per_month * months
+    if (creditsToGrant <= 0) return
+
+    const currentPeriod = toCurrentCalendarPeriod(new Date())
+
+    const { error: insertError } = await supabase
+      .from('subscription_credit_ledger')
+      .insert({
+        parent_id: parentId,
+        period_start: currentPeriod.start,
+        period_end: currentPeriod.end,
+        entry_type: 'grant',
+        credits_delta: creditsToGrant,
+        notes: `Stripe subscription payment grant (${resolvedTier}, ${months} month${months > 1 ? 's' : ''})`,
+        stripe_event_id: event.id,
+        created_at: new Date().toISOString()
+      })
 
     if (insertError && !insertError.message.toLowerCase().includes('duplicate key')) {
       throw insertError
@@ -240,7 +306,7 @@ serve(async (req) => {
             .upsert({
               parent_id: parentId,
               stripe_customer_id: customerId,
-              tier: currentSub?.tier || 'low',
+              tier: normalizeTierCode(currentSub?.tier) || 'low',
               status: 'active',
               current_period_start: periodStart.toISOString().slice(0, 10),
               current_period_end: periodEnd.toISOString().slice(0, 10),
@@ -254,6 +320,12 @@ serve(async (req) => {
             console.error('Failed to update subscription after payment:', updateError)
             throw updateError
           }
+
+          await grantSubscriptionExtensionCredits({
+            parentId,
+            months,
+            tier: currentSub?.tier || session.metadata?.tier || 'low'
+          })
 
           console.log(`Subscription extended for ${parentId}: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`)
           break
