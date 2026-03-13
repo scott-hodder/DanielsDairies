@@ -988,74 +988,75 @@ class DanielModulePreview {
     }
   }
 
-  showModulePreviewWithDaniel(module) {
+  async showModulePreviewWithDaniel(module) {
     const category = window.enhancedDashboard?.adventureMap?.currentCategory || 'all';
+    const child = window.state?.selectedChild;
+    const self = this;
     
-    // Show Daniel's pre-activity dialogue first
-    this.dialogueSystem.showPreActivity(module, category, async () => {
-      const child = window.state?.selectedChild;
+    // Get module order/position - check if this is the first module
+    // The module object from adventure map has pathwayOrder as a direct property
+    const rawMod = module.module || module;
+    const moduleOrder = module.pathwayOrder; // Direct property from adventure map module
+    
+    // Check if this is the first module in the current adventure map (index 0)
+    const adventureMap = window.enhancedDashboard?.adventureMap;
+    let moduleIndex = -1;
+    if (adventureMap && adventureMap.modules && adventureMap.modules.length > 0) {
+      moduleIndex = adventureMap.modules.findIndex(m => m.id === module.id);
+    }
+    const isFirstModuleInMap = moduleIndex === 0;
+    
+    // First module if pathwayOrder is 1 OR if it's the first in the current map view
+    const isFirstModule = moduleOrder === 1 || isFirstModuleInMap;
+    
+    console.log('[Daniel] Module clicked:', module.name, 'pathwayOrder:', moduleOrder, 'index:', moduleIndex, 'isFirstModule:', isFirstModule);
+    
+    // For the FIRST module, show intro + check-in INSTEAD of Daniel dialogue
+    // But only if they haven't already completed a check-in
+    if (child && isFirstModule) {
+      console.log('[Daniel] First module detected - checking if check-in already done');
       
-      if (child && module) {
+      // Check if any check-in has been completed for this child
+      const hasCompletedCheckin = await self.hasCompletedAnyCheckin(child.id);
+      console.log('[Daniel] Has completed check-in:', hasCompletedCheckin);
+      
+      if (!hasCompletedCheckin && typeof window.showCheckinPopup === 'function') {
+        console.log('[Daniel] Showing intro + check-in for first module');
+        const moduleIdToCheck = rawMod.id || module.id;
         const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
+        const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code, id: moduleIdToCheck });
         
-        // Check-in intercept for weeks 1, 4, 7, 10
-        // The raw DB module is at module.module (adventure map wraps it)
-        const CHECKIN_WEEKS = [1, 4, 7, 10];
-        const rawMod = module.module || module;
-        let week = Number(rawMod.week_number || rawMod.pathway_order || module.pathwayOrder || 0);
-        // Fallback: derive week from position in the adventure map's current module list
-        if (!week && window.enhancedDashboard?.adventureMap?.modules) {
-          const mapModules = window.enhancedDashboard.adventureMap.modules;
-          const idx = mapModules.findIndex(m => m.id === module.id);
-          if (idx !== -1) week = idx + 1;
-        }
-        if (week && CHECKIN_WEEKS.includes(week) && typeof window.showCheckinPopup === 'function') {
-          try {
-            // Use the module ID that will be stored - prefer rawMod.id, fallback to module.id
+        // On completion, navigate to module. On close/skip, stay on dashboard.
+        window.showCheckinPopup(popupMod, () => { window.location.href = moduleUrl; });
+        return; // Don't show Daniel dialogue
+      }
+    }
+    
+    // For non-first modules, check if we need a periodic check-in (every 3 modules)
+    if (child) {
+      try {
+        const needsPeriodicCheckin = await self.shouldTriggerCheckinForModuleCount(child.id);
+        console.log('[Daniel] Periodic check-in needed:', needsPeriodicCheckin);
+        
+        if (needsPeriodicCheckin) {
+          if (typeof window.showCheckinPopup === 'function') {
             const moduleIdToCheck = rawMod.id || module.id;
-            console.log('[Daniel Check-in] Checking for existing check-in:', { childId: child.id, moduleId: moduleIdToCheck, week });
+            const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
+            const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code, id: moduleIdToCheck });
             
-            // Check pathway_assessments for existing check-in (primary check)
-            const { data: existingAssessment, error: assessmentError } = await window.supabase
-              .from('pathway_assessments')
-              .select('id')
-              .eq('child_id', child.id)
-              .eq('module_id', moduleIdToCheck)
-              .in('assessment_type', ['checkin', 'check_in'])
-              .limit(1)
-              .maybeSingle();
-            
-            if (assessmentError) {
-              console.error('[Daniel Check-in] Error checking pathway_assessments:', assessmentError);
-            }
-            
-            // Also check weekly_checkins for backwards compatibility
-            const { data: existingCheckin, error: checkinError } = await window.supabase
-              .from('weekly_checkins')
-              .select('id')
-              .eq('child_id', child.id)
-              .eq('module_id', moduleIdToCheck)
-              .limit(1)
-              .maybeSingle();
-            
-            if (checkinError) {
-              console.error('[Daniel Check-in] Error checking weekly_checkins:', checkinError);
-            }
-            
-            console.log('[Daniel Check-in] Results:', { existingAssessment, existingCheckin });
-            
-            if (!existingAssessment && !existingCheckin) {
-              const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code, id: moduleIdToCheck });
-              window.showCheckinPopup(popupMod, () => { window.location.href = moduleUrl; });
-              return;
-            } else {
-              console.log('[Daniel Check-in] Skipping check-in - already exists');
-            }
-          } catch (e) {
-            console.error('Error checking checkin:', e);
+            window.showCheckinPopup(popupMod, () => { window.location.href = moduleUrl; });
+            return; // Don't show Daniel dialogue
           }
         }
-        
+      } catch (e) {
+        console.error('[Daniel] Error checking periodic checkin:', e);
+      }
+    }
+    
+    // No check-in needed - show Daniel's pre-activity dialogue
+    this.dialogueSystem.showPreActivity(module, category, async () => {
+      if (child && module) {
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
         window.location.href = moduleUrl;
         return;
       }
@@ -1072,6 +1073,83 @@ class DanielModulePreview {
         window.enhancedDashboard.startModule(wrappedModule);
       }
     });
+  }
+  
+  // Check if any check-in has been completed for this child
+  async hasCompletedAnyCheckin(childId) {
+    if (!childId || !window.supabase) return false;
+    
+    try {
+      const { data: completedCheckins, error } = await window.supabase
+        .from('pathway_assessments')
+        .select('id')
+        .eq('child_id', childId)
+        .in('assessment_type', ['checkin', 'check_in'])
+        .limit(1);
+      
+      if (error) {
+        console.error('[Daniel] Error checking for completed check-ins:', error);
+        return false;
+      }
+      
+      return completedCheckins && completedCheckins.length > 0;
+    } catch (e) {
+      console.error('[Daniel] Error checking for completed check-ins:', e);
+      return false;
+    }
+  }
+  
+  // Check if a check-in is needed based on completed module count (every 3 modules)
+  async shouldTriggerCheckinForModuleCount(childId) {
+    if (!childId || !window.supabase) return false;
+    const CHECKIN_MODULE_INTERVAL = 3;
+    
+    try {
+      // Count completed modules for this child
+      const { data: completedModules, error: countError } = await window.supabase
+        .from('child_modules')
+        .select('id')
+        .eq('child_id', childId)
+        .eq('is_completed', true);
+      
+      if (countError) {
+        console.error('[Daniel Check-in] Error counting completed modules:', countError);
+        return false;
+      }
+      
+      const completedCount = completedModules?.length || 0;
+      
+      // Count how many check-ins have been completed for this child
+      const { data: completedCheckins, error: checkinError } = await window.supabase
+        .from('pathway_assessments')
+        .select('id')
+        .eq('child_id', childId)
+        .in('assessment_type', ['checkin', 'check_in']);
+      
+      if (checkinError) {
+        console.error('[Daniel Check-in] Error counting completed check-ins:', checkinError);
+        return false;
+      }
+      
+      const checkinCount = completedCheckins?.length || 0;
+      
+      // Calculate how many check-ins should have been done
+      // First check-in at module 1, then every 3 modules (1, 4, 7, 10, etc.)
+      const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL) + 1;
+      
+      console.log('[Daniel Check-in] Completed modules:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
+      
+      // Trigger check-in if we haven't done enough check-ins yet
+      if (checkinCount < expectedCheckins) {
+        console.log('[Daniel Check-in] Triggering check-in - need to catch up');
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      console.error('[Daniel Check-in] Error checking checkin status:', e);
+      return false;
+    }
   }
 }
 

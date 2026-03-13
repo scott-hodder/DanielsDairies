@@ -2402,45 +2402,78 @@ class EnhancedDashboard {
     var mod = module.module;
     var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '');
     
-    // Check-in intercept for weeks 1, 4, 7, 10
-    var CHECKIN_WEEKS = [1, 4, 7, 10];
-    var week = Number(mod.week_number || mod.pathway_order || module.pathwayOrder || 0);
-    if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
-      try {
-        // Check pathway_assessments for existing check-in (primary check)
-        var existingAssessment = await window.supabase
-          .from('pathway_assessments')
-          .select('id')
-          .eq('child_id', child.id)
-          .eq('module_id', mod.id)
-          .in('assessment_type', ['checkin', 'check_in'])
-          .limit(1)
-          .maybeSingle();
-        
-        // Also check weekly_checkins for backwards compatibility
-        var existingCheckin = await window.supabase
-          .from('weekly_checkins')
-          .select('id')
-          .eq('child_id', child.id)
-          .eq('module_id', mod.id)
-          .limit(1)
-          .maybeSingle();
-        
-        if (!existingAssessment.data && !existingCheckin.data) {
-          if (typeof window.showCheckinPopup === 'function') {
-            var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-            window.showCheckinPopup(popupModule, function() {
-              window.location.href = moduleUrl;
-            });
-            return;
-          }
+    // Check-in intercept every 3 modules completed
+    try {
+      // Check if we need a check-in based on completed module count
+      var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id);
+      if (needsCheckin) {
+        if (typeof window.showCheckinPopup === 'function') {
+          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
+          // On completion, navigate to module. On close/skip, stay on dashboard.
+          window.showCheckinPopup(popupModule, function() {
+            window.location.href = moduleUrl;
+          });
+          return;
         }
-      } catch (e) {
-        console.error('Error checking checkin:', e);
       }
+    } catch (e) {
+      console.error('Error checking checkin:', e);
     }
     
     window.location.href = moduleUrl;
+  }
+  
+  // Check if a check-in is needed based on completed module count (every 3 modules)
+  async shouldTriggerCheckinForModuleCount(childId) {
+    if (!childId || !window.supabase) return false;
+    var CHECKIN_MODULE_INTERVAL = 3;
+    
+    try {
+      // Count completed modules for this child
+      var completedResult = await window.supabase
+        .from('child_modules')
+        .select('id')
+        .eq('child_id', childId)
+        .eq('is_completed', true);
+      
+      if (completedResult.error) {
+        console.error('[Check-in] Error counting completed modules:', completedResult.error);
+        return false;
+      }
+      
+      var completedCount = (completedResult.data && completedResult.data.length) || 0;
+      
+      // Count how many check-ins have been completed for this child
+      var checkinsResult = await window.supabase
+        .from('pathway_assessments')
+        .select('id')
+        .eq('child_id', childId)
+        .in('assessment_type', ['checkin', 'check_in']);
+      
+      if (checkinsResult.error) {
+        console.error('[Check-in] Error counting completed check-ins:', checkinsResult.error);
+        return false;
+      }
+      
+      var checkinCount = (checkinsResult.data && checkinsResult.data.length) || 0;
+      
+      // Calculate how many check-ins should have been done
+      // First check-in at module 1, then every 3 modules (1, 4, 7, 10, etc.)
+      var expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL) + 1;
+      
+      console.log('[Check-in] Completed modules:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
+      
+      // Trigger check-in if we haven't done enough check-ins yet
+      if (checkinCount < expectedCheckins) {
+        console.log('[Check-in] Triggering check-in - need to catch up');
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      console.error('Error checking checkin status:', e);
+      return false;
+    }
   }
 
   async getPathwayProgress(childId, pathwayCategory) {
@@ -2507,7 +2540,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   function checkDataReady() {
     checkCount++;
-    if (typeof window.modules !== 'undefined' || typeof window.selectedChild !== 'undefined') {
+    // Check for window.modules OR window.state.selectedChild (the actual variable used)
+    if (typeof window.modules !== 'undefined' || (window.state && window.state.selectedChild)) {
       requestAnimationFrame(initEnhancedDashboard);
     } else if (checkCount < maxChecks) {
       setTimeout(checkDataReady, 200);

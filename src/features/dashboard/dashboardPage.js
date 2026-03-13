@@ -1315,29 +1315,26 @@ async function init() {
       }
       clearRememberedChildId()
     }
+    
+    // If multiple children and no remembered child, auto-select the first one
+    if (state.children && state.children.length > 0) {
+      await selectChild(state.children[0])
+      clearTimeout(loadingTimeout)
+      return
+    }
 
-    // Default: show children/profile view
-    showChildrenView()
-    hideLoadingScreen()
+    // No children - redirect to profile page to add children
+    window.location.href = '/profile.html'
     clearTimeout(loadingTimeout)
     
   } catch (error) {
     console.error('Initialization error:', error)
     console.error('Error stack:', error.stack)
     clearTimeout(loadingTimeout)
-    // Show children view anyway so user isn't stuck
-    try {
-      showChildrenView()
-      hideLoadingScreen()
-    } catch (e) {
-      console.error('Error showing children view:', e)
-      // Force hide loading state
-      hideLoadingScreen()
-      if (childrenView) {
-        showElement(childrenView)
-      }
-    }
-    alert('Some data failed to load. You can still add children and use the app.')
+    // Redirect to profile page on error
+    hideLoadingScreen()
+    alert('Some data failed to load. Redirecting to profile page.')
+    window.location.href = '/profile.html'
   }
 }
 
@@ -2108,6 +2105,11 @@ function showChildrenView() {
   }
 }
 
+// Show parent view (profile hub) - now navigates to separate profile page
+function showParentView() {
+  window.location.href = '/profile.html'
+}
+
 // Setup category colors
 function setupCategoryColors() {
   // Default category colors if none are loaded from database
@@ -2861,55 +2863,61 @@ function createModuleCard(module, options = {}) {
   return card
 }
 
-// Check-in trigger weeks
-const CHECKIN_WEEKS = [1, 4, 7, 10]
+// Check-in frequency: once per 3 modules completed
+const CHECKIN_MODULE_INTERVAL = 3
 
-async function hasExistingCheckin(childId, moduleId) {
-  if (!childId || !moduleId) return true
+// Check if a check-in is needed based on completed module count
+// Returns true if check-in should be triggered (every 3 modules, starting at module 1)
+async function shouldTriggerCheckinForModuleCount(childId) {
+  if (!childId) return false
   try {
-    // Check if a check-in has been started for this specific module
-    // Check for both 'checkin' and 'check_in' assessment types
-    const { data: assessmentData } = await supabase
+    // Count completed modules for this child
+    const { data: completedModules, error: countError } = await supabase
+      .from('child_modules')
+      .select('id')
+      .eq('child_id', childId)
+      .eq('is_completed', true)
+    
+    if (countError) {
+      console.error('[Check-in] Error counting completed modules:', countError)
+      return false
+    }
+    
+    const completedCount = completedModules?.length || 0
+    
+    // Count how many check-ins have been completed for this child
+    const { data: completedCheckins, error: checkinError } = await supabase
       .from('pathway_assessments')
       .select('id')
       .eq('child_id', childId)
-      .eq('module_id', moduleId)
       .in('assessment_type', ['checkin', 'check_in'])
-      .limit(1)
-      .maybeSingle()
     
-    // If an assessment exists for this module, the check-in was already triggered
-    if (assessmentData) {
-      console.log('[Check-in] Found existing assessment for module:', moduleId)
+    if (checkinError) {
+      console.error('[Check-in] Error counting completed check-ins:', checkinError)
+      return false
+    }
+    
+    const checkinCount = completedCheckins?.length || 0
+    
+    // Calculate how many check-ins should have been done
+    // First check-in at module 1, then every 3 modules (1, 4, 7, 10, etc.)
+    // Formula: expectedCheckins = floor((completedCount) / 3) + 1 for first module
+    // Simplified: trigger if completedCount is 0, 3, 6, 9... AND we haven't done that check-in yet
+    const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL) + 1
+    
+    console.log('[Check-in] Completed modules:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins)
+    
+    // Trigger check-in if we haven't done enough check-ins yet
+    if (checkinCount < expectedCheckins) {
+      console.log('[Check-in] Triggering check-in - need to catch up')
       return true
     }
     
-    // Also check if a weekly_checkin exists for this module (for backwards compatibility)
-    const { data: checkinData } = await supabase
-      .from('weekly_checkins')
-      .select('id')
-      .eq('child_id', childId)
-      .eq('module_id', moduleId)
-      .limit(1)
-      .maybeSingle()
-    
-    // If a weekly_checkin exists for this module, the check-in was completed
-    if (checkinData) {
-      console.log('[Check-in] Found existing weekly_checkin for module:', moduleId)
-      return true
-    }
-    
-    console.log('[Check-in] No existing check-in found for module:', moduleId)
     return false
   } catch (e) {
-    console.error('Error checking existing checkin:', e)
-    return true
+    console.error('Error checking checkin status:', e)
+    return false
   }
-}
-
-function shouldTriggerCheckin(module) {
-  const week = module.week_number || module.pathway_order || module.order
-  return week && CHECKIN_WEEKS.includes(Number(week))
 }
 
 function navigateToModule(module) {
@@ -2919,83 +2927,369 @@ function navigateToModule(module) {
   window.location.href = moduleUrl
 }
 
+// Get super skill info for a module (character name, species, domain, image)
+async function getSuperSkillInfo(module) {
+  let superSkill = null
+  
+  // Try to get from window.superSkills first
+  if (module.super_skill_id && window.superSkills) {
+    superSkill = window.superSkills.find(s => s.id === module.super_skill_id)
+  }
+  
+  // If not found, try to fetch from database with character info
+  if (!superSkill && module.super_skill_id) {
+    try {
+      const { data } = await supabase
+        .from('super_skills')
+        .select('*, characters:character_id(id, name, species, image_url)')
+        .eq('id', module.super_skill_id)
+        .single()
+      if (data) superSkill = data
+    } catch (e) {
+      console.error('Error fetching super skill:', e)
+    }
+  }
+  
+  // Fallback: try to get from current adventure map category
+  if (!superSkill) {
+    const mapCat = window.enhancedDashboard?.adventureMap?.currentCategory ||
+                   window.currentFocusSuperSkill || null
+    if (mapCat && mapCat !== 'all' && window.superSkills) {
+      superSkill = window.superSkills.find(s => s.slug === mapCat)
+    }
+  }
+  
+  // If still not found, try to fetch from database using the map category slug
+  if (!superSkill) {
+    const mapCat = window.enhancedDashboard?.adventureMap?.currentCategory ||
+                   window.currentFocusSuperSkill || null
+    if (mapCat && mapCat !== 'all') {
+      try {
+        const { data } = await supabase
+          .from('super_skills')
+          .select('*, characters:character_id(id, name, species, image_url)')
+          .eq('slug', mapCat)
+          .single()
+        if (data) superSkill = data
+      } catch (e) {
+        console.error('Error fetching super skill by slug:', e)
+      }
+    }
+  }
+  
+  return superSkill
+}
+
+// Show intro screen with Daniel + character before check-in
+function showIntroScreen(superSkill, onContinue, onClose) {
+  console.log('[Intro Screen] Showing intro screen with super skill:', superSkill)
+  
+  // Get character info
+  const character = superSkill?.characters || {}
+  const characterName = character.name || superSkill?.character_name || 'Lenny'
+  const characterSpecies = character.species || 'friend'
+  const characterImage = character.image_url || superSkill?.character_image_url || '/images/characters/lenny.png'
+  const domain = superSkill?.domain || superSkill?.name || 'important skills'
+  const superSkillName = superSkill?.name || 'Super Skills'
+  
+  // Create intro overlay
+  const overlay = document.createElement('div')
+  overlay.className = 'intro-screen-overlay'
+  overlay.id = 'introScreenOverlay'
+  overlay.innerHTML = `
+    <div class="intro-screen-modal">
+      <button class="intro-screen-close" id="closeIntroBtn" aria-label="Close">✕</button>
+      
+      <div class="intro-screen-characters">
+        <div class="intro-character daniel">
+          <img src="/images/characters/DanielTheDog.png" alt="Daniel" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">🐕</div>
+        </div>
+        <div class="intro-character friend">
+          <img src="${characterImage}" alt="${characterName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">${superSkill?.emoji || '🐕'}</div>
+        </div>
+      </div>
+      
+      <div class="intro-screen-content">
+        <h2 class="intro-screen-title">Meet Your Guides!</h2>
+        <p class="intro-screen-text">
+          Hi there! I'm <strong>Daniel</strong>, and this is my friend <strong>${characterName} the ${characterSpecies}</strong>! 🎉
+        </p>
+        <p class="intro-screen-text">
+          ${characterName} is going to help you learn all about <strong>${domain}</strong>. 
+          Together, we'll go on an amazing adventure and discover some really cool things!
+        </p>
+        <p class="intro-screen-text intro-checkin-prompt">
+          But first, let's do a quick check-in to see how you're feeling today! 💫
+        </p>
+      </div>
+      
+      <button class="intro-screen-btn" id="continueToCheckinBtn">
+        Let's Check In! →
+      </button>
+    </div>
+  `
+  
+  // Add styles if not already present
+  if (!document.getElementById('introScreenStyles')) {
+    const styles = document.createElement('style')
+    styles.id = 'introScreenStyles'
+    styles.textContent = `
+      .intro-screen-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+      }
+      .intro-screen-modal {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+        border-radius: 24px;
+        padding: 32px;
+        max-width: 480px;
+        width: 90%;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.4s ease;
+      }
+      .intro-screen-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(0, 0, 0, 0.1);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+      .intro-screen-close:hover {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .intro-screen-characters {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+      .intro-character {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        overflow: visible;
+        background: white;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        position: relative;
+      }
+      .intro-character img {
+        width: 130px;
+        height: 130px;
+        object-fit: contain;
+        object-position: center bottom;
+      }
+      .intro-character-fallback {
+        font-size: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .intro-screen-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a365d;
+        margin-bottom: 16px;
+      }
+      .intro-screen-text {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #4a5568;
+        margin-bottom: 12px;
+      }
+      .intro-checkin-prompt {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-top: 16px;
+        font-weight: 500;
+      }
+      .intro-screen-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 16px 32px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .intro-screen-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    `
+    document.head.appendChild(styles)
+  }
+  
+  document.body.appendChild(overlay)
+  
+  // Event listeners
+  document.getElementById('continueToCheckinBtn').addEventListener('click', () => {
+    overlay.remove()
+    onContinue()
+  })
+  
+  document.getElementById('closeIntroBtn').addEventListener('click', () => {
+    overlay.remove()
+    onClose()
+  })
+}
+
 window.showCheckinPopup = showCheckinPopup
-function showCheckinPopup(module, onComplete) {
+async function showCheckinPopup(module, onComplete, skipIntro = false) {
+  console.log('[Check-in Popup] Called with module:', module, 'skipIntro:', skipIntro)
+  
   // Determine the pathway/super skill for the psychometric assessment
   // Priority: module's super_skill_id → current adventure map category → 'general'
   let pathwayOrSuperSkill = 'general'
-
-  // Try to get super skill slug from the module's super_skill_id
-  if (module.super_skill_id && window.superSkills) {
-    const ss = window.superSkills.find(s => s.id === module.super_skill_id)
-    if (ss && ss.slug) pathwayOrSuperSkill = ss.slug
-  }
-
-  // Fallback: use the current adventure map category
-  if (pathwayOrSuperSkill === 'general') {
+  
+  // Get super skill info for intro screen
+  const superSkill = await getSuperSkillInfo(module)
+  console.log('[Check-in Popup] Super skill info:', superSkill)
+  
+  if (superSkill && superSkill.slug) {
+    pathwayOrSuperSkill = superSkill.slug
+  } else {
+    // Fallback: use the current adventure map category
     const mapCat = window.enhancedDashboard?.adventureMap?.currentCategory ||
                    window.currentFocusSuperSkill || 'general'
     if (mapCat && mapCat !== 'all') pathwayOrSuperSkill = mapCat
   }
 
   const childId = state.selectedChild?.id || window.state?.selectedChild?.id
+  console.log('[Check-in Popup] childId:', childId)
   if (!childId) {
+    console.warn('[Check-in Popup] No childId, calling onComplete and returning')
     onComplete()
     return
   }
 
   // Initialize the progress tracking system if needed
+  console.log('[Check-in Popup] progressTrackingSystem available:', !!window.progressTrackingSystem)
   if (window.progressTrackingSystem && !window.progressTrackingSystem.supabaseClient) {
     window.progressTrackingSystem.init(supabase)
   }
 
   if (!window.progressTrackingSystem) {
-    console.warn('Progress tracking system not available, skipping check-in')
+    console.warn('[Check-in Popup] Progress tracking system not available, skipping check-in')
     onComplete()
     return
   }
-
-  // Use 'checkin' assessment type for weekly check-ins
-  window.progressTrackingSystem.showAssessment(
-    childId,
-    pathwayOrSuperSkill,
-    'checkin',
-    // onComplete — assessment finished, also record in weekly_checkins so it won't trigger again
-    async (results) => {
-      try {
-        await saveWeeklyCheckin({
-          parentUserId: state.currentUser?.id || window.state?.currentUser?.id,
-          childId: childId,
-          intensity: results?.totalScore || 0,
-          challenge: pathwayOrSuperSkill,
-          triggers: [],
-          goal: null,
-          notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) — score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
-          generatedPlan: null,
-          subSkillId: module.sub_skill_id || null,
-          weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,
-          moduleId: module.id
-        })
-      } catch (e) {
-        console.error('Error recording weekly checkin after assessment:', e)
+  
+  // Function to show the actual check-in assessment
+  const showActualCheckin = () => {
+    // Use 'checkin' assessment type for check-ins
+    // Pass closeToDashboard: true so X button closes to dashboard, not module
+    window.progressTrackingSystem.showAssessment(
+      childId,
+      pathwayOrSuperSkill,
+      'checkin',
+      // onComplete — assessment finished, also record in pathway_assessments so it won't trigger again
+      async (results) => {
+        try {
+          await saveWeeklyCheckin({
+            parentUserId: state.currentUser?.id || window.state?.currentUser?.id,
+            childId: childId,
+            intensity: results?.totalScore || 0,
+            challenge: pathwayOrSuperSkill,
+            triggers: [],
+            goal: null,
+            notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) — score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
+            generatedPlan: null,
+            subSkillId: module.sub_skill_id || null,
+            weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,
+            moduleId: module.id
+          })
+        } catch (e) {
+          console.error('Error recording weekly checkin after assessment:', e)
+        }
+        onComplete()
+      },
+      // onSkip — user closed/skipped, return to dashboard (NOT navigate to module)
+      () => {
+        // Do nothing - just close the modal and stay on dashboard
+        console.log('[Check-in] User closed check-in, returning to dashboard')
+      },
+      // Pass module data for tracking
+      module
+    )
+  }
+  
+  // Show intro screen first (unless skipped)
+  // Always show intro screen - use fallback character if no super skill found
+  console.log('[Check-in Popup] skipIntro:', skipIntro, 'About to show intro screen')
+  if (!skipIntro) {
+    // Create fallback super skill if none found
+    const introSuperSkill = superSkill || {
+      name: 'Super Skills',
+      domain: 'important life skills',
+      emoji: '🌟',
+      character_name: 'Lenny',
+      character_image_url: '/images/characters/lenny.png',
+      characters: {
+        name: 'Lenny',
+        species: 'Dog',
+        image_url: '/images/characters/lenny.png'
       }
-      onComplete()
-    },
-    // onSkip — user skipped, still navigate to module
-    () => {
-      onComplete()
-    },
-    // Pass module data for tracking
-    module
-  )
+    }
+    console.log('[Check-in Popup] Calling showIntroScreen with:', introSuperSkill)
+    showIntroScreen(
+      introSuperSkill,
+      showActualCheckin,  // onContinue - show the check-in
+      () => {             // onClose - return to dashboard
+        console.log('[Check-in] User closed intro, returning to dashboard')
+      }
+    )
+  } else {
+    console.log('[Check-in Popup] Skipping intro, showing actual checkin')
+    showActualCheckin()
+  }
 }
 
-// Start module (with check-in intercept for weeks 1, 4, 7, 10)
+// Start module (with check-in intercept every 3 modules completed)
 async function startModule(module) {
   try {
-    if (shouldTriggerCheckin(module) && state.selectedChild && state.currentUser) {
-      const alreadyDone = await hasExistingCheckin(state.selectedChild.id, module.id)
-      if (!alreadyDone) {
+    if (state.selectedChild && state.currentUser) {
+      // Check if we need a check-in based on completed module count
+      const needsCheckin = await shouldTriggerCheckinForModuleCount(state.selectedChild.id)
+      if (needsCheckin) {
+        // Show check-in popup - on completion, navigate to module
+        // On close/skip, stay on dashboard (don't navigate)
         showCheckinPopup(module, () => navigateToModule(module))
         return
       }
@@ -3511,11 +3805,10 @@ if (cancelAddChild) {
   cancelAddChild.addEventListener('click', hideAddChildModal)
 }
 
-// Back button
+// Back button - go to profile page
 if (backButton) {
   backButton.addEventListener('click', () => {
-    setSelectedChild(null)
-    showChildrenView()
+    window.location.href = '/profile.html'
   })
 }
 
@@ -3542,7 +3835,8 @@ if (dashboardHomeButtonDesktop) {
 
 if (profileButtonDesktop) {
   profileButtonDesktop.addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+    // Navigate to profile page
+    window.location.href = '/profile.html'
   })
 }
 
@@ -3653,7 +3947,8 @@ if (dashboardHomeButton) {
 
 if (profileButton) {
   profileButton.addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+    // Navigate to profile page
+    window.location.href = '/profile.html'
   })
 }
 

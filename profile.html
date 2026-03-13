@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel's Diaries - Profile</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="/styles/dashboard.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="/dashboard.html" class="header-logo">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
+                    <div>
+                        <h1 class="header-title">Daniel's Diaries</h1>
+                        <p class="header-subtitle" id="headerSubtitle">Welcome back!</p>
+                    </div>
+                </a>
+            </div>
+            <div class="header-right">
+                <!-- Desktop Navigation Buttons -->
+                <div class="desktop-nav">
+                    <button class="btn-header" id="dashboardHomeButtonDesktop">
+                        Dashboard
+                    </button>
+                    <button class="btn-header active" id="profileButtonDesktop">
+                        Profile
+                    </button>
+                    <button class="btn-header" id="logoutButtonDesktop">Logout</button>
+                    <button class="btn-header settings hidden" id="adminButtonDesktop" style="margin-left: 12px;">
+                        Admin Centre
+                    </button>
+                </div>
+                
+                <!-- Mobile Hamburger Menu -->
+                <button class="hamburger-menu" id="hamburgerMenu" aria-label="Menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <button class="dropdown-item" id="dashboardHomeButton">
+                        <span class="dropdown-icon">🏠</span>
+                        Dashboard
+                    </button>
+                    <button class="dropdown-item active" id="profileButton">
+                        <span class="dropdown-icon">👤</span>
+                        Profile
+                    </button>
+                    <button class="dropdown-item" id="adminButton" style="display: none;">
+                        <span class="dropdown-icon">⚙️</span>
+                        Admin Centre
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item logout" id="logoutButton">
+                        <span class="dropdown-icon">🚪</span>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            Loading...
+        </div>
+
+        <!-- Profile View -->
+        <div id="profileView" class="hidden">
+            <!-- Welcome Header -->
+            <div id="profileWelcomeHeader" style="text-align: center; margin-bottom: 40px;">
+                <h1 style="font-size: 32px; color: #405878; font-weight: 700; margin-bottom: 8px;">Welcome to Your Family Dashboard</h1>
+                <p style="color: #4c6c96; font-size: 16px;">Manage your family learning journey</p>
+            </div>
+
+            <!-- Profile Hub -->
+            <div id="moduleGalleryContainer">
+                <section class="profile-hub">
+                    <div class="profile-hub-header">
+                        <h2 class="profile-hub-title">👤 Your Profile &amp; Plan</h2>
+                        <p class="profile-hub-subtitle">Loading your billing and subscription details...</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Child Modal -->
+    <div id="addChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add a Child</h2>
+                <button class="modal-close" id="closeAddChildModal">&times;</button>
+            </div>
+            <form id="addChildForm">
+                <div class="form-group">
+                    <label for="childName">Child's Name</label>
+                    <input type="text" id="childName" name="childName" required placeholder="Enter name">
+                </div>
+                <div class="form-group">
+                    <label for="childDob">Date of Birth</label>
+                    <input type="date" id="childDob" name="childDob" required>
+                </div>
+                <div class="form-group">
+                    <label>Choose an Avatar</label>
+                    <div class="avatar-picker" id="avatarPicker"></div>
+                </div>
+                <p id="modalError" class="error-message hidden"></p>
+                <button type="submit" class="btn-primary">Add Child</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Child Modal -->
+    <div id="editChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Edit Child</h2>
+                <button class="modal-close" id="closeEditChildModal">&times;</button>
+            </div>
+            <form id="editChildForm">
+                <div class="form-group">
+                    <label for="editChildName">Child's Name</label>
+                    <input type="text" id="editChildName" name="editChildName" required>
+                </div>
+                <div class="form-group">
+                    <label>Choose an Avatar</label>
+                    <div class="avatar-picker" id="editAvatarPicker"></div>
+                </div>
+                <p id="editModalError" class="error-message hidden"></p>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <button type="button" class="btn-secondary" id="forgetPasswordBtn">Reset Password</button>
+                    <button type="button" class="btn-danger" id="removeChildBtn">Remove Child</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Child Confirmation Modal -->
+    <div id="removeChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Remove Child</h2>
+                <button class="modal-close" id="closeRemoveChildModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove <strong id="removeChildName"></strong>?</p>
+                <p class="warning-text">This action cannot be undone. All progress and data for this child will be permanently deleted.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelRemoveChild">Cancel</button>
+                <button class="btn-danger" id="confirmRemoveChild">Remove Child</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Password Modal -->
+    <div id="parentPasswordModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Parent Verification</h2>
+                <button class="modal-close" id="closeParentPasswordModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Please enter your password to continue.</p>
+                <div class="form-group">
+                    <label for="parentPassword">Password</label>
+                    <input type="password" id="parentPassword" name="parentPassword" required>
+                </div>
+                <p id="parentPasswordError" class="error-message hidden"></p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelParentPassword">Cancel</button>
+                <button class="btn-primary" id="confirmParentPassword">Verify</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./src/profile.js"></script>
+</body>
+</html>

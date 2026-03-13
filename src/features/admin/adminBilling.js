@@ -344,25 +344,38 @@ window.grantManualCredits = async function() {
     }
 
     try {
+        // Use the same billing period calculation as the dashboard (current calendar month)
         const now = new Date();
-        const periodStart = now.toISOString().slice(0, 10);
-        const periodEnd = new Date(now.setMonth(now.getMonth() + 1)).toISOString().slice(0, 10);
+        const year = now.getUTCFullYear();
+        const month = now.getUTCMonth();
+        const periodStart = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+        const periodEnd = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
 
+        // Check if there's an existing row for this period - if so, update it
+        const { data: existingRow, error: checkError } = await supabase
+            .from('v_parent_credit_summary')
+            .select('*')
+            .eq('parent_id', parentId)
+            .eq('period_start', periodStart)
+            .eq('period_end', periodEnd)
+            .maybeSingle();
+
+        // Insert a new grant entry into the ledger with the correct period
         const { error } = await supabase
             .from('subscription_credit_ledger')
             .insert({
                 parent_id: parentId,
                 period_start: periodStart,
                 period_end: periodEnd,
-                entry_type: 'admin_grant',
+                entry_type: 'grant',
                 credits_delta: credits,
-                notes: reason,
+                notes: `[Admin Grant] ${reason}`,
                 created_at: new Date().toISOString()
             });
 
         if (error) throw error;
 
-        alert(`✅ Successfully granted ${credits} credit(s)!`);
+        alert(`✅ Successfully granted ${credits} credit(s) for period ${periodStart} to ${periodEnd}!\n\nNote: Refresh the dashboard to see updated credits.`);
         document.getElementById('billingGrantCredits').value = '1';
         document.getElementById('billingGrantReason').value = '';
     } catch (error) {
