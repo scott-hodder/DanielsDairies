@@ -15,6 +15,8 @@ let currentCreditSummary = null
 let currentBillingPeriod = getCurrentBillingPeriod()
 let currentSubscription = null
 let subscriptionTiers = []
+const MODULES_LOADING_RETRY_LIMIT = 12
+let modulesLoadingRetryCount = 0
 
 // Make supabase available to non-module scripts and inline dashboard.html code
 window.supabase = supabase
@@ -2548,6 +2550,17 @@ function renderModules() {
   
   // Add safeguard: if childModules is not loaded yet, show loading state and retry
   if (state.selectedChild && (!state.childModules || state.childModules.length === 0) && state.modules && state.modules.length > 0) {
+    if (modulesLoadingRetryCount >= MODULES_LOADING_RETRY_LIMIT) {
+      modulesGrid.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #4c6c96;">
+          <div style="font-size: 18px; margin-bottom: 12px;">Modules are taking longer than expected.</div>
+          <div style="font-size: 14px;">Please refresh to sync the latest progress.</div>
+        </div>
+      `
+      return
+    }
+
+    modulesLoadingRetryCount += 1
     modulesGrid.innerHTML = `
       <div style="text-align: center; padding: 40px; color: #4c6c96;">
         <div style="font-size: 18px; margin-bottom: 12px;">Loading modules...</div>
@@ -2561,6 +2574,8 @@ function renderModules() {
     }, 100)
     return
   }
+
+  modulesLoadingRetryCount = 0
   
   modulesGrid.innerHTML = ''
   modulesGrid.style.display = 'block'
@@ -2573,8 +2588,10 @@ function renderModules() {
   const selectedCategory = dashboardCategoryFilter ? dashboardCategoryFilter.value : 'all'
   const selectedSeries = dashboardSeriesFilter ? dashboardSeriesFilter.value : 'all'
   
+  const childModulesById = new Map()
   const childModuleLockMap = new Map()
   state.childModules.forEach((cm) => {
+    childModulesById.set(cm.module_id, cm)
     childModuleLockMap.set(cm.module_id, cm.locked !== false)
   })
 
@@ -2603,14 +2620,16 @@ function renderModules() {
 
   // Separate completed and incomplete modules for modules the family has unlocked
   const incompleteModules = unlockedModules.filter(module => {
-    const childModule = state.childModules.find(cm => cm.module_id === module.id)
+    const childModule = childModulesById.get(module.id)
     return !childModule || childModule.is_completed !== true
   })
 
   const completedModules = unlockedModules.filter(module => {
-    const childModule = state.childModules.find(cm => cm.module_id === module.id)
+    const childModule = childModulesById.get(module.id)
     return childModule && childModule.is_completed === true
   })
+
+  const contentFragment = document.createDocumentFragment()
 
   if (unlockedModules.length === 0 && lockedModules.length > 0) {
     const emptyUnlockedMessage = document.createElement('div')
@@ -2619,7 +2638,7 @@ function renderModules() {
     emptyUnlockedMessage.style.padding = '16px'
     emptyUnlockedMessage.style.color = '#4c6c96'
     emptyUnlockedMessage.innerHTML = '<p style="font-size: 16px; margin: 0;">All modules are currently locked. Spend a credit on any module below to unlock it.</p>'
-    modulesGrid.appendChild(emptyUnlockedMessage)
+    contentFragment.appendChild(emptyUnlockedMessage)
   }
   
   // Find the oldest incomplete module (created first)
@@ -2662,7 +2681,7 @@ function renderModules() {
       highlightLabel.style.fontWeight = '600'
       highlightLabel.textContent = '⭐ NEXT MODULE'
       
-      const highlightedCard = createModuleCard(oldestIncompleteModule)
+      const highlightedCard = createModuleCard(oldestIncompleteModule, { childModule: childModulesById.get(oldestIncompleteModule.id) })
       highlightedCard.style.margin = '0'
       highlightedCard.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
       
@@ -2694,7 +2713,7 @@ function renderModules() {
     readyModulesToDisplay.forEach(module => {
       // Skip the oldest module if it's already highlighted
       if (oldestIncompleteModule && module.id === oldestIncompleteModule.id) return
-      const moduleCard = createModuleCard(module)
+      const moduleCard = createModuleCard(module, { childModule: childModulesById.get(module.id) })
       incompleteGrid.appendChild(moduleCard)
     })
     
@@ -2719,7 +2738,7 @@ function renderModules() {
       incompleteSection.appendChild(showMoreWrapper)
     }
 
-    modulesGrid.appendChild(incompleteSection)
+    contentFragment.appendChild(incompleteSection)
   }
 
   // Render Completed Modules Section
@@ -2748,12 +2767,12 @@ function renderModules() {
     completedGrid.style.gap = '20px'
     
     completedModules.forEach(module => {
-      const moduleCard = createModuleCard(module)
+      const moduleCard = createModuleCard(module, { childModule: childModulesById.get(module.id) })
       completedGrid.appendChild(moduleCard)
     })
     
     completedSection.appendChild(completedGrid)
-    modulesGrid.appendChild(completedSection)
+    contentFragment.appendChild(completedSection)
   }
 
   if (lockedModules.length > 0) {
@@ -2784,14 +2803,20 @@ function renderModules() {
     lockedGrid.style.gap = '20px'
 
     lockedModules.forEach((module) => {
-      lockedGrid.appendChild(createModuleCard(module, { locked: true, canUnlock: isModuleNextUnlockable(module) }))
+      lockedGrid.appendChild(createModuleCard(module, {
+        locked: true,
+        canUnlock: isModuleNextUnlockable(module),
+        childModule: childModulesById.get(module.id)
+      }))
     })
 
     lockedSection.appendChild(lockedHeader)
     lockedSection.appendChild(lockedHint)
     lockedSection.appendChild(lockedGrid)
-    modulesGrid.appendChild(lockedSection)
+    contentFragment.appendChild(lockedSection)
   }
+
+  modulesGrid.appendChild(contentFragment)
 }
 
 // Create module card
@@ -2802,7 +2827,7 @@ function createModuleCard(module, options = {}) {
   const canUnlock = options.canUnlock !== false
 
   // Check if module is completed
-  const childModule = state.childModules.find(cm => cm.module_id === module.id)
+  const childModule = options.childModule ?? state.childModules.find(cm => cm.module_id === module.id)
   const isCompleted = !isLocked && childModule && childModule.is_completed === true
 
   card.className = `module-card ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`

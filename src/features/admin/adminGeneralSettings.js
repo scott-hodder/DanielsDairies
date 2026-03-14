@@ -14,26 +14,45 @@ window.generalSubSkills = window.generalSubSkills || [];
 
 async function loadGeneralSettings() {
     try {
-        const { data: superSkillsData, error: superSkillsError } = await supabase.from('super_skills').select('*').order('sort_order', { ascending: true });
-        if (!superSkillsError && superSkillsData) { window.generalSuperSkills = superSkillsData; renderSuperSkills(); populateSubSkillParentDropdown(); populateSuperSkillsDropdown(); }
+        const [
+            superSkillsRes,
+            subSkillsRes,
+            categoryRes,
+            seriesRes,
+            emotionsRes,
+            skillsRes,
+            pathwaysRes
+        ] = await Promise.all([
+            supabase.from('super_skills').select('*').order('sort_order', { ascending: true }),
+            supabase.from('sub_skills').select('*, super_skills(name, emoji)').order('sort_order', { ascending: true }),
+            supabase.from('category_colors').select('*').order('category', { ascending: true }),
+            supabase.from('series').select('*').order('label', { ascending: true }),
+            supabase.from('emotions').select('*').order('label', { ascending: true }),
+            supabase.from('skills').select('*').order('label', { ascending: true }),
+            supabase.from('pathways').select('*').order('name', { ascending: true })
+        ]);
 
-        const { data: subSkillsData, error: subSkillsError } = await supabase.from('sub_skills').select('*, super_skills(name, emoji)').order('sort_order', { ascending: true });
-        if (!subSkillsError && subSkillsData) { window.generalSubSkills = subSkillsData; renderSubSkills(); }
+        if (!superSkillsRes.error && superSkillsRes.data) {
+            window.generalSuperSkills = superSkillsRes.data;
+            renderSuperSkills();
+            populateSubSkillParentDropdown();
+            populateSuperSkillsDropdown();
+        }
 
-        const { data: categoryData, error: categoryError } = await supabase.from('category_colors').select('*').order('category', { ascending: true });
-        if (!categoryError && categoryData) {
-            window.generalCategories = categoryData.map(c => ({ name: c.category, color: c.color }));
+        if (!subSkillsRes.error && subSkillsRes.data) {
+            window.generalSubSkills = subSkillsRes.data;
+            renderSubSkills();
+        }
+
+        if (!categoryRes.error && categoryRes.data) {
+            window.generalCategories = categoryRes.data.map(c => ({ name: c.category, color: c.color }));
             loadCategoriesIntoPathwayDropdowns();
         }
 
-        const { data: seriesData } = await supabase.from('series').select('*').order('label', { ascending: true });
-        if (seriesData) generalSeries = seriesData;
-        const { data: emotionsData } = await supabase.from('emotions').select('*').order('label', { ascending: true });
-        if (emotionsData) generalEmotions = emotionsData;
-        const { data: skillsData } = await supabase.from('skills').select('*').order('label', { ascending: true });
-        if (skillsData) generalSkills = skillsData;
-        const { data: pathwaysData } = await supabase.from('pathways').select('*').order('name', { ascending: true });
-        if (pathwaysData) generalPathways = pathwaysData;
+        if (seriesRes.data) generalSeries = seriesRes.data;
+        if (emotionsRes.data) generalEmotions = emotionsRes.data;
+        if (skillsRes.data) generalSkills = skillsRes.data;
+        if (pathwaysRes.data) generalPathways = pathwaysRes.data;
 
         renderGeneralCategories();
         renderGeneralSeries();

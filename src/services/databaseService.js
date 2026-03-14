@@ -1,6 +1,55 @@
 import { getSupabaseClient } from '../supabaseClient.js'
 import { setChildPasswordServer, verifyChildPasswordServer } from './childCredentials.js'
 
+const queryCache = new Map()
+const inflightQueries = new Map()
+
+function getCacheEntry(key) {
+  const entry = queryCache.get(key)
+  if (!entry) return null
+  if (Date.now() > entry.expiresAt) {
+    queryCache.delete(key)
+    return null
+  }
+  return entry.value
+}
+
+function setCacheEntry(key, value, ttlMs) {
+  queryCache.set(key, { value, expiresAt: Date.now() + ttlMs })
+  return value
+}
+
+function invalidateCacheByPrefix(prefix) {
+  Array.from(queryCache.keys()).forEach((key) => {
+    if (key.startsWith(prefix)) queryCache.delete(key)
+  })
+  Array.from(inflightQueries.keys()).forEach((key) => {
+    if (key.startsWith(prefix)) inflightQueries.delete(key)
+  })
+}
+
+async function withCachedQuery(key, ttlMs, queryFn) {
+  const cached = getCacheEntry(key)
+  if (cached !== null && cached !== undefined) return cached
+
+  if (inflightQueries.has(key)) {
+    return inflightQueries.get(key)
+  }
+
+  const request = (async () => {
+    try {
+      const value = await queryFn()
+      return setCacheEntry(key, value, ttlMs)
+    } finally {
+      inflightQueries.delete(key)
+    }
+  })()
+
+  inflightQueries.set(key, request)
+  return request
+}
+
+
 // Get level information from levels table
 export async function getLevelInfo(level) {
   const { data, error } = await getSupabaseClient()
@@ -52,17 +101,19 @@ export async function getXpForNextLevel(currentLevel) {
 
 // Get all children for a parent
 export async function getChildren(parentUserId) {
-  const { data, error } = await getSupabaseClient()
-    .from('children')
-    .select('*')
-    .eq('parent_user_id', parentUserId)
-    .order('created_at', { ascending: true })
-  
-  if (error) {
-    throw error
-  }
-  
-  return data
+  return withCachedQuery(`children:${parentUserId}`, 30_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('children')
+      .select('*')
+      .eq('parent_user_id', parentUserId)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      throw error
+    }
+
+    return data || []
+  })
 }
 
 // Save a weekly check-in response with generated plan
@@ -161,6 +212,7 @@ export async function createChild(parentUserId, name, dateOfBirth, avatar = null
     throw error
   }
   
+  invalidateCacheByPrefix(`children:${parentUserId}`)
   return data
 }
 
@@ -205,6 +257,8 @@ export async function updateChildProfile(childId, updates) {
     throw error
   }
   
+  invalidateCacheByPrefix('children:')
+  invalidateCacheByPrefix('childModules:')
   return data
 }
 
@@ -231,21 +285,25 @@ export async function deleteChild(childId) {
     throw error
   }
   
+  invalidateCacheByPrefix('children:')
+  invalidateCacheByPrefix('childModules:')
   return true
 }
 
 // Get all modules (active and inactive)
 export async function getModules() {
-  const { data, error } = await getSupabaseClient()
-    .from('modules')
-    .select('*')
-    .order('created_at', { ascending: false })
-  
-  if (error) {
-    throw error
-  }
-  
-  return data
+  return withCachedQuery('modules:all', 60_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('modules')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    return data || []
+  })
 }
 
 // Get all Super Skills for dropdowns
@@ -294,25 +352,29 @@ export function getCurrentBillingPeriod(referenceDate = new Date()) {
 }
 
 export async function getSubscriptionTiers() {
-  const { data, error } = await getSupabaseClient()
-    .from('subscription_tiers')
-    .select('*')
-    .eq('is_active', true)
-    .order('modules_per_month', { ascending: true })
+  return withCachedQuery('subscriptionTiers:active', 300_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('subscription_tiers')
+      .select('*')
+      .eq('is_active', true)
+      .order('modules_per_month', { ascending: true })
 
-  if (error) throw error
-  return data || []
+    if (error) throw error
+    return data || []
+  })
 }
 
 export async function getParentSubscription(parentUserId) {
-  const { data, error } = await getSupabaseClient()
-    .from('parent_subscriptions')
-    .select('*')
-    .eq('parent_id', parentUserId)
-    .maybeSingle()
+  return withCachedQuery(`parentSubscription:${parentUserId}`, 30_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('parent_subscriptions')
+      .select('*')
+      .eq('parent_id', parentUserId)
+      .maybeSingle()
 
-  if (error) throw error
-  return data
+    if (error) throw error
+    return data
+  })
 }
 
 export async function upsertParentSubscription(subscriptionPayload) {
@@ -323,6 +385,7 @@ export async function upsertParentSubscription(subscriptionPayload) {
     .single()
 
   if (error) throw error
+  invalidateCacheByPrefix(`parentSubscription:${subscriptionPayload.parent_id}`)
   return data
 }
 
@@ -443,32 +506,36 @@ export async function unlockModuleWithCredit(moduleId, periodStart) {
 
 // Retrieve module category color configuration
 export async function getCategoryColors() {
-  const { data, error } = await getSupabaseClient()
-    .from('category_colors')
-    .select('*')
+  return withCachedQuery('categoryColors:all', 300_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('category_colors')
+      .select('*')
 
-  if (error) {
-    throw error
-  }
+    if (error) {
+      throw error
+    }
 
-  return data || []
+    return data || []
+  })
 }
 
 // Get child's module progress
 export async function getChildModules(childId) {
-  const { data, error } = await getSupabaseClient()
-    .from('child_modules')
-    .select(`
-      *,
-      modules (*)
-    `)
-    .eq('child_id', childId)
-  
-  if (error) {
-    throw error
-  }
-  
-  return data
+  return withCachedQuery(`childModules:${childId}`, 15_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('child_modules')
+      .select(`
+        *,
+        modules (*)
+      `)
+      .eq('child_id', childId)
+
+    if (error) {
+      throw error
+    }
+
+    return data || []
+  })
 }
 
 // Create or update child module status
@@ -495,6 +562,7 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
       throw error
     }
     
+    invalidateCacheByPrefix(`childModules:${childId}`)
     return data
   } else {
     // Create new record
@@ -513,7 +581,8 @@ export async function updateChildModuleStatus(childId, moduleId, status) {
     if (error) {
       throw error
     }
-    
+
+    invalidateCacheByPrefix(`childModules:${childId}`)
     return data
   }
 }
@@ -553,6 +622,7 @@ export async function completeModule(childId, moduleId) {
       // Temporarily disabled assessment check to identify if this is causing the second modal
       // await checkForAssessmentAfterCompletion(childId, moduleId)
       
+      invalidateCacheByPrefix(`childModules:${childId}`)
       return data
     }
 
@@ -581,6 +651,7 @@ export async function completeModule(childId, moduleId) {
     // Temporarily disabled assessment check to identify if this is causing the second modal
     // await checkForAssessmentAfterCompletion(childId, moduleId)
     
+    invalidateCacheByPrefix(`childModules:${childId}`)
     return data
   }
 }
@@ -666,16 +737,18 @@ export async function getAllChildrenLeaderboard(limit = 10) {
 
 // Check if user is admin
 export async function isUserAdmin(userId) {
-  // Use the security definer function to avoid RLS recursion
-  const { data, error } = await getSupabaseClient()
-    .rpc('is_user_admin_check', { user_id: userId })
-  
-  if (error) {
-    console.error('Error checking admin status:', error)
-    return false
-  }
-  
-  return data || false
+  return withCachedQuery(`isUserAdmin:${userId}`, 120_000, async () => {
+    // Use the security definer function to avoid RLS recursion
+    const { data, error } = await getSupabaseClient()
+      .rpc('is_user_admin_check', { user_id: userId })
+
+    if (error) {
+      console.error('Error checking admin status:', error)
+      return false
+    }
+
+    return data || false
+  })
 }
 
 // Set user admin status
@@ -1154,67 +1227,69 @@ export async function getModuleStatistics(moduleId) {
 
 // Settings Management
 export async function getSettings() {
-  try {
-    const { data, error } = await getSupabaseClient()
-      .from('settings')
-      .select('*')
-      .single()
-    
-    if (error) {
-      // If no settings exist, return defaults
-      if (error.code === 'PGRST116') {
-        return {
-          weekly_checkin_enabled: true,
-          challenges: [
-            'Morning routine',
-            'Bedtime routine',
-            'Homework time',
-            'Sibling conflict',
-            'Screen time limits',
-            'Transitions',
-            'Mealtime'
-          ],
-          goals: [
-            'Use a calm-down tool once',
-            'Name the feeling before reacting',
-            'Take 3 deep breaths when upset',
-            'Use kind words during conflict',
-            'Ask for help when needed'
-          ],
-          tools: [
-            {
-              label: 'Volcano Scale (1-5)',
-              description: 'Rate the feeling, then choose one action to lower it by one point.',
-              triggers: ['Anger', 'Frustration']
-            },
-            {
-              label: 'Thought Bubble',
-              description: 'Name what the brain is saying so you can respond to it.',
-              triggers: ['Worry/Anxiety', 'Sadness']
-            },
-            {
-              label: 'Fix-It / Accept-It Choices',
-              description: 'Decide if this problem can be fixed or if we ride it out.',
-              triggers: ['Frustration', 'Overwhelm']
-            }
-          ],
-          scripts: [
-            {
-              title: 'Volcano scale prompt',
-              script: 'If your volcano is a 1 to 5 right now, what number are you? What helps you go down by one?',
-              context: 'Scale the feeling and choose a step'
-            }
-          ]
+  return withCachedQuery('settings:single', 120_000, async () => {
+    try {
+      const { data, error } = await getSupabaseClient()
+        .from('settings')
+        .select('*')
+        .single()
+
+      if (error) {
+        // If no settings exist, return defaults
+        if (error.code === 'PGRST116') {
+          return {
+            weekly_checkin_enabled: true,
+            challenges: [
+              'Morning routine',
+              'Bedtime routine',
+              'Homework time',
+              'Sibling conflict',
+              'Screen time limits',
+              'Transitions',
+              'Mealtime'
+            ],
+            goals: [
+              'Use a calm-down tool once',
+              'Name the feeling before reacting',
+              'Take 3 deep breaths when upset',
+              'Use kind words during conflict',
+              'Ask for help when needed'
+            ],
+            tools: [
+              {
+                label: 'Volcano Scale (1-5)',
+                description: 'Rate the feeling, then choose one action to lower it by one point.',
+                triggers: ['Anger', 'Frustration']
+              },
+              {
+                label: 'Thought Bubble',
+                description: 'Name what the brain is saying so you can respond to it.',
+                triggers: ['Worry/Anxiety', 'Sadness']
+              },
+              {
+                label: 'Fix-It / Accept-It Choices',
+                description: 'Decide if this problem can be fixed or if we ride it out.',
+                triggers: ['Frustration', 'Overwhelm']
+              }
+            ],
+            scripts: [
+              {
+                title: 'Volcano scale prompt',
+                script: 'If your volcano is a 1 to 5 right now, what number are you? What helps you go down by one?',
+                context: 'Scale the feeling and choose a step'
+              }
+            ]
+          }
         }
+        throw error
       }
+
+      return data
+    } catch (error) {
+      console.error('Error fetching settings:', error)
       throw error
     }
-    
-    return data
-  } catch (error) {
-    console.error('Error fetching settings:', error)
-    throw error
-  }
+  })
 }
 
 export async function updateSettings(settings) {
@@ -1235,6 +1310,7 @@ export async function updateSettings(settings) {
         .single()
       
       if (error) throw error
+      invalidateCacheByPrefix('settings:single')
       return data
     } else {
       // Create new settings
@@ -1245,6 +1321,7 @@ export async function updateSettings(settings) {
         .single()
       
       if (error) throw error
+      invalidateCacheByPrefix('settings:single')
       return data
     }
   } catch (error) {
