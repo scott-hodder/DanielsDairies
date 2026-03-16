@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel's Diaries — Welcome</title>
+    
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=League+Spartan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --navy: #405878;
+            --navy-light: #4c6c96;
+            --navy-dark: #2d3f56;
+            --cream: #f5f3ed;
+            --cream-dark: #e8e4d9;
+            --text-primary: #364f66;
+            --text-secondary: #6b7c8f;
+            --text-muted: #94a3b5;
+            --white: #ffffff;
+            --card-shadow: 0 8px 32px rgba(64, 88, 120, 0.10);
+            --card-shadow-hover: 0 16px 48px rgba(64, 88, 120, 0.18);
+            --accent-warm: #f4a261;
+            --accent-coral: #e76f51;
+            --accent-teal: #2a9d8f;
+            --accent-purple: #7c3aed;
+            --success: #22c55e;
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+        }
+
+        body {
+            font-family: 'League Spartan', sans-serif;
+            background: var(--cream);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ─── BACKGROUND DECORATION ─── */
+        .bg-decor {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .bg-decor .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.25;
+        }
+        .bg-decor .blob-1 { width: 600px; height: 600px; background: #c7d2e0; top: -180px; right: -120px; }
+        .bg-decor .blob-2 { width: 500px; height: 500px; background: #e8d5b7; bottom: -200px; left: -100px; }
+        .bg-decor .blob-3 { width: 350px; height: 350px; background: #b8d4e3; top: 50%; left: 30%; }
+
+        /* ─── HEADER ─── */
+        .header {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+            padding: 14px 24px;
+            color: #fffff5;
+            box-shadow: 0 4px 20px rgba(64, 92, 150, 0.12);
+            position: relative;
+            z-index: 10;
+        }
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            color: #fffff5;
+        }
+        .header-brand img {
+            width: 50px; height: 50px;
+            object-fit: contain;
+            background: rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 4px;
+        }
+        .header-brand h1 { font-size: 20px; font-weight: 700; }
+        .header-brand p { font-size: 12px; opacity: 0.85; }
+        .header-nav { display: flex; gap: 8px; }
+        .header-nav button {
+            padding: 10px 22px;
+            background: rgba(255,255,255,0.12);
+            color: #fffff5;
+            border: 1.5px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .header-nav button:hover { background: rgba(255,255,255,0.22); }
+        .header-nav button.active {
+            background: rgba(255,255,255,0.95);
+            color: var(--navy);
+            border-color: transparent;
+        }
+
+        /* ─── LAYOUT ─── */
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+        }
+
+        /* ─── VIEW STATES ─── */
+        .view { display: none; }
+        .view.active { display: block; animation: viewIn 0.5s ease; }
+        @keyframes viewIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ══════════════════════════════
+           HERO / MARKETING SECTION
+           ══════════════════════════════ */
+        .hero-section {
+            text-align: center;
+            max-width: 740px;
+            margin: 0 auto 48px;
+        }
+        .hero-mascot {
+            height: 150px;
+            margin-bottom: 16px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        .hero-section h2 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 700;
+            color: var(--navy);
+            line-height: 1.15;
+            margin-bottom: 16px;
+        }
+        .hero-section h2 span { color: var(--accent-coral); }
+        .hero-section p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ─── TRUST BAR ─── */
+        .trust-bar {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            margin-top: 28px;
+        }
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .trust-item .icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(64, 88, 120, 0.08);
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        /* ══════════════════════════════
+           PRICING TIERS
+           ══════════════════════════════ */
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+        .pricing-header h3 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 8px;
+        }
+        .pricing-header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .billing-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 36px;
+        }
+        .billing-toggle span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .billing-toggle span.active { color: var(--navy); }
+        .toggle-switch {
+            width: 52px;
+            height: 28px;
+            background: #d1d5db;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch.active { background: var(--accent-teal); }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        }
+        .toggle-switch.active::after { transform: translateX(24px); }
+        .save-badge {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-teal);
+            background: rgba(42, 157, 143, 0.1);
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .tiers-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 960px;
+            margin: 0 auto 40px;
+        }
+
+        .tier-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 32px 26px;
+            border: 2px solid #e9ecef;
+            position: relative;
+            transition: all 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+        .tier-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--card-shadow-hover);
+        }
+        .tier-card.selected {
+            border-color: var(--navy);
+            box-shadow: 0 0 0 3px rgba(64, 88, 120, 0.15), var(--card-shadow-hover);
+        }
+        .tier-card.popular {
+            border-color: var(--accent-warm);
+        }
+        .tier-card.popular.selected {
+            border-color: var(--navy);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--accent-warm) 0%, var(--accent-coral) 100%);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 18px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            white-space: nowrap;
+        }
+
+        .tier-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 18px;
+        }
+        .tier-low .tier-icon { background: #e8f5e9; }
+        .tier-mid .tier-icon { background: #fff3e0; }
+        .tier-top .tier-icon { background: #ede7f6; }
+
+        .tier-name {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 4px;
+        }
+        .tier-tagline {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .tier-price {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+        .tier-price .currency { font-size: 20px; font-weight: 700; color: var(--navy); }
+        .tier-price .amount { font-size: 42px; font-weight: 700; color: var(--navy); line-height: 1; }
+        .tier-price .period { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+
+        .tier-original-price {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+            margin-bottom: 16px;
+            min-height: 18px;
+        }
+
+        .tier-divider {
+            height: 1px;
+            background: #e9ecef;
+            margin: 16px 0;
+        }
+
+        .tier-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex: 1;
+        }
+        .tier-features li {
+            font-size: 14px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.4;
+        }
+        .tier-features li .check {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            margin-top: 1px;
+        }
+        .check-green { background: #dcfce7; color: #16a34a; }
+        .check-amber { background: #fef3c7; color: #d97706; }
+        .check-purple { background: #ede9fe; color: #7c3aed; }
+
+        .tier-select-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            border: 2px solid #e9ecef;
+            background: var(--white);
+            color: var(--navy);
+        }
+        .tier-select-btn:hover {
+            border-color: var(--navy-light);
+            background: #f8f9fa;
+        }
+        .tier-card.selected .tier-select-btn {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 16px rgba(64, 88, 120, 0.3);
+        }
+
+        /* ══════════════════════════════
+           SIGNUP FORM
+           ══════════════════════════════ */
+        .signup-form-section {
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 40px 36px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e9ecef;
+        }
+        .signup-form-section h3 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--navy);
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .signup-form-section .form-subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+
+        .selected-tier-summary {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #f0f7ff 0%, #e6f3ff 100%);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid #b3d9ff;
+        }
+        .selected-tier-summary .tier-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            background: var(--white);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .selected-tier-summary .tier-info {
+            flex: 1;
+        }
+        .selected-tier-summary .tier-info strong {
+            display: block;
+            color: var(--navy);
+            font-size: 15px;
+        }
+        .selected-tier-summary .tier-info span {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .selected-tier-summary .change-link {
+            font-size: 13px;
+            color: var(--navy-light);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--text-primary);
+            background: var(--white);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: var(--navy-light);
+            box-shadow: 0 0 0 3px rgba(76, 108, 150, 0.1);
+        }
+        .form-group input::placeholder { color: var(--text-muted); }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .password-requirements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+            margin-top: 8px;
+        }
+        .pw-req {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+        .pw-req.met { color: var(--success); }
+        .pw-req .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #d1d5db;
+            transition: background 0.2s;
+        }
+        .pw-req.met .dot { background: var(--success); }
+
+        .btn-signup {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 6px 20px rgba(64, 88, 120, 0.3);
+            margin-top: 8px;
+        }
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(64, 88, 120, 0.35);
+        }
+        .btn-signup:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .form-footer a {
+            color: var(--navy);
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            cursor: pointer;
+        }
+
+        .form-error {
+            background: #fef2f2;
+            color: #b91c1c;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            margin-bottom: 16px;
+            border-left: 4px solid #dc2626;
+            display: none;
+        }
+        .form-error.visible { display: block; }
+
+        /* ══════════════════════════════
+           LOGIN VIEW
+           ══════════════════════════════ */
+        .login-container {
+            max-width: 440px;
+            margin: 60px auto 0;
+        }
+        .login-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 44px 36px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+        .login-card .mascot-small {
+            height: 90px;
+            margin-bottom: 12px;
+        }
+        .login-card h2 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 6px;
+        }
+        .login-card .subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+        .login-card .form-group { text-align: left; }
+        .login-card .btn-signup { margin-top: 4px; }
+
+        .forgot-link {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--navy-light);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* ══════════════════════════════
+           FEATURES GRID
+           ══════════════════════════════ */
+        .features-section {
+            margin-top: 56px;
+            margin-bottom: 16px;
+        }
+        .features-section h3 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--navy);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .features-section > p {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 32px;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .feature-card {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: 28px 20px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(64, 88, 120, 0.06);
+            border: 1px solid #eef0f4;
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--card-shadow);
+        }
+        .feature-card .f-icon {
+            font-size: 36px;
+            margin-bottom: 14px;
+            display: block;
+        }
+        .feature-card h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 6px;
+        }
+        .feature-card p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ─── STEP INDICATOR (for signup flow) ─── */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 36px;
+        }
+        .step-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            background: #e9ecef;
+            color: var(--text-muted);
+            transition: all 0.3s;
+            position: relative;
+        }
+        .step-dot.active {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(64, 88, 120, 0.3);
+        }
+        .step-dot.done {
+            background: var(--success);
+            color: white;
+        }
+        .step-line {
+            width: 64px;
+            height: 3px;
+            background: #e9ecef;
+            transition: background 0.3s;
+        }
+        .step-line.done { background: var(--success); }
+
+        /* ─── MOBILE ─── */
+        @media (max-width: 900px) {
+            .tiers-grid { grid-template-columns: 1fr; max-width: 400px; }
+            .features-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            .page-wrapper { padding: 24px 16px 48px; }
+            .signup-form-section { padding: 28px 22px; }
+            .login-card { padding: 32px 22px; }
+            .form-row { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: 1fr; max-width: 320px; margin: 0 auto; }
+            .trust-bar { gap: 16px; }
+            .header-nav { gap: 4px; }
+            .header-nav button { padding: 8px 14px; font-size: 13px; }
+            .hero-section h2 { font-size: 28px; }
+            .tier-card { padding: 26px 22px; }
+        }
+
+        /* ─── UTILITY ─── */
+        .hidden { display: none !important; }
+
+        /* ─── LOADING SPINNER ─── */
+        .spinner {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 2.5px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.65s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── SOCIAL PROOF ─── */
+        .social-proof {
+            text-align: center;
+            margin-top: 48px;
+            padding: 32px 24px;
+            background: rgba(255,255,255,0.5);
+            border-radius: var(--radius-lg);
+        }
+        .social-proof .quote {
+            font-size: 17px;
+            color: var(--text-primary);
+            font-style: italic;
+            line-height: 1.7;
+            max-width: 520px;
+            margin: 0 auto 12px;
+        }
+        .social-proof .author {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Decoration -->
+    <div class="bg-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="header-brand">
+                <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries">
+                <div>
+                    <h1>Daniel's Diaries</h1>
+                    <p>Your journey together</p>
+                </div>
+            </a>
+            <nav class="header-nav">
+                <button id="navLogin" onclick="showView('login')" class="active">Log In</button>
+                <button id="navSignup" onclick="showView('signup')">Sign Up</button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="page-wrapper">
+
+        <!-- ═══════════════════════════════════
+             LOGIN VIEW
+             ═══════════════════════════════════ -->
+        <div id="loginView" class="view active">
+            <div class="login-container">
+                <div class="login-card">
+                    <img src="/public/images/characters/DanielTheDog.png" alt="Daniel" class="mascot-small">
+                    <h2>Welcome Back</h2>
+                    <p class="subtitle">Sign in to continue your child's journey</p>
+
+                    <div id="loginError" class="form-error"></div>
+
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label for="loginEmail">Email address</label>
+                            <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+                        </div>
+                        <button type="submit" class="btn-signup" id="loginBtn">Log In</button>
+                    </form>
+                    <a class="forgot-link" onclick="handleForgotPassword()">Forgot your password?</a>
+
+                    <div class="form-footer" style="margin-top: 24px;">
+                        New to Daniel's Diaries? <a onclick="showView('signup')">Create an account</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════
+             SIGNUP VIEW
+             ═══════════════════════════════════ -->
+        <div id="signupView" class="view">
+
+            <!-- Hero Marketing Section -->
+            <section class="hero-section">
+                <img src="/public/images/characters/DanielTheDog.png" alt="Daniel the Dog" class="hero-mascot">
+                <h2>Help Your Child Build <span>Emotional Strength</span></h2>
+                <p>
+                    Interactive workbooks designed by child psychologists to nurture emotional intelligence, 
+                    resilience, and coping skills — one story at a time.
+                </p>
+                <div class="trust-bar">
+                    <div class="trust-item"><span class="icon">🧠</span> Expert-Designed</div>
+                    <div class="trust-item"><span class="icon">📊</span> Progress Tracking</div>
+                    <div class="trust-item"><span class="icon">🔒</span> Safe & Private</div>
+                    <div class="trust-item"><span class="icon">⭐</span> Evidence-Based</div>
+                </div>
+            </section>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step-dot" id="step1Dot">1</div>
+                <div class="step-line" id="step1Line"></div>
+                <div class="step-dot" id="step2Dot">2</div>
+            </div>
+
+            <!-- STEP 1: Choose a Plan -->
+            <div id="signupStep1">
+                <section class="pricing-header">
+                    <h3>Choose Your Plan</h3>
+                    <p>Every plan includes expert-crafted workbooks tailored to your child's needs</p>
+                </section>
+
+                <!-- Billing Toggle -->
+                <div class="billing-toggle">
+                    <span id="toggleMonthly" class="active" onclick="setBilling('monthly')">Monthly</span>
+                    <div class="toggle-switch" id="billingToggle" onclick="toggleBilling()"></div>
+                    <span id="toggleAnnual" onclick="setBilling('annual')">Annual</span>
+                    <span class="save-badge">Save up to 20%</span>
+                </div>
+
+                <!-- Tier Cards -->
+                <div class="tiers-grid">
+                    <!-- Explorer -->
+                    <div class="tier-card tier-low" onclick="selectTier('low')" id="tierLow">
+                        <div class="tier-icon">🌱</div>
+                        <div class="tier-name">Explorer</div>
+                        <div class="tier-tagline">Get started with the essentials</div>
+                        <div class="tier-price">
+                            <span class="currency">$</span>
+                            <span class="amount" id="priceLow">9</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <div class="tier-original-price" id="originalLow"></div>
+                        <div class="tier-divider"></div>
+                        <ul class="tier-features">
+                            <li><span class="check check-green">✓</span>2 workbook modules per month</li>
+                            <li><span class="check check-green">✓</span>Interactive stories & activities</li>
+                            <li><span class="check check-green">✓</span>Child progress tracking</li>
+                            <li><span class="check check-green">✓</span>Star reward system</li>
+                        </ul>
+                        <button class="tier-select-btn" id="btnLow">Select Explorer</button>
+                    </div>
+
+                    <!-- Adventurer (Popular) -->
+                    <div class="tier-card tier-mid" onclick="selectTier('mid')" id="tierMid">
+                        <div class="popular-badge">Most Popular</div>
+                        <div class="tier-icon">🚀</div>
+                        <div class="tier-name">Adventurer</div>
+                        <div class="tier-tagline">Perfect for growing families</div>
+                        <div class="tier-price">
+                            <span class="currency">$</span>
+                            <span class="amount" id="priceMid">19</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <div class="tier-original-price" id="originalMid"></div>
+                        <div class="tier-divider"></div>
+                        <ul class="tier-features">
+                            <li><span class="check check-amber">✓</span>5 workbook modules per month</li>
+                            <li><span class="check check-amber">✓</span>Everything in Explorer</li>
+                            <li><span class="check check-amber">✓</span>Parent Insights dashboard</li>
+                            <li><span class="check check-amber">✓</span>Detailed emotional analytics</li>
+                        </ul>
+                        <button class="tier-select-btn" id="btnMid">Select Adventurer</button>
+                    </div>
+
+                    <!-- Champion -->
+                    <div class="tier-card tier-top" onclick="selectTier('top')" id="tierTop">
+                        <div class="tier-icon">👑</div>
+                        <div class="tier-name">Champion</div>
+                        <div class="tier-tagline">Complete support for your child</div>
+                        <div class="tier-price">
+                            <span class="currency">$</span>
+                            <span class="amount" id="priceTop">29</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <div class="tier-original-price" id="originalTop"></div>
+                        <div class="tier-divider"></div>
+                        <ul class="tier-features">
+                            <li><span class="check check-purple">✓</span>Unlimited modules per month</li>
+                            <li><span class="check check-purple">✓</span>Everything in Adventurer</li>
+                            <li><span class="check check-purple">✓</span>Behavioural support tools</li>
+                            <li><span class="check check-purple">✓</span>Priority new content access</li>
+                        </ul>
+                        <button class="tier-select-btn" id="btnTop">Select Champion</button>
+                    </div>
+                </div>
+
+                <!-- Features Grid -->
+                <section class="features-section">
+                    <h3>Why Families Love Daniel's Diaries</h3>
+                    <p>Every tool you need to support your child's emotional development</p>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <span class="f-icon">📚</span>
+                            <h4>Interactive Workbooks</h4>
+                            <p>Engaging stories and activities that build real emotional skills</p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="f-icon">📈</span>
+                            <h4>Growth Tracking</h4>
+                            <p>See how your child develops confidence and coping strategies</p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="f-icon">🎯</span>
+                            <h4>Expert-Crafted</h4>
+                            <p>Designed by child psychologists with evidence-based methods</p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="f-icon">🏆</span>
+                            <h4>Reward System</h4>
+                            <p>Stars and achievements keep children motivated and engaged</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Social Proof -->
+                <div class="social-proof">
+                    <p class="quote">"My daughter used to struggle with big emotions at school. After just two modules, she started using the calming strategies on her own. It's been a game-changer for our family."</p>
+                    <p class="author">— Sarah M., Parent of 7-year-old</p>
+                </div>
+            </div>
+
+            <!-- STEP 2: Create Account -->
+            <div id="signupStep2" class="hidden">
+                <div class="signup-form-section">
+                    <h3>Create Your Account</h3>
+                    <p class="form-subtitle">One more step to start your child's journey</p>
+
+                    <!-- Selected Tier Summary -->
+                    <div class="selected-tier-summary" id="selectedTierSummary">
+                        <div class="tier-badge" id="summaryIcon">🚀</div>
+                        <div class="tier-info">
+                            <strong id="summaryName">Adventurer Plan</strong>
+                            <span id="summaryPrice">$19/month</span>
+                        </div>
+                        <span class="change-link" onclick="goToStep(1)">Change</span>
+                    </div>
+
+                    <div id="signupError" class="form-error"></div>
+
+                    <form id="signupForm" onsubmit="handleSignup(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName">First name</label>
+                                <input type="text" id="firstName" placeholder="Jane" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last name</label>
+                                <input type="text" id="lastName" placeholder="Smith" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="signupEmail">Email address</label>
+                            <input type="email" id="signupEmail" placeholder="you@example.com" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupPassword">Create password</label>
+                            <input type="password" id="signupPassword" placeholder="At least 8 characters" required autocomplete="new-password" oninput="checkPassword()">
+                            <div class="password-requirements">
+                                <span class="pw-req" id="pwLen"><span class="dot"></span>8+ characters</span>
+                                <span class="pw-req" id="pwUpper"><span class="dot"></span>Uppercase</span>
+                                <span class="pw-req" id="pwNum"><span class="dot"></span>Number</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-signup" id="signupBtn">Create Account & Get Started</button>
+                    </form>
+
+                    <div class="form-footer">
+                        Already have an account? <a onclick="showView('login')">Log in</a>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end signupView -->
+
+    </div><!-- end page-wrapper -->
+
+
+    <script type="module">
+        // ─── Supabase Imports ───
+        // Adjust these paths to match your project structure
+        import { supabase } from './src/supabaseClient.js'
+
+        // ─── State ───
+        let selectedTier = null;
+        let billingCycle = 'monthly'; // 'monthly' or 'annual'
+
+        // Tier config — update these values to match your subscription_tiers table
+        const tierConfig = {
+            low: {
+                displayName: 'Explorer',
+                icon: '🌱',
+                monthlyPrice: 9,
+                annualPrice: 7, // discounted
+                originalMonthly: null,
+                originalAnnual: 9,
+            },
+            mid: {
+                displayName: 'Adventurer',
+                icon: '🚀',
+                monthlyPrice: 19,
+                annualPrice: 15,
+                originalMonthly: null,
+                originalAnnual: 19,
+            },
+            top: {
+                displayName: 'Champion',
+                icon: '👑',
+                monthlyPrice: 29,
+                annualPrice: 23,
+                originalMonthly: null,
+                originalAnnual: 29,
+            }
+        };
+
+        // ─── Make functions available globally ───
+        window.showView = function(view) {
+            document.getElementById('loginView').classList.remove('active');
+            document.getElementById('signupView').classList.remove('active');
+            document.getElementById('navLogin').classList.remove('active');
+            document.getElementById('navSignup').classList.remove('active');
+
+            if (view === 'login') {
+                document.getElementById('loginView').classList.add('active');
+                document.getElementById('navLogin').classList.add('active');
+            } else {
+                document.getElementById('signupView').classList.add('active');
+                document.getElementById('navSignup').classList.add('active');
+                goToStep(1);
+            }
+        };
+
+        window.goToStep = function(step) {
+            const step1 = document.getElementById('signupStep1');
+            const step2 = document.getElementById('signupStep2');
+            const dot1 = document.getElementById('step1Dot');
+            const dot2 = document.getElementById('step2Dot');
+            const line = document.getElementById('step1Line');
+
+            if (step === 1) {
+                step1.classList.remove('hidden');
+                step2.classList.add('hidden');
+                dot1.classList.add('active');
+                dot1.classList.remove('done');
+                dot2.classList.remove('active');
+                line.classList.remove('done');
+                dot1.textContent = '1';
+            } else {
+                step1.classList.add('hidden');
+                step2.classList.remove('hidden');
+                dot1.classList.remove('active');
+                dot1.classList.add('done');
+                dot1.textContent = '✓';
+                dot2.classList.add('active');
+                line.classList.add('done');
+                updateSummary();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        function updateSummary() {
+            if (!selectedTier) return;
+            const config = tierConfig[selectedTier];
+            const price = billingCycle === 'annual' ? config.annualPrice : config.monthlyPrice;
+            document.getElementById('summaryIcon').textContent = config.icon;
+            document.getElementById('summaryName').textContent = config.displayName + ' Plan';
+            document.getElementById('summaryPrice').textContent = `$${price}/month` + (billingCycle === 'annual' ? ' (billed annually)' : '');
+        }
+
+        window.selectTier = function(tier) {
+            selectedTier = tier;
+
+            // Update UI
+            document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('tier' + tier.charAt(0).toUpperCase() + tier.slice(1)).classList.add('selected');
+
+            // Auto-advance to step 2 after short delay
+            setTimeout(() => goToStep(2), 350);
+        };
+
+        window.toggleBilling = function() {
+            billingCycle = billingCycle === 'monthly' ? 'annual' : 'monthly';
+            updateBillingUI();
+        };
+
+        window.setBilling = function(cycle) {
+            billingCycle = cycle;
+            updateBillingUI();
+        };
+
+        function updateBillingUI() {
+            const toggle = document.getElementById('billingToggle');
+            const mLabel = document.getElementById('toggleMonthly');
+            const aLabel = document.getElementById('toggleAnnual');
+
+            if (billingCycle === 'annual') {
+                toggle.classList.add('active');
+                aLabel.classList.add('active');
+                mLabel.classList.remove('active');
+            } else {
+                toggle.classList.remove('active');
+                mLabel.classList.add('active');
+                aLabel.classList.remove('active');
+            }
+
+            // Update prices
+            for (const [key, config] of Object.entries(tierConfig)) {
+                const priceEl = document.getElementById('price' + key.charAt(0).toUpperCase() + key.slice(1));
+                const origEl = document.getElementById('original' + key.charAt(0).toUpperCase() + key.slice(1));
+
+                if (billingCycle === 'annual') {
+                    priceEl.textContent = config.annualPrice;
+                    origEl.textContent = config.originalAnnual ? `$${config.originalAnnual}/mo` : '';
+                } else {
+                    priceEl.textContent = config.monthlyPrice;
+                    origEl.textContent = config.originalMonthly ? `$${config.originalMonthly}/mo` : '';
+                }
+            }
+        }
+
+        // ─── Password checker ───
+        window.checkPassword = function() {
+            const pw = document.getElementById('signupPassword').value;
+            document.getElementById('pwLen').classList.toggle('met', pw.length >= 8);
+            document.getElementById('pwUpper').classList.toggle('met', /[A-Z]/.test(pw));
+            document.getElementById('pwNum').classList.toggle('met', /[0-9]/.test(pw));
+        };
+
+        // ─── Handle Signup ───
+        window.handleSignup = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('signupBtn');
+            const errorEl = document.getElementById('signupError');
+            errorEl.classList.remove('visible');
+
+            if (!selectedTier) {
+                errorEl.textContent = 'Please select a plan first.';
+                errorEl.classList.add('visible');
+                return;
+            }
+
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const displayName = `${firstName} ${lastName}`;
+
+            if (password.length < 8) {
+                errorEl.textContent = 'Password must be at least 8 characters.';
+                errorEl.classList.add('visible');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Creating account...';
+
+            try {
+                // 1. Sign up with Supabase Auth
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            display_name: displayName,
+                            first_name: firstName,
+                            last_name: lastName,
+                        }
+                    }
+                });
+
+                if (error) throw error;
+
+                const userId = data.user?.id;
+                if (!userId) throw new Error('Account created but user ID not returned.');
+
+                // 2. Update parent_subscriptions with selected tier
+                // The parent_subscriptions row should already be created by a trigger 
+                // when the user is created. We just need to update it.
+                const { error: subError } = await supabase
+                    .from('parent_subscriptions')
+                    .upsert({
+                        parent_id: userId,
+                        tier: selectedTier,
+                        status: 'inactive', // Will become 'active' once Stripe is connected
+                    }, {
+                        onConflict: 'parent_id'
+                    });
+
+                if (subError) {
+                    console.error('Subscription update error:', subError);
+                    // Don't block — the user is still created
+                }
+
+                // 3. Redirect to landing page (or confirmation)
+                window.location.href = '/landing.html';
+
+            } catch (err) {
+                console.error('Signup error:', err);
+                errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+                errorEl.classList.add('visible');
+                btn.disabled = false;
+                btn.innerHTML = 'Create Account & Get Started';
+            }
+        };
+
+        // ─── Handle Login ───
+        window.handleLogin = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const errorEl = document.getElementById('loginError');
+            errorEl.classList.remove('visible');
+            errorEl.style.display = 'none';
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Signing in...';
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                window.location.href = '/landing.html';
+
+            } catch (err) {
+                errorEl.textContent = err.message || 'Invalid email or password.';
+                errorEl.classList.add('visible');
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = 'Log In';
+            }
+        };
+
+        // ─── Forgot Password ───
+        window.handleForgotPassword = async function() {
+            const email = document.getElementById('loginEmail').value.trim();
+            if (!email) {
+                alert('Please enter your email address first, then click "Forgot your password?"');
+                return;
+            }
+
+            try {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password.html',
+                });
+                if (error) throw error;
+                alert('Password reset link sent! Check your email.');
+            } catch (err) {
+                alert(err.message || 'Could not send reset email. Please try again.');
+            }
+        };
+
+        // ─── Check if already logged in ───
+        async function checkExistingSession() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    window.location.href = '/landing.html';
+                }
+            } catch (e) {
+                // Not logged in, stay on auth page
+            }
+        }
+
+        // Check URL params for initial view
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('view') === 'signup') {
+            showView('signup');
+        }
+
+        checkExistingSession();
+    </script>
+
+</body>
+</html>

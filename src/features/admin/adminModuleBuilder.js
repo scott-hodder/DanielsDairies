@@ -1221,7 +1221,7 @@ function addHomeButtonToHeader(htmlContent) {
 // ================================================================================
 // SUPER SKILL CHANGE HANDLERS (for Add Module & Edit Module forms)
 // ================================================================================
-window.onSuperSkillChange = function() {
+window.onSuperSkillChange = async function() {
     const superSkillSelect = document.getElementById('newModuleSuperSkill');
     const characterInput = document.getElementById('newModuleCharacter');
     const subSkillSelect = document.getElementById('newModuleSubSkill');
@@ -1242,13 +1242,29 @@ window.onSuperSkillChange = function() {
         document.getElementById('newModuleSeries').value = selectedSkill.character_name || '';
     }
 
-    subSkillSelect.innerHTML = '<option value="">Select sub-skill...</option>';
-    subSkillsData.filter(ss => ss.super_skill_id === superSkillId).forEach(subSkill => {
-        const option = document.createElement('option');
-        option.value = subSkill.id;
-        option.textContent = subSkill.name;
-        subSkillSelect.appendChild(option);
-    });
+    // Load sub-skills dynamically from database
+    subSkillSelect.innerHTML = '<option value="">Loading sub-skills...</option>';
+    try {
+        const { data, error } = await supabase
+            .from('sub_skills')
+            .select('id, name')
+            .eq('super_skill_id', superSkillId)
+            .eq('is_active', true)
+            .order('name');
+        
+        if (error) throw error;
+        
+        subSkillSelect.innerHTML = '<option value="">Select sub-skill...</option>';
+        (data || []).forEach(subSkill => {
+            const option = document.createElement('option');
+            option.value = subSkill.id;
+            option.textContent = subSkill.name;
+            subSkillSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading sub-skills:', error);
+        subSkillSelect.innerHTML = '<option value="">Error loading sub-skills</option>';
+    }
 
     cycleSelect.innerHTML = '<option value="">Select cycle...</option>';
     cyclesData.filter(c => c.super_skill_id === superSkillId).forEach(cycle => {
@@ -1261,7 +1277,7 @@ window.onSuperSkillChange = function() {
     if (typeof applyTheoryConnectionAutofill === 'function') applyTheoryConnectionAutofill();
 };
 
-window.onEditSuperSkillChange = function() {
+window.onEditSuperSkillChange = async function() {
     const superSkillSelect = document.getElementById('editSuperSkill');
     const characterInput = document.getElementById('editCharacter');
     const subSkillSelect = document.getElementById('editSubSkill');
@@ -1272,13 +1288,29 @@ window.onEditSuperSkillChange = function() {
     const superSkillId = superSkillSelect.value;
     if (characterInput) characterInput.value = selectedOption?.dataset?.characterName || '';
 
-    subSkillSelect.innerHTML = '<option value="">Select sub-skill...</option>';
-    subSkillsData.filter(ss => ss.super_skill_id === superSkillId).forEach(subSkill => {
-        const option = document.createElement('option');
-        option.value = subSkill.id;
-        option.textContent = subSkill.name;
-        subSkillSelect.appendChild(option);
-    });
+    // Load sub-skills dynamically from database
+    subSkillSelect.innerHTML = '<option value="">Loading sub-skills...</option>';
+    try {
+        const { data, error } = await supabase
+            .from('sub_skills')
+            .select('id, name')
+            .eq('super_skill_id', superSkillId)
+            .eq('is_active', true)
+            .order('name');
+        
+        if (error) throw error;
+        
+        subSkillSelect.innerHTML = '<option value="">Select sub-skill...</option>';
+        (data || []).forEach(subSkill => {
+            const option = document.createElement('option');
+            option.value = subSkill.id;
+            option.textContent = subSkill.name;
+            subSkillSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading sub-skills:', error);
+        subSkillSelect.innerHTML = '<option value="">Error loading sub-skills</option>';
+    }
 
     cycleSelect.innerHTML = '<option value="">Select cycle...</option>';
     cyclesData.filter(c => c.super_skill_id === superSkillId).forEach(cycle => {
