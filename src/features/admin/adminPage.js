@@ -152,7 +152,7 @@ export async function checkAdminAccess() {
 export async function loadAllChildren() {
     const { data: childrenData, error: childrenError } = await supabase
         .from('children')
-        .select('*')
+        .select('id, name, parent_user_id')
         .order('name');
 
     if (childrenError) {
