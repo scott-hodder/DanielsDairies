@@ -1009,16 +1009,46 @@ class DanielModulePreview {
     // First module if pathwayOrder is 1 OR if it's the first in the current map view
     const isFirstModule = moduleOrder === 1 || isFirstModuleInMap;
     
-    console.log('[Daniel] Module clicked:', module.name, 'pathwayOrder:', moduleOrder, 'index:', moduleIndex, 'isFirstModule:', isFirstModule);
     
+    // Check if this is the first module in a super skill — show character intro + check-in
+    const superSkillId = rawMod.super_skill_id || null;
+    if (isFirstModule && superSkillId && child && typeof window.showCheckinPopup === 'function') {
+      const introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
+      const alreadySeen = localStorage.getItem(introKey);
+      if (!alreadySeen) {
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+        window.showCheckinPopup(rawMod, function() {
+          localStorage.setItem(introKey, 'true');
+          window.location.href = moduleUrl;
+        });
+        return;
+      }
+    }
+
     // Show Daniel's pre-activity dialogue immediately for fast UI response
     this.dialogueSystem.showPreActivity(module, category, async () => {
       if (child && module) {
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+
+        // Check for periodic check-in (every 3 completed modules)
+        if (typeof window.showCheckinPopup === 'function') {
+          try {
+            const needsCheckin = await self.shouldTriggerCheckinForModuleCount(child.id);
+            if (needsCheckin) {
+              window.showCheckinPopup(rawMod, function() {
+                window.location.href = moduleUrl;
+              }, true); // skipIntro=true for periodic check-ins
+              return;
+            }
+          } catch (e) {
+            console.error('[Daniel] Error checking periodic check-in:', e);
+          }
+        }
+
         window.location.href = moduleUrl;
         return;
       }
-      
+
       // Fallback to other methods if direct navigation fails
       if (typeof startModule === 'function') {
         startModule(module);
@@ -1140,7 +1170,7 @@ class DanielHubEnhancer {
     }
 
     // Add pulsing hint to show Daniel is interactive
-    const danielAvatar = danielHub.querySelector('.daniel-avatar');
+    const danielAvatar = danielHub.querySelector('.hero-daniel-img') || danielHub.querySelector('.daniel-avatar');
     if (danielAvatar) {
       danielAvatar.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
       danielAvatar.addEventListener('mouseenter', () => {

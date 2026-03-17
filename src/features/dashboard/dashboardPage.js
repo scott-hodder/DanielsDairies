@@ -3011,7 +3011,6 @@ async function getSuperSkillInfo(module) {
 
 // Show intro screen with Daniel + character before check-in
 function showIntroScreen(superSkill, onContinue, onClose) {
-  console.log('[Intro Screen] Showing intro screen with super skill:', superSkill)
   
   // Get character info
   const character = superSkill?.characters || {}
@@ -3201,15 +3200,12 @@ function showIntroScreen(superSkill, onContinue, onClose) {
 
 window.showCheckinPopup = showCheckinPopup
 async function showCheckinPopup(module, onComplete, skipIntro = false) {
-  console.log('[Check-in Popup] Called with module:', module, 'skipIntro:', skipIntro)
-  
   // Determine the pathway/super skill for the psychometric assessment
   // Priority: module's super_skill_id → current adventure map category → 'general'
   let pathwayOrSuperSkill = 'general'
-  
+
   // Get super skill info for intro screen
   const superSkill = await getSuperSkillInfo(module)
-  console.log('[Check-in Popup] Super skill info:', superSkill)
   
   if (superSkill && superSkill.slug) {
     pathwayOrSuperSkill = superSkill.slug
@@ -3221,27 +3217,24 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
   }
 
   const childId = state.selectedChild?.id || window.state?.selectedChild?.id
-  console.log('[Check-in Popup] childId:', childId)
   if (!childId) {
-    console.warn('[Check-in Popup] No childId, calling onComplete and returning')
     onComplete()
     return
   }
 
   // Initialize the progress tracking system if needed
-  console.log('[Check-in Popup] progressTrackingSystem available:', !!window.progressTrackingSystem)
   if (window.progressTrackingSystem && !window.progressTrackingSystem.supabaseClient) {
     window.progressTrackingSystem.init(supabase)
   }
 
-  if (!window.progressTrackingSystem) {
-    console.warn('[Check-in Popup] Progress tracking system not available, skipping check-in')
-    onComplete()
-    return
-  }
-  
-  // Function to show the actual check-in assessment
+  const hasProgressTracking = !!window.progressTrackingSystem
+
+  // Function to show the actual check-in assessment (only if progress tracking available)
   const showActualCheckin = () => {
+    if (!hasProgressTracking) {
+      onComplete()
+      return
+    }
     // Use 'checkin' assessment type for check-ins
     // Pass closeToDashboard: true so X button closes to dashboard, not module
     window.progressTrackingSystem.showAssessment(
@@ -3272,16 +3265,13 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
       // onSkip — user closed/skipped, return to dashboard (NOT navigate to module)
       () => {
         // Do nothing - just close the modal and stay on dashboard
-        console.log('[Check-in] User closed check-in, returning to dashboard')
       },
       // Pass module data for tracking
       module
     )
   }
-  
+
   // Show intro screen first (unless skipped)
-  // Always show intro screen - use fallback character if no super skill found
-  console.log('[Check-in Popup] skipIntro:', skipIntro, 'About to show intro screen')
   if (!skipIntro) {
     // Create fallback super skill if none found
     const introSuperSkill = superSkill || {
@@ -3296,17 +3286,15 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
         image_url: '/images/characters/lenny.png'
       }
     }
-    console.log('[Check-in Popup] Calling showIntroScreen with:', introSuperSkill)
     showIntroScreen(
       introSuperSkill,
-      showActualCheckin,  // onContinue - show the check-in
-      () => {             // onClose - return to dashboard
-        console.log('[Check-in] User closed intro, returning to dashboard')
-      }
+      showActualCheckin,  // onContinue - show the check-in (or navigate if no tracking)
+      () => {}             // onClose - return to dashboard
     )
-  } else {
-    console.log('[Check-in Popup] Skipping intro, showing actual checkin')
+  } else if (hasProgressTracking) {
     showActualCheckin()
+  } else {
+    onComplete()
   }
 }
 
@@ -4255,72 +4243,41 @@ function updateParentInsights() {
     'MODULE8': 'Practice "emotion detective" - watch shows together and identify characters\' feelings.'
   }
   
-  // Aggregate skills and emotions from completed modules
-  const completedSkills = new Set()
-  const completedEmotions = new Set()
-  completedModules.forEach(module => {
-    normalizeTextArray(module?.skills).forEach(skill => completedSkills.add(skill))
-    normalizeTextArray(module?.emotions).forEach(emotion => completedEmotions.add(emotion))
-  })
-
-  // Update "Your Journey This Week" stats
-  const skillsCount = completedSkills.size
-  const emotionsCount = completedEmotions.size
-  const activitiesCount = completedCount
-
-  const skillsExploredCountEl = document.getElementById('skillsExploredCount')
-  const skillsExploredLabelEl = document.getElementById('skillsExploredLabel')
-  const toolsIntroducedCountEl = document.getElementById('toolsIntroducedCount')
-  const toolsIntroducedLabelEl = document.getElementById('toolsIntroducedLabel')
-  const activitiesCompletedCountEl = document.getElementById('activitiesCompletedCount')
-  const activitiesCompletedLabelEl = document.getElementById('activitiesCompletedLabel')
-
-  // Get the skills box container
-  const skillsExploredBoxEl = document.getElementById('skillsExploredBox')
-
-  // If all counts are 0, show one large box with a single message
-  if (skillsCount === 0 && emotionsCount === 0 && activitiesCount === 0) {
-    if (skillsExploredBoxEl) {
-      skillsExploredBoxEl.style.gridColumn = '1 / -1'
-    }
-    if (skillsExploredCountEl) {
-      skillsExploredCountEl.textContent = ''
-      skillsExploredCountEl.style.display = 'none'
-    }
-    if (skillsExploredLabelEl) {
-      skillsExploredLabelEl.textContent = 'Your child\'s journey will appear here as they explore modules and build skills.'
-      skillsExploredLabelEl.style.fontSize = '12px'
-      skillsExploredLabelEl.style.lineHeight = '1.4'
-    }
-    if (toolsIntroducedCountEl) toolsIntroducedCountEl.parentElement.style.display = 'none'
-    if (activitiesCompletedCountEl) activitiesCompletedCountEl.parentElement.style.display = 'none'
-  } else {
-    // Show all three boxes with their data
-    if (skillsExploredBoxEl) {
-      skillsExploredBoxEl.style.gridColumn = 'auto'
-    }
-    if (toolsIntroducedCountEl) toolsIntroducedCountEl.parentElement.style.display = 'block'
-    if (activitiesCompletedCountEl) activitiesCompletedCountEl.parentElement.style.display = 'block'
-    if (skillsExploredCountEl) {
-      skillsExploredCountEl.style.display = 'block'
-      skillsExploredCountEl.textContent = skillsCount
-    }
-    if (skillsExploredLabelEl) {
-      skillsExploredLabelEl.textContent = 'SKILLS EXPLORED'
-      skillsExploredLabelEl.style.fontSize = '11px'
-    }
-    if (toolsIntroducedCountEl) toolsIntroducedCountEl.textContent = emotionsCount
-    if (toolsIntroducedLabelEl) {
-      toolsIntroducedLabelEl.textContent = 'TOOLS INTRODUCED'
-      toolsIntroducedLabelEl.style.fontSize = '11px'
-    }
-    if (activitiesCompletedCountEl) activitiesCompletedCountEl.textContent = activitiesCount
-    if (activitiesCompletedLabelEl) {
-      activitiesCompletedLabelEl.textContent = 'ACTIVITIES COMPLETED'
-      activitiesCompletedLabelEl.style.fontSize = '11px'
-    }
-  }
+  // Update "Your Journey So Far" stats with level and XP
+  const currentLevel = state.selectedChild?.level || 1
+  const totalXp = state.selectedChild?.total_xp || 0
   
+  // Calculate XP needed for next level
+  const xpPerLevel = 500
+  const xpForCurrentLevel = (currentLevel - 1) * xpPerLevel
+  const xpForNextLevel = currentLevel * xpPerLevel
+  const xpIntoCurrentLevel = totalXp - xpForCurrentLevel
+  const xpNeededForNext = Math.max(0, xpForNextLevel - totalXp)
+  const progressPercent = xpNeededForNext === 0 ? 100 : Math.min(100, (xpIntoCurrentLevel / xpPerLevel) * 100)
+
+  // Update level display
+  const currentLevelEl = document.getElementById('currentLevelDisplay')
+  if (currentLevelEl) currentLevelEl.textContent = currentLevel
+
+  // Update total XP display
+  const totalXpEl = document.getElementById('totalXpDisplay')
+  if (totalXpEl) totalXpEl.textContent = totalXp
+
+  // Update XP progress bar and text
+  const xpProgressBar = document.getElementById('xpProgressBar')
+  if (xpProgressBar) xpProgressBar.style.width = progressPercent + '%'
+
+  const xpProgressText = document.getElementById('xpProgressText')
+  if (xpProgressText) xpProgressText.textContent = xpIntoCurrentLevel + ' / ' + xpPerLevel + ' XP'
+
+  // Update level ring SVG progress
+  const levelRing = document.getElementById('levelRingProgress')
+  if (levelRing) {
+    const circumference = 2 * Math.PI * 34 // r=34 from SVG
+    const offset = circumference - (progressPercent / 100) * circumference
+    levelRing.style.strokeDashoffset = offset
+  }
+
   // Reinforcement tips sourced from active modules
   const reinforcements = []
   inProgressModules.forEach(module => {

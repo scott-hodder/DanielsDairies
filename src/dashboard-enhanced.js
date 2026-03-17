@@ -643,41 +643,39 @@ class AdventureMapV4 {
     this.buildModuleList();
     this.filterModulesByCategory();
 
-    // Batch all DOM operations in a single animation frame
-    requestAnimationFrame(function() {
-      self.createMapHTML();
-      self.setupEventListeners();
+    // Run DOM updates directly — callers already handle framing
+    this.createMapHTML();
+    this.setupEventListeners();
 
-      if (self.modules.length > 0) {
-        self.applyThemeToBackground();
-        self.renderPath();
-        self.renderDecorations();
-        self.renderNodes();
-        self.updateProgress();
+    if (this.modules.length > 0) {
+      this.applyThemeToBackground();
+      this.renderPath();
+      this.renderDecorations();
+      this.renderNodes();
+      this.updateProgress();
 
-        // Render roadblocks asynchronously to avoid blocking
-        self.renderRoadblocks().then(function() {
-          setTimeout(function() { self.centerOnCurrentModule(); }, 100);
-          if (typeof window._dashboardRenderComplete === 'function') {
-            window._dashboardRenderComplete();
-            window._dashboardRenderComplete = null;
-          }
-        }).catch(function(err) {
-          console.log('Roadblock rendering error:', err);
-          setTimeout(function() { self.centerOnCurrentModule(); }, 100);
-          if (typeof window._dashboardRenderComplete === 'function') {
-            window._dashboardRenderComplete();
-            window._dashboardRenderComplete = null;
-          }
-        });
-      } else {
-        // No modules to render - still signal completion
+      // Render roadblocks asynchronously to avoid blocking
+      this.renderRoadblocks().then(function() {
+        setTimeout(function() { self.centerOnCurrentModule(); }, 100);
         if (typeof window._dashboardRenderComplete === 'function') {
           window._dashboardRenderComplete();
           window._dashboardRenderComplete = null;
         }
+      }).catch(function(err) {
+        console.log('Roadblock rendering error:', err);
+        setTimeout(function() { self.centerOnCurrentModule(); }, 100);
+        if (typeof window._dashboardRenderComplete === 'function') {
+          window._dashboardRenderComplete();
+          window._dashboardRenderComplete = null;
+        }
+      });
+    } else {
+      // No modules to render - still signal completion
+      if (typeof window._dashboardRenderComplete === 'function') {
+        window._dashboardRenderComplete();
+        window._dashboardRenderComplete = null;
       }
-    });
+    }
   }
   
   // NEW: Initialize and render roadblocks on the adventure map
@@ -1259,8 +1257,8 @@ class AdventureMapV4 {
     }).join('');
     var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
     var html = '<div class="adventure-header">' +
-      '<h2 class="adventure-title" style="color: ' + theme.color + '">' + theme.emoji + ' ' + theme.name + '</h2>' +
-      '<p class="adventure-subtitle">' + theme.description + '</p>' +
+      '<h2 class="adventure-title">🗺️ Your Adventure Map</h2>' +
+      '<p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>' +
       '</div>' +
       '<div class="category-filter-container">' +
       '<label class="category-filter-label">Choose your skill:</label>' +
@@ -1273,6 +1271,10 @@ class AdventureMapV4 {
 
     if (this.modules.length > 0) {
       html += this.getTownProgressCueHtml(completedCount);
+      html += '<div class="adventure-skill-title" style="color: ' + theme.color + '">' +
+        '<span class="adventure-skill-emoji">' + theme.emoji + '</span>' +
+        '<span>' + theme.name + '</span>' +
+        '</div>';
       html += '<div class="adventure-viewport" id="adventureViewport">' +
         '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
         '<div class="map-zone-layers" aria-hidden="true"></div>' +
@@ -1334,42 +1336,32 @@ class AdventureMapV4 {
     }
   }
 
-  getZoneForChildLevel(childLevel) {
-    if (childLevel >= 10) return 4;  // Level 10+ = Metropolis
-    if (childLevel >= 7) return 3;   // Level 7-9 = City
-    if (childLevel >= 4) return 2;   // Level 4-6 = Village
-    return 1;                        // Level 1-3 = Nature
-  }
-
   applyZoneBackground() {
     if (!this.viewport) return;
-    
-    // Get child's level from dashboard data
-    var childLevel = 1;
-    if (dashboardSelectedChild && dashboardSelectedChild.level) {
-      childLevel = dashboardSelectedChild.level;
-    }
-    
-    var newZone = this.getZoneForChildLevel(childLevel);
+
+    // Use completed module count to determine zone (matches the progress cue)
+    var townStage = this.getTownStage(); // 0=Trailhead, 1=Village, 2=Town Center, 3=City
+    var newZone = townStage + 1; // zones are 1-4
+
     var previousZone = this.currentZone;
     this.viewport.dataset.zone = newZone;
     this.currentZone = newZone;
 
     // Detect zone upgrade: only when moving to a higher zone (not zone 1)
+    var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
     if (previousZone !== null && newZone > previousZone && newZone > 1) {
       var self = this;
-      // Small delay so the background image loads before the celebration plays
       setTimeout(function() {
-        self.showZoneUpgradeBanner(newZone, childLevel);
+        self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
       }, 400);
     } else if (previousZone === null && newZone > 1) {
-      // First render after selecting a child — check if this zone was already celebrated
-      var storageKey = 'zone-celebrated-' + (dashboardSelectedChild ? dashboardSelectedChild.id : 'unknown') + '-' + newZone;
-      
+      var childId = child ? child.id : 'unknown';
+      var storageKey = 'zone-celebrated-' + childId + '-' + newZone;
+
       if (localStorage.getItem(storageKey) !== 'true') {
         var self = this;
         setTimeout(function() {
-          self.showZoneUpgradeBanner(newZone, childLevel);
+          self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
         }, 800);
       }
     }
@@ -2217,27 +2209,25 @@ class EnhancedDashboard {
   init() {
     var self = this;
     getDashboardData();
-    
+
     // Only attach event listeners once
     if (!this.eventListenersAttached) {
       this.setupDanielHub();
       this.setupModulePreview();
       this.eventListenersAttached = true;
     }
-    
+
     // Load quest data (synchronous localStorage read)
     this.loadDailyQuest();
-    
-    // Batch DOM updates in animation frame
-    requestAnimationFrame(function() {
-      self.updateDanielMood();
-      self.updateQuestDisplay();
-      self.updateRankDisplay();
-      
-      // Setup adventure map (heavy operation - do last)
-      self.setupAdventureMap();
-    });
-    
+
+    // Update UI synchronously — these are fast DOM writes
+    this.updateDanielMood();
+    this.updateQuestDisplay();
+    this.updateRankDisplay();
+
+    // Setup adventure map — render() has its own rAF
+    this.setupAdventureMap();
+
     this.initialized = true;
   }
 
@@ -2248,7 +2238,7 @@ class EnhancedDashboard {
   }
 
   interactWithDaniel() {
-    var danielAvatar = document.querySelector('.daniel-avatar');
+    var danielAvatar = document.querySelector('.hero-daniel-img') || document.querySelector('.daniel-avatar');
     var moodText = document.getElementById('moodText');
     
     if (danielAvatar) {
@@ -2415,20 +2405,34 @@ class EnhancedDashboard {
 
   async startModule(module) {
     var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
-    if (!module.module || !child) return;
+    if (!module.module || !child) {
+      return;
+    }
 
-    var self = this;
     var mod = module.module;
     var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '');
-    
-    // Check-in intercept every 3 modules completed
+
     try {
-      // Check if we need a check-in based on completed module count
+      // Check 1: First module in a super skill → show character intro + checkin
+      var superSkillId = mod.super_skill_id || null;
+      if (superSkillId && typeof window.showCheckinPopup === 'function') {
+        var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
+        var alreadySeen = localStorage.getItem(introKey);
+        if (!alreadySeen) {
+          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
+          window.showCheckinPopup(popupModule, function() {
+            localStorage.setItem(introKey, 'true');
+            window.location.href = moduleUrl;
+          });
+          return;
+        }
+      }
+
+      // Check 2: Periodic check-in every 3 completed modules
       var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id);
       if (needsCheckin) {
         if (typeof window.showCheckinPopup === 'function') {
           var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-          // On completion, navigate to module. On close/skip, stay on dashboard.
           window.showCheckinPopup(popupModule, function() {
             window.location.href = moduleUrl;
           });
@@ -2436,9 +2440,9 @@ class EnhancedDashboard {
         }
       }
     } catch (e) {
-      console.error('Error checking checkin:', e);
+      console.error('[StartModule] Error checking checkin:', e);
     }
-    
+
     window.location.href = moduleUrl;
   }
   
@@ -2538,11 +2542,12 @@ function initEnhancedDashboard() {
     enhancedDashboard.init();
     return;
   }
-  
+
   console.log('Initializing enhanced dashboard with Adventure Map V4 (Super Skills Themed)...');
   enhancedDashboard = new EnhancedDashboard();
   enhancedDashboardInitialized = true;
   window.enhancedDashboard = enhancedDashboard;
+  enhancedDashboard.init();
 }
 
 // OPTIMIZED: Use event-driven initialization instead of polling
@@ -2573,21 +2578,22 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(checkDataReady, 100);
 });
 
-// Optimized refresh function with debouncing
+// Refresh function — immediate execution, debounces rapid successive calls
 var refreshDebounceTimer = null;
 window.refreshEnhancedDashboard = function() {
-  // Debounce rapid refresh calls
+  // If a call is already pending, skip (debounce)
   if (refreshDebounceTimer) {
-    clearTimeout(refreshDebounceTimer);
+    return;
   }
-  
+  // Execute immediately
+  if (enhancedDashboard) {
+    enhancedDashboard.init();
+  } else {
+    initEnhancedDashboard();
+  }
+  // Block subsequent calls for 50ms
   refreshDebounceTimer = setTimeout(function() {
     refreshDebounceTimer = null;
-    if (enhancedDashboard) {
-      enhancedDashboard.init();
-    } else {
-      initEnhancedDashboard();
-    }
   }, 50);
 };
 
