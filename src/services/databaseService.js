@@ -101,7 +101,7 @@ export async function getXpForNextLevel(currentLevel) {
 
 // Get all children for a parent
 export async function getChildren(parentUserId) {
-  return withCachedQuery(`children:${parentUserId}`, 30_000, async () => {
+  return withCachedQuery(`children:${parentUserId}`, 120_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('children')
       .select('*')
@@ -292,7 +292,7 @@ export async function deleteChild(childId) {
 
 // Get all modules (active and inactive)
 export async function getModules() {
-  return withCachedQuery('modules:all', 60_000, async () => {
+  return withCachedQuery('modules:all', 300_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('modules')
       .select('*')
@@ -365,7 +365,7 @@ export async function getSubscriptionTiers() {
 }
 
 export async function getParentSubscription(parentUserId) {
-  return withCachedQuery(`parentSubscription:${parentUserId}`, 30_000, async () => {
+  return withCachedQuery(`parentSubscription:${parentUserId}`, 120_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('parent_subscriptions')
       .select('*')
@@ -521,7 +521,7 @@ export async function getCategoryColors() {
 
 // Get child's module progress
 export async function getChildModules(childId) {
-  return withCachedQuery(`childModules:${childId}`, 15_000, async () => {
+  return withCachedQuery(`childModules:${childId}`, 60_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('child_modules')
       .select(`
@@ -670,19 +670,7 @@ async function awardModuleXp(childId, moduleId) {
   const xpReward = moduleData?.xp_reward || 0
   if (!xpReward) return
 
-  try {
-    const { error: rpcError } = await getSupabaseClient().rpc('increment_child_rewards', {
-      p_child_id: childId,
-      p_stars: 0,
-      p_xp: xpReward
-    })
-
-    if (!rpcError) return
-    console.warn('increment_child_rewards RPC failed, falling back to direct update:', rpcError)
-  } catch (rpcError) {
-    console.warn('increment_child_rewards RPC error, falling back to direct update:', rpcError)
-  }
-
+  // Get current child data
   const { data: child, error: childError } = await getSupabaseClient()
     .from('children')
     .select('total_xp, level')
@@ -699,6 +687,7 @@ async function awardModuleXp(childId, moduleId) {
   // Calculate new level based on total XP using the levels table
   const newLevel = await getLevelForXp(newTotalXp)
 
+  // Update child with new XP and level
   const { error: updateError } = await getSupabaseClient()
     .from('children')
     .update({ total_xp: newTotalXp, level: newLevel })

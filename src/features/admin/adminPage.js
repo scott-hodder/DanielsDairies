@@ -88,24 +88,6 @@ export function getAgeRangeLabel(ageRangeValue) {
 }
 
 // ================================================================================
-// DELEGATE CHECKBOX CHANGES
-// ================================================================================
-document.addEventListener('change', (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (target.classList.contains('module-checkbox')) {
-        let moduleId = target.getAttribute('data-module-id');
-        if (moduleId === null) return;
-        if (!isNaN(moduleId) && moduleId !== '') moduleId = Number(moduleId);
-        if (typeof window.toggleModuleSelection === 'function') {
-            window.toggleModuleSelection(moduleId);
-        } else if (typeof toggleModuleSelection === 'function') {
-            toggleModuleSelection(moduleId);
-        }
-    }
-});
-
-// ================================================================================
 // ADMIN ACCESS CHECK
 // ================================================================================
 export async function checkAdminAccess() {
@@ -150,32 +132,25 @@ export async function checkAdminAccess() {
 // LOAD ALL CHILDREN (for stats)
 // ================================================================================
 export async function loadAllChildren() {
-    const { data: childrenData, error: childrenError } = await supabase
-        .from('children')
-        .select('id, name, parent_user_id')
-        .order('name');
+    // Load children and parents in parallel instead of sequentially
+    const [childrenResult, parentsResult] = await Promise.allSettled([
+        supabase.from('children').select('id, name, parent_user_id').order('name'),
+        supabase.from('parent_profiles').select('id, username')
+    ]);
 
-    if (childrenError) {
-        console.error('Error loading children:', childrenError);
+    if (childrenResult.status !== 'fulfilled' || childrenResult.value.error) {
+        console.error('Error loading children:', childrenResult.status === 'fulfilled' ? childrenResult.value.error : childrenResult.reason);
         return;
     }
 
-    const { data: parentsData, error: parentsError } = await supabase
-        .from('parent_profiles')
-        .select('id, username');
-
-    if (parentsError) {
-        console.error('Error loading parents:', parentsError);
-    }
-
     const parentMap = {};
-    if (parentsData) {
-        parentsData.forEach(parent => {
+    if (parentsResult.status === 'fulfilled' && !parentsResult.value.error && parentsResult.value.data) {
+        parentsResult.value.data.forEach(parent => {
             parentMap[parent.id] = parent.username;
         });
     }
 
-    allChildren = childrenData.map(child => ({
+    allChildren = (childrenResult.value.data || []).map(child => ({
         ...child,
         parent_username: parentMap[child.parent_user_id] || 'Unknown'
     }));
@@ -265,11 +240,6 @@ window.switchTab = function(evt, tabName) {
     if (tabName === 'generalSettings') {
         document.getElementById('generalSettingsTab').classList.add('active');
         if (typeof window._adminLoadCheckInsSettings === 'function') window._adminLoadCheckInsSettings();
-    } else if (tabName === 'childModules') {
-        document.getElementById('parentModulesTab').classList.add('active');
-        if (allParents.length === 0) {
-            if (typeof window._adminLoadAllParents === 'function') window._adminLoadAllParents();
-        }
     } else if (tabName === 'moduleCustomisation') {
         document.getElementById('moduleCustomisationTab').classList.add('active');
         if (typeof window._adminRenderAllModulesList === 'function') window._adminRenderAllModulesList();
@@ -304,7 +274,6 @@ window.switchTab = function(evt, tabName) {
 // ================================================================================
 import './adminModuleBuilder.js';
 import './adminModuleCustomisation.js';
-import './adminParentModules.js';
 import './adminRewards.js';
 import './adminCheckIns.js';
 import './adminParentToolkit.js';
@@ -315,21 +284,27 @@ import './adminBilling.js';
 // ================================================================================
 // INITIALIZE
 // ================================================================================
+function hideAdminLoading() {
+    const overlay = document.getElementById('adminLoadingOverlay');
+    if (overlay) overlay.remove();
+}
+
 async function init() {
     const hasAccess = await checkAdminAccess();
-    if (!hasAccess) return;
+    if (!hasAccess) { hideAdminLoading(); return; }
 
     await Promise.all([
         loadAllChildren(),
         loadAllModules(),
         (typeof window._adminLoadGeneralSettings === 'function'
             ? window._adminLoadGeneralSettings()
+            : Promise.resolve()),
+        (typeof window._adminLoadRewards === 'function'
+            ? window._adminLoadRewards()
             : Promise.resolve())
     ]);
 
-    if (typeof window._adminLoadRewards === 'function') {
-        await window._adminLoadRewards();
-    }
+    hideAdminLoading();
 }
 
 init();

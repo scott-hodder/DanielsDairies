@@ -15,7 +15,9 @@ let dashboardChildren = [];
 function getDashboardData() {
   if (typeof window.modules !== 'undefined') dashboardModules = window.modules;
   if (typeof window.childModules !== 'undefined') dashboardChildModules = window.childModules;
-  if (typeof window.selectedChild !== 'undefined') dashboardSelectedChild = window.selectedChild;
+  // Check both window.selectedChild and window.state.selectedChild
+  var sc = window.selectedChild || (window.state && window.state.selectedChild) || null;
+  if (sc) dashboardSelectedChild = sc;
   if (typeof window.children !== 'undefined') dashboardChildren = window.children;
 }
 
@@ -237,29 +239,29 @@ const MAP_ZONE_PROGRESSION = [
 
 // Daniel expression images mapping
 const DANIEL_EXPRESSIONS = {
-  stressed: '/images/characters/DanielTheDog.png',
-  worried: '/images/characters/DanielTheDog.png',
-  sad: '/images/characters/DanielTheDog.png',
-  tense: '/images/characters/DanielTheDog.png',
-  confused: '/images/characters/DanielTheDog.png',
-  shy: '/images/characters/DanielTheDog.png',
-  curious: '/images/characters/DanielTheDog.png',
-  focused: '/images/characters/DanielTheDog.png',
-  hopeful: '/images/characters/DanielTheDog.png',
-  relaxing: '/images/characters/DanielTheDog.png',
-  thinking: '/images/characters/DanielTheDog.png',
-  friendly: '/images/characters/DanielTheDog.png',
-  learning: '/images/characters/DanielTheDog.png',
-  understanding: '/images/characters/DanielTheDog.png',
-  happy: '/images/characters/DanielTheDog.png',
-  calm: '/images/characters/DanielTheDog.png',
-  peaceful: '/images/characters/DanielTheDog.png',
-  joyful: '/images/characters/DanielTheDog.png',
-  loving: '/images/characters/DanielTheDog.png',
-  zen: '/images/characters/DanielTheDog.png',
-  enlightened: '/images/characters/DanielTheDog.png',
-  celebrating: '/images/characters/DanielTheDog.png',
-  proud: '/images/characters/DanielTheDog.png'
+  stressed: '/images/characters/DanielTheDog.webp',
+  worried: '/images/characters/DanielTheDog.webp',
+  sad: '/images/characters/DanielTheDog.webp',
+  tense: '/images/characters/DanielTheDog.webp',
+  confused: '/images/characters/DanielTheDog.webp',
+  shy: '/images/characters/DanielTheDog.webp',
+  curious: '/images/characters/DanielTheDog.webp',
+  focused: '/images/characters/DanielTheDog.webp',
+  hopeful: '/images/characters/DanielTheDog.webp',
+  relaxing: '/images/characters/DanielTheDog.webp',
+  thinking: '/images/characters/DanielTheDog.webp',
+  friendly: '/images/characters/DanielTheDog.webp',
+  learning: '/images/characters/DanielTheDog.webp',
+  understanding: '/images/characters/DanielTheDog.webp',
+  happy: '/images/characters/DanielTheDog.webp',
+  calm: '/images/characters/DanielTheDog.webp',
+  peaceful: '/images/characters/DanielTheDog.webp',
+  joyful: '/images/characters/DanielTheDog.webp',
+  loving: '/images/characters/DanielTheDog.webp',
+  zen: '/images/characters/DanielTheDog.webp',
+  enlightened: '/images/characters/DanielTheDog.webp',
+  celebrating: '/images/characters/DanielTheDog.webp',
+  proud: '/images/characters/DanielTheDog.webp'
 };
 
 // ================================================
@@ -324,18 +326,28 @@ class AdventureMapV4 {
   init() {
     var self = this;
     this.injectStyles();
-    
+
     // Check if there's a focus plan super skill already set
     if (window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
       this.currentCategory = window.currentFocusSuperSkill;
     }
-    
+
     // Restore user's explicit category selection (overrides focus plan default)
     var storedCategory = this.getStoredCategory();
     if (storedCategory && SUPER_SKILL_THEMES[storedCategory]) {
       this.currentCategory = storedCategory;
     }
-    
+
+    // If we already loaded super skills/cycles, skip the DB call and render immediately
+    if (superSkillsFromDB.length > 0 || cyclesFromDB.length > 0) {
+      // Re-check focus plan in case it changed
+      if (!self.currentCategory && window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
+        self.currentCategory = window.currentFocusSuperSkill;
+      }
+      self.render();
+      return;
+    }
+
     // Load super skills and cycles from database if supabase is available
     if (window.supabase) {
       Promise.all([
@@ -356,22 +368,42 @@ class AdventureMapV4 {
             superSkillsFromDB = superSkillsResult.data;
             // Update SUPER_SKILL_THEMES with database values
             superSkillsResult.data.forEach(function(skill) {
+              if (!skill.slug) return;
               if (SUPER_SKILL_THEMES[skill.slug]) {
                 SUPER_SKILL_THEMES[skill.slug].name = skill.name;
                 SUPER_SKILL_THEMES[skill.slug].emoji = skill.emoji || SUPER_SKILL_THEMES[skill.slug].emoji;
                 SUPER_SKILL_THEMES[skill.slug].color = skill.theme_color || SUPER_SKILL_THEMES[skill.slug].color;
+              } else {
+                // Generate a theme for new super skills not hardcoded above
+                var c = skill.theme_color || '#405878';
+                SUPER_SKILL_THEMES[skill.slug] = {
+                  name: skill.name || skill.slug,
+                  emoji: skill.emoji || '🗺️',
+                  color: c,
+                  description: skill.description || '',
+                  skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
+                  skyGradientEnd: ['#87CEEB', '#98D8C8', '#7CCD7C', '#90EE90', '#98FB98'],
+                  decorationsStart: ['🌲', '🌳', '🍂', '🍃'],
+                  decorationsEnd: ['🌸', '🌻', '🌼', '🦋', '🐦', '🌈'],
+                  pathColor: { main: c, light: c, shadow: 'rgba(0,0,0,0.2)' },
+                  startMarker: '🏠',
+                  endMarker: '🏁',
+                  destination: { name: (skill.name || 'Adventure') + "'s End", emoji: '🏆' },
+                  nodeEmojis: { incomplete: '📘', complete: '✨' },
+                  danielExpressions: { start: 'focused', middle: 'happy', end: 'proud' }
+                };
               }
             });
           }
           if (cyclesResult.data) {
             cyclesFromDB = cyclesResult.data;
           }
-          
+
           // Check again for focus plan after loading (in case it was set while loading)
           if (!self.currentCategory && window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
             self.currentCategory = window.currentFocusSuperSkill;
           }
-          
+
           self.render();
         })
         .catch(function(err) {
@@ -605,53 +637,38 @@ class AdventureMapV4 {
 
   render() {
     var self = this;
-    
+
     // Get data first (synchronous)
     getDashboardData();
     this.buildModuleList();
     this.filterModulesByCategory();
-    
+
     // Batch all DOM operations in a single animation frame
     requestAnimationFrame(function() {
       self.createMapHTML();
-      
-      // Setup event listeners immediately after creating the HTML
       self.setupEventListeners();
-      
+
       if (self.modules.length > 0) {
-        // Batch these operations together
         self.applyThemeToBackground();
         self.renderPath();
-        
-        // Defer decorations and nodes slightly for smoother rendering
-        requestAnimationFrame(function() {
-          self.renderDecorations();
-          self.renderNodes();
-          self.updateProgress();
-          
-          // Render roadblocks asynchronously to avoid blocking
-          self.renderRoadblocks().then(function() {
-            // Add a small delay to ensure module data is fully processed before centering
-            setTimeout(function() {
-              self.centerOnCurrentModule();
-            }, 100);
-            
-            // Signal that the dashboard map has finished rendering
-            if (typeof window._dashboardRenderComplete === 'function') {
-              window._dashboardRenderComplete();
-              window._dashboardRenderComplete = null;
-            }
-          }).catch(function(err) {
-            console.log('Roadblock rendering error:', err);
-            // Still signal completion even if roadblocks fail
-            setTimeout(function() {
-              self.centerOnCurrentModule();
-            }, 100);
-            if (typeof window._dashboardRenderComplete === 'function') {
-              window._dashboardRenderComplete();
-              window._dashboardRenderComplete = null;
-            }
-          });
+        self.renderDecorations();
+        self.renderNodes();
+        self.updateProgress();
+
+        // Render roadblocks asynchronously to avoid blocking
+        self.renderRoadblocks().then(function() {
+          setTimeout(function() { self.centerOnCurrentModule(); }, 100);
+          if (typeof window._dashboardRenderComplete === 'function') {
+            window._dashboardRenderComplete();
+            window._dashboardRenderComplete = null;
+          }
+        }).catch(function(err) {
+          console.log('Roadblock rendering error:', err);
+          setTimeout(function() { self.centerOnCurrentModule(); }, 100);
+          if (typeof window._dashboardRenderComplete === 'function') {
+            window._dashboardRenderComplete();
+            window._dashboardRenderComplete = null;
+          }
         });
       } else {
         // No modules to render - still signal completion
@@ -671,7 +688,7 @@ class AdventureMapV4 {
     
     // Initialize roadblock system if not already done
     if (window.roadblockSystem && !window.roadblockSystem.initialized) {
-      var child = window.selectedChild || dashboardSelectedChild;
+      var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
       if (child && child.id && window.supabase) {
         try {
           await window.roadblockSystem.init(window.supabase, child.id);
@@ -1069,7 +1086,7 @@ class AdventureMapV4 {
 
     overlay.innerHTML =
       '<div class="cycle-complete-popup-wrap">' +
-      '<img src="/images/characters/DanielTheDogThumbsUp.png" alt="Daniel thumbs up" class="cycle-complete-popup-daniel" />' +
+      '<img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel thumbs up" class="cycle-complete-popup-daniel" />' +
       '<div class="cycle-complete-popup" role="dialog" aria-modal="true" aria-label="Cycle completion congratulations">' +
       '<div class="cycle-complete-popup-header">' +
       '<h3 class="cycle-complete-popup-title">🎉 Congratulations!</h3>' +
@@ -1414,7 +1431,7 @@ class AdventureMapV4 {
     banner.className = 'zone-upgrade-banner';
     banner.innerHTML =
       '<div class="zone-upgrade-card">' +
-        '<div class="zone-upgrade-daniel"><img src="/images/characters/DanielTheDogThumbsUp.png" alt="Daniel celebrates"></div>' +
+        '<div class="zone-upgrade-daniel"><img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel celebrates"></div>' +
         '<div class="zone-upgrade-emoji">' + emoji + '</div>' +
         '<div class="zone-upgrade-title">' + title + '</div>' +
         '<div class="zone-upgrade-subtitle">' + subtitle + '</div>' +
@@ -1814,7 +1831,7 @@ class AdventureMapV4 {
         var character = document.createElement('div');
         character.className = 'current-indicator';
         var dogImage = document.createElement('img');
-        dogImage.src = '/images/characters/DanielTheDog.png';
+        dogImage.src = '/images/characters/DanielTheDog.webp';
         dogImage.alt = 'Daniel the dog';
         character.appendChild(dogImage);
         var indicatorLabel = document.createElement('div');
@@ -1883,7 +1900,7 @@ class AdventureMapV4 {
     if (window.enhancedDashboard && typeof window.enhancedDashboard.showModulePreview === 'function') {
       window.enhancedDashboard.showModulePreview(module);
     } else {
-      var child = window.selectedChild || dashboardSelectedChild;
+      var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
       if (child && module.module) {
         var url = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code);
         window.location.href = url;
@@ -2179,12 +2196,12 @@ var DANIEL_MOODS = [
 ];
 
 var DANIEL_IMAGES = [
-  "/images/characters/DanielTheDog.png",
-  "/images/characters/DanielReading.png",
-  "/images/characters/DanielTheDogHoldingHeart.png",
-  "/images/characters/DanielTheDogReading.png",
-  "/images/characters/DanielTheDogThumbsUp.png",
-  "/images/characters/DanielWithFootball.png"
+  "/images/characters/DanielTheDog.webp",
+  "/images/characters/DanielReading.webp",
+  "/images/characters/DanielTheDogHoldingHeart.webp",
+  "/images/characters/DanielTheDogReading.webp",
+  "/images/characters/DanielTheDogThumbsUp.webp",
+  "/images/characters/DanielWithFootball.webp"
 ];
 
 class EnhancedDashboard {
@@ -2330,7 +2347,9 @@ class EnhancedDashboard {
   }
 
   setupAdventureMap() {
-    this.adventureMap = new AdventureMapV4();
+    if (!this.adventureMap) {
+      this.adventureMap = new AdventureMapV4();
+    }
     this.adventureMap.init();
   }
 
@@ -2395,7 +2414,7 @@ class EnhancedDashboard {
   }
 
   async startModule(module) {
-    var child = window.selectedChild || dashboardSelectedChild;
+    var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
     if (!module.module || !child) return;
 
     var self = this;

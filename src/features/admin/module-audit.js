@@ -22,10 +22,10 @@ var _auditData = {
     loaded: false
 };
 
-// ═══ LOAD ALL AUDIT DATA FROM DATABASE ═══
-// ALWAYS fetches fresh data - no caching to ensure rules match admin panel
+// ═══ LOAD ALL AUDIT DATA ═══
+// Uses shared data from reference-data-grids (window._*) when available,
+// falls back to fresh database fetch only for missing data.
 async function _loadAuditData() {
-    // Reset data to ensure fresh fetch
     _auditData = {
         superSkills: [],
         theoryConnections: [],
@@ -38,43 +38,57 @@ async function _loadAuditData() {
         auditRules: [],
         loaded: false
     };
-    
-    // Always fetch fresh from database to match admin panel exactly
+
     if (!window.supabase) {
         console.error('[Audit] Supabase not available - cannot load audit data');
         return false;
     }
-    
+
     try {
-        console.log('[Audit] Loading data from database...');
-        
-        var results = await Promise.all([
-            window.supabase.from('super_skills').select('*, characters:character_id(id, name, species)').eq('is_active', true),
-            window.supabase.from('theory_connections').select('*, super_skills:super_skill_id(id, code), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name, primary_researchers)').eq('is_active', true),
-            window.supabase.from('age_ranges').select('*').eq('is_active', true),
-            window.supabase.from('levels').select('*').order('level'),
-            window.supabase.from('forbidden_terms').select('term, term_type').eq('is_active', true),
-            window.supabase.from('audit_sections').select('*').eq('is_active', true).order('section_number'),
-            window.supabase.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order'),
-            window.supabase.from('cycles').select('*').order('cycle_number')
-        ]);
-        
-        if (results[0].data) _auditData.superSkills = results[0].data;
-        if (results[1].data) _auditData.theoryConnections = results[1].data;
-        if (results[2].data) _auditData.ageRanges = results[2].data;
-        if (results[3].data) _auditData.levels = results[3].data;
-        if (results[4].data) {
-            _auditData.forbiddenWords = results[4].data.filter(f => f.term_type === 'word').map(f => f.term);
-            _auditData.forbiddenMetaphors = results[4].data.filter(f => f.term_type === 'metaphor').map(f => f.term);
-        }
-        if (results[5].data) _auditData.auditSections = results[5].data;
-        if (results[6].data) _auditData.auditRules = results[6].data;
-        if (results[7].data) _auditData.cycles = results[7].data;
-        
+        // Use shared caches from reference-data-grids where available
+        var hasSS = Array.isArray(window._ss) && window._ss.length > 0;
+        var hasConn = Array.isArray(window._connections) && window._connections.length > 0;
+        var hasAge = Array.isArray(window._age) && window._age.length > 0;
+        var hasForbidden = Array.isArray(window._forbidden) && window._forbidden.length > 0;
+        var hasSections = Array.isArray(window._auditSections) && window._auditSections.length > 0;
+        var hasRules = Array.isArray(window._auditRules) && window._auditRules.length > 0;
+        var hasCycles = Array.isArray(window._cycles) && window._cycles.length > 0;
+
+        // Only fetch what we don't already have (levels are never loaded by ref-grids)
+        var fetches = [];
+        var fetchMap = [];
+
+        if (!hasSS) { fetches.push(window.supabase.from('super_skills').select('*, characters:character_id(id, name, species)').eq('is_active', true)); fetchMap.push('ss'); }
+        if (!hasConn) { fetches.push(window.supabase.from('theory_connections').select('*, super_skills:super_skill_id(id, code), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name, primary_researchers)').eq('is_active', true)); fetchMap.push('conn'); }
+        if (!hasAge) { fetches.push(window.supabase.from('age_ranges').select('*').eq('is_active', true)); fetchMap.push('age'); }
+        // Levels are not loaded by reference-data-grids — always fetch
+        fetches.push(window.supabase.from('levels').select('*').order('level')); fetchMap.push('levels');
+        if (!hasForbidden) { fetches.push(window.supabase.from('forbidden_terms').select('term, term_type').eq('is_active', true)); fetchMap.push('forbidden'); }
+        if (!hasSections) { fetches.push(window.supabase.from('audit_sections').select('*').eq('is_active', true).order('section_number')); fetchMap.push('sections'); }
+        if (!hasRules) { fetches.push(window.supabase.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order')); fetchMap.push('rules'); }
+        if (!hasCycles) { fetches.push(window.supabase.from('cycles').select('*').order('cycle_number')); fetchMap.push('cycles'); }
+
+        var results = fetches.length > 0 ? await Promise.all(fetches) : [];
+        var fetched = {};
+        fetchMap.forEach(function(key, i) { fetched[key] = (results[i] && results[i].data) || []; });
+
+        _auditData.superSkills = hasSS ? window._ss : (fetched.ss || []);
+        _auditData.theoryConnections = hasConn ? window._connections : (fetched.conn || []);
+        _auditData.ageRanges = hasAge ? window._age : (fetched.age || []);
+        _auditData.levels = fetched.levels || [];
+        _auditData.cycles = hasCycles ? window._cycles : (fetched.cycles || []);
+        _auditData.auditSections = hasSections ? window._auditSections : (fetched.sections || []);
+        _auditData.auditRules = hasRules ? window._auditRules : (fetched.rules || []);
+
+        // Forbidden terms: shared cache is full objects, fetched is {term, term_type}
+        var forbiddenSource = hasForbidden ? window._forbidden : (fetched.forbidden || []);
+        _auditData.forbiddenWords = forbiddenSource.filter(function(f) { return f.term_type === 'word'; }).map(function(f) { return f.term; });
+        _auditData.forbiddenMetaphors = forbiddenSource.filter(function(f) { return f.term_type === 'metaphor'; }).map(function(f) { return f.term; });
+
         _auditData.loaded = true;
-        console.log('[Audit] Loaded:', _auditData.superSkills.length, 'super skills,', _auditData.auditSections.length, 'audit sections,', _auditData.auditRules.length, 'audit rules');
+        console.log('[Audit] Ready:', _auditData.superSkills.length, 'super skills,', _auditData.auditSections.length, 'sections,', _auditData.auditRules.length, 'rules', fetches.length > 0 ? '(' + fetches.length + ' fetched, rest from cache)' : '(all from cache)');
         return true;
-        
+
     } catch (e) {
         console.error('[Audit] Failed to load data:', e);
         return false;

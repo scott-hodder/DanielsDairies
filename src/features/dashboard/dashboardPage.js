@@ -1326,6 +1326,7 @@ async function init() {
     }
 
     // No children - redirect to profile page to add children
+    showLoadingScreen()
     window.location.href = '/profile.html'
     clearTimeout(loadingTimeout)
     
@@ -1951,8 +1952,8 @@ async function selectChild(child) {
       getChildModules(child.id),
       loadLatestWeeklyPlanData(child.id), // New optimized function
       checkFocusPlan(child.id),
-      // Update login streak for this child (using parent's user_id + child_id)
-      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id).then(() => getLoginStreak(state.currentUser.id, child.id)) : Promise.reject('No parent user')
+      // Update login streak for this child — updateLoginStreak already returns the updated record
+      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
     ])
     
     // Process child modules
@@ -2109,6 +2110,7 @@ function showChildrenView() {
 
 // Show parent view (profile hub) - now navigates to separate profile page
 function showParentView() {
+  showLoadingScreen()
   window.location.href = '/profile.html'
 }
 
@@ -2348,39 +2350,41 @@ function showChildDetailView(child) {
   setAppState('childModules', state.childModules)
   window.state.currentFocusPlan = state.currentFocusPlan
   
-  // Batch DOM writes using requestAnimationFrame to avoid forced reflow
+  // Apply focus plan's default super skill or pathway to adventure map
+  // (must happen before rendering so the map picks up the right category)
+  if (state.currentFocusPlan && (state.currentFocusPlan.super_skill_id || state.currentFocusPlan.default_pathway_id)) {
+    applyFocusPlanToMap(state.currentFocusPlan)
+  }
+
+  // Show/setup Focus Plan settings button
+  setupFocusPlanSettingsButton()
+
+  // Batch DOM writes — show the container first, then render the map
+  // inside the same frame so the map's container is guaranteed to be visible
   requestAnimationFrame(() => {
     // Update header
     headerSubtitle.textContent = `Welcome back, ${child.name}!`
-    
+
     // Show child detail view
     hideElement(childrenView)
     showElement(childDetailView)
-    
+
     // Show dashboard tab by default
     showTab('dashboard')
-    
+
     // Show dashboard button when viewing child details
     if (dashboardButton) {
       dashboardButton.style.display = 'inline-block'
     }
-    
+
     // Update stats immediately (fast operation)
     updateDashboardStats()
+
+    // Refresh enhanced dashboard now that the container is visible
+    if (typeof window.refreshEnhancedDashboard === 'function') {
+      window.refreshEnhancedDashboard()
+    }
   })
-  
-  // Apply focus plan's default super skill or pathway to adventure map
-  if (state.currentFocusPlan && (state.currentFocusPlan.super_skill_id || state.currentFocusPlan.default_pathway_id)) {
-    applyFocusPlanToMap(state.currentFocusPlan)
-  }
-  
-  // Show/setup Focus Plan settings button
-  setupFocusPlanSettingsButton()
-  
-  // Refresh enhanced dashboard synchronously (it has its own debounce)
-  if (typeof window.refreshEnhancedDashboard === 'function') {
-    window.refreshEnhancedDashboard()
-  }
   
   // Defer leaderboard and weekly plan to idle callback or setTimeout
   // These are not visible on initial load
@@ -3027,7 +3031,7 @@ function showIntroScreen(superSkill, onContinue, onClose) {
       
       <div class="intro-screen-characters">
         <div class="intro-character daniel">
-          <img src="/images/characters/DanielTheDog.png" alt="Daniel" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <img src="/images/characters/DanielTheDog.webp" alt="Daniel" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div class="intro-character-fallback" style="display:none;">🐕</div>
         </div>
         <div class="intro-character friend">
@@ -3477,6 +3481,13 @@ if (confirmPurchaseButton) {
         await selectChild(state.selectedChild)
       }
 
+      // Refresh adventure map to show unlocked module immediately
+      if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
+        window.enhancedDashboard.adventureMap.buildModuleList()
+        window.enhancedDashboard.adventureMap.filterModulesByCategory()
+        window.enhancedDashboard.adventureMap.render()
+      }
+
       closePurchaseModal()
       createConfettiCelebration()
       showUnlockResultModal({
@@ -3833,6 +3844,7 @@ if (cancelAddChild) {
 // Back button - go to profile page
 if (backButton) {
   backButton.addEventListener('click', () => {
+    showLoadingScreen()
     window.location.href = '/profile.html'
   })
 }
@@ -3860,7 +3872,7 @@ if (dashboardHomeButtonDesktop) {
 
 if (profileButtonDesktop) {
   profileButtonDesktop.addEventListener('click', () => {
-    // Navigate to profile page
+    showLoadingScreen()
     window.location.href = '/profile.html'
   })
 }
@@ -3972,7 +3984,7 @@ if (dashboardHomeButton) {
 
 if (profileButton) {
   profileButton.addEventListener('click', () => {
-    // Navigate to profile page
+    showLoadingScreen()
     window.location.href = '/profile.html'
   })
 }

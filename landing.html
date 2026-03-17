@@ -12,9 +12,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/landing.css">
     <link href="/styles/dashboard.css" rel="stylesheet">
 </head>
@@ -87,7 +85,7 @@
             <div style="max-width: 700px; text-align: center; padding: 40px 20px;">
                 <!-- Welcome Header -->
                 <div style="margin-bottom: 40px;">
-                    <img src="/public/images/characters/DanielTheDog.png" alt="Daniel the Dog" style="height: 200px; display: block; margin-left: auto; margin-right: auto;">
+                    <img src="/public/images/characters/DanielTheDog.webp" alt="Daniel the Dog" loading="lazy" style="height: 200px; display: block; margin-left: auto; margin-right: auto;">
                     <h1 style="font-size: 48px; color: #405878; font-weight: 700; margin-bottom: 16px;">Welcome to Daniel's Diaries</h1>
                     <p style="font-size: 18px; color: #4c6c96; line-height: 1.6; margin-bottom: 24px;">
                         Daniel's Diaries is an interactive workbook designed to help children build emotional intelligence, resilience, and coping skills through engaging stories and activities. Each workbook is expertly crafted to support your child's mental wellbeing journey.
@@ -138,7 +136,7 @@
 
         <!-- Welcome Section -->
         <div id="welcomeSection" class="welcome-section hidden" style="display: none;">
-            <img src="/public/images/characters/DanielTheDog.png" alt="Daniel the Dog" style="height: 140px; display: block; margin-left: auto; margin-right: auto;">
+            <img src="/public/images/characters/DanielTheDog.webp" alt="Daniel the Dog" loading="lazy" style="height: 140px; display: block; margin-left: auto; margin-right: auto;">
             <h1 class="welcome-greeting" id="welcomeGreeting">Welcome back</h1>
             <p class="welcome-message">Today is a good day to check in. Every small step forward matters.</p>
         </div>
@@ -155,6 +153,7 @@
         import { checkAuth, signOut } from './src/auth.js'
         import { getChildren, getModules, getChildModules, getParentProfile, createChild, updateChildModuleStatus } from './src/database.js'
         import { supabase } from './src/supabaseClient.js'
+        import { showLoadingScreen, hideLoadingScreen } from './src/loading-screen.js'
 
         let currentUser = null
         let children = []
@@ -233,6 +232,7 @@
 
         // Initialize
         async function init() {
+            showLoadingScreen()
             try {
                 // Check authentication
                 const session = await checkAuth()
@@ -250,15 +250,17 @@
                     welcomeGreeting.textContent = `Welcome back, ${displayName}`
                 }
 
-                await setupAdminAccess(currentUser.id)
-
-                // Load children (pass user ID)
-                children = await getChildren(currentUser.id)
-                
-                // Load modules
-                modules = await getModules()
+                // Load admin access, children, and modules in parallel
+                const [, childrenResult, modulesResult] = await Promise.all([
+                    setupAdminAccess(currentUser.id),
+                    getChildren(currentUser.id),
+                    getModules()
+                ])
+                children = childrenResult
+                modules = modulesResult
 
                 // Hide loading state
+                hideLoadingScreen()
                 loadingState.style.display = 'none'
                 
                 // If no children, show welcome landing page
@@ -328,6 +330,7 @@
         // Select child and show next step
         async function selectChild(child) {
             selectedChild = child
+            showLoadingScreen()
             window.location.href = `/dashboard.html?childId=${child.id}`
         }
 

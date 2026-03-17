@@ -6,37 +6,37 @@
 // Daniel's emotional states and expressions
 const DANIEL_EMOTIONS = {
   curious: {
-    image: '/images/characters/DanielTheDog.png',
+    image: '/images/characters/DanielTheDog.webp',
     fallbackEmoji: '🐕',
     color: '#6366F1'
   },
   nervous: {
-    image: '/images/characters/DanielTheDog.png',
+    image: '/images/characters/DanielTheDog.webp',
     fallbackEmoji: '🐕',
     color: '#F59E0B'
   },
   hopeful: {
-    image: '/images/characters/DanielTheDog.png',
+    image: '/images/characters/DanielTheDog.webp',
     fallbackEmoji: '🐕',
     color: '#10B981'
   },
   proud: {
-    image: '/images/characters/DanielTheDog.png',
+    image: '/images/characters/DanielTheDog.webp',
     fallbackEmoji: '🐕',
     color: '#EC4899'
   },
   relieved: {
-    image: '/images/characters/DanielTheDog.png',
+    image: '/images/characters/DanielTheDog.webp',
     fallbackEmoji: '🐕',
     color: '#06B6D4'
   },
   grateful: {
-    image: '/images/characters/DanielTheDog.png',
+    image: '/images/characters/DanielTheDog.webp',
     fallbackEmoji: '🐕',
     color: '#8B5CF6'
   },
   thinking: {
-    image: '/images/characters/DanielTheDog.png',
+    image: '/images/characters/DanielTheDog.webp',
     fallbackEmoji: '🐕',
     color: '#64748B'
   }
@@ -336,7 +336,7 @@ class DanielDialogueSystem {
         <div class="daniel-dialogue-content">
           <div class="daniel-image-section">
             <div class="daniel-image-wrapper">
-              <img src="/images/characters/DanielTheDog.png" alt="Daniel the Dog" class="daniel-modal-image" id="danielModalImage">
+              <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="daniel-modal-image" id="danielModalImage">
               <div class="daniel-emotion-indicator" id="danielEmotionIndicator"></div>
             </div>
             <div class="daniel-name-tag">Daniel</div>
@@ -1011,49 +1011,7 @@ class DanielModulePreview {
     
     console.log('[Daniel] Module clicked:', module.name, 'pathwayOrder:', moduleOrder, 'index:', moduleIndex, 'isFirstModule:', isFirstModule);
     
-    // For the FIRST module, show intro + check-in INSTEAD of Daniel dialogue
-    // But only if they haven't already completed a check-in
-    if (child && isFirstModule) {
-      console.log('[Daniel] First module detected - checking if check-in already done');
-      
-      // Check if any check-in has been completed for this child
-      const hasCompletedCheckin = await self.hasCompletedAnyCheckin(child.id);
-      console.log('[Daniel] Has completed check-in:', hasCompletedCheckin);
-      
-      if (!hasCompletedCheckin && typeof window.showCheckinPopup === 'function') {
-        console.log('[Daniel] Showing intro + check-in for first module');
-        const moduleIdToCheck = rawMod.id || module.id;
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
-        const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code, id: moduleIdToCheck });
-        
-        // On completion, navigate to module. On close/skip, stay on dashboard.
-        window.showCheckinPopup(popupMod, () => { window.location.href = moduleUrl; });
-        return; // Don't show Daniel dialogue
-      }
-    }
-    
-    // For non-first modules, check if we need a periodic check-in (every 3 modules)
-    if (child) {
-      try {
-        const needsPeriodicCheckin = await self.shouldTriggerCheckinForModuleCount(child.id);
-        console.log('[Daniel] Periodic check-in needed:', needsPeriodicCheckin);
-        
-        if (needsPeriodicCheckin) {
-          if (typeof window.showCheckinPopup === 'function') {
-            const moduleIdToCheck = rawMod.id || module.id;
-            const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');
-            const popupMod = Object.assign({}, rawMod, { code: module.code || rawMod.code, id: moduleIdToCheck });
-            
-            window.showCheckinPopup(popupMod, () => { window.location.href = moduleUrl; });
-            return; // Don't show Daniel dialogue
-          }
-        }
-      } catch (e) {
-        console.error('[Daniel] Error checking periodic checkin:', e);
-      }
-    }
-    
-    // No check-in needed - show Daniel's pre-activity dialogue
+    // Show Daniel's pre-activity dialogue immediately for fast UI response
     this.dialogueSystem.showPreActivity(module, category, async () => {
       if (child && module) {
         const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + module.id + '&code=' + module.code + '&childName=' + encodeURIComponent(child.name || '');

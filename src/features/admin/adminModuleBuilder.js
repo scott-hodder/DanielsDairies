@@ -19,6 +19,26 @@ let subSkillsData = [];
 let cyclesData = [];
 let theoryConnectionsData = [];
 
+// Load cycles data from database
+async function loadCyclesData() {
+    try {
+        const { data, error } = await supabase
+            .from('cycles')
+            .select('*')
+            .order('cycle_number');
+        
+        if (error) {
+            console.error('Error loading cycles:', error);
+            return;
+        }
+        
+        cyclesData = data || [];
+        console.log('Loaded cycles data:', cyclesData);
+    } catch (error) {
+        console.error('Error loading cycles:', error);
+    }
+}
+
 // ========== GENERATION STATE ==========
 let generationStartTime = null;
 let elapsedInterval = null;
@@ -476,6 +496,7 @@ function initPsychologyDropdowns() {
 
 document.addEventListener('DOMContentLoaded', function() {
     initPsychologyDropdowns();
+    loadCyclesData();
 });
 
 // ================================================================================
@@ -604,8 +625,8 @@ window.loadModuleBlueprintIntoForm = async function() {
             }
         }
         if (brainTownField) {
-            brainTownField.value = blueprint.brain_town_analogy || '';
-            if (blueprint.brain_town_analogy) {
+            brainTownField.value = blueprint.brain_town_metaphor || '';
+            if (blueprint.brain_town_metaphor) {
                 brainTownField.style.backgroundColor = '#D1FAE5';
                 setTimeout(() => { brainTownField.style.backgroundColor = ''; }, 3000);
             }
@@ -650,7 +671,7 @@ function buildContentBriefFromBlueprint(blueprint) {
     if (blueprint.cycle) parts.push(`Cycle: ${blueprint.cycle}`);
     if (blueprint.level) parts.push(`Level: ${blueprint.level}`);
     if (blueprint.core_theory) parts.push(`\nCore Theory: ${blueprint.core_theory}`);
-    if (blueprint.brain_town_analogy) parts.push(`\nBrain Town Analogy: ${blueprint.brain_town_analogy}`);
+    if (blueprint.brain_town_metaphor) parts.push(`\nBrain Town Analogy: ${blueprint.brain_town_metaphor}`);
     if (blueprint.main_activity) parts.push(`\nMain Activity: ${blueprint.main_activity}`);
     if (blueprint.builds_on && blueprint.builds_on !== 'N/A') parts.push(`\nBuilds On: ${blueprint.builds_on}`);
     return parts.join('\n');
@@ -1087,8 +1108,16 @@ window.saveGeneratedModule = async function() {
         if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
         const title = document.getElementById('newModuleTitle').value.trim();
-        const category = document.getElementById('newModuleCategory').value;
-        const series = document.getElementById('newModuleSeries').value || null;
+        
+        // Get category and series from super skill
+        let category = null;
+        let series = null;
+        if (superSkillId && window.generalSuperSkills && Array.isArray(window.generalSuperSkills)) {
+            const skill = window.generalSuperSkills.find(s => s.id === superSkillId);
+            category = skill?.slug || null;
+            series = skill?.character_name || null;
+        }
+        
         const weekNumber = document.getElementById('newModuleOrder').value || null;
         const xpReward = document.getElementById('newModuleXPReward')?.value ? parseInt(document.getElementById('newModuleXPReward').value) : 100;
         const starsReward = document.getElementById('newModuleStarsReward')?.value ? parseInt(document.getElementById('newModuleStarsReward').value) : 10;
@@ -1112,7 +1141,7 @@ window.saveGeneratedModule = async function() {
                 cycle_id: cycleId || null, week_number: weekNumber, xp_reward: xpReward, stars_reward: starsReward,
                 character_name: characterName, primary_theory_id: primaryTheoryId, ndis_domain_id: ndisDomainId,
                 dss_sedi_id: dssSediId, neuroscience_concept: neuroscienceConcept,
-                brain_town_analogy: brainTownMetaphor, module_summary: moduleSummary
+                brain_town_metaphor: brainTownMetaphor, module_summary: moduleSummary
             })
             .select()
             .single();

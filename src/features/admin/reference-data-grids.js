@@ -7,13 +7,37 @@
  */
 
 // Export switchRefTab globally for onclick handlers
+function _showRefLoading() {
+    var existing = document.getElementById('refLoadingIndicator');
+    if (existing) return;
+    var panels = document.querySelectorAll('.ref-panel');
+    if (!panels.length) return;
+    var container = panels[0].parentElement;
+    if (!container) return;
+    var el = document.createElement('div');
+    el.id = 'refLoadingIndicator';
+    el.style.cssText = 'text-align:center;padding:40px 20px;';
+    el.innerHTML = '<div style="width:36px;height:36px;border:3px solid #e5e7eb;border-top-color:#405878;border-radius:50%;animation:refSpin 0.8s linear infinite;margin:0 auto 12px;"></div><p style="color:#6b7c8f;font-size:13px;font-family:League Spartan,sans-serif;">Loading reference data...</p><style>@keyframes refSpin{to{transform:rotate(360deg)}}</style>';
+    container.insertBefore(el, panels[0]);
+}
+
+function _hideRefLoading() {
+    var el = document.getElementById('refLoadingIndicator');
+    if (el) el.remove();
+}
+
 export function switchRefTab(ev, id) {
     document.querySelectorAll('.ref-panel').forEach(function(p) { p.style.display = 'none'; });
     document.querySelectorAll('#refDataTabs .ref-tab').forEach(function(b) { b.style.background = '#f8f9fa'; b.style.color = '#405878'; });
     var panel = document.getElementById(id + 'Panel');
     if (panel) panel.style.display = 'block';
     if (ev && ev.target) { ev.target.style.background = '#405878'; ev.target.style.color = 'white'; }
-    _render(id);
+    if (!_dataLoaded) {
+        _showRefLoading();
+        _ensureLoaded().then(function() { _hideRefLoading(); _render(id); });
+    } else {
+        _render(id);
+    }
 }
 
 // Make switchRefTab globally available for onclick handlers
@@ -127,6 +151,59 @@ function validateAiPromptTemplate(template) {
 }
 
 var _dataLoaded = false;
+var _loadingPromise = null;
+
+// --- Targeted single-table reload (avoids re-fetching all 14 tables) ---
+var _tableLoaders = {
+    super_skills: function(sb) { return sb.from('super_skills').select('*, characters:character_id(id, name, species, personality_nd, image_url)').order('sort_order'); },
+    sub_skills: function(sb) { return sb.from('sub_skills').select('*, super_skills:super_skill_id(id, name, slug, emoji)').order('sort_order'); },
+    core_theories: function(sb) { return sb.from('core_theories').select('*').eq('is_active', true).order('theory_name'); },
+    age_ranges: function(sb) { return sb.from('age_ranges').select('*').eq('is_active', true).order('age_range'); },
+    ndis_domains: function(sb) { return sb.from('ndis_domains').select('*').eq('is_active', true).order('sort_order'); },
+    dss_sedi_categories: function(sb) { return sb.from('dss_sedi_categories').select('*').eq('is_active', true).order('sort_order'); },
+    fasd_domains: function(sb) { return sb.from('fasd_domains').select('*').eq('is_active', true).order('domain_number'); },
+    characters: function(sb) { return sb.from('characters').select('*').eq('is_active', true).order('sort_order'); },
+    cycles: function(sb) { return sb.from('cycles').select('*').order('cycle_number'); },
+    theory_connections: function(sb) { return sb.from('theory_connections').select('*, super_skills:super_skill_id(id, name), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name)').order('sort_order'); },
+    forbidden_terms: function(sb) { return sb.from('forbidden_terms').select('*').eq('is_active', true).order('term_type,term'); },
+    audit_sections: function(sb) { return sb.from('audit_sections').select('*').eq('is_active', true).order('section_number'); },
+    audit_rules: function(sb) { return sb.from('audit_rules').select('*, audit_sections:section_id(id, section_number, section_name)').eq('is_active', true).order('sort_order'); },
+    settings: function(sb) { return sb.from('settings').select('id, ai_prompt_template').maybeSingle(); }
+};
+var _tableSetters = {
+    super_skills: function(d) { _ss = d; window._ss = d; },
+    sub_skills: function(d) { _sub = d; window._sub = d; },
+    core_theories: function(d) { _th = d; window._th = d; },
+    age_ranges: function(d) { _age = d; window._age = d; },
+    ndis_domains: function(d) { _ndis = d; window._ndis = d; },
+    dss_sedi_categories: function(d) { _sedi = d; window._sedi = d; },
+    fasd_domains: function(d) { _fasd = d; window._fasd = d; },
+    characters: function(d) { _chars = d; window._chars = d; },
+    cycles: function(d) { _cycles = d; window._cycles = d; },
+    theory_connections: function(d) { _connections = d; window._connections = d; },
+    forbidden_terms: function(d) { _forbidden = d; window._forbidden = d; },
+    audit_sections: function(d) { _auditSections = d; window._auditSections = d; },
+    audit_rules: function(d) { _auditRules = d; window._auditRules = d; },
+    settings: function(d) { _settings = d; }
+};
+
+async function _reloadTable(table) {
+    var sb = window.supabase;
+    if (!sb || !_tableLoaders[table]) return;
+    try {
+        var result = await _tableLoaders[table](sb);
+        if (_tableSetters[table]) _tableSetters[table](table === 'settings' ? (result.data || null) : (result.data || []));
+    } catch (e) { console.error('[RefGrids] Reload ' + table + ':', e); }
+}
+
+// Ensure data is loaded (deferred — first call triggers the load)
+async function _ensureLoaded() {
+    if (_dataLoaded) return;
+    if (_loadingPromise) return _loadingPromise;
+    _loadingPromise = _loadAll();
+    await _loadingPromise;
+    _loadingPromise = null;
+}
 
 async function _loadAll() {
     var sb = window.supabase;
@@ -268,8 +345,8 @@ window.refSaveRow = async function(table, id, btn) {
             var res = await window.supabase.from(cfg.dbTable).update(dbUpdates).eq('id', id);
             if (res.error) throw res.error;
         }
-        // Reload and re-render
-        await _loadAll();
+        // Reload only the affected table and re-render
+        await _reloadTable(cfg.dbTable);
         cfg.render();
     } catch (e) {
         console.error('Save error:', e);
@@ -619,7 +696,7 @@ window.refDeleteForbidden = async function(id) {
     if (!confirm('Delete this forbidden term?')) return;
     try {
         await window.supabase.from('forbidden_terms').delete().eq('id', id);
-        await _loadAll();
+        await _reloadTable('forbidden_terms');
         rVocab();
     } catch (e) { alert('Error: ' + e.message); }
 };
@@ -801,7 +878,7 @@ window.scrollToAuditSection = function(id) {
 window.updateSectionWeight = async function(id, value) {
     try {
         await window.supabase.from('audit_sections').update({ weight: parseInt(value) || 0 }).eq('id', id);
-        await _loadAll();
+        await _reloadTable('audit_sections');
         rAuditRules();
     } catch (e) { alert('Error: ' + e.message); }
 };
@@ -833,7 +910,7 @@ window.addAuditRule = async function(sectionId) {
             is_active: true,
             sort_order: (existingRules.length + 1) * 10
         }]);
-        await _loadAll();
+        await _reloadTable('audit_rules');
         rAuditRules();
     } catch (e) { alert('Error: ' + e.message); }
 };
@@ -845,7 +922,7 @@ window.editAuditRule = function(id) {
     var newInstruction = prompt('AI Instruction for "' + rule.rule_name + '":', rule.ai_instruction || '');
     if (newInstruction === null) return;
     window.supabase.from('audit_rules').update({ ai_instruction: newInstruction }).eq('id', id)
-        .then(function() { _loadAll().then(rAuditRules); })
+        .then(function() { _reloadTable('audit_rules').then(rAuditRules); })
         .catch(function(e) { alert('Error: ' + e.message); });
 };
 
@@ -854,7 +931,7 @@ window.deleteAuditRule = async function(id) {
     if (!confirm('Delete this rule?')) return;
     try {
         await window.supabase.from('audit_rules').delete().eq('id', id);
-        await _loadAll();
+        await _reloadTable('audit_rules');
         rAuditRules();
     } catch (e) { alert('Error: ' + e.message); }
 };
@@ -922,7 +999,7 @@ var _inlineConfigs = {
                 }
             }
         },
-        after: async function() { await _loadAll(); rSS(); }
+        after: async function() { await _reloadTable('super_skills'); await _reloadTable('characters'); rSS(); }
     },
     Sub: {
         tbId: 'tbSub',
@@ -935,7 +1012,7 @@ var _inlineConfigs = {
             var slug = vals.Name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             await window.supabase.from('sub_skills').insert([{ name: vals.Name, slug: slug, super_skill_id: vals.Parent || null, description: vals.Desc || null, is_active: true, sort_order: (_sub.length + 1) * 10 }]);
         },
-        after: async function() { await _loadAll(); rSub(); }
+        after: async function() { await _reloadTable('sub_skills'); rSub(); }
     },
     Th: {
         tbId: 'tbTh',
@@ -948,7 +1025,7 @@ var _inlineConfigs = {
             var code = vals.Name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
             await window.supabase.from('core_theories').insert([{ theory_name: vals.Name, theory_code: code, primary_researchers: vals.Researchers || null, description: vals.Desc || null, is_active: true }]);
         },
-        after: async function() { await _loadAll(); rTh(); }
+        after: async function() { await _reloadTable('core_theories'); rTh(); }
     },
     Conn: {
         tbId: 'tbConn',
@@ -970,7 +1047,7 @@ var _inlineConfigs = {
                 sort_order: (_connections.length + 1) * 10
             }]);
         },
-        after: async function() { await _loadAll(); rConn(); }
+        after: async function() { await _reloadTable('theory_connections'); rConn(); }
     },
     Ndis: {
         tbId: 'tbNdis',
@@ -981,7 +1058,7 @@ var _inlineConfigs = {
         save: async function(vals) {
             await window.supabase.from('ndis_domains').insert([{ domain_name: vals.Name, description: vals.Desc || null, is_active: true, sort_order: (_ndis.length + 1) * 10 }]);
         },
-        after: async function() { await _loadAll(); rNdis(); }
+        after: async function() { await _reloadTable('ndis_domains'); rNdis(); }
     },
     Sedi: {
         tbId: 'tbSedi',
@@ -993,7 +1070,7 @@ var _inlineConfigs = {
         save: async function(vals) {
             await window.supabase.from('dss_sedi_categories').insert([{ sedi_code: vals.Code, sedi_name: vals.Name, description: vals.Desc || null, is_active: true, sort_order: (_sedi.length + 1) * 10 }]);
         },
-        after: async function() { await _loadAll(); rSedi(); }
+        after: async function() { await _reloadTable('dss_sedi_categories'); rSedi(); }
     },
     Age: {
         tbId: 'tbAge',
@@ -1006,7 +1083,7 @@ var _inlineConfigs = {
         save: async function(vals) {
             await window.supabase.from('age_ranges').insert([{ age_range: vals.Range, display_name: vals.Display, language_guidelines: vals.Lang || null, developmental_stage: vals.Dev || null, is_active: true }]);
         },
-        after: async function() { await _loadAll(); rAge(); }
+        after: async function() { await _reloadTable('age_ranges'); rAge(); }
     },
     Fasd: {
         tbId: 'tbFasd',
@@ -1018,7 +1095,7 @@ var _inlineConfigs = {
         save: async function(vals) {
             await window.supabase.from('fasd_domains').insert([{ domain_number: vals.Num ? parseInt(vals.Num) : null, domain_name: vals.Name, description: vals.Desc || null, is_active: true }]);
         },
-        after: async function() { await _loadAll(); rFasd(); }
+        after: async function() { await _reloadTable('fasd_domains'); rFasd(); }
     },
     Dx: {
         tbId: 'tbDx',
@@ -1043,7 +1120,7 @@ var _inlineConfigs = {
         save: async function(vals) {
             await window.supabase.from('forbidden_terms').insert([{ term: vals.Term, term_type: 'word', brain_town_alternative: vals.Alt || null, is_active: true }]);
         },
-        after: async function() { await _loadAll(); rVocab(); }
+        after: async function() { await _reloadTable('forbidden_terms'); rVocab(); }
     },
     ForbiddenMetaphor: {
         tbId: 'tbForbiddenMetaphor',
@@ -1054,7 +1131,7 @@ var _inlineConfigs = {
         save: async function(vals) {
             await window.supabase.from('forbidden_terms').insert([{ term: vals.Term, term_type: 'metaphor', brain_town_alternative: vals.Alt || null, is_active: true }]);
         },
-        after: async function() { await _loadAll(); rVocab(); }
+        after: async function() { await _reloadTable('forbidden_terms'); rVocab(); }
     }
 };
 
@@ -1169,13 +1246,9 @@ window._onConnSuperSkillEditSelect = function(selectEl, table, itemId) {
 // ============================
 // INIT
 // ============================
+// Deferred init — data loads on first reference-data tab access, not on page load
 (async function() {
     await _waitSB();
     if (!window.supabase) { console.error('[RefGrids] No supabase'); return; }
-    console.log('[RefGrids] Init...');
-    await _loadAll();
-    // Render the default visible panel
-    rSS();
-    // Render static panels
-    rLev(); rVocab(); rSeq(); rDx();
+    console.log('[RefGrids] Ready (deferred — will load on first tab open)');
 })();

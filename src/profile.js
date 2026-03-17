@@ -2,6 +2,8 @@
 import { signOut, getCurrentUser } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
 import { showElement, hideElement } from './utils/dom.js'
+import { switchStripeSubscriptionPlan } from './services/databaseService.js'
+import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 
 const supabase = getSupabaseClient()
 
@@ -59,6 +61,9 @@ const parentPasswordModal = document.getElementById('parentPasswordModal')
 
 // Initialize
 async function init() {
+  // Show the Daniel loading screen immediately
+  showLoadingScreen()
+
   try {
     // Check authentication
     const user = await getCurrentUser()
@@ -66,119 +71,92 @@ async function init() {
       window.location.href = '/'
       return
     }
-    
+
     state.currentUser = user
-    
+
     // Update header
     if (headerSubtitle) {
       headerSubtitle.textContent = `Welcome back, ${user.email}!`
     }
-    
+
     // Check if admin
     state.isAdmin = await checkIsAdmin()
     if (state.isAdmin) {
       if (adminButton) adminButton.style.display = 'block'
       if (adminButtonDesktop) showElement(adminButtonDesktop)
     }
-    
+
     // Load data
     await loadData()
-    
-    // Show profile view
+
+    // Hide loading screen, show profile view
+    hideLoadingScreen()
     hideElement(loadingState)
     showElement(profileView)
-    
+
     // Initialize profile hub (ModuleGallery)
     initProfileHub()
-    
+
   } catch (error) {
     console.error('Profile initialization error:', error)
+    hideLoadingScreen()
     hideElement(loadingState)
     showElement(profileView)
   }
 }
 
-// Load user data
+// Load user data — all queries run in parallel for speed
 async function loadData() {
   try {
-    // Load children
-    const { data: children, error: childrenError } = await supabase
-      .from('children')
-      .select('*')
-      .eq('parent_user_id', state.currentUser.id)
-      .order('created_at', { ascending: true })
-    
-    if (childrenError) throw childrenError
-    state.children = children || []
-    
-    // Set global dashboardState for ModuleGallery compatibility
-    window.dashboardState = window.dashboardState || {}
-    window.dashboardState.children = state.children
-    
-    // Load modules for the parent overview
-    const { data: modules, error: modulesError } = await supabase
-      .from('modules')
-      .select('*, super_skills(*)')
-      .eq('is_active', true)
-      .order('pathway_order', { ascending: true })
-    
-    if (!modulesError) {
-      state.modules = modules || []
+    const userId = state.currentUser.id
+
+    const [childrenResult, modulesResult, tiersResult, subResult, creditResult] = await Promise.allSettled([
+      supabase.from('children').select('*').eq('parent_user_id', userId).order('created_at', { ascending: true }),
+      supabase.from('modules').select('*, super_skills(*)').eq('is_active', true).order('pathway_order', { ascending: true }),
+      supabase.from('subscription_tiers').select('*').eq('is_active', true).order('created_at', { ascending: true }),
+      supabase.from('parent_subscriptions').select('*, subscription_tiers(*)').eq('parent_id', userId).maybeSingle(),
+      supabase.from('v_parent_credit_summary').select('*').eq('parent_id', userId).order('period_end', { ascending: false }).limit(1).maybeSingle()
+    ])
+
+    // Children
+    if (childrenResult.status === 'fulfilled' && !childrenResult.value.error) {
+      state.children = childrenResult.value.data || []
+      window.dashboardState = window.dashboardState || {}
+      window.dashboardState.children = state.children
+    }
+
+    // Modules
+    if (modulesResult.status === 'fulfilled' && !modulesResult.value.error) {
+      state.modules = modulesResult.value.data || []
       window.modules = state.modules
+      window.dashboardState = window.dashboardState || {}
       window.dashboardState.modules = state.modules
     }
-    
-    // Load subscription tiers (all available tiers)
-    const { data: tiers, error: tiersError } = await supabase
-      .from('subscription_tiers')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true })
-    
-    if (!tiersError && tiers) {
-      window.subscriptionTiers = tiers
+
+    // Subscription tiers
+    if (tiersResult.status === 'fulfilled' && !tiersResult.value.error) {
+      window.subscriptionTiers = tiersResult.value.data || []
     }
-    
-    // Load current subscription from parent_subscriptions table
-    const { data: subscription, error: subError } = await supabase
-      .from('parent_subscriptions')
-      .select('*, subscription_tiers(*)')
-      .eq('parent_id', state.currentUser.id)
-      .maybeSingle()
-    
-    if (!subError && subscription) {
-      state.subscription = subscription
-      window.currentSubscription = subscription
-      // Also set the tier data from the joined subscription_tiers
-      if (subscription.subscription_tiers) {
-        // Merge tier data into subscription for easier access
-        subscription.tierData = subscription.subscription_tiers
+
+    // Current subscription
+    if (subResult.status === 'fulfilled' && !subResult.value.error) {
+      const subscription = subResult.value.data
+      if (subscription) {
+        state.subscription = subscription
+        window.currentSubscription = subscription
+        if (subscription.subscription_tiers) {
+          subscription.tierData = subscription.subscription_tiers
+        }
       }
     }
-    
-    // Load credit summary from v_parent_credit_summary view (same as dashboard credit button)
-    // Get the most recent credit summary for this user (don't filter by date - get latest)
-    const { data: creditData, error: creditError } = await supabase
-      .from('v_parent_credit_summary')
-      .select('*')
-      .eq('parent_id', state.currentUser.id)
-      .order('period_end', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    
-    console.log('[Profile] Credit data:', creditData, 'Error:', creditError)
-    
-    if (!creditError && creditData) {
-      window.currentCreditSummary = creditData
+
+    // Credit summary
+    if (creditResult.status === 'fulfilled' && !creditResult.value.error && creditResult.value.data) {
+      window.currentCreditSummary = creditResult.value.data
     } else {
-      // Default if no data found
-      window.currentCreditSummary = {
-        credits_granted: 0,
-        credits_used: 0,
-        credits_available: 0
-      }
+      window.currentCreditSummary = { credits_granted: 0, credits_used: 0, credits_available: 0 }
     }
-    
+
   } catch (error) {
     console.error('Error loading data:', error)
   }
@@ -278,6 +256,10 @@ function renderBasicProfileSections(container) {
   if (addChildBtn) {
     addChildBtn.addEventListener('click', () => showElement(addChildModal))
   }
+
+  // Wire plan action buttons
+  document.getElementById('changePlanBtn')?.addEventListener('click', openChangePlanModal)
+  document.getElementById('makePaymentBtn')?.addEventListener('click', openMakePaymentModal)
 }
 
 // Render plan section content
@@ -348,8 +330,8 @@ function renderPlanSection() {
         </div>
       </div>
       <div class="plan-actions">
-        <a href="/billing.html" class="profile-action-btn">Change Plan</a>
-        <a href="/billing.html" class="profile-action-btn profile-action-btn-primary">Make Payment</a>
+        <button class="profile-action-btn" id="changePlanBtn">Change Plan</button>
+        <button class="profile-action-btn profile-action-btn-primary" id="makePaymentBtn">Make a Payment</button>
       </div>
     </div>
   `
@@ -446,6 +428,7 @@ function openEditChildModal(child) {
 function setupNavigation() {
   // Dashboard button - go to dashboard with remembered child
   const goToDashboard = () => {
+    showLoadingScreen()
     const rememberedChildId = localStorage.getItem('selectedChildId')
     if (rememberedChildId) {
       window.location.href = `/dashboard.html?childId=${rememberedChildId}`
@@ -537,6 +520,568 @@ function setupModals() {
   // Add child button
   document.getElementById('addChildBtn')?.addEventListener('click', () => showElement(addChildModal))
 }
+
+// ─── Make Payment Modal ───────────────────────────────────────────────────────
+
+const DISCOUNT_RATES = { 1: 0, 3: 0.05, 6: 0.10, 12: 0.17 }
+const CREDIT_PRICE = 6.99
+
+function getMonthlyPriceDollars() {
+  const sub = window.currentSubscription || state.subscription
+  const currentTier = sub?.tier
+  const tiers = window.subscriptionTiers || []
+  const tierConfig = tiers.find(t => t.tier === currentTier)
+  const cents = Number(tierConfig?.monthly_price_cents)
+  return Number.isFinite(cents) && cents > 0 ? cents / 100 : 19
+}
+
+function calcPaymentTotal(months) {
+  const monthly = getMonthlyPriceDollars()
+  const discount = DISCOUNT_RATES[months] || 0
+  return Number((monthly * months * (1 - discount)).toFixed(2))
+}
+
+function formatPaymentLabel(months) {
+  const price = calcPaymentTotal(months)
+  const discount = DISCOUNT_RATES[months] || 0
+  return discount > 0
+    ? `$${price.toFixed(2)} — Save ${Math.round(discount * 100)}%`
+    : `$${price.toFixed(2)}`
+}
+
+function calcNewEndDate(months) {
+  const sub = window.currentSubscription || state.subscription
+  const periodEnd = sub?.stripe_current_period_end || sub?.current_period_end
+  const base = periodEnd && new Date(periodEnd) > new Date() ? new Date(periodEnd) : new Date()
+  const result = new Date(base)
+  result.setMonth(result.getMonth() + months)
+  return result
+}
+
+function formatDateAU(date) {
+  return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+async function callCheckoutSession(payload) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+  if (!supabaseUrl) throw new Error('Supabase URL is not configured.')
+
+  const session = await supabase.auth.getSession()
+  const accessToken = session?.data?.session?.access_token
+  if (!accessToken) throw new Error('Your session has expired. Please sign in again.')
+
+  const origin = window.location.origin
+  const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+    body: JSON.stringify({
+      ...payload,
+      success_url: `${origin}/profile.html?payment=success`,
+      cancel_url: `${origin}/profile.html?payment=cancelled`
+    })
+  })
+
+  let result
+  try { result = await response.json() } catch { result = {} }
+
+  if (!response.ok) {
+    throw new Error(result?.error || result?.message || `Request failed (${response.status})`)
+  }
+  return result
+}
+
+function openMakePaymentModal() {
+  document.getElementById('ddPaymentModalOverlay')?.remove()
+
+  const sub = window.currentSubscription || state.subscription
+  const periodEnd = sub?.stripe_current_period_end || sub?.current_period_end
+  const isPastDue = !periodEnd || new Date(periodEnd) < new Date()
+  const paidToDisplay = periodEnd ? formatDateAU(new Date(periodEnd)) : 'Not set'
+
+  let selectedMonths = null
+
+  const durationOptions = [1, 3, 6, 12].map(m => `
+    <label class="dd-pay-option" data-months="${m}" style="
+      display:flex;align-items:center;gap:14px;padding:14px 16px;
+      border:2px solid #e8edf5;border-radius:12px;cursor:pointer;
+      transition:border-color 0.15s,background 0.15s;background:white;
+    ">
+      <input type="radio" name="ddPayDuration" value="${m}" style="width:18px;height:18px;accent-color:#14b8a6;flex-shrink:0;">
+      <div style="flex:1;">
+        <div style="font-weight:600;color:#2b3a55;font-family:'League Spartan',sans-serif;">${m} Month${m > 1 ? 's' : ''}</div>
+        <div style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;margin-top:2px;">${formatPaymentLabel(m)}</div>
+      </div>
+    </label>
+  `).join('')
+
+  const overlay = document.createElement('div')
+  overlay.id = 'ddPaymentModalOverlay'
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.82);
+    z-index:2000;display:flex;align-items:center;justify-content:center;
+    padding:20px;overflow-y:auto;
+  `
+  overlay.innerHTML = `
+    <div style="
+      background:#fffff5;border-radius:24px;width:100%;max-width:500px;
+      box-shadow:0 24px 64px rgba(64,88,120,0.35);overflow:hidden;position:relative;
+    ">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#405878,#4c6c96);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <h2 style="color:white;font-size:22px;font-weight:700;margin:0;font-family:'League Spartan',sans-serif;">Make a Payment</h2>
+          <p style="color:rgba(255,255,255,0.75);font-size:14px;margin:4px 0 0;font-family:'League Spartan',sans-serif;">Extend your subscription or buy module credits</p>
+        </div>
+        <button id="ddClosePayModal" style="
+          width:36px;height:36px;border-radius:50%;border:none;
+          background:rgba(255,255,255,0.2);color:white;font-size:22px;
+          cursor:pointer;display:flex;align-items:center;justify-content:center;
+          line-height:1;
+        ">&times;</button>
+      </div>
+
+      <div style="padding:24px 28px;">
+
+        <!-- Error banner -->
+        <div id="ddPayError" style="
+          display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
+          padding:12px 16px;color:#c02626;font-size:14px;
+          font-family:'League Spartan',sans-serif;margin-bottom:20px;
+        "></div>
+
+        <!-- Current status -->
+        <div style="
+          background:${isPastDue ? '#fef2f2' : '#f0fdf4'};
+          border:1px solid ${isPastDue ? '#fecaca' : '#bbf7d0'};
+          border-radius:10px;padding:14px 16px;margin-bottom:22px;
+          display:flex;justify-content:space-between;align-items:center;
+        ">
+          <span style="font-size:14px;color:#5f6b85;font-family:'League Spartan',sans-serif;">Currently paid to:</span>
+          <span style="font-size:16px;font-weight:700;color:${isPastDue ? '#c02626' : '#16a34a'};font-family:'League Spartan',sans-serif;">${paidToDisplay}</span>
+        </div>
+
+        <!-- Section: Subscription -->
+        <div style="margin-bottom:24px;">
+          <div style="font-size:14px;font-weight:700;color:#405878;font-family:'League Spartan',sans-serif;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <span style="background:linear-gradient(135deg,#405878,#4c6c96);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">1</span>
+            Select Payment Duration
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="ddDurationOptions">
+            ${durationOptions}
+          </div>
+
+          <!-- Preview -->
+          <div id="ddPayPreview" style="
+            display:none;background:#f0f4ff;border:1px solid #c7d7f5;
+            border-radius:10px;padding:14px 16px;margin-top:14px;
+          ">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;">New paid-to date:</span>
+              <span id="ddNewEndDate" style="font-size:13px;font-weight:600;color:#2b3a55;font-family:'League Spartan',sans-serif;">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;">Total:</span>
+              <span id="ddPayAmount" style="font-size:18px;font-weight:700;color:#14b8a6;font-family:'League Spartan',sans-serif;">—</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="ddProceedSubBtn" disabled style="
+          width:100%;padding:14px;border:none;border-radius:12px;
+          background:#cbd5e1;color:white;font-size:15px;font-weight:700;
+          font-family:'League Spartan',sans-serif;cursor:not-allowed;
+          transition:background 0.2s,transform 0.15s;margin-bottom:24px;
+        ">Select a duration above</button>
+
+        <!-- Divider -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <div style="flex:1;height:1px;background:#e8edf5;"></div>
+          <span style="font-size:12px;color:#9baab8;font-family:'League Spartan',sans-serif;font-weight:600;">OR</span>
+          <div style="flex:1;height:1px;background:#e8edf5;"></div>
+        </div>
+
+        <!-- Section: Credits -->
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#405878;font-family:'League Spartan',sans-serif;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <span style="background:linear-gradient(135deg,#f6b700,#e6a800);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">2</span>
+            Buy Module Credits
+          </div>
+          <div style="background:white;border:2px solid #e8edf5;border-radius:12px;padding:16px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+              <div style="display:flex;align-items:center;gap:8px;border:1.5px solid #e8edf5;border-radius:8px;padding:4px;background:#f8faff;">
+                <button id="ddCreditMinus" style="width:30px;height:30px;border:none;background:none;font-size:18px;cursor:pointer;color:#405878;font-weight:700;border-radius:6px;display:flex;align-items:center;justify-content:center;">−</button>
+                <input type="number" id="ddCreditCount" min="1" max="100" value="5" style="width:48px;padding:6px;border:none;font-size:16px;font-weight:700;text-align:center;color:#2b3a55;font-family:'League Spartan',sans-serif;background:transparent;">
+                <button id="ddCreditPlus" style="width:30px;height:30px;border:none;background:none;font-size:18px;cursor:pointer;color:#405878;font-weight:700;border-radius:6px;display:flex;align-items:center;justify-content:center;">+</button>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:14px;color:#2b3a55;font-family:'League Spartan',sans-serif;font-weight:600;">credits × $${CREDIT_PRICE.toFixed(2)} each</div>
+                <div style="font-size:12px;color:#5f6b85;font-family:'League Spartan',sans-serif;">1 credit = 1 module unlock</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f4ff;">
+              <span id="ddCreditTotal" style="font-size:16px;font-weight:700;color:#f6b700;font-family:'League Spartan',sans-serif;">Total: $${(5 * CREDIT_PRICE).toFixed(2)}</span>
+              <button id="ddBuyCreditBtn" style="
+                padding:10px 22px;background:linear-gradient(135deg,#f6b700,#e6a800);
+                color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
+                font-family:'League Spartan',sans-serif;cursor:pointer;transition:opacity 0.2s;
+              ">Buy Credits →</button>
+            </div>
+          </div>
+        </div>
+
+        <p style="text-align:center;margin-top:18px;font-size:12px;color:#9baab8;font-family:'League Spartan',sans-serif;">
+          🔒 Secure checkout via Stripe. Cancel anytime.
+        </p>
+      </div>
+
+      <!-- Loading overlay -->
+      <div id="ddPayLoading" style="
+        display:none;position:absolute;inset:0;background:rgba(255,255,254,0.93);
+        border-radius:24px;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+      ">
+        <div style="
+          width:44px;height:44px;border:4px solid #e8edf5;border-top-color:#14b8a6;
+          border-radius:50%;animation:ddSpin 0.75s linear infinite;
+        "></div>
+        <p style="color:#405878;font-weight:600;font-family:'League Spartan',sans-serif;margin:0;">Connecting to Stripe…</p>
+      </div>
+    </div>
+
+    <style>
+      .dd-pay-option:hover { border-color: #14b8a6 !important; background: #f0fdfb !important; }
+      .dd-pay-option.selected { border-color: #14b8a6 !important; background: #f0fdfb !important; }
+      #ddCreditMinus:hover, #ddCreditPlus:hover { background: #f0f4ff !important; }
+      #ddBuyCreditBtn:hover { opacity: 0.88; }
+    </style>
+  `
+
+  document.body.appendChild(overlay)
+
+  // Helpers scoped to this modal
+  const errorEl = () => document.getElementById('ddPayError')
+  const loadingEl = () => document.getElementById('ddPayLoading')
+  const proceedBtn = document.getElementById('ddProceedSubBtn')
+  const preview = document.getElementById('ddPayPreview')
+  const creditInput = document.getElementById('ddCreditCount')
+  const creditTotal = document.getElementById('ddCreditTotal')
+
+  function showError(msg) {
+    if (loadingEl()) loadingEl().style.display = 'none'
+    const el = errorEl()
+    if (el) { el.textContent = msg; el.style.display = 'block' }
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  function updateCreditTotal() {
+    const count = Math.max(1, parseInt(creditInput.value) || 1)
+    creditInput.value = count
+    if (creditTotal) creditTotal.textContent = `Total: $${(count * CREDIT_PRICE).toFixed(2)}`
+  }
+
+  // Duration radio listeners
+  overlay.querySelectorAll('input[name="ddPayDuration"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      selectedMonths = parseInt(radio.value)
+      overlay.querySelectorAll('.dd-pay-option').forEach(el => el.classList.remove('selected'))
+      radio.closest('.dd-pay-option').classList.add('selected')
+
+      const newEnd = calcNewEndDate(selectedMonths)
+      document.getElementById('ddNewEndDate').textContent = formatDateAU(newEnd)
+      document.getElementById('ddPayAmount').textContent = `$${calcPaymentTotal(selectedMonths).toFixed(2)}`
+      if (preview) preview.style.display = 'block'
+
+      proceedBtn.disabled = false
+      proceedBtn.style.background = 'linear-gradient(135deg,#405878,#4c6c96)'
+      proceedBtn.style.cursor = 'pointer'
+      proceedBtn.textContent = `Pay $${calcPaymentTotal(selectedMonths).toFixed(2)} →`
+    })
+  })
+
+  // Proceed subscription button
+  proceedBtn.addEventListener('click', async () => {
+    if (!selectedMonths) return
+    if (errorEl()) errorEl().style.display = 'none'
+    if (loadingEl()) loadingEl().style.display = 'flex'
+    proceedBtn.disabled = true
+
+    try {
+      const newEndDate = calcNewEndDate(selectedMonths).toISOString().split('T')[0]
+      const data = await callCheckoutSession({
+        paymentType: 'subscription',
+        months: selectedMonths,
+        newEndDate,
+        amount: calcPaymentTotal(selectedMonths)
+      })
+      if (data?.url) { window.location.href = data.url }
+      else throw new Error('No checkout URL returned. Please try again.')
+    } catch (err) {
+      proceedBtn.disabled = false
+      proceedBtn.textContent = `Pay $${calcPaymentTotal(selectedMonths).toFixed(2)} →`
+      showError(err.message || 'Something went wrong. Please try again.')
+    }
+  })
+
+  // Credit +/- buttons
+  document.getElementById('ddCreditMinus').addEventListener('click', () => {
+    creditInput.value = Math.max(1, (parseInt(creditInput.value) || 1) - 1)
+    updateCreditTotal()
+  })
+  document.getElementById('ddCreditPlus').addEventListener('click', () => {
+    creditInput.value = Math.min(100, (parseInt(creditInput.value) || 1) + 1)
+    updateCreditTotal()
+  })
+  creditInput.addEventListener('input', updateCreditTotal)
+
+  // Buy credits button
+  document.getElementById('ddBuyCreditBtn').addEventListener('click', async () => {
+    const credits = Math.max(1, parseInt(creditInput.value) || 1)
+    if (errorEl()) errorEl().style.display = 'none'
+    if (loadingEl()) loadingEl().style.display = 'flex'
+
+    try {
+      const data = await callCheckoutSession({ paymentType: 'prepaid', credits, pricePerCredit: CREDIT_PRICE })
+      if (data?.url) { window.location.href = data.url }
+      else throw new Error('No checkout URL returned. Please try again.')
+    } catch (err) {
+      showError(err.message || 'Something went wrong. Please try again.')
+    }
+  })
+
+  // Close
+  document.getElementById('ddClosePayModal').addEventListener('click', closeMakePaymentModal)
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeMakePaymentModal() })
+}
+
+function closeMakePaymentModal() {
+  document.getElementById('ddPaymentModalOverlay')?.remove()
+}
+
+// ─── Plan Selection Modal ────────────────────────────────────────────────────
+
+const PLAN_META = {
+  low: {
+    icon: '🌱',
+    label: 'Starter',
+    gradient: 'linear-gradient(135deg, #405878, #4c6c96)',
+    accent: '#4c6c96',
+    shadow: 'rgba(64,88,120,0.25)',
+    features: [
+      '4 modules per month',
+      'Unlimited children',
+      'Progress tracking',
+      'Parent insights dashboard'
+    ]
+  },
+  mid: {
+    icon: '⭐',
+    label: 'Family',
+    gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)',
+    accent: '#14b8a6',
+    shadow: 'rgba(20,184,166,0.25)',
+    badge: 'Most Popular',
+    features: [
+      '8 modules per month',
+      'Unlimited children',
+      'Progress tracking',
+      'Parent insights dashboard',
+      'Priority support'
+    ]
+  },
+  top: {
+    icon: '🚀',
+    label: 'Champion',
+    gradient: 'linear-gradient(135deg, #f6b700, #e6a800)',
+    accent: '#f6b700',
+    shadow: 'rgba(246,183,0,0.25)',
+    features: [
+      '16 modules per month',
+      'Unlimited children',
+      'Progress tracking',
+      'Parent insights dashboard',
+      'Priority support',
+      'Early access to new content'
+    ]
+  }
+}
+
+function buildPlanCard(tier, isCurrent) {
+  const price = tier.monthly_price_cents
+    ? `$${(tier.monthly_price_cents / 100).toFixed(2)}`
+    : 'Free'
+  const meta = PLAN_META[tier.tier] || {
+    icon: '📋',
+    label: tier.display_name || tier.tier.toUpperCase(),
+    gradient: 'linear-gradient(135deg, #405878, #4c6c96)',
+    accent: '#4c6c96',
+    shadow: 'rgba(64,88,120,0.25)',
+    features: [`${tier.modules_per_month || 0} modules per month`]
+  }
+  const displayName = tier.display_name || meta.label
+
+  const topBadge = isCurrent
+    ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:${meta.accent};color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap;font-family:'League Spartan',sans-serif;letter-spacing:0.5px;box-shadow:0 2px 8px ${meta.shadow};">CURRENT PLAN</div>`
+    : meta.badge
+    ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:${meta.gradient};color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap;font-family:'League Spartan',sans-serif;letter-spacing:0.5px;box-shadow:0 2px 8px ${meta.shadow};">${meta.badge}</div>`
+    : ''
+
+  const featureItems = meta.features.map(f => `
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
+      <span style="color:#14b8a6;font-size:14px;flex-shrink:0;margin-top:1px;">✓</span>
+      <span style="font-size:13px;color:#3b475f;font-family:'League Spartan',sans-serif;line-height:1.4;">${f}</span>
+    </div>`).join('')
+
+  const btnStyle = isCurrent
+    ? `background:#f0f4ff;color:#405878;cursor:default;`
+    : `background:${meta.gradient};color:white;cursor:pointer;`
+
+  return `
+    <div class="dd-plan-card" data-tier="${tier.tier}" style="
+      position:relative;
+      background:white;
+      border-radius:16px;
+      padding:28px 20px 20px;
+      border:2px solid ${isCurrent ? meta.accent : '#e8edf5'};
+      box-shadow:${isCurrent ? `0 6px 24px ${meta.shadow}` : '0 2px 10px rgba(64,88,120,0.07)'};
+      display:flex;flex-direction:column;gap:16px;
+      transition:transform 0.2s,box-shadow 0.2s;
+    ">
+      ${topBadge}
+      <div style="text-align:center;">
+        <div style="font-size:38px;margin-bottom:8px;">${meta.icon}</div>
+        <div style="font-size:18px;font-weight:700;font-family:'League Spartan',sans-serif;background:${meta.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${displayName}</div>
+        <div style="margin-top:10px;">
+          <span style="font-size:30px;font-weight:700;color:#2b3a55;font-family:'League Spartan',sans-serif;">${price}</span>
+          <span style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;">/mo</span>
+        </div>
+      </div>
+      <div style="border-top:1px solid #f0f4ff;padding-top:14px;flex:1;">
+        ${featureItems}
+      </div>
+      <button
+        class="dd-select-plan-btn"
+        data-tier="${tier.tier}"
+        ${isCurrent ? 'disabled' : ''}
+        style="
+          width:100%;padding:12px;border:none;border-radius:10px;
+          font-size:14px;font-weight:600;font-family:'League Spartan',sans-serif;
+          transition:opacity 0.2s,transform 0.15s;
+          ${btnStyle}
+        "
+      >${isCurrent ? 'Current Plan' : 'Select Plan →'}</button>
+    </div>`
+}
+
+function openChangePlanModal() {
+  document.getElementById('changePlanModalOverlay')?.remove()
+
+  const tiers = window.subscriptionTiers || []
+  const currentTier = (window.currentSubscription || state.subscription)?.tier
+
+  const cards = tiers.length
+    ? tiers.map(t => buildPlanCard(t, t.tier === currentTier)).join('')
+    : '<p style="text-align:center;color:#5f6b85;font-family:\'League Spartan\',sans-serif;grid-column:1/-1;">Loading plans…</p>'
+
+  const overlay = document.createElement('div')
+  overlay.id = 'changePlanModalOverlay'
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.82);
+    z-index:2000;display:flex;align-items:center;justify-content:center;
+    padding:20px;overflow-y:auto;
+  `
+  overlay.innerHTML = `
+    <div style="
+      background:#fffff5;border-radius:24px;width:100%;max-width:700px;
+      box-shadow:0 24px 64px rgba(64,88,120,0.35);overflow:hidden;position:relative;
+    ">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#405878,#4c6c96);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <h2 style="color:white;font-size:22px;font-weight:700;margin:0;font-family:'League Spartan',sans-serif;">Choose Your Plan</h2>
+          <p style="color:rgba(255,255,255,0.75);font-size:14px;margin:4px 0 0;font-family:'League Spartan',sans-serif;">Select a plan and you'll be taken securely to Stripe</p>
+        </div>
+        <button id="ddClosePlanModal" style="
+          width:36px;height:36px;border-radius:50%;border:none;
+          background:rgba(255,255,255,0.2);color:white;font-size:22px;
+          cursor:pointer;display:flex;align-items:center;justify-content:center;
+          line-height:1;transition:background 0.2s;
+        ">&times;</button>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:28px;">
+        <div id="ddPlanError" style="
+          display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
+          padding:12px 16px;color:#c02626;font-size:14px;
+          font-family:'League Spartan',sans-serif;margin-bottom:20px;
+        "></div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:20px;margin-top:8px;">
+          ${cards}
+        </div>
+
+        <p style="text-align:center;margin-top:22px;font-size:12px;color:#5f6b85;font-family:'League Spartan',sans-serif;">
+          🔒 Payments are processed securely by Stripe. Cancel anytime.
+        </p>
+      </div>
+
+      <!-- Loading overlay -->
+      <div id="ddPlanLoading" style="
+        display:none;position:absolute;inset:0;background:rgba(255,255,254,0.93);
+        border-radius:24px;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+      ">
+        <div style="
+          width:44px;height:44px;border:4px solid #e8edf5;border-top-color:#14b8a6;
+          border-radius:50%;animation:ddSpin 0.75s linear infinite;
+        "></div>
+        <p style="color:#405878;font-weight:600;font-family:'League Spartan',sans-serif;margin:0;">Connecting to Stripe…</p>
+      </div>
+    </div>
+
+    <style>
+      @keyframes ddSpin{to{transform:rotate(360deg)}}
+      .dd-plan-card:not([style*="cursor:default"]):hover{transform:translateY(-3px)!important;box-shadow:0 12px 32px rgba(64,88,120,0.18)!important;}
+      .dd-select-plan-btn:not([disabled]):hover{opacity:0.88;transform:translateY(-1px);}
+    </style>
+  `
+
+  document.body.appendChild(overlay)
+
+  document.getElementById('ddClosePlanModal').addEventListener('click', closeChangePlanModal)
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeChangePlanModal() })
+
+  overlay.querySelectorAll('.dd-select-plan-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => selectPlan(btn.dataset.tier))
+  })
+}
+
+function closeChangePlanModal() {
+  document.getElementById('changePlanModalOverlay')?.remove()
+}
+
+async function selectPlan(tier) {
+  const errorEl = document.getElementById('ddPlanError')
+  const loadingEl = document.getElementById('ddPlanLoading')
+
+  if (errorEl) errorEl.style.display = 'none'
+  if (loadingEl) loadingEl.style.display = 'flex'
+
+  try {
+    const data = await switchStripeSubscriptionPlan(tier)
+    if (data?.url) {
+      window.location.href = data.url
+    } else {
+      throw new Error('No checkout URL was returned. Please try again.')
+    }
+  } catch (err) {
+    if (loadingEl) loadingEl.style.display = 'none'
+    if (errorEl) {
+      errorEl.textContent = err.message || 'Something went wrong. Please try again.'
+      errorEl.style.display = 'block'
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {

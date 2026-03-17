@@ -573,35 +573,8 @@
     async function awardModuleXp(childIdValue, xpReward) {
       console.log(`[awardModuleXp] Starting: Awarding ${xpReward} XP to child ${childIdValue}`);
       
-      // Try RPC first
-      try {
-        const { error: rpcError } = await supabase.rpc('increment_child_rewards', {
-          p_child_id: childIdValue,
-          p_stars: 0,
-          p_xp: xpReward
-        });
-        
-        if (!rpcError) {
-          console.log(`[awardModuleXp] RPC successful - verifying update...`);
-          // Verify the RPC actually updated the database
-          const { data: verifyChild } = await supabase
-            .from('children')
-            .select('total_xp, level')
-            .eq('id', childIdValue)
-            .single();
-          
-          if (verifyChild && verifyChild.total_xp > 0) {
-            console.log(`[awardModuleXp] RPC verified: New XP = ${verifyChild.total_xp}, Level = ${verifyChild.level}`);
-            return;
-          } else {
-            console.warn('[awardModuleXp] RPC claimed success but no update found, falling back to direct update');
-          }
-        } else {
-          console.warn('[awardModuleXp] RPC failed, falling back to direct update:', rpcError);
-        }
-      } catch (rpcError) {
-        console.warn('[awardModuleXp] RPC error, falling back to direct update:', rpcError);
-      }
+      // Skip RPC attempt - function doesn't exist, go straight to direct update
+      console.log('[awardModuleXp] RPC function not available, using direct database update...');
       
       // Fallback: Direct update
       console.log('[awardModuleXp] Performing direct database update...');
@@ -630,10 +603,11 @@
           .select('level')
           .lte('xp_required', newTotalXp)
           .order('xp_required', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
         
-        newLevel = levelData?.level || 1;
+        if (levelData && levelData.length > 0) {
+          newLevel = levelData[0].level || 1;
+        }
         console.log(`[awardModuleXp] New level calculated: ${newLevel}`);
       } catch (levelError) {
         console.warn('[awardModuleXp] Error getting level from table, using fallback:', levelError);

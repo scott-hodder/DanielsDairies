@@ -26,6 +26,15 @@
         </div>
     </header>
 
+    <!-- Admin Loading Overlay -->
+    <div id="adminLoadingOverlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);">
+        <div style="text-align:center;">
+            <div style="width:48px;height:48px;border:4px solid #e5e7eb;border-top-color:#405878;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+            <p style="color:#405878;font-size:15px;font-weight:600;font-family:'League Spartan',sans-serif;">Loading Admin Centre...</p>
+        </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
     <!-- Main Content -->
     <main class="container">
         <!-- Stats -->
@@ -47,8 +56,7 @@
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" onclick="switchTab(event, 'moduleCustomisation')">Module Customisation</button>
-            <button class="tab" onclick="switchTab(event, 'childModules')">Parent's Modules</button>
-            <button class="tab" onclick="switchTab(event, 'theories')">Reference Data</button>
+                        <button class="tab" onclick="switchTab(event, 'theories')">Reference Data</button>
             <button class="tab" onclick="switchTab(event, 'rewards')">Rewards</button>
             <button class="tab" onclick="switchTab(event, 'parentToolkit')">Parent Toolkit</button>
             <button class="tab" onclick="switchTab(event, 'generalSettings')">Check Ins</button>
@@ -421,84 +429,6 @@
             </div>
         </div>
         <!-- End Module Customisation Tab -->
-
-        <!-- Tab Content: Parent's Modules -->
-        <div id="parentModulesTab" class="tab-content">
-        <!-- 3-Column Grid: Parents | Children | Modules -->
-        <div style="display: grid; grid-template-columns: 300px 300px 1fr; gap: 20px; height: calc(100vh - 300px);">
-            
-            <!-- Column 1: Parents List -->
-            <div class="card" style="height: 100%; overflow: hidden; display: flex; flex-direction: column;">
-                <div class="card-header">
-                    <h3>All Parents</h3>
-                </div>
-                <div class="card-body" id="parentsList" style="flex: 1; overflow-y: auto;">
-                    <div class="empty-state">
-                        <p>Loading...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Column 2: Parent's Children -->
-            <div class="card" style="height: 100%; overflow: hidden; display: flex; flex-direction: column;">
-                <div class="card-header">
-                    <h3 id="childrenTitle">Children</h3>
-                </div>
-                <div class="card-body" id="parentChildrenList" style="flex: 1; overflow-y: auto;">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">👈</div>
-                        <p>Select a parent to see their children</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Column 3: Modules Panel -->
-            <div class="modules-panel" style="height: 100%; overflow: hidden; display: flex; flex-direction: column;">
-                <h2 class="panel-title" id="modulesTitle">Modules</h2>
-                
-                <!-- Search and Filter -->
-                <div class="search-filter-container" id="searchFilterContainer" style="display: none;">
-                    <input type="text" 
-                           class="search-box" 
-                           id="moduleSearch" 
-                           placeholder="🔍 Search modules by name..."
-                           oninput="filterModules()">
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <select class="category-dropdown" id="categoryFilter" onchange="filterModules()">
-                            <option value="all">All Categories</option>
-                        </select>
-                        
-                        <select class="category-dropdown" id="seriesFilter" onchange="filterModules()">
-                            <option value="all">All Series</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" onclick="setFilter(event, 'all')">All Modules</button>
-                        <button class="filter-btn" onclick="setFilter(event, 'active')">✓ Active Only</button>
-                        <button class="filter-btn" onclick="setFilter(event, 'inactive')">✗ Inactive Only</button>
-                    </div>
-                </div>
-                
-                <!-- Bulk Actions -->
-                <div class="bulk-actions" id="bulkActions" style="display: none;">
-                    <span class="bulk-actions-label"><span id="selectedCount">0</span> selected</span>
-                    <button class="bulk-btn activate" id="bulkActivateBtn" onclick="bulkActivate()">Make Active</button>
-                    <button class="bulk-btn deactivate" id="bulkDeactivateBtn" onclick="bulkDeactivate()">Make Inactive</button>
-                    <button class="bulk-btn" onclick="clearSelection()" style="background: #6b7c8f; color: white;">Clear</button>
-                </div>
-                
-                <div id="modulesList" style="flex: 1; overflow-y: auto;">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">👈</div>
-                        <p>Select a parent from the list to manage their modules</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        </div>
-        <!-- End Parent's Modules Tab -->
 
         <!-- Tab Content: Reference Data (was Theories) -->
         <div id="theoriesTab" class="tab-content">

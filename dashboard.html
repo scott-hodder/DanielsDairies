@@ -11,14 +11,13 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="/styles/dashboard.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Adventure UI Overhaul -->
     <link href="/styles/dashboard-adventure.css" rel="stylesheet">
 
-    
-    <script type="module" src="./src/progress-tracking-system.js"></script>
 
 </head>
 <body>
@@ -116,7 +115,7 @@
                     <!-- Daniel Hub - Enhanced for relationship building -->
                     <div class="daniel-hub has-activity" id="danielHub">
                         <div class="daniel-character" id="danielCharacter" tabindex="0" role="button" aria-label="Talk to Daniel">
-                            <img class="daniel-avatar" src="/images/characters/DanielTheDog.png" alt="Daniel the Dog - your learning buddy" />
+                            <img class="daniel-avatar" src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog - your learning buddy" loading="lazy" />
                         </div>
                         <div class="daniel-info">
                             <h3 class="daniel-name">Daniel</h3>
@@ -770,6 +769,7 @@
         </div>
     </div>
 
+    <script type="module" src="./src/progress-tracking-system.js"></script>
     <script type="module" src="./src/dashboard.js"></script>
    <script type="module" src="./src/dashboard-enhanced.js"></script>
     <script type ="module" src="./src/daily-quest-system.js"></script>
