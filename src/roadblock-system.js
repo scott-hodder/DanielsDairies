@@ -395,6 +395,7 @@ class RoadblockSystem {
       // Update child's stars and XP
       const child = window.selectedChild;
       if (child && child.id) {
+        const previousStars = child.stars ?? child.total_stars ?? 0;
         await this.supabase.rpc('increment_child_rewards', {
           p_child_id: child.id,
           p_stars: starsReward,
@@ -407,6 +408,18 @@ class RoadblockSystem {
         }
         if (child.total_xp !== undefined) {
           child.total_xp = (child.total_xp || 0) + xpReward;
+        }
+
+        const newStars = previousStars + starsReward;
+        if (child.stars !== undefined) {
+          child.stars = newStars;
+        }
+        if (typeof window.maybeCelebrateFirstStar === 'function') {
+          window.maybeCelebrateFirstStar({
+            id: child.id,
+            name: child.name || 'Explorer',
+            stars: newStars
+          });
         }
         
         // Trigger UI refresh
