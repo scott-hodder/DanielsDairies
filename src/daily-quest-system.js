@@ -1616,6 +1616,13 @@ class DailyQuestManager {
             console.error('Error updating child stars:', updateError);
           } else {
             console.log(`Daily Quest: Awarded 1 star. Child now has ${newStars} stars.`);
+            if (typeof window.maybeCelebrateFirstStar === 'function') {
+              window.maybeCelebrateFirstStar({
+                id: this.childId,
+                name: window.selectedChild?.name || window.state?.selectedChild?.name || 'Explorer',
+                stars: newStars
+              });
+            }
           }
         }
 

@@ -64,6 +64,181 @@ function markStreakPopupAsShown(childId) {
   localStorage.setItem(key, 'true')
 }
 
+function hasFirstStarCelebrationBeenShown(childId) {
+  if (!childId) return false
+  return localStorage.getItem(`firstStarCelebrated_child_${childId}`) === 'true'
+}
+
+function markFirstStarCelebrationAsShown(childId) {
+  if (!childId) return
+  localStorage.setItem(`firstStarCelebrated_child_${childId}`, 'true')
+}
+
+function ensureCelebrationPopupStyles() {
+  if (document.getElementById('celebrationPopupStyles')) return
+
+  const style = document.createElement('style')
+  style.id = 'celebrationPopupStyles'
+  style.textContent = `
+    .celebration-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(24, 34, 56, 0.45);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10000;
+      animation: celebrationFadeIn 0.25s ease;
+    }
+
+    .celebration-popup-card {
+      position: relative;
+      width: min(460px, 100%);
+      border-radius: 28px;
+      padding: 32px 28px 26px;
+      color: #243b5a;
+      text-align: center;
+      background: linear-gradient(145deg, #fffdf7 0%, #fff3fb 45%, #eef8ff 100%);
+      box-shadow: 0 28px 80px rgba(75, 85, 180, 0.28);
+      overflow: hidden;
+      animation: celebrationCardPop 0.35s ease;
+    }
+
+    .celebration-popup-glow {
+      position: absolute;
+      inset: auto auto -40px -30px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.28) 0%, rgba(251, 191, 36, 0) 70%);
+      pointer-events: none;
+    }
+
+    .celebration-popup-stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      font-size: 26px;
+      margin-bottom: 16px;
+    }
+
+    .celebration-popup-stars span {
+      animation: celebrationFloat 2.4s ease-in-out infinite;
+    }
+
+    .celebration-popup-stars span:nth-child(2) { animation-delay: 0.2s; }
+    .celebration-popup-stars span:nth-child(3) { animation-delay: 0.4s; }
+
+    .celebration-popup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.85);
+      color: #7c3aed;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .celebration-popup-card h2 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 4vw, 36px);
+      line-height: 1.1;
+      color: #2f3e74;
+    }
+
+    .celebration-popup-card p {
+      margin: 0 auto 22px;
+      max-width: 330px;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #506487;
+    }
+
+    .celebration-popup-button {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 22px;
+      min-width: 170px;
+      background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 14px 30px rgba(124, 58, 237, 0.28);
+    }
+
+    .celebration-popup-button:hover {
+      transform: translateY(-1px);
+    }
+
+    @keyframes celebrationFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes celebrationCardPop {
+      from { opacity: 0; transform: translateY(16px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes celebrationFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.08); }
+    }
+  `
+
+  document.head.appendChild(style)
+}
+
+function showFirstStarPopup(childName = 'Explorer') {
+  ensureCelebrationPopupStyles()
+
+  const existingPopup = document.getElementById('firstStarCelebrationPopup')
+  if (existingPopup) existingPopup.remove()
+
+  const overlay = document.createElement('div')
+  overlay.id = 'firstStarCelebrationPopup'
+  overlay.className = 'celebration-popup-overlay'
+  overlay.innerHTML = `
+    <div class="celebration-popup-card" role="dialog" aria-modal="true" aria-labelledby="firstStarCelebrationTitle">
+      <div class="celebration-popup-glow"></div>
+      <div class="celebration-popup-stars"><span>⭐</span><span>✨</span><span>🌟</span></div>
+      <div class="celebration-popup-badge">First star unlocked</div>
+      <h2 id="firstStarCelebrationTitle">Congratulations, ${childName}!</h2>
+      <p>You earned your very first star. Keep going to collect more stars and unlock exciting rewards along the way!</p>
+      <button type="button" class="celebration-popup-button" id="firstStarCelebrationClose">Amazing!</button>
+    </div>
+  `
+
+  const closePopup = () => overlay.remove()
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closePopup()
+  })
+
+  document.body.appendChild(overlay)
+  document.getElementById('firstStarCelebrationClose')?.addEventListener('click', closePopup)
+}
+
+function maybeCelebrateFirstStar(childData) {
+  const childId = childData?.id
+  const totalStars = Number(childData?.stars ?? childData?.total_stars ?? 0)
+
+  if (!childId || totalStars !== 1 || hasFirstStarCelebrationBeenShown(childId)) return false
+
+  markFirstStarCelebrationAsShown(childId)
+  createConfettiCelebration()
+  showFirstStarPopup(childData?.name || 'Explorer')
+  return true
+}
+
+window.maybeCelebrateFirstStar = maybeCelebrateFirstStar
+
 // DOM Elements
 const loadingState = document.getElementById('loadingState')
 const childrenView = document.getElementById('childrenView')
@@ -1945,6 +2120,7 @@ async function selectChild(child) {
   setSelectedChild(child)
   setAppState('selectedChild', child)
   rememberSelectedChildId(child.id)
+  maybeCelebrateFirstStar(child)
   
   try {
     // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
