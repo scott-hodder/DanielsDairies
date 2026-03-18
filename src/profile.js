@@ -26,6 +26,14 @@ async function checkIsAdmin() {
   }
 }
 
+// Avatar categories for the fun picker
+const avatarCategories = {
+  animals: ['🦊', '🐼', '🦁', '🐨', '🦋', '🐸', '🐯', '🐺'],
+  magical: ['🧚', '🧙', '🧜', '🐉', '🦄', '🌈', '🔮', '🦕'],
+  heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎'],
+  space: ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌙', '⭐', '🪐', '☄️']
+}
+
 // State
 const state = {
   currentUser: null,
@@ -254,7 +262,7 @@ function renderBasicProfileSections(container) {
   // Setup add child button
   const addChildBtn = document.getElementById('addChildBtn')
   if (addChildBtn) {
-    addChildBtn.addEventListener('click', () => showElement(addChildModal))
+    addChildBtn.addEventListener('click', showAddChildModal)
   }
 
   // Wire plan action buttons
@@ -421,6 +429,17 @@ function openEditChildModal(child) {
   state.editingChild = child
   const editChildName = document.getElementById('editChildName')
   if (editChildName) editChildName.value = child.name
+
+  const currentAvatar = child.avatar || '🦊'
+  const avatarInput = document.getElementById('editChildAvatar')
+  if (avatarInput) avatarInput.value = currentAvatar
+  const preview = document.getElementById('editAvatarPreviewCircle')
+  if (preview) preview.textContent = currentAvatar
+
+  const errorEl = document.getElementById('editModalError')
+  if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden') }
+
+  renderAvatarPicker('edit', currentAvatar)
   showElement(editChildModal)
 }
 
@@ -505,6 +524,155 @@ function setupNavigation() {
   }
 }
 
+// Render emoji avatar picker into a modal (add or edit)
+function renderAvatarPicker(prefix, selectedAvatar) {
+  const selected = selectedAvatar || '🦊'
+  const categoryNames = ['animals', 'magical', 'heroes', 'space']
+
+  categoryNames.forEach(cat => {
+    const container = document.getElementById(prefix + 'AvatarPicker' + cat.charAt(0).toUpperCase() + cat.slice(1))
+    if (!container) return
+    container.innerHTML = ''
+    avatarCategories[cat].forEach(emoji => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'avatar-option-fun' + (emoji === selected ? ' selected' : '')
+      btn.textContent = emoji
+      btn.addEventListener('click', () => {
+        // Deselect all in this modal
+        document.querySelectorAll('#' + prefix + 'AvatarPickerAnimals .avatar-option-fun, #' + prefix + 'AvatarPickerMagical .avatar-option-fun, #' + prefix + 'AvatarPickerHeroes .avatar-option-fun, #' + prefix + 'AvatarPickerSpace .avatar-option-fun')
+          .forEach(b => b.classList.remove('selected'))
+        btn.classList.add('selected')
+        // Update hidden input and preview
+        const hiddenInput = document.getElementById(prefix + 'ChildAvatar')
+        const preview = document.getElementById(prefix + 'AvatarPreviewCircle')
+        if (hiddenInput) hiddenInput.value = emoji
+        if (preview) preview.textContent = emoji
+      })
+      container.appendChild(btn)
+    })
+  })
+}
+
+// Show add child modal with avatar picker
+function showAddChildModal() {
+  // Reset form
+  const form = document.getElementById('addChildForm')
+  if (form) form.reset()
+  const avatarInput = document.getElementById('addChildAvatar')
+  if (avatarInput) avatarInput.value = '🦊'
+  const preview = document.getElementById('addAvatarPreviewCircle')
+  if (preview) preview.textContent = '🦊'
+  const errorEl = document.getElementById('modalError')
+  if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden') }
+
+  renderAvatarPicker('add', '🦊')
+  showElement(addChildModal)
+
+  // Auto-focus name
+  setTimeout(() => document.getElementById('childName')?.focus(), 100)
+}
+
+// Handle add child form submission
+async function handleAddChild(e) {
+  e.preventDefault()
+  const name = document.getElementById('childName')?.value.trim()
+  const dob = document.getElementById('childDob')?.value
+  const avatar = document.getElementById('addChildAvatar')?.value || '🦊'
+  const errorEl = document.getElementById('modalError')
+  const submitBtn = e.target.querySelector('button[type="submit"]')
+
+  if (!name || !dob) {
+    if (errorEl) { errorEl.textContent = 'Please fill in both name and date of birth.'; errorEl.classList.remove('hidden') }
+    return
+  }
+
+  try {
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creating...' }
+
+    const { data, error } = await supabase
+      .from('children')
+      .insert([{ parent_user_id: state.currentUser.id, name, date_of_birth: dob, avatar }])
+      .select()
+      .single()
+
+    if (error) throw error
+
+    state.children.push(data)
+    renderChildrenList()
+    hideElement(addChildModal)
+
+    // Confetti celebration
+    createConfetti()
+  } catch (err) {
+    console.error('Error adding child:', err)
+    if (errorEl) { errorEl.textContent = err.message || 'Could not add child. Please try again.'; errorEl.classList.remove('hidden') }
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✨ Add Child!' }
+  }
+}
+
+// Handle edit child form submission
+async function handleEditChild(e) {
+  e.preventDefault()
+  if (!state.editingChild) return
+
+  const name = document.getElementById('editChildName')?.value.trim()
+  const avatar = document.getElementById('editChildAvatar')?.value || state.editingChild.avatar || '🦊'
+  const errorEl = document.getElementById('editModalError')
+  const submitBtn = e.target.querySelector('button[type="submit"]')
+
+  if (!name) {
+    if (errorEl) { errorEl.textContent = 'Please enter a name.'; errorEl.classList.remove('hidden') }
+    return
+  }
+
+  try {
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...' }
+
+    const { error } = await supabase
+      .from('children')
+      .update({ name, avatar })
+      .eq('id', state.editingChild.id)
+
+    if (error) throw error
+
+    // Update local state
+    const idx = state.children.findIndex(c => c.id === state.editingChild.id)
+    if (idx >= 0) {
+      state.children[idx].name = name
+      state.children[idx].avatar = avatar
+    }
+
+    renderChildrenList()
+    hideElement(editChildModal)
+  } catch (err) {
+    console.error('Error editing child:', err)
+    if (errorEl) { errorEl.textContent = err.message || 'Could not save changes. Please try again.'; errorEl.classList.remove('hidden') }
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✨ Save Changes' }
+  }
+}
+
+// Simple confetti celebration
+function createConfetti() {
+  const colors = ['#7c3aed', '#ec4899', '#fbbf24', '#14b8a6', '#3b82f6', '#f97316', '#22c55e']
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('div')
+    piece.style.cssText = `position:fixed;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;background:${colors[Math.floor(Math.random() * colors.length)]};border-radius:${Math.random() > 0.5 ? '50%' : '2px'};top:-10px;left:${Math.random() * 100}%;z-index:100000;pointer-events:none;animation:confettiFall ${1.5 + Math.random() * 2}s ease-out forwards;animation-delay:${Math.random() * 0.5}s;opacity:0;`
+    document.body.appendChild(piece)
+    setTimeout(() => piece.remove(), 3500)
+  }
+}
+
+// Add confetti keyframe if not present
+if (!document.getElementById('confetti-keyframes')) {
+  const style = document.createElement('style')
+  style.id = 'confetti-keyframes'
+  style.textContent = '@keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }'
+  document.head.appendChild(style)
+}
+
 // Setup modal listeners
 function setupModals() {
   // Close buttons
@@ -512,13 +680,41 @@ function setupModals() {
   document.getElementById('closeEditChildModal')?.addEventListener('click', () => hideElement(editChildModal))
   document.getElementById('closeRemoveChildModal')?.addEventListener('click', () => hideElement(removeChildModal))
   document.getElementById('closeParentPasswordModal')?.addEventListener('click', () => hideElement(parentPasswordModal))
-  
+
   // Cancel buttons
+  document.getElementById('cancelAddChild')?.addEventListener('click', () => hideElement(addChildModal))
+  document.getElementById('cancelEditChild')?.addEventListener('click', () => hideElement(editChildModal))
   document.getElementById('cancelRemoveChild')?.addEventListener('click', () => hideElement(removeChildModal))
   document.getElementById('cancelParentPassword')?.addEventListener('click', () => hideElement(parentPasswordModal))
-  
-  // Add child button
-  document.getElementById('addChildBtn')?.addEventListener('click', () => showElement(addChildModal))
+
+  // Form submissions
+  document.getElementById('addChildForm')?.addEventListener('submit', handleAddChild)
+  document.getElementById('editChildForm')?.addEventListener('submit', handleEditChild)
+
+  // Remove child button (in edit modal) -> opens confirmation
+  document.getElementById('removeChildBtn')?.addEventListener('click', () => {
+    if (!state.editingChild) return
+    const nameEl = document.getElementById('removeChildName')
+    if (nameEl) nameEl.textContent = state.editingChild.name
+    hideElement(editChildModal)
+    showElement(removeChildModal)
+  })
+
+  // Confirm remove child
+  document.getElementById('confirmRemoveChild')?.addEventListener('click', async () => {
+    if (!state.editingChild) return
+    try {
+      const { error } = await supabase.from('children').delete().eq('id', state.editingChild.id)
+      if (error) throw error
+      state.children = state.children.filter(c => c.id !== state.editingChild.id)
+      state.editingChild = null
+      renderChildrenList()
+      hideElement(removeChildModal)
+    } catch (err) {
+      console.error('Error removing child:', err)
+      alert('Could not remove child. Please try again.')
+    }
+  })
 }
 
 // ─── Make Payment Modal ───────────────────────────────────────────────────────

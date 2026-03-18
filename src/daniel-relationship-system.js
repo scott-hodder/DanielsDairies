@@ -1008,14 +1008,35 @@ class DanielModulePreview {
     
     // First module if pathwayOrder is 1 OR if it's the first in the current map view
     const isFirstModule = moduleOrder === 1 || isFirstModuleInMap;
-    
-    
-    // Check if this is the first module in a super skill — show character intro + check-in
     const superSkillId = rawMod.super_skill_id || null;
+
+    // Check periodic check-in FIRST — it takes priority over super skill intro
+    // (e.g. module 4 needs a check-in, even if it's the first module of a new super skill)
+    if (child && typeof window.showCheckinPopup === 'function') {
+      try {
+        const needsCheckin = await self.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
+        console.log('[DanielSystem] Periodic check-in check — needsCheckin:', needsCheckin);
+        if (needsCheckin) {
+          console.log('[DanielSystem] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)');
+          const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+          window.showCheckinPopup(rawMod, function() {
+            window.location.href = moduleUrl;
+          }, true);
+          return;
+        }
+      } catch (e) {
+        console.error('[Daniel] Error checking periodic check-in:', e);
+      }
+    }
+
+    // Check super skill intro — show character introduction on first module of each super skill
+    console.log('[DanielSystem] Intro check — isFirstModule:', isFirstModule, 'superSkillId:', superSkillId);
     if (isFirstModule && superSkillId && child && typeof window.showCheckinPopup === 'function') {
       const introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
       const alreadySeen = localStorage.getItem(introKey);
+      console.log('[DanielSystem] introKey:', introKey, 'alreadySeen:', alreadySeen);
       if (!alreadySeen) {
+        console.log('[DanielSystem] Showing INTRO (first module for this super skill)');
         const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
         window.showCheckinPopup(rawMod, function() {
           localStorage.setItem(introKey, 'true');
@@ -1029,21 +1050,6 @@ class DanielModulePreview {
     this.dialogueSystem.showPreActivity(module, category, async () => {
       if (child && module) {
         const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
-
-        // Check for periodic check-in (every 3 completed modules)
-        if (typeof window.showCheckinPopup === 'function') {
-          try {
-            const needsCheckin = await self.shouldTriggerCheckinForModuleCount(child.id);
-            if (needsCheckin) {
-              window.showCheckinPopup(rawMod, function() {
-                window.location.href = moduleUrl;
-              }, true); // skipIntro=true for periodic check-ins
-              return;
-            }
-          } catch (e) {
-            console.error('[Daniel] Error checking periodic check-in:', e);
-          }
-        }
 
         window.location.href = moduleUrl;
         return;
@@ -1087,52 +1093,98 @@ class DanielModulePreview {
     }
   }
   
-  // Check if a check-in is needed based on completed module count (every 3 modules)
-  async shouldTriggerCheckinForModuleCount(childId) {
-    if (!childId || !window.supabase) return false;
+  // Check if a check-in is needed for this super skill based on completed module count
+  // Check-in every 3 completed modules within the same super skill
+  async shouldTriggerCheckinForModuleCount(childId, superSkillId) {
+    console.log('[Daniel Check-in] === START === childId:', childId, 'superSkillId:', superSkillId);
+    if (!childId || !window.supabase) {
+      console.log('[Daniel Check-in] BAIL: no childId or supabase', { childId: !!childId, supabase: !!window.supabase });
+      return false;
+    }
     const CHECKIN_MODULE_INTERVAL = 3;
-    
+
     try {
-      // Count completed modules for this child
-      const { data: completedModules, error: countError } = await window.supabase
-        .from('child_modules')
-        .select('id')
-        .eq('child_id', childId)
-        .eq('is_completed', true);
-      
-      if (countError) {
-        console.error('[Daniel Check-in] Error counting completed modules:', countError);
-        return false;
+      // Count completed modules for this child IN this super skill
+      var completedCount = 0;
+      if (superSkillId) {
+        console.log('[Daniel Check-in] Counting completed modules for superSkillId:', superSkillId);
+        const { data: completedModules, error: countError } = await window.supabase
+          .from('child_modules')
+          .select('id, modules!inner(super_skill_id)')
+          .eq('child_id', childId)
+          .eq('is_completed', true)
+          .eq('modules.super_skill_id', superSkillId);
+
+        if (countError) {
+          console.error('[Daniel Check-in] Error counting completed modules:', countError);
+          return false;
+        }
+        completedCount = completedModules?.length || 0;
+        console.log('[Daniel Check-in] Per-skill completed modules:', completedCount, 'raw data:', JSON.stringify(completedModules));
+      } else {
+        console.log('[Daniel Check-in] No superSkillId — counting ALL completed modules');
+        const { data: completedModules, error: countError } = await window.supabase
+          .from('child_modules')
+          .select('id')
+          .eq('child_id', childId)
+          .eq('is_completed', true);
+
+        if (countError) return false;
+        completedCount = completedModules?.length || 0;
+        console.log('[Daniel Check-in] Global completed modules:', completedCount);
       }
-      
-      const completedCount = completedModules?.length || 0;
-      
-      // Count how many check-ins have been completed for this child
-      const { data: completedCheckins, error: checkinError } = await window.supabase
-        .from('pathway_assessments')
-        .select('id')
-        .eq('child_id', childId)
-        .in('assessment_type', ['checkin', 'check_in']);
-      
-      if (checkinError) {
-        console.error('[Daniel Check-in] Error counting completed check-ins:', checkinError);
-        return false;
+
+      // Count check-ins for this child for this super skill's pathway
+      var checkinCount = 0;
+      if (superSkillId) {
+        // Look up the super skill slug to match against pathway_assessments
+        const { data: skillData, error: slugError } = await window.supabase
+          .from('super_skills')
+          .select('slug')
+          .eq('id', superSkillId)
+          .single();
+
+        console.log('[Daniel Check-in] Super skill slug lookup — data:', JSON.stringify(skillData), 'error:', slugError);
+        const slug = skillData?.slug;
+        if (slug) {
+          const { data: completedCheckins, error: checkinError } = await window.supabase
+            .from('pathway_assessments')
+            .select('id, pathway_category, assessment_type')
+            .eq('child_id', childId)
+            .eq('pathway_category', slug)
+            .in('assessment_type', ['checkin', 'check_in']);
+
+          console.log('[Daniel Check-in] Per-skill check-ins for slug "' + slug + '":', JSON.stringify(completedCheckins), 'error:', checkinError);
+          if (!checkinError) {
+            checkinCount = completedCheckins?.length || 0;
+          }
+        }
       }
-      
-      const checkinCount = completedCheckins?.length || 0;
-      
-      // Calculate how many check-ins should have been done
-      // First check-in at module 1, then every 3 modules (1, 4, 7, 10, etc.)
-      const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL) + 1;
-      
-      console.log('[Daniel Check-in] Completed modules:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
-      
-      // Trigger check-in if we haven't done enough check-ins yet
-      if (checkinCount < expectedCheckins) {
-        console.log('[Daniel Check-in] Triggering check-in - need to catch up');
+      // If no super skill or slug lookup failed, count all check-ins
+      if (!superSkillId || checkinCount === 0) {
+        console.log('[Daniel Check-in] Falling back to count ALL check-ins (superSkillId:', superSkillId, ', checkinCount was:', checkinCount, ')');
+        const { data: allCheckins } = await window.supabase
+          .from('pathway_assessments')
+          .select('id, pathway_category, assessment_type')
+          .eq('child_id', childId)
+          .in('assessment_type', ['checkin', 'check_in']);
+        console.log('[Daniel Check-in] All check-ins:', JSON.stringify(allCheckins));
+        checkinCount = allCheckins?.length || 0;
+      }
+
+      // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
+      // Don't include the initial intro check-in (that's separate)
+      const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL);
+
+      console.log('[Daniel Check-in] === RESULT === SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
+      console.log('[Daniel Check-in] Decision: expectedCheckins > 0 ?', expectedCheckins > 0, '&& checkinCount < expectedCheckins ?', checkinCount < expectedCheckins);
+
+      if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
+        console.log('[Daniel Check-in] >>> TRIGGERING check-in');
         return true;
       }
-      
+
+      console.log('[Daniel Check-in] >>> NOT triggering check-in');
       return false;
     } catch (e) {
       console.error('[Daniel Check-in] Error checking checkin status:', e);

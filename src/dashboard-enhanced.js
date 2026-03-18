@@ -547,6 +547,7 @@ class AdventureMapV4 {
     css.push('.map-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }');
     css.push('.map-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid rgba(64,88,120,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }');
     css.push('.map-btn:hover { background: #fff; transform: scale(1.08); }');
+    css.push('@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }');
     css.push('.map-marker { position: absolute; width: 46px; height: 46px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; background-repeat: no-repeat; background-position: center; background-size: contain; }');
     css.push('.map-marker.start { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%23ffffff\' d=\'M32 6c-9 0-16 7-16 16 0 12 16 32 16 32s16-20 16-32c0-9-7-16-16-16z\'/%3E%3Cpath fill=\'%234f6b8f\' d=\'M32 10c-6.6 0-12 5.4-12 12 0 8.8 12 26 12 26s12-17.2 12-26c0-6.6-5.4-12-12-12z\'/%3E%3Ccircle cx=\'32\' cy=\'22\' r=\'6\' fill=\'%23f8fafc\'/%3E%3C/svg%3E"); animation: markerPop 0.5s ease-out; }');
     css.push('.map-marker.finish { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%2340597a\' d=\'M16 10h4v44h-4z\'/%3E%3Cpath fill=\'%23ffffff\' d=\'M20 14l28 6-12 6 12 6-28 6z\'/%3E%3Cpath fill=\'%23e2e8f0\' d=\'M20 14l20 4-10 5 10 5-20 4z\'/%3E%3C/svg%3E"); animation: flagWave 1.5s ease-in-out infinite; }');
@@ -1334,6 +1335,7 @@ class AdventureMapV4 {
         '</div>' +
         '<div class="scroll-hint" id="scrollHint"><span class="scroll-hint-icon">👆</span><span>Drag to explore the map</span></div>' +
         '<div class="map-controls">' +
+        '<button class="map-btn" id="btnRefreshMap" title="Refresh map">🔄</button>' +
         '<button class="map-btn" id="btnCenter" title="Center on current">📍</button>' +
         '<button class="map-btn" id="btnTop" title="Go to start">⬆️</button>' +
         '</div>' +
@@ -2105,8 +2107,10 @@ class AdventureMapV4 {
 
     var btnCenter = document.getElementById('btnCenter');
     var btnTop = document.getElementById('btnTop');
+    var btnRefreshMap = document.getElementById('btnRefreshMap');
     if (btnCenter) btnCenter.addEventListener('click', function() { self.centerOnCurrentModule(); });
     if (btnTop) btnTop.addEventListener('click', function() { self.scrollToTop(); });
+    if (btnRefreshMap) btnRefreshMap.addEventListener('click', function() { self.refreshMap(); });
 
     // Add window resize listener
     window.addEventListener('resize', this.boundHandlers.resize);
@@ -2187,6 +2191,20 @@ class AdventureMapV4 {
   endDrag() {
     this.isDragging = false;
     if (this.viewport) this.viewport.classList.remove('dragging');
+  }
+
+  refreshMap() {
+    var self = this;
+    var btn = document.getElementById('btnRefreshMap');
+    if (btn) {
+      btn.style.animation = 'spin 0.5s ease';
+      setTimeout(function() { btn.style.animation = ''; }, 500);
+    }
+    // Re-fetch data and re-render
+    this.translateX = 0;
+    this.translateY = 0;
+    this.render();
+    console.log('[AdventureMap] Map refreshed manually');
   }
 
   centerOnCurrentModule() {
@@ -2505,27 +2523,32 @@ class EnhancedDashboard {
     var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '');
 
     try {
-      // Check 1: First module in a super skill → show character intro + checkin
       var superSkillId = mod.super_skill_id || null;
-      if (superSkillId && typeof window.showCheckinPopup === 'function') {
-        var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
-        var alreadySeen = localStorage.getItem(introKey);
-        if (!alreadySeen) {
+
+      // Check 1: Periodic check-in (every 3 modules) — takes priority over intro
+      var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
+      console.log('[AdventureMap.startModule] Check 1 (periodic) — needsCheckin:', needsCheckin);
+      if (needsCheckin) {
+        if (typeof window.showCheckinPopup === 'function') {
           var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
+          console.log('[AdventureMap.startModule] Calling showCheckinPopup with skipIntro=true');
           window.showCheckinPopup(popupModule, function() {
-            localStorage.setItem(introKey, 'true');
             window.location.href = moduleUrl;
-          });
+          }, true);
           return;
         }
       }
 
-      // Check 2: Periodic check-in every 3 completed modules
-      var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id);
-      if (needsCheckin) {
-        if (typeof window.showCheckinPopup === 'function') {
+      // Check 2: First module in a super skill → show character intro
+      console.log('[AdventureMap.startModule] Check 2 (intro) — superSkillId:', superSkillId, 'childId:', child.id);
+      if (superSkillId && typeof window.showCheckinPopup === 'function') {
+        var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
+        var alreadySeen = localStorage.getItem(introKey);
+        console.log('[AdventureMap.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen);
+        if (!alreadySeen) {
           var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
           window.showCheckinPopup(popupModule, function() {
+            localStorage.setItem(introKey, 'true');
             window.location.href = moduleUrl;
           });
           return;
@@ -2539,51 +2562,81 @@ class EnhancedDashboard {
   }
   
   // Check if a check-in is needed based on completed module count (every 3 modules)
-  async shouldTriggerCheckinForModuleCount(childId) {
+  async shouldTriggerCheckinForModuleCount(childId, superSkillId) {
     if (!childId || !window.supabase) return false;
     var CHECKIN_MODULE_INTERVAL = 3;
-    
+
     try {
-      // Count completed modules for this child
-      var completedResult = await window.supabase
-        .from('child_modules')
-        .select('id')
-        .eq('child_id', childId)
-        .eq('is_completed', true);
-      
-      if (completedResult.error) {
-        console.error('[Check-in] Error counting completed modules:', completedResult.error);
-        return false;
+      // Count completed modules for this child IN this super skill
+      var completedCount = 0;
+      if (superSkillId) {
+        var completedResult = await window.supabase
+          .from('child_modules')
+          .select('id, modules!inner(super_skill_id)')
+          .eq('child_id', childId)
+          .eq('is_completed', true)
+          .eq('modules.super_skill_id', superSkillId);
+
+        if (completedResult.error) {
+          console.error('[Check-in] Error counting completed modules:', completedResult.error);
+          return false;
+        }
+        completedCount = (completedResult.data && completedResult.data.length) || 0;
+      } else {
+        var completedResult = await window.supabase
+          .from('child_modules')
+          .select('id')
+          .eq('child_id', childId)
+          .eq('is_completed', true);
+
+        if (completedResult.error) return false;
+        completedCount = (completedResult.data && completedResult.data.length) || 0;
       }
-      
-      var completedCount = (completedResult.data && completedResult.data.length) || 0;
-      
-      // Count how many check-ins have been completed for this child
-      var checkinsResult = await window.supabase
-        .from('pathway_assessments')
-        .select('id')
-        .eq('child_id', childId)
-        .in('assessment_type', ['checkin', 'check_in']);
-      
-      if (checkinsResult.error) {
-        console.error('[Check-in] Error counting completed check-ins:', checkinsResult.error);
-        return false;
+
+      // Count check-ins for this child for this super skill's pathway
+      var checkinCount = 0;
+      if (superSkillId) {
+        var skillResult = await window.supabase
+          .from('super_skills')
+          .select('slug')
+          .eq('id', superSkillId)
+          .single();
+
+        var slug = skillResult.data && skillResult.data.slug;
+        if (slug) {
+          var checkinResult = await window.supabase
+            .from('pathway_assessments')
+            .select('id')
+            .eq('child_id', childId)
+            .eq('pathway_category', slug)
+            .in('assessment_type', ['checkin', 'check_in']);
+
+          if (!checkinResult.error) {
+            checkinCount = (checkinResult.data && checkinResult.data.length) || 0;
+          }
+        }
       }
-      
-      var checkinCount = (checkinsResult.data && checkinsResult.data.length) || 0;
-      
-      // Calculate how many check-ins should have been done
-      // First check-in at module 1, then every 3 modules (1, 4, 7, 10, etc.)
-      var expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL) + 1;
-      
-      console.log('[Check-in] Completed modules:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
-      
-      // Trigger check-in if we haven't done enough check-ins yet
-      if (checkinCount < expectedCheckins) {
-        console.log('[Check-in] Triggering check-in - need to catch up');
+      // If no super skill or slug lookup failed, count all check-ins
+      if (!superSkillId || checkinCount === 0) {
+        var allCheckinsResult = await window.supabase
+          .from('pathway_assessments')
+          .select('id')
+          .eq('child_id', childId)
+          .in('assessment_type', ['checkin', 'check_in']);
+        checkinCount = (allCheckinsResult.data && allCheckinsResult.data.length) || 0;
+      }
+
+      // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
+      // Don't include the initial intro check-in (that's separate)
+      var expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL);
+
+      console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
+
+      if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
+        console.log('[Check-in] Triggering check-in — need to catch up');
         return true;
       }
-      
+
       return false;
     } catch (e) {
       console.error('Error checking checkin status:', e);

@@ -2899,56 +2899,81 @@ function createModuleCard(module, options = {}) {
   return card
 }
 
-// Check-in frequency: once per 3 modules completed
-const CHECKIN_MODULE_INTERVAL = 3
-
-// Check if a check-in is needed based on completed module count
-// Returns true if check-in should be triggered (every 3 modules, starting at module 1)
-async function shouldTriggerCheckinForModuleCount(childId) {
+// Check if a check-in is needed based on completed module count per super skill
+async function shouldTriggerCheckinForModuleCount(childId, superSkillId) {
   if (!childId) return false
+  const CHECKIN_MODULE_INTERVAL = 3
   try {
-    // Count completed modules for this child
-    const { data: completedModules, error: countError } = await supabase
-      .from('child_modules')
-      .select('id')
-      .eq('child_id', childId)
-      .eq('is_completed', true)
-    
-    if (countError) {
-      console.error('[Check-in] Error counting completed modules:', countError)
-      return false
+    // Count completed modules for this child IN this super skill
+    let completedCount = 0
+    if (superSkillId) {
+      const { data: completedModules, error: countError } = await supabase
+        .from('child_modules')
+        .select('id, modules!inner(super_skill_id)')
+        .eq('child_id', childId)
+        .eq('is_completed', true)
+        .eq('modules.super_skill_id', superSkillId)
+
+      if (countError) {
+        console.error('[Check-in] Error counting completed modules:', countError)
+        return false
+      }
+      completedCount = completedModules?.length || 0
+    } else {
+      const { data: completedModules, error: countError } = await supabase
+        .from('child_modules')
+        .select('id')
+        .eq('child_id', childId)
+        .eq('is_completed', true)
+
+      if (countError) return false
+      completedCount = completedModules?.length || 0
     }
-    
-    const completedCount = completedModules?.length || 0
-    
-    // Count how many check-ins have been completed for this child
-    const { data: completedCheckins, error: checkinError } = await supabase
-      .from('pathway_assessments')
-      .select('id')
-      .eq('child_id', childId)
-      .in('assessment_type', ['checkin', 'check_in'])
-    
-    if (checkinError) {
-      console.error('[Check-in] Error counting completed check-ins:', checkinError)
-      return false
+
+    // Count check-ins for this child for this super skill's pathway
+    let checkinCount = 0
+    if (superSkillId) {
+      const { data: skillData } = await supabase
+        .from('super_skills')
+        .select('slug')
+        .eq('id', superSkillId)
+        .single()
+
+      const slug = skillData?.slug
+      if (slug) {
+        const { data: completedCheckins, error: checkinError } = await supabase
+          .from('pathway_assessments')
+          .select('id')
+          .eq('child_id', childId)
+          .eq('pathway_category', slug)
+          .in('assessment_type', ['checkin', 'check_in'])
+
+        if (!checkinError) {
+          checkinCount = completedCheckins?.length || 0
+        }
+      }
     }
-    
-    const checkinCount = completedCheckins?.length || 0
-    
-    // Calculate how many check-ins should have been done
-    // First check-in at module 1, then every 3 modules (1, 4, 7, 10, etc.)
-    // Formula: expectedCheckins = floor((completedCount) / 3) + 1 for first module
-    // Simplified: trigger if completedCount is 0, 3, 6, 9... AND we haven't done that check-in yet
-    const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL) + 1
-    
-    console.log('[Check-in] Completed modules:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins)
-    
-    // Trigger check-in if we haven't done enough check-ins yet
-    if (checkinCount < expectedCheckins) {
-      console.log('[Check-in] Triggering check-in - need to catch up')
+    // If no super skill or slug lookup failed, count all check-ins
+    if (!superSkillId || checkinCount === 0) {
+      const { data: allCheckins } = await supabase
+        .from('pathway_assessments')
+        .select('id')
+        .eq('child_id', childId)
+        .in('assessment_type', ['checkin', 'check_in'])
+      checkinCount = allCheckins?.length || 0
+    }
+
+    // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
+    // Don't include the initial intro check-in (that's separate)
+    const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL)
+
+    console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins)
+
+    if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
+      console.log('[Check-in] Triggering check-in — need to catch up')
       return true
     }
-    
+
     return false
   } catch (e) {
     console.error('Error checking checkin status:', e)
@@ -3017,6 +3042,90 @@ async function getSuperSkillInfo(module) {
 }
 
 // Show intro screen with Daniel + character before check-in
+function showEncouragementScreen(superSkill, onContinue, onClose) {
+  const character = superSkill?.characters || {}
+  const characterName = character.name || superSkill?.character_name || 'Lenny'
+  const characterImage = character.image_url || superSkill?.character_image_url || '/images/characters/lenny.png'
+  const domain = superSkill?.domain || superSkill?.name || 'your skills'
+
+  // Pick a random encouragement message
+  const encouragements = [
+    { title: 'Amazing Progress!', emoji: '🌟', message: `Wow, you're doing brilliantly! ${characterName} and Daniel are so proud of how much you've learned about <strong>${domain}</strong>!` },
+    { title: 'You\'re on Fire!', emoji: '🔥', message: `Look at you go! You've been working so hard on <strong>${domain}</strong> — ${characterName} can't believe how far you've come!` },
+    { title: 'Super Star!', emoji: '⭐', message: `${characterName} says you're a true superstar! You've learned so much about <strong>${domain}</strong> already!` },
+    { title: 'Keep It Up!', emoji: '🚀', message: `You're absolutely smashing it! Daniel and ${characterName} love adventuring with you through <strong>${domain}</strong>!` }
+  ]
+  const pick = encouragements[Math.floor(Math.random() * encouragements.length)]
+
+  const overlay = document.createElement('div')
+  overlay.className = 'intro-screen-overlay'
+  overlay.id = 'encouragementScreenOverlay'
+  overlay.innerHTML = `
+    <div class="intro-screen-modal">
+      <button class="intro-screen-close" id="closeEncouragementBtn" aria-label="Close">\u2715</button>
+
+      <div class="intro-screen-characters">
+        <div class="intro-character daniel">
+          <img src="/images/characters/DanielTheDog.webp" alt="Daniel" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">🐕</div>
+        </div>
+        <div class="intro-character friend">
+          <img src="${characterImage}" alt="${characterName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">${superSkill?.emoji || '🐕'}</div>
+        </div>
+      </div>
+
+      <div class="intro-screen-content">
+        <h2 class="intro-screen-title">${pick.emoji} ${pick.title}</h2>
+        <p class="intro-screen-text">${pick.message}</p>
+        <p class="intro-screen-text intro-checkin-prompt">
+          Time for a quick check-in so we can see how you're feeling and keep the adventure going! 💫
+        </p>
+      </div>
+
+      <button class="intro-screen-btn" id="continueEncouragementBtn">
+        Let's Check In! →
+      </button>
+    </div>
+  `
+
+  // Reuse existing intro screen styles (already injected by showIntroScreen)
+  if (!document.getElementById('introScreenStyles')) {
+    const styles = document.createElement('style')
+    styles.id = 'introScreenStyles'
+    styles.textContent = `
+      .intro-screen-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000; animation: fadeIn 0.3s ease; }
+      .intro-screen-modal { background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); border-radius: 24px; padding: 32px; max-width: 480px; width: 90%; text-align: center; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.4s ease; }
+      .intro-screen-close { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.1); border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+      .intro-screen-close:hover { background: rgba(0,0,0,0.2); }
+      .intro-screen-characters { display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; }
+      .intro-character { width: 140px; height: 140px; border-radius: 50%; overflow: visible; background: white; box-shadow: 0 8px 20px rgba(0,0,0,0.15); display: flex; align-items: flex-end; justify-content: center; position: relative; }
+      .intro-character img { width: 130px; height: 130px; object-fit: contain; object-position: center bottom; }
+      .intro-character-fallback { font-size: 64px; display: flex; align-items: center; justify-content: center; }
+      .intro-screen-title { font-size: 28px; font-weight: 700; color: #1a365d; margin-bottom: 16px; }
+      .intro-screen-text { font-size: 16px; line-height: 1.6; color: #4a5568; margin-bottom: 12px; }
+      .intro-checkin-prompt { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 12px 16px; border-radius: 12px; margin-top: 16px; font-weight: 500; }
+      .intro-screen-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; padding: 16px 32px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 20px; transition: transform 0.2s, box-shadow 0.2s; }
+      .intro-screen-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    `
+    document.head.appendChild(styles)
+  }
+
+  document.body.appendChild(overlay)
+
+  document.getElementById('continueEncouragementBtn').addEventListener('click', () => {
+    overlay.remove()
+    onContinue()
+  })
+
+  document.getElementById('closeEncouragementBtn').addEventListener('click', () => {
+    overlay.remove()
+    onClose()
+  })
+}
+
 function showIntroScreen(superSkill, onContinue, onClose) {
   
   // Get character info
@@ -3207,6 +3316,7 @@ function showIntroScreen(superSkill, onContinue, onClose) {
 
 window.showCheckinPopup = showCheckinPopup
 async function showCheckinPopup(module, onComplete, skipIntro = false) {
+  console.log('[showCheckinPopup] Called — skipIntro:', skipIntro, 'module:', module?.title || module?.id || module?.code, 'caller:', new Error().stack?.split('\n')[2]?.trim())
   // Determine the pathway/super skill for the psychometric assessment
   // Priority: module's super_skill_id → current adventure map category → 'general'
   let pathwayOrSuperSkill = 'general'
@@ -3279,6 +3389,7 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
   }
 
   // Show intro screen first (unless skipped)
+  console.log('[showCheckinPopup] Decision — skipIntro:', skipIntro, 'hasProgressTracking:', hasProgressTracking)
   if (!skipIntro) {
     // Create fallback super skill if none found
     const introSuperSkill = superSkill || {
@@ -3299,7 +3410,12 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
       () => {}             // onClose - return to dashboard
     )
   } else if (hasProgressTracking) {
-    showActualCheckin()
+    // Periodic check-in — show encouragement screen instead of character intro
+    showEncouragementScreen(
+      superSkill,
+      showActualCheckin,
+      () => {}
+    )
   } else {
     onComplete()
   }
@@ -3307,15 +3423,36 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
 
 // Start module (with check-in intercept every 3 modules completed)
 async function startModule(module) {
+  console.log('[dashboardPage.startModule] Called — module:', module?.title || module?.id)
   try {
     if (state.selectedChild && state.currentUser) {
-      // Check if we need a check-in based on completed module count
-      const needsCheckin = await shouldTriggerCheckinForModuleCount(state.selectedChild.id)
+      const childId = state.selectedChild.id
+
+      const superSkillId = module.super_skill_id || null
+
+      // Check 1: Periodic check-in (every 3 modules) — takes priority over intro
+      const needsCheckin = await shouldTriggerCheckinForModuleCount(childId, superSkillId)
+      console.log('[dashboardPage.startModule] Check 1 (periodic) — needsCheckin:', needsCheckin)
       if (needsCheckin) {
-        // Show check-in popup - on completion, navigate to module
-        // On close/skip, stay on dashboard (don't navigate)
-        showCheckinPopup(module, () => navigateToModule(module))
+        console.log('[dashboardPage.startModule] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)')
+        showCheckinPopup(module, () => navigateToModule(module), true)
         return
+      }
+
+      // Check 2: First module in a super skill → show character intro
+      console.log('[dashboardPage.startModule] Check 2 (intro) — superSkillId:', superSkillId)
+      if (superSkillId) {
+        const introKey = 'superSkillIntroSeen_' + childId + '_' + superSkillId
+        const alreadySeen = localStorage.getItem(introKey)
+        console.log('[dashboardPage.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen)
+        if (!alreadySeen) {
+          console.log('[dashboardPage.startModule] Showing INTRO (first module for this super skill)')
+          showCheckinPopup(module, () => {
+            localStorage.setItem(introKey, 'true')
+            navigateToModule(module)
+          }, false)
+          return
+        }
       }
     }
     navigateToModule(module)

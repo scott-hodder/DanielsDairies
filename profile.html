@@ -104,25 +104,55 @@
     <!-- Add Child Modal -->
     <div id="addChildModal" class="modal-overlay hidden">
         <div class="modal">
-            <div class="modal-header">
-                <h2>Add a Child</h2>
-                <button class="modal-close" id="closeAddChildModal">&times;</button>
+            <div class="modal-header-fun">
+                <div class="header-sparkles">
+                    <span class="header-sparkle">✨</span>
+                    <span class="header-sparkle">⭐</span>
+                    <span class="header-sparkle">💫</span>
+                    <span class="header-sparkle">🌟</span>
+                </div>
+                <h2 class="modal-title-fun">Add New Explorer!</h2>
+                <p class="modal-subtitle-fun">Let's create a profile!</p>
+                <div class="avatar-preview-wrapper">
+                    <div class="avatar-preview-circle" id="addAvatarPreviewCircle">🦊</div>
+                </div>
+                <button class="modal-close" id="closeAddChildModal" style="position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
             </div>
-            <form id="addChildForm">
-                <div class="form-group">
-                    <label for="childName">Child's Name</label>
-                    <input type="text" id="childName" name="childName" required placeholder="Enter name">
+            <form id="addChildForm" class="modal-body-fun">
+                <div class="form-group-fun">
+                    <label class="form-label-fun"><span class="form-label-icon">📝</span> What's Their Name?</label>
+                    <input type="text" id="childName" name="childName" class="form-input-fun" required placeholder="e.g. Oliver, Mia...">
                 </div>
-                <div class="form-group">
-                    <label for="childDob">Date of Birth</label>
-                    <input type="date" id="childDob" name="childDob" required>
+                <div class="form-group-fun">
+                    <label class="form-label-fun"><span class="form-label-icon">🎂</span> Date of Birth</label>
+                    <input type="date" id="childDob" name="childDob" class="form-input-fun" required>
                 </div>
-                <div class="form-group">
-                    <label>Choose an Avatar</label>
-                    <div class="avatar-picker" id="avatarPicker"></div>
+                <div class="avatar-section-fun">
+                    <div class="avatar-section-title">🎨 Pick Your Avatar</div>
+                    <div class="avatar-section-subtitle">Choose a character that represents you!</div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🐾 Animals</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerAnimals"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🔮 Magical</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerMagical"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🦸 Heroes</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerHeroes"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🚀 Space</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerSpace"></div>
+                    </div>
                 </div>
+                <input type="hidden" id="addChildAvatar" value="🦊">
                 <p id="modalError" class="error-message hidden"></p>
-                <button type="submit" class="btn-primary">Add Child</button>
+                <div class="modal-buttons-fun">
+                    <button type="button" class="btn-fun btn-secondary-fun" id="cancelAddChild">Maybe Later</button>
+                    <button type="submit" class="btn-fun btn-primary-fun">✨ Add Child!</button>
+                </div>
             </form>
         </div>
     </div>
@@ -130,24 +160,53 @@
     <!-- Edit Child Modal -->
     <div id="editChildModal" class="modal-overlay hidden">
         <div class="modal">
-            <div class="modal-header">
-                <h2>Edit Child</h2>
-                <button class="modal-close" id="closeEditChildModal">&times;</button>
+            <div class="modal-header-fun">
+                <div class="header-sparkles">
+                    <span class="header-sparkle">✨</span>
+                    <span class="header-sparkle">⭐</span>
+                    <span class="header-sparkle">💫</span>
+                    <span class="header-sparkle">🌟</span>
+                </div>
+                <h2 class="modal-title-fun">Edit Explorer</h2>
+                <p class="modal-subtitle-fun">Update your profile!</p>
+                <div class="avatar-preview-wrapper">
+                    <div class="avatar-preview-circle" id="editAvatarPreviewCircle">🦊</div>
+                </div>
+                <button class="modal-close" id="closeEditChildModal" style="position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
             </div>
-            <form id="editChildForm">
-                <div class="form-group">
-                    <label for="editChildName">Child's Name</label>
-                    <input type="text" id="editChildName" name="editChildName" required>
+            <form id="editChildForm" class="modal-body-fun">
+                <div class="form-group-fun">
+                    <label class="form-label-fun"><span class="form-label-icon">📝</span> Name</label>
+                    <input type="text" id="editChildName" name="editChildName" class="form-input-fun" required>
                 </div>
-                <div class="form-group">
-                    <label>Choose an Avatar</label>
-                    <div class="avatar-picker" id="editAvatarPicker"></div>
+                <div class="avatar-section-fun">
+                    <div class="avatar-section-title">🎨 Pick Your Avatar</div>
+                    <div class="avatar-section-subtitle">Choose a character that represents you!</div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🐾 Animals</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerAnimals"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🔮 Magical</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerMagical"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🦸 Heroes</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerHeroes"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🚀 Space</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerSpace"></div>
+                    </div>
                 </div>
+                <input type="hidden" id="editChildAvatar" value="🦊">
                 <p id="editModalError" class="error-message hidden"></p>
-                <div class="modal-actions">
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                    <button type="button" class="btn-secondary" id="forgetPasswordBtn">Reset Password</button>
-                    <button type="button" class="btn-danger" id="removeChildBtn">Remove Child</button>
+                <div class="modal-buttons-fun">
+                    <button type="button" class="btn-fun btn-secondary-fun" id="cancelEditChild">Cancel</button>
+                    <button type="submit" class="btn-fun btn-primary-fun">✨ Save Changes</button>
+                </div>
+                <div class="remove-section-fun">
+                    <button type="button" class="btn-fun" id="removeChildBtn" style="color: #ef4444; font-size: 13px; width: auto; margin: 0 auto;">🗑️ Remove Child</button>
                 </div>
             </form>
         </div>
