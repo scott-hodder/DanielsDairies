@@ -19,7 +19,7 @@ function setCacheEntry(key, value, ttlMs) {
   return value
 }
 
-function invalidateCacheByPrefix(prefix) {
+export function invalidateCacheByPrefix(prefix) {
   Array.from(queryCache.keys()).forEach((key) => {
     if (key.startsWith(prefix)) queryCache.delete(key)
   })

@@ -419,36 +419,45 @@ class AdventureMapV4 {
     if (document.getElementById('adventure-map-v4-styles')) return;
     
     var css = [];
-    css.push('.adventure-map-section { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid rgba(64,88,120,0.08); margin-top: 20px; overflow: visible; position: relative; }');
+    css.push('.adventure-map-section { background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(245,250,255,0.4) 30%, rgba(240,248,255,0.3) 100%); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 24px; padding: 0; box-shadow: 0 8px 32px rgba(64,88,120,0.08), 0 2px 8px rgba(64,88,120,0.04), inset 0 1px 0 rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5); margin-top: 0; overflow: hidden; position: relative; }');
     css.push('.adventure-map-header-fixed { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; text-align: center; }');
-    css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; }');
-    css.push('.adventure-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 26px; margin: 0; color: #405878; display: flex; align-items: center; gap: 10px; }');
-    css.push('.adventure-subtitle { margin: 0; color: #6d86a8; font-size: 14px; }');
-    css.push('.category-filter-container { display: flex; align-items: center; gap: 12px; margin: 12px 0 16px; padding: 0 8px; flex-wrap: wrap; justify-content: center; }');
-    css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 600; color: #405878; }');
-    css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 500; padding: 10px 36px 10px 16px; border-radius: 12px; border: 2px solid rgba(64,88,120,0.15); background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%); color: #405878; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23405878\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 200px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }');
-    css.push('.category-filter-select:hover { border-color: rgba(64,88,120,0.25); }');
-    css.push('.category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }');
-    css.push('.cycle-badge { background: #ffffff; color: #405878; border: 2px solid rgba(64,88,120,0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }');
-    css.push('.town-progress-cue { margin: 0 8px 16px; border-radius: 16px; border: 2px solid rgba(64,88,120,0.12); background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.98) 100%); box-shadow: 0 8px 20px rgba(15,23,42,0.08); overflow: hidden; }');
-    css.push('.town-progress-cue-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 10px; border-bottom: 1px solid rgba(64,88,120,0.1); }');
-    css.push('.town-progress-cue-title { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #405878; display: flex; align-items: center; gap: 8px; }');
-    css.push('.town-progress-cue-stage { font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 600; color: #405878; background: rgba(64,88,120,0.08); border-radius: 999px; padding: 5px 10px; }');
-    css.push('.town-progress-cue-copy { padding: 10px 16px 14px; font-size: 13px; line-height: 1.45; color: #4b5f7a; }');
-    css.push('.town-progress-cue-strong { color: #2f4664; font-weight: 700; }');
-    css.push('.town-progress-cue-timeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }');
-    css.push('.town-progress-cue-step { border-radius: 10px; border: 1px solid rgba(64,88,120,0.12); background: #fff; padding: 8px 6px; text-align: center; font-size: 11px; color: #6d86a8; }');
-    css.push('.town-progress-cue-step strong { display: block; font-family: "Fredoka", sans-serif; color: #405878; font-size: 12px; margin-top: 2px; }');
-    css.push('.town-progress-cue-step.active { border-color: rgba(47, 108, 197, 0.45); background: rgba(59,130,246,0.08); color: #2f4664; }');
-    css.push('.town-progress-cue-step.done { border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.1); color: #2f6e4a; }');
-    css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 20px; overflow: hidden; cursor: grab; border: 4px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 120px rgba(135,206,235,0.25), 0 12px 28px rgba(15, 23, 42, 0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%); }');
+    css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 24px 14px; position: relative; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%); }');
+    css.push('.adventure-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
+    css.push('.adventure-subtitle { margin: 2px 0 0; color: #64748B; font-size: 14px; font-weight: 500; }');
+    css.push('.category-filter-container { display: flex; align-items: center; gap: 10px; margin: 0 20px 10px; padding: 10px 20px; flex-wrap: wrap; justify-content: center; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.6); }');
+    css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; color: #64748B; }');
+    css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 600; padding: 10px 36px 10px 16px; border-radius: 14px; border: 1.5px solid rgba(64,88,120,0.12); background: rgba(255,255,255,0.85); color: #1E293B; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748B\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 180px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }');
+    css.push('.category-filter-select:hover { border-color: rgba(99,102,241,0.35); box-shadow: 0 2px 8px rgba(99,102,241,0.08); }');
+    css.push('.category-filter-select:focus { outline: none; border-color: rgba(99,102,241,0.4); box-shadow: 0 0 0 3px rgba(99,102,241,0.08); }');
+    css.push('.category-badge { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); letter-spacing: 0.2px; }');
+    css.push('.cycle-badge { background: rgba(255,255,255,0.85); color: #405878; border: 1.5px solid rgba(64,88,120,0.1); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }');
+    css.push('.town-progress-cue { margin: 0 20px 12px; border-radius: 18px; border: none; background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(248,250,255,0.5) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 2px 12px rgba(64,88,120,0.06), inset 0 1px 0 rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.55); overflow: hidden; }');
+    css.push('.town-progress-cue-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px 8px; }');
+    css.push('.town-progress-cue-title { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px; }');
+    css.push('.town-progress-cue-stage { font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; color: #6366F1; background: rgba(99,102,241,0.1); border-radius: 999px; padding: 5px 12px; }');
+    css.push('.town-progress-cue-copy { padding: 0 20px 14px; font-size: 12px; line-height: 1.5; color: #64748B; }');
+    css.push('.town-progress-cue-strong { color: #1E293B; font-weight: 700; }');
+    css.push('.town-progress-cue-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 10px; position: relative; }');
+    css.push('.town-progress-cue-timeline::before { content: ""; position: absolute; top: 24px; left: 12%; right: 12%; height: 4px; background: #E2E8F0; border-radius: 2px; z-index: 0; }');
+    css.push('.town-progress-cue-step { text-align: center; padding: 10px 8px; position: relative; z-index: 1; transition: all 0.3s ease; border-radius: 14px; }');
+    css.push('.town-progress-cue-step-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #F1F5F9; border: 3px solid #E2E8F0; transition: all 0.3s ease; }');
+    css.push('.town-progress-cue-step strong { display: block; font-family: "Fredoka", sans-serif; color: #94A3B8; font-size: 11px; margin-top: 1px; font-weight: 600; }');
+    css.push('.town-progress-cue-step small { font-size: 10px; color: #CBD5E1; font-weight: 500; }');
+    css.push('.town-progress-cue-step.active { background: rgba(99,102,241,0.06); }');
+    css.push('.town-progress-cue-step.active .town-progress-cue-step-dot { background: linear-gradient(135deg, #6366F1, #818CF8); border-color: #6366F1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15), 0 3px 8px rgba(99,102,241,0.25); }');
+    css.push('.town-progress-cue-step.active strong { color: #4338CA; font-weight: 700; }');
+    css.push('.town-progress-cue-step.active small { color: #6366F1; font-weight: 600; }');
+    css.push('.town-progress-cue-step.done .town-progress-cue-step-dot { background: linear-gradient(135deg, #22C55E, #4ADE80); border-color: #22C55E; box-shadow: 0 2px 6px rgba(34,197,94,0.25); }');
+    css.push('.town-progress-cue-step.done strong { color: #16A34A; font-weight: 700; }');
+    css.push('.town-progress-cue-step.done small { color: #22C55E; }');
+    css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 0 0 22px 22px; overflow: hidden; cursor: grab; border: none; border-top: 1px solid rgba(64,88,120,0.06); box-shadow: inset 0 0 80px rgba(135,206,235,0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%); }');
     css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
     css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');
     css.push('.adventure-viewport[data-zone="2"] { background-image: url("/images/zones/zone2.png"); }');
     css.push('.adventure-viewport[data-zone="3"] { background-image: url("/images/zones/zone3.png"); }');
     css.push('.adventure-viewport[data-zone="4"] { background-image: url("/images/zones/zone4.png"); }');
     css.push('.adventure-viewport[data-zone] .map-bg-stack { opacity: 0; }');
-    css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 20px; pointer-events: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), inset 0 -40px 60px rgba(15, 23, 42, 0.08); }');
+    css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 0 0 22px 22px; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), inset 0 -30px 50px rgba(15, 23, 42, 0.06); }');
     css.push('.adventure-viewport:active, .adventure-viewport.dragging { cursor: grabbing; }');
     css.push('.map-bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }');
     css.push('.map-bg-sky { transition: background 0.8s ease; }');
@@ -642,6 +651,20 @@ class AdventureMapV4 {
     getDashboardData();
     this.buildModuleList();
     this.filterModulesByCategory();
+
+    console.log('[AdventureMap] render() — allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
+
+    // If filter produced no results but modules exist, fall back to first available category
+    if (this.modules.length === 0 && this.allModules.length > 0) {
+      console.log('[AdventureMap] Category "' + this.currentCategory + '" has no modules — falling back');
+      var fallbackCategories = this.getAvailableCategories();
+      if (fallbackCategories.length > 0) {
+        this.currentCategory = fallbackCategories[0];
+        this.currentCycleId = null;
+        this.filterModulesByCategory();
+        console.log('[AdventureMap] Fell back to category:', this.currentCategory, 'modules:', this.modules.length);
+      }
+    }
 
     // Run DOM updates directly — callers already handle framing
     this.createMapHTML();
@@ -1256,14 +1279,20 @@ class AdventureMapV4 {
       return '<option value="' + cycle.id + '"' + selected + '>' + label + completedText + '</option>';
     }).join('');
     var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
+    var remainingCount = numModules - completedCount;
+    var progressMsg = completedCount === 0
+      ? 'Your journey begins here — pick your first module to start exploring!'
+      : remainingCount > 0
+        ? completedCount + ' of ' + numModules + ' modules completed — ' + remainingCount + ' more to go!'
+        : 'All ' + numModules + ' modules completed — amazing work! 🎉';
     var html = '<div class="adventure-header">' +
       '<h2 class="adventure-title">🗺️ Your Adventure Map</h2>' +
-      '<p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>' +
+      '<p class="adventure-subtitle">' + progressMsg + '</p>' +
       '</div>' +
       '<div class="category-filter-container">' +
-      '<label class="category-filter-label">Choose your skill:</label>' +
+      '<label class="category-filter-label">Skill:</label>' +
       '<select class="category-filter-select" id="categoryFilter">' + categoryOptions + '</select>' +
-      (availableCycles.length > 0 ? '<label class="category-filter-label">Choose your cycle:</label>' +
+      (availableCycles.length > 0 ? '<label class="category-filter-label" style="margin-left: 6px;">Cycle:</label>' +
       '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
       '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
       '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + this.modules.length + ' module' + (this.modules.length !== 1 ? 's' : '') + '</span>' +
@@ -1271,9 +1300,10 @@ class AdventureMapV4 {
 
     if (this.modules.length > 0) {
       html += this.getTownProgressCueHtml(completedCount);
-      html += '<div class="adventure-skill-title" style="color: ' + theme.color + '">' +
+      html += '<div class="adventure-skill-banner" style="--skill-color: ' + theme.color + '">' +
         '<span class="adventure-skill-emoji">' + theme.emoji + '</span>' +
-        '<span>' + theme.name + '</span>' +
+        '<span class="adventure-skill-name">' + theme.name + '</span>' +
+        '<span class="adventure-skill-desc">' + theme.description + '</span>' +
         '</div>';
       html += '<div class="adventure-viewport" id="adventureViewport">' +
         '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
@@ -1534,7 +1564,11 @@ class AdventureMapV4 {
       var statusClass = 'town-progress-cue-step';
       if (idx < stageIndex) statusClass += ' done';
       if (idx === stageIndex) statusClass += ' active';
-      return '<div class="' + statusClass + '">' + item.emoji + '<strong>' + item.label + '</strong>' + item.rangeLabel + ' modules</div>';
+      return '<div class="' + statusClass + '">' +
+        '<div class="town-progress-cue-step-dot">' + item.emoji + '</div>' +
+        '<strong>' + item.label + '</strong>' +
+        '<small>' + item.rangeLabel + ' modules</small>' +
+        '</div>';
     }).join('');
 
     return '<div class="town-progress-cue" role="status" aria-live="polite">' +
@@ -1572,6 +1606,15 @@ class AdventureMapV4 {
     return positions;
   }
 
+  getSegmentRoadStage(completedBefore) {
+    // Road evolves based on how many modules are completed before this segment
+    // Matches brain-pathway metaphor: more modules = stronger neural connections = better road
+    if (completedBefore <= 2) return 0;  // Trailhead: dirt track
+    if (completedBefore <= 5) return 1;  // Village: paved road
+    if (completedBefore <= 8) return 2;  // Town Center: highway
+    return 3;                             // City: motorway
+  }
+
   renderPath() {
     var svg = document.getElementById('adventurePathSvg');
     if (!svg || this.modules.length === 0) return;
@@ -1579,17 +1622,28 @@ class AdventureMapV4 {
     var positions = this.calculateNodePositions();
     if (positions.length < 2) return;
 
-    var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
-    var townStage = this.getTownStage();
-    var townPathPalettes = [
-      { main: '#A8754F', light: '#C89B6C', shadow: 'rgba(109, 71, 41, 0.35)' },
-      { main: '#B38C5C', light: '#D5B489', shadow: 'rgba(120, 86, 52, 0.35)' },
-      { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)' },
-      { main: '#4F46E5', light: '#93C5FD', shadow: 'rgba(30, 64, 175, 0.35)' }
+    // Road palettes: dirt → pavement → highway → motorway
+    var roadPalettes = [
+      // Trailhead: narrow dirt trail
+      { main: '#A8754F', light: '#C89B6C', shadow: 'rgba(109, 71, 41, 0.35)',
+        shadowW: 32, mainW: 26, lightW: 18, dashW: 2, dashArray: '0 20',
+        dashColor: 'rgba(255,255,255,0.35)' },
+      // Village: paved road — grey asphalt with white lane lines
+      { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)',
+        shadowW: 38, mainW: 32, lightW: 24, dashW: 3, dashArray: '12 16',
+        dashColor: 'rgba(255,255,255,0.7)' },
+      // Town Center: highway — dark asphalt, wider, double lane markings
+      { main: '#4B5563', light: '#6B7280', shadow: 'rgba(31, 41, 55, 0.4)',
+        shadowW: 46, mainW: 40, lightW: 30, dashW: 3, dashArray: '18 12',
+        dashColor: 'rgba(255,255,255,0.85)' },
+      // City: motorway — dark smooth surface, widest, solid lane edges
+      { main: '#1F2937', light: '#374151', shadow: 'rgba(17, 24, 39, 0.45)',
+        shadowW: 54, mainW: 48, lightW: 38, dashW: 4, dashArray: '24 10',
+        dashColor: 'rgba(255,255,255,0.9)' }
     ];
-    var pathColors = townPathPalettes[townStage] || theme.pathColor;
+
+    // Build full continuous path
     var pathD = 'M ' + positions[0].x + ' ' + positions[0].y;
-    
     for (var i = 1; i < positions.length; i++) {
       var prev = positions[i - 1];
       var curr = positions[i];
@@ -1597,10 +1651,38 @@ class AdventureMapV4 {
       pathD += ' C ' + prev.x + ' ' + midY + ', ' + curr.x + ' ' + midY + ', ' + curr.x + ' ' + curr.y;
     }
 
-    svg.innerHTML = '<path class="path-shadow" d="' + pathD + '" style="stroke: ' + pathColors.shadow + '" />' +
-      '<path class="path-main" d="' + pathD + '" style="stroke: ' + pathColors.main + '" />' +
-      '<path class="path-light" d="' + pathD + '" style="stroke: ' + pathColors.light + '" />' +
-      '<path class="path-dashes" d="' + pathD + '" />';
+    // Road style based on overall town stage (total completed modules)
+    var totalCompleted = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var stage = this.getSegmentRoadStage(totalCompleted);
+    var road = roadPalettes[stage];
+
+    var svgContent = '';
+
+    // Shadow layer
+    svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.shadow + '" stroke-width="' + road.shadowW + '" stroke-linecap="round" stroke-linejoin="round" />';
+    // Main road surface
+    svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.main + '" stroke-width="' + road.mainW + '" stroke-linecap="round" stroke-linejoin="round" />';
+    // Lighter centre
+    svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.light + '" stroke-width="' + road.lightW + '" stroke-linecap="round" stroke-linejoin="round" />';
+
+    // Road markings — different per stage
+    if (stage === 0) {
+      // Dirt trail: subtle speckled footpath marks
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+    } else if (stage === 1) {
+      // Paved road: single dashed white centre line
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+    } else if (stage === 2) {
+      // Highway: dashed centre line + solid yellow edge line
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="rgba(255,200,50,0.5)" stroke-width="1.5" stroke-linecap="round" />';
+    } else {
+      // Motorway: solid yellow centre line + dashed white lane markers
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="rgba(255,220,60,0.8)" stroke-width="2.5" stroke-linecap="round" />';
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+    }
+
+    svg.innerHTML = svgContent;
 
     var startMarker = document.createElement('div');
     startMarker.className = 'map-marker start';

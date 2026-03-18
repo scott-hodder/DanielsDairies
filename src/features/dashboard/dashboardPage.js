@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -2380,6 +2380,13 @@ function showChildDetailView(child) {
     // Update stats immediately (fast operation)
     updateDashboardStats()
 
+    // Re-sync globals in case they were updated between
+    // the synchronous set and this rAF callback (e.g. after module unlock)
+    window.childModules = state.childModules
+    if (state.modules && state.modules.length > 0) {
+      window.modules = state.modules
+    }
+
     // Refresh enhanced dashboard now that the container is visible
     if (typeof window.refreshEnhancedDashboard === 'function') {
       window.refreshEnhancedDashboard()
@@ -3431,28 +3438,52 @@ if (confirmPurchaseButton) {
           ], { onConflict: 'child_id,module_id' })
 
         if (childUnlockError) throw childUnlockError
+
+        // Immediately update local child modules so the adventure map
+        // reflects the unlock even if the DB re-fetch returns stale data
+        const updatedChildModules = (state.childModules || []).slice()
+        const existingIdx = updatedChildModules.findIndex(cm => cm.module_id === state.currentPurchaseModule.id)
+        if (existingIdx >= 0) {
+          updatedChildModules[existingIdx] = { ...updatedChildModules[existingIdx], locked: false }
+        } else {
+          updatedChildModules.push({
+            child_id: state.selectedChild.id,
+            module_id: state.currentPurchaseModule.id,
+            locked: false
+          })
+        }
+        setChildModules(updatedChildModules)
+        window.childModules = updatedChildModules
       }
 
-      currentCreditSummary = await getCreditSummary(
-        state.currentUser.id,
-        currentBillingPeriod.periodStart,
-        currentBillingPeriod.periodEnd
-      )
+      // Invalidate child modules cache so selectChild fetches fresh data
+      if (state.selectedChild?.id) {
+        invalidateCacheByPrefix(`childModules:${state.selectedChild.id}`)
+      }
+
+      // Run all refresh queries in parallel — these are independent
+      const [creditResult, legacyResult, unlocksResult] = await Promise.all([
+        getCreditSummary(
+          state.currentUser.id,
+          currentBillingPeriod.periodStart,
+          currentBillingPeriod.periodEnd
+        ),
+        supabase
+          .from('parent_modules')
+          .select('module_id, is_active, modules(*)')
+          .eq('parent_id', state.currentUser.id),
+        getModuleUnlocks(
+          state.currentUser.id,
+          currentBillingPeriod.periodStart,
+          currentBillingPeriod.periodEnd
+        )
+      ])
+
+      currentCreditSummary = creditResult
       updateCreditWalletBadge()
 
-      const refreshedLegacy = await supabase
-        .from('parent_modules')
-        .select('module_id, is_active, modules(*)')
-        .eq('parent_id', state.currentUser.id)
-
-      const refreshedUnlocks = await getModuleUnlocks(
-        state.currentUser.id,
-        currentBillingPeriod.periodStart,
-        currentBillingPeriod.periodEnd
-      )
-
       const mergedMap = new Map()
-      ;[(refreshedLegacy.data || []), ...(refreshedUnlocks || []).map(entry => ({
+      ;[(legacyResult.data || []), ...(unlocksResult || []).map(entry => ({
         module_id: entry.module_id,
         is_active: true,
         modules: entry.modules || null,
@@ -3467,13 +3498,29 @@ if (confirmPurchaseButton) {
       renderAllModulesGrid()
       if (state.selectedChild) {
         await selectChild(state.selectedChild)
-      }
 
-      // Refresh adventure map to show unlocked module immediately
-      if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
-        window.enhancedDashboard.adventureMap.buildModuleList()
-        window.enhancedDashboard.adventureMap.filterModulesByCategory()
-        window.enhancedDashboard.adventureMap.render()
+        // selectChild may have fetched stale child modules from DB —
+        // ensure the just-unlocked module is marked unlocked in local state
+        const currentChildMods = (state.childModules || []).slice()
+        const unlockIdx = currentChildMods.findIndex(cm => cm.module_id === state.currentPurchaseModule.id)
+        if (unlockIdx >= 0 && currentChildMods[unlockIdx].locked !== false) {
+          currentChildMods[unlockIdx] = { ...currentChildMods[unlockIdx], locked: false }
+          setChildModules(currentChildMods)
+          window.childModules = currentChildMods
+        } else if (unlockIdx < 0) {
+          currentChildMods.push({
+            child_id: state.selectedChild.id,
+            module_id: state.currentPurchaseModule.id,
+            locked: false
+          })
+          setChildModules(currentChildMods)
+          window.childModules = currentChildMods
+        }
+
+        // Re-render adventure map with corrected child modules
+        if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
+          window.enhancedDashboard.adventureMap.render()
+        }
       }
 
       closePurchaseModal()
