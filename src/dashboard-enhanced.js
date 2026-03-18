@@ -483,6 +483,14 @@ class AdventureMapV4 {
     css.push('.path-light { fill: none; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }');
     css.push('.path-dashes { fill: none; stroke: rgba(255,255,255,0.5); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 18; animation: dashMove 1s linear infinite; }');
     css.push('@keyframes dashMove { to { stroke-dashoffset: -36; } }');
+    css.push('@keyframes roadDashFlow0 { to { stroke-dashoffset: -40; } }');
+    css.push('@keyframes roadDashFlow1 { to { stroke-dashoffset: -56; } }');
+    css.push('@keyframes roadDashFlow2 { to { stroke-dashoffset: -60; } }');
+    css.push('@keyframes roadDashFlow3 { to { stroke-dashoffset: -68; } }');
+    css.push('.road-dash-s0 { animation: roadDashFlow0 3s linear infinite; }');
+    css.push('.road-dash-s1 { animation: roadDashFlow1 2s linear infinite; }');
+    css.push('.road-dash-s2 { animation: roadDashFlow2 1.4s linear infinite; }');
+    css.push('.road-dash-s3 { animation: roadDashFlow3 1s linear infinite; }');
     css.push('.adventure-nodes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }');
     css.push('.adventure-node { position: absolute; width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translate(-50%, -50%); transition: transform 0.2s ease, box-shadow 0.2s ease; z-index: 10; overflow: visible; }');
     css.push('.adventure-node:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 20; }');
@@ -1665,21 +1673,23 @@ class AdventureMapV4 {
     // Lighter centre
     svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.light + '" stroke-width="' + road.lightW + '" stroke-linecap="round" stroke-linejoin="round" />';
 
-    // Road markings — different per stage
+    // Road markings — different per stage, with animated dashes
+    // Animation speed varies: dirt slow & subtle, motorway fast & smooth
+    var dashAnimClass = 'road-dash-s' + stage;
     if (stage === 0) {
       // Dirt trail: subtle speckled footpath marks
-      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
     } else if (stage === 1) {
       // Paved road: single dashed white centre line
-      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
     } else if (stage === 2) {
       // Highway: dashed centre line + solid yellow edge line
-      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
       svgContent += '<path d="' + pathD + '" fill="none" stroke="rgba(255,200,50,0.5)" stroke-width="1.5" stroke-linecap="round" />';
     } else {
       // Motorway: solid yellow centre line + dashed white lane markers
       svgContent += '<path d="' + pathD + '" fill="none" stroke="rgba(255,220,60,0.8)" stroke-width="2.5" stroke-linecap="round" />';
-      svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
     }
 
     svg.innerHTML = svgContent;
