@@ -832,10 +832,10 @@
 
         const MOOD_LABELS = {
             1: { label: 'Very sad', emoji: '😢' },
-            2: { label: 'A bit low', emoji: '😕' },
+            2: { label: 'Frustrated / Worried', emoji: '😣' },
             3: { label: 'Okay-ish', emoji: '😐' },
-            4: { label: 'Pretty good', emoji: '🙂' },
-            5: { label: 'Super happy', emoji: '😄' }
+            4: { label: 'Calm', emoji: '😌' },
+            5: { label: 'Happy', emoji: '😄' }
         };
 
         let progressChart = null;
@@ -958,8 +958,16 @@
 
         function buildMoodStats(moodCheckins) {
             const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            const labelCounts = {};
+
             (moodCheckins || []).forEach(entry => {
                 if (counts[entry.mood_score] !== undefined) counts[entry.mood_score] += 1;
+                const label = entry.mood_label || MOOD_LABELS[entry.mood_score]?.label || 'Mood check-in';
+                const emoji = entry.mood_emoji || MOOD_LABELS[entry.mood_score]?.emoji || '✨';
+                if (!labelCounts[label]) {
+                    labelCounts[label] = { label, emoji, count: 0 };
+                }
+                labelCounts[label].count += 1;
             });
 
             const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
@@ -967,14 +975,15 @@
                 ? ((Object.entries(counts).reduce((sum, [score, count]) => sum + (Number(score) * count), 0)) / total)
                 : null;
 
-            const topScore = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+            const topMood = Object.values(labelCounts).sort((a, b) => b.count - a.count)[0] || null;
             const latestEntry = (moodCheckins || []).length ? moodCheckins[moodCheckins.length - 1] : null;
 
             return {
                 total,
                 counts,
+                labelCounts,
                 averageScore,
-                topScore: topScore ? Number(topScore) : null,
+                topMood,
                 latestEntry
             };
         }
@@ -1100,7 +1109,7 @@
                 <li><strong>Recent check-ins:</strong> ${recentCheckins || 'No check-ins yet'}.</li>
                 <li><strong>Latest modules completed:</strong> ${moduleStats.recentTitles.join(', ') || 'Start a module to unlock more insight'}.</li>
                 <li><strong>Progress signal:</strong> ${trend.text}</li>
-                <li><strong>Daniel check-ins:</strong> ${moodStats.topScore ? `${MOOD_LABELS[moodStats.topScore].emoji} ${MOOD_LABELS[moodStats.topScore].label} selected ${moodStats.counts[moodStats.topScore]} time${moodStats.counts[moodStats.topScore] === 1 ? '' : 's'}` : 'No Daniel mood check-ins yet'}${moodStats.averageScore ? `, average mood score ${moodStats.averageScore.toFixed(1)}/5` : ''}.</li>
+                <li><strong>Daniel check-ins:</strong> ${moodStats.topMood ? `${moodStats.topMood.emoji} ${moodStats.topMood.label} selected ${moodStats.topMood.count} time${moodStats.topMood.count === 1 ? '' : 's'}` : 'No Daniel mood check-ins yet'}${moodStats.averageScore ? `, average mood score ${moodStats.averageScore.toFixed(1)}/5` : ''}.</li>
             `;
         }
 
