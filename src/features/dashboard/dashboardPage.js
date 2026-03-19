@@ -1308,12 +1308,8 @@ async function init() {
   }, 4000)
   
   try {
-    console.time('⏱️ init total')
-
     // Check authentication first (required before anything else)
-    console.time('⏱️ checkAuth')
     const session = await checkAuth()
-    console.timeEnd('⏱️ checkAuth')
 
     if (!session) {
       clearTimeout(loadingTimeout)
@@ -1332,26 +1328,20 @@ async function init() {
     // CRITICAL PATH — only fetch what's needed to show the dashboard
     currentBillingPeriod = getCurrentBillingPeriod()
 
-    console.time('⏱️ critical queries (total)')
-    console.time('⏱️ ┗ getModules')
-    console.time('⏱️ ┗ parent_modules')
-    console.time('⏱️ ┗ getModuleUnlocks')
-    console.time('⏱️ ┗ getChildren')
     const [
       modulesResult,
       parentModulesResult,
       creditUnlocksResult,
       childrenResult
     ] = await Promise.allSettled([
-      getModules().then(r => { console.timeEnd('⏱️ ┗ getModules'); return r }),
+      getModules(),
       supabase
         .from('parent_modules')
         .select('module_id, is_active, modules(id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, is_active, created_at)')
-        .eq('parent_id', state.currentUser.id).then(r => { console.timeEnd('⏱️ ┗ parent_modules'); return r }),
-      getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd).then(r => { console.timeEnd('⏱️ ┗ getModuleUnlocks'); return r }),
-      getChildren(state.currentUser.id).then(r => { console.timeEnd('⏱️ ┗ getChildren'); return r })
+        .eq('parent_id', state.currentUser.id),
+      getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
+      getChildren(state.currentUser.id)
     ])
-    console.timeEnd('⏱️ critical queries (total)')
 
     // Process modules
     if (modulesResult.status === 'fulfilled') {
@@ -1417,7 +1407,6 @@ async function init() {
     })
 
     // DEFERRED — load non-critical data in background (doesn't block UI)
-    console.time('⏱️ deferred queries (total)')
     Promise.allSettled([
       getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
       supabase.from('category_colors').select('*'),
@@ -1425,7 +1414,6 @@ async function init() {
       getParentSubscription(state.currentUser.id),
       getSubscriptionTiers()
     ]).then(([creditSummaryResult, categoryColorsResult, adminResult, subscriptionResult, tiersResult]) => {
-      console.timeEnd('⏱️ deferred queries (total)')
       currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
       currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
       subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
@@ -1450,8 +1438,6 @@ async function init() {
         }
       }
     })
-
-    console.timeEnd('⏱️ init total')
 
     // Check URL for a childId to auto-select (coming back from a module)
     const params = new URLSearchParams(window.location.search)
@@ -2124,12 +2110,9 @@ async function selectChild(child) {
   
   try {
     // CRITICAL PATH — only child modules and focus plan block the UI
-    console.time('⏱️ selectChild total')
-    console.time('⏱️ ┗ getChildModules')
-    console.time('⏱️ ┗ checkFocusPlan')
     const [childModulesResult, focusPlanResult] = await Promise.allSettled([
-      getChildModules(child.id).then(r => { console.timeEnd('⏱️ ┗ getChildModules'); return r }),
-      checkFocusPlan(child.id).then(r => { console.timeEnd('⏱️ ┗ checkFocusPlan'); return r })
+      getChildModules(child.id),
+      checkFocusPlan(child.id)
     ])
 
     // Process child modules
@@ -2161,12 +2144,10 @@ async function selectChild(child) {
     // ... (rest of the code remains the same)
     
     // DEFERRED — weekly plan, streak, and leaderboard data load in background
-    console.time('⏱️ deferred child queries (weeklyPlan, streak)')
     Promise.allSettled([
       loadLatestWeeklyPlanData(child.id),
       state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
     ]).then(([weeklyPlanResult, streakResult]) => {
-      console.timeEnd('⏱️ deferred child queries (weeklyPlan, streak)')
       if (weeklyPlanResult.status === 'fulfilled') {
         setCurrentWeeklyPlan(weeklyPlanResult.value)
         renderWeeklyPlan(state.currentWeeklyPlan)
@@ -2206,14 +2187,9 @@ async function selectChild(child) {
 
     // Show child detail view and hide loading screen IMMEDIATELY
     // Adventure map renders asynchronously inside showChildDetailView
-    console.time('⏱️ ┗ showChildDetailView')
     showChildDetailView(child)
-    console.timeEnd('⏱️ ┗ showChildDetailView')
-    console.time('⏱️ ┗ renderModules')
     renderModules()
-    console.timeEnd('⏱️ ┗ renderModules')
     hideLoadingScreen()
-    console.timeEnd('⏱️ selectChild total')
     
   } catch (error) {
     console.error('Error loading child modules:', error)
