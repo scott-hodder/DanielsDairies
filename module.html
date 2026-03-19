@@ -1262,8 +1262,12 @@
           return true;
         }
 
+        // Clean HTML-encoded apostrophes from legacy modules (generated before fix)
+        // Handle double-encoded (&amp;#039;) first, then single-encoded (&#039;)
+        const cleanedHtml = mod.html_content.replace(/&amp;#039;/g, "'").replace(/&#039;/g, "'");
+
         const parser = new DOMParser();
-        const doc = parser.parseFromString(mod.html_content, 'text/html');
+        const doc = parser.parseFromString(cleanedHtml, 'text/html');
         
         // Copy styles
         doc.querySelectorAll('style').forEach(s => {
