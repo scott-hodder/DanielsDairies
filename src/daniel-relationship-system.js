@@ -1197,6 +1197,11 @@ class DanielModulePreview {
 // DANIEL HUB ENHANCEMENT
 // ================================================
 
+
+function isDanielMoodCheckinEnabled() {
+  return Boolean(window.__danielMoodCheckinEnabled || document.getElementById('danielMoodModal'))
+}
+
 class DanielHubEnhancer {
   constructor(dialogueSystem) {
     this.dialogueSystem = dialogueSystem;
@@ -1209,6 +1214,8 @@ class DanielHubEnhancer {
   }
 
   enhanceExistingHub() {
+    if (isDanielMoodCheckinEnabled()) return;
+
     const danielHub = document.getElementById('danielHub');
     if (!danielHub) return;
 
@@ -1237,9 +1244,11 @@ class DanielHubEnhancer {
   }
 
   updateDanielMessage() {
+    if (isDanielMoodCheckinEnabled()) return;
+
     const moodText = document.getElementById('moodText');
     const danielStatus = document.getElementById('danielStatus');
-    
+
     const completedCount = this.dialogueSystem.completedModules.length;
     const messages = this.getContextualMessages(completedCount);
     const message = messages[Math.floor(Math.random() * messages.length)];
@@ -1281,6 +1290,8 @@ class DanielHubEnhancer {
   }
 
   showDanielGreeting() {
+    if (isDanielMoodCheckinEnabled()) return;
+
     const completedCount = this.dialogueSystem.completedModules.length;
     const greetings = this.getGreetings(completedCount);
     const greeting = greetings[Math.floor(Math.random() * greetings.length)];
