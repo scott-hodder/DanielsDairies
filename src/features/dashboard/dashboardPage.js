@@ -4887,10 +4887,11 @@ function getStreakMessage(streak) {
 const MOOD_CHECKIN_COOLDOWN_MS = 2 * 60 * 60 * 1000
 const DANIEL_MOOD_OPTIONS = [
   { score: 1, emoji: '😢', label: 'Very sad', shortLabel: 'very sad', description: 'I need extra comfort today.' },
-  { score: 2, emoji: '😕', label: 'A bit low', shortLabel: 'a bit low', description: 'Things feel tricky right now.' },
+  { score: 2, emoji: '😣', label: 'Frustrated', shortLabel: 'frustrated', description: 'Everything feels a bit too much.' },
+  { score: 2, emoji: '😟', label: 'Worried', shortLabel: 'worried', description: 'My tummy or thoughts feel wobbly.' },
   { score: 3, emoji: '😐', label: 'Okay-ish', shortLabel: 'okay-ish', description: 'I am somewhere in the middle.' },
-  { score: 4, emoji: '🙂', label: 'Pretty good', shortLabel: 'pretty good', description: 'I am feeling calm and positive.' },
-  { score: 5, emoji: '😄', label: 'Super happy', shortLabel: 'super happy', description: 'I am full of smiles and energy!' }
+  { score: 4, emoji: '😌', label: 'Calm', shortLabel: 'calm', description: 'My body feels settled and safe.' },
+  { score: 5, emoji: '😄', label: 'Happy', shortLabel: 'happy', description: 'I feel bright, smiley, and ready.' }
 ]
 const DANIEL_COOLDOWN_QUOTES = [
   'Every feeling is welcome here — even the wobbly ones.',

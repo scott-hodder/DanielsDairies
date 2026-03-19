@@ -6960,8 +6960,14 @@ button:active, .btn:active {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 34px;
     background: linear-gradient(135deg, #fff1bf, #dcefff);
+    overflow: hidden;
+}
+
+.daniel-mood-mascot-img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
 }
 
 .daniel-mood-kicker {
@@ -6986,7 +6992,7 @@ button:active, .btn:active {
 
 .daniel-mood-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
 }
 
@@ -7042,4 +7048,17 @@ button:active, .btn:active {
     background: linear-gradient(135deg, rgba(255, 242, 191, 0.65), rgba(220, 239, 255, 0.75));
     color: #355070;
     font-weight: 600;
+}
+
+
+@media (max-width: 640px) {
+    .daniel-mood-options {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .daniel-mood-options {
+        grid-template-columns: 1fr;
+    }
 }
