@@ -6917,3 +6917,129 @@ button:active, .btn:active {
 .plan-accordion-panel button {
   margin-top: 20px;
 }
+
+
+.daniel-mood-overlay {
+    z-index: 12000;
+}
+
+.daniel-mood-modal {
+    width: min(560px, calc(100vw - 32px));
+    max-width: 560px;
+    border-radius: 28px;
+    padding: 28px 24px 22px;
+    position: relative;
+    background: linear-gradient(180deg, #fffdf9 0%, #f7fbff 100%);
+    box-shadow: 0 24px 70px rgba(76, 108, 150, 0.28);
+}
+
+.daniel-mood-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(76, 108, 150, 0.1);
+    color: #355070;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.daniel-mood-header {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.daniel-mood-mascot {
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    background: linear-gradient(135deg, #fff1bf, #dcefff);
+}
+
+.daniel-mood-kicker {
+    margin: 0 0 6px;
+    color: #7c6fdd;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+}
+
+.daniel-mood-title {
+    margin-bottom: 8px;
+}
+
+.daniel-mood-subtitle {
+    margin: 0;
+    color: #5d728f;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.daniel-mood-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.daniel-mood-option {
+    border: 2px solid rgba(124, 111, 221, 0.14);
+    border-radius: 22px;
+    padding: 16px 14px;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.daniel-mood-option:hover,
+.daniel-mood-option:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(124, 111, 221, 0.5);
+    box-shadow: 0 10px 24px rgba(124, 111, 221, 0.14);
+    outline: none;
+}
+
+.daniel-mood-option-emoji {
+    display: block;
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.daniel-mood-option-label {
+    display: block;
+    font-weight: 800;
+    color: #243b53;
+    margin-bottom: 4px;
+}
+
+.daniel-mood-option-copy {
+    display: block;
+    font-size: 12px;
+    color: #6b7c8f;
+    line-height: 1.4;
+}
+
+.daniel-mood-footer {
+    margin-top: 18px;
+    text-align: center;
+    color: #5d728f;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.daniel-mood-quote {
+    padding: 16px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255, 242, 191, 0.65), rgba(220, 239, 255, 0.75));
+    color: #355070;
+    font-weight: 600;
+}
