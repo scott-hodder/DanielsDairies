@@ -290,12 +290,12 @@ export async function deleteChild(childId) {
   return true
 }
 
-// Get all modules (active and inactive)
+// Get all modules (metadata only — excludes heavy html_content)
 export async function getModules() {
   return withCachedQuery('modules:all', 300_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('modules')
-      .select('*')
+      .select('id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, xp_reward, stars_reward, character_name, is_active, created_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -484,7 +484,7 @@ export async function getCreditLedger(parentUserId, periodStart, periodEnd) {
 export async function getModuleUnlocks(parentUserId, periodStart, periodEnd) {
   const { data, error } = await getSupabaseClient()
     .from('module_unlocks')
-    .select('module_id, period_start, period_end, unlock_source, modules(*)')
+    .select('module_id, period_start, period_end, unlock_source, modules(id, code, title, category, series, is_active)')
     .eq('parent_id', parentUserId)
     .eq('is_active', true)
     .eq('period_start', periodStart)
@@ -521,7 +521,7 @@ export async function getCategoryColors() {
 
 // Get child's module progress
 export async function getChildModules(childId) {
-  return withCachedQuery(`childModules:${childId}`, 60_000, async () => {
+  return withCachedQuery(`childModules:${childId}`, 300_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('child_modules')
       .select(`

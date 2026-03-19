@@ -1300,69 +1300,59 @@ async function init() {
   // Show fun loading screen
   showLoadingScreen()
   
-  // Reduced timeout - 6 seconds should be enough
+  // Safety timeout in case something hangs
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout reached - forcing UI to show')
     hideLoadingScreen()
     showElement(childrenView)
-  }, 6000)
+  }, 4000)
   
   try {
+    console.time('⏱️ init total')
+
     // Check authentication first (required before anything else)
+    console.time('⏱️ checkAuth')
     const session = await checkAuth()
-    
+    console.timeEnd('⏱️ checkAuth')
+
     if (!session) {
       clearTimeout(loadingTimeout)
       window.location.href = '/'
       return
     }
-    
-    // Get current user
-    setCurrentUser(await getCurrentUser())
+
+    // Use user from session (already available — avoids slow getUser() network call)
+    setCurrentUser(session.user)
     window.state.currentUser = state.currentUser
-    
+
     if (state.currentUser && state.currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
     }
-    
-    // PARALLEL LOADING - Load all independent data at once
+
+    // CRITICAL PATH — only fetch what's needed to show the dashboard
     currentBillingPeriod = getCurrentBillingPeriod()
 
+    console.time('⏱️ critical queries (total)')
+    console.time('⏱️ ┗ getModules')
+    console.time('⏱️ ┗ parent_modules')
+    console.time('⏱️ ┗ getModuleUnlocks')
+    console.time('⏱️ ┗ getChildren')
     const [
       modulesResult,
       parentModulesResult,
       creditUnlocksResult,
-      creditSummaryResult,
-      categoryColorsResult,
-      childrenResult,
-      adminResult,
-      subscriptionResult,
-      tiersResult
+      childrenResult
     ] = await Promise.allSettled([
-      // Load modules
-      getModules(),
-      // Load legacy parent modules with full module data
+      getModules().then(r => { console.timeEnd('⏱️ ┗ getModules'); return r }),
       supabase
         .from('parent_modules')
-        .select('module_id, is_active, modules(*)')
-        .eq('parent_id', state.currentUser.id),
-      // Load subscription-credit unlocks for current month
-      getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
-      // Load current wallet summary
-      getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
-      // Load category colors
-      supabase
-        .from('category_colors')
-        .select('*'),
-      // Load children
-      getChildren(state.currentUser.id),
-      // Check admin status (non-blocking)
-      isUserAdmin(state.currentUser.id),
-      // Load subscription details for credit messaging
-      getParentSubscription(state.currentUser.id),
-      getSubscriptionTiers()
+        .select('module_id, is_active, modules(id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, is_active, created_at)')
+        .eq('parent_id', state.currentUser.id).then(r => { console.timeEnd('⏱️ ┗ parent_modules'); return r }),
+      getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd).then(r => { console.timeEnd('⏱️ ┗ getModuleUnlocks'); return r }),
+      getChildren(state.currentUser.id).then(r => { console.timeEnd('⏱️ ┗ getChildren'); return r })
     ])
-    
+    console.timeEnd('⏱️ critical queries (total)')
+
     // Process modules
     if (modulesResult.status === 'fulfilled') {
       setModules(modulesResult.value || [])
@@ -1370,7 +1360,7 @@ async function init() {
       console.error('Error loading modules:', modulesResult.reason)
       setModules([])
     }
-    
+
     // Process parent modules and merge subscription-credit unlocks
     const legacyParentModules = parentModulesResult.status === 'fulfilled' && parentModulesResult.value.data
       ? parentModulesResult.value.data
@@ -1402,24 +1392,6 @@ async function init() {
     })
     setParentModules(Array.from(mergedParentModulesMap.values()))
 
-    currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
-    currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
-    subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
-    updateCreditWalletBadge()
-    
-    // Process category colors
-    if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
-      const colors = {}
-      categoryColorsResult.value.data.forEach(cc => {
-        if (cc?.category && cc?.color) {
-          colors[cc.category] = cc.color
-        }
-      })
-      setCategoryColors(colors)
-    } else {
-      setCategoryColors({})
-    }
-    
     // Process children
     if (childrenResult.status === 'fulfilled') {
       setChildren(childrenResult.value || [])
@@ -1427,32 +1399,59 @@ async function init() {
       console.error('Error loading children:', childrenResult.reason)
       setChildren([])
     }
-    
-    // Process admin status (non-critical)
-    if (adminResult.status === 'fulfilled') {
-      setIsCurrentUserAdmin(adminResult.value || false)
-      if (state.isCurrentUserAdmin) {
-        const adminButton = document.getElementById('adminButton')
-        const adminButtonDesktop = document.getElementById('adminButtonDesktop')
-        if (adminButton) adminButton.style.display = 'block'
-        if (adminButtonDesktop) showElement(adminButtonDesktop)
-      }
-    }
-    
+
     // Update global variables for enhanced dashboard
     window.modules = state.modules
     setAppState('modules', state.modules)
     window.parentModules = state.parentModules
-    
-    // Setup category colors (use defaults if none loaded)
+
+    // Setup category colors with defaults — real colors load in background
+    setCategoryColors({})
     setupCategoryColors()
-    
+
     // Setup filters (batch DOM operations)
     requestAnimationFrame(() => {
       setupAllWorkbooksFilter()
       setupDashboardFilters()
       renderChildren()
     })
+
+    // DEFERRED — load non-critical data in background (doesn't block UI)
+    console.time('⏱️ deferred queries (total)')
+    Promise.allSettled([
+      getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
+      supabase.from('category_colors').select('*'),
+      isUserAdmin(state.currentUser.id),
+      getParentSubscription(state.currentUser.id),
+      getSubscriptionTiers()
+    ]).then(([creditSummaryResult, categoryColorsResult, adminResult, subscriptionResult, tiersResult]) => {
+      console.timeEnd('⏱️ deferred queries (total)')
+      currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
+      currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
+      subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
+      updateCreditWalletBadge()
+
+      if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
+        const colors = {}
+        categoryColorsResult.value.data.forEach(cc => {
+          if (cc?.category && cc?.color) colors[cc.category] = cc.color
+        })
+        setCategoryColors(colors)
+        setupCategoryColors()
+      }
+
+      if (adminResult.status === 'fulfilled') {
+        setIsCurrentUserAdmin(adminResult.value || false)
+        if (state.isCurrentUserAdmin) {
+          const adminButton = document.getElementById('adminButton')
+          const adminButtonDesktop = document.getElementById('adminButtonDesktop')
+          if (adminButton) adminButton.style.display = 'block'
+          if (adminButtonDesktop) showElement(adminButtonDesktop)
+        }
+      }
+    })
+
+    console.timeEnd('⏱️ init total')
 
     // Check URL for a childId to auto-select (coming back from a module)
     const params = new URLSearchParams(window.location.search)
@@ -2124,15 +2123,15 @@ async function selectChild(child) {
   maybeCelebrateFirstStar(child)
   
   try {
-    // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
-    const [childModulesResult, weeklyPlanResult, focusPlanResult, streakResult] = await Promise.allSettled([
-      getChildModules(child.id),
-      loadLatestWeeklyPlanData(child.id), // New optimized function
-      checkFocusPlan(child.id),
-      // Update login streak for this child — updateLoginStreak already returns the updated record
-      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
+    // CRITICAL PATH — only child modules and focus plan block the UI
+    console.time('⏱️ selectChild total')
+    console.time('⏱️ ┗ getChildModules')
+    console.time('⏱️ ┗ checkFocusPlan')
+    const [childModulesResult, focusPlanResult] = await Promise.allSettled([
+      getChildModules(child.id).then(r => { console.timeEnd('⏱️ ┗ getChildModules'); return r }),
+      checkFocusPlan(child.id).then(r => { console.timeEnd('⏱️ ┗ checkFocusPlan'); return r })
     ])
-    
+
     // Process child modules
     if (childModulesResult.status === 'fulfilled') {
       setChildModules(childModulesResult.value || [])
@@ -2140,12 +2139,7 @@ async function selectChild(child) {
       console.error('Error loading child modules:', childModulesResult.reason)
       setChildModules([])
     }
-    
-    // Process weekly plan
-    if (weeklyPlanResult.status === 'fulfilled') {
-      setCurrentWeeklyPlan(weeklyPlanResult.value)
-    }
-    
+
     // Process focus plan
     if (focusPlanResult.status === 'fulfilled') {
       setCurrentFocusPlan(focusPlanResult.value)
@@ -2153,29 +2147,9 @@ async function selectChild(child) {
       setCurrentFocusPlan(null)
     }
 
-    // Process and display login streak
-    if (streakResult.status === 'fulfilled') {
-      const streakData = streakResult.value
-      if (streakData) {
-        console.log(`[Child Selection] ${child.name} streak: ${streakData.current_streak}`)
-        // Update the day streak display
-        const dayStreakEl = document.getElementById('dayStreak')
-        if (dayStreakEl) {
-          dayStreakEl.textContent = streakData.current_streak ?? 0
-        }
-        // Show streak popup if streak is 3 or more AND hasn't been shown today for this child
-        if (streakData.current_streak >= 3 && !hasStreakPopupBeenShownToday(child.id)) {
-          markStreakPopupAsShown(child.id)
-          showStreakPopup(child.name, streakData.current_streak)
-        }
-      }
-    } else if (streakResult.status === 'rejected') {
-      console.log('[Child Selection] Streak update skipped (non-critical)')
-    }
-
     // Setup rewards event listeners for this child (non-blocking)
     setupRewardsEventListeners(child)
-    
+
     // Initialize daily quest system for this child
     if (typeof window.initDailyQuest === 'function') {
       window.initDailyQuest(child.id)
@@ -2186,37 +2160,60 @@ async function selectChild(child) {
     
     // ... (rest of the code remains the same)
     
+    // DEFERRED — weekly plan, streak, and leaderboard data load in background
+    console.time('⏱️ deferred child queries (weeklyPlan, streak)')
+    Promise.allSettled([
+      loadLatestWeeklyPlanData(child.id),
+      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
+    ]).then(([weeklyPlanResult, streakResult]) => {
+      console.timeEnd('⏱️ deferred child queries (weeklyPlan, streak)')
+      if (weeklyPlanResult.status === 'fulfilled') {
+        setCurrentWeeklyPlan(weeklyPlanResult.value)
+        renderWeeklyPlan(state.currentWeeklyPlan)
+      }
+      if (streakResult.status === 'fulfilled') {
+        const streakData = streakResult.value
+        if (streakData) {
+          const dayStreakEl = document.getElementById('dayStreak')
+          if (dayStreakEl) dayStreakEl.textContent = streakData.current_streak ?? 0
+          if (streakData.current_streak >= 3 && !hasStreakPopupBeenShownToday(child.id)) {
+            markStreakPopupAsShown(child.id)
+            showStreakPopup(child.name, streakData.current_streak)
+          }
+        }
+      }
+    })
+
     if (!state.currentFocusPlan) {
       // No active focus plan - show onboarding
       showFocusPlanOnboarding(child.id, async (plan, superSkillOrPathway) => {
         setCurrentFocusPlan(plan)
         window.state.currentFocusPlan = plan
-        
+
         // Apply the focus plan to the map (handles both super skills and legacy pathways)
         applyFocusPlanToMap(plan)
-        
+
         // Now show the child detail view
         showChildDetailView(child)
-        
+
         // Render modules after onboarding is complete
         renderModules()
-        
-        // Wait for the adventure map to finish rendering before showing the UI
-        await waitForDashboardRender()
+
         hideLoadingScreen()
       })
       return // Don't show detail view yet - wait for onboarding
     }
-    
-    // Show child detail view AFTER all data is loaded
+
+    // Show child detail view and hide loading screen IMMEDIATELY
+    // Adventure map renders asynchronously inside showChildDetailView
+    console.time('⏱️ ┗ showChildDetailView')
     showChildDetailView(child)
-    
-    // Render modules immediately after showing the view
+    console.timeEnd('⏱️ ┗ showChildDetailView')
+    console.time('⏱️ ┗ renderModules')
     renderModules()
-    
-    // Wait for the adventure map to finish rendering before showing the UI
-    await waitForDashboardRender()
+    console.timeEnd('⏱️ ┗ renderModules')
     hideLoadingScreen()
+    console.timeEnd('⏱️ selectChild total')
     
   } catch (error) {
     console.error('Error loading child modules:', error)

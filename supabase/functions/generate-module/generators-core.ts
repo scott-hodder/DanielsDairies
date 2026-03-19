@@ -958,8 +958,7 @@ function escapeHtml(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/"/g, "&quot;");
 }
 
 // For use inside template literals that will be rendered at runtime
@@ -967,8 +966,7 @@ function escapeForTemplate(s: string): string {
   return escapeHtml(s)
     .replace(/\\/g, "\\\\")  // Escape backslashes first
     .replace(/`/g, "\\`")    // Escape backticks
-    .replace(/\$/g, "\\$")   // Escape dollar signs to prevent ${} interpretation
-    .replace(/'/g, "\\'");   // Escape single quotes for onclick handlers
+    .replace(/\$/g, "\\$");  // Escape dollar signs to prevent ${} interpretation
 }
 
 // For use in onclick handlers where single quotes wrap the string

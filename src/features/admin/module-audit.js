@@ -715,7 +715,8 @@ async function executeFixErrors() {
 
         appendFixLog('Applied ' + appliedCount + ' operation(s).', 'success');
 
-        // Apply the fix
+        // Apply the fix (clean up any HTML-encoded apostrophes)
+        fixedContent = fixedContent.replace(/&#039;/g, "'");
         window.generatedModuleHTML = fixedContent;
         // Update the preview textarea if it exists
         var previewTextarea = document.getElementById('aiGeneratedPreview');

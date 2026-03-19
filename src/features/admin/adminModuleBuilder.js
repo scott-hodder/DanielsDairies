@@ -1042,7 +1042,7 @@ window.generateModuleWithAI = async function() {
             const result = await pollForJobResult(jobId);
             if (!result || !result.html) throw new Error('AI did not return valid HTML');
 
-            window.generatedModuleHTML = result.html;
+            window.generatedModuleHTML = result.html.replace(/&#039;/g, "'");
             generatedModuleHTML = window.generatedModuleHTML;
             window.currentGenerationSpec = result.spec;
             currentGenerationSpec = window.currentGenerationSpec;
@@ -1192,7 +1192,7 @@ async function handleLegacyModuleUpload(event) {
         if (moduleCode) {
             migratedHtml = migratedHtml.replace(/__MODULE_CODE__/g, moduleCode).replace(/__WORKBOOK_ID__/g, moduleCode);
         }
-        window.generatedModuleHTML = migratedHtml;
+        window.generatedModuleHTML = migratedHtml.replace(/&#039;/g, "'");
         generatedModuleHTML = window.generatedModuleHTML;
         window.currentGenerationSpec = null;
         currentGenerationSpec = null;
