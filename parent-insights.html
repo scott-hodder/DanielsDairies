@@ -830,6 +830,14 @@
             'resilience-ranger': 'depression'
         };
 
+        const MOOD_LABELS = {
+            1: { label: 'Very sad', emoji: '😢' },
+            2: { label: 'A bit low', emoji: '😕' },
+            3: { label: 'Okay-ish', emoji: '😐' },
+            4: { label: 'Pretty good', emoji: '🙂' },
+            5: { label: 'Super happy', emoji: '😄' }
+        };
+
         let progressChart = null;
 
         function normalizeCategoryKey(rawKey) {
@@ -858,7 +866,7 @@
             return new Date(dateValue).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
         }
 
-        function updateHeader(child, moduleStats, assessments) {
+        function updateHeader(child, moduleStats, assessments, moodStats) {
             document.getElementById('heroTitle').textContent = `${child.name}'s Progress 🎉`;
             document.getElementById('heroGreeting').textContent = `${child.name}'s emotional growth journey`;
 
@@ -878,8 +886,8 @@
                     <span class="hero-stat-label">Stars Earned</span>
                 </div>
                 <div class="hero-stat">
-                    <span class="hero-stat-value">${assessments.length}</span>
-                    <span class="hero-stat-label">Check-ins Done</span>
+                    <span class="hero-stat-value">${moodStats.total}</span>
+                    <span class="hero-stat-label">Mood Check-ins</span>
                 </div>
             `;
 
@@ -946,6 +954,29 @@
             const valid = items.filter(v => Number.isFinite(v));
             if (!valid.length) return null;
             return valid.reduce((a, b) => a + b, 0) / valid.length;
+        }
+
+        function buildMoodStats(moodCheckins) {
+            const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            (moodCheckins || []).forEach(entry => {
+                if (counts[entry.mood_score] !== undefined) counts[entry.mood_score] += 1;
+            });
+
+            const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+            const averageScore = total
+                ? ((Object.entries(counts).reduce((sum, [score, count]) => sum + (Number(score) * count), 0)) / total)
+                : null;
+
+            const topScore = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+            const latestEntry = (moodCheckins || []).length ? moodCheckins[moodCheckins.length - 1] : null;
+
+            return {
+                total,
+                counts,
+                averageScore,
+                topScore: topScore ? Number(topScore) : null,
+                latestEntry
+            };
         }
 
         function renderDevelopmentIntelligence(moduleStats, assessments, childName) {
@@ -1041,7 +1072,7 @@
             document.getElementById('parentConfidenceRow').textContent = `👨‍👩‍👧 Parent confidence score: ${parentConfidence}/100 (${trajectory.direction === 'up' ? 'up' : 'steady'}) — this reflects confidence in supporting your child emotionally with current tools.`;
         }
 
-        function renderStatsSection(moduleStats, assessments) {
+        function renderStatsSection(moduleStats, assessments, moodStats) {
             const grid = document.getElementById('insightGrid');
             const list = document.getElementById('progressStoryList');
 
@@ -1061,6 +1092,7 @@
                 <div class="insight-tile"><div class="insight-tile-label">In Progress Now</div><div class="insight-tile-value">${moduleStats.inProgressCount}</div></div>
                 <div class="insight-tile"><div class="insight-tile-label">Top Skill Track</div><div class="insight-tile-value">${PATHWAY_META[moduleStats.strongestCategory]?.label || 'Building Foundations'}</div></div>
                 <div class="insight-tile"><div class="insight-tile-label">Trend Signal</div><div class="insight-tile-value">${trend.direction === 'up' ? 'Improving' : trend.direction === 'down' ? 'Needs support' : 'Steady'}</div></div>
+                <div class="insight-tile"><div class="insight-tile-label">Mood Average</div><div class="insight-tile-value">${moodStats.averageScore ? moodStats.averageScore.toFixed(1) + '/5' : '—'}</div></div>
             `;
 
             list.innerHTML = `
@@ -1068,10 +1100,11 @@
                 <li><strong>Recent check-ins:</strong> ${recentCheckins || 'No check-ins yet'}.</li>
                 <li><strong>Latest modules completed:</strong> ${moduleStats.recentTitles.join(', ') || 'Start a module to unlock more insight'}.</li>
                 <li><strong>Progress signal:</strong> ${trend.text}</li>
+                <li><strong>Daniel check-ins:</strong> ${moodStats.topScore ? `${MOOD_LABELS[moodStats.topScore].emoji} ${MOOD_LABELS[moodStats.topScore].label} selected ${moodStats.counts[moodStats.topScore]} time${moodStats.counts[moodStats.topScore] === 1 ? '' : 's'}` : 'No Daniel mood check-ins yet'}${moodStats.averageScore ? `, average mood score ${moodStats.averageScore.toFixed(1)}/5` : ''}.</li>
             `;
         }
 
-        function renderPlainEnglishSection(moduleStats, assessments) {
+        function renderPlainEnglishSection(moduleStats, assessments, moodStats) {
             const list = document.getElementById('plainEnglishList');
             const footer = document.getElementById('plainEnglishFooter');
 
@@ -1089,9 +1122,12 @@
                 <li><strong>What this looks like at home:</strong> ${trendLine}</li>
                 <li><strong>How you can help:</strong> Ask one gentle question each day: “What helped you feel better today?” and praise effort, not perfection.</li>
                 <li><strong>Quick routine:</strong> 2 minutes each evening — name one feeling, one body signal, and one tool they can try tomorrow.</li>
+                <li><strong>Daniel mood pulse:</strong> ${moodStats.latestEntry ? `Latest emoji check-in was ${MOOD_LABELS[moodStats.latestEntry.mood_score]?.emoji || ''} ${MOOD_LABELS[moodStats.latestEntry.mood_score]?.label || 'recorded'} on ${formatDate(moodStats.latestEntry.created_at)}.` : 'Once your child starts using Daniel mood check-ins, you will see simple feeling trends here.'}</li>
             `;
 
-            footer.textContent = '💡 Parent tip: Keep language simple and warm — “I can see this is hard. Let’s try one small step together.”';
+            footer.textContent = moodStats.averageScore && moodStats.averageScore < 3
+                ? '💡 Parent tip: If mood scores stay low for several check-ins, keep language gentle and curious — “I noticed things have felt hard lately. Want to show me with an emoji or a colour?”'
+                : '💡 Parent tip: Keep language simple and warm — “I can see this is hard. Let’s try one small step together.”';
         }
 
         function renderChart(assessments) {
@@ -1187,26 +1223,28 @@
                 return;
             }
 
-            const [{ data: child, error: childError }, { data: childModules, error: modulesError }, { data: modules, error: allModulesError }, { data: assessments, error: assessmentsError }] = await Promise.all([
+            const [{ data: child, error: childError }, { data: childModules, error: modulesError }, { data: modules, error: allModulesError }, { data: assessments, error: assessmentsError }, { data: moodCheckins, error: moodError }] = await Promise.all([
                 supabase.from('children').select('*').eq('id', childId).single(),
                 supabase.from('child_modules').select('*').eq('child_id', childId),
                 supabase.from('modules').select('*'),
-                supabase.from('pathway_assessments').select('*').eq('child_id', childId).order('created_at', { ascending: true })
+                supabase.from('pathway_assessments').select('*').eq('child_id', childId).order('created_at', { ascending: true }),
+                supabase.from('child_mood_checkins').select('*').eq('child_id', childId).order('created_at', { ascending: true })
             ]);
 
-            if (childError || modulesError || allModulesError || assessmentsError) {
-                console.error('Parent insights load failed:', { childError, modulesError, allModulesError, assessmentsError });
+            if (childError || modulesError || allModulesError || assessmentsError || moodError) {
+                console.error('Parent insights load failed:', { childError, modulesError, allModulesError, assessmentsError, moodError });
                 return;
             }
 
             const moduleStats = buildModuleStats(childModules || [], modules || []);
             const safeAssessments = assessments || [];
+            const moodStats = buildMoodStats(moodCheckins || []);
 
-            updateHeader(child, moduleStats, safeAssessments);
+            updateHeader(child, moduleStats, safeAssessments, moodStats);
             renderChart(safeAssessments);
             renderDevelopmentIntelligence(moduleStats, safeAssessments, child.name);
-            renderStatsSection(moduleStats, safeAssessments);
-            renderPlainEnglishSection(moduleStats, safeAssessments);
+            renderStatsSection(moduleStats, safeAssessments, moodStats);
+            renderPlainEnglishSection(moduleStats, safeAssessments, moodStats);
             renderFocusPlan(moduleStats, safeAssessments);
         }
 

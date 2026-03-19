@@ -114,7 +114,7 @@
                 <div class="dashboard-hero-strip">
                     <!-- Daniel companion -->
                     <div class="hero-daniel" id="danielHub">
-                        <div class="hero-daniel-inner" id="danielCharacter" tabindex="0" role="button" aria-label="Talk to Daniel">
+                        <div class="hero-daniel-inner" id="danielCharacter" tabindex="0" role="button" aria-label="Rate how you feel with Daniel">
                             <img class="hero-daniel-img" src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" loading="lazy" />
                             <div class="hero-daniel-badge" id="danielGrowthIndicator">
                                 <span style="font-size: 11px;">💪</span>
@@ -123,7 +123,7 @@
                         </div>
                         <div class="hero-daniel-speech">
                             <div class="daniel-info"><h3 class="daniel-name">Daniel</h3></div>
-                            <p class="hero-daniel-quote" id="moodText">Want to figure things out with me?</p>
+                            <p class="hero-daniel-quote" id="moodText">Tap me to share how you feel right now!</p>
                         </div>
                     </div>
 
@@ -662,6 +662,21 @@
     </div>
 
     <!-- Add Custom Reward Modal -->
+
+    <div id="danielMoodModal" class="modal-overlay hidden daniel-mood-overlay" aria-hidden="true">
+        <div class="modal daniel-mood-modal" role="dialog" aria-modal="true" aria-labelledby="danielMoodTitle">
+            <button type="button" class="daniel-mood-close" id="closeDanielMoodModal" aria-label="Close mood popup">×</button>
+            <div class="daniel-mood-header">
+                <div class="daniel-mood-mascot">🐶</div>
+                <p class="daniel-mood-kicker" id="danielMoodKicker">Daniel check-in</p>
+                <h2 class="modal-title daniel-mood-title" id="danielMoodTitle">How are you feeling right now?</h2>
+                <p class="daniel-mood-subtitle" id="danielMoodSubtitle">Pick the emoji that feels most like you.</p>
+            </div>
+            <div class="daniel-mood-options" id="danielMoodOptions"></div>
+            <div class="daniel-mood-footer" id="danielMoodFooter">You can do another check-in in about 2 hours.</div>
+        </div>
+    </div>
+
     <div id="customRewardModal" class="modal-overlay hidden">
         <div class="modal">
             <h2 class="modal-title">Create Custom Reward</h2>

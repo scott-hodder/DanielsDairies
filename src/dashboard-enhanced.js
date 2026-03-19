@@ -2342,12 +2342,14 @@ class EnhancedDashboard {
   }
 
   setupDanielHub() {
+    if (isDanielMoodCheckinEnabled()) return;
     var self = this;
     var danielHub = document.getElementById('danielHub');
     if (danielHub) danielHub.addEventListener('click', function() { self.interactWithDaniel(); });
   }
 
   interactWithDaniel() {
+    if (isDanielMoodCheckinEnabled()) return;
     var danielAvatar = document.querySelector('.hero-daniel-img') || document.querySelector('.daniel-avatar');
     var moodText = document.getElementById('moodText');
     
@@ -2370,6 +2372,7 @@ class EnhancedDashboard {
   }
 
   updateDanielMood() {
+    if (isDanielMoodCheckinEnabled()) return;
     var moodText = document.getElementById('moodText');
     if (moodText) moodText.textContent = DANIEL_MOODS[this.danielMoodIndex];
   }
@@ -2761,3 +2764,8 @@ window.setAdventureMapSuperSkill = function(superSkillSlug) {
 
 // Export the category to super skill mapping for use by focus-plan.js
 window.CATEGORY_TO_SUPERSKILL = CATEGORY_TO_SUPERSKILL;
+function isDanielMoodCheckinEnabled() {
+  return Boolean(window.__danielMoodCheckinEnabled || document.getElementById('danielMoodModal'))
+}
+
+
