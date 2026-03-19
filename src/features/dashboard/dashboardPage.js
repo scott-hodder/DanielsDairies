@@ -24,6 +24,7 @@ window.supabase = supabase
 const state = dashboardState
 
 window.state = window.state || {}
+window.__danielMoodCheckinEnabled = true
 
 const SELECTED_CHILD_STORAGE_PREFIX = 'dashboard:selectedChild:'
 
@@ -2154,6 +2155,11 @@ async function selectChild(child) {
       window.initDailyQuest(child.id)
     }
 
+    setupDanielMoodCheckin()
+    await refreshMoodCheckinState(child.id)
+    
+    // ... (rest of the code remains the same)
+    
     // DEFERRED — weekly plan, streak, and leaderboard data load in background
     console.time('⏱️ deferred child queries (weeklyPlan, streak)')
     Promise.allSettled([
