@@ -2913,7 +2913,7 @@ body {
 .daniel-avatar {
     width: 110px;
     height: 130px;
-    object-fit: cover;
+    object-fit: contain;
     border: none;
     box-shadow: none;
     animation: none;
@@ -5124,22 +5124,25 @@ body::after {
 .hero-daniel-inner {
     position: relative;
     flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+    overflow: hidden;
+    border-radius: 40%;
+    background: linear-gradient(145deg, #E0F2FE 0%, #C7D2FE 100%);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.22), 0 0 0 3px rgba(255,255,255,0.9);
 }
 
 .hero-daniel-img {
-    width: 150px;    
-    height: 200px;
+    width: 100%;    
+    height: 100%;
     object-fit: contain;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #E0F2FE 0%, #C7D2FE 100%);
-    padding: 6px;
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.22), 0 0 0 3px rgba(255,255,255,0.9);
+    transform: scale(1.35);
     animation: danielBounce 3s ease-in-out infinite;
 }
 
 @keyframes danielBounce {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-3px) scale(1.02); }
+    0%, 100% { transform: translateY(0) scale(1.35); }
+    50% { transform: translateY(-3px) scale(1.38); }
 }
 
 .daniel-hub.has-activity .hero-daniel-img {
@@ -5153,7 +5156,7 @@ body::after {
 
 .hero-daniel-badge {
     position: absolute;
-    bottom: -6px;
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     background: white;
@@ -6924,10 +6927,10 @@ button:active, .btn:active {
 }
 
 .daniel-mood-modal {
-    width: min(560px, calc(100vw - 32px));
-    max-width: 560px;
+    width: min(520px, calc(100vw - 32px));
+    max-width: 520px;
     border-radius: 28px;
-    padding: 28px 24px 22px;
+    padding: 32px 28px 24px;
     position: relative;
     background: linear-gradient(180deg, #fffdf9 0%, #f7fbff 100%);
     box-shadow: 0 24px 70px rgba(76, 108, 150, 0.28);
@@ -6953,8 +6956,8 @@ button:active, .btn:active {
 }
 
 .daniel-mood-mascot {
-    width: 68px;
-    height: 68px;
+    width: 120px;
+    height: 120px;
     margin: 0 auto 10px;
     border-radius: 50%;
     display: flex;
@@ -6965,8 +6968,8 @@ button:active, .btn:active {
 }
 
 .daniel-mood-mascot-img {
-    width: 52px;
-    height: 52px;
+    width: 120px;
+    height: 120px;
     object-fit: contain;
 }
 
@@ -6992,18 +6995,23 @@ button:active, .btn:active {
 
 .daniel-mood-options {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
+    width: 100%;
 }
 
 .daniel-mood-option {
     border: 2px solid rgba(124, 111, 221, 0.14);
     border-radius: 22px;
-    padding: 16px 14px;
+    padding: 16px 12px;
     background: #fff;
     cursor: pointer;
     text-align: center;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .daniel-mood-option:hover,
@@ -7042,12 +7050,22 @@ button:active, .btn:active {
     line-height: 1.5;
 }
 
+.daniel-mood-options:has(.daniel-mood-quote) {
+    display: flex;
+    justify-content: center;
+}
+
 .daniel-mood-quote {
-    padding: 16px;
+    padding: 24px 32px;
     border-radius: 18px;
-    background: linear-gradient(135deg, rgba(255, 242, 191, 0.65), rgba(220, 239, 255, 0.75));
+    background: linear-gradient(135deg, rgba(255, 242, 191, 0.7), rgba(220, 239, 255, 0.8));
     color: #355070;
     font-weight: 600;
+    font-size: 18px;
+    line-height: 1.6;
+    text-align: center;
+    flex: 1;
+    box-sizing: border-box;
 }
 
 

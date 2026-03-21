@@ -4992,7 +4992,7 @@ function showDanielMoodModalLocked() {
   kicker.textContent = 'Daniel says'
   title.textContent = 'Thanks for checking in already 🌟'
   subtitle.textContent = `You can rate again in about ${formatTimeRemaining(cooldown.msRemaining)}.`
-  options.innerHTML = `<div class="daniel-mood-quote">“${quote}”</div>`
+  options.innerHTML = `<div class="daniel-mood-quote">"${quote}"</div>`
   footer.textContent = 'Come back a little later for another emoji check-in.'
   showElement(overlay)
   overlay.setAttribute('aria-hidden', 'false')

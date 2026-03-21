@@ -687,7 +687,7 @@
 
         <section class="card development-card" id="developmentCard">
             <div class="card-header">
-                <h3 class="card-title"><span class="card-icon">⭐</span> Development Intelligence</h3>
+                <h3 class="card-title"><span class="card-icon">⭐</span> Development Progress</h3>
                 <span class="card-badge badge-warning">Forecast + Actions</span>
             </div>
             <div class="dev-score-row">
@@ -695,7 +695,6 @@
                     <div class="dev-score-label" id="developmentScoreLabel">Development Score</div>
                     <div class="dev-score-value" id="developmentScoreValue">-- / 100</div>
                 </div>
-                <div class="dev-velocity" id="developmentVelocityText">Trajectory data loading...</div>
             </div>
             <div class="dev-breakdown-grid" id="developmentBreakdownGrid"></div>
             <div class="dev-alert" id="developmentRiskAlert" style="display:none;"></div>
@@ -1022,7 +1021,6 @@
 
             document.getElementById('developmentScoreLabel').textContent = `${childName}’s Development Score`;
             document.getElementById('developmentScoreValue').textContent = `${composite} / 100`;
-            document.getElementById('developmentVelocityText').textContent = `Faster growth than ~${velocityPercentile}% of similar learners (estimated).`;
             document.getElementById('developmentBreakdownGrid').innerHTML = `
                 <div class="dev-breakdown-item">Emotional regulation<strong>${emotionalRegulation}</strong></div>
                 <div class="dev-breakdown-item">Social confidence<strong>${socialConfidence}</strong></div>
