@@ -2,6 +2,11 @@
 // DAILY QUEST SYSTEM - Interactive Mini Activities
 // ================================================
 
+// Get today's date in Brisbane time (AEST, UTC+10, no DST) as YYYY-MM-DD
+function getBrisbaneToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Brisbane' }).format(new Date());
+}
+
 // Daily Quest Data
 const DAILY_QUESTS = [
   {
@@ -800,7 +805,7 @@ class DailyQuestManager {
   }
 
   async loadTodaysQuest() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBrisbaneToday();
     
     // Try to load from database first
     if (this.supabase && this.childId) {
@@ -813,7 +818,7 @@ class DailyQuestManager {
           .single();
 
         if (data && !error) {
-          this.isCompleted = false; //true;
+          this.isCompleted = true;
           this.currentQuest = DAILY_QUESTS.find(q => q.id === data.quest_id) || DAILY_QUESTS[0];
           return;
         }
@@ -1573,7 +1578,7 @@ class DailyQuestManager {
   }
 
   async saveCompletion() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBrisbaneToday();
 
     // Try database first
     if (this.supabase && this.childId) {

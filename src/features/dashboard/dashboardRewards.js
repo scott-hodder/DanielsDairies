@@ -40,8 +40,8 @@ export async function initializeRewardsTab(selectedChild) {
   selectedChildId = selectedChild.id
   
   try {
-    // Load rewards and child's spendable stars
-    rewards = await getRewards()
+    // Load rewards and child's spendable stars (filtered to this child)
+    rewards = await getRewards(selectedChild.id)
     const starsData = await getChildSpendableStars(selectedChild.id)
     childSpendableStars = starsData.spendable_stars || 0
     
@@ -128,9 +128,8 @@ async function renderPurchaseHistory(selectedChild) {
     }
     
     purchaseHistory.innerHTML = history.map(purchase => {
-      const date = new Date(purchase.created_at).toLocaleDateString()
-      const statusClass = purchase.status.toLowerCase()
-      
+      const date = new Date(purchase.created_at).toLocaleDateString('en-AU')
+
       return `
         <div class="purchase-history-item">
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -140,7 +139,6 @@ async function renderPurchaseHistory(selectedChild) {
               <div style="font-size: 13px; color: #4c6c96;">${date} • ⭐ ${purchase.star_cost} stars</div>
             </div>
           </div>
-          <div class="purchase-status ${statusClass}">${purchase.status}</div>
         </div>
       `
     }).join('')
@@ -240,13 +238,14 @@ export function setupRewardsEventListeners(selectedChild) {
           description: document.getElementById('rewardDescription').value,
           star_cost: parseInt(document.getElementById('rewardCost').value),
           icon: document.getElementById('rewardIcon').value || '🎁',
-          category: document.getElementById('rewardCategory').value
+          category: document.getElementById('rewardCategory').value,
+          child_id: selectedChildId
         }
-        
+
         await createCustomReward(rewardData)
-        
-        // Reload rewards
-        rewards = await getRewards()
+
+        // Reload rewards (filtered to this child)
+        rewards = await getRewards(selectedChildId)
         renderRewards(selectedChild)
         
         closeCustomRewardModal()

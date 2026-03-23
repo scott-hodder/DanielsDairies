@@ -663,8 +663,9 @@ class AdventureMapV4 {
 
     console.log('[AdventureMap] render() — allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
 
-    // If filter produced no results but modules exist, fall back to first available category
-    if (this.modules.length === 0 && this.allModules.length > 0) {
+    // If filter produced no results but modules exist, and this isn't a deliberate user cycle selection,
+    // fall back to first available category
+    if (this.modules.length === 0 && this.allModules.length > 0 && !this._userSelectedEmptyCycle) {
       console.log('[AdventureMap] Category "' + this.currentCategory + '" has no modules — falling back');
       var fallbackCategories = this.getAvailableCategories();
       if (fallbackCategories.length > 0) {
@@ -674,6 +675,7 @@ class AdventureMapV4 {
         console.log('[AdventureMap] Fell back to category:', this.currentCategory, 'modules:', this.modules.length);
       }
     }
+    this._userSelectedEmptyCycle = false;
 
     // Run DOM updates directly — callers already handle framing
     this.createMapHTML();
@@ -783,7 +785,7 @@ class AdventureMapV4 {
         var status = completed ? 'completed' : (isLocked ? 'locked' : 'available');
         var seriesName = (m.series && m.series.label) || m.series_name || m.series || '';
         
-        // Get super skill slug - prioritize super_skill_id, fallback to category mapping
+        // Get super skill slug - prioritize super_skill_id, then category field
         var superSkillSlug = 'all';
         if (m.super_skill_id) {
           // Look up super skill slug from loaded data
@@ -791,11 +793,18 @@ class AdventureMapV4 {
           if (superSkill && superSkill.slug) {
             superSkillSlug = superSkill.slug;
           }
-        } else {
-          // Fallback: map old category to super skill
-          var oldCategory = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || '').toLowerCase();
-          if (oldCategory && CATEGORY_TO_SUPERSKILL[oldCategory]) {
-            superSkillSlug = CATEGORY_TO_SUPERSKILL[oldCategory];
+        }
+        // Fallback: use the category field (may already be a slug, or an old category name)
+        if (superSkillSlug === 'all') {
+          var rawCategory = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || '').toLowerCase();
+          if (rawCategory) {
+            if (SUPER_SKILL_THEMES[rawCategory]) {
+              // Category is already a valid super skill slug
+              superSkillSlug = rawCategory;
+            } else if (CATEGORY_TO_SUPERSKILL[rawCategory]) {
+              // Map old category name to super skill slug
+              superSkillSlug = CATEGORY_TO_SUPERSKILL[rawCategory];
+            }
           }
         }
         
@@ -842,19 +851,59 @@ class AdventureMapV4 {
     }
 
     var availableCycles = this.getAvailableCyclesForCategory();
-    if (!this.currentCycleId || (availableCycles.length > 0 && !availableCycles.find(function(cycle) { return String(cycle.id) === String(self.currentCycleId); }))) {
+    if (availableCycles.length === 0) {
+      // No cycles for this category — clear any stale cycle from a previous category
+      this.currentCycleId = null;
+    } else if (!this.currentCycleId || !availableCycles.find(function(cycle) { return String(cycle.id) === String(self.currentCycleId); })) {
       this.syncCycleSelection(availableCycles);
     }
     if (this.currentCycleId) {
       this.setStoredCycleId(this.currentCategory, this.currentCycleId);
     }
-    
-    this.modules = this.allModules.filter(function(m) { 
+
+    this.modules = this.allModules.filter(function(m) {
       var categoryMatch = (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory);
       if (!categoryMatch) return false;
       if (!self.currentCycleId) return true;
       return String(m.cycleId) === String(self.currentCycleId);
     });
+
+    // Safety net: if cycle filter eliminated ALL modules during automatic sync (not manual user selection),
+    // fall back to the cycle that has the most modules
+    if (this.modules.length === 0 && this.currentCycleId && !this._manualCycleSelect) {
+      var categoryModules = this.allModules.filter(function(m) {
+        return (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory);
+      });
+      if (categoryModules.length > 0) {
+        var cycleCounts = {};
+        categoryModules.forEach(function(m) {
+          if (m.cycleId) {
+            cycleCounts[m.cycleId] = (cycleCounts[m.cycleId] || 0) + 1;
+          }
+        });
+        var bestCycleId = null;
+        var bestCount = 0;
+        Object.keys(cycleCounts).forEach(function(cid) {
+          if (cycleCounts[cid] > bestCount) {
+            bestCount = cycleCounts[cid];
+            bestCycleId = cid;
+          }
+        });
+        if (bestCycleId) {
+          this.currentCycleId = bestCycleId;
+        } else {
+          this.currentCycleId = null;
+        }
+        this.modules = this.allModules.filter(function(m) {
+          var categoryMatch = (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory);
+          if (!categoryMatch) return false;
+          if (!self.currentCycleId) return true;
+          return String(m.cycleId) === String(self.currentCycleId);
+        });
+      }
+    }
+    // Reset manual flag after filtering
+    this._manualCycleSelect = false;
 
     // Pathway ordering: if modules have pathway_order, sort ascending (1,2,3...).
     // Fallback keeps original order for items without pathway_order.
@@ -2040,6 +2089,8 @@ class AdventureMapV4 {
     if (cycleFilter) {
       this._cycleChangeHandler = function(e) {
         self.currentCycleId = e.target.value || null;
+        self._manualCycleSelect = true;
+        self._userSelectedEmptyCycle = true;
         self.setStoredCycleId(self.currentCategory, self.currentCycleId);
         self.translateX = 0;
         self.translateY = 0;
