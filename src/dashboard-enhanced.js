@@ -15,7 +15,9 @@ let dashboardChildren = [];
 function getDashboardData() {
   if (typeof window.modules !== 'undefined') dashboardModules = window.modules;
   if (typeof window.childModules !== 'undefined') dashboardChildModules = window.childModules;
-  if (typeof window.selectedChild !== 'undefined') dashboardSelectedChild = window.selectedChild;
+  // Check both window.selectedChild and window.state.selectedChild
+  var sc = window.selectedChild || (window.state && window.state.selectedChild) || null;
+  if (sc) dashboardSelectedChild = sc;
   if (typeof window.children !== 'undefined') dashboardChildren = window.children;
 }
 
@@ -237,29 +239,29 @@ const MAP_ZONE_PROGRESSION = [
 
 // Daniel expression images mapping
 const DANIEL_EXPRESSIONS = {
-  stressed: '/images/characters/DanielTheDog.png',
-  worried: '/images/characters/DanielTheDog.png',
-  sad: '/images/characters/DanielTheDog.png',
-  tense: '/images/characters/DanielTheDog.png',
-  confused: '/images/characters/DanielTheDog.png',
-  shy: '/images/characters/DanielTheDog.png',
-  curious: '/images/characters/DanielTheDog.png',
-  focused: '/images/characters/DanielTheDog.png',
-  hopeful: '/images/characters/DanielTheDog.png',
-  relaxing: '/images/characters/DanielTheDog.png',
-  thinking: '/images/characters/DanielTheDog.png',
-  friendly: '/images/characters/DanielTheDog.png',
-  learning: '/images/characters/DanielTheDog.png',
-  understanding: '/images/characters/DanielTheDog.png',
-  happy: '/images/characters/DanielTheDog.png',
-  calm: '/images/characters/DanielTheDog.png',
-  peaceful: '/images/characters/DanielTheDog.png',
-  joyful: '/images/characters/DanielTheDog.png',
-  loving: '/images/characters/DanielTheDog.png',
-  zen: '/images/characters/DanielTheDog.png',
-  enlightened: '/images/characters/DanielTheDog.png',
-  celebrating: '/images/characters/DanielTheDog.png',
-  proud: '/images/characters/DanielTheDog.png'
+  stressed: '/images/characters/DanielTheDog.webp',
+  worried: '/images/characters/DanielTheDog.webp',
+  sad: '/images/characters/DanielTheDog.webp',
+  tense: '/images/characters/DanielTheDog.webp',
+  confused: '/images/characters/DanielTheDog.webp',
+  shy: '/images/characters/DanielTheDog.webp',
+  curious: '/images/characters/DanielTheDog.webp',
+  focused: '/images/characters/DanielTheDog.webp',
+  hopeful: '/images/characters/DanielTheDog.webp',
+  relaxing: '/images/characters/DanielTheDog.webp',
+  thinking: '/images/characters/DanielTheDog.webp',
+  friendly: '/images/characters/DanielTheDog.webp',
+  learning: '/images/characters/DanielTheDog.webp',
+  understanding: '/images/characters/DanielTheDog.webp',
+  happy: '/images/characters/DanielTheDog.webp',
+  calm: '/images/characters/DanielTheDog.webp',
+  peaceful: '/images/characters/DanielTheDog.webp',
+  joyful: '/images/characters/DanielTheDog.webp',
+  loving: '/images/characters/DanielTheDog.webp',
+  zen: '/images/characters/DanielTheDog.webp',
+  enlightened: '/images/characters/DanielTheDog.webp',
+  celebrating: '/images/characters/DanielTheDog.webp',
+  proud: '/images/characters/DanielTheDog.webp'
 };
 
 // ================================================
@@ -324,18 +326,28 @@ class AdventureMapV4 {
   init() {
     var self = this;
     this.injectStyles();
-    
+
     // Check if there's a focus plan super skill already set
     if (window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
       this.currentCategory = window.currentFocusSuperSkill;
     }
-    
+
     // Restore user's explicit category selection (overrides focus plan default)
     var storedCategory = this.getStoredCategory();
     if (storedCategory && SUPER_SKILL_THEMES[storedCategory]) {
       this.currentCategory = storedCategory;
     }
-    
+
+    // If we already loaded super skills/cycles, skip the DB call and render immediately
+    if (superSkillsFromDB.length > 0 || cyclesFromDB.length > 0) {
+      // Re-check focus plan in case it changed
+      if (!self.currentCategory && window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
+        self.currentCategory = window.currentFocusSuperSkill;
+      }
+      self.render();
+      return;
+    }
+
     // Load super skills and cycles from database if supabase is available
     if (window.supabase) {
       Promise.all([
@@ -356,22 +368,42 @@ class AdventureMapV4 {
             superSkillsFromDB = superSkillsResult.data;
             // Update SUPER_SKILL_THEMES with database values
             superSkillsResult.data.forEach(function(skill) {
+              if (!skill.slug) return;
               if (SUPER_SKILL_THEMES[skill.slug]) {
                 SUPER_SKILL_THEMES[skill.slug].name = skill.name;
                 SUPER_SKILL_THEMES[skill.slug].emoji = skill.emoji || SUPER_SKILL_THEMES[skill.slug].emoji;
                 SUPER_SKILL_THEMES[skill.slug].color = skill.theme_color || SUPER_SKILL_THEMES[skill.slug].color;
+              } else {
+                // Generate a theme for new super skills not hardcoded above
+                var c = skill.theme_color || '#405878';
+                SUPER_SKILL_THEMES[skill.slug] = {
+                  name: skill.name || skill.slug,
+                  emoji: skill.emoji || '🗺️',
+                  color: c,
+                  description: skill.description || '',
+                  skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
+                  skyGradientEnd: ['#87CEEB', '#98D8C8', '#7CCD7C', '#90EE90', '#98FB98'],
+                  decorationsStart: ['🌲', '🌳', '🍂', '🍃'],
+                  decorationsEnd: ['🌸', '🌻', '🌼', '🦋', '🐦', '🌈'],
+                  pathColor: { main: c, light: c, shadow: 'rgba(0,0,0,0.2)' },
+                  startMarker: '🏠',
+                  endMarker: '🏁',
+                  destination: { name: (skill.name || 'Adventure') + "'s End", emoji: '🏆' },
+                  nodeEmojis: { incomplete: '📘', complete: '✨' },
+                  danielExpressions: { start: 'focused', middle: 'happy', end: 'proud' }
+                };
               }
             });
           }
           if (cyclesResult.data) {
             cyclesFromDB = cyclesResult.data;
           }
-          
+
           // Check again for focus plan after loading (in case it was set while loading)
           if (!self.currentCategory && window.currentFocusSuperSkill && SUPER_SKILL_THEMES[window.currentFocusSuperSkill]) {
             self.currentCategory = window.currentFocusSuperSkill;
           }
-          
+
           self.render();
         })
         .catch(function(err) {
@@ -387,35 +419,45 @@ class AdventureMapV4 {
     if (document.getElementById('adventure-map-v4-styles')) return;
     
     var css = [];
-    css.push('.adventure-map-section { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid rgba(64,88,120,0.08); margin-top: 20px; overflow: hidden; }');
-    css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; }');
-    css.push('.adventure-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 26px; margin: 0; color: #405878; display: flex; align-items: center; gap: 10px; }');
-    css.push('.adventure-subtitle { margin: 0; color: #6d86a8; font-size: 14px; }');
-    css.push('.category-filter-container { display: flex; align-items: center; gap: 12px; margin: 12px 0 16px; padding: 0 8px; flex-wrap: wrap; justify-content: center; }');
-    css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 600; color: #405878; }');
-    css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 500; padding: 10px 36px 10px 16px; border-radius: 12px; border: 2px solid rgba(64,88,120,0.15); background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%); color: #405878; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23405878\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 200px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }');
-    css.push('.category-filter-select:hover { border-color: rgba(64,88,120,0.25); }');
-    css.push('.category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }');
-    css.push('.cycle-badge { background: #ffffff; color: #405878; border: 2px solid rgba(64,88,120,0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }');
-    css.push('.town-progress-cue { margin: 0 8px 16px; border-radius: 16px; border: 2px solid rgba(64,88,120,0.12); background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.98) 100%); box-shadow: 0 8px 20px rgba(15,23,42,0.08); overflow: hidden; }');
-    css.push('.town-progress-cue-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 10px; border-bottom: 1px solid rgba(64,88,120,0.1); }');
-    css.push('.town-progress-cue-title { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #405878; display: flex; align-items: center; gap: 8px; }');
-    css.push('.town-progress-cue-stage { font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 600; color: #405878; background: rgba(64,88,120,0.08); border-radius: 999px; padding: 5px 10px; }');
-    css.push('.town-progress-cue-copy { padding: 10px 16px 14px; font-size: 13px; line-height: 1.45; color: #4b5f7a; }');
-    css.push('.town-progress-cue-strong { color: #2f4664; font-weight: 700; }');
-    css.push('.town-progress-cue-timeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }');
-    css.push('.town-progress-cue-step { border-radius: 10px; border: 1px solid rgba(64,88,120,0.12); background: #fff; padding: 8px 6px; text-align: center; font-size: 11px; color: #6d86a8; }');
-    css.push('.town-progress-cue-step strong { display: block; font-family: "Fredoka", sans-serif; color: #405878; font-size: 12px; margin-top: 2px; }');
-    css.push('.town-progress-cue-step.active { border-color: rgba(47, 108, 197, 0.45); background: rgba(59,130,246,0.08); color: #2f4664; }');
-    css.push('.town-progress-cue-step.done { border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.1); color: #2f6e4a; }');
-    css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 20px; overflow: hidden; cursor: grab; border: 4px solid rgba(64,88,120,0.12); box-shadow: inset 0 0 120px rgba(135,206,235,0.25), 0 12px 28px rgba(15, 23, 42, 0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%); }');
+    css.push('.adventure-map-section { background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(245,250,255,0.4) 30%, rgba(240,248,255,0.3) 100%); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 24px; padding: 0; box-shadow: 0 8px 32px rgba(64,88,120,0.08), 0 2px 8px rgba(64,88,120,0.04), inset 0 1px 0 rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5); margin-top: 0; overflow: hidden; position: relative; }');
+    css.push('.adventure-map-header-fixed { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; text-align: center; }');
+    css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 24px 14px; position: relative; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%); }');
+    css.push('.adventure-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
+    css.push('.adventure-subtitle { margin: 2px 0 0; color: #64748B; font-size: 14px; font-weight: 500; }');
+    css.push('.category-filter-container { display: flex; align-items: center; gap: 10px; margin: 0 20px 10px; padding: 10px 20px; flex-wrap: wrap; justify-content: center; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.6); }');
+    css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; color: #64748B; }');
+    css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 600; padding: 10px 36px 10px 16px; border-radius: 14px; border: 1.5px solid rgba(64,88,120,0.12); background: rgba(255,255,255,0.85); color: #1E293B; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748B\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 180px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }');
+    css.push('.category-filter-select:hover { border-color: rgba(99,102,241,0.35); box-shadow: 0 2px 8px rgba(99,102,241,0.08); }');
+    css.push('.category-filter-select:focus { outline: none; border-color: rgba(99,102,241,0.4); box-shadow: 0 0 0 3px rgba(99,102,241,0.08); }');
+    css.push('.category-badge { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); letter-spacing: 0.2px; }');
+    css.push('.cycle-badge { background: rgba(255,255,255,0.85); color: #405878; border: 1.5px solid rgba(64,88,120,0.1); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }');
+    css.push('.town-progress-cue { margin: 0 20px 12px; border-radius: 18px; border: none; background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(248,250,255,0.5) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 2px 12px rgba(64,88,120,0.06), inset 0 1px 0 rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.55); overflow: hidden; }');
+    css.push('.town-progress-cue-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px 8px; }');
+    css.push('.town-progress-cue-title { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px; }');
+    css.push('.town-progress-cue-stage { font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; color: #6366F1; background: rgba(99,102,241,0.1); border-radius: 999px; padding: 5px 12px; }');
+    css.push('.town-progress-cue-copy { padding: 0 20px 14px; font-size: 12px; line-height: 1.5; color: #64748B; }');
+    css.push('.town-progress-cue-strong { color: #1E293B; font-weight: 700; }');
+    css.push('.town-progress-cue-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 10px; position: relative; }');
+    css.push('.town-progress-cue-timeline::before { content: ""; position: absolute; top: 24px; left: 12%; right: 12%; height: 4px; background: #E2E8F0; border-radius: 2px; z-index: 0; }');
+    css.push('.town-progress-cue-step { text-align: center; padding: 10px 8px; position: relative; z-index: 1; transition: all 0.3s ease; border-radius: 14px; }');
+    css.push('.town-progress-cue-step-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #F1F5F9; border: 3px solid #E2E8F0; transition: all 0.3s ease; }');
+    css.push('.town-progress-cue-step strong { display: block; font-family: "Fredoka", sans-serif; color: #94A3B8; font-size: 11px; margin-top: 1px; font-weight: 600; }');
+    css.push('.town-progress-cue-step small { font-size: 10px; color: #CBD5E1; font-weight: 500; }');
+    css.push('.town-progress-cue-step.active { background: rgba(99,102,241,0.06); }');
+    css.push('.town-progress-cue-step.active .town-progress-cue-step-dot { background: linear-gradient(135deg, #6366F1, #818CF8); border-color: #6366F1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15), 0 3px 8px rgba(99,102,241,0.25); }');
+    css.push('.town-progress-cue-step.active strong { color: #4338CA; font-weight: 700; }');
+    css.push('.town-progress-cue-step.active small { color: #6366F1; font-weight: 600; }');
+    css.push('.town-progress-cue-step.done .town-progress-cue-step-dot { background: linear-gradient(135deg, #22C55E, #4ADE80); border-color: #22C55E; box-shadow: 0 2px 6px rgba(34,197,94,0.25); }');
+    css.push('.town-progress-cue-step.done strong { color: #16A34A; font-weight: 700; }');
+    css.push('.town-progress-cue-step.done small { color: #22C55E; }');
+    css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 0 0 22px 22px; overflow: hidden; cursor: grab; border: none; border-top: 1px solid rgba(64,88,120,0.06); box-shadow: inset 0 0 80px rgba(135,206,235,0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%); }');
     css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
     css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');
     css.push('.adventure-viewport[data-zone="2"] { background-image: url("/images/zones/zone2.png"); }');
     css.push('.adventure-viewport[data-zone="3"] { background-image: url("/images/zones/zone3.png"); }');
     css.push('.adventure-viewport[data-zone="4"] { background-image: url("/images/zones/zone4.png"); }');
     css.push('.adventure-viewport[data-zone] .map-bg-stack { opacity: 0; }');
-    css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 20px; pointer-events: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), inset 0 -40px 60px rgba(15, 23, 42, 0.08); }');
+    css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 0 0 22px 22px; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), inset 0 -30px 50px rgba(15, 23, 42, 0.06); }');
     css.push('.adventure-viewport:active, .adventure-viewport.dragging { cursor: grabbing; }');
     css.push('.map-bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }');
     css.push('.map-bg-sky { transition: background 0.8s ease; }');
@@ -441,6 +483,14 @@ class AdventureMapV4 {
     css.push('.path-light { fill: none; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }');
     css.push('.path-dashes { fill: none; stroke: rgba(255,255,255,0.5); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 18; animation: dashMove 1s linear infinite; }');
     css.push('@keyframes dashMove { to { stroke-dashoffset: -36; } }');
+    css.push('@keyframes roadDashFlow0 { to { stroke-dashoffset: -40; } }');
+    css.push('@keyframes roadDashFlow1 { to { stroke-dashoffset: -56; } }');
+    css.push('@keyframes roadDashFlow2 { to { stroke-dashoffset: -60; } }');
+    css.push('@keyframes roadDashFlow3 { to { stroke-dashoffset: -68; } }');
+    css.push('.road-dash-s0 { animation: roadDashFlow0 3s linear infinite; }');
+    css.push('.road-dash-s1 { animation: roadDashFlow1 2s linear infinite; }');
+    css.push('.road-dash-s2 { animation: roadDashFlow2 1.4s linear infinite; }');
+    css.push('.road-dash-s3 { animation: roadDashFlow3 1s linear infinite; }');
     css.push('.adventure-nodes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }');
     css.push('.adventure-node { position: absolute; width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translate(-50%, -50%); transition: transform 0.2s ease, box-shadow 0.2s ease; z-index: 10; overflow: visible; }');
     css.push('.adventure-node:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 20; }');
@@ -497,6 +547,7 @@ class AdventureMapV4 {
     css.push('.map-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }');
     css.push('.map-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid rgba(64,88,120,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }');
     css.push('.map-btn:hover { background: #fff; transform: scale(1.08); }');
+    css.push('@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }');
     css.push('.map-marker { position: absolute; width: 46px; height: 46px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; background-repeat: no-repeat; background-position: center; background-size: contain; }');
     css.push('.map-marker.start { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%23ffffff\' d=\'M32 6c-9 0-16 7-16 16 0 12 16 32 16 32s16-20 16-32c0-9-7-16-16-16z\'/%3E%3Cpath fill=\'%234f6b8f\' d=\'M32 10c-6.6 0-12 5.4-12 12 0 8.8 12 26 12 26s12-17.2 12-26c0-6.6-5.4-12-12-12z\'/%3E%3Ccircle cx=\'32\' cy=\'22\' r=\'6\' fill=\'%23f8fafc\'/%3E%3C/svg%3E"); animation: markerPop 0.5s ease-out; }');
     css.push('.map-marker.finish { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%2340597a\' d=\'M16 10h4v44h-4z\'/%3E%3Cpath fill=\'%23ffffff\' d=\'M20 14l28 6-12 6 12 6-28 6z\'/%3E%3Cpath fill=\'%23e2e8f0\' d=\'M20 14l20 4-10 5 10 5-20 4z\'/%3E%3C/svg%3E"); animation: flagWave 1.5s ease-in-out infinite; }');
@@ -604,50 +655,61 @@ class AdventureMapV4 {
 
   render() {
     var self = this;
-    
+
     // Get data first (synchronous)
     getDashboardData();
     this.buildModuleList();
     this.filterModulesByCategory();
-    
-    // Batch all DOM operations in a single animation frame
-    requestAnimationFrame(function() {
-      self.createMapHTML();
-      
-      // Setup event listeners immediately after creating the HTML
-      self.setupEventListeners();
-      
-      if (self.modules.length > 0) {
-        // Batch these operations together
-        self.applyThemeToBackground();
-        self.renderPath();
-        
-        // Defer decorations and nodes slightly for smoother rendering
-        requestAnimationFrame(function() {
-          self.renderDecorations();
-          self.renderNodes();
-          self.renderRoadblocks(); // NEW: Render roadblocks on the map
-          self.updateProgress();
-          
-          // Add a small delay to ensure module data is fully processed before centering
-          setTimeout(function() {
-            self.centerOnCurrentModule();
-          }, 100);
-          
-          // Signal that the dashboard map has finished rendering
-          if (typeof window._dashboardRenderComplete === 'function') {
-            window._dashboardRenderComplete();
-            window._dashboardRenderComplete = null;
-          }
-        });
-      } else {
-        // No modules to render - still signal completion
+
+    console.log('[AdventureMap] render() — allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
+
+    // If filter produced no results but modules exist, and this isn't a deliberate user cycle selection,
+    // fall back to first available category
+    if (this.modules.length === 0 && this.allModules.length > 0 && !this._userSelectedEmptyCycle) {
+      console.log('[AdventureMap] Category "' + this.currentCategory + '" has no modules — falling back');
+      var fallbackCategories = this.getAvailableCategories();
+      if (fallbackCategories.length > 0) {
+        this.currentCategory = fallbackCategories[0];
+        this.currentCycleId = null;
+        this.filterModulesByCategory();
+        console.log('[AdventureMap] Fell back to category:', this.currentCategory, 'modules:', this.modules.length);
+      }
+    }
+    this._userSelectedEmptyCycle = false;
+
+    // Run DOM updates directly — callers already handle framing
+    this.createMapHTML();
+    this.setupEventListeners();
+
+    if (this.modules.length > 0) {
+      this.applyThemeToBackground();
+      this.renderPath();
+      this.renderDecorations();
+      this.renderNodes();
+      this.updateProgress();
+
+      // Render roadblocks asynchronously to avoid blocking
+      this.renderRoadblocks().then(function() {
+        setTimeout(function() { self.centerOnCurrentModule(); }, 100);
         if (typeof window._dashboardRenderComplete === 'function') {
           window._dashboardRenderComplete();
           window._dashboardRenderComplete = null;
         }
+      }).catch(function(err) {
+        console.log('Roadblock rendering error:', err);
+        setTimeout(function() { self.centerOnCurrentModule(); }, 100);
+        if (typeof window._dashboardRenderComplete === 'function') {
+          window._dashboardRenderComplete();
+          window._dashboardRenderComplete = null;
+        }
+      });
+    } else {
+      // No modules to render - still signal completion
+      if (typeof window._dashboardRenderComplete === 'function') {
+        window._dashboardRenderComplete();
+        window._dashboardRenderComplete = null;
       }
-    });
+    }
   }
   
   // NEW: Initialize and render roadblocks on the adventure map
@@ -658,7 +720,7 @@ class AdventureMapV4 {
     
     // Initialize roadblock system if not already done
     if (window.roadblockSystem && !window.roadblockSystem.initialized) {
-      var child = window.selectedChild || dashboardSelectedChild;
+      var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
       if (child && child.id && window.supabase) {
         try {
           await window.roadblockSystem.init(window.supabase, child.id);
@@ -723,7 +785,7 @@ class AdventureMapV4 {
         var status = completed ? 'completed' : (isLocked ? 'locked' : 'available');
         var seriesName = (m.series && m.series.label) || m.series_name || m.series || '';
         
-        // Get super skill slug - prioritize super_skill_id, fallback to category mapping
+        // Get super skill slug - prioritize super_skill_id, then category field
         var superSkillSlug = 'all';
         if (m.super_skill_id) {
           // Look up super skill slug from loaded data
@@ -731,11 +793,18 @@ class AdventureMapV4 {
           if (superSkill && superSkill.slug) {
             superSkillSlug = superSkill.slug;
           }
-        } else {
-          // Fallback: map old category to super skill
-          var oldCategory = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || '').toLowerCase();
-          if (oldCategory && CATEGORY_TO_SUPERSKILL[oldCategory]) {
-            superSkillSlug = CATEGORY_TO_SUPERSKILL[oldCategory];
+        }
+        // Fallback: use the category field (may already be a slug, or an old category name)
+        if (superSkillSlug === 'all') {
+          var rawCategory = ((m.category && m.category.name) || (m.category && typeof m.category === 'string' ? m.category : '') || m.category_name || '').toLowerCase();
+          if (rawCategory) {
+            if (SUPER_SKILL_THEMES[rawCategory]) {
+              // Category is already a valid super skill slug
+              superSkillSlug = rawCategory;
+            } else if (CATEGORY_TO_SUPERSKILL[rawCategory]) {
+              // Map old category name to super skill slug
+              superSkillSlug = CATEGORY_TO_SUPERSKILL[rawCategory];
+            }
           }
         }
         
@@ -782,19 +851,59 @@ class AdventureMapV4 {
     }
 
     var availableCycles = this.getAvailableCyclesForCategory();
-    if (!this.currentCycleId || (availableCycles.length > 0 && !availableCycles.find(function(cycle) { return String(cycle.id) === String(self.currentCycleId); }))) {
+    if (availableCycles.length === 0) {
+      // No cycles for this category — clear any stale cycle from a previous category
+      this.currentCycleId = null;
+    } else if (!this.currentCycleId || !availableCycles.find(function(cycle) { return String(cycle.id) === String(self.currentCycleId); })) {
       this.syncCycleSelection(availableCycles);
     }
     if (this.currentCycleId) {
       this.setStoredCycleId(this.currentCategory, this.currentCycleId);
     }
-    
-    this.modules = this.allModules.filter(function(m) { 
+
+    this.modules = this.allModules.filter(function(m) {
       var categoryMatch = (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory);
       if (!categoryMatch) return false;
       if (!self.currentCycleId) return true;
       return String(m.cycleId) === String(self.currentCycleId);
     });
+
+    // Safety net: if cycle filter eliminated ALL modules during automatic sync (not manual user selection),
+    // fall back to the cycle that has the most modules
+    if (this.modules.length === 0 && this.currentCycleId && !this._manualCycleSelect) {
+      var categoryModules = this.allModules.filter(function(m) {
+        return (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory);
+      });
+      if (categoryModules.length > 0) {
+        var cycleCounts = {};
+        categoryModules.forEach(function(m) {
+          if (m.cycleId) {
+            cycleCounts[m.cycleId] = (cycleCounts[m.cycleId] || 0) + 1;
+          }
+        });
+        var bestCycleId = null;
+        var bestCount = 0;
+        Object.keys(cycleCounts).forEach(function(cid) {
+          if (cycleCounts[cid] > bestCount) {
+            bestCount = cycleCounts[cid];
+            bestCycleId = cid;
+          }
+        });
+        if (bestCycleId) {
+          this.currentCycleId = bestCycleId;
+        } else {
+          this.currentCycleId = null;
+        }
+        this.modules = this.allModules.filter(function(m) {
+          var categoryMatch = (m.superSkillSlug === self.currentCategory) || (m.category === self.currentCategory);
+          if (!categoryMatch) return false;
+          if (!self.currentCycleId) return true;
+          return String(m.cycleId) === String(self.currentCycleId);
+        });
+      }
+    }
+    // Reset manual flag after filtering
+    this._manualCycleSelect = false;
 
     // Pathway ordering: if modules have pathway_order, sort ascending (1,2,3...).
     // Fallback keeps original order for items without pathway_order.
@@ -1056,7 +1165,7 @@ class AdventureMapV4 {
 
     overlay.innerHTML =
       '<div class="cycle-complete-popup-wrap">' +
-      '<img src="/images/characters/DanielTheDogThumbsUp.png" alt="Daniel thumbs up" class="cycle-complete-popup-daniel" />' +
+      '<img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel thumbs up" class="cycle-complete-popup-daniel" />' +
       '<div class="cycle-complete-popup" role="dialog" aria-modal="true" aria-label="Cycle completion congratulations">' +
       '<div class="cycle-complete-popup-header">' +
       '<h3 class="cycle-complete-popup-title">🎉 Congratulations!</h3>' +
@@ -1196,8 +1305,8 @@ class AdventureMapV4 {
   }
 
   createMapHTML() {
-    var section = document.querySelector('.adventure-map-section');
-    if (!section) return;
+    var container = document.getElementById('adventureMapContainer');
+    if (!container) return;
 
     this.ensureZoneStyles();
 
@@ -1228,14 +1337,20 @@ class AdventureMapV4 {
       return '<option value="' + cycle.id + '"' + selected + '>' + label + completedText + '</option>';
     }).join('');
     var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
+    var remainingCount = numModules - completedCount;
+    var progressMsg = completedCount === 0
+      ? 'Your journey begins here — pick your first module to start exploring!'
+      : remainingCount > 0
+        ? completedCount + ' of ' + numModules + ' modules completed — ' + remainingCount + ' more to go!'
+        : 'All ' + numModules + ' modules completed — amazing work! 🎉';
     var html = '<div class="adventure-header">' +
-      '<h2 class="adventure-title" style="color: ' + theme.color + '">' + theme.emoji + ' ' + theme.name + '</h2>' +
-      '<p class="adventure-subtitle">' + theme.description + '</p>' +
+      '<h2 class="adventure-title">🗺️ Your Adventure Map</h2>' +
+      '<p class="adventure-subtitle">' + progressMsg + '</p>' +
       '</div>' +
       '<div class="category-filter-container">' +
-      '<label class="category-filter-label">Choose your skill:</label>' +
+      '<label class="category-filter-label">Skill:</label>' +
       '<select class="category-filter-select" id="categoryFilter">' + categoryOptions + '</select>' +
-      (availableCycles.length > 0 ? '<label class="category-filter-label">Choose your cycle:</label>' +
+      (availableCycles.length > 0 ? '<label class="category-filter-label" style="margin-left: 6px;">Cycle:</label>' +
       '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
       '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
       '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + this.modules.length + ' module' + (this.modules.length !== 1 ? 's' : '') + '</span>' +
@@ -1243,6 +1358,11 @@ class AdventureMapV4 {
 
     if (this.modules.length > 0) {
       html += this.getTownProgressCueHtml(completedCount);
+      html += '<div class="adventure-skill-banner" style="--skill-color: ' + theme.color + '">' +
+        '<span class="adventure-skill-emoji">' + theme.emoji + '</span>' +
+        '<span class="adventure-skill-name">' + theme.name + '</span>' +
+        '<span class="adventure-skill-desc">' + theme.description + '</span>' +
+        '</div>';
       html += '<div class="adventure-viewport" id="adventureViewport">' +
         '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
         '<div class="map-zone-layers" aria-hidden="true"></div>' +
@@ -1264,6 +1384,7 @@ class AdventureMapV4 {
         '</div>' +
         '<div class="scroll-hint" id="scrollHint"><span class="scroll-hint-icon">👆</span><span>Drag to explore the map</span></div>' +
         '<div class="map-controls">' +
+        '<button class="map-btn" id="btnRefreshMap" title="Refresh map">🔄</button>' +
         '<button class="map-btn" id="btnCenter" title="Center on current">📍</button>' +
         '<button class="map-btn" id="btnTop" title="Go to start">⬆️</button>' +
         '</div>' +
@@ -1277,7 +1398,7 @@ class AdventureMapV4 {
         '</div>';
     }
 
-    section.innerHTML = html;
+    container.innerHTML = html;
     this.viewport = document.getElementById('adventureViewport');
     this.canvas = document.getElementById('adventureCanvas');
     this.applyZoneBackground();
@@ -1304,42 +1425,32 @@ class AdventureMapV4 {
     }
   }
 
-  getZoneForChildLevel(childLevel) {
-    if (childLevel >= 10) return 4;  // Level 10+ = Metropolis
-    if (childLevel >= 7) return 3;   // Level 7-9 = City
-    if (childLevel >= 4) return 2;   // Level 4-6 = Village
-    return 1;                        // Level 1-3 = Nature
-  }
-
   applyZoneBackground() {
     if (!this.viewport) return;
-    
-    // Get child's level from dashboard data
-    var childLevel = 1;
-    if (dashboardSelectedChild && dashboardSelectedChild.level) {
-      childLevel = dashboardSelectedChild.level;
-    }
-    
-    var newZone = this.getZoneForChildLevel(childLevel);
+
+    // Use completed module count to determine zone (matches the progress cue)
+    var townStage = this.getTownStage(); // 0=Trailhead, 1=Village, 2=Town Center, 3=City
+    var newZone = townStage + 1; // zones are 1-4
+
     var previousZone = this.currentZone;
     this.viewport.dataset.zone = newZone;
     this.currentZone = newZone;
 
     // Detect zone upgrade: only when moving to a higher zone (not zone 1)
+    var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
     if (previousZone !== null && newZone > previousZone && newZone > 1) {
       var self = this;
-      // Small delay so the background image loads before the celebration plays
       setTimeout(function() {
-        self.showZoneUpgradeBanner(newZone, childLevel);
+        self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
       }, 400);
     } else if (previousZone === null && newZone > 1) {
-      // First render after selecting a child — check if this zone was already celebrated
-      var storageKey = 'zone-celebrated-' + (dashboardSelectedChild ? dashboardSelectedChild.id : 'unknown') + '-' + newZone;
-      
+      var childId = child ? child.id : 'unknown';
+      var storageKey = 'zone-celebrated-' + childId + '-' + newZone;
+
       if (localStorage.getItem(storageKey) !== 'true') {
         var self = this;
         setTimeout(function() {
-          self.showZoneUpgradeBanner(newZone, childLevel);
+          self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
         }, 800);
       }
     }
@@ -1401,7 +1512,7 @@ class AdventureMapV4 {
     banner.className = 'zone-upgrade-banner';
     banner.innerHTML =
       '<div class="zone-upgrade-card">' +
-        '<div class="zone-upgrade-daniel"><img src="/images/characters/DanielTheDogThumbsUp.png" alt="Daniel celebrates"></div>' +
+        '<div class="zone-upgrade-daniel"><img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel celebrates"></div>' +
         '<div class="zone-upgrade-emoji">' + emoji + '</div>' +
         '<div class="zone-upgrade-title">' + title + '</div>' +
         '<div class="zone-upgrade-subtitle">' + subtitle + '</div>' +
@@ -1490,10 +1601,10 @@ class AdventureMapV4 {
 
   getTownStageMeta() {
     return [
-      { label: 'Trailhead', emoji: '🌱', minComplete: 0, maxComplete: 2, milestone: 3, rangeLabel: '0-2' },
-      { label: 'Village', emoji: '🏡', minComplete: 3, maxComplete: 5, milestone: 6, rangeLabel: '3-5' },
-      { label: 'Town Center', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '6-8' },
-      { label: 'City', emoji: '🏙️', minComplete: 9, maxComplete: 99, milestone: null, rangeLabel: '9+' }
+      { label: 'Trailhead', emoji: '🌱', minComplete: 0, maxComplete: 2, milestone: 3, rangeLabel: '1-3' },
+      { label: 'Village', emoji: '🏡', minComplete: 3, maxComplete: 5, milestone: 6, rangeLabel: '4-6' },
+      { label: 'Town Center', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '7-9' },
+      { label: 'City', emoji: '🏙️', minComplete: 9, maxComplete: 99, milestone: null, rangeLabel: '10+' }
     ];
   }
 
@@ -1512,7 +1623,11 @@ class AdventureMapV4 {
       var statusClass = 'town-progress-cue-step';
       if (idx < stageIndex) statusClass += ' done';
       if (idx === stageIndex) statusClass += ' active';
-      return '<div class="' + statusClass + '">' + item.emoji + '<strong>' + item.label + '</strong>' + item.rangeLabel + ' modules</div>';
+      return '<div class="' + statusClass + '">' +
+        '<div class="town-progress-cue-step-dot">' + item.emoji + '</div>' +
+        '<strong>' + item.label + '</strong>' +
+        '<small>' + item.rangeLabel + ' modules</small>' +
+        '</div>';
     }).join('');
 
     return '<div class="town-progress-cue" role="status" aria-live="polite">' +
@@ -1550,6 +1665,15 @@ class AdventureMapV4 {
     return positions;
   }
 
+  getSegmentRoadStage(completedBefore) {
+    // Road evolves based on how many modules are completed before this segment
+    // Matches brain-pathway metaphor: more modules = stronger neural connections = better road
+    if (completedBefore <= 2) return 0;  // Trailhead: dirt track
+    if (completedBefore <= 5) return 1;  // Village: paved road
+    if (completedBefore <= 8) return 2;  // Town Center: highway
+    return 3;                             // City: motorway
+  }
+
   renderPath() {
     var svg = document.getElementById('adventurePathSvg');
     if (!svg || this.modules.length === 0) return;
@@ -1557,17 +1681,28 @@ class AdventureMapV4 {
     var positions = this.calculateNodePositions();
     if (positions.length < 2) return;
 
-    var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
-    var townStage = this.getTownStage();
-    var townPathPalettes = [
-      { main: '#A8754F', light: '#C89B6C', shadow: 'rgba(109, 71, 41, 0.35)' },
-      { main: '#B38C5C', light: '#D5B489', shadow: 'rgba(120, 86, 52, 0.35)' },
-      { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)' },
-      { main: '#4F46E5', light: '#93C5FD', shadow: 'rgba(30, 64, 175, 0.35)' }
+    // Road palettes: dirt → pavement → highway → motorway
+    var roadPalettes = [
+      // Trailhead: narrow dirt trail
+      { main: '#A8754F', light: '#C89B6C', shadow: 'rgba(109, 71, 41, 0.35)',
+        shadowW: 32, mainW: 26, lightW: 18, dashW: 2, dashArray: '0 20',
+        dashColor: 'rgba(255,255,255,0.35)' },
+      // Village: paved road — grey asphalt with white lane lines
+      { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)',
+        shadowW: 38, mainW: 32, lightW: 24, dashW: 3, dashArray: '12 16',
+        dashColor: 'rgba(255,255,255,0.7)' },
+      // Town Center: highway — dark asphalt, wider, double lane markings
+      { main: '#4B5563', light: '#6B7280', shadow: 'rgba(31, 41, 55, 0.4)',
+        shadowW: 46, mainW: 40, lightW: 30, dashW: 3, dashArray: '18 12',
+        dashColor: 'rgba(255,255,255,0.85)' },
+      // City: motorway — dark smooth surface, widest, solid lane edges
+      { main: '#1F2937', light: '#374151', shadow: 'rgba(17, 24, 39, 0.45)',
+        shadowW: 54, mainW: 48, lightW: 38, dashW: 4, dashArray: '24 10',
+        dashColor: 'rgba(255,255,255,0.9)' }
     ];
-    var pathColors = townPathPalettes[townStage] || theme.pathColor;
+
+    // Build full continuous path
     var pathD = 'M ' + positions[0].x + ' ' + positions[0].y;
-    
     for (var i = 1; i < positions.length; i++) {
       var prev = positions[i - 1];
       var curr = positions[i];
@@ -1575,10 +1710,40 @@ class AdventureMapV4 {
       pathD += ' C ' + prev.x + ' ' + midY + ', ' + curr.x + ' ' + midY + ', ' + curr.x + ' ' + curr.y;
     }
 
-    svg.innerHTML = '<path class="path-shadow" d="' + pathD + '" style="stroke: ' + pathColors.shadow + '" />' +
-      '<path class="path-main" d="' + pathD + '" style="stroke: ' + pathColors.main + '" />' +
-      '<path class="path-light" d="' + pathD + '" style="stroke: ' + pathColors.light + '" />' +
-      '<path class="path-dashes" d="' + pathD + '" />';
+    // Road style based on overall town stage (total completed modules)
+    var totalCompleted = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var stage = this.getSegmentRoadStage(totalCompleted);
+    var road = roadPalettes[stage];
+
+    var svgContent = '';
+
+    // Shadow layer
+    svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.shadow + '" stroke-width="' + road.shadowW + '" stroke-linecap="round" stroke-linejoin="round" />';
+    // Main road surface
+    svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.main + '" stroke-width="' + road.mainW + '" stroke-linecap="round" stroke-linejoin="round" />';
+    // Lighter centre
+    svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.light + '" stroke-width="' + road.lightW + '" stroke-linecap="round" stroke-linejoin="round" />';
+
+    // Road markings — different per stage, with animated dashes
+    // Animation speed varies: dirt slow & subtle, motorway fast & smooth
+    var dashAnimClass = 'road-dash-s' + stage;
+    if (stage === 0) {
+      // Dirt trail: subtle speckled footpath marks
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+    } else if (stage === 1) {
+      // Paved road: single dashed white centre line
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+    } else if (stage === 2) {
+      // Highway: dashed centre line + solid yellow edge line
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="rgba(255,200,50,0.5)" stroke-width="1.5" stroke-linecap="round" />';
+    } else {
+      // Motorway: solid yellow centre line + dashed white lane markers
+      svgContent += '<path d="' + pathD + '" fill="none" stroke="rgba(255,220,60,0.8)" stroke-width="2.5" stroke-linecap="round" />';
+      svgContent += '<path class="' + dashAnimClass + '" d="' + pathD + '" fill="none" stroke="' + road.dashColor + '" stroke-width="' + road.dashW + '" stroke-linecap="round" stroke-dasharray="' + road.dashArray + '" />';
+    }
+
+    svg.innerHTML = svgContent;
 
     var startMarker = document.createElement('div');
     startMarker.className = 'map-marker start';
@@ -1801,7 +1966,7 @@ class AdventureMapV4 {
         var character = document.createElement('div');
         character.className = 'current-indicator';
         var dogImage = document.createElement('img');
-        dogImage.src = '/images/characters/DanielTheDog.png';
+        dogImage.src = '/images/characters/DanielTheDog.webp';
         dogImage.alt = 'Daniel the dog';
         character.appendChild(dogImage);
         var indicatorLabel = document.createElement('div');
@@ -1870,7 +2035,7 @@ class AdventureMapV4 {
     if (window.enhancedDashboard && typeof window.enhancedDashboard.showModulePreview === 'function') {
       window.enhancedDashboard.showModulePreview(module);
     } else {
-      var child = window.selectedChild || dashboardSelectedChild;
+      var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
       if (child && module.module) {
         var url = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code);
         window.location.href = url;
@@ -1924,6 +2089,8 @@ class AdventureMapV4 {
     if (cycleFilter) {
       this._cycleChangeHandler = function(e) {
         self.currentCycleId = e.target.value || null;
+        self._manualCycleSelect = true;
+        self._userSelectedEmptyCycle = true;
         self.setStoredCycleId(self.currentCategory, self.currentCycleId);
         self.translateX = 0;
         self.translateY = 0;
@@ -1991,8 +2158,10 @@ class AdventureMapV4 {
 
     var btnCenter = document.getElementById('btnCenter');
     var btnTop = document.getElementById('btnTop');
+    var btnRefreshMap = document.getElementById('btnRefreshMap');
     if (btnCenter) btnCenter.addEventListener('click', function() { self.centerOnCurrentModule(); });
     if (btnTop) btnTop.addEventListener('click', function() { self.scrollToTop(); });
+    if (btnRefreshMap) btnRefreshMap.addEventListener('click', function() { self.refreshMap(); });
 
     // Add window resize listener
     window.addEventListener('resize', this.boundHandlers.resize);
@@ -2073,6 +2242,20 @@ class AdventureMapV4 {
   endDrag() {
     this.isDragging = false;
     if (this.viewport) this.viewport.classList.remove('dragging');
+  }
+
+  refreshMap() {
+    var self = this;
+    var btn = document.getElementById('btnRefreshMap');
+    if (btn) {
+      btn.style.animation = 'spin 0.5s ease';
+      setTimeout(function() { btn.style.animation = ''; }, 500);
+    }
+    // Re-fetch data and re-render
+    this.translateX = 0;
+    this.translateY = 0;
+    this.render();
+    console.log('[AdventureMap] Map refreshed manually');
   }
 
   centerOnCurrentModule() {
@@ -2166,12 +2349,12 @@ var DANIEL_MOODS = [
 ];
 
 var DANIEL_IMAGES = [
-  "/images/characters/DanielTheDog.png",
-  "/images/characters/DanielReading.png",
-  "/images/characters/DanielTheDogHoldingHeart.png",
-  "/images/characters/DanielTheDogReading.png",
-  "/images/characters/DanielTheDogThumbsUp.png",
-  "/images/characters/DanielWithFootball.png"
+  "/images/characters/DanielTheDog.webp",
+  "/images/characters/DanielReading.webp",
+  "/images/characters/DanielTheDogHoldingHeart.webp",
+  "/images/characters/DanielTheDogReading.webp",
+  "/images/characters/DanielTheDogThumbsUp.webp",
+  "/images/characters/DanielWithFootball.webp"
 ];
 
 class EnhancedDashboard {
@@ -2187,38 +2370,38 @@ class EnhancedDashboard {
   init() {
     var self = this;
     getDashboardData();
-    
+
     // Only attach event listeners once
     if (!this.eventListenersAttached) {
       this.setupDanielHub();
       this.setupModulePreview();
       this.eventListenersAttached = true;
     }
-    
+
     // Load quest data (synchronous localStorage read)
     this.loadDailyQuest();
-    
-    // Batch DOM updates in animation frame
-    requestAnimationFrame(function() {
-      self.updateDanielMood();
-      self.updateQuestDisplay();
-      self.updateRankDisplay();
-      
-      // Setup adventure map (heavy operation - do last)
-      self.setupAdventureMap();
-    });
-    
+
+    // Update UI synchronously — these are fast DOM writes
+    this.updateDanielMood();
+    this.updateQuestDisplay();
+    this.updateRankDisplay();
+
+    // Setup adventure map — render() has its own rAF
+    this.setupAdventureMap();
+
     this.initialized = true;
   }
 
   setupDanielHub() {
+    if (isDanielMoodCheckinEnabled()) return;
     var self = this;
     var danielHub = document.getElementById('danielHub');
     if (danielHub) danielHub.addEventListener('click', function() { self.interactWithDaniel(); });
   }
 
   interactWithDaniel() {
-    var danielAvatar = document.querySelector('.daniel-avatar');
+    if (isDanielMoodCheckinEnabled()) return;
+    var danielAvatar = document.querySelector('.hero-daniel-img') || document.querySelector('.daniel-avatar');
     var moodText = document.getElementById('moodText');
     
     if (danielAvatar) {
@@ -2240,6 +2423,7 @@ class EnhancedDashboard {
   }
 
   updateDanielMood() {
+    if (isDanielMoodCheckinEnabled()) return;
     var moodText = document.getElementById('moodText');
     if (moodText) moodText.textContent = DANIEL_MOODS[this.danielMoodIndex];
   }
@@ -2317,7 +2501,9 @@ class EnhancedDashboard {
   }
 
   setupAdventureMap() {
-    this.adventureMap = new AdventureMapV4();
+    if (!this.adventureMap) {
+      this.adventureMap = new AdventureMapV4();
+    }
     this.adventureMap.init();
   }
 
@@ -2382,52 +2568,134 @@ class EnhancedDashboard {
   }
 
   async startModule(module) {
-    var child = window.selectedChild || dashboardSelectedChild;
-    if (!module.module || !child) return;
+    var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
+    if (!module.module || !child) {
+      return;
+    }
 
-    var self = this;
     var mod = module.module;
     var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '');
-    
-    // Check-in intercept for weeks 1, 4, 7, 10
-    var CHECKIN_WEEKS = [1, 4, 7, 10];
-    var week = Number(mod.week_number || mod.pathway_order || module.pathwayOrder || 0);
-    if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
-      try {
-        // Check pathway_assessments for existing check-in (primary check)
-        var existingAssessment = await window.supabase
-          .from('pathway_assessments')
+
+    try {
+      var superSkillId = mod.super_skill_id || null;
+
+      // Check 1: Periodic check-in (every 3 modules) — takes priority over intro
+      var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
+      console.log('[AdventureMap.startModule] Check 1 (periodic) — needsCheckin:', needsCheckin);
+      if (needsCheckin) {
+        if (typeof window.showCheckinPopup === 'function') {
+          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
+          console.log('[AdventureMap.startModule] Calling showCheckinPopup with skipIntro=true');
+          window.showCheckinPopup(popupModule, function() {
+            window.location.href = moduleUrl;
+          }, true);
+          return;
+        }
+      }
+
+      // Check 2: First module in a super skill → show character intro
+      console.log('[AdventureMap.startModule] Check 2 (intro) — superSkillId:', superSkillId, 'childId:', child.id);
+      if (superSkillId && typeof window.showCheckinPopup === 'function') {
+        var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
+        var alreadySeen = localStorage.getItem(introKey);
+        console.log('[AdventureMap.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen);
+        if (!alreadySeen) {
+          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
+          window.showCheckinPopup(popupModule, function() {
+            localStorage.setItem(introKey, 'true');
+            window.location.href = moduleUrl;
+          });
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('[StartModule] Error checking checkin:', e);
+    }
+
+    window.location.href = moduleUrl;
+  }
+  
+  // Check if a check-in is needed based on completed module count (every 3 modules)
+  async shouldTriggerCheckinForModuleCount(childId, superSkillId) {
+    if (!childId || !window.supabase) return false;
+    var CHECKIN_MODULE_INTERVAL = 3;
+
+    try {
+      // Count completed modules for this child IN this super skill
+      var completedCount = 0;
+      if (superSkillId) {
+        var completedResult = await window.supabase
+          .from('child_modules')
+          .select('id, modules!inner(super_skill_id)')
+          .eq('child_id', childId)
+          .eq('is_completed', true)
+          .eq('modules.super_skill_id', superSkillId);
+
+        if (completedResult.error) {
+          console.error('[Check-in] Error counting completed modules:', completedResult.error);
+          return false;
+        }
+        completedCount = (completedResult.data && completedResult.data.length) || 0;
+      } else {
+        var completedResult = await window.supabase
+          .from('child_modules')
           .select('id')
-          .eq('child_id', child.id)
-          .eq('module_id', mod.id)
-          .in('assessment_type', ['checkin', 'check_in'])
-          .limit(1)
-          .maybeSingle();
-        
-        // Also check weekly_checkins for backwards compatibility
-        var existingCheckin = await window.supabase
-          .from('weekly_checkins')
-          .select('id')
-          .eq('child_id', child.id)
-          .eq('module_id', mod.id)
-          .limit(1)
-          .maybeSingle();
-        
-        if (!existingAssessment.data && !existingCheckin.data) {
-          if (typeof window.showCheckinPopup === 'function') {
-            var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-            window.showCheckinPopup(popupModule, function() {
-              window.location.href = moduleUrl;
-            });
-            return;
+          .eq('child_id', childId)
+          .eq('is_completed', true);
+
+        if (completedResult.error) return false;
+        completedCount = (completedResult.data && completedResult.data.length) || 0;
+      }
+
+      // Count check-ins for this child for this super skill's pathway
+      var checkinCount = 0;
+      if (superSkillId) {
+        var skillResult = await window.supabase
+          .from('super_skills')
+          .select('slug')
+          .eq('id', superSkillId)
+          .single();
+
+        var slug = skillResult.data && skillResult.data.slug;
+        if (slug) {
+          var checkinResult = await window.supabase
+            .from('pathway_assessments')
+            .select('id')
+            .eq('child_id', childId)
+            .eq('pathway_category', slug)
+            .in('assessment_type', ['checkin', 'check_in']);
+
+          if (!checkinResult.error) {
+            checkinCount = (checkinResult.data && checkinResult.data.length) || 0;
           }
         }
-      } catch (e) {
-        console.error('Error checking checkin:', e);
       }
+      // If no super skill or slug lookup failed, count all check-ins
+      if (!superSkillId || checkinCount === 0) {
+        var allCheckinsResult = await window.supabase
+          .from('pathway_assessments')
+          .select('id')
+          .eq('child_id', childId)
+          .in('assessment_type', ['checkin', 'check_in']);
+        checkinCount = (allCheckinsResult.data && allCheckinsResult.data.length) || 0;
+      }
+
+      // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
+      // Don't include the initial intro check-in (that's separate)
+      var expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL);
+
+      console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
+
+      if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
+        console.log('[Check-in] Triggering check-in — need to catch up');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      console.error('Error checking checkin status:', e);
+      return false;
     }
-    
-    window.location.href = moduleUrl;
   }
 
   async getPathwayProgress(childId, pathwayCategory) {
@@ -2473,11 +2741,12 @@ function initEnhancedDashboard() {
     enhancedDashboard.init();
     return;
   }
-  
+
   console.log('Initializing enhanced dashboard with Adventure Map V4 (Super Skills Themed)...');
   enhancedDashboard = new EnhancedDashboard();
   enhancedDashboardInitialized = true;
   window.enhancedDashboard = enhancedDashboard;
+  enhancedDashboard.init();
 }
 
 // OPTIMIZED: Use event-driven initialization instead of polling
@@ -2494,7 +2763,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   function checkDataReady() {
     checkCount++;
-    if (typeof window.modules !== 'undefined' || typeof window.selectedChild !== 'undefined') {
+    // Check for window.modules OR window.state.selectedChild (the actual variable used)
+    if (typeof window.modules !== 'undefined' || (window.state && window.state.selectedChild)) {
       requestAnimationFrame(initEnhancedDashboard);
     } else if (checkCount < maxChecks) {
       setTimeout(checkDataReady, 200);
@@ -2507,21 +2777,22 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(checkDataReady, 100);
 });
 
-// Optimized refresh function with debouncing
+// Refresh function — immediate execution, debounces rapid successive calls
 var refreshDebounceTimer = null;
 window.refreshEnhancedDashboard = function() {
-  // Debounce rapid refresh calls
+  // If a call is already pending, skip (debounce)
   if (refreshDebounceTimer) {
-    clearTimeout(refreshDebounceTimer);
+    return;
   }
-  
+  // Execute immediately
+  if (enhancedDashboard) {
+    enhancedDashboard.init();
+  } else {
+    initEnhancedDashboard();
+  }
+  // Block subsequent calls for 50ms
   refreshDebounceTimer = setTimeout(function() {
     refreshDebounceTimer = null;
-    if (enhancedDashboard) {
-      enhancedDashboard.init();
-    } else {
-      initEnhancedDashboard();
-    }
   }, 50);
 };
 
@@ -2544,3 +2815,8 @@ window.setAdventureMapSuperSkill = function(superSkillSlug) {
 
 // Export the category to super skill mapping for use by focus-plan.js
 window.CATEGORY_TO_SUPERSKILL = CATEGORY_TO_SUPERSKILL;
+function isDanielMoodCheckinEnabled() {
+  return Boolean(window.__danielMoodCheckinEnabled || document.getElementById('danielMoodModal'))
+}
+
+

@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, getLevelInfo, getXpForNextLevel } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -15,6 +15,8 @@ let currentCreditSummary = null
 let currentBillingPeriod = getCurrentBillingPeriod()
 let currentSubscription = null
 let subscriptionTiers = []
+const MODULES_LOADING_RETRY_LIMIT = 12
+let modulesLoadingRetryCount = 0
 
 // Make supabase available to non-module scripts and inline dashboard.html code
 window.supabase = supabase
@@ -22,6 +24,32 @@ window.supabase = supabase
 const state = dashboardState
 
 window.state = window.state || {}
+window.__danielMoodCheckinEnabled = true
+
+const SELECTED_CHILD_STORAGE_PREFIX = 'dashboard:selectedChild:'
+
+function getSelectedChildStorageKey() {
+  if (!state.currentUser || !state.currentUser.id) return null
+  return `${SELECTED_CHILD_STORAGE_PREFIX}${state.currentUser.id}`
+}
+
+function rememberSelectedChildId(childId) {
+  const key = getSelectedChildStorageKey()
+  if (!key || !childId) return
+  localStorage.setItem(key, String(childId))
+}
+
+function getRememberedChildId() {
+  const key = getSelectedChildStorageKey()
+  if (!key) return null
+  return localStorage.getItem(key)
+}
+
+function clearRememberedChildId() {
+  const key = getSelectedChildStorageKey()
+  if (!key) return
+  localStorage.removeItem(key)
+}
 
 // Helper function to check if streak popup was shown today (per child)
 function hasStreakPopupBeenShownToday(childId) {
@@ -36,6 +64,181 @@ function markStreakPopupAsShown(childId) {
   const key = `streakPopup_child_${childId}_${today}`
   localStorage.setItem(key, 'true')
 }
+
+function hasFirstStarCelebrationBeenShown(childId) {
+  if (!childId) return false
+  return localStorage.getItem(`firstStarCelebrated_child_${childId}`) === 'true'
+}
+
+function markFirstStarCelebrationAsShown(childId) {
+  if (!childId) return
+  localStorage.setItem(`firstStarCelebrated_child_${childId}`, 'true')
+}
+
+function ensureCelebrationPopupStyles() {
+  if (document.getElementById('celebrationPopupStyles')) return
+
+  const style = document.createElement('style')
+  style.id = 'celebrationPopupStyles'
+  style.textContent = `
+    .celebration-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(24, 34, 56, 0.45);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10000;
+      animation: celebrationFadeIn 0.25s ease;
+    }
+
+    .celebration-popup-card {
+      position: relative;
+      width: min(460px, 100%);
+      border-radius: 28px;
+      padding: 32px 28px 26px;
+      color: #243b5a;
+      text-align: center;
+      background: linear-gradient(145deg, #fffdf7 0%, #fff3fb 45%, #eef8ff 100%);
+      box-shadow: 0 28px 80px rgba(75, 85, 180, 0.28);
+      overflow: hidden;
+      animation: celebrationCardPop 0.35s ease;
+    }
+
+    .celebration-popup-glow {
+      position: absolute;
+      inset: auto auto -40px -30px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.28) 0%, rgba(251, 191, 36, 0) 70%);
+      pointer-events: none;
+    }
+
+    .celebration-popup-stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      font-size: 26px;
+      margin-bottom: 16px;
+    }
+
+    .celebration-popup-stars span {
+      animation: celebrationFloat 2.4s ease-in-out infinite;
+    }
+
+    .celebration-popup-stars span:nth-child(2) { animation-delay: 0.2s; }
+    .celebration-popup-stars span:nth-child(3) { animation-delay: 0.4s; }
+
+    .celebration-popup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.85);
+      color: #7c3aed;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .celebration-popup-card h2 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 4vw, 36px);
+      line-height: 1.1;
+      color: #2f3e74;
+    }
+
+    .celebration-popup-card p {
+      margin: 0 auto 22px;
+      max-width: 330px;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #506487;
+    }
+
+    .celebration-popup-button {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 22px;
+      min-width: 170px;
+      background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 14px 30px rgba(124, 58, 237, 0.28);
+    }
+
+    .celebration-popup-button:hover {
+      transform: translateY(-1px);
+    }
+
+    @keyframes celebrationFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes celebrationCardPop {
+      from { opacity: 0; transform: translateY(16px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes celebrationFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.08); }
+    }
+  `
+
+  document.head.appendChild(style)
+}
+
+function showFirstStarPopup(childName = 'Explorer') {
+  ensureCelebrationPopupStyles()
+
+  const existingPopup = document.getElementById('firstStarCelebrationPopup')
+  if (existingPopup) existingPopup.remove()
+
+  const overlay = document.createElement('div')
+  overlay.id = 'firstStarCelebrationPopup'
+  overlay.className = 'celebration-popup-overlay'
+  overlay.innerHTML = `
+    <div class="celebration-popup-card" role="dialog" aria-modal="true" aria-labelledby="firstStarCelebrationTitle">
+      <div class="celebration-popup-glow"></div>
+      <div class="celebration-popup-stars"><span>⭐</span><span>✨</span><span>🌟</span></div>
+      <div class="celebration-popup-badge">First star unlocked</div>
+      <h2 id="firstStarCelebrationTitle">Congratulations, ${childName}!</h2>
+      <p>You earned your very first star. Keep going to collect more stars and unlock exciting rewards along the way!</p>
+      <button type="button" class="celebration-popup-button" id="firstStarCelebrationClose">Amazing!</button>
+    </div>
+  `
+
+  const closePopup = () => overlay.remove()
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closePopup()
+  })
+
+  document.body.appendChild(overlay)
+  document.getElementById('firstStarCelebrationClose')?.addEventListener('click', closePopup)
+}
+
+function maybeCelebrateFirstStar(childData) {
+  const childId = childData?.id
+  const totalStars = Number(childData?.stars ?? childData?.total_stars ?? 0)
+
+  if (!childId || totalStars !== 1 || hasFirstStarCelebrationBeenShown(childId)) return false
+
+  markFirstStarCelebrationAsShown(childId)
+  createConfettiCelebration()
+  showFirstStarPopup(childData?.name || 'Explorer')
+  return true
+}
+
+window.maybeCelebrateFirstStar = maybeCelebrateFirstStar
 
 // DOM Elements
 const loadingState = document.getElementById('loadingState')
@@ -1097,69 +1300,49 @@ async function init() {
   // Show fun loading screen
   showLoadingScreen()
   
-  // Reduced timeout - 6 seconds should be enough
+  // Safety timeout in case something hangs
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout reached - forcing UI to show')
     hideLoadingScreen()
     showElement(childrenView)
-  }, 6000)
+  }, 4000)
   
   try {
     // Check authentication first (required before anything else)
     const session = await checkAuth()
-    
+
     if (!session) {
       clearTimeout(loadingTimeout)
       window.location.href = '/'
       return
     }
-    
-    // Get current user
-    setCurrentUser(await getCurrentUser())
+
+    // Use user from session (already available — avoids slow getUser() network call)
+    setCurrentUser(session.user)
     window.state.currentUser = state.currentUser
-    
+
     if (state.currentUser && state.currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
     }
-    
-    // PARALLEL LOADING - Load all independent data at once
+
+    // CRITICAL PATH — only fetch what's needed to show the dashboard
     currentBillingPeriod = getCurrentBillingPeriod()
 
     const [
       modulesResult,
       parentModulesResult,
       creditUnlocksResult,
-      creditSummaryResult,
-      categoryColorsResult,
-      childrenResult,
-      adminResult,
-      subscriptionResult,
-      tiersResult
+      childrenResult
     ] = await Promise.allSettled([
-      // Load modules
       getModules(),
-      // Load legacy parent modules with full module data
       supabase
         .from('parent_modules')
-        .select('module_id, is_active, modules(*)')
+        .select('module_id, is_active, modules(id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, is_active, created_at)')
         .eq('parent_id', state.currentUser.id),
-      // Load subscription-credit unlocks for current month
       getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
-      // Load current wallet summary
-      getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
-      // Load category colors
-      supabase
-        .from('category_colors')
-        .select('*'),
-      // Load children
-      getChildren(state.currentUser.id),
-      // Check admin status (non-blocking)
-      isUserAdmin(state.currentUser.id),
-      // Load subscription details for credit messaging
-      getParentSubscription(state.currentUser.id),
-      getSubscriptionTiers()
+      getChildren(state.currentUser.id)
     ])
-    
+
     // Process modules
     if (modulesResult.status === 'fulfilled') {
       setModules(modulesResult.value || [])
@@ -1167,7 +1350,7 @@ async function init() {
       console.error('Error loading modules:', modulesResult.reason)
       setModules([])
     }
-    
+
     // Process parent modules and merge subscription-credit unlocks
     const legacyParentModules = parentModulesResult.status === 'fulfilled' && parentModulesResult.value.data
       ? parentModulesResult.value.data
@@ -1199,24 +1382,6 @@ async function init() {
     })
     setParentModules(Array.from(mergedParentModulesMap.values()))
 
-    currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
-    currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
-    subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
-    updateCreditWalletBadge()
-    
-    // Process category colors
-    if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
-      const colors = {}
-      categoryColorsResult.value.data.forEach(cc => {
-        if (cc?.category && cc?.color) {
-          colors[cc.category] = cc.color
-        }
-      })
-      setCategoryColors(colors)
-    } else {
-      setCategoryColors({})
-    }
-    
     // Process children
     if (childrenResult.status === 'fulfilled') {
       setChildren(childrenResult.value || [])
@@ -1224,31 +1389,54 @@ async function init() {
       console.error('Error loading children:', childrenResult.reason)
       setChildren([])
     }
-    
-    // Process admin status (non-critical)
-    if (adminResult.status === 'fulfilled') {
-      setIsCurrentUserAdmin(adminResult.value || false)
-      if (state.isCurrentUserAdmin) {
-        const adminButton = document.getElementById('adminButton')
-        const adminButtonDesktop = document.getElementById('adminButtonDesktop')
-        if (adminButton) adminButton.style.display = 'block'
-        if (adminButtonDesktop) showElement(adminButtonDesktop)
-      }
-    }
-    
+
     // Update global variables for enhanced dashboard
     window.modules = state.modules
     setAppState('modules', state.modules)
     window.parentModules = state.parentModules
-    
-    // Setup category colors (use defaults if none loaded)
+
+    // Setup category colors with defaults — real colors load in background
+    setCategoryColors({})
     setupCategoryColors()
-    
+
     // Setup filters (batch DOM operations)
     requestAnimationFrame(() => {
       setupAllWorkbooksFilter()
       setupDashboardFilters()
       renderChildren()
+    })
+
+    // DEFERRED — load non-critical data in background (doesn't block UI)
+    Promise.allSettled([
+      getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
+      supabase.from('category_colors').select('*'),
+      isUserAdmin(state.currentUser.id),
+      getParentSubscription(state.currentUser.id),
+      getSubscriptionTiers()
+    ]).then(([creditSummaryResult, categoryColorsResult, adminResult, subscriptionResult, tiersResult]) => {
+      currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
+      currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
+      subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
+      updateCreditWalletBadge()
+
+      if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
+        const colors = {}
+        categoryColorsResult.value.data.forEach(cc => {
+          if (cc?.category && cc?.color) colors[cc.category] = cc.color
+        })
+        setCategoryColors(colors)
+        setupCategoryColors()
+      }
+
+      if (adminResult.status === 'fulfilled') {
+        setIsCurrentUserAdmin(adminResult.value || false)
+        if (state.isCurrentUserAdmin) {
+          const adminButton = document.getElementById('adminButton')
+          const adminButtonDesktop = document.getElementById('adminButtonDesktop')
+          if (adminButton) adminButton.style.display = 'block'
+          if (adminButtonDesktop) showElement(adminButtonDesktop)
+        }
+      }
     })
 
     // Check URL for a childId to auto-select (coming back from a module)
@@ -1273,28 +1461,44 @@ async function init() {
       }
     }
 
-    // Default: show children/profile view
-    showChildrenView()
-    hideLoadingScreen()
+    // No childId in URL: restore remembered child or auto-select the only child.
+    if (state.children && state.children.length === 1) {
+      await selectChild(state.children[0])
+      clearTimeout(loadingTimeout)
+      return
+    }
+
+    const rememberedChildId = getRememberedChildId()
+    if (rememberedChildId && state.children && state.children.length > 1) {
+      const rememberedChild = state.children.find(c => String(c.id) === String(rememberedChildId))
+      if (rememberedChild) {
+        await selectChild(rememberedChild)
+        clearTimeout(loadingTimeout)
+        return
+      }
+      clearRememberedChildId()
+    }
+    
+    // If multiple children and no remembered child, auto-select the first one
+    if (state.children && state.children.length > 0) {
+      await selectChild(state.children[0])
+      clearTimeout(loadingTimeout)
+      return
+    }
+
+    // No children - redirect to profile page to add children
+    showLoadingScreen()
+    window.location.href = '/profile.html'
     clearTimeout(loadingTimeout)
     
   } catch (error) {
     console.error('Initialization error:', error)
     console.error('Error stack:', error.stack)
     clearTimeout(loadingTimeout)
-    // Show children view anyway so user isn't stuck
-    try {
-      showChildrenView()
-      hideLoadingScreen()
-    } catch (e) {
-      console.error('Error showing children view:', e)
-      // Force hide loading state
-      hideLoadingScreen()
-      if (childrenView) {
-        showElement(childrenView)
-      }
-    }
-    alert('Some data failed to load. You can still add children and use the app.')
+    // Redirect to profile page on error
+    hideLoadingScreen()
+    alert('Some data failed to load. Redirecting to profile page.')
+    window.location.href = '/profile.html'
   }
 }
 
@@ -1427,6 +1631,8 @@ function renderChildren() {
   
   if (loadingState) hideElement(loadingState)
   
+  if (!childrenGrid) return
+  
   childrenGrid.innerHTML = ''
   
   // Render each child
@@ -1455,8 +1661,10 @@ function createChildCard(child) {
   }
 
   card.innerHTML = `
-    <button class="child-card-edit-btn" type="button" title="Edit child">✏️</button>
-    <div class="child-avatar">${avatar}</div>
+    <div class="child-avatar-wrap">
+      <button class="child-card-edit-btn" type="button" title="Edit child" aria-label="Edit ${child.name}">✏️</button>
+      <div class="child-avatar">${avatar}</div>
+    </div>
     <div class="child-name">${child.name}</div>
     <div class="child-stars">
       <span>⭐</span>
@@ -1897,17 +2105,16 @@ async function selectChild(child) {
   
   setSelectedChild(child)
   setAppState('selectedChild', child)
+  rememberSelectedChildId(child.id)
+  maybeCelebrateFirstStar(child)
   
   try {
-    // PARALLEL LOADING - Load child modules, weekly plan, and update login streak
-    const [childModulesResult, weeklyPlanResult, focusPlanResult, streakResult] = await Promise.allSettled([
+    // CRITICAL PATH — only child modules and focus plan block the UI
+    const [childModulesResult, focusPlanResult] = await Promise.allSettled([
       getChildModules(child.id),
-      loadLatestWeeklyPlanData(child.id), // New optimized function
-      checkFocusPlan(child.id),
-      // Update login streak for this child (using parent's user_id + child_id)
-      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id).then(() => getLoginStreak(state.currentUser.id, child.id)) : Promise.reject('No parent user')
+      checkFocusPlan(child.id)
     ])
-    
+
     // Process child modules
     if (childModulesResult.status === 'fulfilled') {
       setChildModules(childModulesResult.value || [])
@@ -1915,12 +2122,7 @@ async function selectChild(child) {
       console.error('Error loading child modules:', childModulesResult.reason)
       setChildModules([])
     }
-    
-    // Process weekly plan
-    if (weeklyPlanResult.status === 'fulfilled') {
-      setCurrentWeeklyPlan(weeklyPlanResult.value)
-    }
-    
+
     // Process focus plan
     if (focusPlanResult.status === 'fulfilled') {
       setCurrentFocusPlan(focusPlanResult.value)
@@ -1928,66 +2130,65 @@ async function selectChild(child) {
       setCurrentFocusPlan(null)
     }
 
-    // Process and display login streak
-    if (streakResult.status === 'fulfilled') {
-      const streakData = streakResult.value
-      if (streakData) {
-        console.log(`[Child Selection] ${child.name} streak: ${streakData.current_streak}`)
-        // Update the day streak display
-        const dayStreakEl = document.getElementById('dayStreak')
-        if (dayStreakEl) {
-          dayStreakEl.textContent = streakData.current_streak ?? 0
-        }
-        // Show streak popup if streak is 3 or more AND hasn't been shown today for this child
-        if (streakData.current_streak >= 3 && !hasStreakPopupBeenShownToday(child.id)) {
-          markStreakPopupAsShown(child.id)
-          showStreakPopup(child.name, streakData.current_streak)
-        }
-      }
-    } else if (streakResult.status === 'rejected') {
-      console.log('[Child Selection] Streak update skipped (non-critical)')
-    }
-
     // Setup rewards event listeners for this child (non-blocking)
     setupRewardsEventListeners(child)
-    
+
     // Initialize daily quest system for this child
     if (typeof window.initDailyQuest === 'function') {
       window.initDailyQuest(child.id)
     }
+
+    setupDanielMoodCheckin()
+    await refreshMoodCheckinState(child.id)
     
     // ... (rest of the code remains the same)
     
+    // DEFERRED — weekly plan, streak, and leaderboard data load in background
+    Promise.allSettled([
+      loadLatestWeeklyPlanData(child.id),
+      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
+    ]).then(([weeklyPlanResult, streakResult]) => {
+      if (weeklyPlanResult.status === 'fulfilled') {
+        setCurrentWeeklyPlan(weeklyPlanResult.value)
+        renderWeeklyPlan(state.currentWeeklyPlan)
+      }
+      if (streakResult.status === 'fulfilled') {
+        const streakData = streakResult.value
+        if (streakData) {
+          const dayStreakEl = document.getElementById('dayStreak')
+          if (dayStreakEl) dayStreakEl.textContent = streakData.current_streak ?? 0
+          if (streakData.current_streak >= 3 && !hasStreakPopupBeenShownToday(child.id)) {
+            markStreakPopupAsShown(child.id)
+            showStreakPopup(child.name, streakData.current_streak)
+          }
+        }
+      }
+    })
+
     if (!state.currentFocusPlan) {
       // No active focus plan - show onboarding
       showFocusPlanOnboarding(child.id, async (plan, superSkillOrPathway) => {
         setCurrentFocusPlan(plan)
         window.state.currentFocusPlan = plan
-        
+
         // Apply the focus plan to the map (handles both super skills and legacy pathways)
         applyFocusPlanToMap(plan)
-        
+
         // Now show the child detail view
         showChildDetailView(child)
-        
+
         // Render modules after onboarding is complete
         renderModules()
-        
-        // Wait for the adventure map to finish rendering before showing the UI
-        await waitForDashboardRender()
+
         hideLoadingScreen()
       })
       return // Don't show detail view yet - wait for onboarding
     }
-    
-    // Show child detail view AFTER all data is loaded
+
+    // Show child detail view and hide loading screen IMMEDIATELY
+    // Adventure map renders asynchronously inside showChildDetailView
     showChildDetailView(child)
-    
-    // Render modules immediately after showing the view
     renderModules()
-    
-    // Wait for the adventure map to finish rendering before showing the UI
-    await waitForDashboardRender()
     hideLoadingScreen()
     
   } catch (error) {
@@ -2022,7 +2223,9 @@ async function loadLatestWeeklyPlanData(childId) {
 // Show children view
 function showChildrenView() {
   const welcomeLandingPage = document.getElementById('welcomeLandingPage')
-  
+  const childrenWelcomeHeader = document.getElementById('childrenWelcomeHeader')
+  const childrenSelectionSection = document.getElementById('childrenSelectionSection')
+
   if (loadingState) {
     hideElement(loadingState)
   }
@@ -2033,6 +2236,16 @@ function showChildrenView() {
     } else {
       hideElement(welcomeLandingPage)
     }
+  }
+
+  const hasDefaultChild = Boolean(state.selectedChild)
+  const shouldShowSelector = !hasDefaultChild && Array.isArray(state.children) && state.children.length > 1
+
+  if (childrenWelcomeHeader) {
+    childrenWelcomeHeader.style.display = shouldShowSelector ? '' : 'none'
+  }
+  if (childrenSelectionSection) {
+    childrenSelectionSection.style.display = shouldShowSelector ? '' : 'none'
   }
   
   showElement(childrenView)
@@ -2046,6 +2259,12 @@ function showChildrenView() {
   if (dashboardButton) {
     dashboardButton.style.display = 'none'
   }
+}
+
+// Show parent view (profile hub) - now navigates to separate profile page
+function showParentView() {
+  showLoadingScreen()
+  window.location.href = '/profile.html'
 }
 
 // Setup category colors
@@ -2284,39 +2503,49 @@ function showChildDetailView(child) {
   setAppState('childModules', state.childModules)
   window.state.currentFocusPlan = state.currentFocusPlan
   
-  // Batch DOM writes using requestAnimationFrame to avoid forced reflow
+  // Apply focus plan's default super skill or pathway to adventure map
+  // (must happen before rendering so the map picks up the right category)
+  if (state.currentFocusPlan && (state.currentFocusPlan.super_skill_id || state.currentFocusPlan.default_pathway_id)) {
+    applyFocusPlanToMap(state.currentFocusPlan)
+  }
+
+  // Show/setup Focus Plan settings button
+  setupFocusPlanSettingsButton()
+
+  // Batch DOM writes — show the container first, then render the map
+  // inside the same frame so the map's container is guaranteed to be visible
   requestAnimationFrame(() => {
     // Update header
     headerSubtitle.textContent = `Welcome back, ${child.name}!`
-    
+
     // Show child detail view
     hideElement(childrenView)
     showElement(childDetailView)
-    
+
     // Show dashboard tab by default
     showTab('dashboard')
-    
+
     // Show dashboard button when viewing child details
     if (dashboardButton) {
       dashboardButton.style.display = 'inline-block'
     }
-    
+
     // Update stats immediately (fast operation)
     updateDashboardStats()
+    updateMoodHeroText()
+
+    // Re-sync globals in case they were updated between
+    // the synchronous set and this rAF callback (e.g. after module unlock)
+    window.childModules = state.childModules
+    if (state.modules && state.modules.length > 0) {
+      window.modules = state.modules
+    }
+
+    // Refresh enhanced dashboard now that the container is visible
+    if (typeof window.refreshEnhancedDashboard === 'function') {
+      window.refreshEnhancedDashboard()
+    }
   })
-  
-  // Apply focus plan's default super skill or pathway to adventure map
-  if (state.currentFocusPlan && (state.currentFocusPlan.super_skill_id || state.currentFocusPlan.default_pathway_id)) {
-    applyFocusPlanToMap(state.currentFocusPlan)
-  }
-  
-  // Show/setup Focus Plan settings button
-  setupFocusPlanSettingsButton()
-  
-  // Refresh enhanced dashboard synchronously (it has its own debounce)
-  if (typeof window.refreshEnhancedDashboard === 'function') {
-    window.refreshEnhancedDashboard()
-  }
   
   // Defer leaderboard and weekly plan to idle callback or setTimeout
   // These are not visible on initial load
@@ -2486,6 +2715,17 @@ function renderModules() {
   
   // Add safeguard: if childModules is not loaded yet, show loading state and retry
   if (state.selectedChild && (!state.childModules || state.childModules.length === 0) && state.modules && state.modules.length > 0) {
+    if (modulesLoadingRetryCount >= MODULES_LOADING_RETRY_LIMIT) {
+      modulesGrid.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #4c6c96;">
+          <div style="font-size: 18px; margin-bottom: 12px;">Modules are taking longer than expected.</div>
+          <div style="font-size: 14px;">Please refresh to sync the latest progress.</div>
+        </div>
+      `
+      return
+    }
+
+    modulesLoadingRetryCount += 1
     modulesGrid.innerHTML = `
       <div style="text-align: center; padding: 40px; color: #4c6c96;">
         <div style="font-size: 18px; margin-bottom: 12px;">Loading modules...</div>
@@ -2499,6 +2739,8 @@ function renderModules() {
     }, 100)
     return
   }
+
+  modulesLoadingRetryCount = 0
   
   modulesGrid.innerHTML = ''
   modulesGrid.style.display = 'block'
@@ -2511,8 +2753,10 @@ function renderModules() {
   const selectedCategory = dashboardCategoryFilter ? dashboardCategoryFilter.value : 'all'
   const selectedSeries = dashboardSeriesFilter ? dashboardSeriesFilter.value : 'all'
   
+  const childModulesById = new Map()
   const childModuleLockMap = new Map()
   state.childModules.forEach((cm) => {
+    childModulesById.set(cm.module_id, cm)
     childModuleLockMap.set(cm.module_id, cm.locked !== false)
   })
 
@@ -2541,14 +2785,16 @@ function renderModules() {
 
   // Separate completed and incomplete modules for modules the family has unlocked
   const incompleteModules = unlockedModules.filter(module => {
-    const childModule = state.childModules.find(cm => cm.module_id === module.id)
+    const childModule = childModulesById.get(module.id)
     return !childModule || childModule.is_completed !== true
   })
 
   const completedModules = unlockedModules.filter(module => {
-    const childModule = state.childModules.find(cm => cm.module_id === module.id)
+    const childModule = childModulesById.get(module.id)
     return childModule && childModule.is_completed === true
   })
+
+  const contentFragment = document.createDocumentFragment()
 
   if (unlockedModules.length === 0 && lockedModules.length > 0) {
     const emptyUnlockedMessage = document.createElement('div')
@@ -2557,7 +2803,7 @@ function renderModules() {
     emptyUnlockedMessage.style.padding = '16px'
     emptyUnlockedMessage.style.color = '#4c6c96'
     emptyUnlockedMessage.innerHTML = '<p style="font-size: 16px; margin: 0;">All modules are currently locked. Spend a credit on any module below to unlock it.</p>'
-    modulesGrid.appendChild(emptyUnlockedMessage)
+    contentFragment.appendChild(emptyUnlockedMessage)
   }
   
   // Find the oldest incomplete module (created first)
@@ -2600,7 +2846,7 @@ function renderModules() {
       highlightLabel.style.fontWeight = '600'
       highlightLabel.textContent = '⭐ NEXT MODULE'
       
-      const highlightedCard = createModuleCard(oldestIncompleteModule)
+      const highlightedCard = createModuleCard(oldestIncompleteModule, { childModule: childModulesById.get(oldestIncompleteModule.id) })
       highlightedCard.style.margin = '0'
       highlightedCard.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
       
@@ -2632,7 +2878,7 @@ function renderModules() {
     readyModulesToDisplay.forEach(module => {
       // Skip the oldest module if it's already highlighted
       if (oldestIncompleteModule && module.id === oldestIncompleteModule.id) return
-      const moduleCard = createModuleCard(module)
+      const moduleCard = createModuleCard(module, { childModule: childModulesById.get(module.id) })
       incompleteGrid.appendChild(moduleCard)
     })
     
@@ -2657,7 +2903,7 @@ function renderModules() {
       incompleteSection.appendChild(showMoreWrapper)
     }
 
-    modulesGrid.appendChild(incompleteSection)
+    contentFragment.appendChild(incompleteSection)
   }
 
   // Render Completed Modules Section
@@ -2686,12 +2932,12 @@ function renderModules() {
     completedGrid.style.gap = '20px'
     
     completedModules.forEach(module => {
-      const moduleCard = createModuleCard(module)
+      const moduleCard = createModuleCard(module, { childModule: childModulesById.get(module.id) })
       completedGrid.appendChild(moduleCard)
     })
     
     completedSection.appendChild(completedGrid)
-    modulesGrid.appendChild(completedSection)
+    contentFragment.appendChild(completedSection)
   }
 
   if (lockedModules.length > 0) {
@@ -2722,14 +2968,20 @@ function renderModules() {
     lockedGrid.style.gap = '20px'
 
     lockedModules.forEach((module) => {
-      lockedGrid.appendChild(createModuleCard(module, { locked: true, canUnlock: isModuleNextUnlockable(module) }))
+      lockedGrid.appendChild(createModuleCard(module, {
+        locked: true,
+        canUnlock: isModuleNextUnlockable(module),
+        childModule: childModulesById.get(module.id)
+      }))
     })
 
     lockedSection.appendChild(lockedHeader)
     lockedSection.appendChild(lockedHint)
     lockedSection.appendChild(lockedGrid)
-    modulesGrid.appendChild(lockedSection)
+    contentFragment.appendChild(lockedSection)
   }
+
+  modulesGrid.appendChild(contentFragment)
 }
 
 // Create module card
@@ -2740,7 +2992,7 @@ function createModuleCard(module, options = {}) {
   const canUnlock = options.canUnlock !== false
 
   // Check if module is completed
-  const childModule = state.childModules.find(cm => cm.module_id === module.id)
+  const childModule = options.childModule ?? state.childModules.find(cm => cm.module_id === module.id)
   const isCompleted = !isLocked && childModule && childModule.is_completed === true
 
   card.className = `module-card ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`
@@ -2801,55 +3053,86 @@ function createModuleCard(module, options = {}) {
   return card
 }
 
-// Check-in trigger weeks
-const CHECKIN_WEEKS = [1, 4, 7, 10]
-
-async function hasExistingCheckin(childId, moduleId) {
-  if (!childId || !moduleId) return true
+// Check if a check-in is needed based on completed module count per super skill
+async function shouldTriggerCheckinForModuleCount(childId, superSkillId) {
+  if (!childId) return false
+  const CHECKIN_MODULE_INTERVAL = 3
   try {
-    // Check if a check-in has been started for this specific module
-    // Check for both 'checkin' and 'check_in' assessment types
-    const { data: assessmentData } = await supabase
-      .from('pathway_assessments')
-      .select('id')
-      .eq('child_id', childId)
-      .eq('module_id', moduleId)
-      .in('assessment_type', ['checkin', 'check_in'])
-      .limit(1)
-      .maybeSingle()
-    
-    // If an assessment exists for this module, the check-in was already triggered
-    if (assessmentData) {
-      console.log('[Check-in] Found existing assessment for module:', moduleId)
+    // Count completed modules for this child IN this super skill
+    let completedCount = 0
+    if (superSkillId) {
+      const { data: completedModules, error: countError } = await supabase
+        .from('child_modules')
+        .select('id, modules!inner(super_skill_id)')
+        .eq('child_id', childId)
+        .eq('is_completed', true)
+        .eq('modules.super_skill_id', superSkillId)
+
+      if (countError) {
+        console.error('[Check-in] Error counting completed modules:', countError)
+        return false
+      }
+      completedCount = completedModules?.length || 0
+    } else {
+      const { data: completedModules, error: countError } = await supabase
+        .from('child_modules')
+        .select('id')
+        .eq('child_id', childId)
+        .eq('is_completed', true)
+
+      if (countError) return false
+      completedCount = completedModules?.length || 0
+    }
+
+    // Count check-ins for this child for this super skill's pathway
+    let checkinCount = 0
+    if (superSkillId) {
+      const { data: skillData } = await supabase
+        .from('super_skills')
+        .select('slug')
+        .eq('id', superSkillId)
+        .single()
+
+      const slug = skillData?.slug
+      if (slug) {
+        const { data: completedCheckins, error: checkinError } = await supabase
+          .from('pathway_assessments')
+          .select('id')
+          .eq('child_id', childId)
+          .eq('pathway_category', slug)
+          .in('assessment_type', ['checkin', 'check_in'])
+
+        if (!checkinError) {
+          checkinCount = completedCheckins?.length || 0
+        }
+      }
+    }
+    // If no super skill or slug lookup failed, count all check-ins
+    if (!superSkillId || checkinCount === 0) {
+      const { data: allCheckins } = await supabase
+        .from('pathway_assessments')
+        .select('id')
+        .eq('child_id', childId)
+        .in('assessment_type', ['checkin', 'check_in'])
+      checkinCount = allCheckins?.length || 0
+    }
+
+    // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
+    // Don't include the initial intro check-in (that's separate)
+    const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL)
+
+    console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins)
+
+    if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
+      console.log('[Check-in] Triggering check-in — need to catch up')
       return true
     }
-    
-    // Also check if a weekly_checkin exists for this module (for backwards compatibility)
-    const { data: checkinData } = await supabase
-      .from('weekly_checkins')
-      .select('id')
-      .eq('child_id', childId)
-      .eq('module_id', moduleId)
-      .limit(1)
-      .maybeSingle()
-    
-    // If a weekly_checkin exists for this module, the check-in was completed
-    if (checkinData) {
-      console.log('[Check-in] Found existing weekly_checkin for module:', moduleId)
-      return true
-    }
-    
-    console.log('[Check-in] No existing check-in found for module:', moduleId)
+
     return false
   } catch (e) {
-    console.error('Error checking existing checkin:', e)
-    return true
+    console.error('Error checking checkin status:', e)
+    return false
   }
-}
-
-function shouldTriggerCheckin(module) {
-  const week = module.week_number || module.pathway_order || module.order
-  return week && CHECKIN_WEEKS.includes(Number(week))
 }
 
 function navigateToModule(module) {
@@ -2859,20 +3142,346 @@ function navigateToModule(module) {
   window.location.href = moduleUrl
 }
 
+// Get super skill info for a module (character name, species, domain, image)
+async function getSuperSkillInfo(module) {
+  let superSkill = null
+  
+  // Try to get from window.superSkills first
+  if (module.super_skill_id && window.superSkills) {
+    superSkill = window.superSkills.find(s => s.id === module.super_skill_id)
+  }
+  
+  // If not found, try to fetch from database with character info
+  if (!superSkill && module.super_skill_id) {
+    try {
+      const { data } = await supabase
+        .from('super_skills')
+        .select('*, characters:character_id(id, name, species, image_url)')
+        .eq('id', module.super_skill_id)
+        .single()
+      if (data) superSkill = data
+    } catch (e) {
+      console.error('Error fetching super skill:', e)
+    }
+  }
+  
+  // Fallback: try to get from current adventure map category
+  if (!superSkill) {
+    const mapCat = window.enhancedDashboard?.adventureMap?.currentCategory ||
+                   window.currentFocusSuperSkill || null
+    if (mapCat && mapCat !== 'all' && window.superSkills) {
+      superSkill = window.superSkills.find(s => s.slug === mapCat)
+    }
+  }
+  
+  // If still not found, try to fetch from database using the map category slug
+  if (!superSkill) {
+    const mapCat = window.enhancedDashboard?.adventureMap?.currentCategory ||
+                   window.currentFocusSuperSkill || null
+    if (mapCat && mapCat !== 'all') {
+      try {
+        const { data } = await supabase
+          .from('super_skills')
+          .select('*, characters:character_id(id, name, species, image_url)')
+          .eq('slug', mapCat)
+          .single()
+        if (data) superSkill = data
+      } catch (e) {
+        console.error('Error fetching super skill by slug:', e)
+      }
+    }
+  }
+  
+  return superSkill
+}
+
+// Show intro screen with Daniel + character before check-in
+function showEncouragementScreen(superSkill, onContinue, onClose) {
+  const character = superSkill?.characters || {}
+  const characterName = character.name || superSkill?.character_name || 'Lenny'
+  const characterImage = character.image_url || superSkill?.character_image_url || '/images/characters/lenny.png'
+  const domain = superSkill?.domain || superSkill?.name || 'your skills'
+
+  // Pick a random encouragement message
+  const encouragements = [
+    { title: 'Amazing Progress!', emoji: '🌟', message: `Wow, you're doing brilliantly! ${characterName} and Daniel are so proud of how much you've learned about <strong>${domain}</strong>!` },
+    { title: 'You\'re on Fire!', emoji: '🔥', message: `Look at you go! You've been working so hard on <strong>${domain}</strong> — ${characterName} can't believe how far you've come!` },
+    { title: 'Super Star!', emoji: '⭐', message: `${characterName} says you're a true superstar! You've learned so much about <strong>${domain}</strong> already!` },
+    { title: 'Keep It Up!', emoji: '🚀', message: `You're absolutely smashing it! Daniel and ${characterName} love adventuring with you through <strong>${domain}</strong>!` }
+  ]
+  const pick = encouragements[Math.floor(Math.random() * encouragements.length)]
+
+  const overlay = document.createElement('div')
+  overlay.className = 'intro-screen-overlay'
+  overlay.id = 'encouragementScreenOverlay'
+  overlay.innerHTML = `
+    <div class="intro-screen-modal">
+      <button class="intro-screen-close" id="closeEncouragementBtn" aria-label="Close">\u2715</button>
+
+      <div class="intro-screen-characters">
+        <div class="intro-character daniel">
+          <img src="/images/characters/DanielTheDog.webp" alt="Daniel" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">🐕</div>
+        </div>
+        <div class="intro-character friend">
+          <img src="${characterImage}" alt="${characterName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">${superSkill?.emoji || '🐕'}</div>
+        </div>
+      </div>
+
+      <div class="intro-screen-content">
+        <h2 class="intro-screen-title">${pick.emoji} ${pick.title}</h2>
+        <p class="intro-screen-text">${pick.message}</p>
+        <p class="intro-screen-text intro-checkin-prompt">
+          Time for a quick check-in so we can see how you're feeling and keep the adventure going! 💫
+        </p>
+      </div>
+
+      <button class="intro-screen-btn" id="continueEncouragementBtn">
+        Let's Check In! →
+      </button>
+    </div>
+  `
+
+  // Reuse existing intro screen styles (already injected by showIntroScreen)
+  if (!document.getElementById('introScreenStyles')) {
+    const styles = document.createElement('style')
+    styles.id = 'introScreenStyles'
+    styles.textContent = `
+      .intro-screen-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000; animation: fadeIn 0.3s ease; }
+      .intro-screen-modal { background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); border-radius: 24px; padding: 32px; max-width: 480px; width: 90%; text-align: center; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.4s ease; }
+      .intro-screen-close { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.1); border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+      .intro-screen-close:hover { background: rgba(0,0,0,0.2); }
+      .intro-screen-characters { display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; }
+      .intro-character { width: 140px; height: 140px; border-radius: 50%; overflow: visible; background: white; box-shadow: 0 8px 20px rgba(0,0,0,0.15); display: flex; align-items: flex-end; justify-content: center; position: relative; }
+      .intro-character img { width: 130px; height: 130px; object-fit: contain; object-position: center bottom; }
+      .intro-character-fallback { font-size: 64px; display: flex; align-items: center; justify-content: center; }
+      .intro-screen-title { font-size: 28px; font-weight: 700; color: #1a365d; margin-bottom: 16px; }
+      .intro-screen-text { font-size: 16px; line-height: 1.6; color: #4a5568; margin-bottom: 12px; }
+      .intro-checkin-prompt { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 12px 16px; border-radius: 12px; margin-top: 16px; font-weight: 500; }
+      .intro-screen-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; padding: 16px 32px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 20px; transition: transform 0.2s, box-shadow 0.2s; }
+      .intro-screen-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    `
+    document.head.appendChild(styles)
+  }
+
+  document.body.appendChild(overlay)
+
+  document.getElementById('continueEncouragementBtn').addEventListener('click', () => {
+    overlay.remove()
+    onContinue()
+  })
+
+  document.getElementById('closeEncouragementBtn').addEventListener('click', () => {
+    overlay.remove()
+    onClose()
+  })
+}
+
+function showIntroScreen(superSkill, onContinue, onClose) {
+  
+  // Get character info
+  const character = superSkill?.characters || {}
+  const characterName = character.name || superSkill?.character_name || 'Lenny'
+  const characterSpecies = character.species || 'friend'
+  const characterImage = character.image_url || superSkill?.character_image_url || '/images/characters/lenny.png'
+  const domain = superSkill?.domain || superSkill?.name || 'important skills'
+  const superSkillName = superSkill?.name || 'Super Skills'
+  
+  // Create intro overlay
+  const overlay = document.createElement('div')
+  overlay.className = 'intro-screen-overlay'
+  overlay.id = 'introScreenOverlay'
+  overlay.innerHTML = `
+    <div class="intro-screen-modal">
+      <button class="intro-screen-close" id="closeIntroBtn" aria-label="Close">✕</button>
+      
+      <div class="intro-screen-characters">
+        <div class="intro-character daniel">
+          <img src="/images/characters/DanielTheDog.webp" alt="Daniel" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">🐕</div>
+        </div>
+        <div class="intro-character friend">
+          <img src="${characterImage}" alt="${characterName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="intro-character-fallback" style="display:none;">${superSkill?.emoji || '🐕'}</div>
+        </div>
+      </div>
+      
+      <div class="intro-screen-content">
+        <h2 class="intro-screen-title">Meet Your Guides!</h2>
+        <p class="intro-screen-text">
+          Hi there! I'm <strong>Daniel</strong>, and this is my friend <strong>${characterName} the ${characterSpecies}</strong>! 🎉
+        </p>
+        <p class="intro-screen-text">
+          ${characterName} is going to help you learn all about <strong>${domain}</strong>. 
+          Together, we'll go on an amazing adventure and discover some really cool things!
+        </p>
+        <p class="intro-screen-text intro-checkin-prompt">
+          But first, let's do a quick check-in to see how you're feeling today! 💫
+        </p>
+      </div>
+      
+      <button class="intro-screen-btn" id="continueToCheckinBtn">
+        Let's Check In! →
+      </button>
+    </div>
+  `
+  
+  // Add styles if not already present
+  if (!document.getElementById('introScreenStyles')) {
+    const styles = document.createElement('style')
+    styles.id = 'introScreenStyles'
+    styles.textContent = `
+      .intro-screen-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+      }
+      .intro-screen-modal {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+        border-radius: 24px;
+        padding: 32px;
+        max-width: 480px;
+        width: 90%;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.4s ease;
+      }
+      .intro-screen-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(0, 0, 0, 0.1);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+      .intro-screen-close:hover {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .intro-screen-characters {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+      .intro-character {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        overflow: visible;
+        background: white;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        position: relative;
+      }
+      .intro-character img {
+        width: 130px;
+        height: 130px;
+        object-fit: contain;
+        object-position: center bottom;
+      }
+      .intro-character-fallback {
+        font-size: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .intro-screen-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a365d;
+        margin-bottom: 16px;
+      }
+      .intro-screen-text {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #4a5568;
+        margin-bottom: 12px;
+      }
+      .intro-checkin-prompt {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-top: 16px;
+        font-weight: 500;
+      }
+      .intro-screen-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 16px 32px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .intro-screen-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    `
+    document.head.appendChild(styles)
+  }
+  
+  document.body.appendChild(overlay)
+  
+  // Event listeners
+  document.getElementById('continueToCheckinBtn').addEventListener('click', () => {
+    overlay.remove()
+    onContinue()
+  })
+  
+  document.getElementById('closeIntroBtn').addEventListener('click', () => {
+    overlay.remove()
+    onClose()
+  })
+}
+
 window.showCheckinPopup = showCheckinPopup
-function showCheckinPopup(module, onComplete) {
+async function showCheckinPopup(module, onComplete, skipIntro = false) {
+  console.log('[showCheckinPopup] Called — skipIntro:', skipIntro, 'module:', module?.title || module?.id || module?.code, 'caller:', new Error().stack?.split('\n')[2]?.trim())
   // Determine the pathway/super skill for the psychometric assessment
   // Priority: module's super_skill_id → current adventure map category → 'general'
   let pathwayOrSuperSkill = 'general'
 
-  // Try to get super skill slug from the module's super_skill_id
-  if (module.super_skill_id && window.superSkills) {
-    const ss = window.superSkills.find(s => s.id === module.super_skill_id)
-    if (ss && ss.slug) pathwayOrSuperSkill = ss.slug
-  }
-
-  // Fallback: use the current adventure map category
-  if (pathwayOrSuperSkill === 'general') {
+  // Get super skill info for intro screen
+  const superSkill = await getSuperSkillInfo(module)
+  
+  if (superSkill && superSkill.slug) {
+    pathwayOrSuperSkill = superSkill.slug
+  } else {
+    // Fallback: use the current adventure map category
     const mapCat = window.enhancedDashboard?.adventureMap?.currentCategory ||
                    window.currentFocusSuperSkill || 'general'
     if (mapCat && mapCat !== 'all') pathwayOrSuperSkill = mapCat
@@ -2889,55 +3498,115 @@ function showCheckinPopup(module, onComplete) {
     window.progressTrackingSystem.init(supabase)
   }
 
-  if (!window.progressTrackingSystem) {
-    console.warn('Progress tracking system not available, skipping check-in')
-    onComplete()
-    return
+  const hasProgressTracking = !!window.progressTrackingSystem
+
+  // Function to show the actual check-in assessment (only if progress tracking available)
+  const showActualCheckin = () => {
+    if (!hasProgressTracking) {
+      onComplete()
+      return
+    }
+    // Use 'checkin' assessment type for check-ins
+    // Pass closeToDashboard: true so X button closes to dashboard, not module
+    window.progressTrackingSystem.showAssessment(
+      childId,
+      pathwayOrSuperSkill,
+      'checkin',
+      // onComplete — assessment finished, also record in pathway_assessments so it won't trigger again
+      async (results) => {
+        try {
+          await saveWeeklyCheckin({
+            parentUserId: state.currentUser?.id || window.state?.currentUser?.id,
+            childId: childId,
+            intensity: results?.totalScore || 0,
+            challenge: pathwayOrSuperSkill,
+            triggers: [],
+            goal: null,
+            notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) — score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
+            generatedPlan: null,
+            subSkillId: module.sub_skill_id || null,
+            weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,
+            moduleId: module.id
+          })
+        } catch (e) {
+          console.error('Error recording weekly checkin after assessment:', e)
+        }
+        onComplete()
+      },
+      // onSkip — user closed/skipped, return to dashboard (NOT navigate to module)
+      () => {
+        // Do nothing - just close the modal and stay on dashboard
+      },
+      // Pass module data for tracking
+      module
+    )
   }
 
-  // Use 'checkin' assessment type for weekly check-ins
-  window.progressTrackingSystem.showAssessment(
-    childId,
-    pathwayOrSuperSkill,
-    'checkin',
-    // onComplete — assessment finished, also record in weekly_checkins so it won't trigger again
-    async (results) => {
-      try {
-        await saveWeeklyCheckin({
-          parentUserId: state.currentUser?.id || window.state?.currentUser?.id,
-          childId: childId,
-          intensity: results?.totalScore || 0,
-          challenge: pathwayOrSuperSkill,
-          triggers: [],
-          goal: null,
-          notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) — score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
-          generatedPlan: null,
-          subSkillId: module.sub_skill_id || null,
-          weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,
-          moduleId: module.id
-        })
-      } catch (e) {
-        console.error('Error recording weekly checkin after assessment:', e)
+  // Show intro screen first (unless skipped)
+  console.log('[showCheckinPopup] Decision — skipIntro:', skipIntro, 'hasProgressTracking:', hasProgressTracking)
+  if (!skipIntro) {
+    // Create fallback super skill if none found
+    const introSuperSkill = superSkill || {
+      name: 'Super Skills',
+      domain: 'important life skills',
+      emoji: '🌟',
+      character_name: 'Lenny',
+      character_image_url: '/images/characters/lenny.png',
+      characters: {
+        name: 'Lenny',
+        species: 'Dog',
+        image_url: '/images/characters/lenny.png'
       }
-      onComplete()
-    },
-    // onSkip — user skipped, still navigate to module
-    () => {
-      onComplete()
-    },
-    // Pass module data for tracking
-    module
-  )
+    }
+    showIntroScreen(
+      introSuperSkill,
+      showActualCheckin,  // onContinue - show the check-in (or navigate if no tracking)
+      () => {}             // onClose - return to dashboard
+    )
+  } else if (hasProgressTracking) {
+    // Periodic check-in — show encouragement screen instead of character intro
+    showEncouragementScreen(
+      superSkill,
+      showActualCheckin,
+      () => {}
+    )
+  } else {
+    onComplete()
+  }
 }
 
-// Start module (with check-in intercept for weeks 1, 4, 7, 10)
+// Start module (with check-in intercept every 3 modules completed)
 async function startModule(module) {
+  console.log('[dashboardPage.startModule] Called — module:', module?.title || module?.id)
   try {
-    if (shouldTriggerCheckin(module) && state.selectedChild && state.currentUser) {
-      const alreadyDone = await hasExistingCheckin(state.selectedChild.id, module.id)
-      if (!alreadyDone) {
-        showCheckinPopup(module, () => navigateToModule(module))
+    if (state.selectedChild && state.currentUser) {
+      const childId = state.selectedChild.id
+
+      const superSkillId = module.super_skill_id || null
+
+      // Check 1: Periodic check-in (every 3 modules) — takes priority over intro
+      const needsCheckin = await shouldTriggerCheckinForModuleCount(childId, superSkillId)
+      console.log('[dashboardPage.startModule] Check 1 (periodic) — needsCheckin:', needsCheckin)
+      if (needsCheckin) {
+        console.log('[dashboardPage.startModule] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)')
+        showCheckinPopup(module, () => navigateToModule(module), true)
         return
+      }
+
+      // Check 2: First module in a super skill → show character intro
+      console.log('[dashboardPage.startModule] Check 2 (intro) — superSkillId:', superSkillId)
+      if (superSkillId) {
+        const introKey = 'superSkillIntroSeen_' + childId + '_' + superSkillId
+        const alreadySeen = localStorage.getItem(introKey)
+        console.log('[dashboardPage.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen)
+        if (!alreadySeen) {
+          console.log('[dashboardPage.startModule] Showing INTRO (first module for this super skill)')
+          showCheckinPopup(module, () => {
+            localStorage.setItem(introKey, 'true')
+            navigateToModule(module)
+          }, false)
+          return
+        }
       }
     }
     navigateToModule(module)
@@ -2960,7 +3629,7 @@ function showAddChildModal() {
     document.getElementById('childDob').value = '';
     hideElement(document.getElementById('modalError'))
     
-    renderEnhancedAddAvatarPicker('🦊');
+    renderEnhancedAvatarPicker('🦊');
     
     showElement(addChildModal);
     setTimeout(() => document.getElementById('childName')?.focus(), 100);
@@ -3060,28 +3729,52 @@ if (confirmPurchaseButton) {
           ], { onConflict: 'child_id,module_id' })
 
         if (childUnlockError) throw childUnlockError
+
+        // Immediately update local child modules so the adventure map
+        // reflects the unlock even if the DB re-fetch returns stale data
+        const updatedChildModules = (state.childModules || []).slice()
+        const existingIdx = updatedChildModules.findIndex(cm => cm.module_id === state.currentPurchaseModule.id)
+        if (existingIdx >= 0) {
+          updatedChildModules[existingIdx] = { ...updatedChildModules[existingIdx], locked: false }
+        } else {
+          updatedChildModules.push({
+            child_id: state.selectedChild.id,
+            module_id: state.currentPurchaseModule.id,
+            locked: false
+          })
+        }
+        setChildModules(updatedChildModules)
+        window.childModules = updatedChildModules
       }
 
-      currentCreditSummary = await getCreditSummary(
-        state.currentUser.id,
-        currentBillingPeriod.periodStart,
-        currentBillingPeriod.periodEnd
-      )
+      // Invalidate child modules cache so selectChild fetches fresh data
+      if (state.selectedChild?.id) {
+        invalidateCacheByPrefix(`childModules:${state.selectedChild.id}`)
+      }
+
+      // Run all refresh queries in parallel — these are independent
+      const [creditResult, legacyResult, unlocksResult] = await Promise.all([
+        getCreditSummary(
+          state.currentUser.id,
+          currentBillingPeriod.periodStart,
+          currentBillingPeriod.periodEnd
+        ),
+        supabase
+          .from('parent_modules')
+          .select('module_id, is_active, modules(*)')
+          .eq('parent_id', state.currentUser.id),
+        getModuleUnlocks(
+          state.currentUser.id,
+          currentBillingPeriod.periodStart,
+          currentBillingPeriod.periodEnd
+        )
+      ])
+
+      currentCreditSummary = creditResult
       updateCreditWalletBadge()
 
-      const refreshedLegacy = await supabase
-        .from('parent_modules')
-        .select('module_id, is_active, modules(*)')
-        .eq('parent_id', state.currentUser.id)
-
-      const refreshedUnlocks = await getModuleUnlocks(
-        state.currentUser.id,
-        currentBillingPeriod.periodStart,
-        currentBillingPeriod.periodEnd
-      )
-
       const mergedMap = new Map()
-      ;[(refreshedLegacy.data || []), ...(refreshedUnlocks || []).map(entry => ({
+      ;[(legacyResult.data || []), ...(unlocksResult || []).map(entry => ({
         module_id: entry.module_id,
         is_active: true,
         modules: entry.modules || null,
@@ -3096,6 +3789,29 @@ if (confirmPurchaseButton) {
       renderAllModulesGrid()
       if (state.selectedChild) {
         await selectChild(state.selectedChild)
+
+        // selectChild may have fetched stale child modules from DB —
+        // ensure the just-unlocked module is marked unlocked in local state
+        const currentChildMods = (state.childModules || []).slice()
+        const unlockIdx = currentChildMods.findIndex(cm => cm.module_id === state.currentPurchaseModule.id)
+        if (unlockIdx >= 0 && currentChildMods[unlockIdx].locked !== false) {
+          currentChildMods[unlockIdx] = { ...currentChildMods[unlockIdx], locked: false }
+          setChildModules(currentChildMods)
+          window.childModules = currentChildMods
+        } else if (unlockIdx < 0) {
+          currentChildMods.push({
+            child_id: state.selectedChild.id,
+            module_id: state.currentPurchaseModule.id,
+            locked: false
+          })
+          setChildModules(currentChildMods)
+          window.childModules = currentChildMods
+        }
+
+        // Re-render adventure map with corrected child modules
+        if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
+          window.enhancedDashboard.adventureMap.render()
+        }
       }
 
       closePurchaseModal()
@@ -3451,11 +4167,11 @@ if (cancelAddChild) {
   cancelAddChild.addEventListener('click', hideAddChildModal)
 }
 
-// Back button
+// Back button - go to profile page
 if (backButton) {
   backButton.addEventListener('click', () => {
-    setSelectedChild(null)
-    showChildrenView()
+    showLoadingScreen()
+    window.location.href = '/profile.html'
   })
 }
 
@@ -3468,8 +4184,12 @@ const adminButtonDesktop = document.getElementById('adminButtonDesktop')
 
 if (dashboardHomeButtonDesktop) {
   dashboardHomeButtonDesktop.addEventListener('click', () => {
-    if (state.selectedChild) {
-      window.location.href = `/dashboard.html?childId=${state.selectedChild.id}`
+    const fallbackChild = state.selectedChild ||
+      (state.children && state.children.length === 1 ? state.children[0] : null) ||
+      (state.children && state.children.find(child => String(child.id) === String(getRememberedChildId())))
+
+    if (fallbackChild) {
+      window.location.href = `/dashboard.html?childId=${fallbackChild.id}`
     } else {
       window.location.href = '/dashboard.html'
     }
@@ -3478,7 +4198,8 @@ if (dashboardHomeButtonDesktop) {
 
 if (profileButtonDesktop) {
   profileButtonDesktop.addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+    showLoadingScreen()
+    window.location.href = '/profile.html'
   })
 }
 
@@ -3491,6 +4212,7 @@ if (billingButtonDesktop) {
 if (logoutButtonDesktop) {
   logoutButtonDesktop.addEventListener('click', async () => {
     try {
+      clearRememberedChildId()
       await signOut()
       window.location.href = '/'
     } catch (error) {
@@ -3574,13 +4296,22 @@ if (moreModulesNextButton) {
 
 if (dashboardHomeButton) {
   dashboardHomeButton.addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+    const fallbackChild = state.selectedChild ||
+      (state.children && state.children.length === 1 ? state.children[0] : null) ||
+      (state.children && state.children.find(child => String(child.id) === String(getRememberedChildId())))
+
+    if (fallbackChild) {
+      window.location.href = `/dashboard.html?childId=${fallbackChild.id}`
+    } else {
+      window.location.href = '/dashboard.html'
+    }
   })
 }
 
 if (profileButton) {
   profileButton.addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+    showLoadingScreen()
+    window.location.href = '/profile.html'
   })
 }
 
@@ -3594,6 +4325,7 @@ if (billingButton) {
 if (logoutButton) {
   logoutButton.addEventListener('click', async () => {
     try {
+      clearRememberedChildId()
       await signOut()
       window.location.href = '/'
     } catch (error) {
@@ -3849,72 +4581,41 @@ function updateParentInsights() {
     'MODULE8': 'Practice "emotion detective" - watch shows together and identify characters\' feelings.'
   }
   
-  // Aggregate skills and emotions from completed modules
-  const completedSkills = new Set()
-  const completedEmotions = new Set()
-  completedModules.forEach(module => {
-    normalizeTextArray(module?.skills).forEach(skill => completedSkills.add(skill))
-    normalizeTextArray(module?.emotions).forEach(emotion => completedEmotions.add(emotion))
-  })
-
-  // Update "Your Journey This Week" stats
-  const skillsCount = completedSkills.size
-  const emotionsCount = completedEmotions.size
-  const activitiesCount = completedCount
-
-  const skillsExploredCountEl = document.getElementById('skillsExploredCount')
-  const skillsExploredLabelEl = document.getElementById('skillsExploredLabel')
-  const toolsIntroducedCountEl = document.getElementById('toolsIntroducedCount')
-  const toolsIntroducedLabelEl = document.getElementById('toolsIntroducedLabel')
-  const activitiesCompletedCountEl = document.getElementById('activitiesCompletedCount')
-  const activitiesCompletedLabelEl = document.getElementById('activitiesCompletedLabel')
-
-  // Get the skills box container
-  const skillsExploredBoxEl = document.getElementById('skillsExploredBox')
-
-  // If all counts are 0, show one large box with a single message
-  if (skillsCount === 0 && emotionsCount === 0 && activitiesCount === 0) {
-    if (skillsExploredBoxEl) {
-      skillsExploredBoxEl.style.gridColumn = '1 / -1'
-    }
-    if (skillsExploredCountEl) {
-      skillsExploredCountEl.textContent = ''
-      skillsExploredCountEl.style.display = 'none'
-    }
-    if (skillsExploredLabelEl) {
-      skillsExploredLabelEl.textContent = 'Your child\'s journey will appear here as they explore modules and build skills.'
-      skillsExploredLabelEl.style.fontSize = '12px'
-      skillsExploredLabelEl.style.lineHeight = '1.4'
-    }
-    if (toolsIntroducedCountEl) toolsIntroducedCountEl.parentElement.style.display = 'none'
-    if (activitiesCompletedCountEl) activitiesCompletedCountEl.parentElement.style.display = 'none'
-  } else {
-    // Show all three boxes with their data
-    if (skillsExploredBoxEl) {
-      skillsExploredBoxEl.style.gridColumn = 'auto'
-    }
-    if (toolsIntroducedCountEl) toolsIntroducedCountEl.parentElement.style.display = 'block'
-    if (activitiesCompletedCountEl) activitiesCompletedCountEl.parentElement.style.display = 'block'
-    if (skillsExploredCountEl) {
-      skillsExploredCountEl.style.display = 'block'
-      skillsExploredCountEl.textContent = skillsCount
-    }
-    if (skillsExploredLabelEl) {
-      skillsExploredLabelEl.textContent = 'SKILLS EXPLORED'
-      skillsExploredLabelEl.style.fontSize = '11px'
-    }
-    if (toolsIntroducedCountEl) toolsIntroducedCountEl.textContent = emotionsCount
-    if (toolsIntroducedLabelEl) {
-      toolsIntroducedLabelEl.textContent = 'TOOLS INTRODUCED'
-      toolsIntroducedLabelEl.style.fontSize = '11px'
-    }
-    if (activitiesCompletedCountEl) activitiesCompletedCountEl.textContent = activitiesCount
-    if (activitiesCompletedLabelEl) {
-      activitiesCompletedLabelEl.textContent = 'ACTIVITIES COMPLETED'
-      activitiesCompletedLabelEl.style.fontSize = '11px'
-    }
-  }
+  // Update "Your Journey So Far" stats with level and XP
+  const currentLevel = state.selectedChild?.level || 1
+  const totalXp = state.selectedChild?.total_xp || 0
   
+  // Calculate XP needed for next level
+  const xpPerLevel = 500
+  const xpForCurrentLevel = (currentLevel - 1) * xpPerLevel
+  const xpForNextLevel = currentLevel * xpPerLevel
+  const xpIntoCurrentLevel = totalXp - xpForCurrentLevel
+  const xpNeededForNext = Math.max(0, xpForNextLevel - totalXp)
+  const progressPercent = xpNeededForNext === 0 ? 100 : Math.min(100, (xpIntoCurrentLevel / xpPerLevel) * 100)
+
+  // Update level display
+  const currentLevelEl = document.getElementById('currentLevelDisplay')
+  if (currentLevelEl) currentLevelEl.textContent = currentLevel
+
+  // Update total XP display
+  const totalXpEl = document.getElementById('totalXpDisplay')
+  if (totalXpEl) totalXpEl.textContent = totalXp
+
+  // Update XP progress bar and text
+  const xpProgressBar = document.getElementById('xpProgressBar')
+  if (xpProgressBar) xpProgressBar.style.width = progressPercent + '%'
+
+  const xpProgressText = document.getElementById('xpProgressText')
+  if (xpProgressText) xpProgressText.textContent = xpIntoCurrentLevel + ' / ' + xpPerLevel + ' XP'
+
+  // Update level ring SVG progress
+  const levelRing = document.getElementById('levelRingProgress')
+  if (levelRing) {
+    const circumference = 2 * Math.PI * 34 // r=34 from SVG
+    const offset = circumference - (progressPercent / 100) * circumference
+    levelRing.style.strokeDashoffset = offset
+  }
+
   // Reinforcement tips sourced from active modules
   const reinforcements = []
   inProgressModules.forEach(module => {
@@ -4159,563 +4860,1164 @@ function getStreakMessage(streak) {
   return "Keep it going!"
 }
 
+const MOOD_CHECKIN_COOLDOWN_MS = 2 * 60 * 60 * 1000
+const DANIEL_MOOD_OPTIONS = [
+  { score: 1, emoji: '😢', label: 'Very sad', shortLabel: 'very sad', description: 'I need extra comfort today.' },
+  { score: 2, emoji: '😣', label: 'Frustrated', shortLabel: 'frustrated', description: 'Everything feels a bit too much.' },
+  { score: 2, emoji: '😟', label: 'Worried', shortLabel: 'worried', description: 'My tummy or thoughts feel wobbly.' },
+  { score: 3, emoji: '😐', label: 'Okay-ish', shortLabel: 'okay-ish', description: 'I am somewhere in the middle.' },
+  { score: 4, emoji: '😌', label: 'Calm', shortLabel: 'calm', description: 'My body feels settled and safe.' },
+  { score: 5, emoji: '😄', label: 'Happy', shortLabel: 'happy', description: 'I feel bright, smiley, and ready.' }
+]
+const DANIEL_COOLDOWN_QUOTES = [
+  'Every feeling is welcome here — even the wobbly ones.',
+  'Small feelings can still be important feelings.',
+  'A slow breath can help your body feel a little safer.',
+  'You do not have to fix every feeling straight away.',
+  'Talking about feelings is a brave thing to do.',
+  'You are growing every time you notice how you feel.'
+]
+
+let latestMoodCheckin = null
+
+function getMoodTextElement() {
+  return document.getElementById('moodText')
+}
+
+function getDanielMoodModalElements() {
+  return {
+    overlay: document.getElementById('danielMoodModal'),
+    title: document.getElementById('danielMoodTitle'),
+    subtitle: document.getElementById('danielMoodSubtitle'),
+    kicker: document.getElementById('danielMoodKicker'),
+    options: document.getElementById('danielMoodOptions'),
+    footer: document.getElementById('danielMoodFooter'),
+    close: document.getElementById('closeDanielMoodModal')
+  }
+}
+
+function getRandomDanielQuote() {
+  return DANIEL_COOLDOWN_QUOTES[Math.floor(Math.random() * DANIEL_COOLDOWN_QUOTES.length)]
+}
+
+function getMoodOptionByScore(score) {
+  return DANIEL_MOOD_OPTIONS.find(option => option.score === score) || null
+}
+
+function formatTimeRemaining(ms) {
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours && minutes) return `${hours}h ${minutes}m`
+  if (hours) return `${hours}h`
+  return `${minutes}m`
+}
+
+async function getLatestMoodCheckin(childId) {
+  if (!childId) return null
+  const { data, error } = await supabase
+    .from('child_mood_checkins')
+    .select('*')
+    .eq('child_id', childId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  return data || null
+}
+
+function getMoodCooldownState(checkin = latestMoodCheckin) {
+  if (!checkin?.created_at) {
+    return { canRate: true, msRemaining: 0, nextRatingAt: null }
+  }
+
+  const nextRatingAt = new Date(new Date(checkin.created_at).getTime() + MOOD_CHECKIN_COOLDOWN_MS)
+  const msRemaining = nextRatingAt.getTime() - Date.now()
+  return {
+    canRate: msRemaining <= 0,
+    msRemaining: Math.max(0, msRemaining),
+    nextRatingAt
+  }
+}
+
+function getDanielPromptText() {
+  if (!state.selectedChild) return 'Tap me to share how you feel right now!'
+
+  const cooldown = getMoodCooldownState()
+  if (cooldown.canRate) {
+    return 'Tap me to share how you feel right now!'
+  }
+
+  const mood = getMoodOptionByScore(latestMoodCheckin?.mood_score)
+  const prefix = mood ? `You picked ${mood.emoji} ${mood.shortLabel} earlier.` : 'Thanks for checking in with me earlier.'
+  return `${prefix} Tap me for a kind quote until your next check-in.`
+}
+
+function updateMoodHeroText() {
+  const moodText = getMoodTextElement()
+  if (moodText) moodText.textContent = getDanielPromptText()
+}
+
+async function refreshMoodCheckinState(childId = state.selectedChild?.id) {
+  if (!childId) {
+    latestMoodCheckin = null
+    updateMoodHeroText()
+    return
+  }
+
+  try {
+    latestMoodCheckin = await getLatestMoodCheckin(childId)
+  } catch (error) {
+    latestMoodCheckin = null
+    console.error('Error loading latest mood check-in:', error)
+  }
+
+  updateMoodHeroText()
+}
+
+function closeDanielMoodModal() {
+  const { overlay } = getDanielMoodModalElements()
+  if (!overlay) return
+  hideElement(overlay)
+  overlay.setAttribute('aria-hidden', 'true')
+}
+
+function showDanielMoodModalLocked() {
+  const { overlay, title, subtitle, kicker, options, footer } = getDanielMoodModalElements()
+  if (!overlay || !title || !subtitle || !kicker || !options || !footer) return
+
+  const cooldown = getMoodCooldownState()
+  const quote = getRandomDanielQuote()
+  kicker.textContent = 'Daniel says'
+  title.textContent = 'Thanks for checking in already 🌟'
+  subtitle.textContent = `You can rate again in about ${formatTimeRemaining(cooldown.msRemaining)}.`
+  options.innerHTML = `<div class="daniel-mood-quote">"${quote}"</div>`
+  footer.textContent = 'Come back a little later for another emoji check-in.'
+  showElement(overlay)
+  overlay.setAttribute('aria-hidden', 'false')
+}
+
+function showDanielMoodModalRate() {
+  const { overlay, title, subtitle, kicker, options, footer } = getDanielMoodModalElements()
+  if (!overlay || !title || !subtitle || !kicker || !options || !footer) return
+
+  kicker.textContent = 'Daniel check-in'
+  title.textContent = 'How are you feeling right now?'
+  subtitle.textContent = 'Tap the emoji that feels the most like you today.'
+  options.innerHTML = DANIEL_MOOD_OPTIONS.map(option => `
+    <button type="button" class="daniel-mood-option" data-score="${option.score}" aria-label="${option.label}">
+      <span class="daniel-mood-option-emoji">${option.emoji}</span>
+      <span class="daniel-mood-option-label">${option.label}</span>
+      <span class="daniel-mood-option-copy">${option.description}</span>
+    </button>
+  `).join('')
+  footer.textContent = 'You can do another Daniel check-in in about 2 hours.'
+  showElement(overlay)
+  overlay.setAttribute('aria-hidden', 'false')
+}
+
+async function saveMoodCheckin(score) {
+  if (!state.selectedChild?.id || !state.currentUser?.id) return
+
+  const mood = getMoodOptionByScore(score)
+  const payload = {
+    child_id: state.selectedChild.id,
+    parent_user_id: state.currentUser.id,
+    mood_score: score,
+    mood_label: mood?.label || null,
+    mood_emoji: mood?.emoji || null
+  }
+
+  const { error } = await supabase
+    .from('child_mood_checkins')
+    .insert([payload])
+
+  if (error) throw error
+}
+
+async function handleDanielMoodOptionClick(score) {
+  const { footer } = getDanielMoodModalElements()
+  try {
+    if (footer) footer.textContent = 'Saving your feeling...'
+    await saveMoodCheckin(score)
+    await refreshMoodCheckinState()
+    const mood = getMoodOptionByScore(score)
+    if (footer) footer.textContent = `Lovely sharing, ${state.selectedChild?.name || 'friend'}! You picked ${mood?.emoji || ''} ${mood?.shortLabel || ''}.`
+    setTimeout(() => closeDanielMoodModal(), 900)
+  } catch (error) {
+    console.error('Error saving mood check-in:', error)
+    if (footer) footer.textContent = 'I could not save that check-in yet. Please try again after the database table is added.'
+  }
+}
+
+async function handleDanielClick() {
+  if (!state.selectedChild?.id) return
+  await refreshMoodCheckinState()
+  const cooldown = getMoodCooldownState()
+  if (cooldown.canRate) {
+    showDanielMoodModalRate()
+  } else {
+    showDanielMoodModalLocked()
+  }
+}
+
+function setupDanielMoodCheckin() {
+  const danielCharacter = document.getElementById('danielCharacter')
+  const { overlay, close, options } = getDanielMoodModalElements()
+  if (!danielCharacter || !overlay || !close || !options || danielCharacter.dataset.moodBound === 'true') return
+
+  danielCharacter.dataset.moodBound = 'true'
+  danielCharacter.addEventListener('click', handleDanielClick)
+  danielCharacter.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      handleDanielClick()
+    }
+  })
+
+  close.addEventListener('click', closeDanielMoodModal)
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closeDanielMoodModal()
+  })
+  options.addEventListener('click', (event) => {
+    const button = event.target.closest('.daniel-mood-option')
+    if (!button) return
+    const score = Number(button.dataset.score)
+    if (Number.isFinite(score)) handleDanielMoodOptionClick(score)
+  })
+}
+
 // ================================================
-// MODULE GALLERY
-// A warm, card-based display for children's workbooks
+// PROFILE HUB
+// Replaces the workbook gallery with billing + subscription profile info
 // ================================================
 
 class ModuleGallery {
     constructor(containerId, options) {
         this.containerId = containerId;
         this.container = null;
-        this.modules = [];
-        this.filteredModules = [];
-        this.superSkills = [];
-        this.currentCategory = 'all';
-        this.currentSuperSkill = 'all';
-        this.showActiveOnly = true;
-        this.modalElement = null;
         this.options = options || {};
-        
-        this.categoryEmojis = {
-            anger: '🔥',
-            anxiety: '🌧️',
-            depression: '🌙',
-            emotions: '💭',
-            social: '👫',
-            body: '💪',
-            cognitive: '🧠',
-            general: '📚'
-        };
-        
-        this.categoryNames = {
-            anger: 'Anger',
-            anxiety: 'Anxiety',
-            depression: 'Mood',
-            emotions: 'Emotions',
-            social: 'Social',
-            body: 'Body',
-            cognitive: 'Thinking',
-            general: 'General'
-        };
+        this.changePlanModal = null;
+        this.expandedTier = null;
     }
-    
-    init(modules, parentModules, childModules, superSkills) {
+
+    init() {
         this.container = document.getElementById(this.containerId);
         if (!this.container) {
-            console.warn('Module gallery container not found:', this.containerId);
+            console.warn('Profile hub container not found:', this.containerId);
             return;
         }
-        
-        parentModules = parentModules || [];
-        childModules = childModules || [];
-        this.superSkills = superSkills || [];
-        
-        this.modules = this.processModules(modules, parentModules, childModules);
-        this.applyFilters();
+
         this.render();
-        this.createModal();
-    }
-    
-    processModules(modules, parentModules, childModules) {
-        var parentModuleIds = {};
-        parentModules.forEach(function(pm) {
-            // Only mark module as active if parent assignment is active
-            if (pm.is_active === true) {
-                parentModuleIds[pm.module_id] = true;
-            }
-        });
-        
-        var childModuleMap = {};
-        childModules.forEach(function(cm) {
-            childModuleMap[cm.module_id] = cm;
-        });
-        
-        return modules.map(function(module) {
-            var isActive = !!parentModuleIds[module.id];
-            var childProgress = childModuleMap[module.id];
-            var isCompleted = childProgress && childProgress.status === 'completed';
-            
-            return Object.assign({}, module, {
-                isActive: isActive,
-                isCompleted: isCompleted,
-                childProgress: childProgress
-            });
-        });
-    }
-    
-    applyFilters() {
-        var self = this;
-        this.filteredModules = this.modules.filter(function(module) {
-            if (self.currentCategory !== 'all') {
-                var moduleCategory = (module.category || 'general').toLowerCase();
-                if (moduleCategory !== self.currentCategory.toLowerCase()) {
-                    return false;
-                }
-            }
-            
-            if (self.currentSuperSkill !== 'all') {
-                if (module.super_skill_id !== self.currentSuperSkill) {
-                    return false;
-                }
-            }
-            
-            if (self.showActiveOnly && !module.isActive) {
-                return false;
-            }
-            
-            return true;
-        });
-        
-        this.filteredModules.sort(function(a, b) {
-            if (a.isActive && !b.isActive) return -1;
-            if (!a.isActive && b.isActive) return 1;
-            return (a.title || '').localeCompare(b.title || '');
-        });
-    }
-    
-    getUniqueCategories() {
-        var categories = {};
-        this.modules.forEach(function(m) {
-            if (m.category) categories[m.category.toLowerCase()] = true;
-        });
-        return Object.keys(categories).sort();
-    }
-    
-getUniqueSuperSkills() {
-    // Return all Super Skills (sorted by name), independent of module usage
-    var list = this.superSkills.map(function(s) {
-        return {
-            id: s.id,
-            name: s.name,
-            emoji: s.emoji || '🎯'
-        };
-    });
-    return list.sort(function(a, b) { return a.name.localeCompare(b.name); });
-}
-    
-    render() {
-        if (!this.container) return;
-        
-        var self = this;
-        var categories = this.getUniqueCategories();
-        var superSkillsList = this.getUniqueSuperSkills();
-        
-        var categoryOptions = categories.map(function(cat) {
-            var selected = self.currentCategory === cat ? 'selected' : '';
-            var emoji = self.categoryEmojis[cat] || '📖';
-            var name = self.categoryNames[cat] || self.capitalizeFirst(cat);
-            return '<option value="' + cat + '" ' + selected + '>' + emoji + ' ' + name + '</option>';
-        }).join('');
-        
-        var superSkillsOptions = superSkillsList.map(function(superSkill) {
-            var selected = self.currentSuperSkill === superSkill.id ? 'selected' : '';
-            return '<option value="' + superSkill.id + '" ' + selected + '>' + superSkill.emoji + ' ' + superSkill.name + '</option>';
-        }).join('');
-        
-        var activeCount = this.filteredModules.filter(function(m) { return m.isActive; }).length;
-        
-        this.container.innerHTML = 
-            '<div class="module-gallery">' +
-                '<div class="gallery-header">' +
-                    '<h2 class="gallery-title">' +
-                        '<span class="gallery-title-icon">📚</span>' +
-                        'Your Workbook Library' +
-                    '</h2>' +
-                    '<p class="gallery-subtitle">' +
-                        'Explore your collection of learning adventures' +
-                    '</p>' +
-                '</div>' +
-                
-                '<div class="gallery-filters">' +
-                    '<div class="gallery-filter-group">' +
-                        '<span class="gallery-filter-label">Category</span>' +
-                        '<select class="gallery-filter-select" id="galleryCategoryFilter">' +
-                            '<option value="all">All Categories</option>' +
-                            categoryOptions +
-                        '</select>' +
-                    '</div>' +
-                    
-                    '<div class="gallery-filter-group">' +
-                        '<span class="gallery-filter-label">Super Skill</span>' +
-                        '<select class="gallery-filter-select" id="gallerySuperSkillFilter">' +
-                            '<option value="all">All Super Skills</option>' +
-                            superSkillsOptions +
-                        '</select>' +
-                    '</div>' +
-                    
-                    '<label class="gallery-toggle">' +
-                        '<input type="checkbox" id="galleryActiveOnly" ' + (this.showActiveOnly ? 'checked' : '') + '>' +
-                        '<span>Active Only</span>' +
-                    '</label>' +
-                    
-                    '<div class="gallery-count">' +
-                        '<span>📖</span> ' + this.filteredModules.length + ' workbook' + (this.filteredModules.length !== 1 ? 's' : '') +
-                    '</div>' +
-                '</div>' +
-                
-                '<div class="gallery-grid" id="galleryGrid">' +
-                    this.renderCards() +
-                '</div>' +
-            '</div>';
-        
+        this.createChangePlanModal();
         this.attachEventListeners();
     }
-    
-    renderCards() {
-        if (this.filteredModules.length === 0) {
-            return '<div class="gallery-empty">' +
-                '<div class="gallery-empty-icon">📭</div>' +
-                '<h3 class="gallery-empty-title">No workbooks found</h3>' +
-                '<p class="gallery-empty-text">Try adjusting your filters to see more workbooks.</p>' +
-            '</div>';
+
+    getSafeTiers() {
+        return (subscriptionTiers || []).filter(function(tier) {
+            return tier && tier.is_active !== false;
+        });
+    }
+
+    getCurrentTierName() {
+        return (currentSubscription && currentSubscription.tier || 'mid').toLowerCase();
+    }
+
+    getNextPaymentDateLabel() {
+        var rawDate = (currentSubscription && currentSubscription.stripe_current_period_end) || (currentSubscription && currentSubscription.current_period_end) || null;
+        if (!rawDate) {
+            return 'Pending Stripe sync';
         }
-        
+        return this.formatDateLabel(rawDate);
+    }
+
+    getBillingCycleLabel() {
+        var start = (currentSubscription && currentSubscription.stripe_current_period_start) || (currentSubscription && currentSubscription.current_period_start) || null;
+        var end = (currentSubscription && currentSubscription.stripe_current_period_end) || (currentSubscription && currentSubscription.current_period_end) || null;
+        if (!start || !end) return 'Pending Stripe sync';
+        return this.formatDateDDMMYYYY(start) + ' → ' + this.formatDateDDMMYYYY(end);
+    }
+
+    formatDateLabel(value) {
+        if (!value) return 'Not available';
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'Not available';
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    formatDateDDMMYYYY(value) {
+        if (!value) return '-';
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '-';
+        var day = String(date.getDate()).padStart(2, '0');
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var year = date.getFullYear();
+        return day + '/' + month + '/' + year;
+    }
+
+    formatCurrency(cents) {
+        if (typeof cents !== 'number') return 'Contact support';
+        var formatter = getCurrencyFormatter('AUD');
+        return formatter.format(cents / 100) + '/month';
+    }
+
+    render() {
+        if (!this.container) return;
+
+        var tiers = this.getSafeTiers();
+        var currentTierName = this.getCurrentTierName();
+        var activeTier = tiers.find(function(t) { return t.tier === currentTierName; }) || null;
+
+        this.container.innerHTML =
+            '<section class="profile-hub">' +
+                '<div class="profile-hub-header">' +
+                    '<h2 class="profile-hub-title">👤 Your Profile</h2>' +
+                    '<p class="profile-hub-subtitle">Manage your family learning journey</p>' +
+                '</div>' +
+                '<div class="profile-sections">' +
+                    '<div class="profile-section">' +
+                        '<button type="button" class="profile-section-toggle" data-section="children">' +
+                            '<span class="profile-section-title">Children</span>' +
+                            '<span class="profile-section-arrow">▼</span>' +
+                        '</button>' +
+                        '<div class="profile-section-content" id="profile-children-content">' +
+                            this.renderChildrenSection() +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="profile-section">' +
+                        '<button type="button" class="profile-section-toggle" data-section="plan">' +
+                            '<span class="profile-section-title">Plan</span>' +
+                            '<span class="profile-section-arrow">▼</span>' +
+                        '</button>' +
+                        '<div class="profile-section-content" id="profile-plan-content">' +
+                            this.renderPlanSection(activeTier, currentTierName) +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="profile-section">' +
+                        '<button type="button" class="profile-section-toggle" data-section="modules">' +
+                            '<span class="profile-section-title">Modules</span>' +
+                            '<span class="profile-section-arrow">▼</span>' +
+                        '</button>' +
+                        '<div class="profile-section-content" id="profile-modules-content">' +
+                            this.renderModulesSection() +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</section>';
+
+        // Add event listeners for collapsible sections
+        this.attachSectionListeners();
+    }
+
+    renderChildrenSection() {
         var self = this;
-        return this.filteredModules.map(function(module) {
-            return self.renderCard(module);
+        var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
+        var selectedChildId = (typeof dashboardState !== 'undefined' && dashboardState.selectedChild && dashboardState.selectedChild.id) || null;
+
+        if (!children || children.length === 0) {
+            return '<div class="profile-children-actions">' +
+                '<button type="button" class="profile-action-btn profile-action-btn-primary" id="profileAddChildBtn">➕ Add Child</button>' +
+            '</div>' +
+            '<p class="profile-empty-state">No children added yet. Add your first child to get started!</p>';
+        }
+
+        var profileChildren = children;
+        if (selectedChildId) {
+            profileChildren = children.filter(function(child) {
+                return child.id === selectedChildId;
+            });
+        }
+
+        if (!profileChildren.length) {
+            profileChildren = [children[0]];
+        }
+
+        return '<div class="profile-children-actions">' +
+                '<button type="button" class="profile-action-btn profile-action-btn-primary" id="profileAddChildBtn">➕ Add Child</button>' +
+            '</div>' +
+            '<div class="children-profile-grid">' +
+            profileChildren.map(function(child) {
+                var unlockedCount = 0;
+                var completedCount = 0;
+                var starsEarned = child.stars || 0;
+                var currentPath = 'Not Started';
+
+                if (window.childModuleStats && window.childModuleStats[child.id]) {
+                    var stats = window.childModuleStats[child.id];
+                    unlockedCount = stats.unlockedCount || 0;
+                    completedCount = stats.completedCount || 0;
+                    starsEarned = stats.totalStars || child.stars || 0;
+                }
+
+                if (window.childLearningPaths && window.childLearningPaths[child.id]) {
+                    currentPath = window.childLearningPaths[child.id].name || 'Not Started';
+                }
+
+                return '<div class="child-profile-card">' +
+                    '<div class="child-profile-avatar-wrap">' +
+                        '<button type="button" class="child-profile-edit-btn" data-edit-child-id="' + self.escapeHtml(String(child.id)) + '" title="Edit child" aria-label="Edit ' + self.escapeHtml(child.name) + '">✏️</button>' +
+                        '<div class="child-profile-avatar">' + self.escapeHtml(child.avatar || '👶') + '</div>' +
+                    '</div>' +
+                    '<div class="child-profile-info">' +
+                        '<h4 class="child-profile-name">' + self.escapeHtml(child.name) + '</h4>' +
+                        '<p class="child-profile-path">Current Path: ' + self.escapeHtml(currentPath) + '</p>' +
+                        '<div class="child-profile-stats">' +
+                            '<div class="child-stat">' +
+                                '<span class="child-stat-value">' + unlockedCount + '</span>' +
+                                '<span class="child-stat-label">Unlocked</span>' +
+                            '</div>' +
+                            '<div class="child-stat">' +
+                                '<span class="child-stat-value">' + completedCount + '</span>' +
+                                '<span class="child-stat-label">Completed</span>' +
+                            '</div>' +
+                            '<div class="child-stat">' +
+                                '<span class="child-stat-value">' + starsEarned + '</span>' +
+                                '<span class="child-stat-label">Stars</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('') +
+        '</div>';
+    }
+
+    renderPlanSection(activeTier, currentTierName) {
+        return '<div class="plan-overview">' +
+            '<div class="plan-current-info">' +
+                '<div class="plan-tier-badge">' + this.escapeHtml(((activeTier && activeTier.tier) || currentTierName).toUpperCase()) + '</div>' +
+                '<h3>Current Plan Details</h3>' +
+                '<div class="plan-stats">' +
+                    '<div class="plan-stat">' +
+                        '<span class="plan-stat-label">Monthly Modules</span>' +
+                        '<span class="plan-stat-value">' + ((activeTier && activeTier.modules_per_month) || 0) + '</span>' +
+                    '</div>' +
+                    '<div class="plan-stat">' +
+                        '<span class="plan-stat-label">Monthly Cost</span>' +
+                        '<span class="plan-stat-value">' + this.escapeHtml(this.formatCurrency(activeTier && activeTier.monthly_price_cents)) + '</span>' +
+                    '</div>' +
+                    '<div class="plan-stat">' +
+                        '<span class="plan-stat-label">Status</span>' +
+                        '<span class="plan-stat-value">' + this.escapeHtml(((currentSubscription && currentSubscription.status) || 'active').toUpperCase()) + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="plan-billing-info">' +
+                '<h4>Billing Snapshot</h4>' +
+                '<div class="billing-stats">' +
+                    '<div class="billing-stat">' +
+                        '<span class="billing-stat-label">Next Payment</span>' +
+                        '<span class="billing-stat-value">' + this.escapeHtml(this.getNextPaymentDateLabel()) + '</span>' +
+                    '</div>' +
+                    '<div class="billing-stat">' +
+                        '<span class="billing-stat-label">Credits Available</span>' +
+                        '<span class="billing-stat-value">' + ((currentCreditSummary && currentCreditSummary.credits_available) || 0) + '</span>' +
+                    '</div>' +
+                    '<div class="billing-stat">' +
+                        '<span class="billing-stat-label">Credits Used</span>' +
+                        '<span class="billing-stat-value">' + ((currentCreditSummary && currentCreditSummary.credits_used) || 0) + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="plan-actions">' +
+                '<button type="button" id="openChangePlanModal" class="profile-action-btn">Change Plan</button>' +
+                '<button type="button" id="openMakePaymentModal" class="profile-action-btn profile-action-btn-primary">Make Payment</button>' +
+            '</div>' +
+        '</div>';
+    }
+
+    renderModulesSection() {
+        var self = this;
+        var unlockedModules = [];
+        var completedModules = [];
+        var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
+        var modules = (typeof dashboardState !== 'undefined' && dashboardState.modules) || [];
+
+        if (children && children.length > 0) {
+            children.forEach(function(child) {
+                if (window.childModuleAssignments && window.childModuleAssignments[child.id]) {
+                    Object.values(window.childModuleAssignments[child.id]).forEach(function(assignment) {
+                        if (assignment.is_active) {
+                            var module = modules.find(function(m) { return m.id === assignment.module_id; });
+                            if (module) {
+                                if (!unlockedModules.find(function(m) { return m.id === module.id; })) {
+                                    unlockedModules.push(module);
+                                }
+                                if (assignment.is_completed) {
+                                    if (!completedModules.find(function(m) { return m.id === module.id; })) {
+                                        completedModules.push(module);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        return '<div class="modules-overview">' +
+            '<div class="modules-category">' +
+                '<h4>📖 Unlocked Modules (' + unlockedModules.length + ')</h4>' +
+                '<div class="modules-grid">' +
+                    (unlockedModules.length > 0 ? 
+                        unlockedModules.map(function(module) {
+                            return '<div class="module-tile">' +
+                                '<div class="module-tile-emoji">' + self.escapeHtml(module.emoji || '📚') + '</div>' +
+                                '<div class="module-tile-title">' + self.escapeHtml(module.title) + '</div>' +
+                            '</div>';
+                        }).join('') :
+                        '<p class="modules-empty">No modules unlocked yet</p>'
+                    ) +
+                '</div>' +
+            '</div>' +
+            '<div class="modules-category">' +
+                '<h4>✅ Completed Modules (' + completedModules.length + ')</h4>' +
+                '<div class="modules-grid">' +
+                    (completedModules.length > 0 ?
+                        completedModules.map(function(module) {
+                            return '<div class="module-tile completed">' +
+                                '<div class="module-tile-emoji">' + self.escapeHtml(module.emoji || '📚') + '</div>' +
+                                '<div class="module-tile-title">' + self.escapeHtml(module.title) + '</div>' +
+                                '<div class="module-tile-check">✓</div>' +
+                            '</div>';
+                        }).join('') :
+                        '<p class="modules-empty">No modules completed yet</p>'
+                    ) +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
+    attachSectionListeners() {
+        var self = this;
+        var toggles = this.container.querySelectorAll('.profile-section-toggle');
+        toggles.forEach(function(toggle) {
+            var content = toggle.nextElementSibling;
+            var arrow = toggle.querySelector('.profile-section-arrow');
+            if (content) {
+                content.style.display = 'none';
+            }
+            if (arrow) {
+                arrow.style.transform = 'rotate(0deg)';
+            }
+
+            toggle.addEventListener('click', function() {
+                if (!content || !arrow) return;
+                if (content.style.display === 'none' || !content.style.display) {
+                    content.style.display = 'block';
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    content.style.display = 'none';
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+
+        var addChildButton = this.container.querySelector('#profileAddChildBtn');
+        if (addChildButton) {
+            addChildButton.addEventListener('click', function(event) {
+                event.stopPropagation();
+                if (typeof showAddChildModal === 'function') {
+                    showAddChildModal();
+                }
+            });
+        }
+
+        var editButtons = this.container.querySelectorAll('.child-profile-edit-btn');
+        editButtons.forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                var childId = button.getAttribute('data-edit-child-id');
+                var children = (typeof dashboardState !== 'undefined' && dashboardState.children) || [];
+                var child = children.find(function(item) { return String(item.id) === String(childId); });
+                if (child) {
+                    promptEditChild(child);
+                }
+            });
+        });
+    }
+
+    renderTierAccordion(tiers, selectedTierName) {
+        if (!tiers.length) {
+            return '<p class="change-plan-empty">No plans available right now. Please contact support.</p>';
+        }
+
+        var expandedTier = this.expandedTier || selectedTierName || tiers[0].tier;
+
+        return tiers.map((tier) => {
+            var isCurrent = tier.tier === selectedTierName;
+            var isOpen = tier.tier === expandedTier;
+            
+            var featuresList = '<ul class="plan-features-list">' +
+                '<li class="plan-feature-item included"><strong>' + tier.modules_per_month + '</strong>  modules per month</li>' +
+                '<li class="plan-feature-item ' + (tier.includes_parent_insights ? 'included' : 'excluded') + '">Parent insights and progress tracking</li>' +
+                '<li class="plan-feature-item ' + (tier.includes_behavioural_support ? 'included' : 'excluded') + '">Behavioral support resources</li>' +
+                '</ul>';
+            
+            return '<div class="plan-accordion-item ' + (isCurrent ? 'is-current' : '') + ' ' + (isOpen ? 'is-open' : '') + '" data-tier="' + this.escapeHtml(tier.tier) + '">' +
+                '<button type="button" class="plan-accordion-trigger" data-tier-trigger="' + this.escapeHtml(tier.tier) + '">' +
+                    '<div><span class="plan-tier-name">' + this.escapeHtml(tier.tier.toUpperCase()) + '</span>' +
+                    (isCurrent ? '<span class="plan-current-badge">Current Plan</span>' : '') + '</div>' +
+                    '<span class="plan-tier-price">' + this.escapeHtml(this.formatCurrency(tier.monthly_price_cents)) + '</span>' +
+                '</button>' +
+                '<div class="plan-accordion-panel" ' + (isOpen ? '' : 'hidden') + '>' +
+                    '<p>' + this.escapeHtml(tier.description || 'A balanced plan designed for steady emotional growth and family support.') + '</p>' +
+                    '<ul>' +
+                        '<li><strong>' + tier.modules_per_month + '</strong> modules per month</li>' +
+                        '<li>Includes progress tracking and family dashboard tools</li>' +
+                        '<li>Priority content updates for active subscribers</li>' +
+                    '</ul>' +
+                    '<button type="button" class="profile-select-plan-btn" data-select-tier="' + this.escapeHtml(tier.tier) + '" ' + (isCurrent ? 'disabled' : '') + '>' + (isCurrent ? 'Current Plan' : 'Select ' + this.escapeHtml(tier.tier.toUpperCase())) + '</button>' +
+                '</div>' +
+            '</div>';
         }).join('');
     }
-    
-    renderCard(module) {
-        var category = (module.category || 'general').toLowerCase();
-        var emoji = this.categoryEmojis[category] || '📖';
-        var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
-        var title = module.title || module.name || 'Untitled';
-        var shortDesc = module.short_description || module.description || '';
-        var ageRange = getSafeAgeRange(module);
-        
-        var statusClass = 'active';
-        var statusText = 'Ready to start';
-        var statusIcon = '●';
-        
-        if (!module.isActive) {
-            statusClass = 'locked';
-            statusText = 'Locked';
-            statusIcon = '🔒';
-        } else if (module.isCompleted) {
-            statusClass = 'completed';
-            statusText = 'Completed';
-            statusIcon = '✓';
-        }
-        
-        var actionText = module.isActive ? 'View Details →' : 'Learn More';
-        
-        return '<div class="module-card ' + (!module.isActive ? 'locked' : '') + '" ' +
-                    'data-category="' + category + '" ' +
-                    'data-module-id="' + module.id + '">' +
-                '<div class="card-stripe"></div>' +
-                '<div class="card-content">' +
-                    '<div class="card-header">' +
-                        '<div class="card-emoji">' + emoji + '</div>' +
-                        '<div class="card-badges">' +
-                            '<span class="card-category">' + categoryName + '</span>' +
-                            (ageRange ? '<span class="card-age">Ages ' + ageRange + '</span>' : '') +
-                        '</div>' +
-                    '</div>' +
-                    '<h3 class="card-title">' + this.escapeHtml(title) + '</h3>' +
-                    '<p class="card-description">' + this.escapeHtml(shortDesc) + '</p>' +
-                    '<div class="card-footer">' +
-                        '<span class="card-status ' + statusClass + '">' +
-                            '<span class="card-status-dot"></span>' +
-                            statusText +
-                        '</span>' +
-                        '<span class="card-action ' + (module.isActive ? '' : 'locked') + '">' +
-                            actionText +
-                        '</span>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
-    }
-    
-    createModal() {
-        var existingModal = document.getElementById('moduleDetailModal');
+
+    createChangePlanModal() {
+        var existingModal = document.getElementById('changePlanModal');
         if (existingModal) existingModal.remove();
-        
+
+        var tiers = this.getSafeTiers();
+        var selectedTierName = this.getCurrentTierName();
+        this.expandedTier = selectedTierName;
+
         var modal = document.createElement('div');
-        modal.id = 'moduleDetailModal';
+        modal.id = 'changePlanModal';
         modal.className = 'module-modal-overlay';
-        modal.innerHTML = 
-            '<div class="module-modal" id="moduleModalContent">' +
-                '<div class="modal-header">' +
-                    '<button class="modal-close" id="modalCloseBtn">✕</button>' +
-                    '<div class="modal-emoji" id="modalEmoji">📚</div>' +
-                    '<h2 class="modal-title" id="modalTitle">Module Title</h2>' +
-                    '<div class="modal-meta">' +
-                        '<span class="modal-meta-badge" id="modalCategory">📖 Category</span>' +
-                        '<span class="modal-meta-badge" id="modalAge">👶 Ages 7-12</span>' +
-                        '<span class="modal-meta-badge" id="modalStatus">✨ Active</span>' +
-                    '</div>' +
+        modal.innerHTML =
+            '<div class="module-modal change-plan-modal-shell">' +
+                '<div class="change-plan-header">' +
+                    '<h2>Change your plan</h2>' +
+                    '<button type="button" class="modal-close" id="changePlanCloseBtn">✕</button>' +
                 '</div>' +
-                
-                '<div class="modal-body">' +
-                    '<p class="modal-short-desc" id="modalShortDesc">Short description...</p>' +
-                    
-                    '<div class="modal-section">' +
-                        '<h4 class="modal-section-title"><span>📖</span> About This Workbook</h4>' +
-                        '<p class="modal-description" id="modalDescription">Full description...</p>' +
-                    '</div>' +
-                    
-                    '<div class="modal-section" id="modalEmotionsSection">' +
-                        '<h4 class="modal-section-title"><span>💭</span> Emotions Explored</h4>' +
-                        '<div class="modal-tags" id="modalEmotions"></div>' +
-                    '</div>' +
-                    
-                    '<div class="modal-section" id="modalSkillsSection">' +
-                        '<h4 class="modal-section-title"><span>🎯</span> Skills You\'ll Learn</h4>' +
-                        '<div class="modal-tags" id="modalSkills"></div>' +
-                    '</div>' +
-                    
-                    '<div class="modal-section" id="modalPathwaySection">' +
-                        '<div class="modal-pathway">' +
-                            '<div class="modal-pathway-label">Learning Pathway</div>' +
-                            '<div class="modal-pathway-name" id="modalPathway">🗺️ Pathway Name</div>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>' +
-                
-                '<div class="modal-footer">' +
-                    '<button class="modal-btn secondary" id="modalCancelBtn">Close</button>' +
-                    '<button class="modal-btn primary" id="modalStartBtn">🚀 Start Learning</button>' +
-                '</div>' +
+                '<p class="change-plan-subtitle">Choose the best tier for your family. Your current plan is highlighted.</p>' +
+                '<div id="changePlanAccordion">' + this.renderTierAccordion(tiers, selectedTierName) + '</div>' +
             '</div>';
-        
+
         document.body.appendChild(modal);
-        this.modalElement = modal;
-        
-        var self = this;
-        
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) self.closeModal();
-        });
-        
-        document.getElementById('modalCloseBtn').addEventListener('click', function() {
-            self.closeModal();
-        });
-        
-        document.getElementById('modalCancelBtn').addEventListener('click', function() {
-            self.closeModal();
-        });
-        
-        document.getElementById('modalStartBtn').addEventListener('click', function() {
-            var moduleId = modal.dataset.moduleId;
-            var code = modal.dataset.code;
-            var isLocked = modal.dataset.locked === 'true';
-            
-            if (!isLocked) {
-                self.startModule(moduleId, code);
-            }
-        });
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && self.modalElement && self.modalElement.classList.contains('active')) {
-                self.closeModal();
-            }
-        });
+        this.changePlanModal = modal;
     }
-    
-    openModal(module) {
-        if (!this.modalElement) return;
-        
-        var category = (module.category || 'general').toLowerCase();
-        var emoji = this.categoryEmojis[category] || '📖';
-        var categoryName = this.categoryNames[category] || this.capitalizeFirst(category);
-        
-        var title = module.title || module.name || 'Untitled';
-        var shortDesc = module.short_description || '';
-        var description = module.description || 'No description available.';
-        var ageRange = getSafeAgeRange(module) || 'All ages';
-        var code = module.code || '';
-        var pathway = module.pathway || '';
-        var emotions = module.emotions || [];
-        var skills = module.skills || [];
-        
-        this.modalElement.dataset.moduleId = module.id;
-        this.modalElement.dataset.code = code;
-        this.modalElement.dataset.locked = !module.isActive;
-        
-        var modalContent = document.getElementById('moduleModalContent');
-        modalContent.setAttribute('data-category', category);
-        
-        document.getElementById('modalEmoji').textContent = emoji;
-        document.getElementById('modalTitle').textContent = title;
-        document.getElementById('modalCategory').innerHTML = emoji + ' ' + categoryName;
-        document.getElementById('modalAge').textContent = '👶 Ages ' + ageRange;
-        
-        var statusBadge = document.getElementById('modalStatus');
-        if (!module.isActive) {
-            statusBadge.textContent = '🔒 Locked';
-        } else if (module.isCompleted) {
-            statusBadge.textContent = '✅ Completed';
-        } else {
-            statusBadge.textContent = '✨ Active';
-        }
-        
-        document.getElementById('modalShortDesc').textContent = shortDesc || 'An interactive learning workbook designed to help children develop emotional skills.';
-        document.getElementById('modalDescription').textContent = description;
-        
-        var pathwaySection = document.getElementById('modalPathwaySection');
-        var pathwayName = document.getElementById('modalPathway');
-        if (pathway) {
-            pathwaySection.style.display = 'block';
-            pathwayName.textContent = '🗺️ ' + pathway;
-        } else {
-            pathwaySection.style.display = 'none';
-        }
-        
-        var emotionsSection = document.getElementById('modalEmotionsSection');
-        var emotionsContainer = document.getElementById('modalEmotions');
-        if (emotions && emotions.length > 0) {
-            emotionsSection.style.display = 'block';
-            var self = this;
-            emotionsContainer.innerHTML = emotions.map(function(e) {
-                return '<span class="modal-tag emotion">' + self.escapeHtml(e) + '</span>';
-            }).join('');
-        } else {
-            emotionsSection.style.display = 'none';
-        }
-        
-        var skillsSection = document.getElementById('modalSkillsSection');
-        var skillsContainer = document.getElementById('modalSkills');
-        if (skills && skills.length > 0) {
-            skillsSection.style.display = 'block';
-            var self = this;
-            skillsContainer.innerHTML = skills.map(function(s) {
-                return '<span class="modal-tag skill">' + self.escapeHtml(s) + '</span>';
-            }).join('');
-        } else {
-            skillsSection.style.display = 'none';
-        }
-        
-        var startBtn = document.getElementById('modalStartBtn');
-        if (!module.isActive) {
-            startBtn.disabled = true;
-            startBtn.textContent = '🔒 Locked';
-        } else {
-            startBtn.disabled = false;
-            startBtn.innerHTML = '🚀 Start Learning';
-        }
-        
-        this.modalElement.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-    
-    closeModal() {
-        if (this.modalElement) {
-            this.modalElement.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    }
-    
+
     attachEventListeners() {
-        var self = this;
-        
-        var categoryFilter = document.getElementById('galleryCategoryFilter');
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', function(e) {
-                self.currentCategory = e.target.value;
-                self.applyFilters();
-                self.updateGrid();
-            });
-        }
-        
-        var superSkillFilter = document.getElementById('gallerySuperSkillFilter');
-        if (superSkillFilter) {
-            superSkillFilter.addEventListener('change', function(e) {
-                self.currentSuperSkill = e.target.value;
-                self.applyFilters();
-                self.updateGrid();
-            });
-        }
-        
-        var activeToggle = document.getElementById('galleryActiveOnly');
-        if (activeToggle) {
-            activeToggle.addEventListener('change', function(e) {
-                self.showActiveOnly = e.target.checked;
-                self.applyFilters();
-                self.updateGrid();
-            });
-        }
-        
-        this.attachCardClickHandlers();
-    }
-    
-    attachCardClickHandlers() {
-        var self = this;
-        var cards = this.container.querySelectorAll('.module-card');
-        
-        cards.forEach(function(card) {
-            card.addEventListener('click', function() {
-                var moduleId = card.dataset.moduleId;
-                var module = self.modules.find(function(m) {
-                    return m.id == moduleId;
-                });
-                
-                if (module) {
-                    self.openModal(module);
+        var openButton = document.getElementById('openChangePlanModal');
+        if (openButton) {
+            openButton.addEventListener('click', () => {
+                if (this.changePlanModal) {
+                    this.changePlanModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
                 }
             });
+        }
+
+        var openPaymentButton = document.getElementById('openMakePaymentModal');
+        if (openPaymentButton) {
+            openPaymentButton.addEventListener('click', () => {
+                this.createMakePaymentModal();
+                if (this.makePaymentModal) {
+                    this.makePaymentModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    this.attachPaymentModalListeners();
+                }
+            });
+        }
+
+        if (this.changePlanModal) {
+            var closeButton = document.getElementById('changePlanCloseBtn');
+            if (closeButton) {
+                closeButton.addEventListener('click', () => this.closeModal());
+            }
+
+            this.changePlanModal.addEventListener('click', (event) => {
+                if (event.target === this.changePlanModal) this.closeModal();
+            });
+
+            this.changePlanModal.addEventListener('click', (event) => {
+                var trigger = event.target.closest('[data-tier-trigger]');
+                if (trigger) {
+                    this.expandedTier = trigger.getAttribute('data-tier-trigger');
+                    this.refreshAccordion();
+                    return;
+                }
+
+                var selectButton = event.target.closest('.profile-select-plan-btn');
+                if (selectButton) {
+                    var tierName = selectButton.getAttribute('data-select-tier');
+                    if (tierName) this.handleTierSwitch(tierName, selectButton);
+                }
+            });
+        }
+    }
+
+    attachPaymentModalListeners() {
+        if (!this.makePaymentModal) return;
+        var self = this;
+
+        var closeButton = document.getElementById('makePaymentCloseBtn');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => this.closeMakePaymentModal());
+        }
+
+        this.makePaymentModal.addEventListener('click', (event) => {
+            if (event.target === this.makePaymentModal) this.closeMakePaymentModal();
         });
-    }
-    
-    updateGrid() {
-        var grid = document.getElementById('galleryGrid');
-        if (grid) {
-            grid.innerHTML = this.renderCards();
-            this.attachCardClickHandlers();
+
+        // Radio button selection for duration
+        var radioButtons = this.makePaymentModal.querySelectorAll('input[name="paymentDuration"]');
+        radioButtons.forEach((radio) => {
+            radio.addEventListener('change', function() {
+                self.handleDurationSelect(parseInt(this.value));
+            });
+        });
+
+        // Credits amount input
+        var creditsInput = document.getElementById('prepaidCreditsAmount');
+        if (creditsInput) {
+            creditsInput.addEventListener('input', function() {
+                self.updateCreditsPreview(parseInt(this.value) || 0);
+            });
         }
+
+        // Buy credits button
+        var buyCreditsBtn = document.getElementById('buyCreditsBtn');
+        if (buyCreditsBtn) {
+            buyCreditsBtn.addEventListener('click', () => this.handleBuyCredits());
+        }
+
+        // Proceed payment button
+        var proceedButton = document.getElementById('proceedPaymentBtn');
+        if (proceedButton) {
+            proceedButton.addEventListener('click', () => this.handleProceedPayment());
+        }
+    }
+
+    handleDurationSelect(months) {
+        this.selectedMonths = months;
         
-        // Update count
-        var countEl = this.container.querySelector('.gallery-count');
-        if (countEl) {
-            countEl.innerHTML = '<span>📖</span> ' + this.filteredModules.length + ' workbook' + (this.filteredModules.length !== 1 ? 's' : '');
+        // Update radio option styles
+        var options = this.makePaymentModal.querySelectorAll('.payment-radio-option');
+        options.forEach((opt) => {
+            var radio = opt.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                opt.style.borderColor = '#2A8F8F';
+                opt.style.background = '#F0FDFA';
+            } else {
+                opt.style.borderColor = '#E5E7EB';
+                opt.style.background = 'white';
+            }
+        });
+
+        // Show payment preview
+        var preview = document.getElementById('paymentPreview');
+        var newDateEl = document.getElementById('newPaidToDate');
+        var amountEl = document.getElementById('paymentAmount');
+        var proceedBtn = document.getElementById('proceedPaymentBtn');
+
+        if (preview && newDateEl && amountEl) {
+            var newEndDate = this.calculateNewEndDate(months);
+            var price = this.getPaymentPrice(months);
+
+            preview.style.display = 'block';
+            newDateEl.textContent = this.formatDateDisplay(newEndDate.toISOString());
+            amountEl.textContent = '$' + price.toFixed(2);
+        }
+
+        if (proceedBtn) {
+            proceedBtn.disabled = false;
+            proceedBtn.style.background = '#2A8F8F';
+            proceedBtn.style.cursor = 'pointer';
+            proceedBtn.textContent = 'Pay $' + this.getPaymentPrice(months).toFixed(2);
         }
     }
-    
-    async startModule(moduleId, code) {
-        var child = window.state.selectedChild;
-        if (!child) {
-            alert('Please select a child first.');
+
+    updateCreditsPreview(credits) {
+        var total = (credits * 6.99).toFixed(2);
+        var preview = document.getElementById('creditsTotalPreview');
+        if (preview) {
+            preview.innerHTML = 'Total: <strong style="color: #F59E0B;">$' + total + '</strong>';
+        }
+    }
+
+    async handleBuyCredits() {
+        var credits = parseInt(document.getElementById('prepaidCreditsAmount')?.value || '5');
+        if (credits < 1) {
+            this.notifyUser('Please enter at least 1 credit.');
             return;
         }
-        
-        this.closeModal();
-        
-        var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + moduleId + '&code=' + code + '&childName=' + encodeURIComponent(child.name || '');
-        
-        // Check-in intercept for weeks 1, 4, 7, 10
-        var CHECKIN_WEEKS = [1, 4, 7, 10];
-        var mod = (window.modules || []).find(function(m) { return m.id === moduleId; });
-        if (mod && typeof window.showCheckinPopup === 'function') {
-            var week = Number(mod.week_number || mod.pathway_order || 0);
-            if (week && CHECKIN_WEEKS.indexOf(week) !== -1) {
-                try {
-                    var alreadyDone = await hasExistingCheckin(child.id, mod.id);
-                    if (!alreadyDone) {
-                        var popupModule = Object.assign({}, mod, { code: code });
-                        window.showCheckinPopup(popupModule, function() {
-                            window.location.href = moduleUrl;
-                        });
-                        return;
-                    }
-                } catch (e) {
-                    console.error('Error checking checkin:', e);
-                }
+
+        var buyBtn = document.getElementById('buyCreditsBtn');
+        if (buyBtn) {
+            buyBtn.disabled = true;
+            buyBtn.textContent = 'Processing...';
+        }
+
+        try {
+            var response = await this.callPaymentEndpoint({
+                paymentType: 'prepaid',
+                credits: credits,
+                pricePerCredit: 6.99
+            });
+
+            if (response.url) {
+                window.location.assign(response.url);
+            } else {
+                throw new Error('No checkout URL returned');
+            }
+        } catch (error) {
+            console.error('Credits purchase error:', error);
+            this.notifyUser(error?.message || 'Unable to process credits purchase.');
+            if (buyBtn) {
+                buyBtn.disabled = false;
+                buyBtn.textContent = 'Buy';
             }
         }
-        
-        window.location.href = moduleUrl;
     }
-    
-    capitalizeFirst(str) {
-        if (!str) return '';
-        return str.charAt(0).toUpperCase() + str.slice(1);
+
+    async handleProceedPayment() {
+        if (!this.selectedMonths) {
+            this.notifyUser('Please select a payment duration.');
+            return;
+        }
+
+        var proceedButton = document.getElementById('proceedPaymentBtn');
+        if (proceedButton) {
+            proceedButton.disabled = true;
+            proceedButton.textContent = 'Processing...';
+        }
+
+        try {
+            var newEndDate = this.calculateNewEndDate(this.selectedMonths);
+            var price = this.getPaymentPrice(this.selectedMonths);
+
+            var response = await this.callPaymentEndpoint({
+                paymentType: 'subscription',
+                months: this.selectedMonths,
+                newEndDate: newEndDate.toISOString().split('T')[0],
+                amount: price,
+                tier: this.getCurrentTierName()
+            });
+
+            if (response.url) {
+                window.location.assign(response.url);
+            } else {
+                throw new Error('No checkout URL returned');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            this.notifyUser(error?.message || 'Unable to process payment. Please try again.');
+            if (proceedButton) {
+                proceedButton.disabled = false;
+                proceedButton.textContent = 'Pay $' + this.getPaymentPrice(this.selectedMonths).toFixed(2);
+            }
+        }
     }
-    
+
+    async callPaymentEndpoint(paymentData) {
+        var supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+        if (!supabaseUrl) {
+            throw new Error('Supabase URL is not configured for payments.');
+        }
+
+        var session = await supabase.auth.getSession();
+        var accessToken = session?.data?.session?.access_token || '';
+
+        // Use current origin for redirect URLs (works for both localhost and production)
+        var currentOrigin = window.location.origin;
+        paymentData.success_url = currentOrigin + '/dashboard.html?payment=success';
+        paymentData.cancel_url = currentOrigin + '/dashboard.html?payment=cancelled';
+
+        if (!accessToken) {
+            throw new Error('Your session has expired. Please sign in again.');
+        }
+
+        var response = await fetch(supabaseUrl + '/functions/v1/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + accessToken
+            },
+            body: JSON.stringify(paymentData)
+        });
+
+        if (!response.ok) {
+            var errorMessage = 'Payment request failed';
+
+            try {
+                var errorBody = await response.json();
+                errorMessage = errorBody.error || errorBody.message || errorMessage;
+            } catch (e) {
+                try {
+                    errorMessage = await response.text() || errorMessage;
+                } catch (e2) {
+                    // Use default error message
+                }
+            }
+
+            if (String(errorMessage).toLowerCase().includes('invalid jwt')) {
+                errorMessage = 'Your session is no longer valid. Please sign in again and retry payment.';
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        var result = await response.json();
+        return result || {};
+    }
+
+    refreshAccordion() {
+        var accordion = document.getElementById('changePlanAccordion');
+        if (!accordion) return;
+        accordion.innerHTML = this.renderTierAccordion(this.getSafeTiers(), this.getCurrentTierName());
+    }
+
+    createMakePaymentModal() {
+        var existingModal = document.getElementById('makePaymentModal');
+        if (existingModal) existingModal.remove();
+
+        var currentPaidTo = this.getCurrentPaidToDate();
+        var formattedPaidTo = this.formatDateDisplay(currentPaidTo);
+        var isPastDue = new Date(currentPaidTo) < new Date();
+        var oneMonthLabel = this.getDurationPriceLabel(1);
+        var threeMonthLabel = this.getDurationPriceLabel(3);
+        var sixMonthLabel = this.getDurationPriceLabel(6);
+        var twelveMonthLabel = this.getDurationPriceLabel(12);
+
+        var modal = document.createElement('div');
+        modal.id = 'makePaymentModal';
+        modal.className = 'module-modal-overlay';
+        modal.innerHTML =
+            '<div class="module-modal change-plan-modal-shell" style="max-width: 480px;">' +
+                '<div class="change-plan-header">' +
+                    '<h2>Make a Payment</h2>' +
+                    '<button type="button" class="modal-close" id="makePaymentCloseBtn">✕</button>' +
+                '</div>' +
+                
+                '<div style="background: ' + (isPastDue ? '#FEF2F2' : '#F0FDF4') + '; border: 1px solid ' + (isPastDue ? '#FECACA' : '#BBF7D0') + '; border-radius: 8px; padding: 16px; margin-bottom: 20px;">' +
+                    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                        '<span style="font-size: 14px; color: #64748B;">Currently Paid To:</span>' +
+                        '<span style="font-size: 16px; font-weight: 700; color: ' + (isPastDue ? '#DC2626' : '#16A34A') + ';">' + formattedPaidTo + '</span>' +
+                    '</div>' +
+                    (isPastDue ? '<p style="font-size: 12px; color: #DC2626; margin-top: 8px; margin-bottom: 0;">Your subscription is past due. Payment will start from today.</p>' : '') +
+                '</div>' +
+                
+                '<div style="margin-bottom: 20px;">' +
+                    '<label style="display: block; font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">Select Payment Duration</label>' +
+                    '<div style="display: flex; flex-direction: column; gap: 8px;">' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="1" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">1 Month</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(oneMonthLabel) + '</div>' +
+                            '</div>' +
+                        '</label>' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="3" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">3 Months</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(threeMonthLabel) + '</div>' +
+                            '</div>' +
+                        '</label>' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="6" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">6 Months</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(sixMonthLabel) + '</div>' +
+                            '</div>' +
+                        '</label>' +
+                        '<label class="payment-radio-option" style="display: flex; align-items: center; padding: 14px 16px; border: 2px solid #E5E7EB; border-radius: 10px; cursor: pointer; transition: all 0.15s;">' +
+                            '<input type="radio" name="paymentDuration" value="12" style="width: 18px; height: 18px; margin-right: 12px; accent-color: #2A8F8F;">' +
+                            '<div style="flex: 1;">' +
+                                '<div style="font-weight: 600; color: #1F2937;">12 Months</div>' +
+                                '<div style="font-size: 12px; color: #6B7280;">' + this.escapeHtml(twelveMonthLabel) + '</div>' +
+                            '</div>' +
+                        '</label>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<div id="paymentPreview" style="display: none; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">' +
+                    '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">' +
+                        '<span style="color: #64748B;">New Paid-To Date:</span>' +
+                        '<span id="newPaidToDate" style="font-weight: 600; color: #1F2937;">—</span>' +
+                    '</div>' +
+                    '<div style="display: flex; justify-content: space-between;">' +
+                        '<span style="color: #64748B;">Amount:</span>' +
+                        '<span id="paymentAmount" style="font-weight: 700; color: #2A8F8F; font-size: 18px;">—</span>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<div style="border-top: 1px solid #E5E7EB; padding-top: 20px; margin-top: 8px;">' +
+                    '<label style="display: block; font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">Or Buy Prepaid Credits</label>' +
+                    '<div style="display: flex; gap: 12px; align-items: center;">' +
+                        '<input type="number" id="prepaidCreditsAmount" min="1" max="100" value="5" style="width: 80px; padding: 10px; border: 1.5px solid #E2E8F0; border-radius: 8px; font-size: 14px; text-align: center;">' +
+                        '<div style="flex: 1;">' +
+                            '<div style="font-size: 14px; color: #374151;">credits × $6.99 each</div>' +
+                            '<div style="font-size: 12px; color: #6B7280;">1 credit = 1 module unlock</div>' +
+                        '</div>' +
+                        '<button type="button" id="buyCreditsBtn" style="padding: 10px 20px; background: #F59E0B; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Buy</button>' +
+                    '</div>' +
+                    '<div id="creditsTotalPreview" style="text-align: right; margin-top: 8px; font-size: 14px; color: #64748B;">Total: <strong style="color: #F59E0B;">$34.95</strong></div>' +
+                '</div>' +
+                
+                '<button type="button" id="proceedPaymentBtn" disabled style="width: 100%; margin-top: 20px; padding: 14px; background: #CBD5E1; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: not-allowed;">Select a payment option</button>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+        this.makePaymentModal = modal;
+        this.currentPaidToDate = currentPaidTo;
+    }
+
+    getCurrentPaidToDate() {
+        var sub = currentSubscription || window.currentSubscription;
+        if (sub?.current_period_end) {
+            return sub.current_period_end;
+        }
+        return new Date().toISOString().split('T')[0];
+    }
+
+    formatDateDisplay(dateStr) {
+        try {
+            var date = new Date(dateStr);
+            return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch (e) {
+            return dateStr;
+        }
+    }
+
+    calculateNewEndDate(months) {
+        var currentEnd = new Date(this.currentPaidToDate);
+        var today = new Date();
+        var startFrom = currentEnd > today ? currentEnd : today;
+        var newEnd = new Date(startFrom);
+        newEnd.setMonth(newEnd.getMonth() + months);
+        return newEnd;
+    }
+
+    getCurrentTierConfig() {
+        var tiers = this.getSafeTiers();
+        var currentTierName = this.getCurrentTierName();
+        return tiers.find(function(t) { return t.tier === currentTierName; }) || null;
+    }
+
+    getMonthlyTierPrice() {
+        var tierConfig = this.getCurrentTierConfig();
+        var monthlyPriceCents = Number(tierConfig?.monthly_price_cents);
+        return Number.isFinite(monthlyPriceCents) && monthlyPriceCents > 0 ? (monthlyPriceCents / 100) : 19;
+    }
+
+    getDiscountRateForMonths(months) {
+        var tierConfig = this.getCurrentTierConfig();
+        var fallback = { 1: 0, 3: 0.05, 6: 0.10, 12: 0.17 };
+        var rawValue = months === 3
+            ? tierConfig?.discount_3_month
+            : months === 6
+                ? tierConfig?.discount_6_month
+                : months === 12
+                    ? tierConfig?.discount_12_month
+                    : 0;
+
+        var value = Number(rawValue);
+        if (!Number.isFinite(value) || value <= 0) return fallback[months] || 0;
+        return value > 1 ? value / 100 : value;
+    }
+
+    getPaymentPrice(months) {
+        var monthlyPrice = this.getMonthlyTierPrice();
+        var discountRate = this.getDiscountRateForMonths(months);
+        return Number((monthlyPrice * months * (1 - discountRate)).toFixed(2));
+    }
+
+    getDurationPriceLabel(months) {
+        var price = this.getPaymentPrice(months);
+        var discountRate = this.getDiscountRateForMonths(months);
+        if (discountRate > 0) {
+            return '$' + price.toFixed(2) + ' (Save ' + Math.round(discountRate * 100) + '%)';
+        }
+        return '$' + price.toFixed(2);
+    }
+
+    closeModal() {
+        if (!this.changePlanModal) return;
+        this.changePlanModal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    closeMakePaymentModal() {
+        if (!this.makePaymentModal) return;
+        this.makePaymentModal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+
+    notifyUser(message) {
+        if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+            window.showToast(message);
+            return;
+        }
+        alert(message);
+    }
+
+    async handleTierSwitch(tierName, button) {
+        var parentUserId = state?.currentUser?.id || window.state?.currentUser?.id;
+        var targetTier = String(tierName || '').toLowerCase();
+
+        console.log('[ChangePlan] Tier switch requested', {
+            tierName: tierName,
+            targetTier: targetTier,
+            hasButton: Boolean(button),
+            buttonLabel: button?.textContent || null,
+            stateUserId: state?.currentUser?.id || null,
+            windowStateUserId: window.state?.currentUser?.id || null,
+            parentUserId: parentUserId || null,
+            subscriptionTier: currentSubscription?.tier || null,
+            subscriptionStatus: currentSubscription?.status || null
+        });
+
+        if (!parentUserId) {
+            console.warn('[ChangePlan] Missing parent user id. Aborting tier switch.');
+            this.notifyUser('Unable to switch plans right now. Please refresh and try again.');
+            return;
+        }
+
+        if (!targetTier) {
+            console.warn('[ChangePlan] Missing target tier value. Aborting tier switch.', { tierName: tierName });
+            return;
+        }
+
+        var originalLabel = button?.textContent || '';
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Redirecting...';
+        }
+
+        try {
+            console.log('[ChangePlan] Calling switchStripeSubscriptionPlan', {
+                parentUserId: parentUserId,
+                targetTier: targetTier
+            });
+            var result = await switchStripeSubscriptionPlan(targetTier);
+            console.log('[ChangePlan] switchStripeSubscriptionPlan result', result);
+            if (!result?.url) throw new Error('Stripe checkout URL was not returned.');
+            window.location.assign(result.url);
+        } catch (error) {
+            console.error('Failed to switch subscription tier:', {
+                message: error?.message,
+                name: error?.name,
+                stack: error?.stack,
+                details: error,
+                targetTier: targetTier,
+                parentUserId: parentUserId
+            });
+            this.notifyUser(error?.message || 'Unable to open Stripe checkout. Please try again.');
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalLabel;
+            }
+        }
+    }
+
     escapeHtml(str) {
-        if (!str) return '';
+        if (str === null || str === undefined) return '';
         var div = document.createElement('div');
-        div.textContent = str;
+        div.textContent = String(str);
         return div.innerHTML;
     }
 }
@@ -4725,30 +6027,17 @@ window.ModuleGallery = ModuleGallery;
 
 // Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    var checkAndInit = async function() {
+    var checkAndInit = function() {
         var container = document.getElementById('moduleGalleryContainer');
-        if (container && window.modules && window.parentModules) {
-            try {
-                var superSkills = await getSuperSkills();
-                window.superSkills = superSkills || [];
-            } catch {
-                window.superSkills = [];
-            }
-
+        if (container) {
             var gallery = new ModuleGallery('moduleGalleryContainer');
-            gallery.init(
-                window.modules || [],
-                window.parentModules || [],
-                window.childModules || [],
-                window.superSkills || []
-            );
+            gallery.init();
             window.moduleGallery = gallery;
             return true;
         }
         return false;
     };
 
-    // Always listen for the data-ready event, and also try once immediately
     window.addEventListener('dashboardDataReady', checkAndInit);
     checkAndInit();
 });

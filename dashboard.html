@@ -11,14 +11,13 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="/styles/dashboard.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Adventure UI Overhaul -->
     <link href="/styles/dashboard-adventure.css" rel="stylesheet">
 
-    
-    <script type="module" src="./src/progress-tracking-system.js"></script>
 
 </head>
 <body>
@@ -35,18 +34,6 @@
                 </a>
             </div>
             <div class="header-right">
-                <div class="credit-wallet" id="creditWalletBadge" title="Module credits available this billing period">
-                    <svg class="credit-wallet-icon" viewBox="0 0 64 32" aria-hidden="true" focusable="false">
-                        <path d="M8 10c0-3.3 2.7-6 6-6h6l4-3h16l4 3h6c3.3 0 6 2.7 6 6v12c0 3.3-2.7 6-6 6H14c-3.3 0-6-2.7-6-6V10z" fill="#f6c453" stroke="#b36a2d" stroke-width="2"/>
-                        <circle cx="22" cy="16" r="3" fill="#b36a2d"/>
-                        <circle cx="32" cy="16" r="3" fill="#b36a2d"/>
-                        <circle cx="42" cy="16" r="3" fill="#b36a2d"/>
-                    </svg>
-                    <div class="credit-wallet-copy">
-                        <span class="credit-wallet-label">Credits</span>
-                        <span class="credit-wallet-value" id="creditWalletValue">0</span>
-                    </div>
-                </div>
                 <!-- Desktop Navigation Buttons -->
                 <div class="desktop-nav">
                     <button class="btn-header" id="dashboardHomeButtonDesktop">
@@ -54,9 +41,6 @@
                     </button>
                     <button class="btn-header" id="profileButtonDesktop">
                         Profile
-                    </button>
-                    <button class="btn-header" id="billingButtonDesktop">
-                        Billing
                     </button>
                     <button class="btn-header" id="logoutButtonDesktop">Logout</button>
                     <button class="btn-header settings hidden" id="adminButtonDesktop" style="margin-left: 12px;">
@@ -79,10 +63,6 @@
                         <span class="dropdown-icon">👤</span>
                         Profile
                     </button>
-                    <button class="dropdown-item" id="billingButton">
-                        <span class="dropdown-icon">💳</span>
-                        Billing
-                    </button>
                     <button class="dropdown-item" id="adminButton" style="display: none;">
                         <span class="dropdown-icon">⚙️</span>
                         Admin Centre
@@ -102,60 +82,6 @@
         <!-- Loading State -->
         <div id="loadingState" class="loading">
             Loading...
-        </div>
-
-        <!-- Children List View -->
-        <div id="childrenView" class="hidden">
-            <!-- Welcome Header -->
-            <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="font-size: 32px; color: #405878; font-weight: 700; margin-bottom: 8px;">Welcome to Your Family Dashboard</h1>
-                <p style="color: #4c6c96; font-size: 16px;">Select a child to view their progress and continue their learning journey</p>
-            </div>
-
-            <!-- Children Cards -->
-            <div style="margin-bottom: 48px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                    <h2 style="font-size: 20px; color: #405878; font-weight: 700; margin: 0;">Your Children</h2>
-                    <button id="addChildQuickBtn" class="add-child-quick-btn" type="button" title="Add new child">
-                        <span>➕ Add Child</span>
-                    </button>
-                </div>
-                <div class="children-grid" id="childrenGrid"></div>
-            </div>
-
-            <!-- Module Gallery for All Modules -->
-            <div id="moduleGalleryContainer">
-                <!-- Gallery will be rendered here by JavaScript -->
-                <div class="module-gallery">
-                    <div class="gallery-header">
-                        <h2 class="gallery-title">
-                            <span class="gallery-title-icon">📚</span>
-                            Your Workbook Library
-                        </h2>
-                        <p class="gallery-subtitle">Loading your collection...</p>
-                    </div>
-                    <div class="gallery-grid">
-                        <div class="gallery-empty">
-                            <div class="gallery-empty-icon">⏳</div>
-                            <p class="gallery-empty-text">Loading workbooks...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Hidden containers for backward compatibility -->
-            <div style="display: none;">
-                <div id="activeModulesSection">
-                    <div class="modules-grid" id="parentUnlockedModulesGrid"></div>
-                </div>
-                <div id="inactiveModulesSection">
-                    <div class="modules-grid" id="parentLockedModulesGrid"></div>
-                </div>
-                <select id="allWorkbooksCategoryFilter"><option value="all">All Categories</option></select>
-                <select id="allWorkbooksSeriesFilter"><option value="all">All Series</option></select>
-                <button type="button" id="showMoreModulesBtn" style="display: none;"></button>
-                <button type="button" id="showLessModulesBtn" style="display: none;"></button>
-            </div>
         </div>
 
         <!-- Child Detail View -->
@@ -184,111 +110,73 @@
 
             <!-- Dashboard Tab -->
             <div id="dashboardTabContent">
-                <!-- Top Row: Daniel Hub + Daily Quest + Stats -->
-                <div class="dashboard-top-row">
-                    <!-- Daniel Hub - Enhanced for relationship building -->
-                    <div class="daniel-hub has-activity" id="danielHub">
-                        <div class="daniel-character" id="danielCharacter" tabindex="0" role="button" aria-label="Talk to Daniel">
-                            <img class="daniel-avatar" src="/images/characters/DanielTheDog.png" alt="Daniel the Dog - your learning buddy" />
+                <!-- Dashboard Hero Strip -->
+                <div class="dashboard-hero-strip">
+                    <!-- Daniel companion -->
+                    <div class="hero-daniel" id="danielHub">
+                        <div class="hero-daniel-inner" id="danielCharacter" tabindex="0" role="button" aria-label="Rate how you feel with Daniel">
+                            <img class="hero-daniel-img" src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel the Dog" loading="lazy" />
+                            <div class="hero-daniel-badge" id="danielGrowthIndicator">
+                                <span style="font-size: 11px;">💪</span>
+                                <span id="danielConfidenceLevel">Growing together</span>
+                            </div>
                         </div>
-                        <div class="daniel-info">
-                            <h3 class="daniel-name">Daniel</h3>
-                        </div>
-                        <div class="daniel-growth-indicator" id="danielGrowthIndicator">
-                            <span style="font-size: 12px;">💪</span>
-                            <span id="danielConfidenceLevel">Growing together</span>
-                        </div>
-                        <!-- Quote as heading across container -->
-                        <div class="daniel-quote-heading">
-                            <h2 id="moodText" class="quote-text">Want to figure things out with me?</h2>
+                        <div class="hero-daniel-speech">
+                            <div class="daniel-info"><h3 class="daniel-name">Daniel</h3></div>
+                            <p class="hero-daniel-quote" id="moodText">Tap me to share how you feel right now!</p>
                         </div>
                     </div>
 
-                    <!-- Daily Quest Card -->
-                    <div class="stat-card daily-quest-card" id="dailyQuestCard" 
-                        style="background: linear-gradient(135deg, #f4a261 0%, #e9c46a 100%); color: white;">
-                        <div class="quest-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                            <div class="quest-icon" style="font-size: 32px;">🎯</div>
-                            <div>
-                                <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Daily Quest</h3>
-                                <p style="margin: 0; font-size: 12px; opacity: 0.9;">Complete for bonus stars!</p>
-                            </div>
+                    <!-- Stats trio -->
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <div class="hero-stat-icon">⭐</div>
+                            <div class="hero-stat-val" id="totalStars">0</div>
+                            <div class="hero-stat-lbl">Stars</div>
                         </div>
-                        
-                        <div class="quest-progress-section">
-                            <p class="quest-description" id="questDescription" 
-                            style="margin: 0 0 12px 0; font-size: 15px;">
-                                Loading quest...
-                            </p>
-                            
-                            <!-- Button will be rendered by JS -->
-                            <button class="daily-quest-btn" id="doQuestBtn">
-                                Do Daily Quest
-                            </button>
+                        <div class="hero-stat">
+                            <div class="hero-stat-icon">🔥</div>
+                            <div class="hero-stat-val" id="dayStreak">0</div>
+                            <div class="hero-stat-lbl">Streak</div>
+                        </div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-icon">🏆</div>
+                            <div class="hero-stat-val" id="childRank">#-</div>
+                            <div class="hero-stat-lbl">Rank</div>
                         </div>
                     </div>
-                    <!-- Combined Stats Box -->
-                    <div style="background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid rgba(64,88,120,0.08);">
-                        <!-- Stats Row -->
-                        <div style="display: flex; gap: 20px; justify-content: space-around; margin-bottom: 20px;">
-                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                                <div style="font-size: 32px;">⭐</div>
-                                <div>
-                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="totalStars">0</div>
-                                    <div style="font-size: 12px; color: #6d86a8; font-weight: 600;">Stars</div>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                                <div style="font-size: 32px;">🔥</div>
-                                <div>
-                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="dayStreak">0</div>
-                                    <div style="font-size: 12px; color: #6d86a8; font-weight: 600;">Day Streak</div>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                                <div style="font-size: 32px;">🏆</div>
-                                <div>
-                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="childRank">#-</div>
-                                    <div style="font-size: 12px; color: #6d86a8; font-weight: 600;">Rank</div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div style="background: #f8fafc; border-radius: 12px; padding: 12px; margin-bottom: 18px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span style="font-size: 18px;">🎯</span>
-                                    <span style="font-size: 12px; font-weight: 700; color: #405878;">Level</span>
-                                </div>
-                                <span style="font-size: 16px; font-weight: 700; color: #405878;" id="childLevel">1</span>
-                            </div>
-                            <div style="background: rgba(64, 88, 120, 0.1); border-radius: 999px; height: 8px; overflow: hidden;">
-                                <div id="levelProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #4c6c96, #79a7d3); transition: width 0.3s ease;"></div>
-                            </div>
-                            <div style="margin-top: 6px; font-size: 11px; font-weight: 600; color: #6d86a8;" id="levelProgressText">0 / 100 XP</div>
+                    <!-- Level & XP -->
+                    <div class="hero-level">
+                        <div class="hero-level-ring">
+                            <svg class="hero-level-svg" viewBox="0 0 80 80">
+                                <circle cx="40" cy="40" r="34" fill="none" stroke="#E5E7EB" stroke-width="6" />
+                                <circle class="hero-level-progress" id="levelRingProgress" cx="40" cy="40" r="34" fill="none" stroke="url(#levelGrad)" stroke-width="6" stroke-linecap="round"
+                                    stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90 40 40)" />
+                                <defs><linearGradient id="levelGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366F1"/><stop offset="100%" stop-color="#8B5CF6"/></linearGradient></defs>
+                            </svg>
+                            <div class="hero-level-num" id="currentLevelDisplay">1</div>
+                            <div class="hero-level-word">LEVEL</div>
                         </div>
+                        <div class="hero-xp-info">
+                            <div class="hero-xp-earned"><span class="hero-xp-val" id="totalXpDisplay">0</span> <span class="hero-xp-unit">XP</span></div>
+                            <div class="hero-xp-bar-wrap">
+                                <div class="hero-xp-bar-track">
+                                    <div class="hero-xp-bar-fill" id="xpProgressBar"></div>
+                                </div>
+                                <div class="hero-xp-bar-text" id="xpProgressText">0 / 500 XP</div>
+                            </div>
+                        </div>
+                    </div>
 
-                        <!-- Your Journey So Far Section -->
-                        <div style="padding-top: 20px; border-top: 1px solid rgba(64,88,120,0.1);">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                <span style="font-size: 20px;">🐝</span>
-                                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #405878;">Your Journey So Far</h3>
-                            </div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-                                <div style="background: #f0f4ff; border-radius: 12px; padding: 12px; text-align: center; grid-column: 1 / -1;" id="skillsExploredBox">
-                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="skillsExploredCount">0</div>
-                                    <div style="font-size: 11px; color: #6d86a8; font-weight: 600; margin-top: 4px;" id="skillsExploredLabel">SKILLS EXPLORED</div>
-                                </div>
-                                <div style="background: #f0f4ff; border-radius: 12px; padding: 12px; text-align: center;">
-                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="toolsIntroducedCount">0</div>
-                                    <div style="font-size: 11px; color: #6d86a8; font-weight: 600; margin-top: 4px;" id="toolsIntroducedLabel">TOOLS INTRODUCED</div>
-                                </div>
-                                <div style="background: #f0f4ff; border-radius: 12px; padding: 12px; text-align: center;">
-                                    <div style="font-size: 20px; font-weight: 700; color: #405878;" id="activitiesCompletedCount">0</div>
-                                    <div style="font-size: 11px; color: #6d86a8; font-weight: 600; margin-top: 4px;" id="activitiesCompletedLabel">ACTIVITIES COMPLETED</div>
-                                </div>
-                            </div>
+                    <!-- Daily Quest -->
+                    <div class="hero-quest daily-quest-card" id="dailyQuestCard">
+                        <div class="hero-quest-icon">🎯</div>
+                        <div class="hero-quest-text">
+                            <span class="hero-quest-label">Daily Quest</span>
+                            <span class="quest-description" id="questDescription">Loading quest...</span>
                         </div>
+                        <button class="daily-quest-btn" id="doQuestBtn">Go!</button>
                     </div>
                 </div>
 
@@ -301,18 +189,13 @@
 
 <!-- Adventure Map Section -->
 <div class="adventure-map-section">
-    <div class="adventure-header">
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div>
-                <h2 class="adventure-title">🗺️ Your Adventure Map</h2>
-                <p class="adventure-subtitle">Follow the path and complete modules to unlock new adventures!</p>
-            </div>
-            <button type="button" id="focusPlanSettingsBtn" class="focus-plan-settings-btn" title="Focus Plan Settings" style="display: none;">
-                ⚙️ Focus Plan
-            </button>
-        </div>
+    <!-- Credits badge - floats inside header -->
+    <div class="credits-display" id="creditsDisplay" title="Module credits available this billing period">
+        <span class="credits-icon">🎟️</span>
+        <span class="credits-value" id="creditWalletValue">0</span>
+        <span class="credits-label">credits</span>
     </div>
-    
+
     <!-- The map will be rendered here by JavaScript -->
     <div id="adventureMapContainer"></div>
 </div>
@@ -779,6 +662,21 @@
     </div>
 
     <!-- Add Custom Reward Modal -->
+
+    <div id="danielMoodModal" class="modal-overlay hidden daniel-mood-overlay" aria-hidden="true">
+        <div class="modal daniel-mood-modal" role="dialog" aria-modal="true" aria-labelledby="danielMoodTitle">
+            <button type="button" class="daniel-mood-close" id="closeDanielMoodModal" aria-label="Close mood popup">×</button>
+            <div class="daniel-mood-header">
+                <div class="daniel-mood-mascot"><img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel the Dog" class="daniel-mood-mascot-img" loading="lazy" /></div>
+                <p class="daniel-mood-kicker" id="danielMoodKicker">Daniel check-in</p>
+                <h2 class="modal-title daniel-mood-title" id="danielMoodTitle">How are you feeling right now?</h2>
+                <p class="daniel-mood-subtitle" id="danielMoodSubtitle">Pick the emoji that feels most like you.</p>
+            </div>
+            <div class="daniel-mood-options" id="danielMoodOptions"></div>
+            <div class="daniel-mood-footer" id="danielMoodFooter">You can do another check-in in about 2 hours.</div>
+        </div>
+    </div>
+
     <div id="customRewardModal" class="modal-overlay hidden">
         <div class="modal">
             <h2 class="modal-title">Create Custom Reward</h2>
@@ -844,6 +742,7 @@
         </div>
     </div>
 
+    <script type="module" src="./src/progress-tracking-system.js"></script>
     <script type="module" src="./src/dashboard.js"></script>
    <script type="module" src="./src/dashboard-enhanced.js"></script>
     <script type ="module" src="./src/daily-quest-system.js"></script>

@@ -2,6 +2,11 @@
 // DAILY QUEST SYSTEM - Interactive Mini Activities
 // ================================================
 
+// Get today's date in Brisbane time (AEST, UTC+10, no DST) as YYYY-MM-DD
+function getBrisbaneToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Brisbane' }).format(new Date());
+}
+
 // Daily Quest Data
 const DAILY_QUESTS = [
   {
@@ -800,7 +805,7 @@ class DailyQuestManager {
   }
 
   async loadTodaysQuest() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBrisbaneToday();
     
     // Try to load from database first
     if (this.supabase && this.childId) {
@@ -813,12 +818,12 @@ class DailyQuestManager {
           .single();
 
         if (data && !error) {
-          this.isCompleted = false; //true;
+          this.isCompleted = true;
           this.currentQuest = DAILY_QUESTS.find(q => q.id === data.quest_id) || DAILY_QUESTS[0];
           return;
         }
       } catch (e) {
-        console.log('DB not available, using localStorage');
+        console.log('DB not available or table missing, using localStorage:', e.message);
       }
     }
 
@@ -1573,7 +1578,7 @@ class DailyQuestManager {
   }
 
   async saveCompletion() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBrisbaneToday();
 
     // Try database first
     if (this.supabase && this.childId) {
@@ -1589,7 +1594,7 @@ class DailyQuestManager {
           });
 
         if (insertError) {
-          console.error('Error saving quest completion:', insertError);
+          console.log('Note: Quest completion table not yet available, using localStorage:', insertError.message);
         }
 
         // Award star - directly update the 'stars' field on children table
@@ -1616,6 +1621,13 @@ class DailyQuestManager {
             console.error('Error updating child stars:', updateError);
           } else {
             console.log(`Daily Quest: Awarded 1 star. Child now has ${newStars} stars.`);
+            if (typeof window.maybeCelebrateFirstStar === 'function') {
+              window.maybeCelebrateFirstStar({
+                id: this.childId,
+                name: window.selectedChild?.name || window.state?.selectedChild?.name || 'Explorer',
+                stars: newStars
+              });
+            }
           }
         }
 
@@ -1628,7 +1640,7 @@ class DailyQuestManager {
         await this.updateStarsDisplay();
         
       } catch (e) {
-        console.error('DB save failed:', e);
+        console.log('DB save failed, using localStorage:', e.message);
       }
     }
 

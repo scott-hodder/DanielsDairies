@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel's Diaries - Profile</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/styles/dashboard.css" rel="stylesheet">
+
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="/dashboard.html" class="header-logo">
+                    <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
+                    <div>
+                        <h1 class="header-title">Daniel's Diaries</h1>
+                        <p class="header-subtitle" id="headerSubtitle">Welcome back!</p>
+                    </div>
+                </a>
+            </div>
+            <div class="header-right">
+                <!-- Desktop Navigation Buttons -->
+                <div class="desktop-nav">
+                    <button class="btn-header" id="dashboardHomeButtonDesktop">
+                        Dashboard
+                    </button>
+                    <button class="btn-header active" id="profileButtonDesktop">
+                        Profile
+                    </button>
+                    <button class="btn-header" id="logoutButtonDesktop">Logout</button>
+                    <button class="btn-header settings hidden" id="adminButtonDesktop" style="margin-left: 12px;">
+                        Admin Centre
+                    </button>
+                </div>
+                
+                <!-- Mobile Hamburger Menu -->
+                <button class="hamburger-menu" id="hamburgerMenu" aria-label="Menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <button class="dropdown-item" id="dashboardHomeButton">
+                        <span class="dropdown-icon">🏠</span>
+                        Dashboard
+                    </button>
+                    <button class="dropdown-item active" id="profileButton">
+                        <span class="dropdown-icon">👤</span>
+                        Profile
+                    </button>
+                    <button class="dropdown-item" id="adminButton" style="display: none;">
+                        <span class="dropdown-icon">⚙️</span>
+                        Admin Centre
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item logout" id="logoutButton">
+                        <span class="dropdown-icon">🚪</span>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            Loading...
+        </div>
+
+        <!-- Profile View -->
+        <div id="profileView" class="hidden">
+            <!-- Welcome Header -->
+            <div id="profileWelcomeHeader" style="text-align: center; margin-bottom: 40px;">
+                <h1 style="font-size: 32px; color: #405878; font-weight: 700; margin-bottom: 8px;">Welcome to Your Family Dashboard</h1>
+                <p style="color: #4c6c96; font-size: 16px;">Manage your family learning journey</p>
+            </div>
+
+            <!-- Profile Hub -->
+            <div id="moduleGalleryContainer">
+                <section class="profile-hub">
+                    <div class="profile-hub-header">
+                        <h2 class="profile-hub-title">👤 Your Profile &amp; Plan</h2>
+                        <p class="profile-hub-subtitle">Loading your billing and subscription details...</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Child Modal -->
+    <div id="addChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header-fun">
+                <div class="header-sparkles">
+                    <span class="header-sparkle">✨</span>
+                    <span class="header-sparkle">⭐</span>
+                    <span class="header-sparkle">💫</span>
+                    <span class="header-sparkle">🌟</span>
+                </div>
+                <h2 class="modal-title-fun">Add New Explorer!</h2>
+                <p class="modal-subtitle-fun">Let's create a profile!</p>
+                <div class="avatar-preview-wrapper">
+                    <div class="avatar-preview-circle" id="addAvatarPreviewCircle">🦊</div>
+                </div>
+                <button class="modal-close" id="closeAddChildModal" style="position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+            </div>
+            <form id="addChildForm" class="modal-body-fun">
+                <div class="form-group-fun">
+                    <label class="form-label-fun"><span class="form-label-icon">📝</span> What's Their Name?</label>
+                    <input type="text" id="childName" name="childName" class="form-input-fun" required placeholder="e.g. Oliver, Mia...">
+                </div>
+                <div class="form-group-fun">
+                    <label class="form-label-fun"><span class="form-label-icon">🎂</span> Date of Birth</label>
+                    <input type="date" id="childDob" name="childDob" class="form-input-fun" required>
+                </div>
+                <div class="avatar-section-fun">
+                    <div class="avatar-section-title">🎨 Pick Your Avatar</div>
+                    <div class="avatar-section-subtitle">Choose a character that represents you!</div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🐾 Animals</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerAnimals"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🔮 Magical</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerMagical"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🦸 Heroes</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerHeroes"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🚀 Space</div>
+                        <div class="avatar-picker-fun" id="addAvatarPickerSpace"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="addChildAvatar" value="🦊">
+                <p id="modalError" class="error-message hidden"></p>
+                <div class="modal-buttons-fun">
+                    <button type="button" class="btn-fun btn-secondary-fun" id="cancelAddChild">Maybe Later</button>
+                    <button type="submit" class="btn-fun btn-primary-fun">✨ Add Child!</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Child Modal -->
+    <div id="editChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header-fun">
+                <div class="header-sparkles">
+                    <span class="header-sparkle">✨</span>
+                    <span class="header-sparkle">⭐</span>
+                    <span class="header-sparkle">💫</span>
+                    <span class="header-sparkle">🌟</span>
+                </div>
+                <h2 class="modal-title-fun">Edit Explorer</h2>
+                <p class="modal-subtitle-fun">Update your profile!</p>
+                <div class="avatar-preview-wrapper">
+                    <div class="avatar-preview-circle" id="editAvatarPreviewCircle">🦊</div>
+                </div>
+                <button class="modal-close" id="closeEditChildModal" style="position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+            </div>
+            <form id="editChildForm" class="modal-body-fun">
+                <div class="form-group-fun">
+                    <label class="form-label-fun"><span class="form-label-icon">📝</span> Name</label>
+                    <input type="text" id="editChildName" name="editChildName" class="form-input-fun" required>
+                </div>
+                <div class="avatar-section-fun">
+                    <div class="avatar-section-title">🎨 Pick Your Avatar</div>
+                    <div class="avatar-section-subtitle">Choose a character that represents you!</div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🐾 Animals</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerAnimals"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🔮 Magical</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerMagical"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🦸 Heroes</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerHeroes"></div>
+                    </div>
+                    <div class="avatar-category">
+                        <div class="avatar-category-label">🚀 Space</div>
+                        <div class="avatar-picker-fun" id="editAvatarPickerSpace"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="editChildAvatar" value="🦊">
+                <p id="editModalError" class="error-message hidden"></p>
+                <div class="modal-buttons-fun">
+                    <button type="button" class="btn-fun btn-secondary-fun" id="cancelEditChild">Cancel</button>
+                    <button type="submit" class="btn-fun btn-primary-fun">✨ Save Changes</button>
+                </div>
+                <div class="remove-section-fun">
+                    <button type="button" class="btn-fun" id="removeChildBtn" style="color: #ef4444; font-size: 13px; width: auto; margin: 0 auto;">🗑️ Remove Child</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Child Confirmation Modal -->
+    <div id="removeChildModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Remove Child</h2>
+                <button class="modal-close" id="closeRemoveChildModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove <strong id="removeChildName"></strong>?</p>
+                <p class="warning-text">This action cannot be undone. All progress and data for this child will be permanently deleted.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelRemoveChild">Cancel</button>
+                <button class="btn-danger" id="confirmRemoveChild">Remove Child</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Password Modal -->
+    <div id="parentPasswordModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Parent Verification</h2>
+                <button class="modal-close" id="closeParentPasswordModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Please enter your password to continue.</p>
+                <div class="form-group">
+                    <label for="parentPassword">Password</label>
+                    <input type="password" id="parentPassword" name="parentPassword" required>
+                </div>
+                <p id="parentPasswordError" class="error-message hidden"></p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelParentPassword">Cancel</button>
+                <button class="btn-primary" id="confirmParentPassword">Verify</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./src/profile.js"></script>
+</body>
+</html>

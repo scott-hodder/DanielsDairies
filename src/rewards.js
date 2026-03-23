@@ -1,9 +1,10 @@
 import { supabase } from './supabaseClient.js'
 
 /**
- * Get all available rewards (baseline + custom for current user)
+ * Get all available rewards (baseline + custom for current user, filtered by child)
+ * Shows: baseline rewards, global custom rewards (no child_id), and child-specific custom rewards
  */
-export async function getRewards() {
+export async function getRewards(childId) {
   const { data, error } = await supabase
     .from('rewards')
     .select('*')
@@ -14,6 +15,11 @@ export async function getRewards() {
   if (error) {
     console.error('Error fetching rewards:', error)
     throw error
+  }
+
+  // Filter: show baseline, global custom (no child_id), or matching child's custom rewards
+  if (childId) {
+    return data.filter(r => r.is_baseline || !r.child_id || r.child_id === childId)
   }
 
   return data
@@ -33,6 +39,7 @@ export async function createCustomReward(reward) {
     .from('rewards')
     .insert({
       parent_user_id: user.user.id,
+      child_id: reward.child_id || null,
       title: reward.title,
       description: reward.description,
       star_cost: reward.star_cost,

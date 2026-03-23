@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>test</title>
+  <title>Roads Grow In Your Brain Town</title>
   <!-- DEBUG: 
   Series Info Debug:
-  - characterName: Professor Panda
+  - characterName: Lenny
   - characterEmoji: 🧠
-  - characterType: professor panda
-  - series: Professor Panda
+  - characterType: lenny
+  - series: Lenny
    -->
   <!-- CATEGORY_COLOR: #6366F1 -->
   <!-- PALETTE: primary=#6366F1 secondary=#8B5CF6 accent=#818CF8 -->
@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="./modules/shared/module-theme.css">
   <link rel="stylesheet" href="./modules/shared/module-header.css">
   <link rel="stylesheet" href="./modules/shared/module-base.css">
+  <link rel="stylesheet" href="./modules/shared/module-utilities.css">
   
   <style>
     /* Brand Colors - Dynamic based on category */
@@ -113,7 +114,7 @@
     }
   </style>
 </head>
-<body class="module-theme" data-series="Professor Panda" data-age-range="6-8">
+<body class="module-theme" data-series="Lenny" data-age-range="6-8">
   <div id="moduleHeaderRoot"></div>
   
   <main class="module-content">
@@ -264,10 +265,10 @@
       }
     };
     
-    const WORKBOOK_ID = "MOD_MM8Z5VO8";
-    const MODULE_CODE = "MOD_MM8Z5VO8";
-    const MAX_STARS = 11;
-    const TOTAL_PAGES = 21;
+    const WORKBOOK_ID = "MOD_MMUJJCYO";
+    const MODULE_CODE = "MOD_MMUJJCYO";
+    const MAX_STARS = 8;
+    const TOTAL_PAGES = 17;
     
     let currentPage = 0;
     let totalStars = 0;
@@ -308,31 +309,31 @@
     // Page generators
     function generatePage0() {
   return `
-    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--cream)); padding-top: 20px;" data-page="cover">
-      <div class="text-center max-w-4xl" style="margin-top: -80px;">
+    <div class="page min-h-screen flex items-center justify-center p-8 m-page-cover" data-page="cover">
+      <div class="text-center max-w-4xl m-cover-center">
         <!-- Big Character Front and Center -->
         <div class="mb-4 animate-bounce-slow">
-          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/PongThePanda.png" alt="Professor Panda" class="object-contain mx-auto drop-shadow-2xl" style="height: 280px; width: 280px; display: block;">
+          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/Lenny.png" alt="Lenny" class="object-contain mx-auto drop-shadow-2xl m-character-img--cover">
         </div>
         
         <!-- Character Name Badge -->
-        <div class="inline-block px-6 py-2 rounded-full mb-4" style="background-color: var(--primary);">
-          <span class="text-white font-title text-xl">Meet Professor Panda!</span>
+        <div class="inline-block px-6 py-2 rounded-full mb-4 m-bg-primary">
+          <span class="text-white font-title text-xl">Meet Lenny!</span>
         </div>
         
-        <h1 class="text-5xl md:text-6xl mb-3 font-title" style="color: var(--dark);">test</h1>
-        <h2 class="text-2xl md:text-3xl mb-6 font-title" style="color: var(--primary);">Building strong connections with Professor Panda</h2>
-        <div class="text-xl mb-6 font-body" style="color: var(--secondary);">
+        <h1 class="text-5xl md:text-6xl mb-3 font-title m-color-dark">Roads Grow In Your Brain Town</h1>
+        <h2 class="text-2xl md:text-3xl mb-6 font-title m-color-primary">Building new roads in your amazing brain</h2>
+        <div class="text-xl mb-6 font-body m-color-secondary">
           <p class="mb-2">An Interactive Adventure for Ages 6-8</p>
         </div>
-        <div class="border-4 rounded-3xl p-6 inline-block animate-glow" style="border-color: var(--primary); background-color: white;">
-          <p class="font-semibold mb-2 font-body text-lg" style="color: var(--dark);">This adventure belongs to:</p>
-          <div class="text-3xl font-title" style="color: var(--primary);" id="childNameDisplay">
+        <div class="border-4 rounded-3xl p-6 inline-block animate-glow m-border-primary m-bg-white">
+          <p class="font-semibold mb-2 font-body text-lg m-color-dark">This adventure belongs to:</p>
+          <div class="text-3xl font-title m-color-primary" id="childNameDisplay">
             Friend
           </div>
         </div>
         <div class="mt-6">
-          <p class="text-lg font-body" style="color: var(--secondary);">⭐ Earn stars by completing activities! ⭐</p>
+          <p class="text-lg font-body m-color-secondary">⭐ Earn stars by completing activities! ⭐</p>
         </div>
       </div>
     </div>`;
@@ -340,19 +341,19 @@
 
     function generatePage1() {
   return `
-    <div class="page min-h-screen p-6 md:p-8" style="background-color: var(--cream);" data-page="welcome">
+    <div class="page min-h-screen p-6 md:p-8 m-bg-cream" data-page="welcome">
       <div class="max-w-4xl mx-auto">
         <div class="flex items-center gap-4 mb-4">
-          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/PongThePanda.png" alt="Professor Panda" class="object-contain flex-shrink-0" style="height: 10rem; width: 10rem;">
-          <h1 class="text-3xl md:text-4xl font-title" style="color: var(--dark);">Welcome to Brain Builder with Professor Panda 🧠</h1>
+          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/Lenny.png" alt="Lenny" class="object-contain flex-shrink-0 m-character-img--welcome">
+          <h1 class="text-3xl md:text-4xl font-title m-color-dark">Welcome to Brain Town with Lenny! 🧠</h1>
         </div>
         
         <div class="rounded-3xl shadow-xl p-6 mb-4" style="background-color: white; border-left: 6px solid var(--primary);">
-          <p class="text-lg mb-3 last:mb-0 leading-relaxed font-body" style="color: var(--dark);">Hello there, amazing brain builder! I&#039;m Professor Panda, and I&#039;m so excited to explore your incredible brain with you. Your brain is like a special town where all your feelings and thoughts live together.</p><p class="text-lg mb-3 last:mb-0 leading-relaxed font-body" style="color: var(--dark);">We&#039;re going to learn how your brain helps you feel safe and connected with the people you love most. Daniel is learning right along with you, and together we&#039;ll discover how your amazing brain works!</p>
+          <p class="text-lg mb-3 last:mb-0 leading-relaxed font-body m-color-dark">G'day mate! I'm Lenny, your brain buddy! 🧠 I'm so excited you're here because we're going to explore the most amazing place ever - your very own Brain Town!</p><p class="text-lg mb-3 last:mb-0 leading-relaxed font-body m-color-dark">You're the town planner of your Brain Town, which means you get to help it grow bigger and stronger every single day! Daniel will be learning right along with you as we discover how roads grow in your brain when you practise new things. Let's start building! ⭐</p>
         </div>
         
-        <div class="rounded-xl p-4 text-center" style="background-color: var(--soft-yellow);">
-          <p class="text-lg font-semibold font-body" style="color: var(--dark);">
+        <div class="rounded-xl p-4 text-center m-bg-soft-yellow">
+          <p class="text-lg font-semibold font-body m-color-dark">
             "All feelings are okay—even the big ones!" 💛
           </p>
         </div>
@@ -362,7 +363,7 @@
 
     function generatePage2() {
   return `
-    <div class="page chapter-scene-page" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;" data-page="chapter">
+    <div class="page chapter-scene-page m-chapter-scene" data-page="chapter">
 
       <!-- Daytime sky -->
       <div style="position:absolute;inset:0;background:linear-gradient(180deg,
@@ -373,10 +374,10 @@
       );"></div>
 
       <!-- Sun glow -->
-      <div style="position:absolute;top:6%;right:12%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle, var(--soft-yellow) 0%, color-mix(in srgb, var(--soft-yellow) 40%, transparent) 50%, transparent 70%);opacity:0.7;"></div>
+      <div class="m-chapter-sun"></div>
 
       <!-- Soft clouds (pure CSS) -->
-      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">
+      <div class="m-chapter-stars">
         <div class="ch-cloud ch-cloud-1"></div>
         <div class="ch-cloud ch-cloud-2"></div>
         <div class="ch-cloud ch-cloud-3"></div>
@@ -384,8 +385,8 @@
       </div>
 
       <!-- Landscape at bottom — 280px -->
-      <div style="position:absolute;bottom:0;left:0;right:0;height:280px;z-index:1;">
-        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" style="width:100%;height:100%;">
+      <div class="m-chapter-hills">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
           
     <!-- Far hills -->
     <ellipse cx="150" cy="200" rx="280" ry="90" fill="var(--hill-far)"/>
@@ -418,35 +419,35 @@
       </div>
 
       <!-- Content — centred above scene -->
-      <div style="position:relative;z-index:10;text-align:center;padding:0 24px;max-width:640px;margin:0 auto;padding-bottom:300px;">
+      <div class="m-chapter-content">
         <!-- Journey badge -->
-        <div style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--primary) 12%, white);border:1px solid color-mix(in srgb, var(--primary) 25%, transparent);border-radius:20px;padding:5px 14px;margin-bottom:20px;backdrop-filter:blur(8px);">
-          <span style="font-size:13px;">🌿</span>
-          <span style="color:var(--primary);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">Setting Out</span>
+        <div class="m-chapter-badge">
+          <span class="m-chapter-badge__emoji">🌿</span>
+          <span class="m-chapter-badge__label">Setting Out</span>
         </div>
 
         <!-- Chapter number + title -->
-        <div style="display:flex;align-items:baseline;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
-          <h1 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(32px,7vw,52px);font-weight:800;color:var(--primary);margin:0;line-height:1.1;text-shadow:0 2px 12px color-mix(in srgb, var(--primary) 25%, transparent);">
+        <div class="m-chapter-title-wrap">
+          <h1 class="m-chapter-number">
             Chapter 1
           </h1>
-          <h2 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(24px,5vw,38px);font-weight:800;color:var(--dark);margin:0;line-height:1.15;">
-            My Safe People
+          <h2 class="m-chapter-heading">
+            Meet Your Brain Town
           </h2>
         </div>
 
         <!-- Decorative dashes in accent colour -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px;">
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:24px;height:3px;background:var(--accent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+        <div class="m-chapter-dots">
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot--active"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
         </div>
 
         <!-- Subtitle -->
-        <p style="font-family:'Nunito',sans-serif;font-size:clamp(15px,3vw,20px);font-weight:600;color:color-mix(in srgb, var(--dark) 70%, var(--secondary));margin:0;line-height:1.5;max-width:460px;margin-left:auto;margin-right:auto;">
-          Finding the grown ups who keep me safe
+        <p class="m-chapter-subtitle">
+          Discovering how your brain builds roads
         </p>
       </div>
 
@@ -486,82 +487,80 @@
 
     function generatePage3() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Who Makes You Feel Safe?</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Meet Your Amazing Brain Town! 🧠</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Professor Panda here! 🧠 Let&#039;s think about the special people in your life. Some people make us feel warm and safe inside, like a cosy hug!</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 leading-relaxed font-body m-color-dark">Hi there, town planner! Your brain is like a special town that grows every single day. Lenny 🧠 wants to show you something amazing about your Brain Town!</p>
           
           
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">Who makes you feel the most safe and loved?</p>
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">What happens in your Brain Town when you learn something new?</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="opinion"
+                      data-correct="true"
                       data-index="0"
-                      onclick="handleInteractiveChoice(this, 0, false, -1)">
-                My pet
+                      onclick="handleInteractiveChoice(this, 0, true, 0)">
+                New roads start to grow
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="opinion"
+                      data-correct="false"
                       data-index="1"
-                      onclick="handleInteractiveChoice(this, 0, false, -1)">
-                My grandparents
+                      onclick="handleInteractiveChoice(this, 0, true, 0)">
+                Old roads disappear
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="opinion"
+                      data-correct="false"
                       data-index="2"
-                      onclick="handleInteractiveChoice(this, 0, false, -1)">
-                My mum or dad
+                      onclick="handleInteractiveChoice(this, 0, true, 0)">
+                The town stays exactly the same
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="opinion"
+                      data-correct="false"
                       data-index="3"
-                      onclick="handleInteractiveChoice(this, 0, false, -1)">
-                My teacher
+                      onclick="handleInteractiveChoice(this, 0, true, 0)">
+                Nothing changes
               </button>
             
           </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
         </div>
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Everyone has special people who care for them! These caring people help our brains feel calm and happy.</p>
+            <p class="font-body m-color-dark">That's right! Every time you learn something new, tiny roads start growing in your Brain Town. The more you practise, the stronger these roads become!</p>
           </div>
         </div>
         
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
           <span class="text-3xl">🧠</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">What a wonderful choice! The people who make us feel safe are like special helpers for our hearts and minds. 🧠💛</p>
+          <p class="font-body font-semibold m-color-dark">Wow! You're already thinking like a brilliant town planner! Your Brain Town is ready to grow amazing new roads! 🧠⭐</p>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-soft-yellow">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="interactive_0"
             disabled
             onchange="markActivityComplete('interactive_0')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+          <label class="font-title text-xl m-color-dark">I participated!</label>
         </div>
       
       <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
         <button 
           onclick="toggleGrownUpNote('grownup-note-3')"
-          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors"
-          style="color: var(--secondary);"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
         >
           <span class="flex items-center gap-2 font-semibold text-sm">
             <span>👨‍👩‍👧</span>
@@ -572,17 +571,17 @@
           </svg>
         </button>
         <div id="grownup-note-3" class="hidden px-4 pb-4">
-          <div class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--secondary);">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
             Active Learning Theory
           </div>
-          <p class="text-sm mb-3" style="color: var(--dark);">
-            Children learn best through hands on experiences that help them feel safe and connected. This activity strengthens your child&#039;s sense of security by practising emotional skills together.
+          <p class="text-sm mb-3 m-color-dark">
+            When children actively engage with neuroplasticity concepts through hands on activities, they better understand their brain's amazing ability to grow and change, building confidence in their learning journey.
           </p>
-          <div class="text-xs font-semibold uppercase tracking-wide mb-1" style="color: var(--secondary);">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
             Try asking:
           </div>
-          <ul class="text-sm list-disc list-inside" style="color: var(--dark);">
-            <li class="mb-1">"What made you feel most safe and happy during this activity?"</li><li class="mb-1">"How can we create more moments like this at home when you need comfort?"</li>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"What new roads have you noticed growing in your Brain Town lately?"</li><li class="mb-1">"You could point out when you see your child learning something new: 'Look at those new roads growing in your Brain Town!'"</li>
           </ul>
         </div>
       </div></div></div>`;
@@ -590,481 +589,277 @@
 
     function generatePage4() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Safe People Make You Feel Good 💛</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Your Brain Town Builds New Roads 🧠</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Safe people are special grown ups who care about you. They help you feel happy and calm inside.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Your mum, dad, grandma or teacher might be safe people. They listen when you talk. They give hugs when you need them.</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-4 leading-relaxed font-body m-color-dark">Welcome to your very own Brain Town! You are the town planner here, which means you get to help your brain grow. Every time you think a thought or learn something new, a tiny road appears in your Brain Town.</p><p class="text-lg mb-4 leading-relaxed font-body m-color-dark">Lenny 🧠 loves watching roads grow! When you first try something new, like riding a bike, a small pathway forms. The more you practise, the bigger that road becomes. It might grow from a little path to a street, then to a main street!</p>
         </div>
         
         
-    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 What Makes Someone Safe?</h3>
-      <p class="font-body" style="color: var(--dark);">Safe people make you smile. They are kind with their words. They help you when you feel scared or sad.</p>
+    <div class="rounded-2xl p-6 mb-6 m-bg-soft-yellow">
+      <h3 class="text-xl font-title mb-2 m-color-dark">💡 Try This</h3>
+      <p class="font-body m-color-dark">Think of something you learnt recently. Maybe tying your shoes or a new game? That made a new road in your Brain Town!</p>
     </div>
         
-    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
+    <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
       <span class="text-3xl">🧠</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: Your brain feels happy when safe people are near! 🧠</p>
+      <p class="font-body font-semibold m-color-dark">Lenny says: Every time you practise something, you're building stronger roads in your Brain Town! 🧠</p>
     </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage5() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="power-up-collector" data-activity="powerup_1">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Safe Connection Collector ⭐</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body text-center" style="color: var(--dark);">Help Professor Panda 🧠 collect the safe connection tools! Avoid the ones that might hurt friendships.</p>
-          
-          <!-- Collection Progress -->
-          <div class="flex justify-center items-center gap-4 mb-6">
-            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl" style="background-color: var(--soft-yellow);">
-              <span class="text-3xl">🎒</span>
-              <span class="font-title text-2xl" style="color: var(--dark);"><span id="collectedCount">0</span> / 5</span>
-            </div>
-          </div>
-          
-          <!-- Collected Items Display -->
-          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl" style="background-color: var(--cream);" id="collectedDisplay">
-            <p class="font-body text-sm self-center" style="color: var(--secondary);">Your collected power-ups will appear here!</p>
-          </div>
-          
-          <!-- Power-Up Grid -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
-            
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Kind Words"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">💛</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Kind Words</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Make friends feel good</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Good Listening"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">👂</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Good Listening</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Shows you care</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="false"
-            data-name="Mean Words"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">😡</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Mean Words</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Hurt people&#039;s feelings</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Gentle Hugs"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">🤗</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Gentle Hugs</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Share safe comfort</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="false"
-            data-name="Telling Secrets"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">🤐</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Telling Secrets</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Breaks trust with friends</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Saying Sorry"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">💙</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Saying Sorry</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Fixes hurt feelings</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="true"
-            data-name="Helping Others"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">🤝</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Helping Others</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Shows you&#039;re a good friend</p>
-    </button>
-  
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
-            style="background-color: white; border-color: var(--primary);"
-            data-positive="false"
-            data-name="Leaving People Out"
-            onclick="handlePowerUpClick(this, 'powerup_1', 5)">
-      <div class="text-4xl mb-2">😞</div>
-      <p class="font-title text-lg" style="color: var(--dark);">Leaving People Out</p>
-      <p class="font-body text-sm" style="color: var(--secondary);">Makes others feel sad</p>
-    </button>
-  
-          </div>
-          
-          <!-- Feedback Area -->
-          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" style="display: none;">
-            <p class="font-body text-lg" id="powerupFeedbackText"></p>
-          </div>
-          
-          <!-- Win Message (hidden initially) -->
-          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-4xl mb-2">🎉</p>
-            <p class="font-title text-2xl mb-2" style="color: var(--dark);">Amazing! You found all the safe connection tools!</p>
-            <p class="font-body" style="color: var(--secondary);">Professor Panda says these tools help your brain feel safe and happy with others!</p>
-          </div>
-          
-          <!-- Completion Checkbox -->
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);" id="powerupComplete">
-            <input 
-              type="checkbox" 
-              class="w-8 h-8 rounded cursor-pointer"
-              style="accent-color: var(--primary);"
-              data-activity="powerup_1"
-              onchange="markActivityComplete('powerup_1')"
-              
-            >
-            <label class="font-title text-xl" style="color: var(--dark);">I collected my power-ups! ⭐</label>
-          </div>
-        </div>
-      </div>
-      
-      <style>
-        .power-up-item:active { transform: scale(0.95); }
-        .power-up-item.collected { opacity: 0.5; pointer-events: none; border-color: var(--light-green) !important; }
-        .power-up-item.wrong { animation: shake 0.5s; background-color: #fecaca !important; }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-      </style>
-    </div>`;
-}
-
-    function generatePage6() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="agree-disagree">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Safe Connection Thoughts 🤔</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Read each sentence and tick agree or disagree - what do you think?</p>
-          
-          
-    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
-      <p class="font-body text-lg mb-3" style="color: var(--dark);">"When I feel scared, I can tell a grown up I trust"</p>
-      <div class="flex gap-3 mb-3">
-        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_0', 'agree');">
-          I Agree
-        </button>
-        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_0', 'disagree');">
-          I Disagree
-        </button>
-      </div>
-      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
-        <p class="font-body text-sm" style="color: var(--secondary);">Yes! Sharing scary feelings with safe adults helps your brain feel calm and protected</p>
-      </div>
-    </div>
-  
-    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
-      <p class="font-body text-lg mb-3" style="color: var(--dark);">"I should hide my big feelings so I don&#039;t bother anyone"</p>
-      <div class="flex gap-3 mb-3">
-        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_1', 'agree');">
-          I Agree
-        </button>
-        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_1', 'disagree');">
-          I Disagree
-        </button>
-      </div>
-      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
-        <p class="font-body text-sm" style="color: var(--secondary);">Actually, sharing feelings with caring people helps you feel better and builds stronger connections</p>
-      </div>
-    </div>
-  
-    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
-      <p class="font-body text-lg mb-3" style="color: var(--dark);">"Some grown ups are safe to talk to when I&#039;m upset"</p>
-      <div class="flex gap-3 mb-3">
-        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_2', 'agree');">
-          I Agree
-        </button>
-        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_2', 'disagree');">
-          I Disagree
-        </button>
-      </div>
-      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
-        <p class="font-body text-sm" style="color: var(--secondary);">Absolutely! Safe grown ups listen with kind hearts and help you feel understood</p>
-      </div>
-    </div>
-  
-    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
-      <p class="font-body text-lg mb-3" style="color: var(--dark);">"If someone gets angry, it means they don&#039;t like me"</p>
-      <div class="flex gap-3 mb-3">
-        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_3', 'agree');">
-          I Agree
-        </button>
-        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_3', 'disagree');">
-          I Disagree
-        </button>
-      </div>
-      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
-        <p class="font-body text-sm" style="color: var(--secondary);">Not true! People can have big feelings and still care about you - feelings and love are different</p>
-      </div>
-    </div>
-  
-    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
-      <p class="font-body text-lg mb-3" style="color: var(--dark);">"When I&#039;m with people who care about me, I feel safer"</p>
-      <div class="flex gap-3 mb-3">
-        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_4', 'agree');">
-          I Agree
-        </button>
-        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_4', 'disagree');">
-          I Disagree
-        </button>
-      </div>
-      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
-        <p class="font-body text-sm" style="color: var(--secondary);">Yes! Your brain feels calm when you&#039;re with caring people - this is how connections keep us safe</p>
-      </div>
-    </div>
-  
-    <div class="statement-card p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);">
-      <p class="font-body text-lg mb-3" style="color: var(--dark);">"I need to be perfect for people to like me"</p>
-      <div class="flex gap-3 mb-3">
-        <button class="agree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: var(--light-green); border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.nextElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_5', 'agree');">
-          I Agree
-        </button>
-        <button class="disagree-btn flex-1 py-3 rounded-lg font-title text-lg cursor-pointer transition-all border-2" 
-                style="background-color: #fecaca; border-color: transparent; color: var(--dark);"
-                onclick="this.style.borderColor = 'var(--dark)'; this.previousElementSibling.style.borderColor = 'transparent'; this.parentElement.nextElementSibling.style.display = 'block'; saveFormData('agree_2_5', 'disagree');">
-          I Disagree
-        </button>
-      </div>
-      <div class="insight p-3 rounded-lg" style="background-color: white; display: none;">
-        <p class="font-body text-sm" style="color: var(--secondary);">Not at all! People who truly care about you like you just as you are, even when you make mistakes</p>
-      </div>
-    </div>
-  
-          
-          <div class="p-4 rounded-xl" style="background-color: var(--cream);">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Which safe person in your life makes you feel most calm and happy?</p>
-            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); min-height: 60px;" placeholder="Write your thoughts..." onchange="saveFormData('agree_reflection_2', this.value)"></textarea>
-          </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="agree_2"
-            onchange="markActivityComplete('agree_2')"
-            
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I shared my opinions!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage7() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="gratitude-jar">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Safe Connection Jar ⭐</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">When we feel safe with people, our hearts feel warm and happy. Let&#039;s fill our jar with all the special people and places that make us feel loved and protected.</p>
-          
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 28px; justify-items: center;">
-            
-    <div class="gratitude-jar-item" style="display: flex; flex-direction: column; align-items: center;">
-      <!-- Jar Visual -->
-      <div class="gratitude-jar" style="position: relative; width: 220px; margin-bottom: 12px;">
-        <!-- Jar Lid -->
-        <div style="width: 120px; height: 22px; margin: 0 auto; background: linear-gradient(180deg, #b8860b, #daa520, #b8860b); border-radius: 8px 8px 0 0; border: 2px solid #8b6914; border-bottom: none; position: relative; z-index: 2;"></div>
-        <!-- Jar Neck -->
-        <div style="width: 110px; height: 12px; margin: 0 auto; background: rgba(255,255,255,0.35); border-left: 2px solid rgba(0,0,0,0.08); border-right: 2px solid rgba(0,0,0,0.08); position: relative; z-index: 1;"></div>
-        <!-- Jar Body -->
-        <div style="width: 190px; height: 170px; margin: 0 auto; background: linear-gradient(135deg, rgba(255,255,255,0.6), #FFB5B530, rgba(255,255,255,0.25)); border: 2px solid rgba(0,0,0,0.10); border-radius: 16px 16px 32px 32px; position: relative; overflow: hidden; box-shadow: inset -10px 0 16px rgba(255,255,255,0.35), inset 10px 0 16px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.1);">
-          <!-- Glass shine -->
-          <div style="position: absolute; top: 12px; left: 16px; width: 10px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 5px; transform: rotate(5deg);"></div>
-          <!-- Jar fill (colour at bottom) -->
-          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, #FFB5B550, #FFB5B580); border-radius: 0 0 30px 30px;"></div>
-          <!-- Jar contents label -->
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 12px; position: relative; z-index: 1;">
-            <span style="font-size: 2.8rem;">❤</span>
-            <span class="font-title" style="font-size: 1.1rem; color: var(--dark); text-align: center; margin-top: 6px;">Safe People</span>
-          </div>
-        </div>
-      </div>
-      <!-- Prompt and Input -->
-      <p class="font-body text-sm mb-2 text-center" style="color: var(--dark); max-width: 220px;">Someone who gives me hugs when I&#039;m sad...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white; max-width: 220px;" placeholder="I'm grateful for..." data-form-key="gratitude_3_0" onchange="saveFormData('gratitude_3_0', this.value)">
-    </div>
-    <div class="gratitude-jar-item" style="display: flex; flex-direction: column; align-items: center;">
-      <!-- Jar Visual -->
-      <div class="gratitude-jar" style="position: relative; width: 220px; margin-bottom: 12px;">
-        <!-- Jar Lid -->
-        <div style="width: 120px; height: 22px; margin: 0 auto; background: linear-gradient(180deg, #b8860b, #daa520, #b8860b); border-radius: 8px 8px 0 0; border: 2px solid #8b6914; border-bottom: none; position: relative; z-index: 2;"></div>
-        <!-- Jar Neck -->
-        <div style="width: 110px; height: 12px; margin: 0 auto; background: rgba(255,255,255,0.35); border-left: 2px solid rgba(0,0,0,0.08); border-right: 2px solid rgba(0,0,0,0.08); position: relative; z-index: 1;"></div>
-        <!-- Jar Body -->
-        <div style="width: 190px; height: 170px; margin: 0 auto; background: linear-gradient(135deg, rgba(255,255,255,0.6), #B5D8FF30, rgba(255,255,255,0.25)); border: 2px solid rgba(0,0,0,0.10); border-radius: 16px 16px 32px 32px; position: relative; overflow: hidden; box-shadow: inset -10px 0 16px rgba(255,255,255,0.35), inset 10px 0 16px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.1);">
-          <!-- Glass shine -->
-          <div style="position: absolute; top: 12px; left: 16px; width: 10px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 5px; transform: rotate(5deg);"></div>
-          <!-- Jar fill (colour at bottom) -->
-          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, #B5D8FF50, #B5D8FF80); border-radius: 0 0 30px 30px;"></div>
-          <!-- Jar contents label -->
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 12px; position: relative; z-index: 1;">
-            <span style="font-size: 2.8rem;">🏠</span>
-            <span class="font-title" style="font-size: 1.1rem; color: var(--dark); text-align: center; margin-top: 6px;">Cozy Places</span>
-          </div>
-        </div>
-      </div>
-      <!-- Prompt and Input -->
-      <p class="font-body text-sm mb-2 text-center" style="color: var(--dark); max-width: 220px;">A place where I feel super safe...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white; max-width: 220px;" placeholder="I'm grateful for..." data-form-key="gratitude_3_1" onchange="saveFormData('gratitude_3_1', this.value)">
-    </div>
-    <div class="gratitude-jar-item" style="display: flex; flex-direction: column; align-items: center;">
-      <!-- Jar Visual -->
-      <div class="gratitude-jar" style="position: relative; width: 220px; margin-bottom: 12px;">
-        <!-- Jar Lid -->
-        <div style="width: 120px; height: 22px; margin: 0 auto; background: linear-gradient(180deg, #b8860b, #daa520, #b8860b); border-radius: 8px 8px 0 0; border: 2px solid #8b6914; border-bottom: none; position: relative; z-index: 2;"></div>
-        <!-- Jar Neck -->
-        <div style="width: 110px; height: 12px; margin: 0 auto; background: rgba(255,255,255,0.35); border-left: 2px solid rgba(0,0,0,0.08); border-right: 2px solid rgba(0,0,0,0.08); position: relative; z-index: 1;"></div>
-        <!-- Jar Body -->
-        <div style="width: 190px; height: 170px; margin: 0 auto; background: linear-gradient(135deg, rgba(255,255,255,0.6), #B5FFD830, rgba(255,255,255,0.25)); border: 2px solid rgba(0,0,0,0.10); border-radius: 16px 16px 32px 32px; position: relative; overflow: hidden; box-shadow: inset -10px 0 16px rgba(255,255,255,0.35), inset 10px 0 16px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.1);">
-          <!-- Glass shine -->
-          <div style="position: absolute; top: 12px; left: 16px; width: 10px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 5px; transform: rotate(5deg);"></div>
-          <!-- Jar fill (colour at bottom) -->
-          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, #B5FFD850, #B5FFD880); border-radius: 0 0 30px 30px;"></div>
-          <!-- Jar contents label -->
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 12px; position: relative; z-index: 1;">
-            <span style="font-size: 2.8rem;">💛</span>
-            <span class="font-title" style="font-size: 1.1rem; color: var(--dark); text-align: center; margin-top: 6px;">Comfort Things</span>
-          </div>
-        </div>
-      </div>
-      <!-- Prompt and Input -->
-      <p class="font-body text-sm mb-2 text-center" style="color: var(--dark); max-width: 220px;">Something that helps me feel calm...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white; max-width: 220px;" placeholder="I'm grateful for..." data-form-key="gratitude_3_2" onchange="saveFormData('gratitude_3_2', this.value)">
-    </div>
-    <div class="gratitude-jar-item" style="display: flex; flex-direction: column; align-items: center;">
-      <!-- Jar Visual -->
-      <div class="gratitude-jar" style="position: relative; width: 220px; margin-bottom: 12px;">
-        <!-- Jar Lid -->
-        <div style="width: 120px; height: 22px; margin: 0 auto; background: linear-gradient(180deg, #b8860b, #daa520, #b8860b); border-radius: 8px 8px 0 0; border: 2px solid #8b6914; border-bottom: none; position: relative; z-index: 2;"></div>
-        <!-- Jar Neck -->
-        <div style="width: 110px; height: 12px; margin: 0 auto; background: rgba(255,255,255,0.35); border-left: 2px solid rgba(0,0,0,0.08); border-right: 2px solid rgba(0,0,0,0.08); position: relative; z-index: 1;"></div>
-        <!-- Jar Body -->
-        <div style="width: 190px; height: 170px; margin: 0 auto; background: linear-gradient(135deg, rgba(255,255,255,0.6), #FFE5B530, rgba(255,255,255,0.25)); border: 2px solid rgba(0,0,0,0.10); border-radius: 16px 16px 32px 32px; position: relative; overflow: hidden; box-shadow: inset -10px 0 16px rgba(255,255,255,0.35), inset 10px 0 16px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.1);">
-          <!-- Glass shine -->
-          <div style="position: absolute; top: 12px; left: 16px; width: 10px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 5px; transform: rotate(5deg);"></div>
-          <!-- Jar fill (colour at bottom) -->
-          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, #FFE5B550, #FFE5B580); border-radius: 0 0 30px 30px;"></div>
-          <!-- Jar contents label -->
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 12px; position: relative; z-index: 1;">
-            <span style="font-size: 2.8rem;">🌟</span>
-            <span class="font-title" style="font-size: 1.1rem; color: var(--dark); text-align: center; margin-top: 6px;">Happy Times</span>
-          </div>
-        </div>
-      </div>
-      <!-- Prompt and Input -->
-      <p class="font-body text-sm mb-2 text-center" style="color: var(--dark); max-width: 220px;">A time when someone made me feel special...</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--primary); background-color: white; max-width: 220px;" placeholder="I'm grateful for..." data-form-key="gratitude_3_3" onchange="saveFormData('gratitude_3_3', this.value)">
-    </div>
-          </div>
-          
-          <div class="mt-6 p-4 rounded-xl text-center" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says your brain feels happiest when you remember all the people who care about you! 🧠 Keep adding to your jar every day.</p>
-          </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="gratitude_3"
-            onchange="markActivityComplete('gratitude_3')"
-            
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I filled my gratitude jar!</label>
-        </div>
       
       <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
         <button 
-          onclick="toggleGrownUpNote('grownup-note-7')"
-          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors"
-          style="color: var(--secondary);"
+          onclick="toggleGrownUpNote('grownup-note-4')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
         >
           <span class="flex items-center gap-2 font-semibold text-sm">
             <span>👨‍👩‍👧</span>
             <span>Grown-Up Note</span>
           </span>
-          <svg id="grownup-note-7-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg id="grownup-note-4-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
           </svg>
         </button>
-        <div id="grownup-note-7" class="hidden px-4 pb-4">
-          <div class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--secondary);">
-            Positive Psychology / Gratitude Practice
+        <div id="grownup-note-4" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
+            Social Emotional Learning
           </div>
-          <p class="text-sm mb-3" style="color: var(--dark);">
-            Sharing gratitude together strengthens your emotional bond and helps your child feel safe expressing positive feelings. This builds their sense of security and trust in your relationship.
+          <p class="text-sm mb-3 m-color-dark">
+            Understanding that brains can grow and change helps children develop awareness of their brain's incredible ability to adapt, feeling confident about learning new skills and bouncing back from challenges.
           </p>
-          <div class="text-xs font-semibold uppercase tracking-wide mb-1" style="color: var(--secondary);">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
             Try asking:
           </div>
-          <ul class="text-sm list-disc list-inside" style="color: var(--dark);">
-            <li class="mb-1">"What made you feel happy and loved today?"</li><li class="mb-1">"Let&#039;s add something we&#039;re grateful for together as a family to the jar each evening"</li>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"What new roads have you built in your Brain Town lately?"</li><li class="mb-1">"When you practise something new, you could say 'I'm building new roads in my brain!'"</li>
           </ul>
         </div>
       </div></div></div>`;
 }
 
-    function generatePage8() {
+    function generatePage5() {
   return `
-    <div class="page chapter-scene-page" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;" data-page="chapter">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="superhero-creator" data-activity="superhero_1">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">Brain Road Builder Hero 🦸</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">Create your own superhero who helps build strong roads in Brain Town! Pick their powers, costume, and sidekick to make brains grow stronger.</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center">Oh no! Some children in Brain Town have tiny, wobbly roads in their brains. They need practice to make their roads bigger and stronger. Daniel says we need a special superhero who knows that brains can grow and change!</p>
+          </div>
+          <div class="p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(135deg, var(--cream), var(--soft-yellow));">
+            <p class="font-title mb-2">Your Superhero:</p>
+            <div class="flex justify-center items-center gap-4 text-6xl">
+              <span id="hero_1_costume">❓</span>
+              <span id="hero_1_power">❓</span>
+              <span id="hero_1_sidekick">❓</span>
+            </div>
+            <input type="text" class="mt-4 p-2 rounded-lg border-2 font-title text-center text-xl w-full max-w-xs m-border-primary" placeholder="Hero name..." onchange="saveFormData('hero_name_1', this.value); checkHeroComplete('1')">
+          </div>
+          <div class="mb-4"><p class="font-title mb-2">⚡ Power:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('1', 'power', '🛣️')"><span class="text-2xl">🛣️</span><p class="font-body text-xs mt-1">Road Growing Power</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('1', 'power', '⭐')"><span class="text-2xl">⭐</span><p class="font-body text-xs mt-1">Practice Magic</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('1', 'power', '💡')"><span class="text-2xl">💡</span><p class="font-body text-xs mt-1">Mistake Fixing</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('1', 'power', '👀')"><span class="text-2xl">👀</span><p class="font-body text-xs mt-1">Growth Vision</p></button></div></div>
+          <div class="mb-4"><p class="font-title mb-2">🦸 Costume:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #22c55e20; border-color: transparent;" onclick="window.selectHero('1', 'costume', '🦸')"><span class="text-2xl">🦸</span><p class="font-body text-xs mt-1">Road Builder Cape</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #8b5cf620; border-color: transparent;" onclick="window.selectHero('1', 'costume', '🦹')"><span class="text-2xl">🦹</span><p class="font-body text-xs mt-1">Brain Town Suit</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer" style="background-color: #f59e0b20; border-color: transparent;" onclick="window.selectHero('1', 'costume', '⭐')"><span class="text-2xl">⭐</span><p class="font-body text-xs mt-1">Growth Outfit</p></button></div></div>
+          <div class="mb-4"><p class="font-title mb-2">🐾 Sidekick:</p><div class="flex flex-wrap gap-2"><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('1', 'sidekick', '🧠')"><span class="text-2xl">🧠</span><p class="font-body text-xs mt-1">Lenny the Brain</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer m-bg-white m-border-transparent" onclick="window.selectHero('1', 'sidekick', '🐕')"><span class="text-2xl">🐕</span><p class="font-body text-xs mt-1">Practice Puppy</p></button></div></div>
+          <div class="p-4 rounded-xl mb-6 m-bg-cream">
+            <p class="font-title mb-2">What brain road does your hero help children build stronger?</p>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body m-input-bordered-secondary" placeholder="My hero will..." onchange="saveFormData('hero_mission_1', this.value); checkHeroComplete('1')"></textarea>
+          </div>
+          <div class="p-6 rounded-2xl text-center" id="heroDone_1" class="m-feedback-hidden">
+            <p class="text-5xl mb-2">🦸‍♂️✨🦸‍♀️</p>
+            <p class="font-title text-2xl">Amazing! Your superhero is ready to help build stronger roads in Brain Town. Remember, you're the town planner of your own Brain Town too!</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="heroComplete_1">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="superhero_1" onchange="markActivityComplete('superhero_1')" >
+            <label class="font-title text-xl m-color-dark">My superhero is ready! ⭐</label>
+          </div>
+        </div>
+      
+      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
+        <button 
+          onclick="toggleGrownUpNote('grownup-note-5')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
+        >
+          <span class="flex items-center gap-2 font-semibold text-sm">
+            <span>👨‍👩‍👧</span>
+            <span>Grown-Up Note</span>
+          </span>
+          <svg id="grownup-note-5-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="grownup-note-5" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
+            Strength Based Approaches
+          </div>
+          <p class="text-sm mb-3 m-color-dark">
+            When children identify their strengths, they're building new neural pathways that recognise their capabilities. This strengthens their sense of self and helps their brain develop patterns of positive self recognition.
+          </p>
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
+            Try asking:
+          </div>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"What superpower did you give your hero, and how is that strength like something you're good at?"</li><li class="mb-1">"You could look for moments this week when your child uses their identified strength and say 'I noticed you used your [strength] superpower there!'"</li>
+          </ul>
+        </div>
+      </div></div></div>`;
+}
+
+    function generatePage6() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="feeling-volcano" data-activity="volcano_2">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Building New Roads When Feelings Get Big 🌋</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">Your Brain Town has feeling roads that can get very busy! When big feelings start to build up like a volcano, you can use your town planner skills to build new calming roads.</p>
+          
+          <!-- Scenario -->
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center m-color-dark"><strong>The situation:</strong> You're trying to learn something new but it feels really hard. Your feeling volcano starts getting hot because your brain is working to build new roads!</p>
+          </div>
+          
+          <!-- Volcano Visual -->
+          <div class="flex justify-center items-end gap-8 mb-6">
+            <!-- Level Indicator -->
+            <div class="flex flex-col-reverse gap-1">
+              
+    <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel5" style="background-color: #ef444420;">
+      <span class="text-xl">🌋</span>
+      <span class="font-body text-sm m-color-dark">About to Erupt!</span>
+    </div>
+  
+    <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel4" style="background-color: #f9731620;">
+      <span class="text-xl">🔥</span>
+      <span class="font-body text-sm m-color-dark">Very Hot</span>
+    </div>
+  
+    <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel3" style="background-color: #eab30820;">
+      <span class="text-xl">😤</span>
+      <span class="font-body text-sm m-color-dark">Getting Warm</span>
+    </div>
+  
+    <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel2" style="background-color: #84cc1620;">
+      <span class="text-xl">😊</span>
+      <span class="font-body text-sm m-color-dark">Cooling Down</span>
+    </div>
+  
+    <div class="volcano-level flex items-center gap-2 p-2 rounded-lg transition-all" id="volcanoLevel1" style="background-color: #22c55e20;">
+      <span class="text-xl">😌</span>
+      <span class="font-body text-sm m-color-dark">Cool and Calm</span>
+    </div>
+  
+            </div>
+            
+            <!-- Volcano -->
+            <div class="volcano-container relative volcano-drop-zone" data-activity-id="volcano_2">
+              <svg viewBox="0 0 200 200" class="w-48 h-48">
+                <!-- Volcano body -->
+                <path d="M20 200 L60 80 L80 90 L100 60 L120 90 L140 80 L180 200 Z" 
+                      fill="#8B4513" stroke="#5D3A1A" stroke-width="3"/>
+                <!-- Lava inside -->
+                <path d="M65 95 L80 95 L100 70 L120 95 L135 95 L120 130 L80 130 Z" 
+                      class="volcano-lava" id="volcanoLava"
+                      fill="#ef4444" opacity="0.9"/>
+                <!-- Bubbles -->
+                <circle class="lava-bubble" cx="90" cy="100" r="5" fill="#fbbf24" opacity="0.8">
+                  <animate attributeName="cy" values="100;85;100" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <circle class="lava-bubble" cx="110" cy="105" r="4" fill="#fbbf24" opacity="0.8">
+                  <animate attributeName="cy" values="105;90;105" dur="1.2s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+              <div class="volcano-indicator absolute -top-6 left-1/2 -translate-x-1/2 text-4xl transition-all" id="volcanoIndicator">🌋</div>
+            </div>
+            
+            <!-- Temperature Display -->
+            <div class="text-center">
+              <p class="font-title text-3xl m-color-accent"><span id="volcanoTemp">100</span>°</p>
+              <p class="font-body text-sm m-color-dark">Heat Level</p>
+            </div>
+          </div>
+          
+          <!-- Cooling Actions -->
+          <p class="font-title text-lg text-center mb-3 m-color-dark">Drag your cooling tools into the volcano! 🧊</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab"
+            draggable="true"
+            class="m-card-bordered"
+            data-cooling="25"
+            data-power="25"
+            data-action="Tell yourself 'My brain is growing new roads'">
+      <span class="text-3xl">🧠</span>
+      <span class="font-body text-sm text-center m-color-dark">Tell yourself 'My brain is growing new roads'</span>
+    </button>
+  
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab"
+            draggable="true"
+            class="m-card-bordered"
+            data-cooling="20"
+            data-power="20"
+            data-action="Take three slow breaths">
+      <span class="text-3xl">🌬️</span>
+      <span class="font-body text-sm text-center m-color-dark">Take three slow breaths</span>
+    </button>
+  
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab"
+            draggable="true"
+            class="m-card-bordered"
+            data-cooling="20"
+            data-power="20"
+            data-action="Say 'I can learn this step by step'">
+      <span class="text-3xl">👣</span>
+      <span class="font-body text-sm text-center m-color-dark">Say 'I can learn this step by step'</span>
+    </button>
+  
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab"
+            draggable="true"
+            class="m-card-bordered"
+            data-cooling="15"
+            data-power="15"
+            data-action="Picture Lenny building roads in your Brain Town">
+      <span class="text-3xl">🏗️</span>
+      <span class="font-body text-sm text-center m-color-dark">Picture Lenny building roads in your Brain Town</span>
+    </button>
+  
+          </div>
+          
+          <!-- Feedback -->
+          <div class="volcano-feedback p-4 rounded-xl text-center mb-4" id="volcanoFeedback" class="m-hidden">
+            <p class="font-body text-lg" id="volcanoFeedbackText"></p>
+          </div>
+          
+          <!-- Safe Message -->
+          <div class="volcano-safe p-6 rounded-2xl text-center" id="volcanoSafe" class="m-feedback-hidden">
+            <p class="text-4xl mb-2">😌</p>
+            <p class="font-title text-2xl mb-2 m-color-dark">Amazing! You built new calming roads in your Brain Town. Every time you practice cooling down, those roads get stronger!</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="volcanoComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+              data-activity="volcano_2"
+              onchange="markActivityComplete('volcano_2')"
+              
+            >
+            <label class="font-title text-xl m-color-dark">I cooled the volcano! ⭐</label>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        .cooling-action:active { transform: scale(0.95); }
+        .cooling-action.cooldown { opacity: 0.5; pointer-events: none; }
+        .volcano-level.active { transform: scale(1.1); font-weight: bold; }
+      </style>
+    </div>`;
+}
+
+    function generatePage7() {
+  return `
+    <div class="page chapter-scene-page m-chapter-scene" data-page="chapter">
 
       <!-- Daytime sky -->
       <div style="position:absolute;inset:0;background:linear-gradient(180deg,
@@ -1075,10 +870,10 @@
       );"></div>
 
       <!-- Sun glow -->
-      <div style="position:absolute;top:6%;right:12%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle, var(--soft-yellow) 0%, color-mix(in srgb, var(--soft-yellow) 40%, transparent) 50%, transparent 70%);opacity:0.7;"></div>
+      <div class="m-chapter-sun"></div>
 
       <!-- Soft clouds (pure CSS) -->
-      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">
+      <div class="m-chapter-stars">
         <div class="ch-cloud ch-cloud-1"></div>
         <div class="ch-cloud ch-cloud-2"></div>
         <div class="ch-cloud ch-cloud-3"></div>
@@ -1086,8 +881,8 @@
       </div>
 
       <!-- Landscape at bottom — 280px -->
-      <div style="position:absolute;bottom:0;left:0;right:0;height:280px;z-index:1;">
-        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" style="width:100%;height:100%;">
+      <div class="m-chapter-hills">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
           
     <ellipse cx="200" cy="200" rx="300" ry="100" fill="var(--hill-far)"/>
     <ellipse cx="650" cy="200" rx="380" ry="115" fill="var(--hill-near)"/>
@@ -1134,35 +929,35 @@
       </div>
 
       <!-- Content — centred above scene -->
-      <div style="position:relative;z-index:10;text-align:center;padding:0 24px;max-width:640px;margin:0 auto;padding-bottom:300px;">
+      <div class="m-chapter-content">
         <!-- Journey badge -->
-        <div style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--primary) 12%, white);border:1px solid color-mix(in srgb, var(--primary) 25%, transparent);border-radius:20px;padding:5px 14px;margin-bottom:20px;backdrop-filter:blur(8px);">
-          <span style="font-size:13px;">🏡</span>
-          <span style="color:var(--primary);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">Growing Stronger</span>
+        <div class="m-chapter-badge">
+          <span class="m-chapter-badge__emoji">🏡</span>
+          <span class="m-chapter-badge__label">Growing Stronger</span>
         </div>
 
         <!-- Chapter number + title -->
-        <div style="display:flex;align-items:baseline;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
-          <h1 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(32px,7vw,52px);font-weight:800;color:var(--primary);margin:0;line-height:1.1;text-shadow:0 2px 12px color-mix(in srgb, var(--primary) 25%, transparent);">
+        <div class="m-chapter-title-wrap">
+          <h1 class="m-chapter-number">
             Chapter 2
           </h1>
-          <h2 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(24px,5vw,38px);font-weight:800;color:var(--dark);margin:0;line-height:1.15;">
-            Feeling Safe Together
+          <h2 class="m-chapter-heading">
+            Building Stronger Roads
           </h2>
         </div>
 
         <!-- Decorative dashes in accent colour -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px;">
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:24px;height:3px;background:var(--accent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+        <div class="m-chapter-dots">
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot--active"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
         </div>
 
         <!-- Subtitle -->
-        <p style="font-family:'Nunito',sans-serif;font-size:clamp(15px,3vw,20px);font-weight:600;color:color-mix(in srgb, var(--dark) 70%, var(--secondary));margin:0;line-height:1.5;max-width:460px;margin-left:auto;margin-right:auto;">
-          Building strong connections with people I trust
+        <p class="m-chapter-subtitle">
+          Practising makes your brain roads grow
         </p>
       </div>
 
@@ -1200,313 +995,233 @@
     </div>`;
 }
 
-    function generatePage9() {
+    function generatePage8() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">When You Feel Worried</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Building Stronger Roads in Your Brain Town! 🛣️</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">Sometimes our feelings get big and scary! Professor Panda 🧠 knows that when we feel worried, our safe people can help us feel better.</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 leading-relaxed font-body m-color-dark">Remember how new roads grow when you learn? Well, Lenny has discovered something amazing! The more you practice something, the stronger those roads become in your Brain Town.</p>
           
           
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">What helps you feel calmer when you&#039;re worried or scared?</p>
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">If you practice riding your bike every day, what happens to the bike riding road in your Brain Town?</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
                       data-correct="false"
                       data-index="0"
-                      onclick="handleInteractiveChoice(this, 4, true, 1)">
-                Pretend I&#039;m not scared
-              </button>
-            
-              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
-                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="true"
-                      data-index="1"
-                      onclick="handleInteractiveChoice(this, 4, true, 1)">
-                Talk to someone who cares about me
+                      onclick="handleInteractiveChoice(this, 3, true, 2)">
+                It gets smaller
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
                       data-correct="false"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 3, true, 2)">
+                It disappears completely
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
                       data-index="2"
-                      onclick="handleInteractiveChoice(this, 4, true, 1)">
-                Run away from everyone
+                      onclick="handleInteractiveChoice(this, 3, true, 2)">
+                It grows stronger and wider
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
                       data-correct="false"
                       data-index="3"
-                      onclick="handleInteractiveChoice(this, 4, true, 1)">
-                Hide under my blanket
+                      onclick="handleInteractiveChoice(this, 3, true, 2)">
+                It stays exactly the same
               </button>
             
           </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
         </div>
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Great thinking! Talking to our safe people helps our worried feelings get smaller.</p>
+            <p class="font-body m-color-dark">That's right! Just like a busy street gets stronger with more traffic, your brain roads get stronger with practice. You're becoming an expert town planner! 🏗️</p>
           </div>
         </div>
         
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
           <span class="text-3xl">🧠</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: Your safe people are like cozy blankets for your heart! 🧠💛</p>
+          <p class="font-body font-semibold m-color-dark">Great thinking! I love watching roads grow stronger in Brain Town when children practice new skills! 🧠✨</p>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-soft-yellow">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="interactive_4"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+            data-activity="interactive_3"
             disabled
-            onchange="markActivityComplete('interactive_4')"
+            onchange="markActivityComplete('interactive_3')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+          <label class="font-title text-xl m-color-dark">I participated!</label>
         </div>
+      
+      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
+        <button 
+          onclick="toggleGrownUpNote('grownup-note-8')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
+        >
+          <span class="flex items-center gap-2 font-semibold text-sm">
+            <span>👨‍👩‍👧</span>
+            <span>Grown-Up Note</span>
+          </span>
+          <svg id="grownup-note-8-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="grownup-note-8" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
+            Active Learning Theory
+          </div>
+          <p class="text-sm mb-3 m-color-dark">
+            When children actively engage with learning through hands on activities, their brains form stronger neural pathways. This helps them understand that their brains can grow and change through practice.
+          </p>
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
+            Try asking:
+          </div>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"What new roads did you build in your Brain Town today? Tell me about how your brain grew stronger."</li><li class="mb-1">"Let's notice together when you're building new brain roads - like when you practise tying your shoes or learning to read."</li>
+          </ul>
+        </div>
+      </div></div></div>`;
+}
+
+    function generatePage9() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Practice Makes Roads Stronger 💪</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-4 leading-relaxed font-body m-color-dark">Daniel 🐕 was learning to catch a ball. At first, his Brain Town only had a tiny pathway for catching. The ball bounced off his paws! But Daniel kept trying every day.</p><p class="text-lg mb-4 leading-relaxed font-body m-color-dark">Each time Daniel practised, his catching road grew stronger. The little pathway became a street, then a main street! Now Daniel can catch balls easily because his Brain Town has a strong catching road.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6 m-bg-soft-yellow">
+      <h3 class="text-xl font-title mb-2 m-color-dark">💡 Your Turn to Build</h3>
+      <p class="font-body m-color-dark">You can choose what roads to make stronger in your Brain Town. Pick something you want to get better at and practise it!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+      <span class="text-3xl">🧠</span>
+      <p class="font-body font-semibold m-color-dark">Lenny says: The more traffic a road gets in your Brain Town, the bigger and stronger it becomes! Keep practising! 🧠</p>
+    </div>
       </div>
     </div>`;
 }
 
     function generatePage10() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="lesson">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="warning-signs">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Finding Your Safe Person 🤗</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Brain Road Traffic Lights ⚠️</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">When you feel worried or upset, you can find a safe person. They will help you feel better.</p><p class="text-lg mb-4 leading-relaxed font-body" style="color: var(--dark);">Daniel 🐕 always looks for his mum when he feels scared. She gives him a cuddle and he feels safe again.</p>
-        </div>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">As the town planner of your Brain Town, you can notice when your roads get busy or blocked. Daniel says these are your brain's traffic signals telling you something important!</p>
+          
+          
+    <div class="rounded-xl p-4 mb-4 m-bg-soft-yellow">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">❤️</span>
+        <h3 class="font-title text-xl m-color-dark">Body Signs</h3>
+      </div>
+      <div class="space-y-2">
         
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Heart beats like a drum</span>
+          </label>
         
-    <div class="rounded-2xl p-6 mb-6" style="background-color: var(--soft-yellow);">
-      <h3 class="text-xl font-title mb-2" style="color: var(--dark);">💡 Practice Time!</h3>
-      <p class="font-body" style="color: var(--dark);">Think of someone who makes you feel safe. Picture their kind face. Remember how good you feel with them.</p>
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Hands feel shaky</span>
+          </label>
+        
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Head feels heavy</span>
+          </label>
+        
+      </div>
     </div>
+    <div class="rounded-xl p-4 mb-4 m-bg-soft-yellow">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">💭</span>
+        <h3 class="font-title text-xl m-color-dark">Thought Signs</h3>
+      </div>
+      <div class="space-y-2">
         
-    <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-      <span class="text-3xl">🧠</span>
-      <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: Your brain remembers safe feelings. This helps you feel brave! 🧠</p>
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Brain feels stuck</span>
+          </label>
+        
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Same worry keeps coming back</span>
+          </label>
+        
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Hard to remember things</span>
+          </label>
+        
+      </div>
     </div>
-      
-      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
-        <button 
-          onclick="toggleGrownUpNote('grownup-note-10')"
-          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors"
-          style="color: var(--secondary);"
-        >
-          <span class="flex items-center gap-2 font-semibold text-sm">
-            <span>👨‍👩‍👧</span>
-            <span>Grown-Up Note</span>
-          </span>
-          <svg id="grownup-note-10-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
-        <div id="grownup-note-10" class="hidden px-4 pb-4">
-          <div class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--secondary);">
-            Social Emotional Learning
+    <div class="rounded-xl p-4 mb-4 m-bg-soft-yellow">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-2xl">🏃</span>
+        <h3 class="font-title text-xl m-color-dark">Action Signs</h3>
+      </div>
+      <div class="space-y-2">
+        
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Want to hide away</span>
+          </label>
+        
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Feel like stomping feet</span>
+          </label>
+        
+          <label class="flex items-center gap-3 p-2 rounded-lg bg-white cursor-pointer hover:shadow-sm transition-all">
+            <input type="checkbox" class="warning-sign-item w-5 h-5 rounded m-accent-primary">
+            <span class="font-body m-color-dark">Can't keep hands still</span>
+          </label>
+        
+      </div>
+    </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+              data-activity="warningsigns_4"
+              onchange="markActivityComplete('warningsigns_4')"
+              
+            >
+            <label class="font-title text-xl m-color-dark">I identified my warning signs! ⭐</label>
           </div>
-          <p class="text-sm mb-3" style="color: var(--dark);">
-            This activity helps your child understand that having a safe, trusted person to turn to builds confidence and emotional security. Strong connections with caregivers form the foundation for healthy relationships throughout life.
-          </p>
-          <div class="text-xs font-semibold uppercase tracking-wide mb-1" style="color: var(--secondary);">
-            Try asking:
-          </div>
-          <ul class="text-sm list-disc list-inside" style="color: var(--dark);">
-            <li class="mb-1">"Who are the special people in your life that make you feel safe and loved?"</li><li class="mb-1">"Let&#039;s think of times when you felt worried or scared - who helped you feel better?"</li>
-          </ul>
         </div>
-      </div></div></div>`;
+      </div>
+    </div>`;
 }
 
     function generatePage11() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="balloon-pop" data-activity="balloon_5">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">Safe Space Balloon Pop 🎈</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Pop the worry balloons by clicking on calming tools! Each tool helps make worries smaller and smaller until they disappear.</p>
-          
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center" style="color: var(--dark);">Emma feels worried about her first day at a new school. Her tummy feels funny and her brain is full of big worries. Professor Panda 🧠 shows her how safe people and calming tools can make worries pop like balloons!</p>
-          </div>
-          
-          <div class="mb-6 p-4 rounded-xl" style="background-color: var(--cream);">
-            <div class="flex justify-between mb-2">
-              <span class="font-title" style="color: var(--dark);">Calming Power:</span>
-              <span class="font-title text-xl" id="balloonPower_5" style="color: var(--primary);">0%</span>
-            </div>
-            <div class="h-6 rounded-full overflow-hidden" style="background-color: #e5e7eb;">
-              <div class="h-full rounded-full transition-all duration-500" id="balloonPowerBar_5" style="width: 0%; background: linear-gradient(90deg, var(--light-green), var(--primary));"></div>
-            </div>
-          </div>
-          
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Step 1: Build Calming Power 🧰</p>
-          <p class="font-body text-sm text-center mb-3" style="color: var(--secondary);">Tap the calming tools to fill your power bar!</p>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-    <button class="calming-tool p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2"
-            style="background-color: var(--light-green); border-color: var(--secondary);"
-            onclick="window.useCalmingTool('t1', 25, 'Safe Person Hug')">
-      <span class="text-3xl">🤗</span>
-      <span class="font-body text-sm" style="color: var(--dark);">Safe Person Hug</span>
-      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25</span>
-    </button>
-  
-    <button class="calming-tool p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2"
-            style="background-color: var(--light-green); border-color: var(--secondary);"
-            onclick="window.useCalmingTool('t2', 30, 'Happy Memory')">
-      <span class="text-3xl">💭</span>
-      <span class="font-body text-sm" style="color: var(--dark);">Happy Memory</span>
-      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+30</span>
-    </button>
-  
-    <button class="calming-tool p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2"
-            style="background-color: var(--light-green); border-color: var(--secondary);"
-            onclick="window.useCalmingTool('t3', 25, 'Belly Breathing')">
-      <span class="text-3xl">🌬</span>
-      <span class="font-body text-sm" style="color: var(--dark);">Belly Breathing</span>
-      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+25</span>
-    </button>
-  
-    <button class="calming-tool p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2"
-            style="background-color: var(--light-green); border-color: var(--secondary);"
-            onclick="window.useCalmingTool('t4', 20, 'Kind Words')">
-      <span class="text-3xl">💛</span>
-      <span class="font-body text-sm" style="color: var(--dark);">Kind Words</span>
-      <span class="text-xs px-2 py-1 rounded-full" style="background-color: var(--soft-yellow);">+20</span>
-    </button>
-  </div>
-          
-          <p class="font-title text-lg text-center mb-3" style="color: var(--dark);">Step 2: Pop the Worry Balloons 🎈</p>
-          <p class="font-body text-sm text-center mb-3" style="color: var(--secondary);">Once you have enough calming power, tap each balloon to pop it!</p>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="balloons_5">
-    <div class="balloon-item flex flex-col items-center p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105"
-         id="balloon_b1"
-         style="background-color: #ef444420; border-color: #ef4444;"
-         data-response="You are kind and special - people will see that!"
-         onclick="window.popBalloon('b1', 'balloon_5', 4)">
-      <span class="text-5xl mb-2 animate-bounce-slow">🎈</span>
-      <span class="text-2xl mb-1">😰</span>
-      <p class="font-body text-sm text-center" style="color: var(--dark);">"What if no one likes me?"</p>
-    </div>
-  
-    <div class="balloon-item flex flex-col items-center p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105"
-         id="balloon_b2"
-         style="background-color: #f9731620; border-color: #f97316;"
-         data-response="Safe adults are there to help you find your way!"
-         onclick="window.popBalloon('b2', 'balloon_5', 4)">
-      <span class="text-5xl mb-2 animate-bounce-slow">🎈</span>
-      <span class="text-2xl mb-1">😟</span>
-      <p class="font-body text-sm text-center" style="color: var(--dark);">"What if I get lost?"</p>
-    </div>
-  
-    <div class="balloon-item flex flex-col items-center p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105"
-         id="balloon_b3"
-         style="background-color: #eab30820; border-color: #eab308;"
-         data-response="Feeling scared is normal - you can ask for a hug!"
-         onclick="window.popBalloon('b3', 'balloon_5', 4)">
-      <span class="text-5xl mb-2 animate-bounce-slow">🎈</span>
-      <span class="text-2xl mb-1">😥</span>
-      <p class="font-body text-sm text-center" style="color: var(--dark);">"What if I feel scared?"</p>
-    </div>
-  
-    <div class="balloon-item flex flex-col items-center p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105"
-         id="balloon_b4"
-         style="background-color: #a855f720; border-color: #a855f7;"
-         data-response="Mum&#039;s love stays with you even when she&#039;s not here!"
-         onclick="window.popBalloon('b4', 'balloon_5', 4)">
-      <span class="text-5xl mb-2 animate-bounce-slow">🎈</span>
-      <span class="text-2xl mb-1">😨</span>
-      <p class="font-body text-sm text-center" style="color: var(--dark);">"What if I miss Mum?"</p>
-    </div>
-  </div>
-          
-          <div class="p-4 rounded-xl text-center mb-4" id="balloonFeedback_5" style="display: none; background-color: var(--light-green);">
-            <p class="font-body text-lg" id="balloonFeedbackText_5"></p>
-          </div>
-          
-          <div class="p-6 rounded-2xl text-center" id="balloonVictory_5" style="display: none; background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-5xl mb-2">🎉</p>
-            <p class="font-title text-2xl" style="color: var(--dark);">Amazing! You popped all the worry balloons! Professor Panda 🧠 is so proud - you know how to feel safe and calm your worries!</p>
-          </div>
-          
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green); display: none;" id="balloonComplete_5">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="balloon_5" onchange="markActivityComplete('balloon_5')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I popped all my worries! ⭐</label>
-          </div>
-        </div>
-      </div>
-      <style>.balloon-item.popped { opacity: 0.3; pointer-events: none; transform: scale(0.8); }</style>
-    </div>`;
-}
-
-    function generatePage12() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="affirmation-builder">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Safe Connection Words ⭐</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6 affirmation-container" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Build special words that help you feel safe and loved! Pick one from each box to make your own caring message.</p>
-          
-          <div class="mb-4">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 1: Pick a starter</p>
-            <div class="flex flex-wrap"><button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--light-green); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">I am</button><button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--light-green); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">I am becoming</button><button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--light-green); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">I choose to be</button><button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--light-green); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">Every day I am</button></div>
-          </div>
-          
-          <div class="mb-4">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 2: Pick a middle</p>
-            <div class="flex flex-wrap"><button class="affirmation-part middle px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">loved and</button><button class="affirmation-part middle px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">safe and</button><button class="affirmation-part middle px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">cared for and</button><button class="affirmation-part middle px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">supported and</button></div>
-          </div>
-          
-          <div class="mb-4">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Step 3: Pick an ending</p>
-            <div class="flex flex-wrap"><button class="affirmation-part ending px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">valued</button><button class="affirmation-part ending px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">protected</button><button class="affirmation-part ending px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">important</button><button class="affirmation-part ending px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">cherished</button></div>
-          </div>
-          
-          <div class="mb-6">
-            <p class="font-body font-semibold mb-2" style="color: var(--dark);">Decorate with emojis:</p>
-            <div class="flex flex-wrap gap-1"><button class="emoji-decoration text-2xl p-1 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '💛 ' + display.textContent + ' 💛';">💛</button><button class="emoji-decoration text-2xl p-1 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '🤗 ' + display.textContent + ' 🤗';">🤗</button><button class="emoji-decoration text-2xl p-1 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '🌟 ' + display.textContent + ' 🌟';">🌟</button><button class="emoji-decoration text-2xl p-1 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '💖 ' + display.textContent + ' 💖';">💖</button></div>
-          </div>
-          
-          <div class="p-6 rounded-2xl text-center mb-4" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="font-body text-sm mb-2" style="color: var(--secondary);">Your affirmation:</p>
-            <p class="affirmation-display font-title text-2xl" style="color: var(--dark);">Tap the words above!</p>
-          </div>
-          
-          <div class="p-4 rounded-xl" style="background-color: var(--soft-yellow);">
-            <p class="font-body" style="color: var(--dark);">Say your special words out loud three times so your brain remembers how loved you are!</p>
-          </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="affirm_6"
-            onchange="markActivityComplete('affirm_6')"
-            
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I built my power phrase!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage13() {
-  return `
-    <div class="page chapter-scene-page" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;" data-page="chapter">
+    <div class="page chapter-scene-page m-chapter-scene" data-page="chapter">
 
       <!-- Daytime sky -->
       <div style="position:absolute;inset:0;background:linear-gradient(180deg,
@@ -1517,10 +1232,10 @@
       );"></div>
 
       <!-- Sun glow -->
-      <div style="position:absolute;top:6%;right:12%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle, var(--soft-yellow) 0%, color-mix(in srgb, var(--soft-yellow) 40%, transparent) 50%, transparent 70%);opacity:0.7;"></div>
+      <div class="m-chapter-sun"></div>
 
       <!-- Soft clouds (pure CSS) -->
-      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">
+      <div class="m-chapter-stars">
         <div class="ch-cloud ch-cloud-1"></div>
         <div class="ch-cloud ch-cloud-2"></div>
         <div class="ch-cloud ch-cloud-3"></div>
@@ -1528,8 +1243,8 @@
       </div>
 
       <!-- Landscape at bottom — 280px -->
-      <div style="position:absolute;bottom:0;left:0;right:0;height:280px;z-index:1;">
-        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" style="width:100%;height:100%;">
+      <div class="m-chapter-hills">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
           
     <ellipse cx="200" cy="200" rx="300" ry="100" fill="var(--hill-far)"/>
     <ellipse cx="600" cy="200" rx="420" ry="120" fill="var(--hill-near)"/>
@@ -1623,35 +1338,35 @@
       </div>
 
       <!-- Content — centred above scene -->
-      <div style="position:relative;z-index:10;text-align:center;padding:0 24px;max-width:640px;margin:0 auto;padding-bottom:300px;">
+      <div class="m-chapter-content">
         <!-- Journey badge -->
-        <div style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--primary) 12%, white);border:1px solid color-mix(in srgb, var(--primary) 25%, transparent);border-radius:20px;padding:5px 14px;margin-bottom:20px;backdrop-filter:blur(8px);">
-          <span style="font-size:13px;">🏘️</span>
-          <span style="color:var(--primary);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">Welcome to Brain Town</span>
+        <div class="m-chapter-badge">
+          <span class="m-chapter-badge__emoji">🏘️</span>
+          <span class="m-chapter-badge__label">Welcome to Brain Town</span>
         </div>
 
         <!-- Chapter number + title -->
-        <div style="display:flex;align-items:baseline;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
-          <h1 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(32px,7vw,52px);font-weight:800;color:var(--primary);margin:0;line-height:1.1;text-shadow:0 2px 12px color-mix(in srgb, var(--primary) 25%, transparent);">
+        <div class="m-chapter-title-wrap">
+          <h1 class="m-chapter-number">
             Chapter 3
           </h1>
-          <h2 style="font-family:'Fredoka One','Baloo 2',cursive;font-size:clamp(24px,5vw,38px);font-weight:800;color:var(--dark);margin:0;line-height:1.15;">
-            My Safety Circle
+          <h2 class="m-chapter-heading">
+            You're the Town Planner
           </h2>
         </div>
 
         <!-- Decorative dashes in accent colour -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px;">
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:24px;height:3px;background:var(--accent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
-          <div style="width:16px;height:3px;background:color-mix(in srgb, var(--accent) 35%, transparent);border-radius:2px;"></div>
+        <div class="m-chapter-dots">
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot--active"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
         </div>
 
         <!-- Subtitle -->
-        <p style="font-family:'Nunito',sans-serif;font-size:clamp(15px,3vw,20px);font-weight:600;color:color-mix(in srgb, var(--dark) 70%, var(--secondary));margin:0;line-height:1.5;max-width:460px;margin-left:auto;margin-right:auto;">
-          Using what I know to stay connected and secure
+        <p class="m-chapter-subtitle">
+          Using your power to grow your Brain Town
         </p>
       </div>
 
@@ -1689,133 +1404,334 @@
     </div>`;
 }
 
-    function generatePage14() {
+    function generatePage12() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="interactive-lesson">
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="interactive-lesson">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Safety Team</h1>
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Your Brain Town Adventure Map! 🗺️</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 leading-relaxed font-body" style="color: var(--dark);">You&#039;ve learnt about feeling safe and staying calm. Now let&#039;s think about your whole safety team! These are all the people who help you feel loved and secure.</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 leading-relaxed font-body m-color-dark">You are the town planner of your amazing Brain Town! Daniel 🐕 loves exploring all the different roads in his Brain Town. What new skill would you like to build a road for in your Brain Town?</p>
           
           
         <div class="interactive-group">
-          <p class="text-lg mb-4 font-body font-semibold" style="color: var(--dark);">When something big happens in your life, what&#039;s the BEST thing to do?</p>
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">Which new road would you most like to grow in your Brain Town?</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="false"
+                      data-correct="opinion"
                       data-index="0"
-                      onclick="handleInteractiveChoice(this, 7, true, 3)">
-                Wait until I&#039;m older
+                      onclick="handleInteractiveChoice(this, 5, false, -1)">
+                Learning to cook with mum
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="false"
+                      data-correct="opinion"
                       data-index="1"
-                      onclick="handleInteractiveChoice(this, 7, true, 3)">
-                Keep it all to myself
+                      onclick="handleInteractiveChoice(this, 5, false, -1)">
+                Building with blocks
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="false"
+                      data-correct="opinion"
                       data-index="2"
-                      onclick="handleInteractiveChoice(this, 7, true, 3)">
-                Only tell one person
+                      onclick="handleInteractiveChoice(this, 5, false, -1)">
+                Speaking a new language
               </button>
             
               <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
-                      data-correct="true"
+                      data-correct="opinion"
                       data-index="3"
-                      onclick="handleInteractiveChoice(this, 7, true, 3)">
-                Share it with my safety team
+                      onclick="handleInteractiveChoice(this, 5, false, -1)">
+                Playing a musical instrument
               </button>
             
           </div>
-          <div class="interactive-feedback p-3 rounded-xl mb-2" style="display: none;"></div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
         </div>
           
           <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
-            <p class="font-body" style="color: var(--dark);">Yes! Your safety team is there for the big moments and the little ones too. They want to share your joys and help with your worries.</p>
+            <p class="font-body m-color-dark">Fantastic choice! Remember, every time you practice, that road gets stronger in your Brain Town.</p>
           </div>
         </div>
         
-        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green); display: none;">
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
           <span class="text-3xl">🧠</span>
-          <p class="font-body font-semibold" style="color: var(--dark);">Professor Panda says: &#039;Your safety team makes your brain feel strong and happy! 🧠 In Brain Town, having caring connections helps every part work better together.&#039;</p>
+          <p class="font-body font-semibold m-color-dark">Lenny says: 'I'm so excited to see which road you'll build first! Your Brain Town is going to be amazing!' 🧠✨</p>
         </div>
         
-        <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--soft-yellow);">
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-soft-yellow">
           <input 
             type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="interactive_7"
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+            data-activity="interactive_5"
             disabled
-            onchange="markActivityComplete('interactive_7')"
+            onchange="markActivityComplete('interactive_5')"
             
           >
-          <label class="font-title text-xl" style="color: var(--dark);">I participated!</label>
+          <label class="font-title text-xl m-color-dark">I participated!</label>
         </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage13() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="power-up-collector" data-activity="powerup_6">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Brain Road Builder Game ✨</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body text-center m-color-dark">Help Lenny 🧠 collect helpful tools that build strong roads in Brain Town! Avoid the ones that make roads bumpy or challenged.</p>
+          
+          <!-- Collection Progress -->
+          <div class="flex justify-center items-center gap-4 mb-6">
+            <div class="collection-bag flex items-center gap-2 p-4 rounded-2xl m-bg-soft-yellow">
+              <span class="text-3xl">🎒</span>
+              <span class="font-title text-2xl m-color-dark"><span id="collectedCount">0</span> / 5</span>
+            </div>
+          </div>
+          
+          <!-- Collected Items Display -->
+          <div class="collected-display flex flex-wrap justify-center gap-2 mb-6 min-h-[60px] p-4 rounded-xl m-bg-cream" id="collectedDisplay">
+            <p class="font-body text-sm self-center m-color-secondary">Your collected power-ups will appear here!</p>
+          </div>
+          
+          <!-- Power-Up Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
+            
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Practice Daily"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">⭐</div>
+      <p class="font-title text-lg m-color-dark">Practice Daily</p>
+      <p class="font-body text-sm m-color-secondary">Makes brain roads stronger</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Try New Things"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">🌈</div>
+      <p class="font-title text-lg m-color-dark">Try New Things</p>
+      <p class="font-body text-sm m-color-secondary">Builds new brain streets</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="Give Up Fast"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">😞</div>
+      <p class="font-title text-lg m-color-dark">Give Up Fast</p>
+      <p class="font-body text-sm m-color-secondary">Stops roads from growing</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Ask for Help"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">🤝</div>
+      <p class="font-title text-lg m-color-dark">Ask for Help</p>
+      <p class="font-body text-sm m-color-secondary">Helps roads grow faster</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="Say I Can't"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">❌</div>
+      <p class="font-title text-lg m-color-dark">Say I Can't</p>
+      <p class="font-body text-sm m-color-secondary">Blocks new brain roads</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Keep Trying"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">💪</div>
+      <p class="font-title text-lg m-color-dark">Keep Trying</p>
+      <p class="font-body text-sm m-color-secondary">Turns paths into motorways</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="true"
+            data-name="Learn from Mistakes"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">💡</div>
+      <p class="font-title text-lg m-color-dark">Learn from Mistakes</p>
+      <p class="font-body text-sm m-color-secondary">Builds better brain streets</p>
+    </button>
+  
+    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+            style="background-color: white; border-color: var(--primary);"
+            data-positive="false"
+            data-name="Hide from Hard Things"
+            onclick="handlePowerUpClick(this, 'powerup_6', 5)">
+      <div class="text-4xl mb-2">😰</div>
+      <p class="font-title text-lg m-color-dark">Hide from Hard Things</p>
+      <p class="font-body text-sm m-color-secondary">Makes brain roads weak</p>
+    </button>
+  
+          </div>
+          
+          <!-- Feedback Area -->
+          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" class="m-hidden">
+            <p class="font-body text-lg" id="powerupFeedbackText"></p>
+          </div>
+          
+          <!-- Win Message (hidden initially) -->
+          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" class="m-feedback-hidden">
+            <p class="text-4xl mb-2">🎉</p>
+            <p class="font-title text-2xl mb-2 m-color-dark">Amazing! You're a brilliant Brain Town planner!</p>
+            <p class="font-body m-color-secondary">As town planner, you can grow new roads in your Brain Town every day!</p>
+          </div>
+          
+          <!-- Completion Checkbox -->
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-light-green" id="powerupComplete">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+              data-activity="powerup_6"
+              onchange="markActivityComplete('powerup_6')"
+              
+            >
+            <label class="font-title text-xl m-color-dark">I collected my power-ups! ⭐</label>
+          </div>
+        </div>
+      </div>
       
-      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
-        <button 
-          onclick="toggleGrownUpNote('grownup-note-14')"
-          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors"
-          style="color: var(--secondary);"
-        >
-          <span class="flex items-center gap-2 font-semibold text-sm">
-            <span>👨‍👩‍👧</span>
-            <span>Grown-Up Note</span>
-          </span>
-          <svg id="grownup-note-14-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
-        <div id="grownup-note-14" class="hidden px-4 pb-4">
-          <div class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--secondary);">
-            Active Learning Theory
+      <style>
+        .power-up-item:active { transform: scale(0.95); }
+        .power-up-item.collected { opacity: 0.5; pointer-events: none; border-color: var(--light-green) !important; }
+        .power-up-item.wrong { animation: shake 0.5s; background-color: #fecaca !important; }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+      </style>
+    </div>`;
+}
+
+    function generatePage14() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="feelings-orchestra" data-activity="orchestra_7">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">Lenny's Brain Town Orchestra 🎵</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">Daniel here! Lenny 🧠 discovered something amazing - every feeling in Brain Town makes its own special sound! You might like to tap each instrument to hear how feelings sound, then create your own feeling song.</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center">In your Brain Town, there's a magical concert hall where all your feelings live as musical instruments. Every time you feel something new, you're building stronger roads to that feeling in your Brain Town! As the town planner, you get to choose which instruments to play.</p>
           </div>
-          <p class="text-sm mb-3" style="color: var(--dark);">
-            When children feel emotionally safe with their caregivers, they develop stronger confidence to explore and learn. This activity helps build that secure foundation through connection.
-          </p>
-          <div class="text-xs font-semibold uppercase tracking-wide mb-1" style="color: var(--secondary);">
-            Try asking:
+          <div class="p-4 rounded-xl mb-6 text-center" id="soundDisplay_7" style="background-color: var(--cream); min-height: 80px;">
+            <p class="font-body">🎵 Tap an instrument to play!</p>
           </div>
-          <ul class="text-sm list-disc list-inside" style="color: var(--dark);">
-            <li class="mb-1">"What made you feel most safe and happy when we did this activity together?"</li><li class="mb-1">"Let&#039;s notice together when you&#039;re feeling worried - I&#039;m always here to help you feel better."</li>
-          </ul>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #fbbf2420; border-color: #fbbf24;" onclick="window.playInstrument('7', '🥁', 'Boom boom!', 'joy', 'Giggly Drums')">
+      <span class="text-5xl">🥁</span>
+      <p class="font-title text-sm mt-2">Giggly Drums</p>
+      <p class="font-body text-xs m-color-secondary">joy</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #22c55e20; border-color: #22c55e;" onclick="window.playInstrument('7', '🎶', 'Whooo...', 'calm', 'Peaceful Flute')">
+      <span class="text-5xl">🎶</span>
+      <p class="font-title text-sm mt-2">Peaceful Flute</p>
+      <p class="font-body text-xs m-color-secondary">calm</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #ef444420; border-color: #ef4444;" onclick="window.playInstrument('7', '🎺', 'Ta da!', 'courage', 'Brave Trumpet')">
+      <span class="text-5xl">🎺</span>
+      <p class="font-title text-sm mt-2">Brave Trumpet</p>
+      <p class="font-body text-xs m-color-secondary">courage</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #3b82f620; border-color: #3b82f6;" onclick="window.playInstrument('7', '🎻', 'Hmmm...', 'sadness', 'Gentle Violin')">
+      <span class="text-5xl">🎻</span>
+      <p class="font-title text-sm mt-2">Gentle Violin</p>
+      <p class="font-body text-xs m-color-secondary">sadness</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #f9731620; border-color: #f97316;" onclick="window.playInstrument('7', '🔔', 'Ding ding!', 'worry', 'Worried Bells')">
+      <span class="text-5xl">🔔</span>
+      <p class="font-title text-sm mt-2">Worried Bells</p>
+      <p class="font-body text-xs m-color-secondary">worry</p>
+    </button>
+  
+    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #8b5cf620; border-color: #8b5cf6;" onclick="window.playInstrument('7', '🎹', 'Ting ting!', 'excitement', 'Excited Piano')">
+      <span class="text-5xl">🎹</span>
+      <p class="font-title text-sm mt-2">Excited Piano</p>
+      <p class="font-body text-xs m-color-secondary">excitement</p>
+    </button>
+  </div>
+          <div class="p-4 rounded-xl mb-6 m-bg-cream">
+            <p class="font-title mb-2">What feeling song will you create in your Brain Town today?</p>
+            <textarea class="w-full p-2 rounded-lg border-2 font-body m-input-bordered-secondary" placeholder="My feelings music is..." onchange="saveFormData('orchestra_7', this.value)"></textarea>
+          </div>
+          <div class="p-6 rounded-2xl text-center m-bg-callout-gradient">
+            <p class="text-4xl mb-2">🎶</p>
+            <p class="font-title text-xl">Beautiful music! Every time you play these instruments, you're making the roads to your feelings stronger in Brain Town! Child can recognise that feelings make different sounds and that practicing with feelings helps build stronger pathways.</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="orchestra_7" onchange="markActivityComplete('orchestra_7')" >
+            <label class="font-title text-xl m-color-dark">I made music! ⭐</label>
+          </div>
         </div>
-      </div></div></div>`;
+      </div>
+    </div>`;
 }
 
     function generatePage15() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feeling-thermometer">
+    <div class="page min-h-screen p-8" style="background: linear-gradient(135deg, #fef9e7, #edf7f2);" data-page="summary">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">My Safe Connection Thermometer 🌡️</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Point to the number that shows how safe and connected you feel with the people who care about you right now.</p>
-          <div class="mb-8">
-            <div class="flex justify-between mb-2">
-              <span class="font-body text-sm" style="color: var(--secondary);">Not safe or connected</span>
-              <span class="font-body text-sm" style="color: var(--accent);">Very safe and connected</span>
-            </div>
-            <input type="range" min="1" max="10" value="5" class="thermometer-slider w-full" oninput="this.parentElement.querySelector('.thermometer-value').textContent = this.value; saveFormData('thermometer_8', this.value)">
-            <div class="text-center mt-4"><span class="thermometer-value text-4xl font-title" style="color: var(--primary);">5</span></div>
+        <div class="rounded-3xl shadow-2xl p-8 md:p-10 border-4" style="background-color: white; border-color: #e6c777;">
+          <div class="text-center mb-6">
+            <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF ACHIEVEMENT</p>
+            <h1 class="text-3xl md:text-4xl mt-2 font-title m-color-dark">Your Brain Town Journey with Lenny! 🧠</h1>
+            <p class="font-body text-lg mt-2 m-color-secondary">Awarded to <strong id="childNameDisplay">Friend</strong></p>
           </div>
+
+          <div class="p-5 rounded-2xl mb-6" style="background-color: var(--cream); border: 2px dashed var(--primary);">
+            <p class="font-title text-xl mb-2 m-color-dark">Sub-skill focus</p>
+            <p class="font-body text-lg m-color-dark">In this module, you practiced <strong>Neuroplasticity</strong> by spotting feelings, choosing calming actions, and using kind self-talk in tricky moments.</p>
+          </div>
+
           <div class="mb-6">
-            <label class="block font-semibold mb-2 font-body" style="color: var(--dark);">Who makes you feel most safe and connected? What do they do that helps you feel this way?</label>
-            <textarea class="w-full rounded-xl p-4 font-body text-lg" style="background-color: var(--cream); border: 3px solid var(--primary); color: var(--dark); min-height: 100px;" placeholder="Write your thoughts here..." data-form-key="thermometer_followup_8" onchange="saveFormData('thermometer_followup_8', this.value)"></textarea>
+            <p class="font-title text-xl mb-2 m-color-dark">What you learned</p>
+            <ul class="list-disc pl-6 space-y-2">
+    <li class="font-body text-lg m-color-dark">Your brain is like a town that you are the town planner of - you help it grow!</li>
+    <li class="font-body text-lg m-color-dark">Every time you practise something, you build stronger roads in your Brain Town</li>
+    <li class="font-body text-lg m-color-dark">When you learn new things, new streets appear in your brain</li>
+    <li class="font-body text-lg m-color-dark">Your Brain Town can change and grow every single day - just like Lenny's does!</li></ul>
           </div>
-          <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="thermometer_8" onchange="markActivityComplete('thermometer_8')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I checked my feelings thermometer! ⭐</label>
+
+          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-4" style="border-top: 2px solid #f2e1a8;">
+            <div>
+              <p class="font-body text-sm m-color-secondary">Completed on</p>
+              <p class="font-title text-2xl" id="certificateDate" class="m-color-dark"></p>
+            </div>
+            <div class="text-right">
+              <p class="font-body text-sm m-color-secondary">Guide</p>
+              <p class="font-title text-xl m-color-dark">Lenny 🧠</p>
+            </div>
           </div>
+        </div>
+
+        <div class="rounded-xl p-6 flex items-center gap-4 mt-6 m-bg-soft-yellow">
+          <span class="text-5xl">🧠</span>
+          <p class="font-body text-lg font-semibold m-color-dark">Amazing work, town planner! Lenny is so proud of how you've learnt about your incredible Brain Town. Remember, every time you try something new or practise something hard, you're building stronger roads in your brain. Your Brain Town is always growing and changing, and you're the one in charge! Keep being curious and keep practising - your brain loves it! 🧠⭐</p>
         </div>
       </div>
     </div>`;
@@ -1823,207 +1739,14 @@
 
     function generatePage16() {
   return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="feelings-orchestra" data-activity="orchestra_9">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-4 font-title" style="color: var(--dark);">My Safe Feelings Orchestra 🎵</h1>
-        <div class="rounded-3xl shadow-xl p-8" style="background-color: white;">
-          <p class="text-lg mb-4 font-body text-center" style="color: var(--dark);">Professor Panda 🧠 wants to show you something special! Each instrument makes music for different feelings we have with people who care about us.</p>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--soft-yellow);">
-            <p class="font-body text-center">In Brain Town, there&#039;s a magical orchestra where feelings make beautiful music! When we feel safe with someone special, our feelings play happy songs together. Professor Panda 🧠 says our brain loves making music when we feel loved and safe!</p>
-          </div>
-          <div class="p-4 rounded-xl mb-6 text-center" id="soundDisplay_9" style="background-color: var(--cream); min-height: 80px;">
-            <p class="font-body">🎵 Tap an instrument to play!</p>
-          </div>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #fbbf2420; border-color: #fbbf24;" onclick="window.playInstrument('9', '🥁', 'Boom boom!', 'joy', 'Happy Drums')">
-      <span class="text-5xl">🥁</span>
-      <p class="font-title text-sm mt-2">Happy Drums</p>
-      <p class="font-body text-xs" style="color: var(--secondary);">joy</p>
-    </button>
-  
-    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #22c55e20; border-color: #22c55e;" onclick="window.playInstrument('9', '🎶', 'Whooo...', 'peace', 'Calm Flute')">
-      <span class="text-5xl">🎶</span>
-      <p class="font-title text-sm mt-2">Calm Flute</p>
-      <p class="font-body text-xs" style="color: var(--secondary);">peace</p>
-    </button>
-  
-    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #ec489920; border-color: #ec4899;" onclick="window.playInstrument('9', '🎵', 'Ting ting!', 'love', 'Love Harp')">
-      <span class="text-5xl">🎵</span>
-      <p class="font-title text-sm mt-2">Love Harp</p>
-      <p class="font-body text-xs" style="color: var(--secondary);">love</p>
-    </button>
-  
-    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #8b5cf620; border-color: #8b5cf6;" onclick="window.playInstrument('9', '🎹', 'La la la!', 'safety', 'Safe Piano')">
-      <span class="text-5xl">🎹</span>
-      <p class="font-title text-sm mt-2">Safe Piano</p>
-      <p class="font-body text-xs" style="color: var(--secondary);">safety</p>
-    </button>
-  
-    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #f9731620; border-color: #f97316;" onclick="window.playInstrument('9', '🔔', 'Ring ring!', 'worry', 'Worry Bells')">
-      <span class="text-5xl">🔔</span>
-      <p class="font-title text-sm mt-2">Worry Bells</p>
-      <p class="font-body text-xs" style="color: var(--secondary);">worry</p>
-    </button>
-  
-    <button class="p-4 rounded-2xl border-3 transition-all hover:scale-110 cursor-pointer flex flex-col items-center" style="background-color: #06b6d420; border-color: #06b6d4;" onclick="window.playInstrument('9', '🎸', 'Strum strum!', 'comfort', 'Comfort Guitar')">
-      <span class="text-5xl">🎸</span>
-      <p class="font-title text-sm mt-2">Comfort Guitar</p>
-      <p class="font-body text-xs" style="color: var(--secondary);">comfort</p>
-    </button>
-  </div>
-          <div class="p-4 rounded-xl mb-6" style="background-color: var(--cream);">
-            <p class="font-title mb-2">What feeling song will you make when you&#039;re with someone special?</p>
-            <textarea class="w-full p-2 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 60px;" placeholder="My feelings music is..." onchange="saveFormData('orchestra_9', this.value)"></textarea>
-          </div>
-          <div class="p-6 rounded-2xl text-center" style="background: linear-gradient(135deg, var(--soft-yellow), var(--light-green));">
-            <p class="text-4xl mb-2">🎶</p>
-            <p class="font-title text-xl">Amazing music! Professor Panda 🧠 says every feeling is important when we feel safe and loved!</p>
-          </div>
-          <div class="rounded-xl p-4 flex items-center gap-3 mt-4" style="background-color: var(--light-green);">
-            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer" style="accent-color: var(--primary);" data-activity="orchestra_9" onchange="markActivityComplete('orchestra_9')" >
-            <label class="font-title text-xl" style="color: var(--dark);">I made music! ⭐</label>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage17() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: var(--cream);" data-page="word-scramble">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title" style="color: var(--dark);">Safe Connection Words 🧩</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6" style="background-color: white;">
-          <p class="text-lg mb-6 font-body" style="color: var(--dark);">Unscramble these words about feeling safe and connected with people you love!</p>
-          
-          
-    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="SAFE">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-2xl">🏠</span>
-        <span class="font-body text-sm" style="color: var(--secondary);">Hint: When you feel protected and secure</span>
-      </div>
-      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">FEAS</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'SAFE'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_10_0', this.value);">
-      <p class="word-feedback text-center font-title mt-2"></p>
-    </div>
-  
-    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="TRUST">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-2xl">🤝</span>
-        <span class="font-body text-sm" style="color: var(--secondary);">Hint: When you believe someone will keep you safe</span>
-      </div>
-      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">TURST</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'TRUST'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_10_1', this.value);">
-      <p class="word-feedback text-center font-title mt-2"></p>
-    </div>
-  
-    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="LOVE">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-2xl">❤</span>
-        <span class="font-body text-sm" style="color: var(--secondary);">Hint: The warm feeling from people who care about you</span>
-      </div>
-      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">VELO</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'LOVE'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_10_2', this.value);">
-      <p class="word-feedback text-center font-title mt-2"></p>
-    </div>
-  
-    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="CARE">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-2xl">🤗</span>
-        <span class="font-body text-sm" style="color: var(--secondary);">Hint: When someone looks after you</span>
-      </div>
-      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">RACE</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'CARE'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_10_3', this.value);">
-      <p class="word-feedback text-center font-title mt-2"></p>
-    </div>
-  
-    <div class="scramble-word p-4 rounded-xl mb-4" style="background-color: var(--soft-yellow);" data-answer="HELP">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-2xl">💪</span>
-        <span class="font-body text-sm" style="color: var(--secondary);">Hint: What safe grown ups give you when you need it</span>
-      </div>
-      <p class="font-title text-2xl text-center mb-3" style="color: var(--dark);">PHEL</p>
-      <input type="text" class="w-full p-3 rounded-lg border-2 font-body text-lg text-center" style="border-color: var(--primary);" placeholder="Your answer..." onchange="const correct = this.value.toUpperCase() === 'HELP'; this.style.borderColor = correct ? 'var(--secondary)' : 'var(--accent)'; this.parentElement.querySelector('.word-feedback').textContent = correct ? 'Correct!' : 'Try again!'; this.parentElement.querySelector('.word-feedback').style.color = correct ? 'var(--secondary)' : 'var(--accent)'; saveFormData('scramble_10_4', this.value);">
-      <p class="word-feedback text-center font-title mt-2"></p>
-    </div>
-  
-          
-          <div class="p-4 rounded-xl text-center" style="background-color: var(--light-green);">
-            <p class="font-body font-semibold" style="color: var(--dark);">Amazing work! Professor Panda 🧠 is so proud! You know all the important words for building safe connections. These feelings help your brain feel calm and happy!</p>
-          </div>
-        </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3" style="background-color: var(--light-green);">
-          <input 
-            type="checkbox" 
-            class="w-8 h-8 rounded cursor-pointer"
-            style="accent-color: var(--primary);"
-            data-activity="scramble_10"
-            onchange="markActivityComplete('scramble_10')"
-            
-          >
-          <label class="font-title text-xl" style="color: var(--dark);">I solved all the scrambles!</label>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage18() {
-  return `
-    <div class="page min-h-screen p-8" style="background: linear-gradient(135deg, #fef9e7, #edf7f2);" data-page="summary">
-      <div class="max-w-4xl mx-auto">
-        <div class="rounded-3xl shadow-2xl p-8 md:p-10 border-4" style="background-color: white; border-color: #e6c777;">
-          <div class="text-center mb-6">
-            <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF ACHIEVEMENT</p>
-            <h1 class="text-3xl md:text-4xl mt-2 font-title" style="color: var(--dark);">What You Learnt About Safe Connections! 🧠</h1>
-            <p class="font-body text-lg mt-2" style="color: var(--secondary);">Awarded to <strong id="childNameDisplay">Friend</strong></p>
-          </div>
-
-          <div class="p-5 rounded-2xl mb-6" style="background-color: var(--cream); border: 2px dashed var(--primary);">
-            <p class="font-title text-xl mb-2" style="color: var(--dark);">Sub-skill focus</p>
-            <p class="font-body text-lg" style="color: var(--dark);">In this module, you practiced <strong>Building secure connections and emotional safety</strong> by spotting feelings, choosing calming actions, and using kind self-talk in tricky moments.</p>
-          </div>
-
-          <div class="mb-6">
-            <p class="font-title text-xl mb-2" style="color: var(--dark);">What you learned</p>
-            <ul class="list-disc pl-6 space-y-2">
-    <li class="font-body text-lg" style="color: var(--dark);">You learnt that feeling safe with special people helps your brain grow strong and happy</li>
-    <li class="font-body text-lg" style="color: var(--dark);">You discovered how to spot your safe people who make you feel loved and protected</li>
-    <li class="font-body text-lg" style="color: var(--dark);">You practised using your words to ask for help when you need comfort or support</li>
-    <li class="font-body text-lg" style="color: var(--dark);">You found out that sharing your feelings with safe people makes connections even stronger</li></ul>
-          </div>
-
-          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-4" style="border-top: 2px solid #f2e1a8;">
-            <div>
-              <p class="font-body text-sm" style="color: var(--secondary);">Completed on</p>
-              <p class="font-title text-2xl" id="certificateDate" style="color: var(--dark);"></p>
-            </div>
-            <div class="text-right">
-              <p class="font-body text-sm" style="color: var(--secondary);">Guide</p>
-              <p class="font-title text-xl" style="color: var(--dark);">Professor Panda 🧠</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="rounded-xl p-6 flex items-center gap-4 mt-6" style="background-color: var(--soft-yellow);">
-          <span class="text-5xl">🧠</span>
-          <p class="font-body text-lg font-semibold" style="color: var(--dark);">Wow! You&#039;re becoming amazing at building safe connections! Professor Panda is so proud of how you&#039;re learning to trust your special people and share your feelings. Your brain is getting stronger every day! 🧠⭐</p>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage19() {
-  return `
     <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
       <div class="text-center max-w-2xl">
         <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
-        <h1 class="text-4xl md:text-5xl mb-6 font-title" style="color: var(--dark);">You Did It! 🎉</h1>
+        <h1 class="text-4xl md:text-5xl mb-6 font-title m-color-dark">🎉 You've Built Amazing Roads in Your Brain Town! 🧠</h1>
         
-        <div class="rounded-3xl shadow-xl p-8 mb-8" style="background-color: white;">
-          <p class="text-xl mb-4 font-body" style="color: var(--dark);">Well done, superstar! You&#039;ve completed this special learning adventure with Professor Panda 🧠. You should feel really proud of all the new things you&#039;ve learnt and practised.</p>
-          <p class="text-lg font-body" style="color: var(--secondary);">Keep using your new skills every day, and remember that Professor Panda is always cheering you on. You&#039;re growing stronger and smarter all the time!</p>
+        <div class="rounded-3xl shadow-xl p-8 mb-8 m-bg-white">
+          <p class="text-xl mb-4 font-body m-color-dark">What an incredible town planner you are! You've learnt how your brain grows new roads every time you practise something, just like how Lenny 🧠 showed you. Your Brain Town is getting stronger and more connected every single day!</p>
+          <p class="text-lg font-body m-color-secondary">Keep being curious about how your brain works and remember that every time you try something new, you're building more roads in your Brain Town. You might like to share what you've learnt with someone special in your life!</p>
         </div>
         
         <div class="flex flex-col gap-4">
@@ -2046,130 +1769,15 @@
         
         <div class="mt-8 flex items-center justify-center gap-2">
           <span class="text-4xl">🧠</span>
-          <p class="font-body text-lg" style="color: var(--dark);">
-            Professor Panda is proud of you!
+          <p class="font-body text-lg m-color-dark">
+            Lenny is proud of you!
           </p>
-        </div>
-      </div>
-    </div>`;
-}
-
-    function generatePage20() {
-  return `
-    <div class="page min-h-screen p-8" style="background-color: #1a1a2e;" data-page="admin-verification" data-admin-only="true">
-      <div class="max-w-4xl mx-auto">
-        <div style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center;">
-          <h1 style="font-family: 'Fredoka One', cursive; font-size: 2rem; color: white; margin-bottom: 8px;">
-            🔒 Admin Verification Report
-          </h1>
-          <p style="color: rgba(255,255,255,0.8); font-family: 'Nunito', sans-serif; font-size: 14px;">
-            This page is only visible to administrators. It shows the AI self-verification audit results.
-          </p>
-        </div>
-        
-        <!-- Overall Assessment -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #EF4444;">
-          <h2 style="font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: #1a1a2e; margin-bottom: 8px;">
-            Overall Assessment
-          </h2>
-          <div style="font-family: 'Nunito', sans-serif; font-size: 1.2rem; font-weight: 700; color: #EF4444;">
-            NEEDS REVIEW
-          </div>
-        </div>
-
-        <!-- Theories Used -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
-            📚 Theories Used & Where Operationalised
-          </h3>
-          <table style="width: 100%; border-collapse: collapse; font-family: 'Nunito', sans-serif; font-size: 14px;">
-            <thead>
-              <tr style="background: #f3f4f6;">
-                <th style="padding: 8px 12px; text-align: left; font-weight: 700;">Theory</th>
-                <th style="padding: 8px 12px; text-align: left; font-weight: 700;">Where Operationalised</th>
-              </tr>
-            </thead>
-            <tbody>
-    <tr>
-      <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Attachment Theory</td>
-      <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">Safe People Make You Feel Good lesson, Finding Your Safe Person lesson, Who Makes You Feel Safe activity, My Safety Team activity - focusing on identifying secure relationships and emotional safety with caregivers</td>
-    </tr>
-  </tbody>
-          </table>
-        </div>
-
-        <!-- Alignment Checks -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🎯 Age Range Alignment</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">Content appropriately simplified for 6-8 age range with focus on identifying safe people and basic emotional safety concepts rather than complex attachment dynamics</p>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🧩 Sub-Skill Alignment</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">Poor alignment - &#039;Test&#039; as a sub skill provides no clear learning objective or skill development focus</p>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🏆 Super Skill Alignment</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">Good alignment with Brain Builder - uses brain metaphors and Professor Panda character to frame cognitive and emotional development</p>
-          </div>
-        </div>
-
-        <!-- Tone & Language -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🗣️ Tone Compliance</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">Tone appears warm and age appropriate from sample text, uses encouraging language suitable for young children</p>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">🇦🇺 Australian English Check</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">Cannot assess from limited sample text provided</p>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">📋 Claim Types</h4>
-            <p style="font-family: 'Nunito', sans-serif; font-size: 13px; color: #374151;">Educational claims about brain function and emotional safety</p>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 16px;">
-            <h4 style="font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: #1a1a2e; margin-bottom: 8px;">⚠️ Unselected Concepts</h4>
-            <ul style="font-family: 'Nunito', sans-serif; font-size: 13px; margin: 0; padding-left: 20px;"><li style="margin-bottom: 4px; color: #F59E0B;">Safety teams</li><li style="margin-bottom: 4px; color: #F59E0B;">Worry management</li><li style="margin-bottom: 4px; color: #F59E0B;">Emotional regulation strategies</li></ul>
-          </div>
-        </div>
-
-        <!-- Flagged Issues -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #EF4444;">
-          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
-            🚩 Flagged Issues
-          </h3>
-          <ul style="font-family: 'Nunito', sans-serif; font-size: 14px; margin: 0; padding-left: 20px;"><li style="margin-bottom: 4px; color: #DC2626;">Sub skill &#039;Test&#039; provides no meaningful learning objective</li><li style="margin-bottom: 4px; color: #DC2626;">Brain Town analogy specification unclear/incomplete (&#039;erer&#039;)</li><li style="margin-bottom: 4px; color: #DC2626;">Limited content sample makes full assessment difficult</li></ul>
-        </div>
-
-        <!-- Module Summary (for next week) -->
-        <div style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 2px solid #10B981;">
-          <h3 style="font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: #1a1a2e; margin-bottom: 12px;">
-            📝 Module Summary (for next week's continuity)
-          </h3>
-          <p style="font-family: 'Nunito', sans-serif; font-size: 14px; color: #374151; margin-bottom: 12px;">
-            This module introduced children to the concept of safe people and emotional safety through Professor Panda&#039;s guidance. Children learnt to identify safe grown ups who make them feel happy and calm, and discovered how to reach out to their safety team when feeling worried or upset.
-          </p>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div>
-              <strong style="font-size: 13px; color: #1a1a2e;">Key Concepts:</strong>
-              <p style="font-size: 13px; color: #374151;">safe people are special grown ups who care about you, safe people help you feel happy and calm inside, you can find safe people when worried or upset</p>
-            </div>
-            <div>
-              <strong style="font-size: 13px; color: #1a1a2e;">Skills Introduced:</strong>
-              <p style="font-size: 13px; color: #374151;">identifying safe people, recognising when to seek help from safe people</p>
-            </div>
-          </div>
-          <div style="margin-top: 8px;">
-            <strong style="font-size: 13px; color: #1a1a2e;">Character Progression:</strong>
-            <p style="font-size: 13px; color: #374151;">Professor Panda established himself as a wise, caring guide who helps children understand emotional safety and the importance of having trusted grown ups to turn to when needed.</p>
-          </div>
         </div>
       </div>
     </div>`;
 }
     
-    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17, generatePage18, generatePage19, generatePage20];
+    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16];
     
     // Check if current page has an uncompleted required activity
     function getCurrentPageActivityStatus() {
@@ -2200,7 +1808,7 @@
                     border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); 
                     z-index: 9999; font-family: var(--font-body); font-size: 1rem;
                     display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.5rem;">✨</span>
+          <span class="m-toast__emoji">✨</span>
           <span>Complete the activity first to continue!</span>
         </div>
       `;
@@ -2875,7 +2483,7 @@
       
       try {
         header = initModuleHeader({
-          title: "test",
+          title: "Roads Grow In Your Brain Town",
           childName: childDisplayName,
           onNext: nextPage,
           onPrev: prevPage,
@@ -2930,8 +2538,8 @@
           feedbackEl.style.display = 'block';
           feedbackEl.style.backgroundColor = isCorrect ? 'var(--success)' : '#fecaca';
           feedbackEl.innerHTML = isCorrect 
-            ? '<span class="font-body" style="color: var(--dark);">✓ Great choice! That is right!</span>'
-            : '<span class="font-body" style="color: var(--dark);">✗ Not quite - try again or tap another option!</span>';
+            ? '<span class="font-body m-color-dark">✓ Great choice! That is right!</span>'
+            : '<span class="font-body m-color-dark">✗ Not quite - try again or tap another option!</span>';
         }
         
         // Only show followup and mascot feedback on correct answer, and enable completion

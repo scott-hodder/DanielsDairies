@@ -44,11 +44,11 @@ const mentalHealthQuotes = [
 
 // Character images available
 const characterImages = [
-  '/images/characters/DanielTheDog.png',
-  '/images/characters/DanielTheDogHoldingHeart.png',
-  '/images/characters/DanielTheDogReading.png',
-  '/images/characters/DanielTheDogThumbsUp.png',
-  '/images/characters/DanielWithFootball.png'
+  '/images/characters/DanielTheDog.webp',
+  '/images/characters/DanielTheDogHoldingHeart.webp',
+  '/images/characters/DanielTheDogReading.webp',
+  '/images/characters/DanielTheDogThumbsUp.webp',
+  '/images/characters/DanielWithFootball.webp'
 ];
 
 // Get random character image

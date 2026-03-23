@@ -489,9 +489,6 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       case "completion":
         pageHtml = renderCompletionPage(content.completion, metadata);
         break;
-      case "admin-verification":
-        pageHtml = renderAdminVerificationPage(content.verificationReport, content.moduleSummary, metadata);
-        break;
        
     }
     
@@ -5855,7 +5852,7 @@ async function generateModule(
 
   
   await updateProgress("generating", `Creating ${pageStructure.length}-page module...`);
-  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo);
+  const content = await generateAllContent(settings.claude_api_key, contentBrief, pageStructure, updateProgress, seriesInfo, settings.ai_prompt_template);
   
   // Generate module code
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
@@ -5874,7 +5871,6 @@ async function generateModule(
     pageCount,
     starCount: pageStructure.filter(p => p.starReward).length,
     metadata: content.metadata,
-    verificationReport: content.verificationReport,
     moduleSummary: content.moduleSummary,
     generatedAt: new Date().toISOString(),
   };
@@ -6057,10 +6053,14 @@ serve(async (req) => {
     let seriesInfo: SeriesInfo | null = null;
     let superSkillName: string | undefined;
     let superSkillDescription: string | undefined;
+    let superSkillDomain: string | undefined;
+    let superSkillPersonality: string | undefined;
+    let superSkillNdAffirmation: string | undefined;
+    let superSkillRelevantTheories: string | undefined;
     if (superSkillId) {
       const { data: superSkillData, error: superSkillError } = await supabaseClient
         .from("super_skills")
-        .select("name, description, emoji, theme_color, character_name, character_image_url")
+        .select("name, description, domain, personality, nd_affirmation, relevant_theories, emoji, theme_color, character_name, character_image_url")
         .eq("id", superSkillId)
         .single();
       
@@ -6068,6 +6068,10 @@ serve(async (req) => {
         themeColor = superSkillData.theme_color;
         superSkillName = superSkillData.name;
         superSkillDescription = superSkillData.description;
+        superSkillDomain = superSkillData.domain || superSkillData.description;
+        superSkillPersonality = superSkillData.personality;
+        superSkillNdAffirmation = superSkillData.nd_affirmation;
+        superSkillRelevantTheories = superSkillData.relevant_theories;
         
         if (superSkillData.character_name) {
           let cleanName = superSkillData.character_name;
@@ -6161,8 +6165,8 @@ serve(async (req) => {
       const neuroscienceConcept = firstNonEmptyString(body.neuroscienceConcept, body.neuroscience_concept);
       const diagnosisPathways = body.diagnosisPathways || body.diagnosis_pathways || [];
       const fasdStrategies = firstNonEmptyString(body.fasdStrategies, body.fasd_strategies);
-      const ndisDomainId = firstNonEmptyString(body.ndisDomainId, body.ndis_domain_id);
-      const dssSediId = firstNonEmptyString(body.dssSediId, body.dss_sedi_id);
+      const ndisDomainIds = body.ndisDomainIds || body.ndis_domain_ids || [];
+      const dssSediIds = body.dssSediIds || body.dss_sedi_ids || [];
       const moduleObjective = firstNonEmptyString(body.moduleObjective, body.module_objective);
       const facilitatorTip = firstNonEmptyString(body.facilitatorTip, body.facilitator_tip);
       const reflectionPrompt = firstNonEmptyString(body.reflectionPrompt, body.reflection_prompt);
@@ -6213,26 +6217,62 @@ serve(async (req) => {
         secondaryTheories = secondaryData?.map(t => t.theory_name) || [];
       }
       
-      // Fetch NDIS domain name if provided
-      let ndisDomain: string | undefined;
-      if (ndisDomainId) {
+      // Fetch NDIS domain names if provided (now supports arrays)
+      let ndisDomains: string[] = [];
+      if (ndisDomainIds && Array.isArray(ndisDomainIds) && ndisDomainIds.length > 0) {
         const { data: ndisData } = await supabaseClient
           .from("ndis_domains")
           .select("domain_name")
-          .eq("id", ndisDomainId)
-          .single();
-        ndisDomain = ndisData?.domain_name;
+          .in("id", ndisDomainIds);
+        ndisDomains = ndisData?.map(d => d.domain_name) || [];
       }
+      const ndisDomain = ndisDomains.length > 0 ? ndisDomains.join(', ') : undefined;
       
-      // Fetch SEDI name if provided
-      let dssSedi: string | undefined;
-      if (dssSediId) {
+      // Fetch SEDI names if provided (now supports arrays)
+      let dssSediList: string[] = [];
+      if (dssSediIds && Array.isArray(dssSediIds) && dssSediIds.length > 0) {
         const { data: sediData } = await supabaseClient
           .from("dss_sedi_categories")
           .select("sedi_code, sedi_name")
-          .eq("id", dssSediId)
-          .single();
-        dssSedi = sediData ? `${sediData.sedi_code}: ${sediData.sedi_name}` : undefined;
+          .in("id", dssSediIds);
+        dssSediList = sediData?.map(s => `${s.sedi_code}: ${s.sedi_name}`) || [];
+      }
+      const dssSedi = dssSediList.length > 0 ? dssSediList.join(', ') : undefined;
+      
+      // Fetch audit rules from database to include in AI prompt
+      let auditRulesPrompt = "";
+      try {
+        const { data: auditSections } = await supabaseClient
+          .from("audit_sections")
+          .select("section_number, section_name, severity, ai_instruction")
+          .eq("is_active", true)
+          .order("section_number");
+        
+        if (auditSections && auditSections.length > 0) {
+          auditRulesPrompt = `
+
+═══════════════════════════════════════════════════════════════
+⚠️  MANDATORY AUDIT COMPLIANCE RULES - READ CAREFULLY  ⚠️
+═══════════════════════════════════════════════════════════════
+
+Your generated content will be AUTOMATICALLY VALIDATED against these rules.
+Failure to comply will result in the module being REJECTED.
+Follow EVERY rule precisely. There are no exceptions.
+
+`;
+          auditSections.forEach((sec: { section_number: number; section_name: string; severity: string; ai_instruction: string }) => {
+            if (sec.ai_instruction) {
+              const sevLabel = sec.severity === 'CRITICAL' ? '🚨 CRITICAL (MUST PASS)' : sec.severity === 'IMPORTANT' ? '⚠️ IMPORTANT' : 'ℹ️ ADVISORY';
+              auditRulesPrompt += `${sevLabel} — ${sec.section_number}. ${sec.section_name}:\n${sec.ai_instruction}\n\n`;
+            }
+          });
+          auditRulesPrompt += `═══════════════════════════════════════════════════════════════
+REMINDER: All CRITICAL rules must pass or the module will be rejected.
+═══════════════════════════════════════════════════════════════\n`;
+          console.log("[AI] Loaded", auditSections.length, "audit sections for prompt");
+        }
+      } catch (auditErr) {
+        console.warn("[AI] Could not load audit rules:", auditErr);
       }
       
       // Fetch age range data - only fetch simplified fields sent to AI
@@ -6294,6 +6334,39 @@ serve(async (req) => {
       
       // superSkillName and superSkillDescription were already fetched above
       // (in the super_skills lookup that runs before the enhanced/legacy mode check)
+
+      const lookupContext = body.lookupContext || body.lookup_context || {};
+      const lookupSuperSkill = lookupContext?.superSkill || {};
+      const lookupSubSkill = lookupContext?.subSkill || {};
+      const lookupCycle = lookupContext?.cycle || {};
+      const lookupTheoryConnection = lookupContext?.theoryConnection || {};
+      const lookupCoreTheory = lookupContext?.coreTheory || {};
+      const lookupSecondaryTheories = Array.isArray(lookupContext?.secondaryTheories) ? lookupContext.secondaryTheories : [];
+      const lookupNdisDomains = Array.isArray(lookupContext?.ndisDomains) ? lookupContext.ndisDomains : [];
+      const lookupSediCategories = Array.isArray(lookupContext?.dssSediCategories) ? lookupContext.dssSediCategories : [];
+
+      const referenceContextLines = [
+        '=== SELECTED REFERENCE DATA (AUTHORITATIVE CONTEXT) ===',
+        `Super Skill Domain: ${superSkillDomain || lookupSuperSkill.domain || 'Not provided'}`,
+        `Character Personality: ${superSkillPersonality || lookupSuperSkill.personality || 'Not provided'}`,
+        `ND-Affirmation Guidance: ${superSkillNdAffirmation || lookupSuperSkill.ndAffirmation || 'Not provided'}`,
+        `Relevant Theories for Super Skill: ${superSkillRelevantTheories || lookupSuperSkill.relevantTheories || 'Not provided'}`,
+        `Sub-Skill Description: ${subSkillDescription || lookupSubSkill.description || 'Not provided'}`,
+        `Cycle Context: ${lookupCycle?.cycleNumber ? `Cycle ${lookupCycle.cycleNumber}: ${lookupCycle.name || ''}`.trim() : (cycleId || 'Not provided')}`,
+        `Cycle Focus: ${lookupCycle.focus || lookupCycle.objective || lookupCycle.evidenceFocus || 'Not provided'}`,
+        `Theory Description: ${theoryData.description || lookupCoreTheory.description || 'Not provided'}`,
+        `Primary Researchers/Citation: ${theoryData.primary_researchers || lookupCoreTheory.primaryResearchers || lookupTheoryConnection.citation || 'Not provided'}`,
+        `Age Language Guidelines: ${ageData.language_guidelines || lookupContext?.ageBand?.languageGuidelines || 'Not provided'}`,
+        `Age Developmental Stage: ${ageData.developmental_stage || lookupContext?.ageBand?.developmentalStage || 'Not provided'}`,
+        `Theory Connection Brain Town Application: ${lookupTheoryConnection.brainTownApplication || 'Not provided'}`,
+        lookupSecondaryTheories.length > 0
+          ? `Secondary Theory Descriptions: ${lookupSecondaryTheories.map((t: any) => `${t?.name || 'Unknown'}${t?.description ? ` — ${t.description}` : ''}`).join(' | ')}`
+          : 'Secondary Theory Descriptions: Not provided',
+        `Neuroscience concept detail: ${neuroscienceConcept || lookupContext?.neuroscienceConcept || 'Not provided'}`,
+        diagnosisPathways?.length ? `Diagnosis pathways selected: ${diagnosisPathways.join(', ')}` : 'Diagnosis pathways selected: None',
+        `NDIS context: ${ndisDomain || (lookupNdisDomains.length > 0 ? lookupNdisDomains.map((d: any) => d.name).join(', ') : 'Not provided')}`,
+        `DSS SEDI context: ${dssSedi || (lookupSediCategories.length > 0 ? lookupSediCategories.map((s: any) => `${s.code}: ${s.name}`).join(', ') : 'Not provided')}`,
+      ];
       
       // Build the enhanced content brief
       contentBrief = buildEnhancedContentBrief({
@@ -6305,8 +6378,9 @@ serve(async (req) => {
         additionalContext: [
           superSkillBrief ? `Super Skill Focus: ${superSkillBrief}` : "",
           subSkillBrief ? `Sub Skill Focus: ${subSkillBrief}` : "",
+          referenceContextLines.join("\n"),
           additionalContext || ""
-        ].filter(Boolean).join("\n"),
+        ].filter(Boolean).join("\n\n"),
         secondaryTheories,
         neuroscienceConcept,
         diagnosisPathways,
@@ -6324,6 +6398,11 @@ serve(async (req) => {
         subSkillName,
         subSkillDescription,
       });
+      
+      // Append audit rules to content brief if loaded
+      if (auditRulesPrompt) {
+        contentBrief += auditRulesPrompt;
+      }
       
       console.log("[AI] Using enhanced psychology-based content brief");
       
