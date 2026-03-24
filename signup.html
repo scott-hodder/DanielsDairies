@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Daniel's Diaries</title>
+    <meta name="description" content="Create your Daniel's Diaries account and start your child's emotional growth journey today.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/styles/signup.css">
+</head>
+<body>
+    <div class="signup-page">
+        <div class="signup-container">
+
+            <!-- ── Left Sidebar ── -->
+            <div class="signup-sidebar">
+                <div class="sidebar-top">
+                    <a href="/home.html" class="sidebar-logo">
+                        <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries">
+                        <span>Daniel's Diaries</span>
+                    </a>
+
+                    <h1 class="sidebar-title">Start your child's emotional growth journey</h1>
+                    <p class="sidebar-description">
+                        Join families across Australia building emotionally resilient children through expert-designed, interactive workbooks.
+                    </p>
+
+                    <ul class="sidebar-features">
+                        <li>
+                            <span class="sidebar-feature-icon">&#128218;</span>
+                            Interactive, expert-designed workbooks
+                        </li>
+                        <li>
+                            <span class="sidebar-feature-icon">&#128200;</span>
+                            Track your child's emotional growth
+                        </li>
+                        <li>
+                            <span class="sidebar-feature-icon">&#11088;</span>
+                            Fun rewards and gamification
+                        </li>
+                        <li>
+                            <span class="sidebar-feature-icon">&#128272;</span>
+                            Safe, private, and ad-free
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-bottom">
+                    <img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel giving thumbs up" class="sidebar-character">
+                    <p class="sidebar-login-note">
+                        Already have an account? <a href="/index.html" class="sidebar-login-link">Log in</a>
+                    </p>
+                </div>
+            </div>
+
+
+            <!-- ── Right Form Area ── -->
+            <div class="signup-form-area">
+                <a href="/home.html" class="signup-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                    Back to home
+                </a>
+
+                <!-- Step Indicator -->
+                <div class="step-indicator">
+                    <div class="step-dot active" data-step="1">1</div>
+                    <div class="step-line" data-line="1"></div>
+                    <div class="step-dot" data-step="2">2</div>
+                    <div class="step-line" data-line="2"></div>
+                    <div class="step-dot" data-step="3">3</div>
+                </div>
+
+                <!-- Alert Messages -->
+                <div class="alert alert-error" id="alertError"></div>
+                <div class="alert alert-success" id="alertSuccess"></div>
+
+
+                <!-- ── Step 1: Your Details ── -->
+                <div class="form-step active" id="step1">
+                    <div class="form-header">
+                        <h2>Create your account</h2>
+                        <p>Tell us a little about yourself to get started.</p>
+                    </div>
+
+                    <form id="step1Form" novalidate>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="firstName">First Name</label>
+                                <input type="text" id="firstName" class="form-input" placeholder="Your first name" required>
+                                <div class="form-error" id="firstNameError">Please enter your first name</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="lastName">Last Name</label>
+                                <input type="text" id="lastName" class="form-input" placeholder="Your last name" required>
+                                <div class="form-error" id="lastNameError">Please enter your last name</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="email">Email Address</label>
+                            <input type="email" id="email" class="form-input" placeholder="you@example.com" required>
+                            <div class="form-error" id="emailError">Please enter a valid email address</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="phone">Phone Number</label>
+                            <input type="tel" id="phone" class="form-input" placeholder="04XX XXX XXX">
+                            <div class="form-error" id="phoneError">Please enter a valid phone number</div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="password">Password</label>
+                                <input type="password" id="password" class="form-input" placeholder="Min. 6 characters" required>
+                                <div class="form-error" id="passwordError">Password must be at least 6 characters</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="confirmPassword">Confirm Password</label>
+                                <input type="password" id="confirmPassword" class="form-input" placeholder="Re-enter password" required>
+                                <div class="form-error" id="confirmPasswordError">Passwords do not match</div>
+                            </div>
+                        </div>
+
+                        <div class="form-buttons">
+                            <button type="submit" class="btn-next">
+                                <span id="step1BtnText">Continue</span>
+                            </button>
+                        </div>
+
+                        <p class="terms-text">
+                            By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+                        </p>
+                    </form>
+                </div>
+
+
+                <!-- ── Step 2: Choose Your Plan ── -->
+                <div class="form-step" id="step2">
+                    <div class="form-header">
+                        <h2>Choose your plan</h2>
+                        <p>Select the plan that best fits your family. You can change anytime.</p>
+                    </div>
+
+                    <form id="step2Form" novalidate>
+                        <div class="plan-cards">
+                            <label class="plan-card" data-plan="starter">
+                                <input type="radio" name="plan" value="starter">
+                                <div class="plan-card-name">Starter</div>
+                                <div class="plan-card-price">$9<span>/mo</span></div>
+                                <div class="plan-card-detail">1 child, 2 modules/month</div>
+                            </label>
+
+                            <label class="plan-card" data-plan="family">
+                                <input type="radio" name="plan" value="family" checked>
+                                <div class="plan-card-popular">Most Popular</div>
+                                <div class="plan-card-name">Family</div>
+                                <div class="plan-card-price">$19<span>/mo</span></div>
+                                <div class="plan-card-detail">3 children, 5 modules/month</div>
+                            </label>
+
+                            <label class="plan-card" data-plan="school">
+                                <input type="radio" name="plan" value="school">
+                                <div class="plan-card-name">School</div>
+                                <div class="plan-card-price">$49<span>/mo</span></div>
+                                <div class="plan-card-detail">Unlimited children & modules</div>
+                            </label>
+                        </div>
+
+                        <div class="form-buttons">
+                            <button type="button" class="btn-back" id="backToStep1">Back</button>
+                            <button type="submit" class="btn-next">
+                                <span id="step2BtnText">Continue</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+
+                <!-- ── Step 3: Review & Pay ── -->
+                <div class="form-step" id="step3">
+                    <div class="form-header">
+                        <h2>Review & subscribe</h2>
+                        <p>Double-check your details, then we'll set up your payment.</p>
+                    </div>
+
+                    <div class="review-summary">
+                        <div class="review-row">
+                            <span class="review-label">Name</span>
+                            <span class="review-value" id="reviewName">-</span>
+                        </div>
+                        <div class="review-row">
+                            <span class="review-label">Email</span>
+                            <span class="review-value" id="reviewEmail">-</span>
+                        </div>
+                        <div class="review-row">
+                            <span class="review-label">Phone</span>
+                            <span class="review-value" id="reviewPhone">-</span>
+                        </div>
+                        <div class="review-row">
+                            <span class="review-label">Plan</span>
+                            <span class="review-value" id="reviewPlan">-</span>
+                        </div>
+                        <div class="review-row review-total">
+                            <span class="review-label">Monthly Total</span>
+                            <span class="review-value" id="reviewTotal">-</span>
+                        </div>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="button" class="btn-back" id="backToStep2">Back</button>
+                        <button type="button" class="btn-submit" id="submitBtn">
+                            <span id="submitBtnText">Create Account & Pay</span>
+                            <span id="submitSpinner" class="spinner hidden"></span>
+                        </button>
+                    </div>
+
+                    <p class="terms-text">
+                        You'll be redirected to Stripe to securely complete payment. Cancel anytime from your profile.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/signup.js"></script>
+</body>
+</html>
