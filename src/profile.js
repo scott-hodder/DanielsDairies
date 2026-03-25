@@ -76,7 +76,7 @@ async function init() {
     // Check authentication
     const user = await getCurrentUser()
     if (!user) {
-      window.location.href = '/'
+      window.location.href = '/login.html'
       return
     }
 
@@ -123,7 +123,7 @@ async function loadData() {
       supabase.from('modules').select('*, super_skills(*)').eq('is_active', true).order('pathway_order', { ascending: true }),
       supabase.from('subscription_tiers').select('*').eq('is_active', true).order('created_at', { ascending: true }),
       supabase.from('parent_subscriptions').select('*, subscription_tiers(*)').eq('parent_id', userId).maybeSingle(),
-      supabase.from('v_parent_credit_summary').select('*').eq('parent_id', userId).order('period_end', { ascending: false }).limit(1).maybeSingle()
+      supabase.from('parent_profiles').select('credits').eq('user_id', userId).maybeSingle()
     ])
 
     // Children
@@ -158,11 +158,11 @@ async function loadData() {
       }
     }
 
-    // Credit summary
+    // Credit summary (from parent_profiles.credits column)
     if (creditResult.status === 'fulfilled' && !creditResult.value.error && creditResult.value.data) {
-      window.currentCreditSummary = creditResult.value.data
+      window.currentCreditSummary = { credits_available: creditResult.value.data.credits ?? 0 }
     } else {
-      window.currentCreditSummary = { credits_granted: 0, credits_used: 0, credits_available: 0 }
+      window.currentCreditSummary = { credits_available: 0 }
     }
 
   } catch (error) {
@@ -484,7 +484,7 @@ function setupNavigation() {
     try {
       localStorage.removeItem('selectedChildId')
       await signOut()
-      window.location.href = '/'
+      window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
       alert('Failed to logout. Please try again.')

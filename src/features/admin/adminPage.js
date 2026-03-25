@@ -95,7 +95,7 @@ export async function checkAdminAccess() {
 
     if (!user) {
         console.error('[Admin] No user logged in');
-        window.location.href = '/index.html';
+        window.location.href = '/login.html';
         return false;
     }
 
@@ -266,6 +266,9 @@ window.switchTab = function(evt, tabName) {
     } else if (tabName === 'billing') {
         document.getElementById('billingTab').classList.add('active');
         if (typeof window._adminLoadBillingSettings === 'function') window._adminLoadBillingSettings();
+    } else if (tabName === 'users') {
+        document.getElementById('usersTab').classList.add('active');
+        if (typeof window._adminLoadUsersData === 'function') window._adminLoadUsersData();
     }
 };
 
@@ -280,6 +283,7 @@ import './adminParentToolkit.js';
 import './adminReferenceData.js';
 import './adminGeneralSettings.js';
 import './adminBilling.js';
+import './adminUsers.js';
 
 // ================================================================================
 // INITIALIZE

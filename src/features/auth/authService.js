@@ -58,7 +58,7 @@ export async function signUp(email, password, metadata = {}) {
 // Trigger password reset email
 export async function resetPassword(email) {
   const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/index.html`
+    redirectTo: `${window.location.origin}/login.html`
   })
 
   if (error) {

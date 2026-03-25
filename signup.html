@@ -25,7 +25,7 @@
             <!-- ── Left Sidebar ── -->
             <div class="signup-sidebar">
                 <div class="sidebar-top">
-                    <a href="/home.html" class="sidebar-logo">
+                    <a href="/" class="sidebar-logo">
                         <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries">
                         <span>Daniel's Diaries</span>
                     </a>
@@ -58,7 +58,7 @@
                 <div class="sidebar-bottom">
                     <img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel giving thumbs up" class="sidebar-character">
                     <p class="sidebar-login-note">
-                        Already have an account? <a href="/index.html" class="sidebar-login-link">Log in</a>
+                        Already have an account? <a href="/login.html" class="sidebar-login-link">Log in</a>
                     </p>
                 </div>
             </div>
@@ -66,7 +66,7 @@
 
             <!-- ── Right Form Area ── -->
             <div class="signup-form-area">
-                <a href="/home.html" class="signup-back">
+                <a href="/" class="signup-back">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                     Back to home
                 </a>
@@ -152,28 +152,9 @@
                     </div>
 
                     <form id="step2Form" novalidate>
-                        <div class="plan-cards">
-                            <label class="plan-card" data-plan="starter">
-                                <input type="radio" name="plan" value="starter">
-                                <div class="plan-card-name">Starter</div>
-                                <div class="plan-card-price">$9<span>/mo</span></div>
-                                <div class="plan-card-detail">1 child, 2 modules/month</div>
-                            </label>
-
-                            <label class="plan-card" data-plan="family">
-                                <input type="radio" name="plan" value="family" checked>
-                                <div class="plan-card-popular">Most Popular</div>
-                                <div class="plan-card-name">Family</div>
-                                <div class="plan-card-price">$19<span>/mo</span></div>
-                                <div class="plan-card-detail">3 children, 5 modules/month</div>
-                            </label>
-
-                            <label class="plan-card" data-plan="school">
-                                <input type="radio" name="plan" value="school">
-                                <div class="plan-card-name">School</div>
-                                <div class="plan-card-price">$49<span>/mo</span></div>
-                                <div class="plan-card-detail">Unlimited children & modules</div>
-                            </label>
+                        <!-- Dynamically loaded from subscription_tiers table -->
+                        <div class="plan-cards" id="planCardsContainer">
+                            <div class="plan-cards-loading">Loading plans...</div>
                         </div>
 
                         <div class="form-buttons">

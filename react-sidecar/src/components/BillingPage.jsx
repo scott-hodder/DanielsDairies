@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import AppHeader from './AppHeader'
 import { getCurrentUser } from '../lib/auth'
 import {
-  getCreditLedger,
-  getCreditSummary,
   getParentSubscription,
   getSubscriptionTiers,
-  upsertParentSubscription
+  upsertParentSubscription,
+  getParentCredits
 } from '../lib/data'
 
 function getCurrentPeriodWindow() {
@@ -25,7 +24,6 @@ export default function BillingPage() {
   const [tiers, setTiers] = useState([])
   const [subscription, setSubscription] = useState(null)
   const [creditSummary, setCreditSummary] = useState(null)
-  const [ledgerRows, setLedgerRows] = useState([])
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -52,11 +50,10 @@ export default function BillingPage() {
           return
         }
 
-        const [tiersData, subscriptionData, summaryData, ledgerData] = await Promise.all([
+        const [tiersData, subscriptionData, parentCredits] = await Promise.all([
           getSubscriptionTiers(),
           getParentSubscription(currentUser.id),
-          getCreditSummary(currentUser.id, period.periodStart, period.periodEnd),
-          getCreditLedger(currentUser.id, period.periodStart, period.periodEnd)
+          getParentCredits(currentUser.id)
         ])
 
         if (!mounted) return
@@ -64,8 +61,7 @@ export default function BillingPage() {
         setUser(currentUser)
         setTiers(tiersData)
         setSubscription(subscriptionData)
-        setCreditSummary(summaryData)
-        setLedgerRows(ledgerData)
+        setCreditSummary({ credits_available: parentCredits ?? 0 })
 
         if (subscriptionData) {
           setFormState({
@@ -110,7 +106,7 @@ export default function BillingPage() {
       })
 
       setSubscription(saved)
-      setSuccess('Subscription test profile saved. You can now add credits manually in Supabase ledger table.')
+      setSuccess('Subscription test profile saved.')
     } catch (saveError) {
       setError(saveError.message || 'Failed to save subscription profile')
     } finally {
@@ -125,8 +121,8 @@ export default function BillingPage() {
         <section className="panel hero-panel">
           <h2>Billing & Subscription Lab (No Stripe)</h2>
           <p>
-            This environment is configured for manual testing. Choose your tier/profile below, then add credits directly in
-            <code> subscription_credit_ledger </code> in Supabase for the current period.
+            This environment is configured for manual testing. Choose your tier/profile below. Credits are stored directly on
+            <code> parent_profiles.credits </code> and <code> children.credits </code>.
           </p>
         </section>
 
@@ -155,14 +151,6 @@ export default function BillingPage() {
             <p className="muted">Loading credit summary...</p>
           ) : (
             <div className="stats-row">
-              <div className="stat-box">
-                <span className="stat-label">Credits granted</span>
-                <strong>{creditSummary.credits_granted}</strong>
-              </div>
-              <div className="stat-box">
-                <span className="stat-label">Credits used</span>
-                <strong>{creditSummary.credits_used}</strong>
-              </div>
               <div className="stat-box">
                 <span className="stat-label">Credits available</span>
                 <strong>{creditSummary.credits_available}</strong>

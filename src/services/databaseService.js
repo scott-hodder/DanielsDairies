@@ -191,27 +191,79 @@ export async function getChild(childId) {
   return data
 }
 
+// Resolve a child's date of birth to an age band for multi-age variant selection
+export function resolveAgeBand(dateOfBirth) {
+  const dob = new Date(dateOfBirth)
+  const now = new Date()
+  let age = now.getFullYear() - dob.getFullYear()
+  const monthDiff = now.getMonth() - dob.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+    age--
+  }
+  if (age <= 8) return '6-8'
+  if (age <= 11) return '9-11'
+  if (age <= 14) return '12-14'
+  return '15-18'
+}
+
+// Find the nearest available age band when the exact one isn't available
+export function findNearestAgeBand(targetBand, availableBands) {
+  if (!availableBands || availableBands.length === 0) return null
+  if (availableBands.includes(targetBand)) return targetBand
+
+  const bandOrder = ['6-8', '9-11', '12-14', '15-18']
+  const targetIdx = bandOrder.indexOf(targetBand)
+  if (targetIdx === -1) return availableBands[0]
+
+  let bestBand = null
+  let bestDist = Infinity
+  for (const band of availableBands) {
+    const idx = bandOrder.indexOf(band)
+    if (idx === -1) continue
+    const dist = Math.abs(idx - targetIdx)
+    if (dist < bestDist) {
+      bestDist = dist
+      bestBand = band
+    }
+  }
+  return bestBand
+}
+
 // Create a new child
 export async function createChild(parentUserId, name, dateOfBirth, avatar = null) {
+  // Fetch parent's credits so the child inherits them
+  let parentCredits = 0
+  try {
+    const { data: profile } = await getSupabaseClient()
+      .from('parent_profiles')
+      .select('credits')
+      .eq('id', parentUserId)
+      .maybeSingle()
+    if (profile?.credits != null) parentCredits = profile.credits
+  } catch (err) {
+    console.error('Could not fetch parent credits for child inheritance:', err)
+  }
+
   const { data, error } = await getSupabaseClient()
     .from('children')
     .insert([
-      { 
-        parent_user_id: parentUserId, 
-        name, 
+      {
+        parent_user_id: parentUserId,
+        name,
         date_of_birth: dateOfBirth,
         stars: 0,
         password: null,
-        avatar: avatar
+        avatar: avatar,
+        credits: parentCredits
       }
     ])
     .select()
     .single()
-  
+
   if (error) {
     throw error
   }
-  
+
   invalidateCacheByPrefix(`children:${parentUserId}`)
   return data
 }
@@ -466,6 +518,87 @@ export async function getCreditSummary(parentUserId, periodStart, periodEnd) {
     credits_used: 0,
     credits_available: 0
   }
+}
+
+// Get credit balance for a specific child (reads from children.credits column)
+export async function getChildCredits(childId) {
+  const { data, error } = await getSupabaseClient()
+    .from('children')
+    .select('credits')
+    .eq('id', childId)
+    .single()
+
+  if (error) throw error
+  return data?.credits ?? 0
+}
+
+// Spend 1 credit from a child's balance
+export async function spendChildCredit(childId) {
+  // First check current balance
+  const credits = await getChildCredits(childId)
+  if (credits < 1) {
+    throw new Error('Not enough credits available')
+  }
+
+  const { data, error } = await getSupabaseClient()
+    .from('children')
+    .update({ credits: credits - 1 })
+    .eq('id', childId)
+    .select('credits')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Get credit balance for a parent (reads from parent_profiles.credits column)
+export async function getParentCredits(parentUserId) {
+  const { data, error } = await getSupabaseClient()
+    .from('parent_profiles')
+    .select('credits')
+    .eq('user_id', parentUserId)
+    .single()
+
+  if (error) throw error
+  return data?.credits ?? 0
+}
+
+// Grant credits to a parent and all their children
+export async function grantCreditsToFamily(parentUserId, amount) {
+  const supabase = getSupabaseClient()
+
+  // Update parent credits
+  const { data: parent, error: parentError } = await supabase
+    .from('parent_profiles')
+    .select('credits')
+    .eq('user_id', parentUserId)
+    .single()
+
+  if (parentError) throw parentError
+
+  await supabase
+    .from('parent_profiles')
+    .update({ credits: (parent?.credits ?? 0) + amount })
+    .eq('user_id', parentUserId)
+
+  // Update all children's credits
+  const { data: children, error: childError } = await supabase
+    .from('children')
+    .select('id, credits')
+    .eq('parent_user_id', parentUserId)
+
+  if (childError) throw childError
+
+  if (children && children.length > 0) {
+    for (const child of children) {
+      await supabase
+        .from('children')
+        .update({ credits: (child.credits ?? 0) + amount })
+        .eq('id', child.id)
+    }
+  }
+
+  invalidateCacheByPrefix(`children:${parentUserId}`)
 }
 
 export async function getCreditLedger(parentUserId, periodStart, periodEnd) {

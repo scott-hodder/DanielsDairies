@@ -60,6 +60,15 @@ import {
   getAgeSpecificFormatting,
   safeJsonParse,
   callClaude,
+  type AgeBand,
+  type AgeRangeData,
+  type VariantGenerationResult,
+  type MultiAgeGenerationResult,
+  ALL_AGE_BANDS,
+  NARRATIVE_RULES,
+  SIGNATURE_RITUALS,
+  resetTokenUsage,
+  getTokenUsage,
 } from "./generators-core.ts";
 import { buildSystemPrompt as buildLayeredSystemPrompt, validatePromptTemplate } from "./prompt-builder.ts";
 
@@ -4292,6 +4301,719 @@ function resolveSystemPrompt(customTemplate?: string | null, contentBrief?: stri
     includeSafetyLayer: true,
   });
 }
+// ================================================================================
+// MULTI-AGE VARIANT GENERATION
+// ================================================================================
+
+/**
+ * Injects age-band-specific context into a base (age-neutral) content brief.
+ * The base brief is generated once from the admin's input without age specifics.
+ * This function appends the age-specific language guidelines, style guide, etc.
+ *
+ * @param baseContentBrief - Content brief with age sections stripped or generic
+ * @param ageBand - The specific age band for this variant (e.g. "6-8")
+ * @param ageData - Full age_ranges row from the database for this band
+ * @returns Content brief with age-specific context appended
+ */
+function buildVariantContentBrief(
+  baseContentBrief: string,
+  ageBand: AgeBand,
+  ageData: AgeRangeData
+): string {
+  // Replace or inject age-specific sections into the base brief
+  let brief = baseContentBrief;
+
+  // Replace existing Target Age line if present
+  brief = brief.replace(
+    /^Target Age:.*$/m,
+    `Target Age: ${ageBand} (${ageData.display_name || `Ages ${ageBand}`})`
+  );
+
+  // Replace existing age range MUST BE line
+  brief = brief.replace(
+    /^- The target age range MUST be exactly ".*?" — do NOT change this\.$/m,
+    `- The target age range MUST be exactly "${ageBand}" — do NOT change this.`
+  );
+
+  // Replace LANGUAGE GUIDELINES section
+  const langGuidelinesRegex = /=== LANGUAGE GUIDELINES ===\n[\s\S]*?(?=\n===)/;
+  const newLangSection = `=== LANGUAGE GUIDELINES ===\n${ageData.language_guidelines || 'Age-appropriate language for ' + ageBand}\n`;
+  if (langGuidelinesRegex.test(brief)) {
+    brief = brief.replace(langGuidelinesRegex, newLangSection);
+  } else {
+    brief += `\n\n${newLangSection}`;
+  }
+
+  // Append variant-specific narrative rules
+  brief += `\n\n=== VARIANT-SPECIFIC NARRATIVE RULES (NON-NEGOTIABLE) ===
+Age Band: ${ageBand}
+1. Open with a recognisable micro-moment (daily conflict within first minute).
+2. Show adult trying, failing, then repairing.
+3. End with repair + exactly one small skill achievable tonight.
+4. Name emotion with body cues + why it makes sense.
+5. Reuse signature rituals: Road Builder, Traffic Light Check-In, Town Map.
+6. Keep child explicitly framed as Brain Town planner (autonomy).
+7. Include one short quotable line.
+
+IMPORTANT: Content for age band ${ageBand} must be DISTINCTLY different from other age bands.
+Use age-appropriate vocabulary, sentence length, and complexity as specified in the language guidelines.
+Do NOT produce generic content that could work for any age — lean into the specific developmental stage.
+`;
+
+  return brief;
+}
+
+/**
+ * Strips age-specific sections from a content brief to create a base/neutral version.
+ * This base brief is used to generate the shared core, then age-specific context
+ * is injected per variant.
+ */
+function stripAgeFromBrief(contentBrief: string): string {
+  let brief = contentBrief;
+  // Neutralise the target age line so it can be replaced per variant
+  brief = brief.replace(
+    /^Target Age:.*$/m,
+    'Target Age: [VARIANT_AGE_BAND]'
+  );
+  brief = brief.replace(
+    /^- The target age range MUST be exactly ".*?" — do NOT change this\.$/m,
+    '- The target age range will be set per variant.'
+  );
+  return brief;
+}
+
+/**
+ * Validate that a generated variant obeys narrative rules and has required fields.
+ * Returns an object with valid flag and list of violations.
+ */
+function validateVariant(
+  ageBand: AgeBand,
+  content: GeneratedContent,
+  ageData: AgeRangeData
+): { valid: boolean; violations: string[] } {
+  const violations: string[] = [];
+
+  // Check metadata exists
+  if (!content.metadata) {
+    violations.push(`[${ageBand}] Missing metadata`);
+  }
+
+  // Check welcome exists
+  if (!content.welcome?.heading || !content.welcome?.paragraphs?.length) {
+    violations.push(`[${ageBand}] Missing or empty welcome page`);
+  }
+
+  // Check chapters exist
+  if (!content.chapters || content.chapters.length < 2) {
+    violations.push(`[${ageBand}] Fewer than 2 chapter dividers`);
+  }
+
+  // Check lessons exist
+  if ((!content.lessons || content.lessons.length === 0) &&
+      (!content.interactiveLessons || content.interactiveLessons.length === 0)) {
+    violations.push(`[${ageBand}] No lessons or interactive lessons generated`);
+  }
+
+  // Check summary and completion
+  if (!content.summary?.heading) {
+    violations.push(`[${ageBand}] Missing summary page`);
+  }
+  if (!content.completion?.heading) {
+    violations.push(`[${ageBand}] Missing completion page`);
+  }
+
+  return {
+    valid: violations.length === 0,
+    violations,
+  };
+}
+
+/**
+ * Calculate similarity between two variants' text content.
+ * Uses Jaccard similarity on combined lesson/welcome text.
+ * Returns value between 0 (completely different) and 1 (identical).
+ */
+function calculateVariantSimilarity(a: GeneratedContent, b: GeneratedContent): number {
+  function extractText(c: GeneratedContent): string {
+    const parts: string[] = [];
+    if (c.welcome?.paragraphs) parts.push(...c.welcome.paragraphs);
+    if (c.lessons) c.lessons.forEach(l => parts.push(l.heading, ...l.paragraphs));
+    if (c.interactiveLessons) c.interactiveLessons.forEach(l => parts.push(l.heading, l.introText, l.followUpText));
+    return parts.join(' ').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  const textA = extractText(a);
+  const textB = extractText(b);
+  const wordsA = new Set(textA.split(' ').filter(w => w.length > 2));
+  const wordsB = new Set(textB.split(' ').filter(w => w.length > 2));
+
+  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+
+  const intersection = new Set([...wordsA].filter(x => wordsB.has(x)));
+  const union = new Set([...wordsA, ...wordsB]);
+
+  return intersection.size / union.size;
+}
+
+/**
+ * Validate diversity across all generated variants.
+ * Warns if any two variants are too similar (>70% word overlap).
+ */
+function validateVariantDiversity(
+  variants: Map<AgeBand, GeneratedContent>
+): { valid: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+  const bands = Array.from(variants.keys());
+  const SIMILARITY_THRESHOLD = 0.70;
+
+  for (let i = 0; i < bands.length; i++) {
+    for (let j = i + 1; j < bands.length; j++) {
+      const sim = calculateVariantSimilarity(variants.get(bands[i])!, variants.get(bands[j])!);
+      if (sim >= SIMILARITY_THRESHOLD) {
+        warnings.push(
+          `Variants ${bands[i]} and ${bands[j]} are ${Math.round(sim * 100)}% similar — content may be too generic`
+        );
+        console.warn(`[MULTI-AGE] Near-duplicate: ${bands[i]} vs ${bands[j]} = ${Math.round(sim * 100)}%`);
+      }
+    }
+  }
+
+  return { valid: warnings.length === 0, warnings };
+}
+
+/**
+ * Generate content for a single age-band variant.
+ * Reuses the shared page structure and injects age-specific context into the brief.
+ *
+ * @param apiKey - Claude API key
+ * @param baseBrief - Age-neutral content brief (shared core context)
+ * @param ageBand - Target age band for this variant
+ * @param ageData - Database age_ranges row for this band
+ * @param pageStructure - Shared page structure (generated once)
+ * @param updateProgress - Progress callback
+ * @param seriesInfo - Series/character info
+ * @param systemPromptTemplate - Optional custom system prompt template
+ */
+async function generateVariantContent(
+  apiKey: string,
+  baseBrief: string,
+  ageBand: AgeBand,
+  ageData: AgeRangeData,
+  pageStructure: PageTemplate[],
+  updateProgress: (step: string, message: string) => Promise<void>,
+  seriesInfo?: SeriesInfo | null,
+  systemPromptTemplate?: string | null,
+): Promise<GeneratedContent> {
+  const startMs = Date.now();
+  console.log(`[MULTI-AGE] Starting variant generation for age band ${ageBand}`);
+
+  // Build age-specific content brief
+  const variantBrief = buildVariantContentBrief(baseBrief, ageBand, ageData);
+
+  await updateProgress('variant', `Generating content for ages ${ageBand}...`);
+
+  // Reuse the existing generateAllContent with the age-adapted brief
+  const content = await generateAllContent(
+    apiKey,
+    variantBrief,
+    pageStructure,
+    updateProgress,
+    seriesInfo,
+    systemPromptTemplate,
+  );
+
+  const durationMs = Date.now() - startMs;
+  console.log(`[MULTI-AGE] Variant ${ageBand} completed in ${(durationMs / 1000).toFixed(1)}s`);
+
+  return content;
+}
+
+/**
+ * Generate all four age-band variants with bounded concurrency.
+ * Generates variants in pairs (2 at a time) to balance speed vs. timeout risk.
+ * Validates each variant and re-generates failed ones (max 1 retry per variant).
+ *
+ * @param apiKey - Claude API key
+ * @param baseBrief - Age-neutral content brief
+ * @param ageBands - Age bands to generate (defaults to ALL_AGE_BANDS)
+ * @param ageBandData - Map of ageBand -> AgeRangeData from database
+ * @param pageStructure - Shared page structure
+ * @param updateProgress - Progress callback
+ * @param seriesInfo - Series/character info
+ * @param systemPromptTemplate - Optional custom system prompt
+ * @returns Map of ageBand -> GeneratedContent with validation results
+ */
+async function generateAllVariants(
+  apiKey: string,
+  baseBrief: string,
+  ageBands: AgeBand[],
+  ageBandData: Map<AgeBand, AgeRangeData>,
+  pageStructure: PageTemplate[],
+  updateProgress: (step: string, message: string) => Promise<void>,
+  seriesInfo?: SeriesInfo | null,
+  systemPromptTemplate?: string | null,
+): Promise<{
+  variants: Map<AgeBand, GeneratedContent>;
+  validationWarnings: string[];
+  regenerationCounts: Record<AgeBand, number>;
+}> {
+  const variants = new Map<AgeBand, GeneratedContent>();
+  const regenerationCounts: Record<string, number> = {};
+  const MAX_RETRIES = 1;
+
+  // Strip age from the base brief so each variant injects its own
+  const neutralBrief = stripAgeFromBrief(baseBrief);
+
+  // Generate in pairs of 2 for bounded concurrency
+  const pairs: AgeBand[][] = [];
+  for (let i = 0; i < ageBands.length; i += 2) {
+    pairs.push(ageBands.slice(i, i + 2));
+  }
+
+  const variantErrors: Record<string, string> = {};
+
+  for (const pair of pairs) {
+    await updateProgress('multi-age', `Generating variants for ages ${pair.join(' and ')}...`);
+
+    const results = await Promise.all(
+      pair.map(async (band) => {
+        const ageData = ageBandData.get(band);
+        if (!ageData) {
+          const msg = `No age_ranges data found for band ${band}`;
+          console.error(`[MULTI-AGE] ${msg}`);
+          variantErrors[band] = msg;
+          return { band, content: null };
+        }
+
+        try {
+          const content = await generateVariantContent(
+            apiKey, neutralBrief, band, ageData,
+            pageStructure, updateProgress, seriesInfo, systemPromptTemplate
+          );
+          return { band, content };
+        } catch (err: any) {
+          const msg = err?.message || String(err);
+          console.error(`[MULTI-AGE] Variant ${band} failed: ${msg}`);
+          variantErrors[band] = msg;
+          return { band, content: null };
+        }
+      })
+    );
+
+    for (const { band, content } of results) {
+      if (content) {
+        variants.set(band, content);
+        regenerationCounts[band] = 0;
+      }
+    }
+  }
+
+  // Validation pass: check each variant and retry failed ones
+  for (const band of ageBands) {
+    const content = variants.get(band);
+    if (!content) {
+      // Variant failed entirely — retry once
+      if ((regenerationCounts[band] ?? 0) < MAX_RETRIES) {
+        console.warn(`[MULTI-AGE] Retrying failed variant ${band}`);
+        regenerationCounts[band] = (regenerationCounts[band] ?? 0) + 1;
+        const ageData = ageBandData.get(band);
+        if (ageData) {
+          try {
+            const retryContent = await generateVariantContent(
+              apiKey, neutralBrief, band, ageData,
+              pageStructure, updateProgress, seriesInfo, systemPromptTemplate
+            );
+            variants.set(band, retryContent);
+          } catch (err) {
+            console.error(`[MULTI-AGE] Retry for ${band} also failed:`, err);
+          }
+        }
+      }
+      continue;
+    }
+
+    const ageData = ageBandData.get(band)!;
+    const validation = validateVariant(band, content, ageData);
+    if (!validation.valid) {
+      console.warn(`[MULTI-AGE] Variant ${band} validation failed:`, validation.violations);
+      if ((regenerationCounts[band] ?? 0) < MAX_RETRIES) {
+        regenerationCounts[band] = (regenerationCounts[band] ?? 0) + 1;
+        try {
+          const retryContent = await generateVariantContent(
+            apiKey, neutralBrief, band, ageData,
+            pageStructure, updateProgress, seriesInfo, systemPromptTemplate
+          );
+          variants.set(band, retryContent);
+        } catch (err) {
+          console.error(`[MULTI-AGE] Retry for ${band} also failed:`, err);
+        }
+      }
+    }
+  }
+
+  // Cross-variant diversity check
+  const diversityCheck = validateVariantDiversity(variants);
+
+  return {
+    variants,
+    validationWarnings: diversityCheck.warnings,
+    regenerationCounts: regenerationCounts as Record<AgeBand, number>,
+    variantErrors,
+  };
+}
+
+// ====================
+// OPTIMIZED MULTI-AGE: SHARED + PER-VARIANT SPLIT
+// ====================
+
+/**
+ * Generate content that is shared across all age variants:
+ * metadata, chapter dividers, grown-up notes.
+ * Called ONCE, then results are reused for every variant.
+ */
+async function generateSharedContent(
+  apiKey: string,
+  contentBrief: string,
+  pageStructure: PageTemplate[],
+  updateProgress: (step: string, message: string) => Promise<void>,
+  seriesInfo?: SeriesInfo | null,
+  systemPromptTemplate?: string | null,
+): Promise<{ metadata: any; chapters: any; grownUpNotes: any }> {
+  ACTIVE_SYSTEM_PROMPT = resolveSystemPrompt(systemPromptTemplate, contentBrief);
+
+  await updateProgress("metadata", "Creating shared module theme and character...");
+  const metadata = await generateMetadata(apiKey, contentBrief, seriesInfo);
+
+  await updateProgress("structure", "Planning shared chapter structure...");
+  const chapters = await generateChapterDividers(apiKey, metadata, contentBrief,
+    pageStructure.filter(p => p.type === "chapter-divider").length);
+
+  await updateProgress("grownup-notes", "Generating parent guidance notes...");
+  const grownUpNotes = await generateGrownUpNotes(apiKey, metadata, contentBrief, pageStructure);
+
+  return { metadata, chapters, grownUpNotes };
+}
+
+/**
+ * Generate per-variant content: welcome, lessons, activities, summary, completion.
+ * Receives shared metadata (with targetAge already overridden to the variant's age band)
+ * and the age-specific content brief.
+ */
+async function generatePerVariantContent(
+  apiKey: string,
+  contentBrief: string,
+  metadata: any,
+  pageStructure: PageTemplate[],
+  updateProgress: (step: string, message: string) => Promise<void>,
+  seriesInfo?: SeriesInfo | null,
+  systemPromptTemplate?: string | null,
+): Promise<any> {
+  ACTIVE_SYSTEM_PROMPT = resolveSystemPrompt(systemPromptTemplate, contentBrief);
+
+  const counts = {
+    chapters: pageStructure.filter(p => p.type === "chapter-divider").length,
+    lessons: pageStructure.filter(p => p.type === "lesson").length,
+    interactiveLessons: pageStructure.filter(p => p.type === "interactive-lesson").length,
+    checklists: pageStructure.filter(p => p.type === "checklist").length,
+    reflections: pageStructure.filter(p => p.type === "reflection").length,
+    quizzes: pageStructure.filter(p => p.type === "quiz").length,
+    drawings: pageStructure.filter(p => p.type === "drawing").length,
+    scenarios: pageStructure.filter(p => p.type === "scenario").length,
+    feelingThermometers: pageStructure.filter(p => p.type === "feeling-thermometer").length,
+    bodyMaps: pageStructure.filter(p => p.type === "body-map").length,
+    feelingSelectors: pageStructure.filter(p => p.type === "feeling-selector").length,
+    calmDenBuilders: pageStructure.filter(p => p.type === "calm-den-builder").length,
+    actionPlans: pageStructure.filter(p => p.type === "action-plan").length,
+    warningSigns: pageStructure.filter(p => p.type === "warning-signs").length,
+    matchingActivities: pageStructure.filter(p => p.type === "matching-activity").length,
+    fillInStories: pageStructure.filter(p => p.type === "fill-in-story").length,
+    copingCards: pageStructure.filter(p => p.type === "coping-cards").length,
+    gratitudeJars: pageStructure.filter(p => p.type === "gratitude-jar").length,
+    sortingActivities: pageStructure.filter(p => p.type === "sorting-activity").length,
+    thoughtBubbles: pageStructure.filter(p => p.type === "thought-bubbles").length,
+    emojiCheckIns: pageStructure.filter(p => p.type === "emoji-check-in").length,
+    wordScrambles: pageStructure.filter(p => p.type === "word-scramble").length,
+    agreeDisagrees: pageStructure.filter(p => p.type === "agree-disagree").length,
+    comicStrips: pageStructure.filter(p => p.type === "comic-strip").length,
+    affirmationBuilders: pageStructure.filter(p => p.type === "affirmation-builder").length,
+    weatherControllers: pageStructure.filter(p => p.type === "weather-controller").length,
+    powerUpCollectors: pageStructure.filter(p => p.type === "power-up-collector").length,
+    emotionMazes: pageStructure.filter(p => p.type === "emotion-maze").length,
+    strengthShields: pageStructure.filter(p => p.type === "strength-shield").length,
+    feelingVolcanoes: pageStructure.filter(p => p.type === "feeling-volcano").length,
+    spinTheWheels: pageStructure.filter(p => p.type === "spin-the-wheel").length,
+    stickerCollectors: pageStructure.filter(p => p.type === "sticker-collector").length,
+    mindfulAdventures: pageStructure.filter(p => p.type === "mindful-adventure").length,
+    emotionDetectives: pageStructure.filter(p => p.type === "emotion-detective").length,
+    balloonPops: pageStructure.filter(p => p.type === "balloon-pop").length,
+    treasureHunts: pageStructure.filter(p => p.type === "treasure-hunt").length,
+    monsterTamers: pageStructure.filter(p => p.type === "monster-tamer").length,
+    gardenGrowers: pageStructure.filter(p => p.type === "garden-grower").length,
+    superheroCreators: pageStructure.filter(p => p.type === "superhero-creator").length,
+    feelingsOrchestras: pageStructure.filter(p => p.type === "feelings-orchestra").length,
+    calmAquariums: pageStructure.filter(p => p.type === "calm-aquarium").length,
+    rocketLaunchers: pageStructure.filter(p => p.type === "rocket-launcher").length,
+    magicPotions: pageStructure.filter(p => p.type === "magic-potion").length,
+    feelingsBingos: pageStructure.filter(p => p.type === "feelings-bingo").length,
+  };
+
+  const ageBand = metadata.targetAge || 'unknown';
+
+  // Welcome
+  const welcome = await generateWelcome(apiKey, metadata, contentBrief, seriesInfo);
+
+  // Lessons + interactive lessons in parallel
+  await updateProgress("variant", `[${ageBand}] Generating lessons...`);
+  const [lessons, rawInteractiveLessons] = await Promise.all([
+    counts.lessons > 0 ? generateLessons(apiKey, metadata, contentBrief, counts.lessons, seriesInfo) : Promise.resolve([]),
+    counts.interactiveLessons > 0 ? generateInteractiveLessons(apiKey, metadata, contentBrief, counts.interactiveLessons, seriesInfo) : Promise.resolve([]),
+  ]);
+
+  // Dedup interactive lessons
+  let interactiveLessons = rawInteractiveLessons;
+  if (interactiveLessons.length > 1) {
+    const duplicates = findDuplicateInteractiveLessons(interactiveLessons);
+    if (duplicates.length > 0) {
+      const fixedLessons = [...interactiveLessons];
+      const regeneratedIndices = new Set<number>();
+      for (const dup of duplicates) {
+        const indexToFix = dup.index2;
+        if (!regeneratedIndices.has(indexToFix)) {
+          try {
+            const newLesson = await regenerateInteractiveLesson(apiKey, metadata, contentBrief, fixedLessons, indexToFix, seriesInfo);
+            fixedLessons[indexToFix] = newLesson;
+            regeneratedIndices.add(indexToFix);
+          } catch (_e) { /* keep original */ }
+        }
+      }
+      interactiveLessons = fixedLessons;
+    }
+  }
+
+  // All activity batches in parallel
+  await updateProgress("variant", `[${ageBand}] Generating activities...`);
+  const [
+    checklists, reflections, quizzes, drawings, scenarios, breathing,
+    feelingThermometers, bodyMaps, feelingSelectors, calmDenBuilders, actionPlans, warningSigns, matchingActivities,
+    fillInStories, copingCards, gratitudeJars, comicStrips, affirmationBuilders,
+    sortingActivities, thoughtBubbles, emojiCheckIns, wordScrambles, agreeDisagrees,
+    weatherControllers, powerUpCollectors, emotionMazes, strengthShields, feelingVolcanoes,
+    spinTheWheels, stickerCollectors, mindfulAdventures, emotionDetectives,
+    balloonPops, treasureHunts, monsterTamers, gardenGrowers, superheroCreators,
+    feelingsOrchestras, calmAquariums, rocketLaunchers, magicPotions, feelingsBingos,
+  ] = await Promise.all([
+    counts.checklists > 0 ? generateChecklists(apiKey, metadata, contentBrief, counts.checklists) : Promise.resolve([]),
+    counts.reflections > 0 ? generateReflections(apiKey, metadata, contentBrief, counts.reflections) : Promise.resolve([]),
+    counts.quizzes > 0 ? generateQuizzes(apiKey, metadata, contentBrief, counts.quizzes) : Promise.resolve([]),
+    counts.drawings > 0 ? generateDrawings(apiKey, metadata, contentBrief, counts.drawings) : Promise.resolve([]),
+    counts.scenarios > 0 ? generateScenarios(apiKey, metadata, contentBrief, counts.scenarios) : Promise.resolve([]),
+    generateBreathing(apiKey, metadata, contentBrief),
+    counts.feelingThermometers > 0 ? generateFeelingThermometers(apiKey, metadata, contentBrief, counts.feelingThermometers) : Promise.resolve([]),
+    counts.bodyMaps > 0 ? generateBodyMaps(apiKey, metadata, contentBrief, counts.bodyMaps) : Promise.resolve([]),
+    counts.feelingSelectors > 0 ? generateFeelingSelectors(apiKey, metadata, contentBrief, counts.feelingSelectors) : Promise.resolve([]),
+    counts.calmDenBuilders > 0 ? generateCalmDenBuilders(apiKey, metadata, contentBrief, counts.calmDenBuilders) : Promise.resolve([]),
+    counts.actionPlans > 0 ? generateActionPlans(apiKey, metadata, contentBrief, counts.actionPlans) : Promise.resolve([]),
+    counts.warningSigns > 0 ? generateWarningSigns(apiKey, metadata, contentBrief, counts.warningSigns) : Promise.resolve([]),
+    counts.matchingActivities > 0 ? generateMatchingActivities(apiKey, metadata, contentBrief, counts.matchingActivities) : Promise.resolve([]),
+    counts.fillInStories > 0 ? generateFillInStories(apiKey, metadata, contentBrief, counts.fillInStories) : Promise.resolve([]),
+    counts.copingCards > 0 ? generateCopingCards(apiKey, metadata, contentBrief, counts.copingCards) : Promise.resolve([]),
+    counts.gratitudeJars > 0 ? generateGratitudeJars(apiKey, metadata, contentBrief, counts.gratitudeJars) : Promise.resolve([]),
+    counts.comicStrips > 0 ? generateComicStrips(apiKey, metadata, contentBrief, counts.comicStrips) : Promise.resolve([]),
+    counts.affirmationBuilders > 0 ? generateAffirmationBuilders(apiKey, metadata, contentBrief, counts.affirmationBuilders) : Promise.resolve([]),
+    counts.sortingActivities > 0 ? generateSortingActivities(apiKey, metadata, contentBrief, counts.sortingActivities) : Promise.resolve([]),
+    counts.thoughtBubbles > 0 ? generateThoughtBubbles(apiKey, metadata, contentBrief, counts.thoughtBubbles) : Promise.resolve([]),
+    counts.emojiCheckIns > 0 ? generateEmojiCheckIns(apiKey, metadata, contentBrief, counts.emojiCheckIns) : Promise.resolve([]),
+    counts.wordScrambles > 0 ? generateWordScrambles(apiKey, metadata, contentBrief, counts.wordScrambles) : Promise.resolve([]),
+    counts.agreeDisagrees > 0 ? generateAgreeDisagrees(apiKey, metadata, contentBrief, counts.agreeDisagrees) : Promise.resolve([]),
+    counts.weatherControllers > 0 ? generateWeatherControllers(apiKey, metadata, contentBrief, counts.weatherControllers) : Promise.resolve([]),
+    counts.powerUpCollectors > 0 ? generatePowerUpCollectors(apiKey, metadata, contentBrief, counts.powerUpCollectors) : Promise.resolve([]),
+    counts.emotionMazes > 0 ? generateEmotionMazes(apiKey, metadata, contentBrief, counts.emotionMazes) : Promise.resolve([]),
+    counts.strengthShields > 0 ? generateStrengthShields(apiKey, metadata, contentBrief, counts.strengthShields) : Promise.resolve([]),
+    counts.feelingVolcanoes > 0 ? generateFeelingVolcanoes(apiKey, metadata, contentBrief, counts.feelingVolcanoes) : Promise.resolve([]),
+    counts.spinTheWheels > 0 ? generateSpinTheWheels(apiKey, metadata, contentBrief, counts.spinTheWheels) : Promise.resolve([]),
+    counts.stickerCollectors > 0 ? generateStickerCollectors(apiKey, metadata, contentBrief, counts.stickerCollectors) : Promise.resolve([]),
+    counts.mindfulAdventures > 0 ? generateMindfulAdventures(apiKey, metadata, contentBrief, counts.mindfulAdventures) : Promise.resolve([]),
+    counts.emotionDetectives > 0 ? generateEmotionDetectives(apiKey, metadata, contentBrief, counts.emotionDetectives) : Promise.resolve([]),
+    counts.balloonPops > 0 ? generateBalloonPops(apiKey, metadata, contentBrief, counts.balloonPops) : Promise.resolve([]),
+    counts.treasureHunts > 0 ? generateTreasureHunts(apiKey, metadata, contentBrief, counts.treasureHunts) : Promise.resolve([]),
+    counts.monsterTamers > 0 ? generateMonsterTamers(apiKey, metadata, contentBrief, counts.monsterTamers) : Promise.resolve([]),
+    counts.gardenGrowers > 0 ? generateGardenGrowers(apiKey, metadata, contentBrief, counts.gardenGrowers) : Promise.resolve([]),
+    counts.superheroCreators > 0 ? generateSuperheroCreators(apiKey, metadata, contentBrief, counts.superheroCreators) : Promise.resolve([]),
+    counts.feelingsOrchestras > 0 ? generateFeelingsOrchestras(apiKey, metadata, contentBrief, counts.feelingsOrchestras) : Promise.resolve([]),
+    counts.calmAquariums > 0 ? generateCalmAquariums(apiKey, metadata, contentBrief, counts.calmAquariums) : Promise.resolve([]),
+    counts.rocketLaunchers > 0 ? generateRocketLaunchers(apiKey, metadata, contentBrief, counts.rocketLaunchers) : Promise.resolve([]),
+    counts.magicPotions > 0 ? generateMagicPotions(apiKey, metadata, contentBrief, counts.magicPotions) : Promise.resolve([]),
+    counts.feelingsBingos > 0 ? generateFeelingsBingos(apiKey, metadata, contentBrief, counts.feelingsBingos) : Promise.resolve([]),
+  ]);
+
+  // Summary + completion
+  await updateProgress("variant", `[${ageBand}] Wrapping up...`);
+  const [summary, completion] = await Promise.all([
+    generateSummary(apiKey, metadata, contentBrief),
+    generateCompletion(apiKey, metadata),
+  ]);
+
+  return {
+    welcome, lessons, interactiveLessons,
+    checklists, reflections, quizzes, drawings, breathing, scenarios,
+    feelingThermometers, bodyMaps, feelingSelectors, calmDenBuilders, actionPlans, warningSigns, matchingActivities,
+    fillInStories, copingCards, gratitudeJars, sortingActivities, thoughtBubbles, emojiCheckIns, wordScrambles, agreeDisagrees,
+    comicStrips, affirmationBuilders,
+    weatherControllers, powerUpCollectors, emotionMazes, strengthShields, feelingVolcanoes,
+    spinTheWheels, stickerCollectors, mindfulAdventures, emotionDetectives,
+    balloonPops, treasureHunts, monsterTamers, gardenGrowers, superheroCreators,
+    feelingsOrchestras, calmAquariums, rocketLaunchers, magicPotions, feelingsBingos,
+    summary, completion,
+  };
+}
+
+/**
+ * Merge shared content + per-variant content into a complete GeneratedContent object.
+ * The result has the same shape as generateAllContent's output, so renderHtml works unchanged.
+ */
+function mergeSharedAndVariantContent(
+  shared: { metadata: any; chapters: any; grownUpNotes: any },
+  perVariant: any,
+  ageBand: string,
+): any {
+  const metadata = { ...shared.metadata, targetAge: ageBand };
+  const merged = {
+    metadata,
+    chapters: shared.chapters,
+    grownUpNotes: shared.grownUpNotes,
+    ...perVariant,
+  };
+  return dehyphenateObject(merged);
+}
+
+/**
+ * Optimized multi-age variant generation.
+ * Phase 1: Generate shared content once (metadata, chapters, grown-up notes).
+ * Phase 2: Generate per-variant content for all bands in parallel.
+ * Phase 3: Generate module summary once using any variant's content.
+ */
+async function generateAllVariantsOptimized(
+  apiKey: string,
+  baseBrief: string,
+  ageBands: AgeBand[],
+  ageBandData: Map<AgeBand, AgeRangeData>,
+  pageStructure: PageTemplate[],
+  updateProgress: (step: string, message: string) => Promise<void>,
+  seriesInfo?: SeriesInfo | null,
+  systemPromptTemplate?: string | null,
+): Promise<{
+  variants: Map<AgeBand, GeneratedContent>;
+  validationWarnings: string[];
+  regenerationCounts: Record<AgeBand, number>;
+  variantErrors: Record<string, string>;
+}> {
+  const variantErrors: Record<string, string> = {};
+  const regenerationCounts: Record<string, number> = {};
+
+  // Phase 1: Generate shared content once with age-neutral brief
+  const neutralBrief = stripAgeFromBrief(baseBrief);
+  await updateProgress('multi-age', 'Generating shared content (metadata, chapters, notes)...');
+  const shared = await generateSharedContent(
+    apiKey, neutralBrief, pageStructure, updateProgress, seriesInfo, systemPromptTemplate
+  );
+  console.log(`[MULTI-AGE] Shared content generated (metadata, chapters, grown-up notes)`);
+
+  // Phase 2: Generate all variants in parallel (full concurrency)
+  await updateProgress('multi-age', `Generating ${ageBands.length} age variants in parallel...`);
+  const results = await Promise.all(
+    ageBands.map(async (band) => {
+      const ageData = ageBandData.get(band);
+      if (!ageData) {
+        const msg = `No age_ranges data found for band ${band}`;
+        console.error(`[MULTI-AGE] ${msg}`);
+        variantErrors[band] = msg;
+        return { band, content: null as any };
+      }
+
+      try {
+        const variantBrief = buildVariantContentBrief(neutralBrief, band, ageData);
+        const variantMetadata = { ...shared.metadata, targetAge: band };
+
+        const perVariant = await generatePerVariantContent(
+          apiKey, variantBrief, variantMetadata, pageStructure,
+          updateProgress, seriesInfo, systemPromptTemplate
+        );
+
+        const merged = mergeSharedAndVariantContent(shared, perVariant, band);
+        regenerationCounts[band] = 0;
+        return { band, content: merged };
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        console.error(`[MULTI-AGE] Variant ${band} failed: ${msg}`);
+        variantErrors[band] = msg;
+        return { band, content: null as any };
+      }
+    })
+  );
+
+  const variants = new Map<AgeBand, GeneratedContent>();
+  for (const { band, content } of results) {
+    if (content) variants.set(band, content);
+  }
+
+  // Retry failed variants (max 1 retry each)
+  for (const band of ageBands) {
+    if (variants.has(band)) continue;
+    const ageData = ageBandData.get(band);
+    if (!ageData) continue;
+    console.warn(`[MULTI-AGE] Retrying failed variant ${band}`);
+    regenerationCounts[band] = 1;
+    try {
+      const variantBrief = buildVariantContentBrief(neutralBrief, band, ageData);
+      const variantMetadata = { ...shared.metadata, targetAge: band };
+      const perVariant = await generatePerVariantContent(
+        apiKey, variantBrief, variantMetadata, pageStructure,
+        updateProgress, seriesInfo, systemPromptTemplate
+      );
+      variants.set(band, mergeSharedAndVariantContent(shared, perVariant, band));
+      delete variantErrors[band];
+    } catch (err: any) {
+      console.error(`[MULTI-AGE] Retry for ${band} also failed: ${err?.message}`);
+      variantErrors[band] = err?.message || String(err);
+    }
+  }
+
+  // Phase 3: Generate module summary once using the first successful variant
+  const firstVariant = variants.values().next().value;
+  if (firstVariant) {
+    await updateProgress('multi-age', 'Generating module summary...');
+    try {
+      const moduleSummary = await generateModuleSummary(apiKey, firstVariant.metadata, neutralBrief, firstVariant);
+      // Attach to all variants
+      for (const [band, content] of variants) {
+        (content as any).moduleSummary = moduleSummary;
+      }
+    } catch (e) {
+      console.warn('[MULTI-AGE] Module summary generation failed:', e);
+    }
+  }
+
+  // Validation pass
+  for (const band of ageBands) {
+    const content = variants.get(band);
+    if (!content) continue;
+    const ageData = ageBandData.get(band)!;
+    const validation = validateVariant(band, content, ageData);
+    if (!validation.valid) {
+      console.warn(`[MULTI-AGE] Variant ${band} validation issues:`, validation.violations);
+    }
+  }
+
+  const diversityCheck = validateVariantDiversity(variants);
+
+  return {
+    variants,
+    validationWarnings: diversityCheck.warnings,
+    regenerationCounts: regenerationCounts as Record<AgeBand, number>,
+    variantErrors,
+  };
+}
+
 // ====================
 // EXPORTS
 // ====================
@@ -4301,4 +5023,16 @@ export {
   resolveSystemPrompt,
   extractAgeRange,
   generateAllContent,
+  // Multi-age variant exports
+  buildVariantContentBrief,
+  stripAgeFromBrief,
+  validateVariant,
+  validateVariantDiversity,
+  generateVariantContent,
+  generateAllVariants,
+  // Optimized multi-age exports
+  generateSharedContent,
+  generatePerVariantContent,
+  mergeSharedAndVariantContent,
+  generateAllVariantsOptimized,
 };

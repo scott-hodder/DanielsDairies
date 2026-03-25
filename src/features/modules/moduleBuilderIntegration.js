@@ -16,6 +16,7 @@ let moduleBuilderState = {
         superSkillId: '',
         subSkillId: '',
         ageRangeId: '',
+        multiAge: true, // Default to multi-age variant mode for new modules
         stage: '',
         cycleWeek: null,
         activityType: '',
@@ -234,10 +235,7 @@ function validateCurrentStep() {
                 alert('Please select a sub-skill');
                 return false;
             }
-            if (!state.formData.ageRangeId) {
-                alert('Please select an age range');
-                return false;
-            }
+            // Age range no longer required — all modules are multi-age
             if (!state.formData.stage) {
                 alert('Please select a stage');
                 return false;
@@ -389,14 +387,11 @@ function renderStep1() {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div>
                     <label style="display: block; font-size: 13px; font-weight: 600; color: #405878; margin-bottom: 8px;">
-                        Age Range <span style="color: #ff5252;">*</span>
+                        Age Variants
                     </label>
-                    <select id="ageRange" style="width: 100%; padding: 10px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
-                        <option value="">Select...</option>
-                        ${state.ageRanges.map(ar => `
-                            <option value="${ar.id}" ${ar.id === state.formData.ageRangeId ? 'selected' : ''}>${ar.age_range} — ${ar.display_name}</option>
-                        `).join('')}
-                    </select>
+                    <div style="padding: 10px 12px; background: #EEF2FF; border: 1px solid #6366F1; border-radius: 6px; font-size: 13px; color: #405878;">
+                        Multi-age — generates 4 variants (6-8, 9-11, 12-14, 15-18)
+                    </div>
                 </div>
                 
                 <div>
@@ -462,10 +457,6 @@ function attachStep1Listeners() {
     
     document.getElementById('subSkill').addEventListener('change', (e) => {
         state.formData.subSkillId = e.target.value;
-    });
-    
-    document.getElementById('ageRange').addEventListener('change', (e) => {
-        state.formData.ageRangeId = e.target.value;
     });
     
     document.getElementById('stage').addEventListener('change', (e) => {
@@ -817,8 +808,8 @@ function renderStep5() {
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px;">
-                    <div style="font-weight: 600; color: #405878;">Age Range:</div>
-                    <div style="color: #6b7280;">${ageRange ? `${ageRange.age_range} — ${ageRange.display_name}` : 'N/A'}</div>
+                    <div style="font-weight: 600; color: #405878;">Age Variants:</div>
+                    <div style="color: #6b7280;">Multi-age (6-8, 9-11, 12-14, 15-18)</div>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px;">
@@ -899,8 +890,8 @@ async function saveModuleBlueprint() {
             module_title: state.formData.moduleTitle,
             super_skill_id: state.formData.superSkillId,
             sub_skill_id: state.formData.subSkillId,
-            age_range: state.ageRanges.find(ar => ar.id === state.formData.ageRangeId)?.age_range,
-            age_range_id: state.formData.ageRangeId,
+            age_range: null, // Multi-age modules don't have a single age_range
+            age_range_id: null,
             stage: state.formData.stage,
             level: state.formData.stage, // Legacy field
             cycle_week: state.formData.cycleWeek,

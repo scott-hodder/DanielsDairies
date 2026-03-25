@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix, getChildCredits, spendChildCredit } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -1313,7 +1313,7 @@ async function init() {
 
     if (!session) {
       clearTimeout(loadingTimeout)
-      window.location.href = '/'
+      window.location.href = '/login.html'
       return
     }
 
@@ -1337,7 +1337,7 @@ async function init() {
       getModules(),
       supabase
         .from('parent_modules')
-        .select('module_id, is_active, modules(id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, is_active, created_at)')
+        .select('module_id, is_active, modules(id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, is_active, created_at, is_multi_age)')
         .eq('parent_id', state.currentUser.id),
       getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
       getChildren(state.currentUser.id)
@@ -1408,13 +1408,13 @@ async function init() {
 
     // DEFERRED — load non-critical data in background (doesn't block UI)
     Promise.allSettled([
-      getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
+      state.selectedChild?.id ? getChildCredits(state.selectedChild.id) : Promise.resolve(0),
       supabase.from('category_colors').select('*'),
       isUserAdmin(state.currentUser.id),
       getParentSubscription(state.currentUser.id),
       getSubscriptionTiers()
     ]).then(([creditSummaryResult, categoryColorsResult, adminResult, subscriptionResult, tiersResult]) => {
-      currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
+      currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? { credits_available: creditSummaryResult.value } : { credits_available: 0 }
       currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
       subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
       updateCreditWalletBadge()
@@ -2110,9 +2110,10 @@ async function selectChild(child) {
   
   try {
     // CRITICAL PATH — only child modules and focus plan block the UI
-    const [childModulesResult, focusPlanResult] = await Promise.allSettled([
+    const [childModulesResult, focusPlanResult, childCreditsResult] = await Promise.allSettled([
       getChildModules(child.id),
-      checkFocusPlan(child.id)
+      checkFocusPlan(child.id),
+      getChildCredits(child.id)
     ])
 
     // Process child modules
@@ -2129,6 +2130,14 @@ async function selectChild(child) {
     } else {
       setCurrentFocusPlan(null)
     }
+
+    // Process child credits and update the badge
+    if (childCreditsResult.status === 'fulfilled') {
+      currentCreditSummary = { credits_available: childCreditsResult.value }
+    } else {
+      currentCreditSummary = { credits_available: 0 }
+    }
+    updateCreditWalletBadge()
 
     // Setup rewards event listeners for this child (non-blocking)
     setupRewardsEventListeners(child)
@@ -3715,7 +3724,8 @@ if (confirmPurchaseButton) {
       confirmPurchaseButton.disabled = true
       confirmPurchaseButton.textContent = 'Unlocking...'
 
-      await unlockModuleWithCredit(state.currentPurchaseModule.id, currentBillingPeriod.periodStart)
+      // Spend 1 credit from the child's balance
+      await spendChildCredit(state.selectedChild.id)
 
       if (state.selectedChild?.id) {
         const { error: childUnlockError } = await supabase
@@ -3754,11 +3764,7 @@ if (confirmPurchaseButton) {
 
       // Run all refresh queries in parallel — these are independent
       const [creditResult, legacyResult, unlocksResult] = await Promise.all([
-        getCreditSummary(
-          state.currentUser.id,
-          currentBillingPeriod.periodStart,
-          currentBillingPeriod.periodEnd
-        ),
+        getChildCredits(state.selectedChild.id),
         supabase
           .from('parent_modules')
           .select('module_id, is_active, modules(*)')
@@ -3770,7 +3776,7 @@ if (confirmPurchaseButton) {
         )
       ])
 
-      currentCreditSummary = creditResult
+      currentCreditSummary = { credits_available: creditResult }
       updateCreditWalletBadge()
 
       const mergedMap = new Map()
@@ -4214,7 +4220,7 @@ if (logoutButtonDesktop) {
     try {
       clearRememberedChildId()
       await signOut()
-      window.location.href = '/'
+      window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
       alert('Failed to logout. Please try again.')
@@ -4327,7 +4333,7 @@ if (logoutButton) {
     try {
       clearRememberedChildId()
       await signOut()
-      window.location.href = '/'
+      window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
       alert('Failed to logout. Please try again.')

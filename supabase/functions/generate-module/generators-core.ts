@@ -942,6 +942,111 @@ interface GeneratedContent {
   grownUpNotes?: Record<number, GrownUpNote>; // Object mapping page index to GrownUpNote
 }
 
+// ================================================================================
+// MULTI-AGE VARIANT TYPES
+// ================================================================================
+
+/**
+ * Canonical age bands for multi-age variant generation.
+ * Each module can have content tailored to these four bands.
+ */
+type AgeBand = '6-8' | '9-11' | '12-14' | '15-18';
+
+const ALL_AGE_BANDS: AgeBand[] = ['6-8', '9-11', '12-14', '15-18'];
+
+/**
+ * Non-negotiable narrative rules enforced on every variant.
+ * Used for validation after generation.
+ */
+const NARRATIVE_RULES = [
+  'Open with a recognizable micro-moment (daily conflict within first minute)',
+  'Show adult trying, failing, then repairing',
+  'End with repair + exactly one small skill achievable tonight',
+  'Name emotion with body cues + why it makes sense',
+  'Reuse signature rituals (Road Builder, Traffic Light Check-In, Town Map)',
+  'Keep child explicitly framed as Brain Town planner (autonomy)',
+  'Include one short quotable line',
+] as const;
+
+const SIGNATURE_RITUALS = ['Road Builder', 'Traffic Light Check-In', 'Town Map'] as const;
+
+/**
+ * Result from generating a single age-band variant
+ */
+interface VariantGenerationResult {
+  ageBand: AgeBand;
+  content: GeneratedContent;
+  html: string;
+  spec: any;
+  tokenUsage: number;
+  durationMs: number;
+}
+
+/**
+ * Result from a full multi-age generation run
+ */
+interface MultiAgeGenerationResult {
+  moduleCode: string;
+  pageStructure: PageTemplate[];
+  core: {
+    objective: string;
+    activityType: string;
+    mechanic: string;
+    rewardType: string;
+    narrativeRules: { rituals: string[] };
+  };
+  variants: Record<AgeBand, VariantGenerationResult>;
+  totalTokens: number;
+  totalDurationMs: number;
+}
+
+/**
+ * Resolve a child's date of birth to the appropriate age band.
+ * Falls back to nearest band if the child's age is outside the 6-18 range.
+ */
+function resolveAgeBand(dateOfBirth: string | Date): AgeBand {
+  const dob = typeof dateOfBirth === 'string' ? new Date(dateOfBirth) : dateOfBirth;
+  const age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  if (age <= 8) return '6-8';
+  if (age <= 11) return '9-11';
+  if (age <= 14) return '12-14';
+  return '15-18';
+}
+
+/**
+ * Find the nearest available age band if the exact one is missing.
+ * Used as a fallback when a variant hasn't been generated.
+ */
+function findNearestAgeBand(targetBand: AgeBand, availableBands: AgeBand[]): AgeBand | null {
+  if (availableBands.includes(targetBand)) return targetBand;
+  if (availableBands.length === 0) return null;
+
+  const bandMidpoints: Record<AgeBand, number> = { '6-8': 7, '9-11': 10, '12-14': 13, '15-18': 16.5 };
+  const targetMid = bandMidpoints[targetBand];
+  let closest: AgeBand = availableBands[0];
+  let closestDist = Math.abs(bandMidpoints[closest] - targetMid);
+  for (const band of availableBands) {
+    const dist = Math.abs(bandMidpoints[band] - targetMid);
+    if (dist < closestDist) { closest = band; closestDist = dist; }
+  }
+  return closest;
+}
+
+// ================================================================================
+// TOKEN TRACKING
+// ================================================================================
+
+/** Tracks cumulative token usage within a single generation run */
+let _runTokenUsage = { input: 0, output: 0 };
+
+function resetTokenUsage(): void {
+  _runTokenUsage = { input: 0, output: 0 };
+}
+
+function getTokenUsage(): { input: number; output: number; total: number } {
+  return { ..._runTokenUsage, total: _runTokenUsage.input + _runTokenUsage.output };
+}
+
 // Cache
 let cachedSettings: { claude_api_key: string; ai_prompt_template?: string | null; fetchedAt: number } | null = null;
 
@@ -1092,7 +1197,7 @@ function getAgeSpecificFormatting(ageRange: string, ageData?: AgeRangeData): {
   itemCount: string;
 } {
   const normalized = getAgeRangeKey(ageRange, ageData);
-  
+
   switch (normalized) {
     case "6-8":
       return {
@@ -1659,6 +1764,11 @@ async function callClaude(
   }
 
   const data = await res.json();
+  // Track token usage for observability
+  if (data?.usage) {
+    _runTokenUsage.input += data.usage.input_tokens || 0;
+    _runTokenUsage.output += data.usage.output_tokens || 0;
+  }
   return (data?.content?.[0]?.text ?? "").toString();
 }
 
@@ -1727,7 +1837,19 @@ export {
   type GrownUpNote,
   PAGE_TYPE_EVIDENCE_MAP,
   buildEnhancedContentBrief,
-  
+
+  // Multi-age variant types and utilities
+  type AgeBand,
+  type VariantGenerationResult,
+  type MultiAgeGenerationResult,
+  ALL_AGE_BANDS,
+  NARRATIVE_RULES,
+  SIGNATURE_RITUALS,
+  resolveAgeBand,
+  findNearestAgeBand,
+  resetTokenUsage,
+  getTokenUsage,
+
   // Configuration
   corsHeaders,
   CLAUDE_MODEL,
@@ -1739,7 +1861,7 @@ export {
   CACHE_TTL_MS,
   MIN_PAGES,
   MAX_PAGES,
-  
+
   // Utilities
   jsonResponse,
   escapeHtml,
@@ -1751,11 +1873,11 @@ export {
   shuffleArray,
   getAgeRangeKey,
   getAgeSpecificFormatting,
-  
+
   // Claude API
   getSettings,
   callClaude,
-  
+
   // Page Structure
   generatePageStructure,
 };

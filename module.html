@@ -1210,34 +1210,103 @@
       try {
         let mod;
 
+        /**
+         * Resolve a child's date of birth to the appropriate age band.
+         * Used to select the correct multi-age variant for rendering.
+         * Falls back to nearest band if age is outside 6-18 range.
+         */
+        function resolveAgeBandFromDob(dateOfBirth) {
+          if (!dateOfBirth) return '6-8'; // safe default
+          var dob = new Date(dateOfBirth);
+          var age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          if (age <= 8) return '6-8';
+          if (age <= 11) return '9-11';
+          if (age <= 14) return '12-14';
+          return '15-18';
+        }
+
         if (moduleId) {
           // Try to get module by ID first (preferred method for new modules)
+          // Include is_multi_age to determine variant loading path
           const { data: modData, error: fetchError } = await supabase
             .from('modules')
-            .select('html_content, title, code, id, short_description')
+            .select('html_content, title, code, id, short_description, is_multi_age')
             .eq('id', moduleId)
             .single();
-          
+
           if (fetchError) throw new Error(fetchError.message);
-          if (!modData?.html_content) throw new Error('Module not found or has no content');
-          mod = modData;
+
+          // Multi-age variant loading:
+          // If is_multi_age is true, resolve child's age band and load from module_variants.
+          // Legacy modules (is_multi_age = false/null) use html_content directly.
+          if (modData?.is_multi_age && childId) {
+            // Fetch child's DOB to resolve age band
+            const { data: childData } = await supabase
+              .from('children')
+              .select('date_of_birth')
+              .eq('id', childId)
+              .single();
+
+            const ageBand = resolveAgeBandFromDob(childData?.date_of_birth);
+            console.log('[Module] Multi-age module detected. Child age band:', ageBand);
+
+            // Try to load the matching variant
+            const { data: variant } = await supabase
+              .from('module_variants')
+              .select('html_content')
+              .eq('module_id', modData.id)
+              .eq('age_band', ageBand)
+              .single();
+
+            if (variant?.html_content) {
+              mod = { ...modData, html_content: variant.html_content };
+            } else {
+              // Fallback: try nearest available band
+              console.warn('[Module] No variant for band', ageBand, '— trying fallback');
+              const { data: allVariants } = await supabase
+                .from('module_variants')
+                .select('age_band, html_content')
+                .eq('module_id', modData.id);
+
+              if (allVariants && allVariants.length > 0) {
+                // Find nearest band
+                var bandMidpoints = { '6-8': 7, '9-11': 10, '12-14': 13, '15-18': 16.5 };
+                var targetMid = bandMidpoints[ageBand] || 8.5;
+                var closest = allVariants[0];
+                var closestDist = Math.abs((bandMidpoints[closest.age_band] || 8.5) - targetMid);
+                for (var av of allVariants) {
+                  var dist = Math.abs((bandMidpoints[av.age_band] || 8.5) - targetMid);
+                  if (dist < closestDist) { closest = av; closestDist = dist; }
+                }
+                console.warn('[Module] Using fallback variant:', closest.age_band);
+                mod = { ...modData, html_content: closest.html_content };
+              } else {
+                // No variants at all — use base html_content
+                mod = modData;
+              }
+            }
+          } else {
+            // Legacy single-age path — unchanged
+            if (!modData?.html_content) throw new Error('Module not found or has no content');
+            mod = modData;
+          }
         } else {
           // Fallback to code for backward compatibility
           const { data: mods, error: fetchError } = await supabase
             .from('modules')
             .select('html_content, title, code, id, short_description')
             .eq('code', moduleCode);
-          
+
           if (fetchError) throw new Error(fetchError.message);
-          
+
           if (!mods || mods.length === 0) {
             throw new Error(`No module found with code: ${moduleCode}`);
           }
-          
+
           if (mods.length > 1) {
             console.warn(`Multiple modules found with code ${moduleCode}, using first one`);
           }
-          
+
           mod = mods[0];
           if (!mod?.html_content) throw new Error('Module has no content');
         }

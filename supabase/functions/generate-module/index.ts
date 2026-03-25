@@ -73,23 +73,34 @@ import {
   type ModuleSummary,
   type GrownUpNote,
   buildEnhancedContentBrief,
-  
+
+  // Multi-age variant types and utilities
+  type AgeBand,
+  type VariantGenerationResult,
+  type MultiAgeGenerationResult,
+  ALL_AGE_BANDS,
+  resolveAgeBand,
+  resetTokenUsage,
+  getTokenUsage,
+
   // Configuration
   corsHeaders,
   JOB_TIMEOUT_MS,
-  
+
   // Utilities
   jsonResponse,
   escapeHtml,
   escapeForTemplate,
   escapeForOnclick,
-  
+
   // Claude API
   getSettings,
-  
+
   // Page Structure & Content Generation
   generatePageStructure,
   generateAllContent,
+  generateAllVariants,
+  generateAllVariantsOptimized,
 } from "./generators.ts";
 import { generatePaletteFromColor, type CategoryPalette } from "./palettes.ts";
 
@@ -5879,6 +5890,155 @@ async function generateModule(
 }
 
 // ====================
+// MULTI-AGE MODULE GENERATOR
+// ====================
+
+/**
+ * Generate a module with content variants for multiple age bands.
+ * Shares page structure across all variants. Generates variants with
+ * bounded concurrency (2 at a time). Returns variant HTML and specs.
+ *
+ * Compatibility: When multiAge is false/absent, the existing single-age
+ * generateModule() path is used unchanged. This function is only called
+ * when the request explicitly opts into multi-age mode.
+ */
+async function generateModuleMultiAge(
+  supabaseClient: any,
+  contentBrief: string,
+  jobId: string,
+  seriesInfo?: SeriesInfo | null,
+  categoryColor?: string | null,
+  forcedTitle?: string | null,
+  requestedBands?: AgeBand[],
+): Promise<{
+  moduleCode: string;
+  pageCount: number;
+  variants: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number }>;
+  core: { objective: string; activityType: string; pageStructure: string[]; narrativeRules: { rituals: string[] } };
+  totalTokens: number;
+  totalDurationMs: number;
+}> {
+  const overallStart = Date.now();
+  resetTokenUsage();
+
+  const updateProgress = async (step: string, message: string) => {
+    if (jobId) {
+      try {
+        await supabaseClient
+          .from("ai_generation_jobs")
+          .update({
+            result: { progress: { step, message, timestamp: new Date().toISOString() } },
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", jobId);
+      } catch (_e) { /* Non-critical */ }
+    }
+  };
+
+  await updateProgress("initializing", "Loading configuration for multi-age generation...");
+  const settings = await getSettings(supabaseClient);
+  const apiKey = settings.claude_api_key;
+  const ageBands = requestedBands || ALL_AGE_BANDS;
+
+  // Generate page structure ONCE (shared across all variants)
+  const pageStructure = generatePageStructure();
+  const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
+
+  console.log(`[MULTI-AGE] Generating ${ageBands.length} variants with shared ${pageStructure.length}-page structure`);
+
+  // Fetch all age_ranges rows for the requested bands
+  await updateProgress("fetching", "Loading age range data...");
+  const fetchStart = Date.now();
+  const { data: ageRows, error: ageError } = await supabaseClient
+    .from("age_ranges")
+    .select("*")
+    .in("age_range", ageBands)
+    .eq("is_active", true);
+
+  if (ageError || !ageRows || ageRows.length === 0) {
+    console.error("[MULTI-AGE] Failed to fetch age_ranges:", ageError);
+    throw new Error(`Could not fetch age_ranges for bands: ${ageBands.join(', ')}`);
+  }
+  console.log(`[MULTI-AGE] DB lookup: ${Date.now() - fetchStart}ms for ${ageRows.length} age_ranges rows`);
+
+  const ageBandData = new Map<AgeBand, any>();
+  for (const row of ageRows) {
+    ageBandData.set(row.age_range as AgeBand, row);
+  }
+
+  // Optimized: shared content once + per-variant content in parallel
+  const { variants, validationWarnings, regenerationCounts, variantErrors } = await generateAllVariantsOptimized(
+    apiKey,
+    contentBrief,
+    ageBands,
+    ageBandData,
+    pageStructure,
+    updateProgress,
+    seriesInfo,
+    settings.ai_prompt_template,
+  );
+
+  if (validationWarnings.length > 0) {
+    console.warn("[MULTI-AGE] Diversity warnings:", validationWarnings);
+  }
+
+  // Check that at least one variant was generated
+  if (variants.size === 0) {
+    const errorDetails = Object.entries(variantErrors).map(([b, e]) => `${b}: ${e}`).join('; ');
+    throw new Error(`Multi-age generation failed: no variants generated. Errors: ${errorDetails}`);
+  }
+  console.log(`[MULTI-AGE] ${variants.size}/${ageBands.length} variants generated successfully`);
+
+  // Render HTML for each variant
+  await updateProgress("rendering", "Building interactive HTML for all variants...");
+  const variantResults: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number }> = {};
+
+  for (const [band, content] of variants) {
+    const renderStart = Date.now();
+    const html = renderHtml(content, pageStructure, `${moduleCode}_${band.replace('-', '')}`, categoryColor, seriesInfo);
+    const spec = {
+      version: "3.0-multi-age",
+      moduleCode,
+      ageBand: band,
+      pageCount: pageStructure.length,
+      starCount: pageStructure.filter(p => p.starReward).length,
+      metadata: content.metadata,
+      moduleSummary: content.moduleSummary,
+      generatedAt: new Date().toISOString(),
+      regenerationAttempts: regenerationCounts[band] || 0,
+    };
+
+    variantResults[band] = {
+      html,
+      spec,
+      tokenUsage: 0, // Individual tracking would require per-variant counters
+      durationMs: Date.now() - renderStart,
+    };
+  }
+
+  const tokenUsage = getTokenUsage();
+  const totalDurationMs = Date.now() - overallStart;
+
+  console.log(`[MULTI-AGE] Complete: ${Object.keys(variantResults).length} variants in ${(totalDurationMs / 1000).toFixed(1)}s, ~${tokenUsage.total} tokens`);
+
+  await updateProgress("complete", `Multi-age generation complete! ${Object.keys(variantResults).length} variants, ${pageStructure.length} pages each`);
+
+  return {
+    moduleCode,
+    pageCount: pageStructure.length,
+    variants: variantResults,
+    core: {
+      objective: forcedTitle || 'Module',
+      activityType: 'multi-age',
+      pageStructure: pageStructure.map(p => p.type),
+      narrativeRules: { rituals: ['Road Builder', 'Traffic Light Check-In', 'Town Map'] },
+    },
+    totalTokens: tokenUsage.total,
+    totalDurationMs,
+  };
+}
+
+// ====================
 // ASYNC JOB RUNNER
 // ====================
 
@@ -5938,6 +6098,91 @@ async function runAsyncGeneration(
     const error = e instanceof Error ? e : new Error(String(e));
     console.error(`[AI] Job ${jobId} failed:`, error.message);
     
+    await supabaseClient
+      .from("ai_generation_jobs")
+      .update({
+        status: "failed",
+        error: error.message,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+  }
+}
+
+// ====================
+// MULTI-AGE ASYNC JOB RUNNER
+// ====================
+
+/**
+ * Runs multi-age variant generation as a background job.
+ * Each variant's HTML is stored in the module_variants table.
+ * The job result contains the core structure and variant specs.
+ *
+ * Migration note: Legacy single-age modules have is_multi_age=false (default)
+ * and store html_content directly on the modules row. Multi-age modules have
+ * is_multi_age=true and store variant HTML in module_variants table.
+ */
+async function runAsyncMultiAgeGeneration(
+  supabaseClient: any,
+  jobId: string,
+  contentBrief: string,
+  seriesInfo?: SeriesInfo | null,
+  categoryColor?: string | null,
+  forcedTitle?: string | null,
+  requestedBands?: AgeBand[],
+) {
+  try {
+    await supabaseClient
+      .from("ai_generation_jobs")
+      .update({ status: "running", updated_at: new Date().toISOString() })
+      .eq("id", jobId);
+
+    // Multi-age generation gets extended timeout (4 variants)
+    const MULTI_AGE_TIMEOUT_MS = JOB_TIMEOUT_MS * 2;
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Multi-age generation timeout")), MULTI_AGE_TIMEOUT_MS);
+    });
+
+    const generationPromise = generateModuleMultiAge(
+      supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle, requestedBands
+    );
+    const result = await Promise.race([generationPromise, timeoutPromise]) as any;
+
+    await supabaseClient
+      .from("ai_generation_jobs")
+      .update({
+        status: "completed",
+        result: {
+          multiAge: true,
+          moduleCode: result.moduleCode,
+          pageCount: result.pageCount,
+          core: result.core,
+          // Store variant specs (not full HTML — that goes to module_variants table)
+          variantSpecs: Object.fromEntries(
+            Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.spec])
+          ),
+          // Store the first variant's HTML as preview for admin
+          html: Object.values(result.variants)[0]?.html || '',
+          spec: Object.values(result.variants)[0]?.spec || {},
+          totalTokens: result.totalTokens,
+          totalDurationMs: result.totalDurationMs,
+          // All variant HTML keys for client to access
+          variantBands: Object.keys(result.variants),
+          // Individual variant HTML stored in result for admin preview
+          variantHtml: Object.fromEntries(
+            Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.html])
+          ),
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+
+    console.log(`[MULTI-AGE] Job ${jobId} completed: ${Object.keys(result.variants).length} variants`);
+
+  } catch (e) {
+    const error = e instanceof Error ? e : new Error(String(e));
+    console.error(`[MULTI-AGE] Job ${jobId} failed:`, error.message);
+
     await supabaseClient
       .from("ai_generation_jobs")
       .update({
@@ -6496,30 +6741,57 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
       }
     }
     
+    // Detect multi-age mode from request body
+    // When multiAge is true, generate content variants for all age bands
+    // instead of a single age-specific module. Backward compatible:
+    // omitting multiAge or setting it to false uses the existing single-age path.
+    const isMultiAgeMode = Boolean(body?.multiAge === true || body?.mode === 'multi-age');
+    const requestedBands: AgeBand[] | undefined = Array.isArray(body?.ageVariants)
+      ? body.ageVariants.filter((b: string) => ALL_AGE_BANDS.includes(b as AgeBand)) as AgeBand[]
+      : undefined;
+
     // Async mode
     if (asyncMode) {
       const jobId = crypto.randomUUID();
-      
+
       await supabaseClient
         .from("ai_generation_jobs")
         .insert({
           id: jobId,
           status: "running",
           content_brief: contentBrief,
+          generation_metadata: isMultiAgeMode ? { multiAge: true, requestedBands: requestedBands || ALL_AGE_BANDS } : null,
           created_at: new Date().toISOString(),
         });
-      
+
       const anyGlobal = globalThis as any;
-      if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
-        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
+
+      if (isMultiAgeMode) {
+        // Multi-age generation path
+        console.log(`[AI] Starting multi-age async generation (bands: ${(requestedBands || ALL_AGE_BANDS).join(', ')})`);
+        if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
+          anyGlobal.EdgeRuntime.waitUntil(
+            runAsyncMultiAgeGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle, requestedBands)
+          );
+        } else {
+          runAsyncMultiAgeGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle, requestedBands).catch(console.error);
+        }
       } else {
-        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle).catch(console.error);
+        // Legacy single-age generation path (unchanged)
+        if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
+          anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
+        } else {
+          runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle).catch(console.error);
+        }
       }
-      
-      return jsonResponse({ jobId });
+
+      return jsonResponse({ jobId, multiAge: isMultiAgeMode });
     }
-    
-    // Sync mode
+
+    // Sync mode (single-age only — multi-age is too slow for sync)
+    if (isMultiAgeMode) {
+      return jsonResponse({ error: "Multi-age generation requires async mode (async: true)" }, 400);
+    }
     const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo, categoryColor, forcedTitle);
     return jsonResponse({
       html: result.html,

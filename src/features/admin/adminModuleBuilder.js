@@ -959,6 +959,9 @@ async function pollForJobResult(jobId, maxAttempts = 300) {
                 addLog(data.progress.message, 'info');
                 if (data.progress.metadata?.wordCount) addLog(`Word count: ${data.progress.metadata.wordCount}`, 'info');
                 if (data.progress.metadata?.pageCount) addLog(`Pages: ${data.progress.metadata.pageCount}`, 'info');
+                // Update loading modal step text
+                const stepTextEl = document.getElementById('generationStepText');
+                if (stepTextEl && data.progress.message) stepTextEl.textContent = data.progress.message;
             }
             if (data.estimated_remaining_seconds !== undefined) updateEstimatedRemaining(data.estimated_remaining_seconds);
             await sleep(pollIntervalMs);
@@ -1009,9 +1012,11 @@ window.generateModuleWithAI = async function() {
         const superSkillName = superSkillEl?.selectedOptions?.[0]?.text?.trim() || '';
         const subSkillName = subSkillEl?.selectedOptions?.[0]?.text?.trim() || '';
 
+        // All modules are now multi-age by default
+        const isMultiAge = true;
+
         if (!title) { alert('❌ Please enter a module title'); document.getElementById('newModuleTitle').focus(); return; }
         if (!superSkillId) { alert('❌ Please select a Super Skill'); document.getElementById('newModuleSuperSkill').focus(); return; }
-        if (!ageRangeId) { alert('❌ Please select an Age Range'); ageRangeEl?.focus(); return; }
         if (!coreTheoryId) { alert('❌ Please select a Core Theory'); coreTheoryEl?.focus(); return; }
         if (!brainTownAnalogy) { alert('❌ Please provide a Brain Town Analogy'); brainTownEl?.focus(); return; }
 
@@ -1020,27 +1025,48 @@ window.generateModuleWithAI = async function() {
         generateBtn.textContent = '⏳ Generating...';
         statusEl.textContent = 'Starting AI generation...';
         statusEl.style.color = '#7b3ff2';
+        generationStartTime = Date.now();
+        startElapsedTimer();
 
         const safetyTimeout = setTimeout(() => {
+            stopElapsedTimer();
             hideGenerationPipeline();
             generateBtn.disabled = false;
             generateBtn.textContent = ' Generate Module with AI';
             statusEl.textContent = ' Generation timed out. Please try again.';
             statusEl.style.color = '#ef4444';
-        }, 300000);
+        }, 900000); // 15 minutes for multi-age (4 variants)
 
         try {
-            const jobId = await startGenerationJob({
+            // Build payload — always multi-age
+            const generationPayload = {
                 contentBrief: enrichedBrief, seriesId, category, weekNumber, cycleId,
-                superSkillId, subSkillId, title, ageRangeId, coreTheoryId, brainTownAnalogy,
+                superSkillId, subSkillId, title, coreTheoryId, brainTownAnalogy,
                 additionalContext: contentBrief, briefSuperSkill: superSkillName, briefSubSkill: subSkillName,
-                adminTitle: title, adminAge: ageRangeId, briefTheory: coreTheoryId
-            });
+                adminTitle: title, adminAge: '6-8', briefTheory: coreTheoryId,
+                multiAge: true,
+            };
+            const jobId = await startGenerationJob(generationPayload);
             currentJobId = jobId;
             saveGenerationSession(jobId, contentBrief);
 
             const result = await pollForJobResult(jobId);
-            if (!result || !result.html) throw new Error('AI did not return valid HTML');
+            if (!result) throw new Error('AI generation returned no result — check Edge Function logs');
+            if (!result.html) throw new Error(`AI generation completed but returned no HTML. ${result.error || ''} ${result.multiAge ? '(Multi-age mode — check if all variants failed)' : ''}`.trim());
+
+            // Store multi-age variant data if present
+            // Legacy adapter: result.multiAge indicates multi-age mode.
+            // result.variantHtml contains { "6-8": "<html>", "9-11": "<html>", ... }
+            // result.html contains the first variant as default preview.
+            if (result.multiAge && result.variantHtml) {
+                window.generatedVariantHtml = result.variantHtml;
+                window.generatedVariantBands = result.variantBands || Object.keys(result.variantHtml);
+                window.isMultiAgeModule = true;
+            } else {
+                window.generatedVariantHtml = null;
+                window.generatedVariantBands = null;
+                window.isMultiAgeModule = false;
+            }
 
             window.generatedModuleHTML = result.html.replace(/&#039;/g, "'");
             generatedModuleHTML = window.generatedModuleHTML;
@@ -1057,27 +1083,63 @@ window.generateModuleWithAI = async function() {
             const charCount = result.characterCount ?? result.html.length;
 
             previewTextarea.value = generatedModuleHTML;
+
+            // Build variant preview selector if multi-age
+            let variantSelectorHtml = '';
+            if (window.isMultiAgeModule && window.generatedVariantBands) {
+                variantSelectorHtml = `
+                    <div style="margin-top: 8px;">
+                        <label style="font-size: 12px; font-weight: 600; color: #405878;">Preview variant:</label>
+                        <select id="variantPreviewSelect" style="margin-left: 8px; padding: 4px 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 12px;">
+                            ${window.generatedVariantBands.map((b, i) => `<option value="${b}" ${i === 0 ? 'selected' : ''}>Ages ${b}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
             previewSummary.textContent = `Approx. ${pageCount || '??'} pages • ${charCount.toLocaleString()} characters`;
             previewStats.innerHTML = `
                 <p style="margin: 0 0 6px;"><strong>Module code:</strong> ${moduleCode}</p>
                 <p style="margin: 0 0 6px;"><strong>Category:</strong> ${category || '—'}</p>
-                <p style="margin: 0;"><strong>Generated with AI</strong> ✨</p>
+                <p style="margin: 0;"><strong>Generated with AI</strong> ${window.isMultiAgeModule ? '(Multi-age: ' + window.generatedVariantBands.length + ' variants)' : ''}</p>
+                ${variantSelectorHtml}
             `;
+
+            // Attach variant preview switcher
+            if (window.isMultiAgeModule) {
+                setTimeout(() => {
+                    const variantSelect = document.getElementById('variantPreviewSelect');
+                    if (variantSelect) {
+                        variantSelect.addEventListener('change', (e) => {
+                            const band = e.target.value;
+                            const variantHtml = window.generatedVariantHtml?.[band];
+                            if (variantHtml) {
+                                window.generatedModuleHTML = variantHtml.replace(/&#039;/g, "'");
+                                generatedModuleHTML = window.generatedModuleHTML;
+                                previewTextarea.value = generatedModuleHTML;
+                            }
+                        });
+                    }
+                }, 100);
+            }
             previewContainer.style.display = 'block';
             saveBtn.disabled = false;
             statusEl.textContent = '✅ Generated! Review and save when ready.';
             statusEl.style.color = '#10b981';
             clearTimeout(safetyTimeout);
+            stopElapsedTimer();
             hideGenerationPipeline();
             generateBtn.disabled = false;
             generateBtn.textContent = '🔁 Regenerate Module';
             clearGenerationSession();
         } catch (innerError) {
             clearTimeout(safetyTimeout);
+            stopElapsedTimer();
             throw innerError;
         }
     } catch (error) {
         console.error('[AI] Generation error:', error);
+        stopElapsedTimer();
         handleGenerationError(error);
         generateBtn.disabled = false;
         generateBtn.textContent = '✨ Generate Module with AI';
@@ -1122,7 +1184,7 @@ window.saveGeneratedModule = async function() {
         const xpReward = document.getElementById('newModuleXPReward')?.value ? parseInt(document.getElementById('newModuleXPReward').value) : 100;
         const starsReward = document.getElementById('newModuleStarsReward')?.value ? parseInt(document.getElementById('newModuleStarsReward').value) : 10;
         const characterName = document.getElementById('newModuleCharacter')?.value || null;
-        const ageRange = document.getElementById('ageRangeSelect').value || null;
+        const ageRange = null; // Multi-age modules don't have a single age_range
         const cycleId = document.getElementById('newModuleCycle')?.value || null;
         const shortDescription = document.getElementById('newModuleShortDescription')?.value?.trim() || currentGenerationSpec?.metadata?.shortDescription || null;
         const description = document.getElementById('newModuleDescription')?.value?.trim() || currentGenerationSpec?.metadata?.description || null;
@@ -1133,6 +1195,11 @@ window.saveGeneratedModule = async function() {
         const brainTownMetaphor = document.getElementById('brainTownAnalogy')?.value?.trim() || null;
         const moduleSummary = currentGenerationSpec?.moduleSummary?.summary || window.currentGenerationSpec?.moduleSummary?.summary || null;
 
+        // Determine if this is a multi-age module
+        const isMultiAge = window.isMultiAgeModule === true;
+
+        // For multi-age modules, store the first variant's HTML as the fallback
+        // html_content and set is_multi_age flag. Variant HTML is stored separately.
         const { data: newModule, error: insertError } = await supabase
             .from('modules')
             .insert({
@@ -1141,10 +1208,29 @@ window.saveGeneratedModule = async function() {
                 cycle_id: cycleId || null, week_number: weekNumber, xp_reward: xpReward, stars_reward: starsReward,
                 character_name: characterName, primary_theory_id: primaryTheoryId, ndis_domain_id: ndisDomainId,
                 dss_sedi_id: dssSediId, neuroscience_concept: neuroscienceConcept,
-                brain_town_metaphor: brainTownMetaphor, module_summary: moduleSummary
+                brain_town_metaphor: brainTownMetaphor, module_summary: moduleSummary,
+                is_multi_age: isMultiAge,
             })
             .select()
             .single();
+
+        // For multi-age modules, save each variant to the module_variants table
+        if (!insertError && newModule && isMultiAge && window.generatedVariantHtml) {
+            const variantEntries = Object.entries(window.generatedVariantHtml);
+            for (const [band, html] of variantEntries) {
+                try {
+                    await supabase.from('module_variants').upsert({
+                        module_id: newModule.id,
+                        age_band: band,
+                        html_content: html,
+                        generated_at: new Date().toISOString(),
+                    }, { onConflict: 'module_id,age_band' });
+                } catch (variantErr) {
+                    console.error(`Failed to save variant ${band}:`, variantErr);
+                }
+            }
+            console.log(`Saved ${variantEntries.length} age variants for module ${newModule.id}`);
+        }
 
         if (insertError) throw insertError;
 
