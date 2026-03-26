@@ -235,7 +235,7 @@ function validateCurrentStep() {
                 alert('Please select a sub-skill');
                 return false;
             }
-            // Age range no longer required — all modules are multi-age
+            // Age range no longer required - all modules are multi-age
             if (!state.formData.stage) {
                 alert('Please select a stage');
                 return false;
@@ -390,7 +390,7 @@ function renderStep1() {
                         Age Variants
                     </label>
                     <div style="padding: 10px 12px; background: #EEF2FF; border: 1px solid #6366F1; border-radius: 6px; font-size: 13px; color: #405878;">
-                        Multi-age — generates 4 variants (6-8, 9-11, 12-14, 15-18)
+                        Multi-age - generates 4 variants (6-8, 9-11, 12-14, 15-18)
                     </div>
                 </div>
                 
@@ -668,7 +668,7 @@ function renderStep3() {
     
     return `
         <h2 style="font-size: 18px; font-weight: 700; color: #405878; margin-bottom: 8px;">Step 3: Diagnosis Adaptations</h2>
-        <p style="font-size: 13px; color: #78909c; margin-bottom: 24px;">Optional — Select diagnosis pathways or skip if not adapting</p>
+        <p style="font-size: 13px; color: #78909c; margin-bottom: 24px;">Optional - Select diagnosis pathways or skip if not adapting</p>
         
         <div style="display: grid; gap: 12px;">
             ${[

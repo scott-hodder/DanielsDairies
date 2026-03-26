@@ -1219,7 +1219,7 @@
               mod = { ...modData, html_content: variant.html_content };
             } else {
               // Fallback: try nearest available band
-              console.warn('[Module] No variant for band', ageBand, '— trying fallback');
+              console.warn('[Module] No variant for band', ageBand, '- trying fallback');
               const { data: allVariants } = await supabase
                 .from('module_variants')
                 .select('age_band, html_content')
@@ -1238,12 +1238,12 @@
                 console.warn('[Module] Using fallback variant:', closest.age_band);
                 mod = { ...modData, html_content: closest.html_content };
               } else {
-                // No variants at all — use base html_content
+                // No variants at all - use base html_content
                 mod = modData;
               }
             }
           } else {
-            // Legacy single-age path — unchanged
+            // Legacy single-age path - unchanged
             if (!modData?.html_content) throw new Error('Module not found or has no content');
             mod = modData;
           }

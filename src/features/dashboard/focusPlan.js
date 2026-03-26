@@ -27,7 +27,7 @@ let focusPlanState = {
   onComplete: null
 }
 
-// Goal options — loaded from DB, with hardcoded fallbacks
+// Goal options - loaded from DB, with hardcoded fallbacks
 const FALLBACK_GOAL_OPTIONS = [
   { key: 'calm_faster', label: 'Calm down faster', icon: '🧘' },
   { key: 'less_meltdowns', label: 'Fewer meltdowns', icon: '🌊' },
@@ -267,7 +267,7 @@ function renderStep(step) {
   
   // Update next button text
   const nextBtn = document.getElementById('focusPlanNext')
-  nextBtn.textContent = step === 3 ? 'Start the adventure' : 'Continue'
+  nextBtn.textContent = step === 3 ? "Let's begin" : 'Continue'
   
   // Render step content
   const body = document.getElementById('focusPlanBody')
@@ -276,20 +276,20 @@ function renderStep(step) {
   
   switch (step) {
     case 1:
-      title.innerHTML = "Where should we start?"
+      title.innerHTML = "Where should we begin?"
       subtitle.textContent = 'Pick up to 3 areas to focus on first'
       body.innerHTML = renderStep1()
       setupStep1Listeners()
       break
     case 2:
       title.innerHTML = "What matters most?"
-      subtitle.textContent = 'Choose the goals that feel right for your child'
+      subtitle.textContent = 'Choose the goals that matter most to your family'
       body.innerHTML = renderStep2()
       setupStep2Listeners()
       break
     case 3:
-      title.innerHTML = "Tell us a bit more"
-      subtitle.textContent = 'This helps Daniel tailor the journey'
+      title.innerHTML = "Help us personalise the journey"
+      subtitle.textContent = 'These details help us match the right level of support'
       body.innerHTML = renderStep3()
       setupStep3Listeners()
       break
@@ -303,7 +303,7 @@ function renderStep1() {
   const categories = focusPlanState.categories
   
   return `
-    <p class="focus-plan-intro">Every child is different. These choices shape which modules appear first and where the adventure begins. You can always change this later.</p>
+    <p class="focus-plan-intro">Every child is different, and that's a good thing. Your choices here shape how the adventure starts - we'll tailor the first modules to what matters most. You can always adjust this later.</p>
 
     <div class="focus-categories-grid">
       ${categories.map(cat => `
@@ -325,7 +325,7 @@ function renderStep1() {
     </div>
     <p class="selection-hint">
       <span class="selection-count">${focusPlanState.selectedCategories.length}</span>/3 selected
-      ${focusPlanState.selectedCategories.length === 0 ? ' — pick at least 1' : ''}
+      ${focusPlanState.selectedCategories.length === 0 ? ' - pick at least 1' : ''}
     </p>
   `
 }
@@ -357,7 +357,7 @@ function setupStep1Listeners() {
       if (hintEl) {
         hintEl.innerHTML = `
           <span class="selection-count">${focusPlanState.selectedCategories.length}</span>/3 selected
-          ${focusPlanState.selectedCategories.length === 0 ? ' — pick at least 1' : ''}
+          ${focusPlanState.selectedCategories.length === 0 ? ' - pick at least 1' : ''}
         `
       }
       document.querySelectorAll('.selection-pill').forEach((pill, i) => {
@@ -397,7 +397,7 @@ function renderStep2() {
       <span class="char-count">${focusPlanState.customGoalText.length}/200</span>
     </div>
 
-    <p class="step-hint">Pick as many as you like, or skip this step</p>
+    <p class="step-hint">Pick as many as you like - these help us shape the journey to your child's real needs</p>
   `
 }
 
@@ -433,7 +433,7 @@ function setupStep2Listeners() {
 function renderStep3() {
   return `
     <div class="focus-options-section">
-      <h3 class="options-label">How often do these challenges come up?</h3>
+      <h3 class="options-label">How often do these challenges show up?</h3>
       <div class="focus-frequency-grid">
         ${FREQUENCY_OPTIONS.map(opt => `
           <button type="button"
@@ -447,7 +447,7 @@ function renderStep3() {
     </div>
 
     <div class="focus-options-section">
-      <h3 class="options-label">How tough are things right now?</h3>
+      <h3 class="options-label">How big do these moments feel?</h3>
       <div class="focus-intensity-grid">
         ${INTENSITY_OPTIONS.map(opt => `
           <button type="button"
@@ -462,17 +462,17 @@ function renderStep3() {
     </div>
 
     <div class="focus-options-section">
-      <h3 class="options-label">Anything else we should know?</h3>
+      <h3 class="options-label">Anything else that would help us understand?</h3>
       <textarea
         id="focusPlanComments"
         class="focus-comments-input"
-        placeholder="Triggers, situations, things that help — anything you'd like to share..."
+        placeholder="Things that help, tricky moments, what works at home - anything you'd like us to know..."
         maxlength="500"
         rows="3">${focusPlanState.comments}</textarea>
       <span class="char-count comments-count">${focusPlanState.comments.length}/500</span>
     </div>
 
-    <p class="step-hint">All of this is optional — share as much or as little as you'd like</p>
+    <p class="step-hint">Everything here is optional. Share as much or as little as feels right - there are no wrong answers.</p>
   `
 }
 

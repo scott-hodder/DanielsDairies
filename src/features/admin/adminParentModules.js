@@ -1,5 +1,5 @@
 // ================================================================================
-// PARENT'S MODULES TAB — Parents list, children, module assignments
+// PARENT'S MODULES TAB - Parents list, children, module assignments
 // ================================================================================
 import {
     supabase,

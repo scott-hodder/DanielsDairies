@@ -111,7 +111,7 @@ function getAgeRangeKey(targetAge?: string): string {
   if (!targetAge) {
     return "6-8";
   }
-  const normalized = targetAge.replace(/[–—]/g, "-").trim();
+  const normalized = targetAge.replace(/[–-]/g, "-").trim();
   const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
   if (match) {
     return `${match[1]}-${match[2]}`;
@@ -3019,7 +3019,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
   // Hills use darkened primary/secondary, buildings use dark + primary tints,
   // windows use soft-yellow (lit) and cream-tinted (unlit), road uses dark + accent dashes.
 
-  // Stage 1: Rolling hills, a tree, a fence — open countryside
+  // Stage 1: Rolling hills, a tree, a fence - open countryside
   const hillsOnly = `
     <!-- Far hills -->
     <ellipse cx="150" cy="200" rx="280" ry="90" fill="var(--hill-far)"/>
@@ -3196,7 +3196,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
         <div class="ch-cloud ch-cloud-4"></div>
       </div>
 
-      <!-- Landscape at bottom — 280px -->
+      <!-- Landscape at bottom - 280px -->
       <div class="m-chapter-hills">
         <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
           ${scene}
@@ -3207,7 +3207,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
         </svg>
       </div>
 
-      <!-- Content — centred above scene -->
+      <!-- Content - centred above scene -->
       <div class="m-chapter-content">
         <!-- Journey badge -->
         <div class="m-chapter-badge">
@@ -3240,7 +3240,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
         </p>
       </div>
 
-      <!-- Scoped styles — all derived from theme vars for colour harmony -->
+      <!-- Scoped styles - all derived from theme vars for colour harmony -->
       <style>
         .chapter-scene-page {
           /* Hill colours: darken primary & secondary to earthy greens */
@@ -6291,7 +6291,7 @@ async function runAsyncMultiAgeGeneration(
           moduleCode: result.moduleCode,
           pageCount: result.pageCount,
           core: result.core,
-          // Store variant specs (not full HTML — that goes to module_variants table)
+          // Store variant specs (not full HTML - that goes to module_variants table)
           variantSpecs: Object.fromEntries(
             Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.spec])
           ),
@@ -6922,7 +6922,7 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
       return jsonResponse({ jobId, multiAge: isMultiAgeMode });
     }
 
-    // Sync mode (single-age only — multi-age is too slow for sync)
+    // Sync mode (single-age only - multi-age is too slow for sync)
     if (isMultiAgeMode) {
       return jsonResponse({ error: "Multi-age generation requires async mode (async: true)" }, 400);
     }

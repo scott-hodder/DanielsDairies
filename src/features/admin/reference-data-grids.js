@@ -59,10 +59,10 @@ function _waitSB() {
 // --- Data caches ---
 var _ss = [], _sub = [], _th = [], _age = [], _ndis = [], _sedi = [], _fasd = [], _chars = [], _cycles = [], _connections = [], _forbidden = [], _auditSections = [], _auditRules = [];
 var _settings = null;
-const DEFAULT_AI_PROMPT_TEMPLATE = `You are an expert child psychologist creating Daniel's Diaries modules — trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
+const DEFAULT_AI_PROMPT_TEMPLATE = `You are an expert child psychologist creating Daniel's Diaries modules - trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
 
 === DANIEL'S DIARIES FRAMEWORK ===
-Daniel is a friendly narrator who guides children through Brain Town — a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town.
+Daniel is a friendly narrator who guides children through Brain Town - a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town.
 
 === MANDATORY CONTENT REQUIREMENTS ===
 1. THEORY & CITATION: Every module MUST mention the primary theory name AND the researcher's surname (e.g., "Operant Learning Foundations" AND "Skinner").
@@ -100,7 +100,7 @@ CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor
 9. NEVER use hyphens or en dashes to join compound words. Use spaces instead (e.g., "thought feeling" not "thought-feeling").
 10. EMOJI SAFETY: Only use well-supported, common emojis from Unicode 12.0 or earlier.
    SAFE emojis: 😊 😢 😡 😨 😌 🤩 😳 😤 🤔 😴 🥰 😎 🤗 😮 🙂 😞 😰 ⭐ 💛 ❤ 🌟 🎯 🎨 📝 💡 🏠 🌈 🐕 🐱 🦁 🐻 🌸 🌻 🎵 🎶 💪 🧠 ❓ ✅ ✓ ❌ 🐢 🐠 🐟 🐙 🐚 🌊 🐬 🐳 🐋 🦈 🐡 🦀 🌿 🍃 💎 ⚡ 🔥 💧 🌙 ☀ 🌤 ⛅ 🌧 ⛈ 🌪 🌞 🎈 🎉 🏆 🎪 🎭 🎬 🎹 🥁 🎸 🎺 🎻 📖 📚 ✏ 🖍 🖌 👀 👂 🤝 👍 👏 🙌 💭 💬 🔍 🧩
-   BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 — and ANY emoji you are unsure about.
+   BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 - and ANY emoji you are unsure about.
 11. GENUINE CHOICE: Always offer the child choices. Use "you could", "you might", "choose", "option" language.
 12. STRENGTHS-BASED: Frame neurodiversity as difference, not deficit. Never use pathologising language.`;
 
@@ -196,7 +196,7 @@ async function _reloadTable(table) {
     } catch (e) { console.error('[RefGrids] Reload ' + table + ':', e); }
 }
 
-// Ensure data is loaded (deferred — first call triggers the load)
+// Ensure data is loaded (deferred - first call triggers the load)
 async function _ensureLoaded() {
     if (_dataLoaded) return;
     if (_loadingPromise) return _loadingPromise;
@@ -660,7 +660,7 @@ function rVocab() {
     h += '</tbody></table></div>';
     
     // Forbidden Terms Section - now with editable grids
-    h += '<h4 style="font-size:14px;color:#C53030;margin:0 0 8px;">⛔ Forbidden Terms — Auto Critical Fail at Audit</h4>';
+    h += '<h4 style="font-size:14px;color:#C53030;margin:0 0 8px;">⛔ Forbidden Terms - Auto Critical Fail at Audit</h4>';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
     
     // Forbidden Words Grid
@@ -669,7 +669,7 @@ function rVocab() {
     h += '<div style="overflow-x:auto;max-height:400px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:#C53030;color:white;">' + TH('Term') + TH('Alternative') + TH('', 'width:60px;') + '</tr></thead><tbody id="tbForbiddenWord">';
     forbiddenWords.forEach(function(f, i) {
         h += '<tr><td style="' + td(i, 'color:#742A2A;font-weight:600;') + '">' + E(f.term) + '</td>';
-        h += '<td style="' + td(i, 'color:#2a8f8f;font-style:italic;') + '">' + E(f.brain_town_alternative || '—') + '</td>';
+        h += '<td style="' + td(i, 'color:#2a8f8f;font-style:italic;') + '">' + E(f.brain_town_alternative || '-') + '</td>';
         h += '<td style="' + td(i, 'text-align:center;') + '">' + editBtn("refEditRow('ForbiddenWord','" + f.id + "',this)") + '<button onclick="refDeleteForbidden(\'' + f.id + '\')" style="background:none;border:none;cursor:pointer;font-size:14px;" title="Delete">🗑️</button></td></tr>';
     });
     if (!forbiddenWords.length) h += '<tr><td colspan="3" style="padding:12px;text-align:center;color:#6b7c8f;">No forbidden words.</td></tr>';
@@ -681,7 +681,7 @@ function rVocab() {
     h += '<div style="overflow-x:auto;max-height:400px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:#C53030;color:white;">' + TH('Metaphor') + TH('Brain Town Alternative') + TH('', 'width:60px;') + '</tr></thead><tbody id="tbForbiddenMetaphor">';
     forbiddenMetaphors.forEach(function(f, i) {
         h += '<tr><td style="' + td(i, 'color:#742A2A;font-weight:600;') + '">' + E(f.term) + '</td>';
-        h += '<td style="' + td(i, 'color:#2a8f8f;font-style:italic;') + '">' + E(f.brain_town_alternative || '—') + '</td>';
+        h += '<td style="' + td(i, 'color:#2a8f8f;font-style:italic;') + '">' + E(f.brain_town_alternative || '-') + '</td>';
         h += '<td style="' + td(i, 'text-align:center;') + '">' + editBtn("refEditRow('ForbiddenMetaphor','" + f.id + "',this)") + '<button onclick="refDeleteForbidden(\'' + f.id + '\')" style="background:none;border:none;cursor:pointer;font-size:14px;" title="Delete">🗑️</button></td></tr>';
     });
     if (!forbiddenMetaphors.length) h += '<tr><td colspan="3" style="padding:12px;text-align:center;color:#6b7c8f;">No forbidden metaphors.</td></tr>';
@@ -712,7 +712,7 @@ function rAuditRules() {
     var weightColor = totalWeight === 100 ? '#38A169' : '#C53030';
     
     var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
-    h += '<div><h3 style="font-size:16px;margin:0;font-weight:700;">🔍 Audit Rules — Sent to AI & Validated After Generation</h3>';
+    h += '<div><h3 style="font-size:16px;margin:0;font-weight:700;">🔍 Audit Rules - Sent to AI & Validated After Generation</h3>';
     h += '<p style="font-size:12px;color:#6b7c8f;margin:4px 0 0;">These rules are sent to the AI during module generation and then validated by the audit system.</p></div>';
     h += '<div style="text-align:right;"><div style="font-size:24px;font-weight:800;color:' + weightColor + ';">' + totalWeight + '%</div>';
     h += '<div style="font-size:10px;color:' + weightColor + ';">Total Weight' + (totalWeight !== 100 ? ' (must = 100%)' : ' ✓') + '</div></div></div>';
@@ -831,7 +831,7 @@ window.renderAiPromptLint = function(template) {
         parts.push('No lint issues detected.');
         lintEl.style.color = '#2a8f8f';
     }
-    lintEl.textContent = parts.join(' — ');
+    lintEl.textContent = parts.join(' - ');
 };
 
 window.saveAiPromptTemplate = async function() {
@@ -975,7 +975,7 @@ function rFasd() {
 }
 
 // ============================
-// INLINE ADD — generic for all sections
+// INLINE ADD - generic for all sections
 // ============================
 var _inlineConfigs = {
     SS: {
@@ -1183,7 +1183,7 @@ window.refInlineSave = async function(key) {
     }
 };
 
-// Character dropdown onchange — auto-populate personality field (ADD mode)
+// Character dropdown onchange - auto-populate personality field (ADD mode)
 window._onCharSelect = function(selectEl, key) {
     var charId = selectEl.value;
     var persInput = document.getElementById('refI_' + key + '_Pers');
@@ -1193,7 +1193,7 @@ window._onCharSelect = function(selectEl, key) {
     persInput.value = ch ? (ch.personality_nd || '') : '';
 };
 
-// Character dropdown onchange — auto-populate personality field (EDIT mode)
+// Character dropdown onchange - auto-populate personality field (EDIT mode)
 window._onCharEditSelect = function(selectEl, table, itemId) {
     var charId = selectEl.value;
     var row = selectEl.closest('tr');
@@ -1246,9 +1246,9 @@ window._onConnSuperSkillEditSelect = function(selectEl, table, itemId) {
 // ============================
 // INIT
 // ============================
-// Deferred init — data loads on first reference-data tab access, not on page load
+// Deferred init - data loads on first reference-data tab access, not on page load
 (async function() {
     await _waitSB();
     if (!window.supabase) { console.error('[RefGrids] No supabase'); return; }
-    console.log('[RefGrids] Ready (deferred — will load on first tab open)');
+    console.log('[RefGrids] Ready (deferred - will load on first tab open)');
 })();

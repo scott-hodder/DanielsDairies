@@ -1,5 +1,5 @@
 // ================================================================================
-// USERS TAB — View all children, parents, and subscription status
+// USERS TAB - View all children, parents, and subscription status
 // ================================================================================
 import { supabase } from './adminPage.js';
 
@@ -148,7 +148,7 @@ function renderUsersTable() {
 function renderUserRow(user) {
     const age = calculateAge(user.dateOfBirth);
     const statusBadge = getStatusBadge(user.subscriptionStatus, user.cancelAtPeriodEnd);
-    const tierLabel = user.subscriptionTier ? user.subscriptionTier.toUpperCase() : '—';
+    const tierLabel = user.subscriptionTier ? user.subscriptionTier.toUpperCase() : '-';
     const dobValue = user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '';
     
     return `
@@ -158,7 +158,7 @@ function renderUserRow(user) {
             </td>
             <td style="color: #6b7c8f; font-size: 13px;">
                 <div class="dob-display" data-child-id="${user.childId}" style="display: flex; align-items: center; gap: 8px;">
-                    <span class="dob-text">${user.dateOfBirth ? formatDate(user.dateOfBirth) : '—'}</span>
+                    <span class="dob-text">${user.dateOfBirth ? formatDate(user.dateOfBirth) : '-'}</span>
                     <button onclick="_adminEditDob('${user.childId}', '${dobValue}')" 
                             style="background: none; border: none; cursor: pointer; padding: 2px 6px; font-size: 12px; color: #6366F1; opacity: 0.7;"
                             title="Edit date of birth">✏️</button>
@@ -173,7 +173,7 @@ function renderUserRow(user) {
                 </div>
             </td>
             <td style="color: #6b7c8f; font-size: 13px;" class="age-cell" data-child-id="${user.childId}">
-                ${age !== null ? `${age} yrs` : '—'}
+                ${age !== null ? `${age} yrs` : '-'}
             </td>
             <td>
                 <div style="font-size: 13px; color: #405878;">${escapeHtml(user.parentUsername)}</div>
@@ -249,7 +249,7 @@ window._adminSaveDob = async function(childId) {
         if (editEl) editEl.style.display = 'none';
         if (ageCell) {
             const age = calculateAge(newDob);
-            ageCell.textContent = age !== null ? `${age} yrs` : '—';
+            ageCell.textContent = age !== null ? `${age} yrs` : '-';
         }
 
     } catch (err) {

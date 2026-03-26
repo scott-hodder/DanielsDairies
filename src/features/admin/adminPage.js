@@ -9,7 +9,7 @@ export { supabase, getSettings, updateSettings, requireSupabaseEnv };
 window.supabase = supabase;
 
 // ================================================================================
-// SHARED STATE — imported by all sub-modules
+// SHARED STATE - imported by all sub-modules
 // ================================================================================
 export let allChildren = [];
 export let allParents = [];

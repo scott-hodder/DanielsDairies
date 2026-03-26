@@ -1,5 +1,5 @@
 // ================================================================================
-// CHECK INS TAB — Focus plan, weekly check-in, assessment questions
+// CHECK INS TAB - Focus plan, weekly check-in, assessment questions
 // ================================================================================
 import { supabase } from './adminPage.js';
 
@@ -18,8 +18,8 @@ async function loadCheckInsSettings() {
         renderFocusPlanCategories(catRes.data || []);
         populateFocusCatSuperSkillDropdown(ssRes.data || []);
         renderCheckinList('focusPlanGoalsList', goalsRes.data || [], 'focus_plan_goals', (item) => `${item.icon} ${item.label}`);
-        renderCheckinList('focusPlanFrequenciesList', freqRes.data || [], 'focus_plan_frequencies', (item) => `${item.label} — ${item.description}`);
-        renderCheckinList('focusPlanIntensitiesList', intRes.data || [], 'focus_plan_intensities', (item) => `${item.icon} ${item.label} — ${item.description}`);
+        renderCheckinList('focusPlanFrequenciesList', freqRes.data || [], 'focus_plan_frequencies', (item) => `${item.label} - ${item.description}`);
+        renderCheckinList('focusPlanIntensitiesList', intRes.data || [], 'focus_plan_intensities', (item) => `${item.icon} ${item.label} - ${item.description}`);
         renderCheckinList('checkinChallengesList', challRes.data || [], 'checkin_challenges', (item) => item.label);
         renderCheckinList('checkinGoalsList', cgRes.data || [], 'checkin_goals', (item) => item.label);
         renderCheckinList('checkinTriggersList', trigRes.data || [], 'checkin_triggers', (item) => item.label);
@@ -206,7 +206,7 @@ window.loadAssessmentQuestions = async function() {
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-size: 12px; color: #374151; font-weight: 600;">${q.question_text}</div>
-                    <div style="font-size: 11px; color: #6b7c8f; margin-top: 2px;">Key: ${q.question_key} • Type: ${q.question_type || '—'}</div>
+                    <div style="font-size: 11px; color: #6b7c8f; margin-top: 2px;">Key: ${q.question_key} • Type: ${q.question_type || '-'}</div>
                 </div>
                 <button onclick="deleteCheckinItem('assessment_questions', '${q.id}')" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer; flex-shrink: 0; margin-left: 8px;">×</button>
             </div>

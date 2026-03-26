@@ -113,7 +113,7 @@ async function init() {
   }
 }
 
-// Load user data — all queries run in parallel for speed
+// Load user data - all queries run in parallel for speed
 async function loadData() {
   try {
     const userId = state.currentUser.id
@@ -741,7 +741,7 @@ function formatPaymentLabel(months) {
   const price = calcPaymentTotal(months)
   const discount = DISCOUNT_RATES[months] || 0
   return discount > 0
-    ? `$${price.toFixed(2)} — Save ${Math.round(discount * 100)}%`
+    ? `$${price.toFixed(2)} - Save ${Math.round(discount * 100)}%`
     : `$${price.toFixed(2)}`
 }
 
@@ -873,11 +873,11 @@ function openMakePaymentModal() {
           ">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
               <span style="font-size:13px;color:#5f6b85;font-family:'Fredoka',sans-serif;">New paid-to date:</span>
-              <span id="ddNewEndDate" style="font-size:13px;font-weight:600;color:#2b3a55;font-family:'Fredoka',sans-serif;">—</span>
+              <span id="ddNewEndDate" style="font-size:13px;font-weight:600;color:#2b3a55;font-family:'Fredoka',sans-serif;">-</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
               <span style="font-size:13px;color:#5f6b85;font-family:'Fredoka',sans-serif;">Total:</span>
-              <span id="ddPayAmount" style="font-size:18px;font-weight:700;color:#14b8a6;font-family:'Fredoka',sans-serif;">—</span>
+              <span id="ddPayAmount" style="font-size:18px;font-weight:700;color:#14b8a6;font-family:'Fredoka',sans-serif;">-</span>
             </div>
           </div>
         </div>

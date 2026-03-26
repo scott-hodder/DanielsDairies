@@ -1015,12 +1015,12 @@ class DanielModulePreview {
     const isFirstModule = moduleOrder === 1 || isFirstModuleInMap;
     const superSkillId = rawMod.super_skill_id || null;
 
-    // Check periodic check-in FIRST — it takes priority over super skill intro
+    // Check periodic check-in FIRST - it takes priority over super skill intro
     // (e.g. module 4 needs a check-in, even if it's the first module of a new super skill)
     if (child && typeof window.showCheckinPopup === 'function') {
       try {
         const needsCheckin = await self.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-        console.log('[DanielSystem] Periodic check-in check — needsCheckin:', needsCheckin);
+        console.log('[DanielSystem] Periodic check-in check - needsCheckin:', needsCheckin);
         if (needsCheckin) {
           clearLoading();
           console.log('[DanielSystem] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)');
@@ -1035,8 +1035,8 @@ class DanielModulePreview {
       }
     }
 
-    // Check super skill intro — show character introduction on first module of each super skill
-    console.log('[DanielSystem] Intro check — isFirstModule:', isFirstModule, 'superSkillId:', superSkillId);
+    // Check super skill intro - show character introduction on first module of each super skill
+    console.log('[DanielSystem] Intro check - isFirstModule:', isFirstModule, 'superSkillId:', superSkillId);
     if (isFirstModule && superSkillId && child && typeof window.showCheckinPopup === 'function') {
       const introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
       const alreadySeen = localStorage.getItem(introKey);
@@ -1130,7 +1130,7 @@ class DanielModulePreview {
         completedCount = completedModules?.length || 0;
         console.log('[Daniel Check-in] Per-skill completed modules:', completedCount, 'raw data:', JSON.stringify(completedModules));
       } else {
-        console.log('[Daniel Check-in] No superSkillId — counting ALL completed modules');
+        console.log('[Daniel Check-in] No superSkillId - counting ALL completed modules');
         const { data: completedModules, error: countError } = await window.supabase
           .from('child_modules')
           .select('id')
@@ -1152,7 +1152,7 @@ class DanielModulePreview {
           .eq('id', superSkillId)
           .single();
 
-        console.log('[Daniel Check-in] Super skill slug lookup — data:', JSON.stringify(skillData), 'error:', slugError);
+        console.log('[Daniel Check-in] Super skill slug lookup - data:', JSON.stringify(skillData), 'error:', slugError);
         const slug = skillData?.slug;
         if (slug) {
           const { data: completedCheckins, error: checkinError } = await window.supabase

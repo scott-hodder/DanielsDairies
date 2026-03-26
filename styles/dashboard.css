@@ -5575,7 +5575,7 @@ body::after {
         padding: 0;
     }
 
-    /* Daniel section — full width, horizontal layout */
+    /* Daniel section - full width, horizontal layout */
     .hero-daniel {
         grid-row: 1;
         grid-column: 1;
@@ -5599,7 +5599,7 @@ body::after {
     .daniel-name { font-size: 16px; }
     .hero-daniel-badge { font-size: 8px; padding: 2px 6px; }
 
-    /* Stats row — full width */
+    /* Stats row - full width */
     .hero-stats {
         grid-row: 2;
         grid-column: 1;
@@ -5614,7 +5614,7 @@ body::after {
     .hero-stat-val { font-size: 20px; }
     .hero-stat-lbl { font-size: 9px; }
 
-    /* Level row — full width */
+    /* Level row - full width */
     .hero-level {
         grid-row: 3;
         grid-column: 1;
@@ -5688,7 +5688,7 @@ body::after {
     margin-top: 2px;
 }
 
-/* Super skill banner — between zone boxes and map */
+/* Super skill banner - between zone boxes and map */
 .adventure-skill-banner {
     display: flex;
     align-items: center;
@@ -5718,7 +5718,7 @@ body::after {
     margin-left: 4px;
 }
 
-/* Credits badge — top-right of adventure section */
+/* Credits badge - top-right of adventure section */
 .credits-display {
     position: absolute;
     top: 18px;
@@ -6332,7 +6332,7 @@ button:active, .btn:active {
        Making Daniel central to the experience
        ======================================== */
     
-    /* Daniel relationship styles — hero strip version (class preserved for JS compat) */
+    /* Daniel relationship styles - hero strip version (class preserved for JS compat) */
 
 
 .unlock-result-modal {

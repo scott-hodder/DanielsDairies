@@ -221,7 +221,7 @@ serve(async (req) => {
     }
 
     // 5. Send confirmation email
-    // Use a regular (anon) Supabase client to call auth.resend — same method as the working resend button
+    // Use a regular (anon) Supabase client to call auth.resend - same method as the working resend button
     console.log('[complete-signup] Step 5: Sending confirmation email via auth.resend...')
     try {
       const anonClient = createClient(supabaseUrl, anonKey, {

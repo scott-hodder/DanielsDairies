@@ -35,7 +35,7 @@ async function init() {
         return
     }
 
-    // Check if payment was cancelled — restore form state
+    // Check if payment was cancelled - restore form state
     if (params.get('payment') === 'cancelled') {
         const pending = localStorage.getItem('dd_pending_signup')
         if (pending) {
@@ -69,9 +69,9 @@ async function init() {
     // If free trial, update UI text
     if (isFreeTrial) {
         const header = document.querySelector('#step1 .form-header h2')
-        if (header) header.textContent = 'Start your free trial'
+        if (header) header.textContent = 'Try it free - no commitment'
         const subtitle = document.querySelector('#step1 .form-header p')
-        if (subtitle) subtitle.textContent = 'Create your account and get 2 free module credits to try Daniel\'s Diaries.'
+        if (subtitle) subtitle.textContent = 'Set up your account and get 2 free module credits to explore Daniel\'s Diaries with your child.'
     }
 
     // Load subscription tiers from DB
@@ -287,9 +287,9 @@ function populateReview() {
         document.getElementById('reviewPlan').textContent = 'Free Trial'
         document.getElementById('reviewTotal').textContent = 'Free (2 credits)'
         submitBtnText.textContent = 'Create Free Account'
-        if (reviewHeader) reviewHeader.textContent = 'Review & create account'
-        if (reviewSubtext) reviewSubtext.textContent = 'You\'ll get 2 free module credits to try Daniel\'s Diaries.'
-        if (termsText) termsText.textContent = 'Your free trial includes 2 module credits. Upgrade anytime from your profile.'
+        if (reviewHeader) reviewHeader.textContent = 'Looking good - ready to go?'
+        if (reviewSubtext) reviewSubtext.textContent = 'You\'ll get 2 free module credits to explore with your child.'
+        if (termsText) termsText.textContent = 'Your free trial includes 2 module credits. No payment needed - upgrade anytime from your profile.'
     } else {
         const selectedTier = tiers.find(t => t.tier === formData.plan)
         if (selectedTier) {
@@ -301,9 +301,9 @@ function populateReview() {
             document.getElementById('reviewTotal').textContent = '-'
         }
         submitBtnText.textContent = 'Subscribe & Pay'
-        if (reviewHeader) reviewHeader.textContent = 'Review & subscribe'
-        if (reviewSubtext) reviewSubtext.textContent = 'Check your details, then you\'ll be taken to Stripe to pay securely.'
-        if (termsText) termsText.textContent = 'Your account will be created after payment is confirmed. Cancel anytime from your profile.'
+        if (reviewHeader) reviewHeader.textContent = 'You\'re almost there'
+        if (reviewSubtext) reviewSubtext.textContent = 'Everything look right? You\'ll be taken to Stripe to complete payment securely.'
+        if (termsText) termsText.textContent = 'Your account is created after payment. No lock-in - cancel or change your plan anytime.'
     }
 }
 
@@ -492,7 +492,7 @@ async function completeSignupAfterPayment() {
         }
         showAlert('error', message)
 
-        // Allow retry — keep localStorage so they can try again
+        // Allow retry - keep localStorage so they can try again
         if (submitBtn) {
             submitBtn.disabled = false
             submitBtn.onclick = () => completeSignupAfterPayment()
@@ -543,31 +543,59 @@ function showPostSignupLoginForm(email) {
     const step3 = document.getElementById('step3')
     if (!step3) return
 
+    // Hide step indicator since we're past the signup flow
+    const stepIndicator = document.querySelector('.step-indicator')
+    if (stepIndicator) stepIndicator.style.display = 'none'
+
     step3.innerHTML = `
-        <div class="form-header">
-            <h2>You're all set!</h2>
-            <p>We've sent a confirmation email to <strong>${email}</strong>. Please check your inbox (and spam folder) and click the link to verify your account, then log in below.</p>
+        <div class="form-header" style="margin-bottom: 8px;">
+            <div style="font-size: 48px; margin-bottom: 12px;">📬</div>
+            <h2>Check your inbox</h2>
+            <p style="margin-bottom: 16px;">We've sent a confirmation link to <strong>${email}</strong></p>
         </div>
-        <div id="signupLoginMessages"></div>
-        <form id="signupLoginForm">
-            <div class="form-group">
-                <label class="form-label" for="signupLoginEmail">Email</label>
-                <input type="email" id="signupLoginEmail" class="form-input" value="${email}" required>
+
+        <div class="email-confirm-steps">
+            <div class="email-step">
+                <span class="email-step-num">1</span>
+                <span>Open the email from Daniel's Diaries</span>
             </div>
-            <div class="form-group">
-                <label class="form-label" for="signupLoginPassword">Password</label>
-                <input type="password" id="signupLoginPassword" class="form-input" placeholder="Enter your password" required>
+            <div class="email-step">
+                <span class="email-step-num">2</span>
+                <span>Click the confirmation link inside</span>
             </div>
-            <div class="form-buttons" style="justify-content: center;">
-                <button type="submit" class="btn-submit" id="signupLoginBtn">
-                    <span id="signupLoginBtnText">Log In</span>
-                    <span id="signupLoginSpinner" class="spinner hidden"></span>
-                </button>
+            <div class="email-step">
+                <span class="email-step-num">3</span>
+                <span>Come back here and log in</span>
             </div>
-        </form>
-        <p style="text-align:center; margin-top: 12px; font-size: 13px; color: #7a8a9e;">
-            Didn't get the email? <a href="#" id="signupResendLink" style="color: #6B9BD1; text-decoration: underline; cursor: pointer;">Resend verification email</a>
+        </div>
+
+        <p style="text-align:center; font-size: 13px; color: #8896a8; margin: 12px 0 20px;">
+            Can't find it? Check your <strong>spam or junk folder</strong> - sometimes it ends up there.
         </p>
+
+        <div style="border-top: 1px solid #e8edf4; padding-top: 20px; margin-top: 8px;">
+            <p style="text-align:center; font-size: 14px; color: #5f6b85; font-weight: 600; margin-bottom: 14px;">Once confirmed, log in below</p>
+            <div id="signupLoginMessages"></div>
+            <form id="signupLoginForm">
+                <div class="form-group">
+                    <label class="form-label" for="signupLoginEmail">Email</label>
+                    <input type="email" id="signupLoginEmail" class="form-input" value="${email}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="signupLoginPassword">Password</label>
+                    <input type="password" id="signupLoginPassword" class="form-input" placeholder="Enter your password" required>
+                </div>
+                <div class="form-buttons" style="justify-content: center;">
+                    <button type="submit" class="btn-submit" id="signupLoginBtn">
+                        <span id="signupLoginBtnText">Log In</span>
+                        <span id="signupLoginSpinner" class="spinner hidden"></span>
+                    </button>
+                </div>
+            </form>
+            <p style="text-align:center; margin-top: 12px; font-size: 13px; color: #7a8a9e;">
+                Didn't get the email? <a href="#" id="signupResendLink" style="color: #6B9BD1; text-decoration: underline; cursor: pointer;">Resend verification email</a>
+            </p>
+        </div>
     `
 
     // Wire up the inline login form
@@ -624,7 +652,7 @@ function showPostSignupLoginForm(email) {
                 resendLink.style.color = '#6B9BD1'
             }, 30000)
         } catch (err) {
-            resendLink.textContent = 'Failed — try again'
+            resendLink.textContent = 'Failed - try again'
             resendLink.style.color = '#c0392b'
             setTimeout(() => {
                 resendLink.textContent = 'Resend verification email'

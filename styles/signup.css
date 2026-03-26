@@ -742,3 +742,52 @@ input[name="plan"] {
         font-size: 24px;
     }
 }
+
+/* Email Confirmation Steps */
+.email-confirm-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px auto;
+    max-width: 340px;
+}
+.email-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #f0f6ff;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #2b3a55;
+    font-weight: 500;
+}
+.email-step-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #405878, #4c6c96);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Trust Badges */
+.trust-badges {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+.trust-badge {
+    font-size: 12px;
+    color: #6b7c8f;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}

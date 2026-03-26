@@ -1,5 +1,5 @@
 // ================================================================================
-// PARENT TOOLKIT TAB — Challenges, goals, tools, scripts, weekly check-in toggle
+// PARENT TOOLKIT TAB - Challenges, goals, tools, scripts, weekly check-in toggle
 // ================================================================================
 import { getSettings, updateSettings } from './adminPage.js';
 

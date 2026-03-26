@@ -1,5 +1,5 @@
 // ================================================================================
-// MODULE BUILDER — Add new module, AI generation, blueprints, enhanced modal,
+// MODULE BUILDER - Add new module, AI generation, blueprints, enhanced modal,
 //                  psychology dropdowns, preview/quality checks
 // ================================================================================
 import {
@@ -584,7 +584,7 @@ window.loadModuleBlueprintIntoForm = async function() {
         const cycleSelect = document.getElementById('newModuleCycle');
         const orderField = document.getElementById('newModuleOrder');
 
-        const normalizeLookup = (value) => (value || '').toString().trim().toLowerCase().replace(/\s+/g, '').replace(/[-–—]/g, '');
+        const normalizeLookup = (value) => (value || '').toString().trim().toLowerCase().replace(/\s+/g, '').replace(/[-–-]/g, '');
         const setSelectByName = (selectEl, lookupName) => {
             if (!selectEl || !lookupName) return false;
             const target = normalizeLookup(lookupName);
@@ -1038,7 +1038,7 @@ window.generateModuleWithAI = async function() {
         }, 900000); // 15 minutes for multi-age (4 variants)
 
         try {
-            // Build payload — always multi-age
+            // Build payload - always multi-age
             const generationPayload = {
                 contentBrief: enrichedBrief, seriesId, category, weekNumber, cycleId,
                 superSkillId, subSkillId, title, coreTheoryId, brainTownAnalogy,
@@ -1051,8 +1051,8 @@ window.generateModuleWithAI = async function() {
             saveGenerationSession(jobId, contentBrief);
 
             const result = await pollForJobResult(jobId);
-            if (!result) throw new Error('AI generation returned no result — check Edge Function logs');
-            if (!result.html) throw new Error(`AI generation completed but returned no HTML. ${result.error || ''} ${result.multiAge ? '(Multi-age mode — check if all variants failed)' : ''}`.trim());
+            if (!result) throw new Error('AI generation returned no result - check Edge Function logs');
+            if (!result.html) throw new Error(`AI generation completed but returned no HTML. ${result.error || ''} ${result.multiAge ? '(Multi-age mode - check if all variants failed)' : ''}`.trim());
 
             // Store multi-age variant data if present
             // Legacy adapter: result.multiAge indicates multi-age mode.
@@ -1100,7 +1100,7 @@ window.generateModuleWithAI = async function() {
             previewSummary.textContent = `Approx. ${pageCount || '??'} pages • ${charCount.toLocaleString()} characters`;
             previewStats.innerHTML = `
                 <p style="margin: 0 0 6px;"><strong>Module code:</strong> ${moduleCode}</p>
-                <p style="margin: 0 0 6px;"><strong>Category:</strong> ${category || '—'}</p>
+                <p style="margin: 0 0 6px;"><strong>Category:</strong> ${category || '-'}</p>
                 <p style="margin: 0;"><strong>Generated with AI</strong> ${window.isMultiAgeModule ? '(Multi-age: ' + window.generatedVariantBands.length + ' variants)' : ''}</p>
                 ${variantSelectorHtml}
             `;
@@ -1303,7 +1303,7 @@ function setMigrationStatus({ message, type = 'info' }) {
 }
 
 // ================================================================================
-// UTILITY — module code, backtick fix, home button
+// UTILITY - module code, backtick fix, home button
 // ================================================================================
 function generateNextModuleCode() {
     const moduleCodes = allModules.map(m => m.code).filter(code => code && code.startsWith('MODULE')).map(code => parseInt(code.replace('MODULE', ''))).filter(num => !isNaN(num));
@@ -1483,7 +1483,7 @@ function injectEnhancedFields() {
 
     const enhancedHTML = `
         <div class="gm-step-group" id="secondaryTheoriesSection" style="margin-top: 12px;">
-            <div class="gm-step-label">Step 11 — Secondary Theories (Max 3)</div>
+            <div class="gm-step-label">Step 11 - Secondary Theories (Max 3)</div>
             <div style="position: relative; margin-bottom: 6px;">
                 <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:#A0AEC0;pointer-events:none;">🔍</span>
                 <input type="text" id="secondaryTheorySearch" placeholder="Search theories..." style="width:100%;padding:7px 10px 7px 28px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:11px;font-family:inherit;background:#fff;color:#1B3A5C;" oninput="filterSecondaryTheories(this.value)">

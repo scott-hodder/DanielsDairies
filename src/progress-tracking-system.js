@@ -1758,8 +1758,8 @@ class ProgressTrackingSystem {
     }
 
     const supportiveFeedback = {
-      low: 'You are showing lots of helpful skills right now. Keep going — you’re doing great.',
-      moderate: 'You are learning and growing every week. Keep practising your tools — progress takes time.',
+      low: 'You are showing lots of helpful skills right now. Keep going - you’re doing great.',
+      moderate: 'You are learning and growing every week. Keep practising your tools - progress takes time.',
       high: 'Thanks for checking in honestly. Everyone has hard days, and we’ll keep supporting you step by step.'
     };
 
@@ -1773,7 +1773,7 @@ class ProgressTrackingSystem {
     const hasImprovedSinceLastCheckin = Number.isFinite(lastScore) && results.totalScore < lastScore;
 
     const encouragementMessage = hasImprovedSinceLastCheckin
-      ? 'Amazing progress! You are growing stronger every week — keep using your tools, you are doing brilliantly!'
+      ? 'Amazing progress! You are growing stronger every week - keep using your tools, you are doing brilliantly!'
       : supportiveFeedback[interpretationKey];
 
     const messages = {

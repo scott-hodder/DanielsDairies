@@ -1,5 +1,5 @@
 // ================================================================================
-// MODULE CUSTOMISATION TAB — Editing, bulk actions, filters, categories
+// MODULE CUSTOMISATION TAB - Editing, bulk actions, filters, categories
 // ================================================================================
 import {
     supabase,

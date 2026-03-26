@@ -1,5 +1,5 @@
 /**
- * Module Header CSS — Road Progress Edition
+ * Module Header CSS - Road Progress Edition
  * ===========================================
  * Road-style dashed progress bar that shows page-by-page
  * progress. Coloured nav buttons. Star badge contained.
@@ -87,7 +87,7 @@
 
 
 /* ============================================
-   NAVIGATION GROUP — LEFT
+   NAVIGATION GROUP - LEFT
    ============================================ */
 .module-header__nav {
   display: flex;
@@ -98,7 +98,7 @@
 
 
 /* ============================================
-   ACTIONS GROUP — RIGHT
+   ACTIONS GROUP - RIGHT
    ============================================ */
 .module-header__actions {
   display: flex;
@@ -146,7 +146,7 @@
 
 
 /* ============================================
-   NAV BUTTONS — Soft coloured tint
+   NAV BUTTONS - Soft coloured tint
    ============================================ */
 .module-header__btn--nav {
   height: var(--btn-size);
@@ -170,7 +170,7 @@
 
 
 /* ============================================
-   PAGE INDICATOR — Muted, small
+   PAGE INDICATOR - Muted, small
    ============================================ */
 .module-header__page {
   font-family: 'Nunito Sans', system-ui, sans-serif;
@@ -213,7 +213,7 @@
   overflow: hidden;
 }
 
-/* Yellow dashed centre line — animated */
+/* Yellow dashed centre line - animated */
 .module-header__road-fill::after {
   content: '';
   position: absolute;
@@ -243,7 +243,7 @@
   100% { transform: translateY(-50%) translateX(-16px); }
 }
 
-/* Remaining road — lighter with static dashes */
+/* Remaining road - lighter with static dashes */
 .module-header__road::after {
   content: '';
   position: absolute;
@@ -276,7 +276,7 @@
 
 
 /* ============================================
-   STAR BUTTON — Properly contained
+   STAR BUTTON - Properly contained
    ============================================ */
 .module-header__star {
   display: inline-flex !important;
@@ -449,7 +449,7 @@
     gap: 5px;
   }
   
-  /* Road still works on mobile — simpler */
+  /* Road still works on mobile - simpler */
   .module-header__road {
     --road-height: 6px;
   }

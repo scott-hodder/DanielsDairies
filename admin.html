@@ -436,7 +436,7 @@
             <div class="rewards-panel" style="max-width: 1500px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     <div>
-                        <h2 class="panel-title" style="margin-bottom: 4px;">📋 Reference Data — Backend Architecture</h2>
+                        <h2 class="panel-title" style="margin-bottom: 4px;">📋 Reference Data - Backend Architecture</h2>
                         <p style="color: #6b7c8f; font-size: 13px; margin: 0;">All reference data that drives AI module generation. Matches the DD_Backend_Data_Architecture document.</p>
                     </div>
                 </div>
@@ -1455,7 +1455,7 @@
 .gm-btn-cancel { background: #E2E8F0; color: #4A5568; }
 .gm-btn-cancel:hover { background: #CBD5E0; }
 
-/* ═══════ RIGHT PANEL — DECISION LOGIC ═══════ */
+/* ═══════ RIGHT PANEL - DECISION LOGIC ═══════ */
 .gm-decision-header {
     display: flex;
     justify-content: space-between;
@@ -1578,58 +1578,58 @@
                 <form id="addModuleForm" onsubmit="saveNewModule(event); return false;" style="display:flex; flex-direction:column; flex:1;">
                     <div class="gm-section-label">Module Parameters</div>
 
-                    <!-- STEP 1 — Title -->
+                    <!-- STEP 1 - Title -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 1 — Module Title</div>
+                        <div class="gm-step-label">Step 1 - Module Title</div>
                         <input type="text" class="gm-input form-input" id="newModuleTitle" required placeholder="e.g., Daniel's Diaries: My Big Feelings" oninput="updateDecisionLogic()">
                     </div>
 
-                    <!-- STEP 2 — Super Skill -->
+                    <!-- STEP 2 - Super Skill -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 2 — Super Skill</div>
+                        <div class="gm-step-label">Step 2 - Super Skill</div>
                         <select class="gm-select form-select" id="newModuleSuperSkill" required onchange="onSuperSkillChange(); updateDecisionLogic();">
                             <option value="">Select Super Skill...</option>
                         </select>
                         <div id="gmInfoSuperSkill"></div>
                     </div>
 
-                    <!-- STEP 3 — Age Variants (all modules are multi-age) -->
+                    <!-- STEP 3 - Age Variants (all modules are multi-age) -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 3 — Age Variants</div>
+                        <div class="gm-step-label">Step 3 - Age Variants</div>
                         <div style="padding: 10px 12px; background: #EEF2FF; border: 1px solid #6366F1; border-radius: 6px; font-size: 13px; color: #405878;">
-                            Multi-age — generates 4 variants (6-8, 9-11, 12-14, 15-18)
+                            Multi-age - generates 4 variants (6-8, 9-11, 12-14, 15-18)
                         </div>
                         <!-- Hidden select kept for backward compat with JS that reads it -->
                         <select id="ageRangeSelect" style="display:none;"></select>
                         <div id="gmInfoAge"></div>
                     </div>
 
-                    <!-- STEP 4 — Character (auto) -->
+                    <!-- STEP 4 - Character (auto) -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 4 — Character</div>
+                        <div class="gm-step-label">Step 4 - Character</div>
                         <input type="text" class="gm-input form-input" id="newModuleCharacter" readonly placeholder="Auto-populated from Super Skill">
                     </div>
 
-                    <!-- STEP 5 — Sub-Skill & Cycle -->
+                    <!-- STEP 5 - Sub-Skill & Cycle -->
                     <div class="gm-row">
                         <div class="gm-step-group">
-                            <div class="gm-step-label">Step 5 — Sub-Skill</div>
+                            <div class="gm-step-label">Step 5 - Sub-Skill</div>
                             <select class="gm-select form-select" id="newModuleSubSkill" onchange="updateDecisionLogic()">
                                 <option value="">Select sub-skill...</option>
                             </select>
                         </div>
                         <div class="gm-step-group">
-                            <div class="gm-step-label">Step 6 — Cycle</div>
+                            <div class="gm-step-label">Step 6 - Cycle</div>
                             <select class="gm-select form-select" id="newModuleCycle" onchange="onModuleCycleChange(); updateDecisionLogic();">
                                 <option value="">Select cycle...</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- STEP 7 — Week & XP/Stars -->
+                    <!-- STEP 7 - Week & XP/Stars -->
                     <div class="gm-row">
                         <div class="gm-step-group">
-                            <div class="gm-step-label">Step 7 — Week</div>
+                            <div class="gm-step-label">Step 7 - Week</div>
                             <input type="number" class="gm-input form-input" id="newModuleOrder" min="1" max="12" placeholder="1-12" oninput="updateDecisionLogic()">
                         </div>
                         <div class="gm-step-group">
@@ -1642,9 +1642,9 @@
                         </div>
                     </div>
 
-                    <!-- STEP 8 — Core Theory -->
+                    <!-- STEP 8 - Core Theory -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 8 — Core Theory</div>
+                        <div class="gm-step-label">Step 8 - Core Theory</div>
                         <select id="coreTheorySelect" class="gm-select form-select" required onchange="updateDecisionLogic(); if(typeof updateTheoryPreview==='function'){updateTheoryPreview({selectId:'coreTheorySelect',previewId:'theoryPreview',nameId:'theoryPreviewName',descriptionId:'theoryPreviewDescription'});}">
                             <option value="">Select psychological theory...</option>
                         </select>
@@ -1654,9 +1654,9 @@
                         </div>
                     </div>
 
-                    <!-- STEP 9 — Brain Town Analogy -->
+                    <!-- STEP 9 - Brain Town Analogy -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 9 — Brain Town Analogy</div>
+                        <div class="gm-step-label">Step 9 - Brain Town Analogy</div>
                         <textarea 
                             class="gm-textarea form-textarea" 
                             id="brainTownAnalogy" 
@@ -1667,9 +1667,9 @@
                         ></textarea>
                     </div>
 
-                    <!-- STEP 10 — Dx Adjustments (injected by enhanced modal) -->
+                    <!-- STEP 10 - Dx Adjustments (injected by enhanced modal) -->
                     <div class="gm-dx-section">
-                        <div class="gm-step-label">Step 10 — Dx Adjustments</div>
+                        <div class="gm-step-label">Step 10 - Dx Adjustments</div>
                         <div id="gmDxCheckboxes"></div>
                     </div>
 
@@ -1701,7 +1701,7 @@
                     <div class="gm-decision-title" id="gmRightTitle">Decision Logic</div>
                 </div>
 
-                <!-- Decision Logic Cards (auto-populated) — hidden after generation -->
+                <!-- Decision Logic Cards (auto-populated) - hidden after generation -->
                 <div id="gmDecisionLogWrapper">
                     <div id="gmDecisionLog"></div>
 
@@ -1740,12 +1740,12 @@
                         <h3 style="margin: 24px 0 8px; color: #1f2937; font-size: 20px;">Generating Module...</h3>
                         <div id="elapsedTime" style="font-size: 32px; font-weight: 700; color: #6366F1; font-variant-numeric: tabular-nums; margin: 8px 0;">0:00</div>
                         <p id="generationStepText" style="margin: 0 0 4px; color: #405878; font-size: 14px; font-weight: 600;">Starting...</p>
-                        <p id="generationProgressText" style="margin: 0; color: #6b7280; font-size: 13px;">Multi-age generation (4 variants) — this may take several minutes.</p>
+                        <p id="generationProgressText" style="margin: 0; color: #6b7280; font-size: 13px;">Multi-age generation (4 variants) - this may take several minutes.</p>
                         <div id="variantProgress" style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;"></div>
                     </div>
                 </div>
 
-                <!-- Results Panel — replaces decision logic after generation -->
+                <!-- Results Panel - replaces decision logic after generation -->
                 <div id="aiGeneratedResult" style="display: none;">
                     <!-- Success banner -->
                     <div style="background:#F0FFF4; border:2px solid #38A169; border-radius:9px; padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:10px;">

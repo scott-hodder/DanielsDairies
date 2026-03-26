@@ -61,7 +61,7 @@ async function _loadAuditData() {
         if (!hasSS) { fetches.push(window.supabase.from('super_skills').select('*, characters:character_id(id, name, species)').eq('is_active', true)); fetchMap.push('ss'); }
         if (!hasConn) { fetches.push(window.supabase.from('theory_connections').select('*, super_skills:super_skill_id(id, code), cycles:cycle_id(id, cycle_number, name), core_theories:primary_theory_id(id, theory_name, primary_researchers)').eq('is_active', true)); fetchMap.push('conn'); }
         if (!hasAge) { fetches.push(window.supabase.from('age_ranges').select('*').eq('is_active', true)); fetchMap.push('age'); }
-        // Levels are not loaded by reference-data-grids — always fetch
+        // Levels are not loaded by reference-data-grids - always fetch
         fetches.push(window.supabase.from('levels').select('*').order('level')); fetchMap.push('levels');
         if (!hasForbidden) { fetches.push(window.supabase.from('forbidden_terms').select('term, term_type').eq('is_active', true)); fetchMap.push('forbidden'); }
         if (!hasSections) { fetches.push(window.supabase.from('audit_sections').select('*').eq('is_active', true).order('section_number')); fetchMap.push('sections'); }
@@ -176,7 +176,7 @@ function _getParams() {
 
     // Age range text is "6-8" or "9-11" etc - extract both numbers
     var ageText = document.getElementById('ageRangeSelect')?.selectedOptions?.[0]?.text || '';
-    var agM = ageText.match(/(\d+)\s*[-–—to\s]+\s*(\d+)/i);
+    var agM = ageText.match(/(\d+)\s*[-–-to\s]+\s*(\d+)/i);
     var ag = agM ? agM[1] + '-' + agM[2] : '';
 
     return { sk: ssCode, ssId: superSkill?.id, cy: cy, wk: wk, ag: ag };
@@ -439,7 +439,7 @@ async function runModuleAudit() {
 
     var h = '<div style="padding:16px;border-radius:10px;background:' + bg + ';border:2px solid ' + col + ';margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">';
     h += '<div><div style="font-size:20px;font-weight:800;text-transform:uppercase;color:' + col + ';letter-spacing:1px;">' + verdict + '</div>';
-    h += '<div style="font-size:11px;color:#718096;margin-top:2px;">' + mid + ' — ' + new Date().toLocaleDateString('en-AU') + '</div></div>';
+    h += '<div style="font-size:11px;color:#718096;margin-top:2px;">' + mid + ' - ' + new Date().toLocaleDateString('en-AU') + '</div></div>';
     h += '<div style="text-align:right;"><div style="font-size:36px;font-weight:800;font-family:monospace;color:' + col + ';">' + pct + '%</div>';
     h += '<div style="font-size:10px;color:#718096;">' + pass + '/' + tot + ' passed (weighted)</div></div></div>';
 
@@ -468,7 +468,7 @@ async function runModuleAudit() {
         h += '<span style="padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800;text-transform:uppercase;background:' + sv + ';color:' + svt + ';">' + sec.sev + '</span>';
         h += '<span style="padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;background:#E2E8F0;color:#4A5568;">' + (sec.weight || 10) + '%</span>';
         h += sec.n + '</div>';
-        h += '<span style="padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;font-family:monospace;background:' + sc + ';color:' + st + ';">' + sec.pc + '/' + sec.tc + ' — ' + sec.pct + '%</span>';
+        h += '<span style="padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;font-family:monospace;background:' + sc + ';color:' + st + ';">' + sec.pc + '/' + sec.tc + ' - ' + sec.pct + '%</span>';
         h += '</div>';
         h += '<div style="display:' + (open ? 'block' : 'none') + ';padding:0 14px 12px;">';
         sec.checks.forEach(function(ch) {

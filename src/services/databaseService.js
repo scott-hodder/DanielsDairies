@@ -342,7 +342,7 @@ export async function deleteChild(childId) {
   return true
 }
 
-// Get all modules (metadata only — excludes heavy html_content)
+// Get all modules (metadata only - excludes heavy html_content)
 export async function getModules() {
   return withCachedQuery('modules:all', 300_000, async () => {
     const { data, error } = await getSupabaseClient()

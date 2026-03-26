@@ -1,5 +1,5 @@
 // ================================================================================
-// BILLING TAB — Tier-centric editing, pricing, credit grants
+// BILLING TAB - Tier-centric editing, pricing, credit grants
 // ================================================================================
 import { supabase } from './adminPage.js';
 

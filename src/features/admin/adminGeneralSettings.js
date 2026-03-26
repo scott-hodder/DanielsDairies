@@ -1,5 +1,5 @@
 // ================================================================================
-// GENERAL SETTINGS — Categories, series, emotions, skills, pathways,
+// GENERAL SETTINGS - Categories, series, emotions, skills, pathways,
 //                    super skills / sub-skills management
 // ================================================================================
 import { supabase } from './adminPage.js';

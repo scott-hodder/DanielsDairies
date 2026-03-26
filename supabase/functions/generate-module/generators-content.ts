@@ -604,7 +604,7 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   }
   
   if (brainTown) {
-    // Include the FULL Brain Town analogy text (up to 500 chars) — it must be woven into content
+    // Include the FULL Brain Town analogy text (up to 500 chars) - it must be woven into content
     parts.push('', `BRAIN TOWN ANALOGY (must weave into content): ${brainTown.substring(0, 500)}`);
   }
   
@@ -634,7 +634,7 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
 function dehyphenateContent(text: string): string {
   if (!text || typeof text !== 'string') return text;
   // Remove em dashes and en dashes, replacing with comma-space or just space
-  let result = text.replace(/\s*—\s*/g, ', ').replace(/\s*–\s*/g, ', ');
+  let result = text.replace(/\s*-\s*/g, ', ').replace(/\s*–\s*/g, ', ');
   // Clean up double commas or comma after punctuation
   result = result.replace(/,\s*,/g, ',').replace(/([.!?]),/g, '$1');
   // Replace letter-hyphen-letter sequences (compound words) with spaces
@@ -733,9 +733,9 @@ DO NOT use any other animal or emoji - only use ${seriesInfo.emoji} for the masc
   const adminAge = briefAgeMatch ? briefAgeMatch[1].trim() : '';
   
   // Extract super skill and sub-skill from the brief for theming
-  const superSkillMatch = contentBrief.match(/^Super Skill:\s*(.+?)(?:\s*—|$)/m);
+  const superSkillMatch = contentBrief.match(/^Super Skill:\s*(.+?)(?:\s*-|$)/m);
   const briefSuperSkill = superSkillMatch ? superSkillMatch[1].trim() : '';
-  const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+?)(?:\s*—|$)/m);
+  const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+?)(?:\s*-|$)/m);
   const briefSubSkill = subSkillMatch ? subSkillMatch[1].trim() : '';
   
   // Extract the primary theory name for theming
@@ -3845,9 +3845,9 @@ async function generateVerificationReport(
   const briefTitle = briefTitleMatch ? briefTitleMatch[1].trim() : metadata.title;
   const briefAgeMatch = contentBrief.match(/^Target Age:\s*(.+?)(?:\s*\(|$)/m);
   const briefAge = briefAgeMatch ? briefAgeMatch[1].trim() : metadata.targetAge;
-  const superSkillMatch = contentBrief.match(/^Super Skill:\s*(.+?)(?:\s*—|$)/m);
+  const superSkillMatch = contentBrief.match(/^Super Skill:\s*(.+?)(?:\s*-|$)/m);
   const superSkillName = superSkillMatch ? superSkillMatch[1].trim() : '';
-  const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+?)(?:\s*—|$)/m);
+  const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+?)(?:\s*-|$)/m);
   const subSkillName = subSkillMatch ? subSkillMatch[1].trim() : '';
 
   // Build a summary of generated content for audit
@@ -4335,7 +4335,7 @@ function buildVariantContentBrief(
 
   // Replace existing age range MUST BE line
   brief = brief.replace(
-    /^- The target age range MUST be exactly ".*?"[\s—.]*do NOT change this\.$/m,
+    /^- The target age range MUST be exactly ".*?"[\s-.]*do NOT change this\.$/m,
     `- The target age range MUST be exactly "${ageBand}". Do NOT change this.`
   );
 
@@ -4380,7 +4380,7 @@ function stripAgeFromBrief(contentBrief: string): string {
     'Target Age: [VARIANT_AGE_BAND]'
   );
   brief = brief.replace(
-    /^- The target age range MUST be exactly ".*?"[\s—.]*[Dd]o NOT change this\.$/m,
+    /^- The target age range MUST be exactly ".*?"[\s-.]*[Dd]o NOT change this\.$/m,
     '- The target age range will be set per variant.'
   );
   return brief;
@@ -4475,7 +4475,7 @@ function validateVariantDiversity(
       const sim = calculateVariantSimilarity(variants.get(bands[i])!, variants.get(bands[j])!);
       if (sim >= SIMILARITY_THRESHOLD) {
         warnings.push(
-          `Variants ${bands[i]} and ${bands[j]} are ${Math.round(sim * 100)}% similar — content may be too generic`
+          `Variants ${bands[i]} and ${bands[j]} are ${Math.round(sim * 100)}% similar - content may be too generic`
         );
         console.warn(`[MULTI-AGE] Near-duplicate: ${bands[i]} vs ${bands[j]} = ${Math.round(sim * 100)}%`);
       }
@@ -4616,7 +4616,7 @@ async function generateAllVariants(
   for (const band of ageBands) {
     const content = variants.get(band);
     if (!content) {
-      // Variant failed entirely — retry once
+      // Variant failed entirely - retry once
       if ((regenerationCounts[band] ?? 0) < MAX_RETRIES) {
         console.warn(`[MULTI-AGE] Retrying failed variant ${band}`);
         regenerationCounts[band] = (regenerationCounts[band] ?? 0) + 1;

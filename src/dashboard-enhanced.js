@@ -353,7 +353,7 @@ class AdventureMapV4 {
       Promise.all([
         window.supabase
           .from('super_skills')
-          .select('*')
+          .select('*, characters:character_id(id, name, species, image_url)')
           .eq('is_active', true)
           .order('sort_order', { ascending: true }),
         window.supabase
@@ -366,6 +366,15 @@ class AdventureMapV4 {
           var cyclesResult = results[1];
           if (superSkillsResult.data) {
             superSkillsFromDB = superSkillsResult.data;
+            window.superSkills = superSkillsResult.data;
+            // Preload character images so they appear instantly
+            superSkillsResult.data.forEach(function(skill) {
+              var imgUrl = (skill.characters && skill.characters.image_url) || skill.character_image_url;
+              if (imgUrl) {
+                var img = new Image();
+                img.src = imgUrl;
+              }
+            });
             // Update SUPER_SKILL_THEMES with database values
             superSkillsResult.data.forEach(function(skill) {
               if (!skill.slug) return;
@@ -568,7 +577,7 @@ class AdventureMapV4 {
     css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
     css.push('@keyframes emojiShake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }');
     
-    // Node loading state — gentle pulse on click while async checks run
+    // Node loading state - gentle pulse on click while async checks run
     css.push('@keyframes nodeLoadingPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }');
     css.push('.adventure-node.node-loading { animation: nodeLoadingPulse 0.8s ease-in-out infinite !important; pointer-events: none !important; }');
 
@@ -665,12 +674,12 @@ class AdventureMapV4 {
     this.buildModuleList();
     this.filterModulesByCategory();
 
-    console.log('[AdventureMap] render() — allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
+    console.log('[AdventureMap] render() - allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
 
     // If filter produced no results but modules exist, and this isn't a deliberate user cycle selection,
     // fall back to first available category
     if (this.modules.length === 0 && this.allModules.length > 0 && !this._userSelectedEmptyCycle) {
-      console.log('[AdventureMap] Category "' + this.currentCategory + '" has no modules — falling back');
+      console.log('[AdventureMap] Category "' + this.currentCategory + '" has no modules - falling back');
       var fallbackCategories = this.getAvailableCategories();
       if (fallbackCategories.length > 0) {
         this.currentCategory = fallbackCategories[0];
@@ -681,7 +690,7 @@ class AdventureMapV4 {
     }
     this._userSelectedEmptyCycle = false;
 
-    // Run DOM updates directly — callers already handle framing
+    // Run DOM updates directly - callers already handle framing
     this.createMapHTML();
     this.setupEventListeners();
 
@@ -856,7 +865,7 @@ class AdventureMapV4 {
 
     var availableCycles = this.getAvailableCyclesForCategory();
     if (availableCycles.length === 0) {
-      // No cycles for this category — clear any stale cycle from a previous category
+      // No cycles for this category - clear any stale cycle from a previous category
       this.currentCycleId = null;
     } else if (!this.currentCycleId || !availableCycles.find(function(cycle) { return String(cycle.id) === String(self.currentCycleId); })) {
       this.syncCycleSelection(availableCycles);
@@ -1343,10 +1352,10 @@ class AdventureMapV4 {
     var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
     var remainingCount = numModules - completedCount;
     var progressMsg = completedCount === 0
-      ? 'Your journey begins here — pick your first module to start exploring!'
+      ? 'Your journey begins here - pick your first module to start exploring!'
       : remainingCount > 0
-        ? completedCount + ' of ' + numModules + ' modules completed — ' + remainingCount + ' more to go!'
-        : 'All ' + numModules + ' modules completed — amazing work! 🎉';
+        ? completedCount + ' of ' + numModules + ' modules completed - ' + remainingCount + ' more to go!'
+        : 'All ' + numModules + ' modules completed - amazing work! 🎉';
     var html = '<div class="adventure-header">' +
       '<h2 class="adventure-title">🗺️ Your Adventure Map</h2>' +
       '<p class="adventure-subtitle">' + progressMsg + '</p>' +
@@ -1463,7 +1472,7 @@ class AdventureMapV4 {
   showZoneUpgradeBanner(zone, completedCount) {
     if (!this.viewport) return;
 
-    // localStorage guard — only show once per child per zone
+    // localStorage guard - only show once per child per zone
     var child = window.state && window.state.selectedChild;
     var childId = child ? child.id : 'unknown';
     var storageKey = 'zoneUpgradeSeen_child_' + childId + '_zone_' + zone;
@@ -1492,7 +1501,7 @@ class AdventureMapV4 {
     var zoneSubtitles = [
       '',
       'Every module builds new pathways in your brain!',
-      'Look! Houses and fences appeared — your brain pathways are growing stronger!',
+      'Look! Houses and fences appeared - your brain pathways are growing stronger!',
       'Shops and street lights! Your brain connections are getting really powerful!',
       'A whole skyline! Your brain is an incredible network of pathways!'
     ];
@@ -1691,15 +1700,15 @@ class AdventureMapV4 {
       { main: '#A8754F', light: '#C89B6C', shadow: 'rgba(109, 71, 41, 0.35)',
         shadowW: 32, mainW: 26, lightW: 18, dashW: 2, dashArray: '0 20',
         dashColor: 'rgba(255,255,255,0.35)' },
-      // Village: paved road — grey asphalt with white lane lines
+      // Village: paved road - grey asphalt with white lane lines
       { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)',
         shadowW: 38, mainW: 32, lightW: 24, dashW: 3, dashArray: '12 16',
         dashColor: 'rgba(255,255,255,0.7)' },
-      // Town Center: highway — dark asphalt, wider, double lane markings
+      // Town Center: highway - dark asphalt, wider, double lane markings
       { main: '#4B5563', light: '#6B7280', shadow: 'rgba(31, 41, 55, 0.4)',
         shadowW: 46, mainW: 40, lightW: 30, dashW: 3, dashArray: '18 12',
         dashColor: 'rgba(255,255,255,0.85)' },
-      // City: motorway — dark smooth surface, widest, solid lane edges
+      // City: motorway - dark smooth surface, widest, solid lane edges
       { main: '#1F2937', light: '#374151', shadow: 'rgba(17, 24, 39, 0.45)',
         shadowW: 54, mainW: 48, lightW: 38, dashW: 4, dashArray: '24 10',
         dashColor: 'rgba(255,255,255,0.9)' }
@@ -1728,7 +1737,7 @@ class AdventureMapV4 {
     // Lighter centre
     svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.light + '" stroke-width="' + road.lightW + '" stroke-linecap="round" stroke-linejoin="round" />';
 
-    // Road markings — different per stage, with animated dashes
+    // Road markings - different per stage, with animated dashes
     // Animation speed varies: dirt slow & subtle, motorway fast & smooth
     var dashAnimClass = 'road-dash-s' + stage;
     if (stage === 0) {
@@ -1994,7 +2003,7 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = module.canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — start with the first lock';
+        statusText = module.canUnlock ? 'Locked - spend 1 credit to unlock' : 'Locked - start with the first lock';
         statusClass = 'locked-status';
       }
 
@@ -2054,7 +2063,7 @@ class AdventureMapV4 {
       self._processingNodeClick = false;
       if (nodeEl) nodeEl.classList.remove('node-loading');
     };
-    // Safety timeout — clear loading state after 5 seconds max
+    // Safety timeout - clear loading state after 5 seconds max
     setTimeout(clearLoading, 5000);
     // Expose clearLoading so Daniel system can call it when popup appears
     window._clearNodeLoading = clearLoading;
@@ -2409,12 +2418,12 @@ class EnhancedDashboard {
     // Load quest data (synchronous localStorage read)
     this.loadDailyQuest();
 
-    // Update UI synchronously — these are fast DOM writes
+    // Update UI synchronously - these are fast DOM writes
     this.updateDanielMood();
     this.updateQuestDisplay();
     this.updateRankDisplay();
 
-    // Setup adventure map — render() has its own rAF
+    // Setup adventure map - render() has its own rAF
     this.setupAdventureMap();
 
     this.initialized = true;
@@ -2607,9 +2616,9 @@ class EnhancedDashboard {
     try {
       var superSkillId = mod.super_skill_id || null;
 
-      // Check 1: Periodic check-in (every 3 modules) — takes priority over intro
+      // Check 1: Periodic check-in (every 3 modules) - takes priority over intro
       var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-      console.log('[AdventureMap.startModule] Check 1 (periodic) — needsCheckin:', needsCheckin);
+      console.log('[AdventureMap.startModule] Check 1 (periodic) - needsCheckin:', needsCheckin);
       if (needsCheckin) {
         if (typeof window.showCheckinPopup === 'function') {
           var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
@@ -2622,7 +2631,7 @@ class EnhancedDashboard {
       }
 
       // Check 2: First module in a super skill → show character intro
-      console.log('[AdventureMap.startModule] Check 2 (intro) — superSkillId:', superSkillId, 'childId:', child.id);
+      console.log('[AdventureMap.startModule] Check 2 (intro) - superSkillId:', superSkillId, 'childId:', child.id);
       if (superSkillId && typeof window.showCheckinPopup === 'function') {
         var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
         var alreadySeen = localStorage.getItem(introKey);
@@ -2715,7 +2724,7 @@ class EnhancedDashboard {
       console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
 
       if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
-        console.log('[Check-in] Triggering check-in — need to catch up');
+        console.log('[Check-in] Triggering check-in - need to catch up');
         return true;
       }
 
@@ -2805,7 +2814,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(checkDataReady, 100);
 });
 
-// Refresh function — immediate execution, debounces rapid successive calls
+// Refresh function - immediate execution, debounces rapid successive calls
 var refreshDebounceTimer = null;
 window.refreshEnhancedDashboard = function() {
   // If a call is already pending, skip (debounce)

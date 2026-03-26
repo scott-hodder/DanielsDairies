@@ -99,7 +99,7 @@ The generated prompt is assembled by `buildEnhancedContentBrief(...)` and includ
 
 1. `=== MODULE BRIEF ===`
    - Title, target age, super skill, sub-skill, objective
-2. `CRITICAL — NON-NEGOTIABLE REQUIREMENTS`
+2. `CRITICAL - NON-NEGOTIABLE REQUIREMENTS`
    - Must keep title/age/theory/brain-town constraints
 3. `=== HIGH-PRIORITY CREATOR INSTRUCTIONS (MUST FOLLOW) ===`
    - Includes freeform admin context

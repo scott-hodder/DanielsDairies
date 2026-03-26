@@ -113,7 +113,7 @@ serve(async (req) => {
           price_data: {
             currency: 'aud',
             product_data: {
-              name: `Daniel's Diaries — ${planName}`,
+              name: `Daniel's Diaries - ${planName}`,
               description: `First month: ${modules} guided modules`
             },
             unit_amount: monthlyPriceCents
