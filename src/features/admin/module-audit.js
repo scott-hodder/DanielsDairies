@@ -176,7 +176,7 @@ function _getParams() {
 
     // Age range text is "6-8" or "9-11" etc - extract both numbers
     var ageText = document.getElementById('ageRangeSelect')?.selectedOptions?.[0]?.text || '';
-    var agM = ageText.match(/(\d+)\s*[-–-to\s]+\s*(\d+)/i);
+    var agM = ageText.match(/(\d+)\s*(?:-|–|to|\s)+\s*(\d+)/i);
     var ag = agM ? agM[1] + '-' + agM[2] : '';
 
     return { sk: ssCode, ssId: superSkill?.id, cy: cy, wk: wk, ag: ag };
