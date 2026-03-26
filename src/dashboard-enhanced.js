@@ -4,6 +4,7 @@
 // ================================================
 
 import { getZoneState } from './adventure-map-zones.js';
+import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
 
 // Import existing dashboard state and functions
 let dashboardModules = [];
@@ -674,6 +675,9 @@ class AdventureMapV4 {
     this.buildModuleList();
     this.filterModulesByCategory();
 
+    // Inject road builder stops at zone boundaries (after modules 3, 6, 9)
+    this.modules = injectRoadBuilderStops(this.modules);
+
     console.log('[AdventureMap] render() - allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
 
     // If filter produced no results but modules exist, and this isn't a deliberate user cycle selection,
@@ -1330,14 +1334,14 @@ class AdventureMapV4 {
       this.syncCycleSelection(availableCycles);
     }
     var currentCycle = availableCycles.find(function(cycle) { return String(cycle.id) === String(this.currentCycleId); }.bind(this)) || null;
-    var numModules = this.modules.length;
-    var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var numModules = this.modules.filter(function(m) { return !m.isRoadBuilder; }).length;
+    var completedCount = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
     var canvasHeight = Math.max(this.config.minCanvasHeight, this.config.topPadding + (numModules * this.config.nodeSpacingY) + this.config.bottomPadding);
 
     var self = this;
     var categoryOptions = availableCategories.map(function(cat) {
       var catTheme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
-      var count = self.allModules.filter(function(m) { return m.category === cat; }).length;
+      var count = self.allModules.filter(function(m) { return !m.isRoadBuilder && m.category === cat; }).length;
       return '<option value="' + cat + '"' + (cat === self.currentCategory ? ' selected' : '') + '>' + catTheme.emoji + ' ' + catTheme.name + ' (' + count + ')</option>';
     }).join('');
 
@@ -1366,7 +1370,7 @@ class AdventureMapV4 {
       (availableCycles.length > 0 ? '<label class="category-filter-label" style="margin-left: 6px;">Cycle:</label>' +
       '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
       '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
-      '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + this.modules.length + ' module' + (this.modules.length !== 1 ? 's' : '') + '</span>' +
+      '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + numModules + ' module' + (numModules !== 1 ? 's' : '') + '</span>' +
       '</div>';
 
     if (this.modules.length > 0) {
@@ -1454,7 +1458,7 @@ class AdventureMapV4 {
     if (previousZone !== null && newZone > previousZone && newZone > 1) {
       var self = this;
       setTimeout(function() {
-        self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
+        self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length);
       }, 400);
     } else if (previousZone === null && newZone > 1) {
       var childId = child ? child.id : 'unknown';
@@ -1463,7 +1467,7 @@ class AdventureMapV4 {
       if (localStorage.getItem(storageKey) !== 'true') {
         var self = this;
         setTimeout(function() {
-          self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
+          self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length);
         }, 800);
       }
     }
@@ -1595,8 +1599,8 @@ class AdventureMapV4 {
   }
   
   getProgressLevel() {
-    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    var total = this.modules.length;
+    var completed = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+    var total = this.modules.filter(function(m) { return !m.isRoadBuilder; }).length;
     if (total === 0) return 0;
     var progress = completed / total;
     if (progress < 0.33) return 0;
@@ -1605,11 +1609,18 @@ class AdventureMapV4 {
   }
 
   getTownStage() {
-    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    if (completed <= 2) return 0;
-    if (completed <= 5) return 1;
-    if (completed <= 8) return 2;
-    return 3;
+    var completed = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+    // Zone upgrades are gated behind road builder completion.
+    // Even if 3 modules are done, stay in zone 0 until road builder 1 is completed.
+    var roadBuilders = this.modules.filter(function(m) { return m.isRoadBuilder; });
+    var rb1Done = roadBuilders.length > 0 && roadBuilders[0] && roadBuilders[0].status === 'completed';
+    var rb2Done = roadBuilders.length > 1 && roadBuilders[1] && roadBuilders[1].status === 'completed';
+    var rb3Done = roadBuilders.length > 2 && roadBuilders[2] && roadBuilders[2].status === 'completed';
+
+    if (completed >= 9 && rb3Done) return 3;
+    if (completed >= 6 && rb2Done) return 2;
+    if (completed >= 3 && rb1Done) return 1;
+    return 0;
   }
 
   getTownStageMeta() {
@@ -1679,12 +1690,9 @@ class AdventureMapV4 {
   }
 
   getSegmentRoadStage(completedBefore) {
-    // Road evolves based on how many modules are completed before this segment
-    // Matches brain-pathway metaphor: more modules = stronger neural connections = better road
-    if (completedBefore <= 2) return 0;  // Trailhead: dirt track
-    if (completedBefore <= 5) return 1;  // Village: paved road
-    if (completedBefore <= 8) return 2;  // Town Center: highway
-    return 3;                             // City: motorway
+    // Road style is now tied to getTownStage so it only upgrades
+    // after the road builder mini-game is completed for that zone.
+    return this.getTownStage();
   }
 
   renderPath() {
@@ -1724,7 +1732,7 @@ class AdventureMapV4 {
     }
 
     // Road style based on overall town stage (total completed modules)
-    var totalCompleted = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var totalCompleted = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
     var stage = this.getSegmentRoadStage(totalCompleted);
     var road = roadPalettes[stage];
 
@@ -1899,17 +1907,78 @@ class AdventureMapV4 {
     var positions = this.calculateNodePositions();
     var currentIndex = -1;
     for (var i = 0; i < this.modules.length; i++) {
-      if (this.modules[i].status === 'available') {
+      if (!this.modules[i].isRoadBuilder && this.modules[i].status === 'available') {
         currentIndex = i;
         break;
       }
     }
 
     var self = this;
+    var moduleNumber = 0; // Track actual module numbers (excluding road builders)
     this.modules.forEach(function(module, index) {
       var pos = positions[index];
       if (!pos) return;
 
+      // ── Road Builder Stop (roadblock-style node) ──
+      if (module.isRoadBuilder) {
+        var rbNode = document.createElement('div');
+        rbNode.className = 'adventure-node road-builder ' + module.status;
+        rbNode.setAttribute('data-module-id', module.id);
+        rbNode.style.left = pos.x + 'px';
+        rbNode.style.top = pos.y + 'px';
+
+        var rbIcon = document.createElement('div');
+        rbIcon.className = 'node-emoji';
+        rbIcon.textContent = module.status === 'completed' ? '✅' : '🚧';
+        rbNode.appendChild(rbIcon);
+
+        if (module.status === 'completed') {
+          // Green checkmark badge (matches roadblock completed style)
+          var rbCheck = document.createElement('div');
+          rbCheck.className = 'rb-checkmark';
+          rbCheck.textContent = '✓';
+          rbNode.appendChild(rbCheck);
+        } else if (module.status === 'available') {
+          // Daniel indicator for available road builder
+          if (currentIndex === -1 || !self.modules.some(function(m, mi) { return mi < index && m.status === 'available' && !m.isRoadBuilder; })) {
+            rbNode.classList.add('is-current');
+            var character = document.createElement('div');
+            character.className = 'current-indicator';
+            var dogImage = document.createElement('img');
+            dogImage.src = '/images/characters/DanielTheDog.webp';
+            dogImage.alt = 'Daniel the dog';
+            character.appendChild(dogImage);
+            var indicatorLabel = document.createElement('div');
+            indicatorLabel.className = 'current-indicator-label';
+            indicatorLabel.textContent = 'Tap to play!';
+            character.appendChild(indicatorLabel);
+            rbNode.appendChild(character);
+          }
+        }
+
+        var rbClickHandler = function(e) {
+          e.stopPropagation();
+          if (module.status === 'locked') return;
+          if (module.status === 'completed') return;
+          openRoadBuilderGame(module.zoneTransition, function() {
+            // Re-render map after completing road builder
+            self.render();
+          });
+        };
+
+        rbNode.addEventListener('click', rbClickHandler);
+        rbNode.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          rbClickHandler(e);
+        });
+
+        rbNode.style.pointerEvents = 'auto';
+        container.appendChild(rbNode);
+        return; // Skip normal module rendering
+      }
+
+      // ── Normal Module Node ──
+      moduleNumber++;
       var node = document.createElement('div');
       node.className = 'adventure-node ' + module.status;
       var nodeModuleId = module.id || (module.module && module.module.id);
@@ -1930,7 +1999,7 @@ class AdventureMapV4 {
 
       var num = document.createElement('div');
       num.className = 'node-number';
-      num.textContent = (index + 1).toString();
+      num.textContent = moduleNumber.toString();
       node.appendChild(num);
 
       if (self.currentCategory === 'all' && module.category) {
@@ -1993,7 +2062,7 @@ class AdventureMapV4 {
 
       var tooltip = document.createElement('div');
       tooltip.className = 'node-tooltip';
-      
+
       var statusText = '';
       var statusClass = '';
       if (module.status === 'completed') {
@@ -2021,6 +2090,16 @@ class AdventureMapV4 {
           }
           return;
         }
+        if (module.status === 'available' && !self.arePreviousModulesComplete(index)) {
+          if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Not quite yet!',
+              message: 'Complete the earlier modules first before starting this one.',
+              type: 'error'
+            });
+          }
+          return;
+        }
         self.onNodeClick(module, this);
       });
 
@@ -2039,12 +2118,30 @@ class AdventureMapV4 {
           }
           return;
         }
+        if (module.status === 'available' && !self.arePreviousModulesComplete(index)) {
+          if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Not quite yet!',
+              message: 'Complete the earlier modules first before starting this one.',
+              type: 'error'
+            });
+          }
+          return;
+        }
         self.onNodeClick(module, this);
       });
 
       node.style.pointerEvents = 'auto';
       container.appendChild(node);
     });
+  }
+
+  arePreviousModulesComplete(moduleIndex) {
+    for (var i = 0; i < moduleIndex; i++) {
+      var m = this.modules[i];
+      if (!m.isRoadBuilder && m.status !== 'completed') return false;
+    }
+    return true;
   }
 
   onNodeClick(module, nodeEl) {
@@ -2074,6 +2171,7 @@ class AdventureMapV4 {
       var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
       if (child && module.module) {
         var url = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code);
+        if (window.state && window.state.isCurrentUserAdmin) url += '&isAdmin=true';
         window.location.href = url;
       }
       clearLoading();
@@ -2081,8 +2179,8 @@ class AdventureMapV4 {
   }
 
   updateProgress() {
-    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    var total = this.modules.length;
+    var completed = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+    var total = this.modules.filter(function(m) { return !m.isRoadBuilder; }).length;
     var progressText = document.getElementById('progressText');
     var progressFill = document.getElementById('progressFill');
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
@@ -2611,7 +2709,7 @@ class EnhancedDashboard {
     }
 
     var mod = module.module;
-    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '');
+    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
 
     try {
       var superSkillId = mod.super_skill_id || null;

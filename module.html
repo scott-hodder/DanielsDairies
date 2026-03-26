@@ -1010,8 +1010,6 @@
     window.restorePageResponses = function(pageNum) {
       const responses = ResponseTracker.getAll();
       
-      console.log('[Restore] Page', pageNum, '- Found', Object.keys(responses).length, 'saved responses');
-      
       // Restore checkboxes
       document.querySelectorAll('.checklist-item').forEach((item, i) => {
         const qid = `checklist_p${pageNum}_${i}`;
@@ -1353,6 +1351,19 @@
             /function\s+renderPage\s*\(\s*\)\s*\{/,
             'function renderPage() { if (window.ensureModuleCoverTitle) { window.ensureModuleCoverTitle(); } setTimeout(function() { if (typeof currentPage !== "undefined") { window.enhancePageTracking(currentPage); window.restorePageResponses(currentPage); } }, 50);'
           );
+
+          // Admin bypass: skip activity/input validation on nextPage when isAdmin=true in URL
+          if (new URLSearchParams(window.location.search).get('isAdmin') === 'true') {
+            code = 'var IS_ADMIN = true;\n' + code;
+            code = code.replace(
+              /if\s*\(\s*!validatePageInputs\s*\(\s*\)\s*\)\s*\{\s*return\s*;?\s*\}/,
+              'if (!IS_ADMIN && !validatePageInputs()) { return; }'
+            );
+            code = code.replace(
+              /if\s*\(status\.hasActivity\s*&&\s*!status\.isComplete\)\s*\{/,
+              'if (!IS_ADMIN && status.hasActivity && !status.isComplete) {'
+            );
+          }
           
           // Wrap the code safely
           const wrappedCode = `
@@ -1423,9 +1434,7 @@
         if (match) {
           const current = parseInt(match[1], 10);
           const total = parseInt(match[2], 10);
-          // REMOVED: Auto-completion when reaching last page
-          // Modules should only complete when explicitly requested via button click
-          console.log(`Page ${current} of ${total} - Auto-completion disabled`);
+          // Auto-completion disabled - modules complete only via button click
         }
       });
       

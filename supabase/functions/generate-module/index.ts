@@ -808,6 +808,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     let formData = {};
     let header;
     let childDisplayName = 'Friend';
+    const IS_ADMIN = new URLSearchParams(window.location.search).get('isAdmin') === 'true';
     
     // Load saved data
     function loadProgress() {
@@ -977,16 +978,18 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     // Navigation
     function nextPage() {
       if (currentPage < pages.length - 1) {
-        // Check if text/drawing inputs are filled
-        if (!validatePageInputs()) {
-          return;
-        }
+        if (!IS_ADMIN) {
+          // Check if text/drawing inputs are filled
+          if (!validatePageInputs()) {
+            return;
+          }
 
-        // Check if current page requires activity completion
-        const status = getCurrentPageActivityStatus();
-        if (status.hasActivity && !status.isComplete) {
-          showActivityReminder();
-          return;
+          // Check if current page requires activity completion
+          const status = getCurrentPageActivityStatus();
+          if (status.hasActivity && !status.isComplete) {
+            showActivityReminder();
+            return;
+          }
         }
 
         currentPage++;

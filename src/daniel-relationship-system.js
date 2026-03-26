@@ -1024,7 +1024,7 @@ class DanielModulePreview {
         if (needsCheckin) {
           clearLoading();
           console.log('[DanielSystem] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)');
-          const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+          const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
           window.showCheckinPopup(rawMod, function() {
             window.location.href = moduleUrl;
           }, true);
@@ -1044,7 +1044,7 @@ class DanielModulePreview {
       if (!alreadySeen) {
         clearLoading();
         console.log('[DanielSystem] Showing INTRO (first module for this super skill)');
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
         window.showCheckinPopup(rawMod, function() {
           localStorage.setItem(introKey, 'true');
           window.location.href = moduleUrl;
@@ -1057,7 +1057,7 @@ class DanielModulePreview {
     clearLoading();
     this.dialogueSystem.showPreActivity(module, category, async () => {
       if (child && module) {
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
 
         window.location.href = moduleUrl;
         return;

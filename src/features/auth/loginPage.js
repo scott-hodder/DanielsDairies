@@ -117,16 +117,13 @@ function showResetPasswordForm() {
 
 // Toggle between login and signup
 toggleLink.addEventListener('click', (e) => {
-  e.preventDefault()
-  if (loginForm.classList.contains('hidden') && forgotPasswordForm.classList.contains('hidden') && resetPasswordForm.classList.contains('hidden')) {
+  // If in forgot/reset password mode, go back to login instead of navigating away
+  if (forgotPasswordForm && !forgotPasswordForm.classList.contains('hidden') || resetPasswordForm && !resetPasswordForm.classList.contains('hidden')) {
+    e.preventDefault()
     showLoginForm()
     return
   }
-  if (isLoginMode) {
-    showSignupForm()
-  } else {
-    showLoginForm()
-  }
+  // Otherwise let the href="/" navigate to the home page for sign up
 })
 
 if (forgotPasswordLink) {
