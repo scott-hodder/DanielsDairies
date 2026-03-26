@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix, getChildCredits, spendChildCredit } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -9,6 +9,7 @@ import { dashboardState, setAllModulesFilters, setCategoryColors, setChildModule
 import { setAppState, getAppState } from '../../services/appState.js'
 import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
+import { maybeShowOnboarding, addHelpButton } from './onboardingWalkthrough.js'
 
 
 let currentCreditSummary = null
@@ -210,10 +211,10 @@ function showFirstStarPopup(childName = 'Explorer') {
     <div class="celebration-popup-card" role="dialog" aria-modal="true" aria-labelledby="firstStarCelebrationTitle">
       <div class="celebration-popup-glow"></div>
       <div class="celebration-popup-stars"><span>⭐</span><span>✨</span><span>🌟</span></div>
-      <div class="celebration-popup-badge">First star unlocked</div>
+      <div class="celebration-popup-badge">Your very first star!</div>
       <h2 id="firstStarCelebrationTitle">Congratulations, ${childName}!</h2>
-      <p>You earned your very first star. Keep going to collect more stars and unlock exciting rewards along the way!</p>
-      <button type="button" class="celebration-popup-button" id="firstStarCelebrationClose">Amazing!</button>
+      <p>You just earned your very first star! Every module you complete brings more stars, and you can trade them for awesome rewards in the Star Shop.</p>
+      <button type="button" class="celebration-popup-button" id="firstStarCelebrationClose">Let's keep going!</button>
     </div>
   `
 
@@ -444,7 +445,7 @@ const parentScriptsSeed = [
   {
     title: 'Emotion naming',
     context: 'Help children identify feelings',
-    script: '“Is this anger, worry, sadness, or overwhelm? If it’s hard to tell, that’s okay — we’ll figure it out together.”',
+    script: '“Is this anger, worry, sadness, or overwhelm? If it’s hard to tell, that’s okay - we’ll figure it out together.”',
     feelings: ['Anger', 'Worry/Anxiety', 'Sadness', 'Overwhelm'],
     tool: 'Emotional Identification'
   },
@@ -1313,11 +1314,11 @@ async function init() {
 
     if (!session) {
       clearTimeout(loadingTimeout)
-      window.location.href = '/'
+      window.location.href = '/login.html'
       return
     }
 
-    // Use user from session (already available — avoids slow getUser() network call)
+    // Use user from session (already available - avoids slow getUser() network call)
     setCurrentUser(session.user)
     window.state.currentUser = state.currentUser
 
@@ -1325,7 +1326,7 @@ async function init() {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
     }
 
-    // CRITICAL PATH — only fetch what's needed to show the dashboard
+    // CRITICAL PATH - only fetch what's needed to show the dashboard
     currentBillingPeriod = getCurrentBillingPeriod()
 
     const [
@@ -1337,7 +1338,7 @@ async function init() {
       getModules(),
       supabase
         .from('parent_modules')
-        .select('module_id, is_active, modules(id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, is_active, created_at)')
+        .select('module_id, is_active, modules(id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, is_active, created_at, is_multi_age)')
         .eq('parent_id', state.currentUser.id),
       getModuleUnlocks(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
       getChildren(state.currentUser.id)
@@ -1395,7 +1396,7 @@ async function init() {
     setAppState('modules', state.modules)
     window.parentModules = state.parentModules
 
-    // Setup category colors with defaults — real colors load in background
+    // Setup category colors with defaults - real colors load in background
     setCategoryColors({})
     setupCategoryColors()
 
@@ -1406,15 +1407,15 @@ async function init() {
       renderChildren()
     })
 
-    // DEFERRED — load non-critical data in background (doesn't block UI)
+    // DEFERRED - load non-critical data in background (doesn't block UI)
     Promise.allSettled([
-      getCreditSummary(state.currentUser.id, currentBillingPeriod.periodStart, currentBillingPeriod.periodEnd),
+      state.selectedChild?.id ? getChildCredits(state.selectedChild.id) : Promise.resolve(0),
       supabase.from('category_colors').select('*'),
       isUserAdmin(state.currentUser.id),
       getParentSubscription(state.currentUser.id),
       getSubscriptionTiers()
     ]).then(([creditSummaryResult, categoryColorsResult, adminResult, subscriptionResult, tiersResult]) => {
-      currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? creditSummaryResult.value : null
+      currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? { credits_available: creditSummaryResult.value } : { credits_available: 0 }
       currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
       subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
       updateCreditWalletBadge()
@@ -2109,10 +2110,11 @@ async function selectChild(child) {
   maybeCelebrateFirstStar(child)
   
   try {
-    // CRITICAL PATH — only child modules and focus plan block the UI
-    const [childModulesResult, focusPlanResult] = await Promise.allSettled([
+    // CRITICAL PATH - only child modules and focus plan block the UI
+    const [childModulesResult, focusPlanResult, childCreditsResult] = await Promise.allSettled([
       getChildModules(child.id),
-      checkFocusPlan(child.id)
+      checkFocusPlan(child.id),
+      getChildCredits(child.id)
     ])
 
     // Process child modules
@@ -2130,6 +2132,14 @@ async function selectChild(child) {
       setCurrentFocusPlan(null)
     }
 
+    // Process child credits and update the badge
+    if (childCreditsResult.status === 'fulfilled') {
+      currentCreditSummary = { credits_available: childCreditsResult.value }
+    } else {
+      currentCreditSummary = { credits_available: 0 }
+    }
+    updateCreditWalletBadge()
+
     // Setup rewards event listeners for this child (non-blocking)
     setupRewardsEventListeners(child)
 
@@ -2143,7 +2153,7 @@ async function selectChild(child) {
     
     // ... (rest of the code remains the same)
     
-    // DEFERRED — weekly plan, streak, and leaderboard data load in background
+    // DEFERRED - weekly plan, streak, and leaderboard data load in background
     Promise.allSettled([
       loadLatestWeeklyPlanData(child.id),
       state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
@@ -2181,6 +2191,10 @@ async function selectChild(child) {
         renderModules()
 
         hideLoadingScreen()
+
+        // Show app walkthrough for first-time users after focus plan is set
+        addHelpButton()
+        maybeShowOnboarding(child.id)
       })
       return // Don't show detail view yet - wait for onboarding
     }
@@ -2189,6 +2203,7 @@ async function selectChild(child) {
     // Adventure map renders asynchronously inside showChildDetailView
     showChildDetailView(child)
     renderModules()
+    addHelpButton()
     hideLoadingScreen()
     
   } catch (error) {
@@ -2512,7 +2527,7 @@ function showChildDetailView(child) {
   // Show/setup Focus Plan settings button
   setupFocusPlanSettingsButton()
 
-  // Batch DOM writes — show the container first, then render the map
+  // Batch DOM writes - show the container first, then render the map
   // inside the same frame so the map's container is guaranteed to be visible
   requestAnimationFrame(() => {
     // Update header
@@ -2672,7 +2687,7 @@ async function applyFocusPlanToMap(focusPlan) {
     //   1. User's explicit localStorage choice (from dropdown)
     //   2. This focus plan default (window.currentFocusSuperSkill)
     //   3. First available category
-    // So we do NOT directly set currentCategory on the map here —
+    // So we do NOT directly set currentCategory on the map here -
     // that would race with init() and override the user's stored preference.
     window.currentFocusSuperSkill = superSkillSlug
   } catch (error) {
@@ -3032,7 +3047,7 @@ function createModuleCard(module, options = {}) {
         ${ageRange ? `<div class="module-subtitle" style="font-weight: 600;">Ages ${ageRange}</div>` : ''}
         ${shortDescription ? `<p class="module-subtitle" style="margin-top: 4px;">${shortDescription}</p>` : ''}
         <p class="module-subtitle" style="margin-top: 8px;">
-          ${isLocked ? (canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — start with the first lock') : (isCompleted ? 'Completed' : 'Ready to start')}
+          ${isLocked ? (canUnlock ? 'Locked - spend 1 credit to unlock' : 'Locked - start with the first lock') : (isCompleted ? 'Completed' : 'Ready to start')}
         </p>
       </div>
     </div>
@@ -3124,7 +3139,7 @@ async function shouldTriggerCheckinForModuleCount(childId, superSkillId) {
     console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins)
 
     if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
-      console.log('[Check-in] Triggering check-in — need to catch up')
+      console.log('[Check-in] Triggering check-in - need to catch up')
       return true
     }
 
@@ -3204,9 +3219,9 @@ function showEncouragementScreen(superSkill, onContinue, onClose) {
 
   // Pick a random encouragement message
   const encouragements = [
-    { title: 'Amazing Progress!', emoji: '🌟', message: `Wow, you're doing brilliantly! ${characterName} and Daniel are so proud of how much you've learned about <strong>${domain}</strong>!` },
-    { title: 'You\'re on Fire!', emoji: '🔥', message: `Look at you go! You've been working so hard on <strong>${domain}</strong> — ${characterName} can't believe how far you've come!` },
-    { title: 'Super Star!', emoji: '⭐', message: `${characterName} says you're a true superstar! You've learned so much about <strong>${domain}</strong> already!` },
+    { title: 'Amazing Progress!', emoji: '🌟', message: `Wow, you're doing brilliantly! ${characterName} and Daniel are so proud of how far you've come with <strong>${domain}</strong>!` },
+    { title: 'You\'re on Fire!', emoji: '🔥', message: `Look at you go! You've been working so hard - ${characterName} can't believe how much you've grown!` },
+    { title: 'Super Star!', emoji: '⭐', message: `${characterName} says you're a real superstar! Every step you take in <strong>${domain}</strong> makes you stronger.` },
     { title: 'Keep It Up!', emoji: '🚀', message: `You're absolutely smashing it! Daniel and ${characterName} love adventuring with you through <strong>${domain}</strong>!` }
   ]
   const pick = encouragements[Math.floor(Math.random() * encouragements.length)]
@@ -3310,21 +3325,21 @@ function showIntroScreen(superSkill, onContinue, onClose) {
       </div>
       
       <div class="intro-screen-content">
-        <h2 class="intro-screen-title">Meet Your Guides!</h2>
+        <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(20,184,166,0.12); border:1px solid rgba(20,184,166,0.25); border-radius:20px; padding:4px 14px; font-size:12px; font-weight:600; color:#0d9488; margin-bottom:12px;">🌟 First adventure in ${superSkillName}</div>
+        <h2 class="intro-screen-title">Your adventure is about to begin!</h2>
         <p class="intro-screen-text">
-          Hi there! I'm <strong>Daniel</strong>, and this is my friend <strong>${characterName} the ${characterSpecies}</strong>! 🎉
+          Hi! I'm <strong>Daniel</strong>, and this is my friend <strong>${characterName}</strong>. We're going to explore <strong>${domain}</strong> together!
         </p>
         <p class="intro-screen-text">
-          ${characterName} is going to help you learn all about <strong>${domain}</strong>. 
-          Together, we'll go on an amazing adventure and discover some really cool things!
+          ${characterName} knows so much about this - and they're really excited to share it with you. Every module is a new step on the path, and you'll earn stars along the way.
         </p>
         <p class="intro-screen-text intro-checkin-prompt">
-          But first, let's do a quick check-in to see how you're feeling today! 💫
+          Before we dive in, let's do a quick check-in. It only takes a moment! 💫
         </p>
       </div>
       
       <button class="intro-screen-btn" id="continueToCheckinBtn">
-        Let's Check In! →
+        I'm ready! →
       </button>
     </div>
   `
@@ -3357,6 +3372,7 @@ function showIntroScreen(superSkill, onContinue, onClose) {
         position: relative;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.4s ease;
+        border: 2px solid rgba(20, 184, 166, 0.15);
       }
       .intro-screen-close {
         position: absolute;
@@ -3427,7 +3443,7 @@ function showIntroScreen(superSkill, onContinue, onClose) {
         font-weight: 500;
       }
       .intro-screen-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2b3a55 0%, #405878 100%);
         color: white;
         border: none;
         border-radius: 12px;
@@ -3440,7 +3456,7 @@ function showIntroScreen(superSkill, onContinue, onClose) {
       }
       .intro-screen-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 6px 20px rgba(43, 58, 85, 0.4);
       }
       @keyframes fadeIn {
         from { opacity: 0; }
@@ -3470,7 +3486,7 @@ function showIntroScreen(superSkill, onContinue, onClose) {
 
 window.showCheckinPopup = showCheckinPopup
 async function showCheckinPopup(module, onComplete, skipIntro = false) {
-  console.log('[showCheckinPopup] Called — skipIntro:', skipIntro, 'module:', module?.title || module?.id || module?.code, 'caller:', new Error().stack?.split('\n')[2]?.trim())
+  console.log('[showCheckinPopup] Called - skipIntro:', skipIntro, 'module:', module?.title || module?.id || module?.code, 'caller:', new Error().stack?.split('\n')[2]?.trim())
   // Determine the pathway/super skill for the psychometric assessment
   // Priority: module's super_skill_id → current adventure map category → 'general'
   let pathwayOrSuperSkill = 'general'
@@ -3512,7 +3528,7 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
       childId,
       pathwayOrSuperSkill,
       'checkin',
-      // onComplete — assessment finished, also record in pathway_assessments so it won't trigger again
+      // onComplete - assessment finished, also record in pathway_assessments so it won't trigger again
       async (results) => {
         try {
           await saveWeeklyCheckin({
@@ -3522,7 +3538,7 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
             challenge: pathwayOrSuperSkill,
             triggers: [],
             goal: null,
-            notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) — score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
+            notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) - score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
             generatedPlan: null,
             subSkillId: module.sub_skill_id || null,
             weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,
@@ -3533,7 +3549,7 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
         }
         onComplete()
       },
-      // onSkip — user closed/skipped, return to dashboard (NOT navigate to module)
+      // onSkip - user closed/skipped, return to dashboard (NOT navigate to module)
       () => {
         // Do nothing - just close the modal and stay on dashboard
       },
@@ -3543,7 +3559,7 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
   }
 
   // Show intro screen first (unless skipped)
-  console.log('[showCheckinPopup] Decision — skipIntro:', skipIntro, 'hasProgressTracking:', hasProgressTracking)
+  console.log('[showCheckinPopup] Decision - skipIntro:', skipIntro, 'hasProgressTracking:', hasProgressTracking)
   if (!skipIntro) {
     // Create fallback super skill if none found
     const introSuperSkill = superSkill || {
@@ -3564,7 +3580,7 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
       () => {}             // onClose - return to dashboard
     )
   } else if (hasProgressTracking) {
-    // Periodic check-in — show encouragement screen instead of character intro
+    // Periodic check-in - show encouragement screen instead of character intro
     showEncouragementScreen(
       superSkill,
       showActualCheckin,
@@ -3577,16 +3593,16 @@ async function showCheckinPopup(module, onComplete, skipIntro = false) {
 
 // Start module (with check-in intercept every 3 modules completed)
 async function startModule(module) {
-  console.log('[dashboardPage.startModule] Called — module:', module?.title || module?.id)
+  console.log('[dashboardPage.startModule] Called - module:', module?.title || module?.id)
   try {
     if (state.selectedChild && state.currentUser) {
       const childId = state.selectedChild.id
 
       const superSkillId = module.super_skill_id || null
 
-      // Check 1: Periodic check-in (every 3 modules) — takes priority over intro
+      // Check 1: Periodic check-in (every 3 modules) - takes priority over intro
       const needsCheckin = await shouldTriggerCheckinForModuleCount(childId, superSkillId)
-      console.log('[dashboardPage.startModule] Check 1 (periodic) — needsCheckin:', needsCheckin)
+      console.log('[dashboardPage.startModule] Check 1 (periodic) - needsCheckin:', needsCheckin)
       if (needsCheckin) {
         console.log('[dashboardPage.startModule] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)')
         showCheckinPopup(module, () => navigateToModule(module), true)
@@ -3594,7 +3610,7 @@ async function startModule(module) {
       }
 
       // Check 2: First module in a super skill → show character intro
-      console.log('[dashboardPage.startModule] Check 2 (intro) — superSkillId:', superSkillId)
+      console.log('[dashboardPage.startModule] Check 2 (intro) - superSkillId:', superSkillId)
       if (superSkillId) {
         const introKey = 'superSkillIntroSeen_' + childId + '_' + superSkillId
         const alreadySeen = localStorage.getItem(introKey)
@@ -3715,7 +3731,8 @@ if (confirmPurchaseButton) {
       confirmPurchaseButton.disabled = true
       confirmPurchaseButton.textContent = 'Unlocking...'
 
-      await unlockModuleWithCredit(state.currentPurchaseModule.id, currentBillingPeriod.periodStart)
+      // Spend 1 credit from the child's balance
+      await spendChildCredit(state.selectedChild.id)
 
       if (state.selectedChild?.id) {
         const { error: childUnlockError } = await supabase
@@ -3752,13 +3769,9 @@ if (confirmPurchaseButton) {
         invalidateCacheByPrefix(`childModules:${state.selectedChild.id}`)
       }
 
-      // Run all refresh queries in parallel — these are independent
+      // Run all refresh queries in parallel - these are independent
       const [creditResult, legacyResult, unlocksResult] = await Promise.all([
-        getCreditSummary(
-          state.currentUser.id,
-          currentBillingPeriod.periodStart,
-          currentBillingPeriod.periodEnd
-        ),
+        getChildCredits(state.selectedChild.id),
         supabase
           .from('parent_modules')
           .select('module_id, is_active, modules(*)')
@@ -3770,7 +3783,7 @@ if (confirmPurchaseButton) {
         )
       ])
 
-      currentCreditSummary = creditResult
+      currentCreditSummary = { credits_available: creditResult }
       updateCreditWalletBadge()
 
       const mergedMap = new Map()
@@ -3790,7 +3803,7 @@ if (confirmPurchaseButton) {
       if (state.selectedChild) {
         await selectChild(state.selectedChild)
 
-        // selectChild may have fetched stale child modules from DB —
+        // selectChild may have fetched stale child modules from DB -
         // ensure the just-unlocked module is marked unlocked in local state
         const currentChildMods = (state.childModules || []).slice()
         const unlockIdx = currentChildMods.findIndex(cm => cm.module_id === state.currentPurchaseModule.id)
@@ -4214,7 +4227,7 @@ if (logoutButtonDesktop) {
     try {
       clearRememberedChildId()
       await signOut()
-      window.location.href = '/'
+      window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
       alert('Failed to logout. Please try again.')
@@ -4327,7 +4340,7 @@ if (logoutButton) {
     try {
       clearRememberedChildId()
       await signOut()
-      window.location.href = '/'
+      window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
       alert('Failed to logout. Please try again.')
@@ -4870,7 +4883,7 @@ const DANIEL_MOOD_OPTIONS = [
   { score: 5, emoji: '😄', label: 'Happy', shortLabel: 'happy', description: 'I feel bright, smiley, and ready.' }
 ]
 const DANIEL_COOLDOWN_QUOTES = [
-  'Every feeling is welcome here — even the wobbly ones.',
+  'Every feeling is welcome here - even the wobbly ones.',
   'Small feelings can still be important feelings.',
   'A slow breath can help your body feel a little safer.',
   'You do not have to fix every feeling straight away.',
@@ -5836,11 +5849,11 @@ class ModuleGallery {
                 '<div id="paymentPreview" style="display: none; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">' +
                     '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">' +
                         '<span style="color: #64748B;">New Paid-To Date:</span>' +
-                        '<span id="newPaidToDate" style="font-weight: 600; color: #1F2937;">—</span>' +
+                        '<span id="newPaidToDate" style="font-weight: 600; color: #1F2937;">-</span>' +
                     '</div>' +
                     '<div style="display: flex; justify-content: space-between;">' +
                         '<span style="color: #64748B;">Amount:</span>' +
-                        '<span id="paymentAmount" style="font-weight: 700; color: #2A8F8F; font-size: 18px;">—</span>' +
+                        '<span id="paymentAmount" style="font-weight: 700; color: #2A8F8F; font-size: 18px;">-</span>' +
                     '</div>' +
                 '</div>' +
                 

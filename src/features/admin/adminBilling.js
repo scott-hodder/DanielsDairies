@@ -1,5 +1,5 @@
 // ================================================================================
-// BILLING TAB — Tier-centric editing, pricing, credit grants
+// BILLING TAB - Tier-centric editing, pricing, credit grants
 // ================================================================================
 import { supabase } from './adminPage.js';
 
@@ -344,38 +344,40 @@ window.grantManualCredits = async function() {
     }
 
     try {
-        // Use the same billing period calculation as the dashboard (current calendar month)
-        const now = new Date();
-        const year = now.getUTCFullYear();
-        const month = now.getUTCMonth();
-        const periodStart = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
-        const periodEnd = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
+        // Update parent_profiles.credits
+        const { data: parent, error: parentFetchError } = await supabase
+            .from('parent_profiles')
+            .select('credits')
+            .eq('id', parentId)
+            .single();
 
-        // Check if there's an existing row for this period - if so, update it
-        const { data: existingRow, error: checkError } = await supabase
-            .from('v_parent_credit_summary')
-            .select('*')
-            .eq('parent_id', parentId)
-            .eq('period_start', periodStart)
-            .eq('period_end', periodEnd)
-            .maybeSingle();
+        if (parentFetchError) throw parentFetchError;
 
-        // Insert a new grant entry into the ledger with the correct period
-        const { error } = await supabase
-            .from('subscription_credit_ledger')
-            .insert({
-                parent_id: parentId,
-                period_start: periodStart,
-                period_end: periodEnd,
-                entry_type: 'grant',
-                credits_delta: credits,
-                notes: `[Admin Grant] ${reason}`,
-                created_at: new Date().toISOString()
-            });
+        const { error: parentUpdateError } = await supabase
+            .from('parent_profiles')
+            .update({ credits: (parent?.credits ?? 0) + credits })
+            .eq('id', parentId);
 
-        if (error) throw error;
+        if (parentUpdateError) throw parentUpdateError;
 
-        alert(`✅ Successfully granted ${credits} credit(s) for period ${periodStart} to ${periodEnd}!\n\nNote: Refresh the dashboard to see updated credits.`);
+        // Update all children's credits for this parent
+        const { data: children, error: childFetchError } = await supabase
+            .from('children')
+            .select('id, credits')
+            .eq('parent_user_id', parentId);
+
+        if (childFetchError) throw childFetchError;
+
+        if (children && children.length > 0) {
+            for (const child of children) {
+                await supabase
+                    .from('children')
+                    .update({ credits: (child.credits ?? 0) + credits })
+                    .eq('id', child.id);
+            }
+        }
+
+        alert(`Successfully granted ${credits} credit(s) to parent and ${children?.length || 0} child(ren).\n\nRefresh the dashboard to see updated credits.`);
         document.getElementById('billingGrantCredits').value = '1';
         document.getElementById('billingGrantReason').value = '';
     } catch (error) {

@@ -1,11 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;1,6..12,400&family=Baloo+2:wght@500;600;700;800&display=swap");
 
 :root{
-  /* Typography — Baloo 2 for display, Nunito Sans for body (refined, not too thick) */
+  /* Typography - Baloo 2 for display, Nunito Sans for body (refined, not too thick) */
   --module-font-display: "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
   --module-font-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Shape / depth — softer, rounder */
+  /* Shape / depth - softer, rounder */
   --module-radius-xl: 26px;
   --module-radius-lg: 20px;
   --module-radius-sm: 14px;
@@ -16,7 +16,7 @@
   /* Header sizing */
   --module-header-height: 75px;
 
-  /* Neutral base palette — the super skill colour is introduced subtly via --primary */
+  /* Neutral base palette - the super skill colour is introduced subtly via --primary */
   --theme-primary: #264653;
   --theme-secondary: #2A9D8F;
   --theme-accent: #F4A261;
@@ -31,10 +31,10 @@
   --sand-light: #FBF7EF;
   --cream-warm: #FFFAF3;
 
-  /* Hero — muted gradient, not overpowering */
+  /* Hero - muted gradient, not overpowering */
   --theme-hero: linear-gradient(135deg, rgba(38,70,83,0.88), rgba(42,157,143,0.88));
 
-  /* Header theme — light, airy, frosted glass feel */
+  /* Header theme - light, airy, frosted glass feel */
   --module-header-bg: rgba(251, 247, 239, 0.88);
   --module-header-border: rgba(38, 70, 83, 0.06);
   --module-header-text: #1E3A4A;
@@ -235,7 +235,7 @@ body.module-theme::before{
   inset:0;
   pointer-events:none;
   z-index:-2;
-  /* Sky gradient — lighter top, warmer bottom */
+  /* Sky gradient - lighter top, warmer bottom */
   background:
     linear-gradient(180deg, 
       color-mix(in srgb, var(--primary) 2%, #EDF2EE) 0%, 
@@ -244,7 +244,7 @@ body.module-theme::before{
   transition: all 0.4s ease;
 }
 
-/* Remove the ::after — world is now injected as real DOM */
+/* Remove the ::after - world is now injected as real DOM */
 body.module-theme::after {
   display: none;
 }
@@ -266,7 +266,7 @@ body.module-theme::after {
   overflow: hidden;
 }
 
-/* Sun — warm glow, upper-right */
+/* Sun - warm glow, upper-right */
 .module-world-bg__sun {
   position: absolute;
   top: 6%;
@@ -289,7 +289,7 @@ body.module-theme::after {
 
 
 /* ============================================
-   FLOATING CLOUDS — Real SVG shapes
+   FLOATING CLOUDS - Real SVG shapes
    ============================================ */
 
 .module-world-bg__cloud {
@@ -298,7 +298,7 @@ body.module-theme::after {
   will-change: transform;
 }
 
-/* Cloud shape — child div with inline SVG background */
+/* Cloud shape - child div with inline SVG background */
 .module-world-bg__cloud-shape {
   width: 100%;
   height: 100%;
@@ -308,7 +308,7 @@ body.module-theme::after {
   background-position: center;
 }
 
-/* Cloud 1 — large, slow, top-left */
+/* Cloud 1 - large, slow, top-left */
 .module-world-bg__cloud--1 {
   width: 240px;
   height: 90px;
@@ -318,7 +318,7 @@ body.module-theme::after {
   animation: cloudFloat1 50s ease-in-out infinite alternate;
 }
 
-/* Cloud 2 — medium, top-right */
+/* Cloud 2 - medium, top-right */
 .module-world-bg__cloud--2 {
   width: 180px;
   height: 70px;
@@ -328,7 +328,7 @@ body.module-theme::after {
   animation: cloudFloat2 60s ease-in-out infinite alternate;
 }
 
-/* Cloud 3 — small, mid-left */
+/* Cloud 3 - small, mid-left */
 .module-world-bg__cloud--3 {
   width: 130px;
   height: 50px;
@@ -338,7 +338,7 @@ body.module-theme::after {
   animation: cloudFloat3 42s ease-in-out infinite alternate;
 }
 
-/* Cloud 4 — wide, upper-centre */
+/* Cloud 4 - wide, upper-centre */
 .module-world-bg__cloud--4 {
   width: 200px;
   height: 75px;
@@ -348,7 +348,7 @@ body.module-theme::after {
   animation: cloudFloat4 55s ease-in-out infinite alternate;
 }
 
-/* Cloud 5 — tiny accent, far right */
+/* Cloud 5 - tiny accent, far right */
 .module-world-bg__cloud--5 {
   width: 110px;
   height: 42px;
@@ -385,7 +385,7 @@ body.module-theme::after {
 
 
 /* ============================================
-   ROLLING HILLS — Bottom of viewport
+   ROLLING HILLS - Bottom of viewport
    Multi-layered SVG hills tinted with primary colour
    ============================================ */
 
@@ -405,7 +405,7 @@ body.module-theme::after {
 }
 
 
-/* Grain texture — barely visible depth */
+/* Grain texture - barely visible depth */
 .module-world-bg__grain {
   position: absolute;
   inset: 0;
@@ -417,7 +417,7 @@ body.module-theme::after {
 
 
 /* ============================================
-   MOBILE — Smaller clouds, shorter hills
+   MOBILE - Smaller clouds, shorter hills
    ============================================ */
 @media (max-width: 768px) {
   .module-world-bg__cloud--1 { width: 160px; height: 60px; }
@@ -432,7 +432,7 @@ body.module-theme::after {
 
 
 /* ============================================
-   PRINT — Hide entire world
+   PRINT - Hide entire world
    ============================================ */
 @media print {
   .module-world-bg {
@@ -451,7 +451,7 @@ body.module-theme::after {
    Standardise gaps between headings and cards
    ============================================ */
 
-/* Page title to card gap — consistent across all pages */
+/* Page title to card gap - consistent across all pages */
 body.module-theme h1.font-title + div,
 body.module-theme h1.font-title + .rounded-3xl,
 body.module-theme .text-3xl.font-title + div,
@@ -459,7 +459,7 @@ body.module-theme .text-4xl.font-title + div {
   margin-top: var(--age-spacing-lg, 1.5rem);
 }
 
-/* Card internal padding — standardised */
+/* Card internal padding - standardised */
 body.module-theme .rounded-3xl.shadow-xl {
   padding: var(--age-spacing-xl, 2rem);
 }
@@ -508,7 +508,7 @@ body.module-theme[data-age-range] .text-xl {
   margin-bottom: var(--age-spacing-sm);
 }
 
-/* Age-specific font weights — slightly lighter for modern feel */
+/* Age-specific font weights - slightly lighter for modern feel */
 body.module-theme[data-age-range="6-8"] p,
 body.module-theme[data-age-range="6-8"] li {
   font-weight: 500;
@@ -532,7 +532,7 @@ body.module-theme[data-age-range="6-8"] {
 
 
 /* ============================================
-   HEADINGS — REFINED
+   HEADINGS - REFINED
    ============================================ */
 
 body.module-theme h1,

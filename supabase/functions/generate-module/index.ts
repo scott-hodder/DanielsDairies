@@ -73,23 +73,34 @@ import {
   type ModuleSummary,
   type GrownUpNote,
   buildEnhancedContentBrief,
-  
+
+  // Multi-age variant types and utilities
+  type AgeBand,
+  type VariantGenerationResult,
+  type MultiAgeGenerationResult,
+  ALL_AGE_BANDS,
+  resolveAgeBand,
+  resetTokenUsage,
+  getTokenUsage,
+
   // Configuration
   corsHeaders,
   JOB_TIMEOUT_MS,
-  
+
   // Utilities
   jsonResponse,
   escapeHtml,
   escapeForTemplate,
   escapeForOnclick,
-  
+
   // Claude API
   getSettings,
-  
+
   // Page Structure & Content Generation
   generatePageStructure,
   generateAllContent,
+  generateAllVariants,
+  generateAllVariantsOptimized,
 } from "./generators.ts";
 import { generatePaletteFromColor, type CategoryPalette } from "./palettes.ts";
 
@@ -100,7 +111,7 @@ function getAgeRangeKey(targetAge?: string): string {
   if (!targetAge) {
     return "6-8";
   }
-  const normalized = targetAge.replace(/[–—]/g, "-").trim();
+  const normalized = targetAge.replace(/[–-]/g, "-").trim();
   const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
   if (match) {
     return `${match[1]}-${match[2]}`;
@@ -797,6 +808,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     let formData = {};
     let header;
     let childDisplayName = 'Friend';
+    const IS_ADMIN = new URLSearchParams(window.location.search).get('isAdmin') === 'true';
     
     // Load saved data
     function loadProgress() {
@@ -836,15 +848,94 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     function getCurrentPageActivityStatus() {
       const page = document.querySelector('.page');
       if (!page) return { hasActivity: false, isComplete: true };
-      
+
       // Check for activity checkbox on the page
       const activityCheckbox = page.querySelector('[data-activity]');
       if (!activityCheckbox) return { hasActivity: false, isComplete: true };
-      
+
       const activityId = activityCheckbox.getAttribute('data-activity');
       const isComplete = completedActivities[activityId] || activityCheckbox.checked;
-      
+
       return { hasActivity: true, isComplete, activityId };
+    }
+
+    // Check if page has required text/drawing inputs that are empty
+    function validatePageInputs() {
+      const page = document.querySelector('.page');
+      if (!page) return true;
+
+      const pageType = page.getAttribute('data-page');
+
+      // Thought-bubbles: require text in textarea
+      if (pageType === 'thought-bubbles') {
+        const textareas = page.querySelectorAll('textarea');
+        for (var i = 0; i < textareas.length; i++) {
+          if (!textareas[i].value.trim()) {
+            showInputReminder('Write your thoughts before moving on!', textareas[i]);
+            return false;
+          }
+        }
+      }
+
+      // Comic-strip: require at least something drawn or typed in each panel
+      if (pageType === 'comic-strip') {
+        var canvases = page.querySelectorAll('.comic-drawing-canvas');
+        var textInputs = page.querySelectorAll('.comic-panel input[type="text"]');
+        var hasContent = false;
+
+        // Check if any canvas has been drawn on
+        for (var c = 0; c < canvases.length; c++) {
+          var ctx = canvases[c].getContext('2d');
+          var pixels = ctx.getImageData(0, 0, canvases[c].width, canvases[c].height).data;
+          for (var p = 3; p < pixels.length; p += 4) {
+            if (pixels[p] > 0) { hasContent = true; break; }
+          }
+          if (hasContent) break;
+        }
+
+        // Also check text inputs
+        if (!hasContent) {
+          for (var t = 0; t < textInputs.length; t++) {
+            if (textInputs[t].value.trim()) { hasContent = true; break; }
+          }
+        }
+
+        if (!hasContent) {
+          showInputReminder('Draw or write something in the panels first!', canvases[0]);
+          return false;
+        }
+      }
+
+      // Reflection pages: require text
+      if (pageType === 'reflection') {
+        var reflTextareas = page.querySelectorAll('textarea');
+        for (var r = 0; r < reflTextareas.length; r++) {
+          if (!reflTextareas[r].value.trim()) {
+            showInputReminder('Share your thoughts before moving on!', reflTextareas[r]);
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    function showInputReminder(message, element) {
+      var existing = document.querySelector('.activity-reminder');
+      if (existing) existing.remove();
+
+      var reminder = document.createElement('div');
+      reminder.className = 'activity-reminder';
+      reminder.innerHTML = '<div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; font-family: var(--font-body); font-size: 1rem; display: flex; align-items: center; gap: 10px;"><span>✏️</span><span>' + message + '</span></div>';
+      document.body.appendChild(reminder);
+      setTimeout(function() { reminder.remove(); }, 3000);
+
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.style.transition = 'box-shadow 0.3s';
+        element.style.boxShadow = '0 0 0 3px var(--primary)';
+        setTimeout(function() { element.style.boxShadow = ''; }, 2000);
+      }
     }
     
     // Show a gentle reminder to complete the activity
@@ -887,13 +978,20 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     // Navigation
     function nextPage() {
       if (currentPage < pages.length - 1) {
-        // Check if current page requires activity completion
-        const status = getCurrentPageActivityStatus();
-        if (status.hasActivity && !status.isComplete) {
-          showActivityReminder();
-          return;
+        if (!IS_ADMIN) {
+          // Check if text/drawing inputs are filled
+          if (!validatePageInputs()) {
+            return;
+          }
+
+          // Check if current page requires activity completion
+          const status = getCurrentPageActivityStatus();
+          if (status.hasActivity && !status.isComplete) {
+            showActivityReminder();
+            return;
+          }
         }
-        
+
         currentPage++;
         renderPage();
       }
@@ -1165,27 +1263,77 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     
     async function markActivityComplete(activityId) {
       if (completedActivities[activityId]) return;
-      
-      completedActivities[activityId] = true;
-      try {
-        totalStars = await awardSingleStar(totalStars);
-      } catch (e) {
-        totalStars++;
+
+      // Validate that content has been filled before allowing completion
+      var page = document.querySelector('.page');
+      if (page) {
+        var pageType = page.getAttribute('data-page');
+
+        // Comic-strip: check drawings/text exist
+        if (pageType === 'comic-strip') {
+          var hasContent = false;
+          var canvases = page.querySelectorAll('.comic-drawing-canvas');
+          for (var c = 0; c < canvases.length; c++) {
+            var ctx = canvases[c].getContext('2d');
+            var pixels = ctx.getImageData(0, 0, canvases[c].width, canvases[c].height).data;
+            for (var p = 3; p < pixels.length; p += 4) {
+              if (pixels[p] > 0) { hasContent = true; break; }
+            }
+            if (hasContent) break;
+          }
+          if (!hasContent) {
+            var textInputs = page.querySelectorAll('.comic-panel input[type="text"]');
+            for (var t = 0; t < textInputs.length; t++) {
+              if (textInputs[t].value.trim()) { hasContent = true; break; }
+            }
+          }
+          if (!hasContent) {
+            showInputReminder('Draw or write in the panels first!', canvases[0]);
+            // Uncheck the checkbox
+            var cb = page.querySelector('[data-activity="' + activityId + '"]');
+            if (cb) cb.checked = false;
+            return;
+          }
+        }
+
+        // Thought-bubbles: check textarea filled
+        if (pageType === 'thought-bubbles') {
+          var textareas = page.querySelectorAll('textarea');
+          var allFilled = true;
+          for (var i = 0; i < textareas.length; i++) {
+            if (!textareas[i].value.trim()) { allFilled = false; break; }
+          }
+          if (!allFilled) {
+            showInputReminder('Write your thoughts first!', textareas[0]);
+            var cb2 = page.querySelector('[data-activity="' + activityId + '"]');
+            if (cb2) cb2.checked = false;
+            return;
+          }
+        }
       }
-      await saveStarData();
-      saveProgress();
-      
-      // Star celebration animation
-      const star = document.createElement('div');
+
+      completedActivities[activityId] = true;
+
+      // Star celebration animation (show immediately, save in background)
+      var star = document.createElement('div');
       star.innerHTML = '⭐';
       star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
       document.body.appendChild(star);
       star.animate([
         { transform: 'translate(-50%,-50%) scale(0.5)', opacity: 1 },
         { transform: 'translate(-50%,-150%) scale(2)', opacity: 0 }
-      ], { duration: 1200, easing: 'ease-out' }).onfinish = () => star.remove();
-      
+      ], { duration: 1200, easing: 'ease-out' }).onfinish = function() { star.remove(); };
+
+      // Update star count in UI immediately
+      totalStars++;
       renderPage();
+
+      // Save to DB in background (don't await - keep UI snappy)
+      awardSingleStar(totalStars - 1).then(function(dbStars) {
+        totalStars = dbStars;
+      }).catch(function() {});
+      saveStarData();
+      saveProgress();
     }
     
     function bindPageInteractions() {
@@ -2856,7 +3004,7 @@ function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | 
         
         <div class="rounded-xl p-4 text-center m-bg-soft-yellow">
           <p class="text-lg font-semibold font-body m-color-dark">
-            "All feelings are okay—even the big ones!" 💛
+            "All feelings are okay, even the big ones!" 💛
           </p>
         </div>
       </div>
@@ -2874,7 +3022,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
   // Hills use darkened primary/secondary, buildings use dark + primary tints,
   // windows use soft-yellow (lit) and cream-tinted (unlit), road uses dark + accent dashes.
 
-  // Stage 1: Rolling hills, a tree, a fence — open countryside
+  // Stage 1: Rolling hills, a tree, a fence - open countryside
   const hillsOnly = `
     <!-- Far hills -->
     <ellipse cx="150" cy="200" rx="280" ry="90" fill="var(--hill-far)"/>
@@ -3051,7 +3199,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
         <div class="ch-cloud ch-cloud-4"></div>
       </div>
 
-      <!-- Landscape at bottom — 280px -->
+      <!-- Landscape at bottom - 280px -->
       <div class="m-chapter-hills">
         <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
           ${scene}
@@ -3062,7 +3210,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
         </svg>
       </div>
 
-      <!-- Content — centred above scene -->
+      <!-- Content - centred above scene -->
       <div class="m-chapter-content">
         <!-- Journey badge -->
         <div class="m-chapter-badge">
@@ -3095,7 +3243,7 @@ function renderChapterDivider(chapter: ChapterDivider): string {
         </p>
       </div>
 
-      <!-- Scoped styles — all derived from theme vars for colour harmony -->
+      <!-- Scoped styles - all derived from theme vars for colour harmony -->
       <style>
         .chapter-scene-page {
           /* Hill colours: darken primary & secondary to earthy greens */
@@ -5879,6 +6027,155 @@ async function generateModule(
 }
 
 // ====================
+// MULTI-AGE MODULE GENERATOR
+// ====================
+
+/**
+ * Generate a module with content variants for multiple age bands.
+ * Shares page structure across all variants. Generates variants with
+ * bounded concurrency (2 at a time). Returns variant HTML and specs.
+ *
+ * Compatibility: When multiAge is false/absent, the existing single-age
+ * generateModule() path is used unchanged. This function is only called
+ * when the request explicitly opts into multi-age mode.
+ */
+async function generateModuleMultiAge(
+  supabaseClient: any,
+  contentBrief: string,
+  jobId: string,
+  seriesInfo?: SeriesInfo | null,
+  categoryColor?: string | null,
+  forcedTitle?: string | null,
+  requestedBands?: AgeBand[],
+): Promise<{
+  moduleCode: string;
+  pageCount: number;
+  variants: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number }>;
+  core: { objective: string; activityType: string; pageStructure: string[]; narrativeRules: { rituals: string[] } };
+  totalTokens: number;
+  totalDurationMs: number;
+}> {
+  const overallStart = Date.now();
+  resetTokenUsage();
+
+  const updateProgress = async (step: string, message: string) => {
+    if (jobId) {
+      try {
+        await supabaseClient
+          .from("ai_generation_jobs")
+          .update({
+            result: { progress: { step, message, timestamp: new Date().toISOString() } },
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", jobId);
+      } catch (_e) { /* Non-critical */ }
+    }
+  };
+
+  await updateProgress("initializing", "Loading configuration for multi-age generation...");
+  const settings = await getSettings(supabaseClient);
+  const apiKey = settings.claude_api_key;
+  const ageBands = requestedBands || ALL_AGE_BANDS;
+
+  // Generate page structure ONCE (shared across all variants)
+  const pageStructure = generatePageStructure();
+  const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
+
+  console.log(`[MULTI-AGE] Generating ${ageBands.length} variants with shared ${pageStructure.length}-page structure`);
+
+  // Fetch all age_ranges rows for the requested bands
+  await updateProgress("fetching", "Loading age range data...");
+  const fetchStart = Date.now();
+  const { data: ageRows, error: ageError } = await supabaseClient
+    .from("age_ranges")
+    .select("*")
+    .in("age_range", ageBands)
+    .eq("is_active", true);
+
+  if (ageError || !ageRows || ageRows.length === 0) {
+    console.error("[MULTI-AGE] Failed to fetch age_ranges:", ageError);
+    throw new Error(`Could not fetch age_ranges for bands: ${ageBands.join(', ')}`);
+  }
+  console.log(`[MULTI-AGE] DB lookup: ${Date.now() - fetchStart}ms for ${ageRows.length} age_ranges rows`);
+
+  const ageBandData = new Map<AgeBand, any>();
+  for (const row of ageRows) {
+    ageBandData.set(row.age_range as AgeBand, row);
+  }
+
+  // Optimized: shared content once + per-variant content in parallel
+  const { variants, validationWarnings, regenerationCounts, variantErrors } = await generateAllVariantsOptimized(
+    apiKey,
+    contentBrief,
+    ageBands,
+    ageBandData,
+    pageStructure,
+    updateProgress,
+    seriesInfo,
+    settings.ai_prompt_template,
+  );
+
+  if (validationWarnings.length > 0) {
+    console.warn("[MULTI-AGE] Diversity warnings:", validationWarnings);
+  }
+
+  // Check that at least one variant was generated
+  if (variants.size === 0) {
+    const errorDetails = Object.entries(variantErrors).map(([b, e]) => `${b}: ${e}`).join('; ');
+    throw new Error(`Multi-age generation failed: no variants generated. Errors: ${errorDetails}`);
+  }
+  console.log(`[MULTI-AGE] ${variants.size}/${ageBands.length} variants generated successfully`);
+
+  // Render HTML for each variant
+  await updateProgress("rendering", "Building interactive HTML for all variants...");
+  const variantResults: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number }> = {};
+
+  for (const [band, content] of variants) {
+    const renderStart = Date.now();
+    const html = renderHtml(content, pageStructure, `${moduleCode}_${band.replace('-', '')}`, categoryColor, seriesInfo);
+    const spec = {
+      version: "3.0-multi-age",
+      moduleCode,
+      ageBand: band,
+      pageCount: pageStructure.length,
+      starCount: pageStructure.filter(p => p.starReward).length,
+      metadata: content.metadata,
+      moduleSummary: content.moduleSummary,
+      generatedAt: new Date().toISOString(),
+      regenerationAttempts: regenerationCounts[band] || 0,
+    };
+
+    variantResults[band] = {
+      html,
+      spec,
+      tokenUsage: 0, // Individual tracking would require per-variant counters
+      durationMs: Date.now() - renderStart,
+    };
+  }
+
+  const tokenUsage = getTokenUsage();
+  const totalDurationMs = Date.now() - overallStart;
+
+  console.log(`[MULTI-AGE] Complete: ${Object.keys(variantResults).length} variants in ${(totalDurationMs / 1000).toFixed(1)}s, ~${tokenUsage.total} tokens`);
+
+  await updateProgress("complete", `Multi-age generation complete! ${Object.keys(variantResults).length} variants, ${pageStructure.length} pages each`);
+
+  return {
+    moduleCode,
+    pageCount: pageStructure.length,
+    variants: variantResults,
+    core: {
+      objective: forcedTitle || 'Module',
+      activityType: 'multi-age',
+      pageStructure: pageStructure.map(p => p.type),
+      narrativeRules: { rituals: ['Road Builder', 'Traffic Light Check-In', 'Town Map'] },
+    },
+    totalTokens: tokenUsage.total,
+    totalDurationMs,
+  };
+}
+
+// ====================
 // ASYNC JOB RUNNER
 // ====================
 
@@ -5938,6 +6235,91 @@ async function runAsyncGeneration(
     const error = e instanceof Error ? e : new Error(String(e));
     console.error(`[AI] Job ${jobId} failed:`, error.message);
     
+    await supabaseClient
+      .from("ai_generation_jobs")
+      .update({
+        status: "failed",
+        error: error.message,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+  }
+}
+
+// ====================
+// MULTI-AGE ASYNC JOB RUNNER
+// ====================
+
+/**
+ * Runs multi-age variant generation as a background job.
+ * Each variant's HTML is stored in the module_variants table.
+ * The job result contains the core structure and variant specs.
+ *
+ * Migration note: Legacy single-age modules have is_multi_age=false (default)
+ * and store html_content directly on the modules row. Multi-age modules have
+ * is_multi_age=true and store variant HTML in module_variants table.
+ */
+async function runAsyncMultiAgeGeneration(
+  supabaseClient: any,
+  jobId: string,
+  contentBrief: string,
+  seriesInfo?: SeriesInfo | null,
+  categoryColor?: string | null,
+  forcedTitle?: string | null,
+  requestedBands?: AgeBand[],
+) {
+  try {
+    await supabaseClient
+      .from("ai_generation_jobs")
+      .update({ status: "running", updated_at: new Date().toISOString() })
+      .eq("id", jobId);
+
+    // Multi-age generation gets extended timeout (4 variants)
+    const MULTI_AGE_TIMEOUT_MS = JOB_TIMEOUT_MS * 2;
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Multi-age generation timeout")), MULTI_AGE_TIMEOUT_MS);
+    });
+
+    const generationPromise = generateModuleMultiAge(
+      supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle, requestedBands
+    );
+    const result = await Promise.race([generationPromise, timeoutPromise]) as any;
+
+    await supabaseClient
+      .from("ai_generation_jobs")
+      .update({
+        status: "completed",
+        result: {
+          multiAge: true,
+          moduleCode: result.moduleCode,
+          pageCount: result.pageCount,
+          core: result.core,
+          // Store variant specs (not full HTML - that goes to module_variants table)
+          variantSpecs: Object.fromEntries(
+            Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.spec])
+          ),
+          // Store the first variant's HTML as preview for admin
+          html: Object.values(result.variants)[0]?.html || '',
+          spec: Object.values(result.variants)[0]?.spec || {},
+          totalTokens: result.totalTokens,
+          totalDurationMs: result.totalDurationMs,
+          // All variant HTML keys for client to access
+          variantBands: Object.keys(result.variants),
+          // Individual variant HTML stored in result for admin preview
+          variantHtml: Object.fromEntries(
+            Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.html])
+          ),
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+
+    console.log(`[MULTI-AGE] Job ${jobId} completed: ${Object.keys(result.variants).length} variants`);
+
+  } catch (e) {
+    const error = e instanceof Error ? e : new Error(String(e));
+    console.error(`[MULTI-AGE] Job ${jobId} failed:`, error.message);
+
     await supabaseClient
       .from("ai_generation_jobs")
       .update({
@@ -6263,7 +6645,7 @@ Follow EVERY rule precisely. There are no exceptions.
           auditSections.forEach((sec: { section_number: number; section_name: string; severity: string; ai_instruction: string }) => {
             if (sec.ai_instruction) {
               const sevLabel = sec.severity === 'CRITICAL' ? '🚨 CRITICAL (MUST PASS)' : sec.severity === 'IMPORTANT' ? '⚠️ IMPORTANT' : 'ℹ️ ADVISORY';
-              auditRulesPrompt += `${sevLabel} — ${sec.section_number}. ${sec.section_name}:\n${sec.ai_instruction}\n\n`;
+              auditRulesPrompt += `${sevLabel} | ${sec.section_number}. ${sec.section_name}:\n${sec.ai_instruction}\n\n`;
             }
           });
           auditRulesPrompt += `═══════════════════════════════════════════════════════════════
@@ -6360,7 +6742,7 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
         `Age Developmental Stage: ${ageData.developmental_stage || lookupContext?.ageBand?.developmentalStage || 'Not provided'}`,
         `Theory Connection Brain Town Application: ${lookupTheoryConnection.brainTownApplication || 'Not provided'}`,
         lookupSecondaryTheories.length > 0
-          ? `Secondary Theory Descriptions: ${lookupSecondaryTheories.map((t: any) => `${t?.name || 'Unknown'}${t?.description ? ` — ${t.description}` : ''}`).join(' | ')}`
+          ? `Secondary Theory Descriptions: ${lookupSecondaryTheories.map((t: any) => `${t?.name || 'Unknown'}${t?.description ? ` (${t.description})` : ''}`).join(' | ')}`
           : 'Secondary Theory Descriptions: Not provided',
         `Neuroscience concept detail: ${neuroscienceConcept || lookupContext?.neuroscienceConcept || 'Not provided'}`,
         diagnosisPathways?.length ? `Diagnosis pathways selected: ${diagnosisPathways.join(', ')}` : 'Diagnosis pathways selected: None',
@@ -6496,30 +6878,57 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
       }
     }
     
+    // Detect multi-age mode from request body
+    // When multiAge is true, generate content variants for all age bands
+    // instead of a single age-specific module. Backward compatible:
+    // omitting multiAge or setting it to false uses the existing single-age path.
+    const isMultiAgeMode = Boolean(body?.multiAge === true || body?.mode === 'multi-age');
+    const requestedBands: AgeBand[] | undefined = Array.isArray(body?.ageVariants)
+      ? body.ageVariants.filter((b: string) => ALL_AGE_BANDS.includes(b as AgeBand)) as AgeBand[]
+      : undefined;
+
     // Async mode
     if (asyncMode) {
       const jobId = crypto.randomUUID();
-      
+
       await supabaseClient
         .from("ai_generation_jobs")
         .insert({
           id: jobId,
           status: "running",
           content_brief: contentBrief,
+          generation_metadata: isMultiAgeMode ? { multiAge: true, requestedBands: requestedBands || ALL_AGE_BANDS } : null,
           created_at: new Date().toISOString(),
         });
-      
+
       const anyGlobal = globalThis as any;
-      if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
-        anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
+
+      if (isMultiAgeMode) {
+        // Multi-age generation path
+        console.log(`[AI] Starting multi-age async generation (bands: ${(requestedBands || ALL_AGE_BANDS).join(', ')})`);
+        if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
+          anyGlobal.EdgeRuntime.waitUntil(
+            runAsyncMultiAgeGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle, requestedBands)
+          );
+        } else {
+          runAsyncMultiAgeGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle, requestedBands).catch(console.error);
+        }
       } else {
-        runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle).catch(console.error);
+        // Legacy single-age generation path (unchanged)
+        if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
+          anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
+        } else {
+          runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle).catch(console.error);
+        }
       }
-      
-      return jsonResponse({ jobId });
+
+      return jsonResponse({ jobId, multiAge: isMultiAgeMode });
     }
-    
-    // Sync mode
+
+    // Sync mode (single-age only - multi-age is too slow for sync)
+    if (isMultiAgeMode) {
+      return jsonResponse({ error: "Multi-age generation requires async mode (async: true)" }, 400);
+    }
     const result = await generateModule(supabaseClient, contentBrief, undefined, seriesInfo, categoryColor, forcedTitle);
     return jsonResponse({
       html: result.html,

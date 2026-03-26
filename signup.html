@@ -25,32 +25,32 @@
             <!-- ── Left Sidebar ── -->
             <div class="signup-sidebar">
                 <div class="sidebar-top">
-                    <a href="/home.html" class="sidebar-logo">
+                    <a href="/" class="sidebar-logo">
                         <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries">
                         <span>Daniel's Diaries</span>
                     </a>
 
-                    <h1 class="sidebar-title">Start your child's emotional growth journey</h1>
+                    <h1 class="sidebar-title">Every child deserves to feel confident and capable</h1>
                     <p class="sidebar-description">
-                        Join families across Australia building emotionally resilient children through expert-designed, interactive workbooks.
+                        Daniel's Diaries helps children build emotional strength through guided, interactive adventures designed by child development experts.
                     </p>
 
                     <ul class="sidebar-features">
                         <li>
                             <span class="sidebar-feature-icon">&#128218;</span>
-                            Interactive, expert-designed workbooks
+                            Guided adventures built by child psychologists
                         </li>
                         <li>
                             <span class="sidebar-feature-icon">&#128200;</span>
-                            Track your child's emotional growth
+                            See your child's confidence grow over time
                         </li>
                         <li>
                             <span class="sidebar-feature-icon">&#11088;</span>
-                            Fun rewards and gamification
+                            Rewards that make learning feel like play
                         </li>
                         <li>
                             <span class="sidebar-feature-icon">&#128272;</span>
-                            Safe, private, and ad-free
+                            Safe, private, and completely ad-free
                         </li>
                     </ul>
                 </div>
@@ -58,7 +58,7 @@
                 <div class="sidebar-bottom">
                     <img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel giving thumbs up" class="sidebar-character">
                     <p class="sidebar-login-note">
-                        Already have an account? <a href="/index.html" class="sidebar-login-link">Log in</a>
+                        Already have an account? <a href="/login.html" class="sidebar-login-link">Log in</a>
                     </p>
                 </div>
             </div>
@@ -66,7 +66,7 @@
 
             <!-- ── Right Form Area ── -->
             <div class="signup-form-area">
-                <a href="/home.html" class="signup-back">
+                <a href="/" class="signup-back">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                     Back to home
                 </a>
@@ -88,8 +88,8 @@
                 <!-- ── Step 1: Your Details ── -->
                 <div class="form-step active" id="step1">
                     <div class="form-header">
-                        <h2>Create your account</h2>
-                        <p>Tell us a little about yourself to get started.</p>
+                        <h2>Let's get you set up</h2>
+                        <p>Just a few details so we can personalise the experience for your family.</p>
                     </div>
 
                     <form id="step1Form" novalidate>
@@ -147,33 +147,14 @@
                 <!-- ── Step 2: Choose Your Plan ── -->
                 <div class="form-step" id="step2">
                     <div class="form-header">
-                        <h2>Choose your plan</h2>
-                        <p>Select the plan that best fits your family. You can change anytime.</p>
+                        <h2>Choose the right plan for your family</h2>
+                        <p>Every plan includes the full experience. Pick what works for you - upgrade or change anytime.</p>
                     </div>
 
                     <form id="step2Form" novalidate>
-                        <div class="plan-cards">
-                            <label class="plan-card" data-plan="starter">
-                                <input type="radio" name="plan" value="starter">
-                                <div class="plan-card-name">Starter</div>
-                                <div class="plan-card-price">$9<span>/mo</span></div>
-                                <div class="plan-card-detail">1 child, 2 modules/month</div>
-                            </label>
-
-                            <label class="plan-card" data-plan="family">
-                                <input type="radio" name="plan" value="family" checked>
-                                <div class="plan-card-popular">Most Popular</div>
-                                <div class="plan-card-name">Family</div>
-                                <div class="plan-card-price">$19<span>/mo</span></div>
-                                <div class="plan-card-detail">3 children, 5 modules/month</div>
-                            </label>
-
-                            <label class="plan-card" data-plan="school">
-                                <input type="radio" name="plan" value="school">
-                                <div class="plan-card-name">School</div>
-                                <div class="plan-card-price">$49<span>/mo</span></div>
-                                <div class="plan-card-detail">Unlimited children & modules</div>
-                            </label>
+                        <!-- Dynamically loaded from subscription_tiers table -->
+                        <div class="plan-cards" id="planCardsContainer">
+                            <div class="plan-cards-loading">Loading plans...</div>
                         </div>
 
                         <div class="form-buttons">
@@ -189,8 +170,8 @@
                 <!-- ── Step 3: Review & Pay ── -->
                 <div class="form-step" id="step3">
                     <div class="form-header">
-                        <h2>Review & subscribe</h2>
-                        <p>Double-check your details, then we'll set up your payment.</p>
+                        <h2>You're almost there</h2>
+                        <p>Take a quick look and make sure everything's right.</p>
                     </div>
 
                     <div class="review-summary">
@@ -225,8 +206,13 @@
                     </div>
 
                     <p class="terms-text">
-                        You'll be redirected to Stripe to securely complete payment. Cancel anytime from your profile.
+                        You'll be taken to Stripe for secure checkout. No lock-in - cancel or change your plan anytime.
                     </p>
+                    <div class="trust-badges">
+                        <span class="trust-badge">🔒 256-bit encryption</span>
+                        <span class="trust-badge">🛡️ No data shared with third parties</span>
+                        <span class="trust-badge">💳 Cancel anytime</span>
+                    </div>
                 </div>
 
             </div>

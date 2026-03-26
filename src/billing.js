@@ -1,11 +1,11 @@
 import { checkAuth, getCurrentUser, signOut } from './auth.js'
 import {
   getCurrentBillingPeriod,
-  getCreditLedger,
-  getCreditSummary,
   getParentSubscription,
   getSubscriptionTiers,
-  upsertParentSubscription
+  upsertParentSubscription,
+  getParentCredits,
+  grantCreditsToFamily
 } from './database.js'
 import { getSupabaseClient } from './supabaseClient.js'
 
@@ -52,10 +52,9 @@ function renderTiers(tiers) {
   })
 }
 
-function renderWallet(summary) {
-  creditsGranted.textContent = summary.credits_granted
-  creditsUsed.textContent = summary.credits_used
-  creditsAvailable.textContent = summary.credits_available
+function renderWallet(parentCredits) {
+  // parent_profiles.credits is the source of truth
+  creditsAvailable.textContent = parentCredits ?? 0
 }
 
 function renderLedger(rows) {
@@ -80,18 +79,14 @@ function renderLedger(rows) {
 }
 
 async function refreshCredits() {
-  const [summary, ledger] = await Promise.all([
-    getCreditSummary(currentUser.id, period.periodStart, period.periodEnd),
-    getCreditLedger(currentUser.id, period.periodStart, period.periodEnd)
-  ])
-  renderWallet(summary)
-  renderLedger(ledger)
+  const parentCredits = await getParentCredits(currentUser.id)
+  renderWallet(parentCredits)
 }
 
 async function init() {
   const session = await checkAuth()
   if (!session) {
-    window.location.href = '/'
+    window.location.href = '/login.html'
     return
   }
 
@@ -140,23 +135,9 @@ quickGrantForm?.addEventListener('submit', async (event) => {
   event.preventDefault()
   try {
     const credits = Number(quickGrantCredits.value)
-    const { error } = await getSupabaseClient()
-      .from('subscription_credit_ledger')
-      .insert([
-        {
-          parent_id: currentUser.id,
-          period_start: period.periodStart,
-          period_end: period.periodEnd,
-          entry_type: 'grant',
-          credits_delta: credits,
-          notes: 'Manual test grant from billing page',
-          created_by: currentUser.id
-        }
-      ])
-
-    if (error) throw error
+    await grantCreditsToFamily(currentUser.id, credits)
     await refreshCredits()
-    setStatus(`Added ${credits} credits to your current period wallet.`)
+    setStatus(`Added ${credits} credits to your account and all children.`)
   } catch (error) {
     setStatus(error.message || 'Failed to grant credits.', 'error')
   }
@@ -164,7 +145,7 @@ quickGrantForm?.addEventListener('submit', async (event) => {
 
 logoutButton?.addEventListener('click', async () => {
   await signOut()
-  window.location.href = '/'
+  window.location.href = '/login.html'
 })
 
 init().catch((error) => {

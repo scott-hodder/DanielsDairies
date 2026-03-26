@@ -76,7 +76,7 @@ async function init() {
     // Check authentication
     const user = await getCurrentUser()
     if (!user) {
-      window.location.href = '/'
+      window.location.href = '/login.html'
       return
     }
 
@@ -113,7 +113,7 @@ async function init() {
   }
 }
 
-// Load user data — all queries run in parallel for speed
+// Load user data - all queries run in parallel for speed
 async function loadData() {
   try {
     const userId = state.currentUser.id
@@ -123,7 +123,7 @@ async function loadData() {
       supabase.from('modules').select('*, super_skills(*)').eq('is_active', true).order('pathway_order', { ascending: true }),
       supabase.from('subscription_tiers').select('*').eq('is_active', true).order('created_at', { ascending: true }),
       supabase.from('parent_subscriptions').select('*, subscription_tiers(*)').eq('parent_id', userId).maybeSingle(),
-      supabase.from('v_parent_credit_summary').select('*').eq('parent_id', userId).order('period_end', { ascending: false }).limit(1).maybeSingle()
+      supabase.from('parent_profiles').select('credits').eq('user_id', userId).maybeSingle()
     ])
 
     // Children
@@ -158,11 +158,11 @@ async function loadData() {
       }
     }
 
-    // Credit summary
+    // Credit summary (from parent_profiles.credits column)
     if (creditResult.status === 'fulfilled' && !creditResult.value.error && creditResult.value.data) {
-      window.currentCreditSummary = creditResult.value.data
+      window.currentCreditSummary = { credits_available: creditResult.value.data.credits ?? 0 }
     } else {
-      window.currentCreditSummary = { credits_granted: 0, credits_used: 0, credits_available: 0 }
+      window.currentCreditSummary = { credits_available: 0 }
     }
 
   } catch (error) {
@@ -484,7 +484,7 @@ function setupNavigation() {
     try {
       localStorage.removeItem('selectedChildId')
       await signOut()
-      window.location.href = '/'
+      window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
       alert('Failed to logout. Please try again.')
@@ -741,7 +741,7 @@ function formatPaymentLabel(months) {
   const price = calcPaymentTotal(months)
   const discount = DISCOUNT_RATES[months] || 0
   return discount > 0
-    ? `$${price.toFixed(2)} — Save ${Math.round(discount * 100)}%`
+    ? `$${price.toFixed(2)} - Save ${Math.round(discount * 100)}%`
     : `$${price.toFixed(2)}`
 }
 
@@ -804,8 +804,8 @@ function openMakePaymentModal() {
     ">
       <input type="radio" name="ddPayDuration" value="${m}" style="width:18px;height:18px;accent-color:#14b8a6;flex-shrink:0;">
       <div style="flex:1;">
-        <div style="font-weight:600;color:#2b3a55;font-family:'League Spartan',sans-serif;">${m} Month${m > 1 ? 's' : ''}</div>
-        <div style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;margin-top:2px;">${formatPaymentLabel(m)}</div>
+        <div style="font-weight:600;color:#2b3a55;font-family:'Fredoka',sans-serif;">${m} Month${m > 1 ? 's' : ''}</div>
+        <div style="font-size:13px;color:#5f6b85;font-family:'Fredoka',sans-serif;margin-top:2px;">${formatPaymentLabel(m)}</div>
       </div>
     </label>
   `).join('')
@@ -825,8 +825,8 @@ function openMakePaymentModal() {
       <!-- Header -->
       <div style="background:linear-gradient(135deg,#405878,#4c6c96);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <h2 style="color:white;font-size:22px;font-weight:700;margin:0;font-family:'League Spartan',sans-serif;">Make a Payment</h2>
-          <p style="color:rgba(255,255,255,0.75);font-size:14px;margin:4px 0 0;font-family:'League Spartan',sans-serif;">Extend your subscription or buy module credits</p>
+          <h2 style="color:white;font-size:22px;font-weight:700;margin:0;font-family:'Fredoka',sans-serif;">Make a Payment</h2>
+          <p style="color:rgba(255,255,255,0.75);font-size:14px;margin:4px 0 0;font-family:'Fredoka',sans-serif;">Extend your subscription or buy module credits</p>
         </div>
         <button id="ddClosePayModal" style="
           width:36px;height:36px;border-radius:50%;border:none;
@@ -842,7 +842,7 @@ function openMakePaymentModal() {
         <div id="ddPayError" style="
           display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
           padding:12px 16px;color:#c02626;font-size:14px;
-          font-family:'League Spartan',sans-serif;margin-bottom:20px;
+          font-family:'Fredoka',sans-serif;margin-bottom:20px;
         "></div>
 
         <!-- Current status -->
@@ -852,13 +852,13 @@ function openMakePaymentModal() {
           border-radius:10px;padding:14px 16px;margin-bottom:22px;
           display:flex;justify-content:space-between;align-items:center;
         ">
-          <span style="font-size:14px;color:#5f6b85;font-family:'League Spartan',sans-serif;">Currently paid to:</span>
-          <span style="font-size:16px;font-weight:700;color:${isPastDue ? '#c02626' : '#16a34a'};font-family:'League Spartan',sans-serif;">${paidToDisplay}</span>
+          <span style="font-size:14px;color:#5f6b85;font-family:'Fredoka',sans-serif;">Currently paid to:</span>
+          <span style="font-size:16px;font-weight:700;color:${isPastDue ? '#c02626' : '#16a34a'};font-family:'Fredoka',sans-serif;">${paidToDisplay}</span>
         </div>
 
         <!-- Section: Subscription -->
         <div style="margin-bottom:24px;">
-          <div style="font-size:14px;font-weight:700;color:#405878;font-family:'League Spartan',sans-serif;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <div style="font-size:14px;font-weight:700;color:#405878;font-family:'Fredoka',sans-serif;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
             <span style="background:linear-gradient(135deg,#405878,#4c6c96);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">1</span>
             Select Payment Duration
           </div>
@@ -872,12 +872,12 @@ function openMakePaymentModal() {
             border-radius:10px;padding:14px 16px;margin-top:14px;
           ">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-              <span style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;">New paid-to date:</span>
-              <span id="ddNewEndDate" style="font-size:13px;font-weight:600;color:#2b3a55;font-family:'League Spartan',sans-serif;">—</span>
+              <span style="font-size:13px;color:#5f6b85;font-family:'Fredoka',sans-serif;">New paid-to date:</span>
+              <span id="ddNewEndDate" style="font-size:13px;font-weight:600;color:#2b3a55;font-family:'Fredoka',sans-serif;">-</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
-              <span style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;">Total:</span>
-              <span id="ddPayAmount" style="font-size:18px;font-weight:700;color:#14b8a6;font-family:'League Spartan',sans-serif;">—</span>
+              <span style="font-size:13px;color:#5f6b85;font-family:'Fredoka',sans-serif;">Total:</span>
+              <span id="ddPayAmount" style="font-size:18px;font-weight:700;color:#14b8a6;font-family:'Fredoka',sans-serif;">-</span>
             </div>
           </div>
         </div>
@@ -885,20 +885,20 @@ function openMakePaymentModal() {
         <button id="ddProceedSubBtn" disabled style="
           width:100%;padding:14px;border:none;border-radius:12px;
           background:#cbd5e1;color:white;font-size:15px;font-weight:700;
-          font-family:'League Spartan',sans-serif;cursor:not-allowed;
+          font-family:'Fredoka',sans-serif;cursor:not-allowed;
           transition:background 0.2s,transform 0.15s;margin-bottom:24px;
         ">Select a duration above</button>
 
         <!-- Divider -->
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
           <div style="flex:1;height:1px;background:#e8edf5;"></div>
-          <span style="font-size:12px;color:#9baab8;font-family:'League Spartan',sans-serif;font-weight:600;">OR</span>
+          <span style="font-size:12px;color:#9baab8;font-family:'Fredoka',sans-serif;font-weight:600;">OR</span>
           <div style="flex:1;height:1px;background:#e8edf5;"></div>
         </div>
 
         <!-- Section: Credits -->
         <div>
-          <div style="font-size:14px;font-weight:700;color:#405878;font-family:'League Spartan',sans-serif;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <div style="font-size:14px;font-weight:700;color:#405878;font-family:'Fredoka',sans-serif;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
             <span style="background:linear-gradient(135deg,#f6b700,#e6a800);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">2</span>
             Buy Module Credits
           </div>
@@ -906,26 +906,26 @@ function openMakePaymentModal() {
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
               <div style="display:flex;align-items:center;gap:8px;border:1.5px solid #e8edf5;border-radius:8px;padding:4px;background:#f8faff;">
                 <button id="ddCreditMinus" style="width:30px;height:30px;border:none;background:none;font-size:18px;cursor:pointer;color:#405878;font-weight:700;border-radius:6px;display:flex;align-items:center;justify-content:center;">−</button>
-                <input type="number" id="ddCreditCount" min="1" max="100" value="5" style="width:48px;padding:6px;border:none;font-size:16px;font-weight:700;text-align:center;color:#2b3a55;font-family:'League Spartan',sans-serif;background:transparent;">
+                <input type="number" id="ddCreditCount" min="1" max="100" value="5" style="width:48px;padding:6px;border:none;font-size:16px;font-weight:700;text-align:center;color:#2b3a55;font-family:'Fredoka',sans-serif;background:transparent;">
                 <button id="ddCreditPlus" style="width:30px;height:30px;border:none;background:none;font-size:18px;cursor:pointer;color:#405878;font-weight:700;border-radius:6px;display:flex;align-items:center;justify-content:center;">+</button>
               </div>
               <div style="flex:1;">
-                <div style="font-size:14px;color:#2b3a55;font-family:'League Spartan',sans-serif;font-weight:600;">credits × $${CREDIT_PRICE.toFixed(2)} each</div>
-                <div style="font-size:12px;color:#5f6b85;font-family:'League Spartan',sans-serif;">1 credit = 1 module unlock</div>
+                <div style="font-size:14px;color:#2b3a55;font-family:'Fredoka',sans-serif;font-weight:600;">credits × $${CREDIT_PRICE.toFixed(2)} each</div>
+                <div style="font-size:12px;color:#5f6b85;font-family:'Fredoka',sans-serif;">1 credit = 1 module unlock</div>
               </div>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f4ff;">
-              <span id="ddCreditTotal" style="font-size:16px;font-weight:700;color:#f6b700;font-family:'League Spartan',sans-serif;">Total: $${(5 * CREDIT_PRICE).toFixed(2)}</span>
+              <span id="ddCreditTotal" style="font-size:16px;font-weight:700;color:#f6b700;font-family:'Fredoka',sans-serif;">Total: $${(5 * CREDIT_PRICE).toFixed(2)}</span>
               <button id="ddBuyCreditBtn" style="
                 padding:10px 22px;background:linear-gradient(135deg,#f6b700,#e6a800);
                 color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
-                font-family:'League Spartan',sans-serif;cursor:pointer;transition:opacity 0.2s;
+                font-family:'Fredoka',sans-serif;cursor:pointer;transition:opacity 0.2s;
               ">Buy Credits →</button>
             </div>
           </div>
         </div>
 
-        <p style="text-align:center;margin-top:18px;font-size:12px;color:#9baab8;font-family:'League Spartan',sans-serif;">
+        <p style="text-align:center;margin-top:18px;font-size:12px;color:#9baab8;font-family:'Fredoka',sans-serif;">
           🔒 Secure checkout via Stripe. Cancel anytime.
         </p>
       </div>
@@ -939,7 +939,7 @@ function openMakePaymentModal() {
           width:44px;height:44px;border:4px solid #e8edf5;border-top-color:#14b8a6;
           border-radius:50%;animation:ddSpin 0.75s linear infinite;
         "></div>
-        <p style="color:#405878;font-weight:600;font-family:'League Spartan',sans-serif;margin:0;">Connecting to Stripe…</p>
+        <p style="color:#405878;font-weight:600;font-family:'Fredoka',sans-serif;margin:0;">Connecting to Stripe…</p>
       </div>
     </div>
 
@@ -1115,15 +1115,15 @@ function buildPlanCard(tier, isCurrent) {
   const displayName = tier.display_name || meta.label
 
   const topBadge = isCurrent
-    ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:${meta.accent};color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap;font-family:'League Spartan',sans-serif;letter-spacing:0.5px;box-shadow:0 2px 8px ${meta.shadow};">CURRENT PLAN</div>`
+    ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:${meta.accent};color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap;font-family:'Fredoka',sans-serif;letter-spacing:0.5px;box-shadow:0 2px 8px ${meta.shadow};">CURRENT PLAN</div>`
     : meta.badge
-    ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:${meta.gradient};color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap;font-family:'League Spartan',sans-serif;letter-spacing:0.5px;box-shadow:0 2px 8px ${meta.shadow};">${meta.badge}</div>`
+    ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:${meta.gradient};color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap;font-family:'Fredoka',sans-serif;letter-spacing:0.5px;box-shadow:0 2px 8px ${meta.shadow};">${meta.badge}</div>`
     : ''
 
   const featureItems = meta.features.map(f => `
     <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;">
       <span style="color:#14b8a6;font-size:14px;flex-shrink:0;margin-top:1px;">✓</span>
-      <span style="font-size:13px;color:#3b475f;font-family:'League Spartan',sans-serif;line-height:1.4;">${f}</span>
+      <span style="font-size:13px;color:#3b475f;font-family:'Fredoka',sans-serif;line-height:1.4;">${f}</span>
     </div>`).join('')
 
   const btnStyle = isCurrent
@@ -1144,10 +1144,10 @@ function buildPlanCard(tier, isCurrent) {
       ${topBadge}
       <div style="text-align:center;">
         <div style="font-size:38px;margin-bottom:8px;">${meta.icon}</div>
-        <div style="font-size:18px;font-weight:700;font-family:'League Spartan',sans-serif;background:${meta.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${displayName}</div>
+        <div style="font-size:18px;font-weight:700;font-family:'Fredoka',sans-serif;background:${meta.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${displayName}</div>
         <div style="margin-top:10px;">
-          <span style="font-size:30px;font-weight:700;color:#2b3a55;font-family:'League Spartan',sans-serif;">${price}</span>
-          <span style="font-size:13px;color:#5f6b85;font-family:'League Spartan',sans-serif;">/mo</span>
+          <span style="font-size:30px;font-weight:700;color:#2b3a55;font-family:'Fredoka',sans-serif;">${price}</span>
+          <span style="font-size:13px;color:#5f6b85;font-family:'Fredoka',sans-serif;">/mo</span>
         </div>
       </div>
       <div style="border-top:1px solid #f0f4ff;padding-top:14px;flex:1;">
@@ -1159,7 +1159,7 @@ function buildPlanCard(tier, isCurrent) {
         ${isCurrent ? 'disabled' : ''}
         style="
           width:100%;padding:12px;border:none;border-radius:10px;
-          font-size:14px;font-weight:600;font-family:'League Spartan',sans-serif;
+          font-size:14px;font-weight:600;font-family:'Fredoka',sans-serif;
           transition:opacity 0.2s,transform 0.15s;
           ${btnStyle}
         "
@@ -1175,7 +1175,7 @@ function openChangePlanModal() {
 
   const cards = tiers.length
     ? tiers.map(t => buildPlanCard(t, t.tier === currentTier)).join('')
-    : '<p style="text-align:center;color:#5f6b85;font-family:\'League Spartan\',sans-serif;grid-column:1/-1;">Loading plans…</p>'
+    : '<p style="text-align:center;color:#5f6b85;font-family:\'Fredoka\',sans-serif;grid-column:1/-1;">Loading plans…</p>'
 
   const overlay = document.createElement('div')
   overlay.id = 'changePlanModalOverlay'
@@ -1192,8 +1192,8 @@ function openChangePlanModal() {
       <!-- Header -->
       <div style="background:linear-gradient(135deg,#405878,#4c6c96);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <h2 style="color:white;font-size:22px;font-weight:700;margin:0;font-family:'League Spartan',sans-serif;">Choose Your Plan</h2>
-          <p style="color:rgba(255,255,255,0.75);font-size:14px;margin:4px 0 0;font-family:'League Spartan',sans-serif;">Select a plan and you'll be taken securely to Stripe</p>
+          <h2 style="color:white;font-size:22px;font-weight:700;margin:0;font-family:'Fredoka',sans-serif;">Choose Your Plan</h2>
+          <p style="color:rgba(255,255,255,0.75);font-size:14px;margin:4px 0 0;font-family:'Fredoka',sans-serif;">Select a plan and you'll be taken securely to Stripe</p>
         </div>
         <button id="ddClosePlanModal" style="
           width:36px;height:36px;border-radius:50%;border:none;
@@ -1208,14 +1208,14 @@ function openChangePlanModal() {
         <div id="ddPlanError" style="
           display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
           padding:12px 16px;color:#c02626;font-size:14px;
-          font-family:'League Spartan',sans-serif;margin-bottom:20px;
+          font-family:'Fredoka',sans-serif;margin-bottom:20px;
         "></div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:20px;margin-top:8px;">
           ${cards}
         </div>
 
-        <p style="text-align:center;margin-top:22px;font-size:12px;color:#5f6b85;font-family:'League Spartan',sans-serif;">
+        <p style="text-align:center;margin-top:22px;font-size:12px;color:#5f6b85;font-family:'Fredoka',sans-serif;">
           🔒 Payments are processed securely by Stripe. Cancel anytime.
         </p>
       </div>
@@ -1229,7 +1229,7 @@ function openChangePlanModal() {
           width:44px;height:44px;border:4px solid #e8edf5;border-top-color:#14b8a6;
           border-radius:50%;animation:ddSpin 0.75s linear infinite;
         "></div>
-        <p style="color:#405878;font-weight:600;font-family:'League Spartan',sans-serif;margin:0;">Connecting to Stripe…</p>
+        <p style="color:#405878;font-weight:600;font-family:'Fredoka',sans-serif;margin:0;">Connecting to Stripe…</p>
       </div>
     </div>
 

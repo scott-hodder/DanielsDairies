@@ -926,7 +926,7 @@ class ProgressTrackingSystem {
       }
 
       .assessment-title {
-        font-family: 'Fredoka', 'League Spartan', sans-serif;
+        font-family: 'Fredoka', 'Fredoka', sans-serif;
         font-size: 26px;
         font-weight: 700;
         margin: 0 0 8px 0;
@@ -1018,7 +1018,7 @@ class ProgressTrackingSystem {
       }
 
       .question-text {
-        font-family: 'Fredoka', 'League Spartan', sans-serif;
+        font-family: 'Fredoka', 'Fredoka', sans-serif;
         font-size: 22px;
         font-weight: 600;
         color: #405878;
@@ -1105,7 +1105,7 @@ class ProgressTrackingSystem {
       .assessment-btn {
         padding: 14px 28px;
         border-radius: 12px;
-        font-family: 'League Spartan', sans-serif;
+        font-family: 'Fredoka', sans-serif;
         font-size: 16px;
         font-weight: 700;
         cursor: pointer;
@@ -1152,7 +1152,7 @@ class ProgressTrackingSystem {
       }
 
       .results-title {
-        font-family: 'Fredoka', 'League Spartan', sans-serif;
+        font-family: 'Fredoka', 'Fredoka', sans-serif;
         font-size: 28px;
         font-weight: 700;
         color: #405878;
@@ -1758,8 +1758,8 @@ class ProgressTrackingSystem {
     }
 
     const supportiveFeedback = {
-      low: 'You are showing lots of helpful skills right now. Keep going — you’re doing great.',
-      moderate: 'You are learning and growing every week. Keep practising your tools — progress takes time.',
+      low: 'You are showing lots of helpful skills right now. Keep going - you’re doing great.',
+      moderate: 'You are learning and growing every week. Keep practising your tools - progress takes time.',
       high: 'Thanks for checking in honestly. Everyone has hard days, and we’ll keep supporting you step by step.'
     };
 
@@ -1773,7 +1773,7 @@ class ProgressTrackingSystem {
     const hasImprovedSinceLastCheckin = Number.isFinite(lastScore) && results.totalScore < lastScore;
 
     const encouragementMessage = hasImprovedSinceLastCheckin
-      ? 'Amazing progress! You are growing stronger every week — keep using your tools, you are doing brilliantly!'
+      ? 'Amazing progress! You are growing stronger every week - keep using your tools, you are doing brilliantly!'
       : supportiveFeedback[interpretationKey];
 
     const messages = {

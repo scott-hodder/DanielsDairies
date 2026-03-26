@@ -2126,6 +2126,10 @@ CREATE TABLE IF NOT EXISTS "public"."parent_profiles" (
     "id" "uuid" NOT NULL,
     "username" "text",
     "is_admin" boolean DEFAULT false,
+    "full_name" "text",
+    "phone" "text",
+    "credits" integer DEFAULT 0,
+    "subscription_tier" "text",
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL
 );

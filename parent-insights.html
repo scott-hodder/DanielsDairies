@@ -41,7 +41,7 @@
         }
 
         body {
-            font-family: 'League Spartan', sans-serif;
+            font-family: 'Fredoka', sans-serif;
             background: var(--bg-light);
             color: var(--text-dark);
             line-height: 1.6;
@@ -98,7 +98,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            font-family: 'League Spartan', sans-serif;
+            font-family: 'Fredoka', sans-serif;
         }
 
         .btn-header:hover {
@@ -1065,7 +1065,7 @@
             const latestAssessment = assessments[assessments.length - 1];
             if (first && latestAssessment) {
                 const shift = latestAssessment.total_score - first.total_score;
-                document.getElementById('developmentTimeMachine').textContent = `⏳ Time Machine: ${formatDate(first.created_at)} vs ${formatDate(latestAssessment.created_at)} — overall challenge score ${shift < 0 ? 'improved by ' + Math.abs(shift) : shift > 0 ? 'increased by ' + shift : 'is unchanged'}.`;
+                document.getElementById('developmentTimeMachine').textContent = `⏳ Time Machine: ${formatDate(first.created_at)} vs ${formatDate(latestAssessment.created_at)} - overall challenge score ${shift < 0 ? 'improved by ' + Math.abs(shift) : shift > 0 ? 'increased by ' + shift : 'is unchanged'}.`;
             } else {
                 document.getElementById('developmentTimeMachine').textContent = '⏳ Time Machine: complete more check-ins to compare then vs now.';
             }
@@ -1076,7 +1076,7 @@
             document.getElementById('developmentMilestone').textContent = milestone;
 
             const parentConfidence = Math.max(45, Math.min(95, Math.round(55 + moduleStats.completedCycles * 4 + (trajectory.direction === 'up' ? 10 : trajectory.direction === 'down' ? -3 : 5))));
-            document.getElementById('parentConfidenceRow').textContent = `👨‍👩‍👧 Parent confidence score: ${parentConfidence}/100 (${trajectory.direction === 'up' ? 'up' : 'steady'}) — this reflects confidence in supporting your child emotionally with current tools.`;
+            document.getElementById('parentConfidenceRow').textContent = `👨‍👩‍👧 Parent confidence score: ${parentConfidence}/100 (${trajectory.direction === 'up' ? 'up' : 'steady'}) - this reflects confidence in supporting your child emotionally with current tools.`;
         }
 
         function renderStatsSection(moduleStats, assessments, moodStats) {
@@ -1099,7 +1099,7 @@
                 <div class="insight-tile"><div class="insight-tile-label">In Progress Now</div><div class="insight-tile-value">${moduleStats.inProgressCount}</div></div>
                 <div class="insight-tile"><div class="insight-tile-label">Top Skill Track</div><div class="insight-tile-value">${PATHWAY_META[moduleStats.strongestCategory]?.label || 'Building Foundations'}</div></div>
                 <div class="insight-tile"><div class="insight-tile-label">Trend Signal</div><div class="insight-tile-value">${trend.direction === 'up' ? 'Improving' : trend.direction === 'down' ? 'Needs support' : 'Steady'}</div></div>
-                <div class="insight-tile"><div class="insight-tile-label">Mood Average</div><div class="insight-tile-value">${moodStats.averageScore ? moodStats.averageScore.toFixed(1) + '/5' : '—'}</div></div>
+                <div class="insight-tile"><div class="insight-tile-label">Mood Average</div><div class="insight-tile-value">${moodStats.averageScore ? moodStats.averageScore.toFixed(1) + '/5' : '-'}</div></div>
             `;
 
             list.innerHTML = `
@@ -1128,13 +1128,13 @@
                 <li><strong>What they’re learning:</strong> Through modules, your child is practising <strong>${primarySkill}</strong> in bite-sized steps.</li>
                 <li><strong>What this looks like at home:</strong> ${trendLine}</li>
                 <li><strong>How you can help:</strong> Ask one gentle question each day: “What helped you feel better today?” and praise effort, not perfection.</li>
-                <li><strong>Quick routine:</strong> 2 minutes each evening — name one feeling, one body signal, and one tool they can try tomorrow.</li>
+                <li><strong>Quick routine:</strong> 2 minutes each evening - name one feeling, one body signal, and one tool they can try tomorrow.</li>
                 <li><strong>Daniel mood pulse:</strong> ${moodStats.latestEntry ? `Latest emoji check-in was ${MOOD_LABELS[moodStats.latestEntry.mood_score]?.emoji || ''} ${MOOD_LABELS[moodStats.latestEntry.mood_score]?.label || 'recorded'} on ${formatDate(moodStats.latestEntry.created_at)}.` : 'Once your child starts using Daniel mood check-ins, you will see simple feeling trends here.'}</li>
             `;
 
             footer.textContent = moodStats.averageScore && moodStats.averageScore < 3
-                ? '💡 Parent tip: If mood scores stay low for several check-ins, keep language gentle and curious — “I noticed things have felt hard lately. Want to show me with an emoji or a colour?”'
-                : '💡 Parent tip: Keep language simple and warm — “I can see this is hard. Let’s try one small step together.”';
+                ? '💡 Parent tip: If mood scores stay low for several check-ins, keep language gentle and curious - “I noticed things have felt hard lately. Want to show me with an emoji or a colour?”'
+                : '💡 Parent tip: Keep language simple and warm - “I can see this is hard. Let’s try one small step together.”';
         }
 
         function renderChart(assessments) {
@@ -1196,7 +1196,7 @@
                                 usePointStyle: true,
                                 pointStyle: 'circle',
                                 padding: 14,
-                                font: { size: 13, weight: 600, family: 'League Spartan' }
+                                font: { size: 13, weight: 600, family: 'Fredoka' }
                             }
                         },
                         tooltip: {

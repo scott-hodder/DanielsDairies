@@ -62,6 +62,79 @@ serve(async (req) => {
       return jsonResponse({ error: 'Missing required environment configuration' }, 500)
     }
 
+    const body = await req.json()
+    const paymentType = body?.paymentType || body?.plan ? 'signup' : 'subscription'
+    const appUrl = Deno.env.get('APP_URL') || 'https://danielsdiaries.com.au'
+
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
+    // ── Signup checkout (no auth required) ──
+    if (paymentType === 'signup' || body?.plan) {
+      const email = body?.email
+      const plan = body?.plan
+      const successUrl = body?.successUrl || `${appUrl}/signup.html?payment=success`
+      const cancelUrl = body?.cancelUrl || `${appUrl}/signup.html?payment=cancelled`
+
+      if (!email || !plan) {
+        return jsonResponse({ error: 'email and plan are required for signup checkout' }, 400)
+      }
+
+      const tierCode = normalizeTierCode(plan)
+      const { data: tierPricing } = await admin
+        .from('subscription_tiers')
+        .select('monthly_price_cents, display_name, modules_per_month')
+        .eq('tier', tierCode)
+        .maybeSingle()
+
+      const monthlyPriceCents =
+        typeof tierPricing?.monthly_price_cents === 'number' && tierPricing.monthly_price_cents > 0
+          ? tierPricing.monthly_price_cents
+          : DEFAULT_MONTHLY_PRICE
+
+      const planName = tierPricing?.display_name || plan
+      const modules = tierPricing?.modules_per_month || '?'
+
+      // Create a Stripe customer for this new signup
+      const customer = await stripe.customers.create({
+        email,
+        metadata: { signup_plan: tierCode }
+      })
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer: customer.id,
+        line_items: [{
+          price_data: {
+            currency: 'aud',
+            product_data: {
+              name: `Daniel's Diaries - ${planName}`,
+              description: `First month: ${modules} guided modules`
+            },
+            unit_amount: monthlyPriceCents
+          },
+          quantity: 1
+        }],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        allow_promotion_codes: true,
+        metadata: {
+          payment_type: 'signup',
+          email,
+          plan: tierCode,
+          stripe_customer_id: customer.id
+        }
+      })
+
+      return jsonResponse({ url: session.url, id: session.id })
+    }
+
+    // ── Authenticated flows (subscription extension / prepaid credits) ──
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } }
     })
@@ -75,13 +148,10 @@ serve(async (req) => {
       return jsonResponse({ error: 'Unauthorized' }, 401)
     }
 
-    const body = await req.json()
-    const paymentType = body?.paymentType || 'subscription'
     const months = body?.months || 1
     const credits = body?.credits || 0
     const newEndDate = body?.newEndDate
     const requestedTier = body?.tier || ''
-    const appUrl = Deno.env.get('APP_URL') || 'https://danielsdiaries.com.au'
     const successUrl = body?.success_url || `${appUrl}/dashboard.html?payment=success`
     const cancelUrl = body?.cancel_url || `${appUrl}/dashboard.html?payment=cancelled`
 
@@ -97,14 +167,6 @@ serve(async (req) => {
       return jsonResponse({ error: 'months must be at least 1 for subscription payments' }, 400)
     }
 
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
-    const admin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-
     // Get current subscription info
     const { data: currentSub } = await admin
       .from('parent_subscriptions')
@@ -113,7 +175,7 @@ serve(async (req) => {
       .maybeSingle()
 
     const activeTier = normalizeTierCode(currentSub?.tier) || normalizeTierCode(requestedTier) || 'low'
-    
+
     const { data: tierPricing } = await admin
       .from('subscription_tiers')
       .select('monthly_price_cents')

@@ -110,4 +110,5 @@ export function setAllModulesFilters(filters) {
 
 export function setIsCurrentUserAdmin(isAdmin) {
   dashboardState.isCurrentUserAdmin = isAdmin
+  if (window.state) window.state.isCurrentUserAdmin = isAdmin
 }

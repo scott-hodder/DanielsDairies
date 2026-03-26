@@ -4,6 +4,7 @@
 // ================================================
 
 import { getZoneState } from './adventure-map-zones.js';
+import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
 
 // Import existing dashboard state and functions
 let dashboardModules = [];
@@ -353,7 +354,7 @@ class AdventureMapV4 {
       Promise.all([
         window.supabase
           .from('super_skills')
-          .select('*')
+          .select('*, characters:character_id(id, name, species, image_url)')
           .eq('is_active', true)
           .order('sort_order', { ascending: true }),
         window.supabase
@@ -366,6 +367,15 @@ class AdventureMapV4 {
           var cyclesResult = results[1];
           if (superSkillsResult.data) {
             superSkillsFromDB = superSkillsResult.data;
+            window.superSkills = superSkillsResult.data;
+            // Preload character images so they appear instantly
+            superSkillsResult.data.forEach(function(skill) {
+              var imgUrl = (skill.characters && skill.characters.image_url) || skill.character_image_url;
+              if (imgUrl) {
+                var img = new Image();
+                img.src = imgUrl;
+              }
+            });
             // Update SUPER_SKILL_THEMES with database values
             superSkillsResult.data.forEach(function(skill) {
               if (!skill.slug) return;
@@ -422,7 +432,7 @@ class AdventureMapV4 {
     css.push('.adventure-map-section { background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(245,250,255,0.4) 30%, rgba(240,248,255,0.3) 100%); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 24px; padding: 0; box-shadow: 0 8px 32px rgba(64,88,120,0.08), 0 2px 8px rgba(64,88,120,0.04), inset 0 1px 0 rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5); margin-top: 0; overflow: hidden; position: relative; }');
     css.push('.adventure-map-header-fixed { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; text-align: center; }');
     css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 24px 14px; position: relative; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%); }');
-    css.push('.adventure-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
+    css.push('.adventure-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
     css.push('.adventure-subtitle { margin: 2px 0 0; color: #64748B; font-size: 14px; font-weight: 500; }');
     css.push('.category-filter-container { display: flex; align-items: center; gap: 10px; margin: 0 20px 10px; padding: 10px 20px; flex-wrap: wrap; justify-content: center; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.6); }');
     css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; color: #64748B; }');
@@ -568,6 +578,10 @@ class AdventureMapV4 {
     css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
     css.push('@keyframes emojiShake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }');
     
+    // Node loading state - gentle pulse on click while async checks run
+    css.push('@keyframes nodeLoadingPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }');
+    css.push('.adventure-node.node-loading { animation: nodeLoadingPulse 0.8s ease-in-out infinite !important; pointer-events: none !important; }');
+
     // Daniel companion on path styles
     css.push('.daniel-companion { position: absolute; width: 64px; height: 64px; z-index: 12; pointer-events: none; transition: all 0.5s ease; }');
     css.push('.daniel-companion-inner { width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,0.95); padding: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: danielWalk 1s ease-in-out infinite; }');
@@ -625,7 +639,7 @@ class AdventureMapV4 {
     css.push('.zone-upgrade-emoji { font-size: 36px; margin-bottom: 4px; animation: zoneEmojiPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both; }');
     css.push('@keyframes zoneEmojiPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }');
     
-    css.push('.zone-upgrade-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 4px; line-height: 1.2; }');
+    css.push('.zone-upgrade-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 4px; line-height: 1.2; }');
     css.push('.zone-upgrade-subtitle { font-family: "Fredoka", sans-serif; font-size: 13px; color: #b45309; margin: 0 0 10px; line-height: 1.4; }');
     
     css.push('.zone-upgrade-new-label { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35); }');
@@ -661,12 +675,15 @@ class AdventureMapV4 {
     this.buildModuleList();
     this.filterModulesByCategory();
 
-    console.log('[AdventureMap] render() — allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
+    // Inject road builder stops at zone boundaries (after modules 3, 6, 9)
+    this.modules = injectRoadBuilderStops(this.modules);
+
+    console.log('[AdventureMap] render() - allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
 
     // If filter produced no results but modules exist, and this isn't a deliberate user cycle selection,
     // fall back to first available category
     if (this.modules.length === 0 && this.allModules.length > 0 && !this._userSelectedEmptyCycle) {
-      console.log('[AdventureMap] Category "' + this.currentCategory + '" has no modules — falling back');
+      console.log('[AdventureMap] Category "' + this.currentCategory + '" has no modules - falling back');
       var fallbackCategories = this.getAvailableCategories();
       if (fallbackCategories.length > 0) {
         this.currentCategory = fallbackCategories[0];
@@ -677,7 +694,7 @@ class AdventureMapV4 {
     }
     this._userSelectedEmptyCycle = false;
 
-    // Run DOM updates directly — callers already handle framing
+    // Run DOM updates directly - callers already handle framing
     this.createMapHTML();
     this.setupEventListeners();
 
@@ -852,7 +869,7 @@ class AdventureMapV4 {
 
     var availableCycles = this.getAvailableCyclesForCategory();
     if (availableCycles.length === 0) {
-      // No cycles for this category — clear any stale cycle from a previous category
+      // No cycles for this category - clear any stale cycle from a previous category
       this.currentCycleId = null;
     } else if (!this.currentCycleId || !availableCycles.find(function(cycle) { return String(cycle.id) === String(self.currentCycleId); })) {
       this.syncCycleSelection(availableCycles);
@@ -1317,14 +1334,14 @@ class AdventureMapV4 {
       this.syncCycleSelection(availableCycles);
     }
     var currentCycle = availableCycles.find(function(cycle) { return String(cycle.id) === String(this.currentCycleId); }.bind(this)) || null;
-    var numModules = this.modules.length;
-    var completedCount = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var numModules = this.modules.filter(function(m) { return !m.isRoadBuilder; }).length;
+    var completedCount = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
     var canvasHeight = Math.max(this.config.minCanvasHeight, this.config.topPadding + (numModules * this.config.nodeSpacingY) + this.config.bottomPadding);
 
     var self = this;
     var categoryOptions = availableCategories.map(function(cat) {
       var catTheme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
-      var count = self.allModules.filter(function(m) { return m.category === cat; }).length;
+      var count = self.allModules.filter(function(m) { return !m.isRoadBuilder && m.category === cat; }).length;
       return '<option value="' + cat + '"' + (cat === self.currentCategory ? ' selected' : '') + '>' + catTheme.emoji + ' ' + catTheme.name + ' (' + count + ')</option>';
     }).join('');
 
@@ -1339,10 +1356,10 @@ class AdventureMapV4 {
     var cycleBadgeLabel = currentCycle ? ('Cycle ' + (currentCycle.cycle_number || '') + (currentCycle.name ? ': ' + currentCycle.name : '')) : 'Cycle';
     var remainingCount = numModules - completedCount;
     var progressMsg = completedCount === 0
-      ? 'Your journey begins here — pick your first module to start exploring!'
+      ? 'Your journey begins here - pick your first module to start exploring!'
       : remainingCount > 0
-        ? completedCount + ' of ' + numModules + ' modules completed — ' + remainingCount + ' more to go!'
-        : 'All ' + numModules + ' modules completed — amazing work! 🎉';
+        ? completedCount + ' of ' + numModules + ' modules completed - ' + remainingCount + ' more to go!'
+        : 'All ' + numModules + ' modules completed - amazing work! 🎉';
     var html = '<div class="adventure-header">' +
       '<h2 class="adventure-title">🗺️ Your Adventure Map</h2>' +
       '<p class="adventure-subtitle">' + progressMsg + '</p>' +
@@ -1353,7 +1370,7 @@ class AdventureMapV4 {
       (availableCycles.length > 0 ? '<label class="category-filter-label" style="margin-left: 6px;">Cycle:</label>' +
       '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
       '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
-      '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + this.modules.length + ' module' + (this.modules.length !== 1 ? 's' : '') + '</span>' +
+      '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + numModules + ' module' + (numModules !== 1 ? 's' : '') + '</span>' +
       '</div>';
 
     if (this.modules.length > 0) {
@@ -1441,7 +1458,7 @@ class AdventureMapV4 {
     if (previousZone !== null && newZone > previousZone && newZone > 1) {
       var self = this;
       setTimeout(function() {
-        self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
+        self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length);
       }, 400);
     } else if (previousZone === null && newZone > 1) {
       var childId = child ? child.id : 'unknown';
@@ -1450,7 +1467,7 @@ class AdventureMapV4 {
       if (localStorage.getItem(storageKey) !== 'true') {
         var self = this;
         setTimeout(function() {
-          self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return m.status === 'completed'; }).length);
+          self.showZoneUpgradeBanner(newZone, self.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length);
         }, 800);
       }
     }
@@ -1459,7 +1476,7 @@ class AdventureMapV4 {
   showZoneUpgradeBanner(zone, completedCount) {
     if (!this.viewport) return;
 
-    // localStorage guard — only show once per child per zone
+    // localStorage guard - only show once per child per zone
     var child = window.state && window.state.selectedChild;
     var childId = child ? child.id : 'unknown';
     var storageKey = 'zoneUpgradeSeen_child_' + childId + '_zone_' + zone;
@@ -1488,7 +1505,7 @@ class AdventureMapV4 {
     var zoneSubtitles = [
       '',
       'Every module builds new pathways in your brain!',
-      'Look! Houses and fences appeared — your brain pathways are growing stronger!',
+      'Look! Houses and fences appeared - your brain pathways are growing stronger!',
       'Shops and street lights! Your brain connections are getting really powerful!',
       'A whole skyline! Your brain is an incredible network of pathways!'
     ];
@@ -1582,8 +1599,8 @@ class AdventureMapV4 {
   }
   
   getProgressLevel() {
-    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    var total = this.modules.length;
+    var completed = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+    var total = this.modules.filter(function(m) { return !m.isRoadBuilder; }).length;
     if (total === 0) return 0;
     var progress = completed / total;
     if (progress < 0.33) return 0;
@@ -1592,11 +1609,18 @@ class AdventureMapV4 {
   }
 
   getTownStage() {
-    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    if (completed <= 2) return 0;
-    if (completed <= 5) return 1;
-    if (completed <= 8) return 2;
-    return 3;
+    var completed = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+    // Zone upgrades are gated behind road builder completion.
+    // Even if 3 modules are done, stay in zone 0 until road builder 1 is completed.
+    var roadBuilders = this.modules.filter(function(m) { return m.isRoadBuilder; });
+    var rb1Done = roadBuilders.length > 0 && roadBuilders[0] && roadBuilders[0].status === 'completed';
+    var rb2Done = roadBuilders.length > 1 && roadBuilders[1] && roadBuilders[1].status === 'completed';
+    var rb3Done = roadBuilders.length > 2 && roadBuilders[2] && roadBuilders[2].status === 'completed';
+
+    if (completed >= 9 && rb3Done) return 3;
+    if (completed >= 6 && rb2Done) return 2;
+    if (completed >= 3 && rb1Done) return 1;
+    return 0;
   }
 
   getTownStageMeta() {
@@ -1666,12 +1690,9 @@ class AdventureMapV4 {
   }
 
   getSegmentRoadStage(completedBefore) {
-    // Road evolves based on how many modules are completed before this segment
-    // Matches brain-pathway metaphor: more modules = stronger neural connections = better road
-    if (completedBefore <= 2) return 0;  // Trailhead: dirt track
-    if (completedBefore <= 5) return 1;  // Village: paved road
-    if (completedBefore <= 8) return 2;  // Town Center: highway
-    return 3;                             // City: motorway
+    // Road style is now tied to getTownStage so it only upgrades
+    // after the road builder mini-game is completed for that zone.
+    return this.getTownStage();
   }
 
   renderPath() {
@@ -1687,15 +1708,15 @@ class AdventureMapV4 {
       { main: '#A8754F', light: '#C89B6C', shadow: 'rgba(109, 71, 41, 0.35)',
         shadowW: 32, mainW: 26, lightW: 18, dashW: 2, dashArray: '0 20',
         dashColor: 'rgba(255,255,255,0.35)' },
-      // Village: paved road — grey asphalt with white lane lines
+      // Village: paved road - grey asphalt with white lane lines
       { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)',
         shadowW: 38, mainW: 32, lightW: 24, dashW: 3, dashArray: '12 16',
         dashColor: 'rgba(255,255,255,0.7)' },
-      // Town Center: highway — dark asphalt, wider, double lane markings
+      // Town Center: highway - dark asphalt, wider, double lane markings
       { main: '#4B5563', light: '#6B7280', shadow: 'rgba(31, 41, 55, 0.4)',
         shadowW: 46, mainW: 40, lightW: 30, dashW: 3, dashArray: '18 12',
         dashColor: 'rgba(255,255,255,0.85)' },
-      // City: motorway — dark smooth surface, widest, solid lane edges
+      // City: motorway - dark smooth surface, widest, solid lane edges
       { main: '#1F2937', light: '#374151', shadow: 'rgba(17, 24, 39, 0.45)',
         shadowW: 54, mainW: 48, lightW: 38, dashW: 4, dashArray: '24 10',
         dashColor: 'rgba(255,255,255,0.9)' }
@@ -1711,7 +1732,7 @@ class AdventureMapV4 {
     }
 
     // Road style based on overall town stage (total completed modules)
-    var totalCompleted = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
+    var totalCompleted = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
     var stage = this.getSegmentRoadStage(totalCompleted);
     var road = roadPalettes[stage];
 
@@ -1724,7 +1745,7 @@ class AdventureMapV4 {
     // Lighter centre
     svgContent += '<path d="' + pathD + '" fill="none" stroke="' + road.light + '" stroke-width="' + road.lightW + '" stroke-linecap="round" stroke-linejoin="round" />';
 
-    // Road markings — different per stage, with animated dashes
+    // Road markings - different per stage, with animated dashes
     // Animation speed varies: dirt slow & subtle, motorway fast & smooth
     var dashAnimClass = 'road-dash-s' + stage;
     if (stage === 0) {
@@ -1886,19 +1907,82 @@ class AdventureMapV4 {
     var positions = this.calculateNodePositions();
     var currentIndex = -1;
     for (var i = 0; i < this.modules.length; i++) {
-      if (this.modules[i].status === 'available') {
+      if (!this.modules[i].isRoadBuilder && this.modules[i].status === 'available') {
         currentIndex = i;
         break;
       }
     }
 
     var self = this;
+    var moduleNumber = 0; // Track actual module numbers (excluding road builders)
     this.modules.forEach(function(module, index) {
       var pos = positions[index];
       if (!pos) return;
 
+      // ── Road Builder Stop (roadblock-style node) ──
+      if (module.isRoadBuilder) {
+        var rbNode = document.createElement('div');
+        rbNode.className = 'adventure-node road-builder ' + module.status;
+        rbNode.setAttribute('data-module-id', module.id);
+        rbNode.style.left = pos.x + 'px';
+        rbNode.style.top = pos.y + 'px';
+
+        var rbIcon = document.createElement('div');
+        rbIcon.className = 'node-emoji';
+        rbIcon.textContent = module.status === 'completed' ? '✅' : '🚧';
+        rbNode.appendChild(rbIcon);
+
+        if (module.status === 'completed') {
+          // Green checkmark badge (matches roadblock completed style)
+          var rbCheck = document.createElement('div');
+          rbCheck.className = 'rb-checkmark';
+          rbCheck.textContent = '✓';
+          rbNode.appendChild(rbCheck);
+        } else if (module.status === 'available') {
+          // Daniel indicator for available road builder
+          if (currentIndex === -1 || !self.modules.some(function(m, mi) { return mi < index && m.status === 'available' && !m.isRoadBuilder; })) {
+            rbNode.classList.add('is-current');
+            var character = document.createElement('div');
+            character.className = 'current-indicator';
+            var dogImage = document.createElement('img');
+            dogImage.src = '/images/characters/DanielTheDog.webp';
+            dogImage.alt = 'Daniel the dog';
+            character.appendChild(dogImage);
+            var indicatorLabel = document.createElement('div');
+            indicatorLabel.className = 'current-indicator-label';
+            indicatorLabel.textContent = 'Tap to play!';
+            character.appendChild(indicatorLabel);
+            rbNode.appendChild(character);
+          }
+        }
+
+        var rbClickHandler = function(e) {
+          e.stopPropagation();
+          if (module.status === 'locked') return;
+          if (module.status === 'completed') return;
+          openRoadBuilderGame(module.zoneTransition, function() {
+            // Re-render map after completing road builder
+            self.render();
+          });
+        };
+
+        rbNode.addEventListener('click', rbClickHandler);
+        rbNode.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          rbClickHandler(e);
+        });
+
+        rbNode.style.pointerEvents = 'auto';
+        container.appendChild(rbNode);
+        return; // Skip normal module rendering
+      }
+
+      // ── Normal Module Node ──
+      moduleNumber++;
       var node = document.createElement('div');
       node.className = 'adventure-node ' + module.status;
+      var nodeModuleId = module.id || (module.module && module.module.id);
+      if (nodeModuleId) node.setAttribute('data-module-id', nodeModuleId);
       node.style.left = pos.x + 'px';
       node.style.top = pos.y + 'px';
 
@@ -1915,7 +1999,7 @@ class AdventureMapV4 {
 
       var num = document.createElement('div');
       num.className = 'node-number';
-      num.textContent = (index + 1).toString();
+      num.textContent = moduleNumber.toString();
       node.appendChild(num);
 
       if (self.currentCategory === 'all' && module.category) {
@@ -1978,7 +2062,7 @@ class AdventureMapV4 {
 
       var tooltip = document.createElement('div');
       tooltip.className = 'node-tooltip';
-      
+
       var statusText = '';
       var statusClass = '';
       if (module.status === 'completed') {
@@ -1988,7 +2072,7 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = module.canUnlock ? 'Locked — spend 1 credit to unlock' : 'Locked — start with the first lock';
+        statusText = module.canUnlock ? 'Locked - spend 1 credit to unlock' : 'Locked - start with the first lock';
         statusClass = 'locked-status';
       }
 
@@ -2006,10 +2090,21 @@ class AdventureMapV4 {
           }
           return;
         }
-        self.onNodeClick(module);
+        if (module.status === 'available' && !self.arePreviousModulesComplete(index)) {
+          if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Not quite yet!',
+              message: 'Complete the earlier modules first before starting this one.',
+              type: 'error'
+            });
+          }
+          return;
+        }
+        self.onNodeClick(module, this);
       });
 
       node.addEventListener('touchend', function(e) {
+        e.preventDefault(); // Prevent subsequent click event from double-firing
         e.stopPropagation();
         if (module.status === 'locked') {
           if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
@@ -2023,7 +2118,17 @@ class AdventureMapV4 {
           }
           return;
         }
-        self.onNodeClick(module);
+        if (module.status === 'available' && !self.arePreviousModulesComplete(index)) {
+          if (typeof window.showUnlockResultModal === 'function') {
+            window.showUnlockResultModal({
+              title: 'Not quite yet!',
+              message: 'Complete the earlier modules first before starting this one.',
+              type: 'error'
+            });
+          }
+          return;
+        }
+        self.onNodeClick(module, this);
       });
 
       node.style.pointerEvents = 'auto';
@@ -2031,21 +2136,51 @@ class AdventureMapV4 {
     });
   }
 
-  onNodeClick(module) {
+  arePreviousModulesComplete(moduleIndex) {
+    for (var i = 0; i < moduleIndex; i++) {
+      var m = this.modules[i];
+      if (!m.isRoadBuilder && m.status !== 'completed') return false;
+    }
+    return true;
+  }
+
+  onNodeClick(module, nodeEl) {
+    // Prevent double-fire from click + touchend both triggering
+    if (this._processingNodeClick) return;
+    this._processingNodeClick = true;
+
+    // Show immediate loading pulse on the clicked node
+    if (nodeEl) {
+      nodeEl.classList.add('node-loading');
+    }
+
+    // Clear guard and loading after popup has had time to appear (or on timeout)
+    var self = this;
+    var clearLoading = function() {
+      self._processingNodeClick = false;
+      if (nodeEl) nodeEl.classList.remove('node-loading');
+    };
+    // Safety timeout - clear loading state after 5 seconds max
+    setTimeout(clearLoading, 5000);
+    // Expose clearLoading so Daniel system can call it when popup appears
+    window._clearNodeLoading = clearLoading;
+
     if (window.enhancedDashboard && typeof window.enhancedDashboard.showModulePreview === 'function') {
-      window.enhancedDashboard.showModulePreview(module);
+      Promise.resolve(window.enhancedDashboard.showModulePreview(module)).then(clearLoading).catch(clearLoading);
     } else {
       var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
       if (child && module.module) {
         var url = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code);
+        if (window.state && window.state.isCurrentUserAdmin) url += '&isAdmin=true';
         window.location.href = url;
       }
+      clearLoading();
     }
   }
 
   updateProgress() {
-    var completed = this.modules.filter(function(m) { return m.status === 'completed'; }).length;
-    var total = this.modules.length;
+    var completed = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+    var total = this.modules.filter(function(m) { return !m.isRoadBuilder; }).length;
     var progressText = document.getElementById('progressText');
     var progressFill = document.getElementById('progressFill');
     var theme = CATEGORY_THEMES[this.currentCategory] || CATEGORY_THEMES.all;
@@ -2381,12 +2516,12 @@ class EnhancedDashboard {
     // Load quest data (synchronous localStorage read)
     this.loadDailyQuest();
 
-    // Update UI synchronously — these are fast DOM writes
+    // Update UI synchronously - these are fast DOM writes
     this.updateDanielMood();
     this.updateQuestDisplay();
     this.updateRankDisplay();
 
-    // Setup adventure map — render() has its own rAF
+    // Setup adventure map - render() has its own rAF
     this.setupAdventureMap();
 
     this.initialized = true;
@@ -2574,14 +2709,14 @@ class EnhancedDashboard {
     }
 
     var mod = module.module;
-    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '');
+    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
 
     try {
       var superSkillId = mod.super_skill_id || null;
 
-      // Check 1: Periodic check-in (every 3 modules) — takes priority over intro
+      // Check 1: Periodic check-in (every 3 modules) - takes priority over intro
       var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-      console.log('[AdventureMap.startModule] Check 1 (periodic) — needsCheckin:', needsCheckin);
+      console.log('[AdventureMap.startModule] Check 1 (periodic) - needsCheckin:', needsCheckin);
       if (needsCheckin) {
         if (typeof window.showCheckinPopup === 'function') {
           var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
@@ -2594,7 +2729,7 @@ class EnhancedDashboard {
       }
 
       // Check 2: First module in a super skill → show character intro
-      console.log('[AdventureMap.startModule] Check 2 (intro) — superSkillId:', superSkillId, 'childId:', child.id);
+      console.log('[AdventureMap.startModule] Check 2 (intro) - superSkillId:', superSkillId, 'childId:', child.id);
       if (superSkillId && typeof window.showCheckinPopup === 'function') {
         var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
         var alreadySeen = localStorage.getItem(introKey);
@@ -2687,7 +2822,7 @@ class EnhancedDashboard {
       console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
 
       if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
-        console.log('[Check-in] Triggering check-in — need to catch up');
+        console.log('[Check-in] Triggering check-in - need to catch up');
         return true;
       }
 
@@ -2777,7 +2912,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(checkDataReady, 100);
 });
 
-// Refresh function — immediate execution, debounces rapid successive calls
+// Refresh function - immediate execution, debounces rapid successive calls
 var refreshDebounceTimer = null;
 window.refreshEnhancedDashboard = function() {
   // If a call is already pending, skip (debounce)

@@ -117,6 +117,36 @@ serve(async (req) => {
     return null
   }
 
+  // Add credits to parent_profiles and all children for a given parent
+  async function addCreditsToFamily(parentId: string, amount: number) {
+    // Update parent credits
+    const { data: parent } = await supabase
+      .from('parent_profiles')
+      .select('credits')
+      .eq('user_id', parentId)
+      .maybeSingle()
+
+    await supabase
+      .from('parent_profiles')
+      .update({ credits: (parent?.credits ?? 0) + amount })
+      .eq('user_id', parentId)
+
+    // Update all children's credits
+    const { data: children } = await supabase
+      .from('children')
+      .select('id, credits')
+      .eq('parent_user_id', parentId)
+
+    if (children && children.length > 0) {
+      for (const child of children) {
+        await supabase
+          .from('children')
+          .update({ credits: (child.credits ?? 0) + amount })
+          .eq('id', child.id)
+      }
+    }
+  }
+
   async function upsertParentSubscription(params: {
     parentId: string
     customerId?: string | null
@@ -184,29 +214,9 @@ serve(async (req) => {
     const periodStart = line?.period?.start ?? subscription.current_period_start
     const periodEnd = line?.period?.end ?? subscription.current_period_end
 
-    const { data: existingGrant } = await supabase
-      .from('subscription_credit_ledger')
-      .select('id')
-      .eq('source_invoice_id', invoice.id)
-      .maybeSingle()
-
-    if (existingGrant?.id) return
-
-    const { error: insertError } = await supabase.from('subscription_credit_ledger').insert({
-      parent_id: parentId,
-      period_start: toIsoDate(periodStart),
-      period_end: toIsoDate(periodEnd),
-      entry_type: 'grant',
-      credits_delta: tierRow.modules_per_month,
-      notes: `Stripe invoice grant (${resolvedTier})`,
-      source_invoice_id: invoice.id,
-      stripe_event_id: event.id,
-      created_at: new Date().toISOString()
-    })
-
-    if (insertError && !insertError.message.toLowerCase().includes('duplicate key')) {
-      throw insertError
-    }
+    // Grant credits directly to parent_profiles and children
+    await addCreditsToFamily(parentId, tierRow.modules_per_month)
+    console.log(`Granted ${tierRow.modules_per_month} credits to family of ${parentId} (invoice ${invoice.id})`)
   }
 
   async function grantSubscriptionExtensionCredits(params: {
@@ -240,23 +250,9 @@ serve(async (req) => {
     const creditsToGrant = tierRow.modules_per_month * months
     if (creditsToGrant <= 0) return
 
-    const currentPeriod = toCurrentCalendarPeriod(new Date())
-
-    const { error: insertError } = await supabase
-      .from('subscription_credit_ledger')
-      .insert({
-        parent_id: parentId,
-        period_start: currentPeriod.start,
-        period_end: currentPeriod.end,
-        entry_type: 'grant',
-        credits_delta: creditsToGrant,
-        notes: `Stripe subscription payment grant (${resolvedTier}, ${months} month${months > 1 ? 's' : ''})`,
-        stripe_event_id: event.id,
-        created_at: new Date().toISOString()
-      })
-
-    if (insertError && !insertError.message.toLowerCase().includes('duplicate key')) {
-      throw insertError
+    // Grant credits directly to parent_profiles and children
+    await addCreditsToFamily(parentId, creditsToGrant)
+    console.log(`Granted ${creditsToGrant} extension credits to family of ${parentId} (${months} months)`)
     }
   }
 
@@ -340,35 +336,12 @@ serve(async (req) => {
         if (session.mode === 'payment' && paymentType === 'prepaid_credits') {
           const credits = parseInt(session.metadata?.credits || '0')
           if (credits > 0) {
-            // Get current billing period
-            const { data: currentSub } = await supabase
-              .from('parent_subscriptions')
-              .select('current_period_start, current_period_end')
-              .eq('parent_id', parentId)
-              .maybeSingle()
-
-            const now = new Date()
-            const periodStart = currentSub?.current_period_start || now.toISOString().slice(0, 10)
-            const periodEnd = currentSub?.current_period_end || new Date(now.setMonth(now.getMonth() + 1)).toISOString().slice(0, 10)
-
-            // Grant credits to the user
-            const { error: creditError } = await supabase
-              .from('subscription_credit_ledger')
-              .insert({
-                parent_id: parentId,
-                period_start: periodStart,
-                period_end: periodEnd,
-                entry_type: 'prepaid_purchase',
-                credits_delta: credits,
-                notes: `Prepaid ${credits} credits via Stripe checkout`,
-                stripe_event_id: event.id,
-                created_at: new Date().toISOString()
-              })
-
-            if (creditError) {
+            // Grant credits directly to parent_profiles and children
+            try {
+              await addCreditsToFamily(parentId, credits)
+              console.log(`Granted ${credits} prepaid credits to family of ${parentId}`)
+            } catch (creditError) {
               console.error('Failed to grant prepaid credits:', creditError)
-            } else {
-              console.log(`Granted ${credits} prepaid credits to ${parentId}`)
             }
           }
           break

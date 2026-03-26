@@ -181,7 +181,7 @@
       console.log('[Print] Page ' + i + ': measured height=' + contentHeight + 'px, target=' + TARGET_HEIGHT + 'px');
       
       if (contentHeight > TARGET_HEIGHT) {
-        // Needs scaling — wrap content and scale to fit
+        // Needs scaling - wrap content and scale to fit
         var scale = TARGET_HEIGHT / contentHeight;
         // No minimum cap - always fit the content on one page
         // Very long pages (scale < 0.5) are rare and better small than cut off
@@ -572,7 +572,7 @@
     if (!text) {
       return null;
     }
-    var normalized = text.replace(/[–—]/g, '-');
+    var normalized = text.replace(/[–-]/g, '-');
     var match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
     if (match) {
       return match[1] + '-' + match[2];
@@ -781,21 +781,21 @@
         worldBg.appendChild(cloud);
       }
 
-      // Rolling hills — multi-layered SVG
+      // Rolling hills - multi-layered SVG
       var hills = document.createElement('div');
       hills.className = 'module-world-bg__hills';
       
-      // Get the primary colour for hill tinting — use CSS var or fallback
+      // Get the primary colour for hill tinting - use CSS var or fallback
       var primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#2A9D8F';
       
       hills.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 200" preserveAspectRatio="none">' +
-        '<!-- Far hills — lightest -->' +
+        '<!-- Far hills - lightest -->' +
         '<path d="M0,120 C200,60 400,100 600,70 C800,40 1000,90 1200,65 C1300,55 1400,80 1440,75 L1440,200 L0,200 Z" ' +
         'fill="' + primaryColor + '" opacity="0.06"/>' +
         '<!-- Mid hills -->' +
         '<path d="M0,150 C150,100 350,130 500,110 C700,85 850,125 1050,100 C1200,80 1350,115 1440,105 L1440,200 L0,200 Z" ' +
         'fill="' + primaryColor + '" opacity="0.09"/>' +
-        '<!-- Near hills — most visible -->' +
+        '<!-- Near hills - most visible -->' +
         '<path d="M0,170 C120,140 280,160 450,145 C620,130 780,155 950,140 C1100,128 1280,150 1440,138 L1440,200 L0,200 Z" ' +
         'fill="' + primaryColor + '" opacity="0.13"/>' +
         '</svg>';
@@ -937,7 +937,7 @@
       }, 150);
     });
 
-    // Handle scroll — add .scrolled class for opaque header
+    // Handle scroll - add .scrolled class for opaque header
     var scrollThreshold = 10;
     window.addEventListener('scroll', function() {
       if (window.scrollY > scrollThreshold) {

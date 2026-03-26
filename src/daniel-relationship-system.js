@@ -386,7 +386,7 @@ class DanielDialogueSystem {
         align-items: center;
         justify-content: center;
         padding: 20px;
-        font-family: 'Fredoka', 'League Spartan', system-ui, sans-serif;
+        font-family: 'Fredoka', 'Fredoka', system-ui, sans-serif;
       }
 
       .daniel-dialogue-modal.visible {
@@ -992,6 +992,11 @@ class DanielModulePreview {
     const category = window.enhancedDashboard?.adventureMap?.currentCategory || 'all';
     const child = window.state?.selectedChild;
     const self = this;
+
+    // Helper to clear the node loading animation
+    const clearLoading = () => {
+      if (typeof window._clearNodeLoading === 'function') window._clearNodeLoading();
+    };
     
     // Get module order/position - check if this is the first module
     // The module object from adventure map has pathwayOrder as a direct property
@@ -1010,15 +1015,16 @@ class DanielModulePreview {
     const isFirstModule = moduleOrder === 1 || isFirstModuleInMap;
     const superSkillId = rawMod.super_skill_id || null;
 
-    // Check periodic check-in FIRST — it takes priority over super skill intro
+    // Check periodic check-in FIRST - it takes priority over super skill intro
     // (e.g. module 4 needs a check-in, even if it's the first module of a new super skill)
     if (child && typeof window.showCheckinPopup === 'function') {
       try {
         const needsCheckin = await self.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-        console.log('[DanielSystem] Periodic check-in check — needsCheckin:', needsCheckin);
+        console.log('[DanielSystem] Periodic check-in check - needsCheckin:', needsCheckin);
         if (needsCheckin) {
+          clearLoading();
           console.log('[DanielSystem] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)');
-          const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+          const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
           window.showCheckinPopup(rawMod, function() {
             window.location.href = moduleUrl;
           }, true);
@@ -1029,15 +1035,16 @@ class DanielModulePreview {
       }
     }
 
-    // Check super skill intro — show character introduction on first module of each super skill
-    console.log('[DanielSystem] Intro check — isFirstModule:', isFirstModule, 'superSkillId:', superSkillId);
+    // Check super skill intro - show character introduction on first module of each super skill
+    console.log('[DanielSystem] Intro check - isFirstModule:', isFirstModule, 'superSkillId:', superSkillId);
     if (isFirstModule && superSkillId && child && typeof window.showCheckinPopup === 'function') {
       const introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
       const alreadySeen = localStorage.getItem(introKey);
       console.log('[DanielSystem] introKey:', introKey, 'alreadySeen:', alreadySeen);
       if (!alreadySeen) {
+        clearLoading();
         console.log('[DanielSystem] Showing INTRO (first module for this super skill)');
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
         window.showCheckinPopup(rawMod, function() {
           localStorage.setItem(introKey, 'true');
           window.location.href = moduleUrl;
@@ -1047,9 +1054,10 @@ class DanielModulePreview {
     }
 
     // Show Daniel's pre-activity dialogue immediately for fast UI response
+    clearLoading();
     this.dialogueSystem.showPreActivity(module, category, async () => {
       if (child && module) {
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
+        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
 
         window.location.href = moduleUrl;
         return;
@@ -1122,7 +1130,7 @@ class DanielModulePreview {
         completedCount = completedModules?.length || 0;
         console.log('[Daniel Check-in] Per-skill completed modules:', completedCount, 'raw data:', JSON.stringify(completedModules));
       } else {
-        console.log('[Daniel Check-in] No superSkillId — counting ALL completed modules');
+        console.log('[Daniel Check-in] No superSkillId - counting ALL completed modules');
         const { data: completedModules, error: countError } = await window.supabase
           .from('child_modules')
           .select('id')
@@ -1144,7 +1152,7 @@ class DanielModulePreview {
           .eq('id', superSkillId)
           .single();
 
-        console.log('[Daniel Check-in] Super skill slug lookup — data:', JSON.stringify(skillData), 'error:', slugError);
+        console.log('[Daniel Check-in] Super skill slug lookup - data:', JSON.stringify(skillData), 'error:', slugError);
         const slug = skillData?.slug;
         if (slug) {
           const { data: completedCheckins, error: checkinError } = await window.supabase
