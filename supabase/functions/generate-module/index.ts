@@ -847,15 +847,94 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     function getCurrentPageActivityStatus() {
       const page = document.querySelector('.page');
       if (!page) return { hasActivity: false, isComplete: true };
-      
+
       // Check for activity checkbox on the page
       const activityCheckbox = page.querySelector('[data-activity]');
       if (!activityCheckbox) return { hasActivity: false, isComplete: true };
-      
+
       const activityId = activityCheckbox.getAttribute('data-activity');
       const isComplete = completedActivities[activityId] || activityCheckbox.checked;
-      
+
       return { hasActivity: true, isComplete, activityId };
+    }
+
+    // Check if page has required text/drawing inputs that are empty
+    function validatePageInputs() {
+      const page = document.querySelector('.page');
+      if (!page) return true;
+
+      const pageType = page.getAttribute('data-page');
+
+      // Thought-bubbles: require text in textarea
+      if (pageType === 'thought-bubbles') {
+        const textareas = page.querySelectorAll('textarea');
+        for (var i = 0; i < textareas.length; i++) {
+          if (!textareas[i].value.trim()) {
+            showInputReminder('Write your thoughts before moving on!', textareas[i]);
+            return false;
+          }
+        }
+      }
+
+      // Comic-strip: require at least something drawn or typed in each panel
+      if (pageType === 'comic-strip') {
+        var canvases = page.querySelectorAll('.comic-drawing-canvas');
+        var textInputs = page.querySelectorAll('.comic-panel input[type="text"]');
+        var hasContent = false;
+
+        // Check if any canvas has been drawn on
+        for (var c = 0; c < canvases.length; c++) {
+          var ctx = canvases[c].getContext('2d');
+          var pixels = ctx.getImageData(0, 0, canvases[c].width, canvases[c].height).data;
+          for (var p = 3; p < pixels.length; p += 4) {
+            if (pixels[p] > 0) { hasContent = true; break; }
+          }
+          if (hasContent) break;
+        }
+
+        // Also check text inputs
+        if (!hasContent) {
+          for (var t = 0; t < textInputs.length; t++) {
+            if (textInputs[t].value.trim()) { hasContent = true; break; }
+          }
+        }
+
+        if (!hasContent) {
+          showInputReminder('Draw or write something in the panels first!', canvases[0]);
+          return false;
+        }
+      }
+
+      // Reflection pages: require text
+      if (pageType === 'reflection') {
+        var reflTextareas = page.querySelectorAll('textarea');
+        for (var r = 0; r < reflTextareas.length; r++) {
+          if (!reflTextareas[r].value.trim()) {
+            showInputReminder('Share your thoughts before moving on!', reflTextareas[r]);
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    function showInputReminder(message, element) {
+      var existing = document.querySelector('.activity-reminder');
+      if (existing) existing.remove();
+
+      var reminder = document.createElement('div');
+      reminder.className = 'activity-reminder';
+      reminder.innerHTML = '<div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; font-family: var(--font-body); font-size: 1rem; display: flex; align-items: center; gap: 10px;"><span>✏️</span><span>' + message + '</span></div>';
+      document.body.appendChild(reminder);
+      setTimeout(function() { reminder.remove(); }, 3000);
+
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.style.transition = 'box-shadow 0.3s';
+        element.style.boxShadow = '0 0 0 3px var(--primary)';
+        setTimeout(function() { element.style.boxShadow = ''; }, 2000);
+      }
     }
     
     // Show a gentle reminder to complete the activity
@@ -898,13 +977,18 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     // Navigation
     function nextPage() {
       if (currentPage < pages.length - 1) {
+        // Check if text/drawing inputs are filled
+        if (!validatePageInputs()) {
+          return;
+        }
+
         // Check if current page requires activity completion
         const status = getCurrentPageActivityStatus();
         if (status.hasActivity && !status.isComplete) {
           showActivityReminder();
           return;
         }
-        
+
         currentPage++;
         renderPage();
       }
@@ -1176,27 +1260,77 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     
     async function markActivityComplete(activityId) {
       if (completedActivities[activityId]) return;
-      
-      completedActivities[activityId] = true;
-      try {
-        totalStars = await awardSingleStar(totalStars);
-      } catch (e) {
-        totalStars++;
+
+      // Validate that content has been filled before allowing completion
+      var page = document.querySelector('.page');
+      if (page) {
+        var pageType = page.getAttribute('data-page');
+
+        // Comic-strip: check drawings/text exist
+        if (pageType === 'comic-strip') {
+          var hasContent = false;
+          var canvases = page.querySelectorAll('.comic-drawing-canvas');
+          for (var c = 0; c < canvases.length; c++) {
+            var ctx = canvases[c].getContext('2d');
+            var pixels = ctx.getImageData(0, 0, canvases[c].width, canvases[c].height).data;
+            for (var p = 3; p < pixels.length; p += 4) {
+              if (pixels[p] > 0) { hasContent = true; break; }
+            }
+            if (hasContent) break;
+          }
+          if (!hasContent) {
+            var textInputs = page.querySelectorAll('.comic-panel input[type="text"]');
+            for (var t = 0; t < textInputs.length; t++) {
+              if (textInputs[t].value.trim()) { hasContent = true; break; }
+            }
+          }
+          if (!hasContent) {
+            showInputReminder('Draw or write in the panels first!', canvases[0]);
+            // Uncheck the checkbox
+            var cb = page.querySelector('[data-activity="' + activityId + '"]');
+            if (cb) cb.checked = false;
+            return;
+          }
+        }
+
+        // Thought-bubbles: check textarea filled
+        if (pageType === 'thought-bubbles') {
+          var textareas = page.querySelectorAll('textarea');
+          var allFilled = true;
+          for (var i = 0; i < textareas.length; i++) {
+            if (!textareas[i].value.trim()) { allFilled = false; break; }
+          }
+          if (!allFilled) {
+            showInputReminder('Write your thoughts first!', textareas[0]);
+            var cb2 = page.querySelector('[data-activity="' + activityId + '"]');
+            if (cb2) cb2.checked = false;
+            return;
+          }
+        }
       }
-      await saveStarData();
-      saveProgress();
-      
-      // Star celebration animation
-      const star = document.createElement('div');
+
+      completedActivities[activityId] = true;
+
+      // Star celebration animation (show immediately, save in background)
+      var star = document.createElement('div');
       star.innerHTML = '⭐';
       star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
       document.body.appendChild(star);
       star.animate([
         { transform: 'translate(-50%,-50%) scale(0.5)', opacity: 1 },
         { transform: 'translate(-50%,-150%) scale(2)', opacity: 0 }
-      ], { duration: 1200, easing: 'ease-out' }).onfinish = () => star.remove();
-      
+      ], { duration: 1200, easing: 'ease-out' }).onfinish = function() { star.remove(); };
+
+      // Update star count in UI immediately
+      totalStars++;
       renderPage();
+
+      // Save to DB in background (don't await - keep UI snappy)
+      awardSingleStar(totalStars - 1).then(function(dbStars) {
+        totalStars = dbStars;
+      }).catch(function() {});
+      saveStarData();
+      saveProgress();
     }
     
     function bindPageInteractions() {
@@ -2867,7 +3001,7 @@ function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | 
         
         <div class="rounded-xl p-4 text-center m-bg-soft-yellow">
           <p class="text-lg font-semibold font-body m-color-dark">
-            "All feelings are okay—even the big ones!" 💛
+            "All feelings are okay, even the big ones!" 💛
           </p>
         </div>
       </div>
@@ -6508,7 +6642,7 @@ Follow EVERY rule precisely. There are no exceptions.
           auditSections.forEach((sec: { section_number: number; section_name: string; severity: string; ai_instruction: string }) => {
             if (sec.ai_instruction) {
               const sevLabel = sec.severity === 'CRITICAL' ? '🚨 CRITICAL (MUST PASS)' : sec.severity === 'IMPORTANT' ? '⚠️ IMPORTANT' : 'ℹ️ ADVISORY';
-              auditRulesPrompt += `${sevLabel} — ${sec.section_number}. ${sec.section_name}:\n${sec.ai_instruction}\n\n`;
+              auditRulesPrompt += `${sevLabel} | ${sec.section_number}. ${sec.section_name}:\n${sec.ai_instruction}\n\n`;
             }
           });
           auditRulesPrompt += `═══════════════════════════════════════════════════════════════
@@ -6605,7 +6739,7 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
         `Age Developmental Stage: ${ageData.developmental_stage || lookupContext?.ageBand?.developmentalStage || 'Not provided'}`,
         `Theory Connection Brain Town Application: ${lookupTheoryConnection.brainTownApplication || 'Not provided'}`,
         lookupSecondaryTheories.length > 0
-          ? `Secondary Theory Descriptions: ${lookupSecondaryTheories.map((t: any) => `${t?.name || 'Unknown'}${t?.description ? ` — ${t.description}` : ''}`).join(' | ')}`
+          ? `Secondary Theory Descriptions: ${lookupSecondaryTheories.map((t: any) => `${t?.name || 'Unknown'}${t?.description ? ` (${t.description})` : ''}`).join(' | ')}`
           : 'Secondary Theory Descriptions: Not provided',
         `Neuroscience concept detail: ${neuroscienceConcept || lookupContext?.neuroscienceConcept || 'Not provided'}`,
         diagnosisPathways?.length ? `Diagnosis pathways selected: ${diagnosisPathways.join(', ')}` : 'Diagnosis pathways selected: None',

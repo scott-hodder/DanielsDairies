@@ -422,7 +422,7 @@ class AdventureMapV4 {
     css.push('.adventure-map-section { background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(245,250,255,0.4) 30%, rgba(240,248,255,0.3) 100%); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 24px; padding: 0; box-shadow: 0 8px 32px rgba(64,88,120,0.08), 0 2px 8px rgba(64,88,120,0.04), inset 0 1px 0 rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5); margin-top: 0; overflow: hidden; position: relative; }');
     css.push('.adventure-map-header-fixed { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; text-align: center; }');
     css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 24px 14px; position: relative; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%); }');
-    css.push('.adventure-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
+    css.push('.adventure-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
     css.push('.adventure-subtitle { margin: 2px 0 0; color: #64748B; font-size: 14px; font-weight: 500; }');
     css.push('.category-filter-container { display: flex; align-items: center; gap: 10px; margin: 0 20px 10px; padding: 10px 20px; flex-wrap: wrap; justify-content: center; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.6); }');
     css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; color: #64748B; }');
@@ -568,6 +568,10 @@ class AdventureMapV4 {
     css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
     css.push('@keyframes emojiShake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }');
     
+    // Node loading state — gentle pulse on click while async checks run
+    css.push('@keyframes nodeLoadingPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }');
+    css.push('.adventure-node.node-loading { animation: nodeLoadingPulse 0.8s ease-in-out infinite !important; pointer-events: none !important; }');
+
     // Daniel companion on path styles
     css.push('.daniel-companion { position: absolute; width: 64px; height: 64px; z-index: 12; pointer-events: none; transition: all 0.5s ease; }');
     css.push('.daniel-companion-inner { width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,0.95); padding: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: danielWalk 1s ease-in-out infinite; }');
@@ -625,7 +629,7 @@ class AdventureMapV4 {
     css.push('.zone-upgrade-emoji { font-size: 36px; margin-bottom: 4px; animation: zoneEmojiPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both; }');
     css.push('@keyframes zoneEmojiPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }');
     
-    css.push('.zone-upgrade-title { font-family: "Fredoka", "League Spartan", system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 4px; line-height: 1.2; }');
+    css.push('.zone-upgrade-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 4px; line-height: 1.2; }');
     css.push('.zone-upgrade-subtitle { font-family: "Fredoka", sans-serif; font-size: 13px; color: #b45309; margin: 0 0 10px; line-height: 1.4; }');
     
     css.push('.zone-upgrade-new-label { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35); }');
@@ -1899,6 +1903,8 @@ class AdventureMapV4 {
 
       var node = document.createElement('div');
       node.className = 'adventure-node ' + module.status;
+      var nodeModuleId = module.id || (module.module && module.module.id);
+      if (nodeModuleId) node.setAttribute('data-module-id', nodeModuleId);
       node.style.left = pos.x + 'px';
       node.style.top = pos.y + 'px';
 
@@ -2006,10 +2012,11 @@ class AdventureMapV4 {
           }
           return;
         }
-        self.onNodeClick(module);
+        self.onNodeClick(module, this);
       });
 
       node.addEventListener('touchend', function(e) {
+        e.preventDefault(); // Prevent subsequent click event from double-firing
         e.stopPropagation();
         if (module.status === 'locked') {
           if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
@@ -2023,7 +2030,7 @@ class AdventureMapV4 {
           }
           return;
         }
-        self.onNodeClick(module);
+        self.onNodeClick(module, this);
       });
 
       node.style.pointerEvents = 'auto';
@@ -2031,15 +2038,36 @@ class AdventureMapV4 {
     });
   }
 
-  onNodeClick(module) {
+  onNodeClick(module, nodeEl) {
+    // Prevent double-fire from click + touchend both triggering
+    if (this._processingNodeClick) return;
+    this._processingNodeClick = true;
+
+    // Show immediate loading pulse on the clicked node
+    if (nodeEl) {
+      nodeEl.classList.add('node-loading');
+    }
+
+    // Clear guard and loading after popup has had time to appear (or on timeout)
+    var self = this;
+    var clearLoading = function() {
+      self._processingNodeClick = false;
+      if (nodeEl) nodeEl.classList.remove('node-loading');
+    };
+    // Safety timeout — clear loading state after 5 seconds max
+    setTimeout(clearLoading, 5000);
+    // Expose clearLoading so Daniel system can call it when popup appears
+    window._clearNodeLoading = clearLoading;
+
     if (window.enhancedDashboard && typeof window.enhancedDashboard.showModulePreview === 'function') {
-      window.enhancedDashboard.showModulePreview(module);
+      Promise.resolve(window.enhancedDashboard.showModulePreview(module)).then(clearLoading).catch(clearLoading);
     } else {
       var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
       if (child && module.module) {
         var url = '/module.html?childId=' + child.id + '&moduleId=' + module.module.id + '&code=' + (module.code || module.module.code);
         window.location.href = url;
       }
+      clearLoading();
     }
   }
 

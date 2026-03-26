@@ -1,6 +1,7 @@
 import { checkAuth, signIn, signUp, resetPassword, updatePassword } from '../../auth.js'
 import { showElement, hideElement, setLoadingState, setMessage, clearMessages as clearMessagesUI } from '../../utils/dom.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
+import { getSupabaseClient } from '../../supabaseClient.js'
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm')
@@ -246,11 +247,13 @@ loginForm.addEventListener('submit', async (e) => {
         errorMsg = 'Invalid email or password. Please try again.'
       } else if (error.message.includes('Email not confirmed')) {
         errorMsg = 'Please verify your email before signing in.'
+        // Show resend button
+        showResendVerification(email)
       } else {
         errorMsg = error.message
       }
     }
-    
+
     showError(errorMsg)
     
     // Reset button state
@@ -327,6 +330,59 @@ function showSuccess(message) {
 // Clear messages
 function clearMessages() {
   clearMessagesUI(errorMessage, successMessage)
+}
+
+// Show resend verification email button
+function showResendVerification(email) {
+  // Remove existing resend button if any
+  const existing = document.getElementById('resendVerificationBtn')
+  if (existing) existing.remove()
+
+  const btn = document.createElement('button')
+  btn.id = 'resendVerificationBtn'
+  btn.type = 'button'
+  btn.textContent = 'Resend verification email'
+  btn.style.cssText = 'display:block; margin:12px auto 0; background:none; border:2px solid #6B9BD1; color:#405878; padding:10px 20px; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.2s;'
+  btn.onmouseenter = () => { btn.style.background = '#E8F4F8' }
+  btn.onmouseleave = () => { btn.style.background = 'none' }
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true
+    btn.textContent = 'Sending...'
+
+    try {
+      const supabase = getSupabaseClient()
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email
+      })
+
+      if (error) throw error
+
+      btn.textContent = 'Email sent!'
+      btn.style.borderColor = '#2E7D32'
+      btn.style.color = '#2E7D32'
+      showSuccess('Verification email sent! Please check your inbox (and spam folder).')
+
+      // Allow re-sending after 30 seconds
+      setTimeout(() => {
+        btn.disabled = false
+        btn.textContent = 'Resend verification email'
+        btn.style.borderColor = '#6B9BD1'
+        btn.style.color = '#405878'
+      }, 30000)
+    } catch (err) {
+      console.error('Resend error:', err)
+      btn.disabled = false
+      btn.textContent = 'Resend verification email'
+      showError('Could not send verification email. Please try again.')
+    }
+  })
+
+  // Insert after the error message
+  if (errorMessage && errorMessage.parentNode) {
+    errorMessage.parentNode.insertBefore(btn, errorMessage.nextSibling)
+  }
 }
 
 // Initialize app

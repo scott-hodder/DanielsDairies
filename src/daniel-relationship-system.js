@@ -386,7 +386,7 @@ class DanielDialogueSystem {
         align-items: center;
         justify-content: center;
         padding: 20px;
-        font-family: 'Fredoka', 'League Spartan', system-ui, sans-serif;
+        font-family: 'Fredoka', 'Fredoka', system-ui, sans-serif;
       }
 
       .daniel-dialogue-modal.visible {
@@ -992,6 +992,11 @@ class DanielModulePreview {
     const category = window.enhancedDashboard?.adventureMap?.currentCategory || 'all';
     const child = window.state?.selectedChild;
     const self = this;
+
+    // Helper to clear the node loading animation
+    const clearLoading = () => {
+      if (typeof window._clearNodeLoading === 'function') window._clearNodeLoading();
+    };
     
     // Get module order/position - check if this is the first module
     // The module object from adventure map has pathwayOrder as a direct property
@@ -1017,6 +1022,7 @@ class DanielModulePreview {
         const needsCheckin = await self.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
         console.log('[DanielSystem] Periodic check-in check — needsCheckin:', needsCheckin);
         if (needsCheckin) {
+          clearLoading();
           console.log('[DanielSystem] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)');
           const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
           window.showCheckinPopup(rawMod, function() {
@@ -1036,6 +1042,7 @@ class DanielModulePreview {
       const alreadySeen = localStorage.getItem(introKey);
       console.log('[DanielSystem] introKey:', introKey, 'alreadySeen:', alreadySeen);
       if (!alreadySeen) {
+        clearLoading();
         console.log('[DanielSystem] Showing INTRO (first module for this super skill)');
         const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');
         window.showCheckinPopup(rawMod, function() {
@@ -1047,6 +1054,7 @@ class DanielModulePreview {
     }
 
     // Show Daniel's pre-activity dialogue immediately for fast UI response
+    clearLoading();
     this.dialogueSystem.showPreActivity(module, category, async () => {
       if (child && module) {
         const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '');

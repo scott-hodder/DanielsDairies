@@ -17,7 +17,7 @@ function _showRefLoading() {
     var el = document.createElement('div');
     el.id = 'refLoadingIndicator';
     el.style.cssText = 'text-align:center;padding:40px 20px;';
-    el.innerHTML = '<div style="width:36px;height:36px;border:3px solid #e5e7eb;border-top-color:#405878;border-radius:50%;animation:refSpin 0.8s linear infinite;margin:0 auto 12px;"></div><p style="color:#6b7c8f;font-size:13px;font-family:League Spartan,sans-serif;">Loading reference data...</p><style>@keyframes refSpin{to{transform:rotate(360deg)}}</style>';
+    el.innerHTML = '<div style="width:36px;height:36px;border:3px solid #e5e7eb;border-top-color:#405878;border-radius:50%;animation:refSpin 0.8s linear infinite;margin:0 auto 12px;"></div><p style="color:#6b7c8f;font-size:13px;font-family:Fredoka,sans-serif;">Loading reference data...</p><style>@keyframes refSpin{to{transform:rotate(360deg)}}</style>';
     container.insertBefore(el, panels[0]);
 }
 

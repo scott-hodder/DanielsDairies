@@ -1130,7 +1130,7 @@ function buildAgeRangeStyleGuide(ageRange: string, ageData?: AgeRangeData): stri
   switch (normalized) {
     case "6-8":
       return `
-EARLY CHILDHOOD (6-8) — Concrete Learners
+EARLY CHILDHOOD (6-8): Concrete Learners
 - Very short text blocks (1-2 short sentences per paragraph) with frequent line breaks.
 - Keep most teaching chunks under ~40-70 words before shifting to an activity.
 - Use simple, concrete words; avoid abstract terms unless explained with an immediate example.
@@ -1141,7 +1141,7 @@ EARLY CHILDHOOD (6-8) — Concrete Learners
 `.trim();
     case "9-11":
       return `
-LATE CHILDHOOD (9-11) — Bridge Thinkers
+LATE CHILDHOOD (9-11): Bridge Thinkers
 - Keep text concise: usually 1-3 short sentences per paragraph.
 - Keep most teaching blocks to ~70-120 words before moving to an activity.
 - Introduce new vocabulary with quick definitions or examples.
@@ -1152,7 +1152,7 @@ LATE CHILDHOOD (9-11) — Bridge Thinkers
 `.trim();
     case "12-14":
       return `
-EARLY ADOLESCENCE (12-14) — Transition Thinkers
+EARLY ADOLESCENCE (12-14): Transition Thinkers
 - Medium text blocks (2-4 sentences) with clear structure and spacing.
 - Keep teaching sections focused (~90-160 words), then move to choice-based interaction.
 - Use more sophisticated vocabulary, but define less-familiar terms naturally in context.
@@ -1163,7 +1163,7 @@ EARLY ADOLESCENCE (12-14) — Transition Thinkers
 `.trim();
     case "15-18":
       return `
-MID-LATE ADOLESCENCE (15-18) — Abstract Integrators
+MID-LATE ADOLESCENCE (15-18): Abstract Integrators
 - Structured text blocks (3-5 sentences) with strong purpose and minimal repetition.
 - Keep explanatory passages concise (~120-220 words) before prompting analysis or action.
 - Use mature, nuanced language; avoid oversimplification.
@@ -1329,14 +1329,14 @@ function buildEnhancedContentBrief(resolved: {
 === MODULE BRIEF ===
 Title: ${title}
 Target Age: ${ageRange} (${displayName})
-${superSkillName ? `Super Skill: ${superSkillName}${superSkillDescription ? ` — ${superSkillDescription}` : ''}` : ''}
-${subSkillName ? `Sub-Skill: ${subSkillName}${subSkillDescription ? ` — ${subSkillDescription}` : ''}` : ''}
+${superSkillName ? `Super Skill: ${superSkillName}${superSkillDescription ? ` (${superSkillDescription})` : ''}` : ''}
+${subSkillName ? `Sub-Skill: ${subSkillName}${subSkillDescription ? ` (${subSkillDescription})` : ''}` : ''}
 ${moduleObjective ? `Objective: ${moduleObjective}` : ''}
 
-CRITICAL — NON-NEGOTIABLE REQUIREMENTS:
-- The module title MUST be exactly "${title}" — do NOT change, rephrase, or create a different title.
-- The target age range MUST be exactly "${ageRange}" — do NOT change this.
-- The primary theory MUST be "${theoryData.theory_name}" — all content must operationalise this theory.
+CRITICAL (NON-NEGOTIABLE REQUIREMENTS):
+- The module title MUST be exactly "${title}". Do NOT change, rephrase, or create a different title.
+- The target age range MUST be exactly "${ageRange}". Do NOT change this.
+- The primary theory MUST be "${theoryData.theory_name}". All content must operationalise this theory.
 - The Brain Town analogy MUST be woven throughout the content (see BRAIN TOWN ANALOGY section).
 ${superSkillName ? `- All content must align with the Super Skill: "${superSkillName}".` : ''}
 ${subSkillName ? `- All content must focus on building the Sub-Skill: "${subSkillName}".` : ''}
@@ -1429,7 +1429,7 @@ ${facilitatorTip}
 3. Focus on ACTIVITIES over explanations
 4. Break content into SMALL chunks
 5. More DOING, less READING
-6. Apply "${theoryData.theory_name}" theory correctly — this is the PRIMARY framework for ALL content
+6. Apply "${theoryData.theory_name}" theory correctly. This is the PRIMARY framework for ALL content
 7. Use the Brain Town analogy throughout (introduce early, reference in lessons and activities)
 8. CHILD AS TOWN PLANNER: Frame the child as the "town planner" of their Brain Town at least once
 9. THEORY CITATION: Mention the primary theory name AND include the researcher's surname in the content
@@ -1461,7 +1461,7 @@ All content MUST use Australian English spelling and conventions:
 
 === NATURAL LANGUAGE RULES (MANDATORY) ===
 Write in a natural, human voice. Avoid patterns that sound like AI-generated text:
-- NEVER use em dashes (—). Use commas, full stops, or rewrite the sentence instead.
+- ABSOLUTELY NEVER use em dashes. Not a single one anywhere in the output. No long dashes between words or clauses. Use commas, full stops, colons, or rewrite the sentence instead. This is a hard rule with zero exceptions.
 - NEVER use hyphens or en dashes to join compound words in headings, labels, activity content, or descriptions. Use spaces instead. Examples: "thought feeling" NOT "thought-feeling", "feeling action" NOT "feeling-action", "self care" NOT "self-care". The only exception is internal code identifiers.
 - NEVER use "Let's dive in", "dive into", "Unlock your", "Unleash", "delve into"
 - Avoid overuse of exclamation marks (max 2-3 per page)

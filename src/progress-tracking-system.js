@@ -926,7 +926,7 @@ class ProgressTrackingSystem {
       }
 
       .assessment-title {
-        font-family: 'Fredoka', 'League Spartan', sans-serif;
+        font-family: 'Fredoka', 'Fredoka', sans-serif;
         font-size: 26px;
         font-weight: 700;
         margin: 0 0 8px 0;
@@ -1018,7 +1018,7 @@ class ProgressTrackingSystem {
       }
 
       .question-text {
-        font-family: 'Fredoka', 'League Spartan', sans-serif;
+        font-family: 'Fredoka', 'Fredoka', sans-serif;
         font-size: 22px;
         font-weight: 600;
         color: #405878;
@@ -1105,7 +1105,7 @@ class ProgressTrackingSystem {
       .assessment-btn {
         padding: 14px 28px;
         border-radius: 12px;
-        font-family: 'League Spartan', sans-serif;
+        font-family: 'Fredoka', sans-serif;
         font-size: 16px;
         font-weight: 700;
         cursor: pointer;
@@ -1152,7 +1152,7 @@ class ProgressTrackingSystem {
       }
 
       .results-title {
-        font-family: 'Fredoka', 'League Spartan', sans-serif;
+        font-family: 'Fredoka', 'Fredoka', sans-serif;
         font-size: 28px;
         font-weight: 700;
         color: #405878;

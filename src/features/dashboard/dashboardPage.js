@@ -9,6 +9,7 @@ import { dashboardState, setAllModulesFilters, setCategoryColors, setChildModule
 import { setAppState, getAppState } from '../../services/appState.js'
 import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
+import { maybeShowOnboarding, addHelpButton } from './onboardingWalkthrough.js'
 
 
 let currentCreditSummary = null
@@ -2190,6 +2191,10 @@ async function selectChild(child) {
         renderModules()
 
         hideLoadingScreen()
+
+        // Show app walkthrough for first-time users after focus plan is set
+        addHelpButton()
+        maybeShowOnboarding(child.id)
       })
       return // Don't show detail view yet - wait for onboarding
     }
@@ -2198,6 +2203,7 @@ async function selectChild(child) {
     // Adventure map renders asynchronously inside showChildDetailView
     showChildDetailView(child)
     renderModules()
+    addHelpButton()
     hideLoadingScreen()
     
   } catch (error) {

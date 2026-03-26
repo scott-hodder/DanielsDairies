@@ -29,6 +29,32 @@ async function init() {
     const params = new URLSearchParams(window.location.search)
     isFreeTrial = params.get('trial') === 'true'
 
+    // Check if returning from successful Stripe payment
+    if (params.get('payment') === 'success') {
+        await completeSignupAfterPayment()
+        return
+    }
+
+    // Check if payment was cancelled — restore form state
+    if (params.get('payment') === 'cancelled') {
+        const pending = localStorage.getItem('dd_pending_signup')
+        if (pending) {
+            const data = JSON.parse(pending)
+            formData.firstName = data.firstName
+            formData.lastName = data.lastName
+            formData.email = data.email
+            formData.phone = data.phone
+            formData.password = data.password
+            formData.plan = data.plan
+
+            // Restore form field values
+            document.getElementById('firstName').value = data.firstName
+            document.getElementById('lastName').value = data.lastName
+            document.getElementById('email').value = data.email
+            document.getElementById('phone').value = data.phone || ''
+        }
+    }
+
     // Set up form submissions
     document.getElementById('step1Form').addEventListener('submit', handleStep1)
     document.getElementById('step2Form').addEventListener('submit', handleStep2)
@@ -57,6 +83,13 @@ async function init() {
         formData.plan = planParam
     }
     updatePlanSelection()
+
+    // If returning from cancelled payment, go to step 2 (plan selection)
+    if (params.get('payment') === 'cancelled') {
+        showAlert('error', 'Payment was cancelled. Please choose your plan and try again.')
+        await loadTiers()
+        goToStep(2)
+    }
 }
 
 // ── Load Tiers from DB ──
@@ -93,10 +126,18 @@ function renderPlanCards(container) {
 
         // Build features list
         const features = []
-        features.push(`${tier.modules_per_month} module${tier.modules_per_month > 1 ? 's' : ''} per month`)
+        features.push(`${tier.modules_per_month} guided module${tier.modules_per_month > 1 ? 's' : ''} per month`)
         if (tier.includes_parent_insights) features.push('Parent insights dashboard')
-        if (tier.includes_behavioural_support) features.push('Behavioural support')
-        if (tier.description) features.push(tier.description)
+        if (tier.includes_behavioural_support) features.push('1-on-1 behavioural support')
+
+        // Short tagline per tier (first sentence of description, or a sensible fallback)
+        let tagline = ''
+        if (tier.description) {
+            // Take first sentence only
+            const firstSentence = tier.description.split(/\.\s/)[0]
+            tagline = firstSentence.length > 100 ? firstSentence.substring(0, 100) + '...' : firstSentence
+            if (!tagline.endsWith('.')) tagline += '.'
+        }
 
         const card = document.createElement('label')
         card.className = 'plan-card' + (isMiddle ? '' : '')
@@ -110,6 +151,7 @@ function renderPlanCards(container) {
             <ul class="plan-card-features-list">
                 ${features.map(f => `<li><span class="plan-feature-check">&#10003;</span> ${f}</li>`).join('')}
             </ul>
+            ${tagline ? `<p class="plan-card-tagline">${tagline}</p>` : ''}
         `
 
         card.addEventListener('click', () => {
@@ -189,6 +231,9 @@ function handleStep1(e) {
     if (!email || !isValidEmail(email)) { showFieldError('email', 'emailError'); valid = false }
     else clearFieldError('email', 'emailError')
 
+    if (phone && !isValidPhone(phone)) { showFieldError('phone', 'phoneError'); valid = false }
+    else clearFieldError('phone', 'phoneError')
+
     if (password.length < 6) { showFieldError('password', 'passwordError'); valid = false }
     else clearFieldError('password', 'passwordError')
 
@@ -255,10 +300,10 @@ function populateReview() {
             document.getElementById('reviewPlan').textContent = formData.plan || '-'
             document.getElementById('reviewTotal').textContent = '-'
         }
-        submitBtnText.textContent = 'Create Account & Pay'
+        submitBtnText.textContent = 'Subscribe & Pay'
         if (reviewHeader) reviewHeader.textContent = 'Review & subscribe'
-        if (reviewSubtext) reviewSubtext.textContent = 'Double-check your details, then we\'ll set up your payment.'
-        if (termsText) termsText.textContent = 'You\'ll be redirected to Stripe to securely complete payment. Cancel anytime from your profile.'
+        if (reviewSubtext) reviewSubtext.textContent = 'Check your details, then you\'ll be taken to Stripe to pay securely.'
+        if (termsText) termsText.textContent = 'Your account will be created after payment is confirmed. Cancel anytime from your profile.'
     }
 }
 
@@ -271,131 +316,81 @@ async function handleSubmit() {
 
     try {
         submitBtn.disabled = true
-        submitBtnText.textContent = 'Creating account...'
         submitSpinner.classList.remove('hidden')
 
-        // 1. Create account via Supabase Auth
-        const data = await signUp(formData.email, formData.password, {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            full_name: `${formData.firstName} ${formData.lastName}`,
-            phone: formData.phone,
-            plan: formData.plan || 'free_trial',
-            is_free_trial: isFreeTrial
-        })
-
-        // 2. Update parent profile with additional details
-        if (data.user) {
-            const supabase = getSupabaseClient()
-            const updateData = {
-                full_name: `${formData.firstName} ${formData.lastName}`,
-                phone: formData.phone
-            }
-            if (formData.plan) {
-                updateData.subscription_tier = formData.plan
-            }
-            // If free trial, set 2 credits on the parent profile
-            if (isFreeTrial) {
-                updateData.credits = 2
-            }
-            
-            // Retry logic - wait for trigger to create profile, then update
-            const maxRetries = 5
-            let success = false
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, 600 * attempt))
-                
-                // First check if profile exists
-                const { data: existingProfile } = await supabase
-                    .from('parent_profiles')
-                    .select('id')
-                    .eq('id', data.user.id)
-                    .maybeSingle()
-                
-                if (!existingProfile) {
-                    console.log(`Profile not found yet, attempt ${attempt}/${maxRetries}`)
-                    continue
-                }
-                
-                // Profile exists, now update it
-                const { data: updateResult, error: updateError } = await supabase
-                    .from('parent_profiles')
-                    .update(updateData)
-                    .eq('id', data.user.id)
-                    .select()
-                
-                if (updateError) {
-                    console.error(`Update error on attempt ${attempt}:`, updateError)
-                    continue
-                }
-                
-                if (updateResult && updateResult.length > 0) {
-                    console.log('Profile updated successfully with credits:', updateResult[0].credits)
-                    success = true
-                    break
-                }
-            }
-            
-            if (!success) {
-                console.error('Failed to update profile with credits after all retries')
-            }
-        }
-
-        // 4. Handle payment or redirect
         if (isFreeTrial) {
-            // Free trial - no payment needed, go to login
-            showAlert('success', 'Account created! Please check your email to verify, then log in.')
-            submitBtnText.textContent = 'Account Created!'
+            // ── Free trial: create account via server-side function ──
+            submitBtnText.textContent = 'Creating account...'
+
+            const supabase = getSupabaseClient()
+            const { data: result, error: fnError } = await supabase.functions.invoke('complete-signup', {
+                body: {
+                    email: formData.email,
+                    password: formData.password,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phone: formData.phone,
+                    plan: 'free_trial',
+                    isFreeTrial: true
+                }
+            })
+
+            if (fnError) {
+                let errorMsg = fnError.message || 'Failed to create account'
+                if (fnError.context && typeof fnError.context.json === 'function') {
+                    try {
+                        const errorBody = await fnError.context.json()
+                        if (errorBody?.error) errorMsg = errorBody.error
+                    } catch (e) { /* ignore */ }
+                }
+                throw new Error(errorMsg)
+            }
+
+            clearAlerts()
             submitSpinner.classList.add('hidden')
 
-            setTimeout(() => {
-                window.location.href = '/login.html'
-            }, 3000)
+            // Show inline login form (same as paid flow)
+            showPostSignupLoginForm(formData.email)
+
         } else {
-            // Paid plan - redirect to Stripe
+            // ── Paid plan: redirect to Stripe FIRST, account created after payment ──
             submitBtnText.textContent = 'Redirecting to payment...'
 
-            try {
-                const supabase = getSupabaseClient()
-                const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-session', {
-                    body: {
-                        plan: formData.plan,
-                        email: formData.email,
-                        userId: data.user?.id,
-                        successUrl: `${window.location.origin}/login.html?signup=success`,
-                        cancelUrl: `${window.location.origin}/signup.html?step=3`
-                    }
-                })
+            // Store signup details so we can create the account after payment
+            localStorage.setItem('dd_pending_signup', JSON.stringify({
+                email: formData.email,
+                password: formData.password,
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                plan: formData.plan
+            }))
 
-                if (checkoutError) throw checkoutError
-
-                if (checkoutData?.url) {
-                    window.location.href = checkoutData.url
-                    return
+            const supabase = getSupabaseClient()
+            const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-session', {
+                body: {
+                    plan: formData.plan,
+                    email: formData.email,
+                    successUrl: `${window.location.origin}/signup.html?payment=success`,
+                    cancelUrl: `${window.location.origin}/signup.html?payment=cancelled`
                 }
+            })
 
-                if (checkoutData?.paymentLink) {
-                    window.location.href = checkoutData.paymentLink
-                    return
-                }
-            } catch (stripeErr) {
-                console.warn('Stripe checkout not configured, proceeding without payment:', stripeErr)
+            if (checkoutError) throw checkoutError
+
+            const redirectUrl = checkoutData?.url || checkoutData?.paymentLink
+            if (redirectUrl) {
+                window.location.href = redirectUrl
+                return
             }
 
-            // Fallback if Stripe isn't configured
-            showAlert('success', 'Account created! Please check your email to verify, then log in.')
-            submitBtnText.textContent = 'Account Created!'
-            submitSpinner.classList.add('hidden')
-
-            setTimeout(() => {
-                window.location.href = '/login.html'
-            }, 3000)
+            throw new Error('Could not start payment session. Please try again.')
         }
 
     } catch (error) {
         console.error('Signup error:', error)
         submitBtn.disabled = false
-        submitBtnText.textContent = isFreeTrial ? 'Create Free Account' : 'Create Account & Pay'
+        submitBtnText.textContent = isFreeTrial ? 'Create Free Account' : 'Subscribe & Pay'
         submitSpinner.classList.add('hidden')
 
         let message = 'Something went wrong. Please try again.'
@@ -410,10 +405,245 @@ async function handleSubmit() {
     }
 }
 
+// After Stripe payment success, complete account creation via server-side edge function
+async function completeSignupAfterPayment() {
+    const pending = localStorage.getItem('dd_pending_signup')
+    if (!pending) {
+        showAlert('error', 'Could not find your signup details. Please try signing up again.')
+        return
+    }
+
+    const data = JSON.parse(pending)
+
+    // Populate formData so the review step shows correct info
+    formData.firstName = data.firstName
+    formData.lastName = data.lastName
+    formData.email = data.email
+    formData.phone = data.phone
+    formData.plan = data.plan
+
+    // Load tiers so populateReview can show the plan name/price
+    await loadTiers()
+
+    const submitBtn = document.getElementById('submitBtn')
+    const submitBtnText = document.getElementById('submitBtnText')
+    const submitSpinner = document.getElementById('submitSpinner')
+
+    try {
+        // Show step 3 with the review populated
+        goToStep(3)
+        if (submitBtn) submitBtn.disabled = true
+        if (submitBtnText) submitBtnText.textContent = 'Setting up your account...'
+        if (submitSpinner) submitSpinner.classList.remove('hidden')
+
+        showAlert('success', 'Payment successful! Creating your account...')
+
+        // Call the server-side edge function that uses service role
+        const supabase = getSupabaseClient()
+        const { data: result, error: fnError } = await supabase.functions.invoke('complete-signup', {
+            body: {
+                email: data.email,
+                password: data.password,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                phone: data.phone,
+                plan: data.plan
+            }
+        })
+
+        if (fnError) {
+            // Try to get the actual error message from the response
+            let errorMsg = fnError.message || 'Failed to create account'
+            if (fnError.context && typeof fnError.context.json === 'function') {
+                try {
+                    const errorBody = await fnError.context.json()
+                    if (errorBody?.error) errorMsg = errorBody.error
+                } catch (e) { /* ignore parse errors */ }
+            }
+            throw new Error(errorMsg)
+        }
+
+        console.log('Account created successfully:', result)
+
+        // Clear pending data
+        localStorage.removeItem('dd_pending_signup')
+
+        // Clear the "Payment successful! Creating your account..." banner
+        clearAlerts()
+
+        // Show inline login form
+        showPostSignupLoginForm(data.email)
+
+    } catch (error) {
+        console.error('Post-payment signup error:', error)
+
+        if (submitBtn) submitBtn.disabled = false
+        if (submitBtnText) submitBtnText.textContent = 'Retry'
+        if (submitSpinner) submitSpinner.classList.add('hidden')
+
+        let message = 'Payment was successful but we had trouble creating your account. Please contact support.'
+        if (error.message) {
+            if (error.message.includes('already exists') || error.message.includes('already registered')) {
+                message = 'An account with this email already exists. Please log in instead.'
+                localStorage.removeItem('dd_pending_signup')
+            } else {
+                message = error.message
+            }
+        }
+        showAlert('error', message)
+
+        // Allow retry — keep localStorage so they can try again
+        if (submitBtn) {
+            submitBtn.disabled = false
+            submitBtn.onclick = () => completeSignupAfterPayment()
+        }
+    }
+}
+
+// Helper to update parent profile with retry logic
+async function updateParentProfile(userId, updateData) {
+    const supabase = getSupabaseClient()
+    const maxRetries = 5
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 600 * attempt))
+
+        const { data: existingProfile } = await supabase
+            .from('parent_profiles')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle()
+
+        if (!existingProfile) {
+            console.log(`Profile not found yet, attempt ${attempt}/${maxRetries}`)
+            continue
+        }
+
+        const { data: updateResult, error: updateError } = await supabase
+            .from('parent_profiles')
+            .update(updateData)
+            .eq('id', userId)
+            .select()
+
+        if (updateError) {
+            console.error(`Update error on attempt ${attempt}:`, updateError)
+            continue
+        }
+
+        if (updateResult && updateResult.length > 0) {
+            console.log('Profile updated successfully:', updateResult[0])
+            return
+        }
+    }
+    console.error('Failed to update profile after all retries')
+}
+
+
+// ── Post-Signup Login Form ──
+function showPostSignupLoginForm(email) {
+    const step3 = document.getElementById('step3')
+    if (!step3) return
+
+    step3.innerHTML = `
+        <div class="form-header">
+            <h2>You're all set!</h2>
+            <p>We've sent a confirmation email to <strong>${email}</strong>. Please check your inbox (and spam folder) and click the link to verify your account, then log in below.</p>
+        </div>
+        <div id="signupLoginMessages"></div>
+        <form id="signupLoginForm">
+            <div class="form-group">
+                <label class="form-label" for="signupLoginEmail">Email</label>
+                <input type="email" id="signupLoginEmail" class="form-input" value="${email}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="signupLoginPassword">Password</label>
+                <input type="password" id="signupLoginPassword" class="form-input" placeholder="Enter your password" required>
+            </div>
+            <div class="form-buttons" style="justify-content: center;">
+                <button type="submit" class="btn-submit" id="signupLoginBtn">
+                    <span id="signupLoginBtnText">Log In</span>
+                    <span id="signupLoginSpinner" class="spinner hidden"></span>
+                </button>
+            </div>
+        </form>
+        <p style="text-align:center; margin-top: 12px; font-size: 13px; color: #7a8a9e;">
+            Didn't get the email? <a href="#" id="signupResendLink" style="color: #6B9BD1; text-decoration: underline; cursor: pointer;">Resend verification email</a>
+        </p>
+    `
+
+    // Wire up the inline login form
+    const loginForm = document.getElementById('signupLoginForm')
+    const messagesDiv = document.getElementById('signupLoginMessages')
+    loginForm.addEventListener('submit', async (ev) => {
+        ev.preventDefault()
+        const loginEmail = document.getElementById('signupLoginEmail').value
+        const loginPassword = document.getElementById('signupLoginPassword').value
+        const loginBtn = document.getElementById('signupLoginBtn')
+        const loginBtnText = document.getElementById('signupLoginBtnText')
+        const loginSpinner = document.getElementById('signupLoginSpinner')
+
+        loginBtn.disabled = true
+        loginBtnText.textContent = 'Logging in...'
+        loginSpinner.classList.remove('hidden')
+        messagesDiv.innerHTML = ''
+
+        try {
+            const { signIn } = await import('./auth.js')
+            await signIn(loginEmail, loginPassword)
+            messagesDiv.innerHTML = '<div class="alert alert-success visible">Login successful! Redirecting...</div>'
+            setTimeout(() => { window.location.href = '/landing.html' }, 1000)
+        } catch (loginErr) {
+            let msg = loginErr.message || 'Login failed'
+            if (msg.includes('Email not confirmed')) {
+                msg = 'Please verify your email first. Check your inbox for the confirmation link.'
+            } else if (msg.includes('Invalid login credentials')) {
+                msg = 'Invalid email or password. Please try again.'
+            }
+            messagesDiv.innerHTML = `<div class="alert alert-error visible">${msg}</div>`
+            loginBtn.disabled = false
+            loginBtnText.textContent = 'Log In'
+            loginSpinner.classList.add('hidden')
+        }
+    })
+
+    // Wire up resend link
+    const resendLink = document.getElementById('signupResendLink')
+    resendLink.addEventListener('click', async (ev) => {
+        ev.preventDefault()
+        resendLink.textContent = 'Sending...'
+        try {
+            const supabaseResend = getSupabaseClient()
+            const { error: resendErr } = await supabaseResend.auth.resend({
+                type: 'signup',
+                email
+            })
+            if (resendErr) throw resendErr
+            resendLink.textContent = 'Email sent!'
+            resendLink.style.color = '#2E7D32'
+            setTimeout(() => {
+                resendLink.textContent = 'Resend verification email'
+                resendLink.style.color = '#6B9BD1'
+            }, 30000)
+        } catch (err) {
+            resendLink.textContent = 'Failed — try again'
+            resendLink.style.color = '#c0392b'
+            setTimeout(() => {
+                resendLink.textContent = 'Resend verification email'
+                resendLink.style.color = '#6B9BD1'
+            }, 3000)
+        }
+    })
+}
 
 // ── Helpers ──
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function isValidPhone(phone) {
+    // Strip spaces, dashes, parens for checking
+    const digits = phone.replace(/[\s\-\(\)\+]/g, '')
+    // Must be at least 8 digits and only contain valid characters
+    return /^[\d\s\-\(\)\+]+$/.test(phone) && digits.length >= 8 && digits.length <= 15
 }
 
 function showFieldError(inputId, errorId) {

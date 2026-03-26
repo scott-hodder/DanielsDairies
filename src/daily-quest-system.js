@@ -183,7 +183,7 @@ class DailyQuestManager {
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-family: 'League Spartan', 'Fredoka', sans-serif;
+        font-family: 'Fredoka', 'Fredoka', sans-serif;
         margin-top: 12px;
       }
 

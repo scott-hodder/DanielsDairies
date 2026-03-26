@@ -407,19 +407,22 @@
       } catch (e) {}
     };
     
-    // Award a single star and return new total
+    // Award a single star and return new total (single DB call, uses cached state)
     window.awardSingleStar = async function(currentStars) {
+      const cachedStars = _state.currentChild?.stars || currentStars || 0;
+      const newStars = cachedStars + 1;
       if (!_state.childId) {
-        return (currentStars || 0) + 1;
+        return newStars;
       }
+      // Update local state immediately for responsiveness
+      if (_state.currentChild) _state.currentChild.stars = newStars;
       try {
-        const child = await _getChild(_state.childId);
-        const newStars = (child.stars || 0) + 1;
+        // Single DB call - no need to fetch first since we have cached state
         const updated = await _updateStars(_state.childId, newStars);
         _state.currentChild = updated;
         return updated.stars;
       } catch (e) {
-        return (currentStars || 0) + 1;
+        return newStars;
       }
     };
     
@@ -700,89 +703,43 @@
             const params = new URLSearchParams(window.location.search);
             const moduleId = params.get('moduleId');
             const moduleCode = params.get('code');
-            
-            let xpReward = 0;
-            let moduleTitle = 'this module';
-            
-            // Get module info and XP reward
-            if (moduleId) {
-              const { data: mod } = await supabase
-                .from('modules')
-                .select('title, xp_reward')
-                .eq('id', moduleId)
-                .single();
-              
-              if (mod) {
-                moduleTitle = mod.title;
-                xpReward = mod.xp_reward || 0;
-              }
-            } else if (moduleCode) {
-              const { data: mod } = await supabase
-                .from('modules')
-                .select('title, xp_reward')
-                .eq('code', moduleCode)
-                .single();
-              
-              if (mod) {
-                moduleTitle = mod.title;
-                xpReward = mod.xp_reward || 0;
-              }
-            }
-            
-            // Get child's current XP and level info
-            const { data: child } = await supabase
-              .from('children')
-              .select('total_xp, level')
-              .eq('id', _state.childId)
-              .single();
-            
-            const currentXp = child?.total_xp || 0;
-            const currentLevel = child?.level || 1;
+
+            // Run all queries in parallel for speed
+            const moduleQuery = moduleId
+              ? supabase.from('modules').select('title, xp_reward').eq('id', moduleId).single()
+              : moduleCode
+                ? supabase.from('modules').select('title, xp_reward').eq('code', moduleCode).single()
+                : Promise.resolve({ data: null });
+
+            const childQuery = supabase.from('children').select('total_xp, level').eq('id', _state.childId).single();
+            const levelsQuery = supabase.from('levels').select('level, xp_required').order('level', { ascending: true });
+
+            const [moduleResult, childResult, levelsResult] = await Promise.all([moduleQuery, childQuery, levelsQuery]);
+
+            const mod = moduleResult.data;
+            const xpReward = mod?.xp_reward || 0;
+            const moduleTitle = mod?.title || 'this module';
+
+            const currentXp = childResult.data?.total_xp || 0;
+            const currentLevel = childResult.data?.level || 1;
             const newTotalXp = currentXp + xpReward;
-            
-            // Get XP needed for next level
+
+            const levels = levelsResult.data || [];
             let nextLevelXp = 0;
             let currentLevelXp = 0;
             let newLevel = currentLevel;
-            
-            try {
-              // Get current level XP requirement
-              const { data: currentLevelInfo } = await supabase
-                .from('levels')
-                .select('xp_required')
-                .eq('level', currentLevel)
-                .single();
-              
-              currentLevelXp = currentLevelInfo?.xp_required || 0;
-              
-              // Get next level XP requirement
-              const { data: nextLevelInfo } = await supabase
-                .from('levels')
-                .select('xp_required')
-                .eq('level', currentLevel + 1)
-                .single();
-              
-              if (nextLevelInfo) {
-                nextLevelXp = nextLevelInfo.xp_required;
-                
-                // Check if leveled up
-                const { data: newLevelData } = await supabase
-                  .from('levels')
-                  .select('level')
-                  .lte('xp_required', newTotalXp)
-                  .order('xp_required', { ascending: false })
-                  .limit(1)
-                  .single();
-                
-                newLevel = newLevelData?.level || currentLevel;
-              } else {
-                // No next level, use current level XP * 1.5 as estimate
-                nextLevelXp = Math.floor(currentLevelXp * 1.5);
-              }
-            } catch (levelError) {
-              console.warn('[showCompletionCelebration] Error getting level info:', levelError);
-              // Fallback calculation
-              nextLevelXp = currentLevelXp + 500;
+
+            const currentLevelInfo = levels.find(l => l.level === currentLevel);
+            const nextLevelInfo = levels.find(l => l.level === currentLevel + 1);
+            currentLevelXp = currentLevelInfo?.xp_required || 0;
+
+            if (nextLevelInfo) {
+              nextLevelXp = nextLevelInfo.xp_required;
+              // Find highest level achieved
+              const achievedLevel = levels.filter(l => l.xp_required <= newTotalXp).pop();
+              newLevel = achievedLevel?.level || currentLevel;
+            } else {
+              nextLevelXp = Math.floor(currentLevelXp * 1.5);
             }
             
             const xpNeededForNextLevel = nextLevelXp - currentLevelXp;

@@ -76,10 +76,10 @@ import { buildSystemPrompt as buildLayeredSystemPrompt, validatePromptTemplate }
 // CONTENT GENERATION
 // ====================
 
-const DEFAULT_SYSTEM_PROMPT = `You are an expert child psychologist creating Daniel's Diaries modules — trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
+const DEFAULT_SYSTEM_PROMPT = `You are an expert child psychologist creating Daniel's Diaries modules. These are trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
 
 === DANIEL'S DIARIES FRAMEWORK ===
-Daniel is a friendly narrator who guides children through Brain Town — a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town.
+Daniel is a friendly narrator who guides children through Brain Town, a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town.
 
 === MANDATORY CONTENT REQUIREMENTS ===
 1. THEORY & CITATION: Every module MUST mention the primary theory name AND the researcher's surname (e.g., "Operant Learning Foundations" AND "Skinner").
@@ -112,12 +112,12 @@ CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor
 4. When creating multiple items, sequence them as a learning journey: start with simple awareness, then practise skills, then apply in real-life scenarios.
 5. Treat the age range and language guidelines as hard requirements.
 6. Use Australian English spelling throughout (colour, behaviour, favourite, organise, centre, mum, learnt). NEVER use: behavior, color, organization, recognize, organize, center, analyze, generalize.
-7. NEVER use em dashes, "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
+7. ABSOLUTELY NEVER use em dashes (the long dash). Not a single one anywhere. Use commas, full stops, or rewrite instead. Also never use "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
 8. Write as a warm, experienced educator, not a marketing copywriter.
 9. NEVER use hyphens or en dashes to join compound words. Use spaces instead (e.g., "thought feeling" not "thought-feeling").
 10. EMOJI SAFETY: Only use well-supported, common emojis from Unicode 12.0 or earlier.
    SAFE emojis: 😊 😢 😡 😨 😌 🤩 😳 😤 🤔 😴 🥰 😎 🤗 😮 🙂 😞 😰 ⭐ 💛 ❤ 🌟 🎯 🎨 📝 💡 🏠 🌈 🐕 🐱 🦁 🐻 🌸 🌻 🎵 🎶 💪 🧠 ❓ ✅ ✓ ❌ 🐢 🐠 🐟 🐙 🐚 🌊 🐬 🐳 🐋 🦈 🐡 🦀 🌿 🍃 💎 ⚡ 🔥 💧 🌙 ☀ 🌤 ⛅ 🌧 ⛈ 🌪 🌞 🎈 🎉 🏆 🎪 🎭 🎬 🎹 🥁 🎸 🎺 🎻 📖 📚 ✏ 🖍 🖌 👀 👂 🤝 👍 👏 🙌 💭 💬 🔍 🧩
-   BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 — and ANY emoji you are unsure about.
+   BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 and ANY emoji you are unsure about.
 11. GENUINE CHOICE: Always offer the child choices. Use "you could", "you might", "choose", "option" language.
 12. STRENGTHS-BASED: Frame neurodiversity as difference, not deficit. Never use pathologising language.`;
 
@@ -633,9 +633,13 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
  */
 function dehyphenateContent(text: string): string {
   if (!text || typeof text !== 'string') return text;
+  // Remove em dashes and en dashes, replacing with comma-space or just space
+  let result = text.replace(/\s*—\s*/g, ', ').replace(/\s*–\s*/g, ', ');
+  // Clean up double commas or comma after punctuation
+  result = result.replace(/,\s*,/g, ',').replace(/([.!?]),/g, '$1');
   // Replace letter-hyphen-letter sequences (compound words) with spaces
   // This matches "thought-feeling" but not "6-8" (number-number)
-  return text.replace(/([a-zA-Z])-([a-zA-Z])/g, '$1 $2');
+  return result.replace(/([a-zA-Z])-([a-zA-Z])/g, '$1 $2');
 }
 
 /**
@@ -743,9 +747,9 @@ DO NOT use any other animal or emoji - only use ${seriesInfo.emoji} for the masc
 CONTENT BRIEF:
 ${contentBrief}${seriesContext}
 
-CRITICAL RULES — DO NOT IGNORE:
-- The "title" field MUST be EXACTLY: "${adminTitle || 'My Feelings Adventure'}" — do NOT change, rephrase, or invent a new title.
-- The "targetAge" field MUST be EXACTLY: "${adminAge || '6-8'}" — do NOT change the age range.
+CRITICAL RULES (DO NOT IGNORE):
+- The "title" field MUST be EXACTLY: "${adminTitle || 'My Feelings Adventure'}". Do NOT change, rephrase, or invent a new title.
+- The "targetAge" field MUST be EXACTLY: "${adminAge || '6-8'}". Do NOT change the age range.
 - The "theme" must relate to the primary theory: "${briefTheory || 'emotional awareness'}".
 ${briefSuperSkill ? `- Content relates to the Super Skill: "${briefSuperSkill}".` : ''}
 ${briefSubSkill ? `- Content focuses on the Sub-Skill: "${briefSubSkill}".` : ''}
@@ -4331,8 +4335,8 @@ function buildVariantContentBrief(
 
   // Replace existing age range MUST BE line
   brief = brief.replace(
-    /^- The target age range MUST be exactly ".*?" — do NOT change this\.$/m,
-    `- The target age range MUST be exactly "${ageBand}" — do NOT change this.`
+    /^- The target age range MUST be exactly ".*?"[\s—.]*do NOT change this\.$/m,
+    `- The target age range MUST be exactly "${ageBand}". Do NOT change this.`
   );
 
   // Replace LANGUAGE GUIDELINES section
@@ -4357,7 +4361,7 @@ Age Band: ${ageBand}
 
 IMPORTANT: Content for age band ${ageBand} must be DISTINCTLY different from other age bands.
 Use age-appropriate vocabulary, sentence length, and complexity as specified in the language guidelines.
-Do NOT produce generic content that could work for any age — lean into the specific developmental stage.
+Do NOT produce generic content that could work for any age. Lean into the specific developmental stage.
 `;
 
   return brief;
@@ -4376,7 +4380,7 @@ function stripAgeFromBrief(contentBrief: string): string {
     'Target Age: [VARIANT_AGE_BAND]'
   );
   brief = brief.replace(
-    /^- The target age range MUST be exactly ".*?" — do NOT change this\.$/m,
+    /^- The target age range MUST be exactly ".*?"[\s—.]*[Dd]o NOT change this\.$/m,
     '- The target age range will be set per variant.'
   );
   return brief;

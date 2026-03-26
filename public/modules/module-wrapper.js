@@ -44,7 +44,7 @@ class ModuleWrapper {
           align-items: center;
           box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
           z-index: 9999;
-          font-family: 'League Spartan', sans-serif;
+          font-family: 'Fredoka', sans-serif;
         }
         
         #module-completion-bar .stars-display {
@@ -64,7 +64,7 @@ class ModuleWrapper {
           font-size: 16px;
           font-weight: 700;
           cursor: pointer;
-          font-family: 'League Spartan', sans-serif;
+          font-family: 'Fredoka', sans-serif;
           transition: transform 0.2s;
         }
         
@@ -86,7 +86,7 @@ class ModuleWrapper {
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          font-family: 'League Spartan', sans-serif;
+          font-family: 'Fredoka', sans-serif;
         }
         
         @media (max-width: 768px) {
@@ -194,7 +194,7 @@ class ModuleWrapper {
           justify-content: center;
           padding: 20px;
           z-index: 10000;
-          font-family: 'League Spartan', sans-serif;
+          font-family: 'Fredoka', sans-serif;
         }
         
         .completion-modal {
@@ -241,7 +241,7 @@ class ModuleWrapper {
           font-size: 18px;
           font-weight: 700;
           cursor: pointer;
-          font-family: 'League Spartan', sans-serif;
+          font-family: 'Fredoka', sans-serif;
         }
       </style>
       <div class="completion-modal-overlay">

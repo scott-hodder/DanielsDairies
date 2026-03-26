@@ -33,7 +33,7 @@ html {
 }
 
 body {
-    font-family: 'League Spartan', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: var(--dd-white);
     background-color: var(--dd-navy-deeper);
     overflow-x: hidden;

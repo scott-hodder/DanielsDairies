@@ -39,16 +39,17 @@ const FALLBACK_GOAL_OPTIONS = [
 ]
 
 const FALLBACK_FREQUENCY_OPTIONS = [
-  { value: 'daily', label: 'Daily', description: 'Every day' },
-  { value: 'few_per_week', label: 'A few times a week', description: '3-4 times' },
-  { value: 'weekly', label: 'Weekly', description: 'Once a week' },
-  { value: 'rare', label: 'As needed', description: 'When it comes up' }
+  { value: 'daily', label: 'Every day', description: 'It happens daily' },
+  { value: 'few_per_week', label: 'Most days', description: 'A few times a week' },
+  { value: 'weekly', label: 'Sometimes', description: 'Once a week or so' },
+  { value: 'rare', label: 'Now & then', description: 'Only when triggered' }
 ]
 
 const FALLBACK_INTENSITY_OPTIONS = [
-  { value: 'mild', label: 'Mild', description: 'Small challenges', icon: '🌱' },
-  { value: 'medium', label: 'Medium', description: 'Regular challenges', icon: '🌿' },
-  { value: 'big', label: 'Big', description: 'Significant challenges', icon: '🌳' }
+  { value: 'mild', label: 'Little bumps', description: 'Small, everyday moments', icon: '🌱' },
+  { value: 'moderate', label: 'Some struggles', description: 'Needs regular support', icon: '🌿' },
+  { value: 'severe', label: 'Big challenges', description: 'Often finds things tough', icon: '🌳' },
+  { value: 'complex', label: 'Really tough', description: 'Needs lots of help daily', icon: '🏔️' }
 ]
 
 let GOAL_OPTIONS = [...FALLBACK_GOAL_OPTIONS]
@@ -220,20 +221,20 @@ function createFocusPlanModal() {
             <div class="progress-line"></div>
             <div class="progress-step" data-step="3">3</div>
           </div>
-          <h2 class="focus-plan-title" id="focusPlanTitle">Let's Create Your Plan! 🎯</h2>
-          <p class="focus-plan-subtitle" id="focusPlanSubtitle">Choose what you'd like to work on</p>
+          <h2 class="focus-plan-title" id="focusPlanTitle">Where should we start?</h2>
+          <p class="focus-plan-subtitle" id="focusPlanSubtitle">Pick up to 3 areas to focus on first</p>
         </div>
-        
+
         <div class="focus-plan-body" id="focusPlanBody">
           <!-- Step content will be rendered here -->
         </div>
-        
+
         <div class="focus-plan-footer">
           <button type="button" class="focus-plan-btn secondary" id="focusPlanBack" style="display: none;">
-            ← Back
+            Back
           </button>
           <button type="button" class="focus-plan-btn primary" id="focusPlanNext">
-            Next →
+            Continue
           </button>
         </div>
       </div>
@@ -266,7 +267,7 @@ function renderStep(step) {
   
   // Update next button text
   const nextBtn = document.getElementById('focusPlanNext')
-  nextBtn.textContent = step === 3 ? '✨ Start Journey!' : 'Next →'
+  nextBtn.textContent = step === 3 ? 'Start the adventure' : 'Continue'
   
   // Render step content
   const body = document.getElementById('focusPlanBody')
@@ -275,20 +276,20 @@ function renderStep(step) {
   
   switch (step) {
     case 1:
-      title.textContent = "Let's Create Your Plan! 🎯"
-      subtitle.textContent = 'Choose up to 3 areas to focus on'
+      title.innerHTML = "Where should we start?"
+      subtitle.textContent = 'Pick up to 3 areas to focus on first'
       body.innerHTML = renderStep1()
       setupStep1Listeners()
       break
     case 2:
-      title.textContent = 'Set Your Goal 🌟'
-      subtitle.textContent = 'What would you like to achieve? (Optional)'
+      title.innerHTML = "What matters most?"
+      subtitle.textContent = 'Choose the goals that feel right for your child'
       body.innerHTML = renderStep2()
       setupStep2Listeners()
       break
     case 3:
-      title.textContent = 'How Often? 📅'
-      subtitle.textContent = 'Tell us about the challenges (Optional)'
+      title.innerHTML = "Tell us a bit more"
+      subtitle.textContent = 'This helps Daniel tailor the journey'
       body.innerHTML = renderStep3()
       setupStep3Listeners()
       break
@@ -302,36 +303,29 @@ function renderStep1() {
   const categories = focusPlanState.categories
   
   return `
-    <div class="focus-plan-info-blurb">
-      <p class="blurb-title">Every child is different</p>
-      <p class="blurb-text">What they struggle with, how they react, and what support helps most. This quick step lets you choose up to three focus areas you'd like your child to work on right now.</p>
-      
-      <p class="blurb-subtitle">Your choices shape the path your child sees:</p>
-      <ul class="blurb-list">
-        <li>Which modules appear first</li>
-        <li>How the adventure map is laid out</li>
-        <li>And where their learning journey begins</li>
-      </ul>
-      
-      <p class="blurb-note">Nothing here is permanent — you can change this later as your child grows. This just helps us start in the right place, instead of guessing.</p>
-    </div>
-    
+    <p class="focus-plan-intro">Every child is different. These choices shape which modules appear first and where the adventure begins. You can always change this later.</p>
+
     <div class="focus-categories-grid">
       ${categories.map(cat => `
-        <button type="button" 
+        <button type="button"
                 class="focus-category-card ${focusPlanState.selectedCategories.includes(cat.id) ? 'selected' : ''}"
                 data-category-id="${cat.id}"
                 data-category-name="${cat.name}">
+          <span class="category-check-circle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 8l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <span class="category-icon">${cat.icon || '📚'}</span>
           <span class="category-name">${cat.name}</span>
           <span class="category-desc">${cat.short_description || ''}</span>
-          <span class="category-check">✓</span>
         </button>
       `).join('')}
     </div>
+    <div class="selection-pills">
+      <span class="selection-pill ${focusPlanState.selectedCategories.length >= 1 ? 'filled' : ''}"></span>
+      <span class="selection-pill ${focusPlanState.selectedCategories.length >= 2 ? 'filled' : ''}"></span>
+      <span class="selection-pill ${focusPlanState.selectedCategories.length >= 3 ? 'filled' : ''}"></span>
+    </div>
     <p class="selection-hint">
       <span class="selection-count">${focusPlanState.selectedCategories.length}</span>/3 selected
-      ${focusPlanState.selectedCategories.length === 0 ? ' — Select at least 1' : ''}
+      ${focusPlanState.selectedCategories.length === 0 ? ' — pick at least 1' : ''}
     </p>
   `
 }
@@ -356,16 +350,19 @@ function setupStep1Listeners() {
         setTimeout(() => card.classList.remove('shake'), 500)
       }
       
-      // Update count display
+      // Update count display and pills
       const countEl = document.querySelector('.selection-count')
       const hintEl = document.querySelector('.selection-hint')
       if (countEl) countEl.textContent = focusPlanState.selectedCategories.length
       if (hintEl) {
         hintEl.innerHTML = `
           <span class="selection-count">${focusPlanState.selectedCategories.length}</span>/3 selected
-          ${focusPlanState.selectedCategories.length === 0 ? ' — Select at least 1' : ''}
+          ${focusPlanState.selectedCategories.length === 0 ? ' — pick at least 1' : ''}
         `
       }
+      document.querySelectorAll('.selection-pill').forEach((pill, i) => {
+        pill.classList.toggle('filled', i < focusPlanState.selectedCategories.length)
+      })
       
       updateNextButtonState()
     })
@@ -380,7 +377,7 @@ function renderStep2() {
   return `
     <div class="focus-goals-grid">
       ${nonCustomGoals.map(goal => `
-        <button type="button" 
+        <button type="button"
                 class="focus-goal-chip ${focusPlanState.selectedGoalKeys.includes(goal.key) ? 'selected' : ''}"
                 data-goal-key="${goal.key}">
           <span class="goal-icon">${goal.icon}</span>
@@ -388,19 +385,19 @@ function renderStep2() {
         </button>
       `).join('')}
     </div>
-    
+
     <div class="custom-goal-container visible">
-      <label for="customGoalInput">Additional goal or notes:</label>
-      <input type="text" 
-             id="customGoalInput" 
+      <label for="customGoalInput">Anything else you'd like to work towards?</label>
+      <input type="text"
+             id="customGoalInput"
              class="custom-goal-input"
-             placeholder="Any other goals you'd like to work on?"
+             placeholder="Type your own goal here..."
              maxlength="200"
              value="${focusPlanState.customGoalText}">
       <span class="char-count">${focusPlanState.customGoalText.length}/200</span>
     </div>
-    
-    <p class="step-hint">💡 Select as many goals as you'd like</p>
+
+    <p class="step-hint">Pick as many as you like, or skip this step</p>
   `
 }
 
@@ -436,10 +433,10 @@ function setupStep2Listeners() {
 function renderStep3() {
   return `
     <div class="focus-options-section">
-      <h3 class="options-label">How often do these challenges happen?</h3>
+      <h3 class="options-label">How often do these challenges come up?</h3>
       <div class="focus-frequency-grid">
         ${FREQUENCY_OPTIONS.map(opt => `
-          <button type="button" 
+          <button type="button"
                   class="focus-option-btn ${focusPlanState.frequency === opt.value ? 'selected' : ''}"
                   data-frequency="${opt.value}">
             <span class="option-label">${opt.label}</span>
@@ -448,12 +445,12 @@ function renderStep3() {
         `).join('')}
       </div>
     </div>
-    
+
     <div class="focus-options-section">
-      <h3 class="options-label">How big are the challenges usually?</h3>
+      <h3 class="options-label">How tough are things right now?</h3>
       <div class="focus-intensity-grid">
         ${INTENSITY_OPTIONS.map(opt => `
-          <button type="button" 
+          <button type="button"
                   class="focus-option-btn intensity ${focusPlanState.intensity === opt.value ? 'selected' : ''}"
                   data-intensity="${opt.value}">
             <span class="option-icon">${opt.icon}</span>
@@ -463,19 +460,19 @@ function renderStep3() {
         `).join('')}
       </div>
     </div>
-    
+
     <div class="focus-options-section">
-      <h3 class="options-label">Additional Comments (Optional)</h3>
-      <textarea 
-        id="focusPlanComments" 
+      <h3 class="options-label">Anything else we should know?</h3>
+      <textarea
+        id="focusPlanComments"
         class="focus-comments-input"
-        placeholder="Any additional information about your child's challenges, triggers, or things we should know..."
+        placeholder="Triggers, situations, things that help — anything you'd like to share..."
         maxlength="500"
         rows="3">${focusPlanState.comments}</textarea>
       <span class="char-count comments-count">${focusPlanState.comments.length}/500</span>
     </div>
-    
-    <p class="step-hint">💡 This helps us recommend the right pace</p>
+
+    <p class="step-hint">All of this is optional — share as much or as little as you'd like</p>
   `
 }
 
@@ -838,580 +835,617 @@ function injectFocusPlanStyles() {
   styles.textContent = `
     .focus-plan-modal {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.55);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 10000;
-      padding: 20px;
-      backdrop-filter: blur(4px);
+      padding: 16px;
+      backdrop-filter: blur(8px);
     }
-    
+
     .focus-plan-modal-content {
-      background: white;
-      border-radius: 24px;
-      max-width: 950px;
+      background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 28px;
+      max-width: 720px;
       width: 100%;
-      max-height: 95vh;
+      max-height: 92vh;
       overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      animation: focusPlanSlideIn 0.3s ease-out;
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(255,255,255,0.6) inset;
+      animation: focusPlanSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
+
     .focus-plan-modal-content.settings-mode {
       max-width: 500px;
     }
-    
+
     @keyframes focusPlanSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
+      from { opacity: 0; transform: translateY(24px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    
+
+    /* ---- Header ---- */
     .focus-plan-header {
-      padding: 24px 24px 16px;
+      padding: 28px 32px 20px;
       text-align: center;
-      border-bottom: 1px solid #eee;
       position: relative;
+      background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, transparent 100%);
     }
-    
+
     .close-settings-btn {
       position: absolute;
-      top: 16px;
-      right: 16px;
-      background: #f0f0f0;
+      top: 16px; right: 16px;
+      background: rgba(0,0,0,0.05);
       border: none;
-      width: 32px;
-      height: 32px;
+      width: 32px; height: 32px;
       border-radius: 50%;
       cursor: pointer;
       font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       transition: background 0.2s;
     }
-    
-    .close-settings-btn:hover {
-      background: #e0e0e0;
-    }
-    
+    .close-settings-btn:hover { background: rgba(0,0,0,0.1); }
+
     .focus-plan-progress {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      margin-bottom: 16px;
+      gap: 0;
+      margin-bottom: 20px;
     }
-    
+
     .progress-step {
-      width: 32px;
-      height: 32px;
+      width: 36px; height: 36px;
       border-radius: 50%;
-      background: #e0e0e0;
-      color: #888;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 14px;
-      transition: all 0.3s;
-    }
-    
-    .progress-step.active {
-      background: #405878;
-      color: white;
-    }
-    
-    .progress-step.completed {
-      background: #4CAF50;
-      color: white;
-    }
-    
-    .progress-line {
-      width: 40px;
-      height: 3px;
-      background: #e0e0e0;
-      border-radius: 2px;
-    }
-    
-    .focus-plan-title {
-      font-size: 24px;
+      background: #e2e8f0;
+      color: #94a3b8;
+      display: flex; align-items: center; justify-content: center;
       font-weight: 700;
-      color: #405878;
-      margin: 0 0 8px;
-      font-family: 'Fredoka', sans-serif;
-    }
-    
-    .focus-plan-subtitle {
       font-size: 14px;
-      color: #666;
+      font-family: 'Fredoka', sans-serif;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      z-index: 1;
+    }
+
+    .progress-step.active {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: white;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      transform: scale(1.1);
+    }
+
+    .progress-step.completed {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      color: white;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .progress-line {
+      width: 48px; height: 3px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+
+    .focus-plan-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 6px;
+      font-family: 'Fredoka', sans-serif;
+      letter-spacing: -0.3px;
+    }
+
+    .focus-plan-subtitle {
+      font-size: 15px;
+      color: #64748b;
       margin: 0;
+      font-weight: 400;
     }
-    
+
+    /* ---- Body ---- */
     .focus-plan-body {
-      padding: 24px;
+      padding: 24px 32px 16px;
     }
-    
+
+    /* ---- Step 1 intro ---- */
+    .focus-plan-intro {
+      text-align: center;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 24px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ---- Category cards ---- */
     .focus-categories-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+      gap: 10px;
     }
-    
+
     .focus-categories-grid.compact {
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
-    
+
     .focus-category-card {
-      background: #f8f9fa;
-      border: 2px solid #e0e0e0;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
       border-radius: 16px;
-      padding: 16px 12px;
+      padding: 18px 10px 14px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       position: relative;
       text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
-    
+
     .focus-category-card:hover {
-      border-color: #405878;
-      transform: translateY(-2px);
+      border-color: #a5b4fc;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
     }
-    
+
     .focus-category-card.selected {
-      background: #e8f4fd;
-      border-color: #405878;
+      background: linear-gradient(165deg, #eef2ff 0%, #e0e7ff 100%);
+      border-color: #6366f1;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.18);
     }
-    
+
+    .focus-category-card .category-check-circle {
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      display: flex; align-items: center; justify-content: center;
+      color: transparent;
+      transition: all 0.2s;
+      background: transparent;
+    }
+
+    .focus-category-card.selected .category-check-circle {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      border-color: #10b981;
+      color: white;
+    }
+
     .focus-category-card .category-icon {
-      font-size: 32px;
+      font-size: 30px;
+      line-height: 1;
     }
-    
+
     .focus-category-card .category-name {
       font-weight: 600;
-      color: #405878;
-      font-size: 13px;
+      color: #334155;
+      font-size: 12.5px;
+      font-family: 'Fredoka', sans-serif;
+      line-height: 1.2;
     }
-    
+
     .focus-category-card .category-desc {
       font-size: 11px;
-      color: #888;
+      color: #94a3b8;
       line-height: 1.3;
     }
-    
-    .focus-category-card .category-check {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 20px;
-      height: 20px;
-      background: #4CAF50;
-      color: white;
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-    }
-    
-    .focus-category-card.selected .category-check {
-      display: flex;
-    }
-    
+
     .focus-category-card.shake {
-      animation: shake 0.5s ease-in-out;
+      animation: fpShake 0.4s ease-in-out;
     }
-    
-    @keyframes shake {
+
+    @keyframes fpShake {
       0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
     }
-    
+
+    /* Selection pills */
+    .selection-pills {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 18px;
+    }
+
+    .selection-pill {
+      width: 32px; height: 5px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .selection-pill.filled {
+      background: linear-gradient(90deg, #6366f1, #818cf8);
+      width: 40px;
+    }
+
     .selection-hint {
       text-align: center;
-      color: #666;
+      color: #94a3b8;
       font-size: 13px;
-      margin-top: 16px;
+      margin-top: 8px;
     }
-    
+
     .selection-count {
       font-weight: 700;
-      color: #405878;
+      color: #6366f1;
     }
-    
+
+    /* ---- Step 2: Goals ---- */
     .focus-goals-grid {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
     }
-    
+
     .focus-goal-chip {
-      background: #f8f9fa;
-      border: 2px solid #e0e0e0;
-      border-radius: 24px;
-      padding: 10px 16px;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 40px;
+      padding: 10px 20px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       align-items: center;
       gap: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
-    
+
     .focus-goal-chip:hover {
-      border-color: #405878;
+      border-color: #a5b4fc;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.1);
     }
-    
+
     .focus-goal-chip.selected {
-      background: #405878;
-      border-color: #405878;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      border-color: transparent;
       color: white;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
     }
-    
+
     .focus-goal-chip .goal-icon {
       font-size: 18px;
     }
-    
+
     .focus-goal-chip .goal-label {
       font-size: 14px;
       font-weight: 500;
     }
-    
+
     .custom-goal-container {
-      margin-top: 20px;
+      margin-top: 24px;
       display: none;
     }
-    
+
     .custom-goal-container.visible {
       display: block;
     }
-    
+
     .custom-goal-container label {
       display: block;
       font-size: 13px;
-      color: #666;
+      color: #64748b;
       margin-bottom: 8px;
+      font-weight: 500;
     }
-    
+
     .custom-goal-input {
       width: 100%;
       padding: 12px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
       font-size: 14px;
-      transition: border-color 0.2s;
+      background: #ffffff;
+      transition: all 0.2s;
+      box-sizing: border-box;
     }
-    
+
     .custom-goal-input:focus {
       outline: none;
-      border-color: #405878;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     }
-    
+
     .focus-comments-input {
       width: 100%;
       padding: 12px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
       font-size: 14px;
       font-family: inherit;
       resize: vertical;
       min-height: 80px;
-      transition: border-color 0.2s;
+      background: #ffffff;
+      transition: all 0.2s;
+      box-sizing: border-box;
     }
-    
+
     .focus-comments-input:focus {
       outline: none;
-      border-color: #405878;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     }
-    
+
     .char-count {
       display: block;
       text-align: right;
       font-size: 11px;
-      color: #888;
+      color: #94a3b8;
       margin-top: 4px;
     }
-    
+
     .step-hint {
       text-align: center;
-      color: #888;
+      color: #94a3b8;
       font-size: 13px;
-      margin-top: 20px;
+      margin-top: 24px;
     }
-    
-    .focus-plan-info-blurb {
-      background: linear-gradient(135deg, #f0f4f8 0%, #e8f1f7 100%);
-      border-left: 4px solid #405878;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 24px;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #2b3a55;
-    }
-    
-    .blurb-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #405878;
-      margin: 0 0 12px 0;
-    }
-    
-    .blurb-text {
-      margin: 0 0 16px 0;
-      color: #495057;
-    }
-    
-    .blurb-subtitle {
-      font-size: 13px;
-      font-weight: 600;
-      color: #405878;
-      margin: 12px 0 8px 0;
-    }
-    
-    .blurb-list {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 12px 0;
-    }
-    
-    .blurb-list li {
-      padding-left: 20px;
-      position: relative;
-      margin-bottom: 6px;
-      color: #495057;
-    }
-    
-    .blurb-list li:before {
-      content: "✓";
-      position: absolute;
-      left: 0;
-      color: #14b8a6;
-      font-weight: bold;
-    }
-    
-    .blurb-note {
-      margin: 12px 0 0 0;
-      font-size: 13px;
-      color: #666;
-      font-style: italic;
-    }
-    
+
+    /* ---- Step 3: Options ---- */
     .focus-options-section {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
-    
+
     .options-label {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
-      color: #405878;
+      color: #334155;
       margin-bottom: 12px;
+      font-family: 'Fredoka', sans-serif;
     }
-    
-    .focus-frequency-grid,
-    .focus-intensity-grid {
+
+    .focus-frequency-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
-    
+
+    .focus-intensity-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
     .focus-option-btn {
-      background: #f8f9fa;
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
-      padding: 12px;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
-    
+
     .focus-option-btn:hover {
-      border-color: #405878;
+      border-color: #a5b4fc;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.1);
     }
-    
+
     .focus-option-btn.selected {
-      background: #e8f4fd;
-      border-color: #405878;
+      background: linear-gradient(165deg, #eef2ff 0%, #e0e7ff 100%);
+      border-color: #6366f1;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.18);
     }
-    
+
     .focus-option-btn .option-icon {
-      font-size: 24px;
+      font-size: 26px;
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
-    
+
     .focus-option-btn .option-label {
       font-weight: 600;
-      color: #405878;
+      color: #334155;
       font-size: 13px;
       display: block;
+      font-family: 'Fredoka', sans-serif;
     }
-    
+
     .focus-option-btn .option-desc {
       font-size: 11px;
-      color: #888;
+      color: #94a3b8;
       display: block;
+      margin-top: 2px;
     }
-    
+
+    /* ---- Footer ---- */
     .focus-plan-footer {
-      padding: 16px 24px 24px;
+      padding: 16px 32px 24px;
       display: flex;
       gap: 12px;
       justify-content: flex-end;
-      border-top: 1px solid #eee;
     }
-    
+
     .focus-plan-btn {
-      padding: 12px 24px;
-      border-radius: 12px;
+      padding: 12px 28px;
+      border-radius: 14px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       border: none;
+      font-family: 'Fredoka', sans-serif;
+      letter-spacing: 0.2px;
     }
-    
+
     .focus-plan-btn.primary {
-      background: #405878;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
       color: white;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
     }
-    
+
     .focus-plan-btn.primary:hover:not(:disabled) {
-      background: #2d3e54;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
     }
-    
+
     .focus-plan-btn.primary:disabled {
-      background: #ccc;
+      background: #cbd5e1;
+      box-shadow: none;
       cursor: not-allowed;
     }
-    
+
     .focus-plan-btn.secondary {
-      background: #f0f0f0;
-      color: #666;
+      background: #f1f5f9;
+      color: #64748b;
     }
-    
+
     .focus-plan-btn.secondary:hover {
-      background: #e0e0e0;
+      background: #e2e8f0;
     }
-    
+
+    /* ---- Settings ---- */
     .settings-section {
       margin-bottom: 24px;
     }
-    
+
     .settings-section h3 {
       font-size: 14px;
       font-weight: 600;
-      color: #405878;
+      color: #334155;
       margin-bottom: 12px;
+      font-family: 'Fredoka', sans-serif;
     }
-    
+
     .pathway-select {
       width: 100%;
       padding: 12px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
       font-size: 14px;
       background: white;
       cursor: pointer;
     }
-    
+
     .pathway-select:focus {
       outline: none;
-      border-color: #405878;
+      border-color: #6366f1;
     }
-    
+
     .new-cycle-btn {
       width: 100%;
       padding: 14px;
-      background: #fff3e0;
-      border: 2px solid #ffb74d;
-      border-radius: 12px;
+      background: #fffbeb;
+      border: 2px solid #fcd34d;
+      border-radius: 14px;
       font-size: 14px;
       font-weight: 600;
-      color: #e65100;
+      color: #b45309;
       cursor: pointer;
       transition: all 0.2s;
     }
-    
+
     .new-cycle-btn:hover {
-      background: #ffe0b2;
+      background: #fef3c7;
+      transform: translateY(-1px);
     }
-    
+
     .new-cycle-hint {
       font-size: 12px;
-      color: #888;
+      color: #94a3b8;
       text-align: center;
       margin-top: 8px;
     }
-    
+
+    /* ---- Toast ---- */
     .focus-plan-toast {
       position: fixed;
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: #405878;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
       color: white;
       padding: 14px 24px;
-      border-radius: 12px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
       z-index: 10001;
-      transition: transform 0.3s ease-out;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
+
     .focus-plan-toast.visible {
       transform: translateX(-50%) translateY(0);
     }
-    
+
     .focus-plan-toast.error {
-      background: #d32f2f;
+      background: linear-gradient(135deg, #ef4444, #f87171);
     }
-    
+
     .focus-plan-toast .toast-icon {
       font-size: 20px;
     }
-    
+
     .focus-plan-toast .toast-message {
       font-size: 14px;
       font-weight: 500;
     }
-    
-    @media (max-width: 480px) {
+
+    /* ---- Legacy blurb (kept for settings mode) ---- */
+    .focus-plan-info-blurb {
+      background: linear-gradient(135deg, #f0f4f8 0%, #e8f1f7 100%);
+      border-left: 4px solid #6366f1;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #334155;
+    }
+    .blurb-title { font-size: 16px; font-weight: 700; color: #334155; margin: 0 0 12px 0; }
+    .blurb-text { margin: 0 0 16px 0; color: #64748b; }
+    .blurb-subtitle { font-size: 13px; font-weight: 600; color: #334155; margin: 12px 0 8px 0; }
+    .blurb-list { list-style: none; padding: 0; margin: 0 0 12px 0; }
+    .blurb-list li { padding-left: 20px; position: relative; margin-bottom: 6px; color: #64748b; }
+    .blurb-list li:before { content: "\\2713"; position: absolute; left: 0; color: #10b981; font-weight: bold; }
+    .blurb-note { margin: 12px 0 0 0; font-size: 13px; color: #94a3b8; font-style: italic; }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 640px) {
+      .focus-plan-modal { padding: 8px; }
+
       .focus-plan-modal-content {
-        border-radius: 16px;
-        max-height: 95vh;
+        border-radius: 20px;
+        max-height: 96vh;
       }
-      
+
+      .focus-plan-header { padding: 20px 20px 16px; }
+      .focus-plan-body { padding: 20px; }
+      .focus-plan-footer { padding: 12px 20px 20px; }
+      .focus-plan-title { font-size: 22px; }
+
       .focus-categories-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
       }
-      
+
+      .focus-category-card { padding: 14px 8px 12px; }
+      .focus-category-card .category-icon { font-size: 26px; }
+      .focus-category-card .category-name { font-size: 12px; }
+      .focus-category-card .category-desc { font-size: 10px; }
+
       .focus-goal-chip {
-        padding: 8px 12px;
+        padding: 8px 14px;
         font-size: 13px;
       }
-      
+
       .focus-frequency-grid,
       .focus-intensity-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
       }
     }
   `
