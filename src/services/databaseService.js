@@ -846,7 +846,7 @@ export async function getAllChildrenLeaderboard(limit = 10) {
   const { data, error } = await getSupabaseClient()
     .from('children')
     .select('id, name, stars, created_at')
-    .order('stars', { ascending: false })
+    .order('stars', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: true }) // Tie-breaker: earlier signup wins
     .limit(limit)
   
