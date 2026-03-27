@@ -253,7 +253,6 @@ serve(async (req) => {
     // Grant credits directly to parent_profiles and children
     await addCreditsToFamily(parentId, creditsToGrant)
     console.log(`Granted ${creditsToGrant} extension credits to family of ${parentId} (${months} months)`)
-    }
   }
 
   try {

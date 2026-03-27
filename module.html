@@ -819,16 +819,58 @@
               <div class="completion-emoji">${xpInfo.leveledUp ? '🎉' : '🎊'}</div>
               <h2 class="completion-title">${xpInfo.leveledUp ? 'Level Up!' : 'Fantastic Work!'}</h2>
               <p class="completion-message">
-                ${xpInfo.leveledUp ? 
+                ${xpInfo.leveledUp ?
                   `Amazing! You completed "${xpInfo.moduleTitle}" and reached Level ${xpInfo.newLevel}!` :
                   `Congratulations! You've completed "${xpInfo.moduleTitle}" and learned valuable emotional skills.`
                 }
               </p>
               ${progressBarHtml}
+              <div id="reflectionRating" style="margin: 20px 0; padding: 16px; background: rgba(255,255,255,0.3); border-radius: 12px; text-align: center;">
+                <p style="font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 10px;">How did that feel?</p>
+                <div style="display: flex; justify-content: center; gap: 10px;" id="reflectionButtons">
+                  <button type="button" class="reflection-btn" data-rating="1" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Hard">😣</button>
+                  <button type="button" class="reflection-btn" data-rating="2" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Tricky">😕</button>
+                  <button type="button" class="reflection-btn" data-rating="3" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="OK">😐</button>
+                  <button type="button" class="reflection-btn" data-rating="4" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Good">😊</button>
+                  <button type="button" class="reflection-btn" data-rating="5" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Great">😄</button>
+                </div>
+              </div>
               <div class="completion-confetti" id="completionConfetti"></div>
               <button class="completion-btn" onclick="window.closeCompletionModal()">Continue Journey</button>
             </div>
           `;
+
+          // Wire up reflection buttons
+          celebrationModal.querySelectorAll('.reflection-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const rating = parseInt(btn.dataset.rating);
+              // Visual feedback
+              celebrationModal.querySelectorAll('.reflection-btn').forEach(b => {
+                b.style.border = '2px solid #e5e7eb';
+                b.style.background = 'white';
+                b.style.transform = 'scale(1)';
+              });
+              btn.style.border = '2px solid #405878';
+              btn.style.background = '#eef2ff';
+              btn.style.transform = 'scale(1.15)';
+
+              // Save reflection
+              try {
+                const params = new URLSearchParams(window.location.search);
+                const moduleCode = params.get('code');
+                if (moduleCode && _state.childId) {
+                  const { data: mod } = await supabase.from('modules').select('id').eq('code', moduleCode).single();
+                  if (mod) {
+                    await supabase.from('child_modules').update({ reflection_rating: rating }).eq('child_id', _state.childId).eq('module_id', mod.id);
+                  }
+                }
+                const ratingEl = document.getElementById('reflectionRating');
+                if (ratingEl) ratingEl.innerHTML = '<p style="font-size:14px; color:#405878; font-weight:600;">Thanks for sharing! ' + btn.textContent + '</p>';
+              } catch (e) {
+                console.warn('Could not save reflection:', e);
+              }
+            });
+          });
           
           document.body.appendChild(celebrationModal);
           generateCompletionConfetti();
