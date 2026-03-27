@@ -176,6 +176,43 @@ export async function getLatestWeeklyPlan(parentUserId, childId) {
   return data
 }
 
+// Get all weekly check-ins for a parent/child (for insights trend analysis)
+export async function getAllWeeklyCheckins(parentUserId, childId, limit = 10) {
+  const { data, error } = await getSupabaseClient()
+    .from('weekly_checkins')
+    .select('*')
+    .eq('parent_user_id', parentUserId)
+    .eq('child_id', childId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
+
+// Get mood check-in history for a child (for mood trend analysis)
+export async function getMoodCheckinHistory(childId, limit = 20) {
+  const { data, error } = await getSupabaseClient()
+    .from('child_mood_checkins')
+    .select('*')
+    .eq('child_id', childId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
+
+// Save post-module reflection rating
+export async function saveModuleReflection(childModuleId, rating) {
+  const { error } = await getSupabaseClient()
+    .from('child_modules')
+    .update({ reflection_rating: rating })
+    .eq('id', childModuleId)
+
+  if (error) throw error
+}
+
 // Get a specific child
 export async function getChild(childId) {
   const { data, error } = await getSupabaseClient()

@@ -4,633 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parent Insights - Daniel's Diaries</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
-    
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js for graphs -->
+
+    <link href="/styles/parent-insights.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #4A5D7E;
-            --primary-dark: #3a4d6e;
-            --accent: #F4A259;
-            --success: #5FAD56;
-            --warning: #F2BE5C;
-            --danger: #E76F51;
-            --info: #5B9BD5;
-            --bg-light: #F8F9FA;
-            --bg-white: #FFFFFF;
-            --text-dark: #2C3E50;
-            --text-medium: #6C757D;
-            --text-light: #ADB5BD;
-            --border: #DEE2E6;
-            --shadow: rgba(0, 0, 0, 0.08);
-            --shadow-lg: rgba(0, 0, 0, 0.12);
-        }
-
-        body {
-            font-family: 'Fredoka', sans-serif;
-            background: var(--bg-light);
-            color: var(--text-dark);
-            line-height: 1.6;
-        }
-
-        /* Header */
-        .header {
-            background: var(--primary);
-            color: white;
-            padding: 1.5rem 2rem;
-            box-shadow: 0 2px 8px var(--shadow);
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-logo {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            text-decoration: none;
-            color: white;
-        }
-
-        .header-logo-img {
-            height: 50px;
-            width: auto;
-        }
-
-        .header-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .header-subtitle {
-            font-size: 0.95rem;
-            opacity: 0.9;
-            margin: 0;
-        }
-
-        .btn-header {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 0.65rem 1.25rem;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Fredoka', sans-serif;
-        }
-
-        .btn-header:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        /* Main Content */
-        .main-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        /* Child Selector */
-        .child-selector {
-            background: white;
-            padding: 1.25rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px var(--shadow);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .child-selector-label {
-            font-weight: 600;
-            color: var(--text-medium);
-        }
-
-        .child-tabs {
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .child-tab {
-            padding: 0.65rem 1.25rem;
-            border-radius: 8px;
-            border: 2px solid var(--border);
-            background: white;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .child-tab:hover {
-            border-color: var(--primary);
-        }
-
-        .child-tab.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* Hero Section */
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 2.5rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 12px var(--shadow-lg);
-        }
-
-        .hero-greeting {
-            font-size: 0.95rem;
-            opacity: 0.9;
-            margin-bottom: 0.5rem;
-        }
-
-        .hero-title {
-            font-size: 2.25rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-        }
-
-        .hero-subtitle {
-            font-size: 1.05rem;
-            opacity: 0.95;
-            margin-bottom: 2rem;
-            max-width: 700px;
-        }
-
-        .hero-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .hero-stat {
-            text-align: center;
-            padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-        }
-
-        .hero-stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-            display: block;
-        }
-
-        .hero-stat-label {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
-
-        /* Card System */
-        .section-grid {
-            display: grid;
-            gap: 2rem;
-            grid-template-columns: 1fr;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 2px 8px var(--shadow);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--bg-light);
-        }
-
-        .card-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .card-icon {
-            font-size: 1.5rem;
-        }
-
-        .card-badge {
-            padding: 0.4rem 0.9rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .badge-info {
-            background: #E3F2FD;
-            color: var(--info);
-        }
-
-        .badge-success {
-            background: #E8F5E9;
-            color: var(--success);
-        }
-
-        .badge-warning {
-            background: #FFF3E0;
-            color: var(--warning);
-        }
-
-        /* Progress Chart */
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin: 1.5rem 0;
-        }
-
-        /* Progress Story */
-        .progress-story {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: var(--bg-light);
-            border-radius: 12px;
-            border-left: 4px solid var(--accent);
-        }
-
-        .progress-story-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .progress-story-header h4 {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .progress-story-badge {
-            padding: 0.35rem 0.75rem;
-            background: white;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-
-        .progress-story-list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .progress-story-list li {
-            padding: 0.75rem 0;
-            padding-left: 1.5rem;
-            position: relative;
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--text-dark);
-        }
-
-        .progress-story-list li:before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: var(--accent);
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-
-        .progress-story-footer {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
-            font-size: 0.95rem;
-            color: var(--text-medium);
-            font-style: italic;
-        }
-
-
-        .plain-english-story {
-            border-left-color: var(--success);
-            background: linear-gradient(135deg, #F6FBF6 0%, #EEF8EE 100%);
-        }
-
-        .insight-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .insight-tile {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0.85rem;
-        }
-
-        .insight-tile-label {
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            color: var(--text-medium);
-            margin-bottom: 0.35rem;
-            font-weight: 600;
-        }
-
-        .insight-tile-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .development-card {
-            border: 1px solid #eef1f5;
-            box-shadow: 0 6px 18px rgba(39, 58, 92, 0.08);
-        }
-
-        .dev-score-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .dev-score-label {
-            color: var(--text-medium);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-
-        .dev-score-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .dev-velocity {
-            background: #f3f7ff;
-            color: #2b5da8;
-            border-radius: 999px;
-            padding: 0.5rem 0.9rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .dev-breakdown-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-
-        .dev-breakdown-item {
-            background: #f8fafc;
-            border-radius: 10px;
-            border: 1px solid #e8edf3;
-            padding: 0.8rem;
-        }
-
-        .dev-breakdown-item strong {
-            display: block;
-            font-size: 1.25rem;
-            color: var(--text-dark);
-        }
-
-        .dev-columns {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 0.9rem;
-            margin-bottom: 0.9rem;
-        }
-
-        .dev-panel {
-            background: #fbfcfe;
-            border: 1px solid #e8edf3;
-            border-radius: 10px;
-            padding: 0.9rem;
-        }
-
-        .dev-panel h4 { margin-bottom: 0.45rem; color: var(--primary); }
-        .dev-panel ul { margin-left: 1rem; }
-
-        .dev-alert {
-            background: #fff5f4;
-            color: #b03a2e;
-            border: 1px solid #ffd8d5;
-            border-radius: 10px;
-            padding: 0.8rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-
-        .dev-milestone, .dev-time-machine, .dev-parent-confidence {
-            background: #f7f9fc;
-            border-radius: 10px;
-            padding: 0.75rem 0.9rem;
-            border: 1px solid #e8edf3;
-            margin-top: 0.6rem;
-            color: var(--text-dark);
-        }
-
-        /* Focus Plan */
-        .focus-plan-summary {
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #FFF9F0 0%, #FFF3E0 100%);
-            border-radius: 12px;
-            border-left: 4px solid var(--accent);
-        }
-
-        .focus-plan-summary p {
-            margin-bottom: 0.75rem;
-            font-size: 1.05rem;
-            line-height: 1.7;
-        }
-
-        .focus-plan-summary p:last-child {
-            margin-bottom: 0;
-        }
-
-        .focus-plan-summary strong {
-            color: var(--primary);
-            font-weight: 700;
-        }
-
-        .focus-plan-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .focus-plan-block h4 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            color: var(--text-dark);
-        }
-
-        .plan-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .plan-chip {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .skill-chip {
-            background: #E3F2FD;
-            color: var(--info);
-        }
-
-        .emotion-chip {
-            background: #FCE4EC;
-            color: #D81B60;
-        }
-
-        .tool-chip {
-            background: #F3E5F5;
-            color: #8E24AA;
-        }
-
-        .focus-plan-footer {
-            padding: 1.25rem;
-            background: var(--bg-light);
-            border-radius: 8px;
-            font-style: italic;
-            color: var(--text-medium);
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 3rem 2rem;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .empty-state-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            color: var(--text-dark);
-        }
-
-        .empty-state-text {
-            font-size: 1.05rem;
-            color: var(--text-medium);
-            max-width: 500px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-
-        /* Loading */
-        .loading-spinner {
-            text-align: center;
-            padding: 3rem;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--bg-light);
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem;
-            }
-
-            .header-content {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
-
-            .hero-title {
-                font-size: 1.75rem;
-            }
-
-            .chart-container {
-                height: 300px;
-            }
-
-            .focus-plan-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Print Styles */
-        @media print {
-            .header, .btn-header, .child-selector {
-                display: none;
-            }
-
-            .card {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-        }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -641,13 +23,13 @@
                     <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
                     <div>
                         <h1 class="header-title">Parent Insights</h1>
-                        <p class="header-subtitle">Understand your child's emotional growth journey</p>
+                        <p class="header-subtitle">Understanding your child's journey</p>
                     </div>
                 </a>
             </div>
             <div style="display: flex; gap: 12px;">
-                <button class="btn-header" onclick="window.print()">📄 Print Report</button>
-                <button class="btn-header" onclick="window.location.href='/dashboard.html'">← Back to Dashboard</button>
+                <button class="btn-header" onclick="window.print()">Print Report</button>
+                <button class="btn-header" onclick="window.location.href='/dashboard.html'">Back to Dashboard</button>
             </div>
         </div>
     </header>
@@ -656,149 +38,236 @@
         <!-- Child Selector -->
         <div class="child-selector">
             <span class="child-selector-label">Viewing insights for:</span>
-            <div class="child-tabs" id="childTabs">
-                <!-- Populated by JavaScript -->
+            <div class="child-tabs" id="childTabs"></div>
+        </div>
+
+        <!-- Subtabs -->
+        <div class="pi-subtabs">
+            <button class="pi-subtab active" id="subtabOverview">Insights Overview</button>
+            <button class="pi-subtab" id="subtabCheckin">Weekly Check-In & Plan</button>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-spinner" id="loadingState">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- ========== INSIGHTS OVERVIEW PANEL ========== -->
+        <div id="overviewPanel" class="hidden">
+
+            <!-- New User Welcome -->
+            <div id="welcomeState" class="pi-card pi-welcome hidden">
+                <div class="pi-welcome-icon">🌱</div>
+                <h3>Welcome to Parent Insights</h3>
+                <p>As your child completes modules and you do weekly check-ins, personalised insights will appear here. Every bit of activity helps us show you a clearer picture.</p>
+                <div class="pi-welcome-steps">
+                    <div class="pi-welcome-step"><span>1</span> Your child explores a module</div>
+                    <div class="pi-welcome-step"><span>2</span> You do a quick weekly check-in</div>
+                    <div class="pi-welcome-step"><span>3</span> Insights start building here</div>
+                </div>
+            </div>
+
+            <!-- Insights Content -->
+            <div id="insightsContent">
+
+                <!-- Hero Summary -->
+                <div class="pi-hero" id="heroCard">
+                    <div class="pi-hero-inner">
+                        <div class="pi-hero-top">
+                            <div>
+                                <p class="pi-hero-greeting" id="heroGreeting">Insights for</p>
+                                <div class="pi-hero-name" id="heroName">Loading...</div>
+                                <p class="pi-hero-engagement" id="heroEngagement"></p>
+                            </div>
+                            <div class="pi-hero-level-block">
+                                <div class="pi-hero-level">
+                                    <svg class="pi-level-ring" viewBox="0 0 80 80" width="72" height="72">
+                                        <circle cx="40" cy="40" r="34" fill="none" stroke-width="5"/>
+                                        <circle id="levelRing" cx="40" cy="40" r="34" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90 40 40)"/>
+                                    </svg>
+                                    <span class="pi-level-number" id="levelNum">1</span>
+                                </div>
+                                <span class="pi-level-label">Level</span>
+                            </div>
+                        </div>
+                        <div class="pi-hero-xp">
+                            <div class="pi-xp-bar"><div class="pi-xp-fill" id="xpFill"></div></div>
+                            <span class="pi-xp-text" id="xpText">0 / 500 XP</span>
+                        </div>
+                        <div class="pi-hero-stats" id="heroStats"></div>
+                    </div>
+                </div>
+
+                <!-- What We Observed Recently -->
+                <div class="pi-card" id="observationsCard">
+                    <h3 class="pi-card-title">What we observed recently</h3>
+                    <div id="recentModules"></div>
+                    <div id="moodTrend"></div>
+                    <div id="latestCheckin"></div>
+                    <p class="pi-basis" id="dataLabel"></p>
+                </div>
+
+                <!-- Mood & Engagement Chart -->
+                <div class="pi-card" id="chartCard">
+                    <div class="pi-card-header">
+                        <h3 class="pi-card-title">Mood & engagement over time</h3>
+                        <span class="pi-confidence-badge early-signal" id="chartBadge" style="display:none;"></span>
+                    </div>
+                    <div class="chart-container" style="height:260px;">
+                        <canvas id="insightsChart"></canvas>
+                    </div>
+                    <p class="pi-basis" id="chartBasis"></p>
+                </div>
+
+                <!-- Emerging Patterns (conditional) -->
+                <div class="pi-card hidden" id="patternsCard">
+                    <div class="pi-card-header">
+                        <h3 class="pi-card-title">Emerging patterns</h3>
+                        <span class="pi-confidence-badge" id="confidenceBadge"></span>
+                    </div>
+                    <div id="triggerFrequency"></div>
+                    <div id="intensityTrend"></div>
+                    <div id="skillAreas"></div>
+                    <div class="pi-explanation" id="patternExplanation"></div>
+                </div>
+
+                <!-- What This May Look Like at Home (conditional) -->
+                <div class="pi-card hidden" id="homeContextCard">
+                    <h3 class="pi-card-title">What this may look like at home</h3>
+                    <div id="homeDescription"></div>
+                    <p class="pi-basis" id="homeBasis"></p>
+                </div>
+
+                <!-- What to Try This Week -->
+                <div class="pi-card" id="actionsCard">
+                    <h3 class="pi-card-title">What to try this week</h3>
+                    <div class="pi-actions-grid" id="actionsGrid"></div>
+                </div>
+
+                <!-- Wins to Celebrate -->
+                <div class="pi-card" id="celebrationsCard">
+                    <h3 class="pi-card-title">Wins to celebrate</h3>
+                    <div id="celebrationsList"></div>
+                </div>
+
+                <!-- Guardrails Footer -->
+                <div class="pi-guardrails">
+                    <p>These insights reflect your child's activity in Daniel's Diaries and are based on modules completed, check-ins submitted, and mood ratings shared.</p>
+                    <p>This is not a clinical assessment or diagnosis. More check-ins and completed modules help us show better patterns over time.</p>
+                </div>
             </div>
         </div>
 
-        <!-- Hero Section -->
-        <section class="hero-section" id="heroSection">
-            <div class="hero-content">
-                <p class="hero-greeting" id="heroGreeting">Track your child's progress</p>
-                <h2 class="hero-title" id="heroTitle">Great Progress! 🎉</h2>
-                <p class="hero-subtitle" id="heroSubtitle">Your child is building real emotional skills through consistent practice.</p>
-                
-                <div class="hero-stats" id="heroStats">
-                    <div class="hero-stat">
-                        <span class="hero-stat-value">12</span>
-                        <span class="hero-stat-label">Modules Completed</span>
-                    </div>
-                    <div class="hero-stat">
-                        <span class="hero-stat-value">176</span>
-                        <span class="hero-stat-label">Stars Earned</span>
-                    </div>
-                    <div class="hero-stat">
-                        <span class="hero-stat-value">13</span>
-                        <span class="hero-stat-label">Check-ins Done</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="card development-card" id="developmentCard">
-            <div class="card-header">
-                <h3 class="card-title"><span class="card-icon">⭐</span> Development Progress</h3>
-                <span class="card-badge badge-warning">Forecast + Actions</span>
-            </div>
-            <div class="dev-score-row">
-                <div>
-                    <div class="dev-score-label" id="developmentScoreLabel">Development Score</div>
-                    <div class="dev-score-value" id="developmentScoreValue">-- / 100</div>
-                </div>
-            </div>
-            <div class="dev-breakdown-grid" id="developmentBreakdownGrid"></div>
-            <div class="dev-alert" id="developmentRiskAlert" style="display:none;"></div>
-            <div class="dev-columns">
-                <div class="dev-panel">
-                    <h4>3-Month Forecast</h4>
-                    <p id="developmentForecastText"></p>
-                </div>
-                <div class="dev-panel">
-                    <h4>What you should do this week</h4>
-                    <ul id="developmentActionList"></ul>
-                </div>
-                <div class="dev-panel">
-                    <h4>Real-world outcomes</h4>
-                    <ul id="developmentOutcomesList"></ul>
-                </div>
-            </div>
-            <div class="dev-milestone" id="developmentMilestone"></div>
-            <div class="dev-time-machine" id="developmentTimeMachine"></div>
-            <div class="dev-parent-confidence" id="parentConfidenceRow"></div>
-        </section>
-
-        <!-- Main Grid -->
-        <div class="section-grid">
-            <!-- Progress Chart Card -->
-            <div class="card progress-overview">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">📊</span>
-                        How Skills Are Growing
-                    </h3>
-                    <span class="card-badge badge-info">Based on check-ins</span>
-                </div>
-                <div id="progressChartArea">
-                    <div class="chart-container">
-                        <canvas id="progressChart"></canvas>
-                    </div>
-                </div>
-                <div id="noAssessmentsMessage" style="display: none;">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <h3 class="empty-state-title">Check-ins Coming Soon</h3>
-                        <p class="empty-state-text">Your child will complete quick check-ins as they progress. These help us track real changes in how they handle emotions.</p>
-                    </div>
-                </div>
-                <div class="progress-story" id="progressStatsStory">
-                    <div class="progress-story-header">
-                        <h4>Progress Snapshot (Live Data)</h4>
-                        <span class="progress-story-badge">Data</span>
-                    </div>
-                    <div class="insight-grid" id="insightGrid"></div>
-                    <ul class="progress-story-list" id="progressStoryList"></ul>
-                </div>
-
-                <div class="progress-story plain-english-story" id="plainEnglishStory">
-                    <div class="progress-story-header">
-                        <h4>What this means in everyday life</h4>
-                        <span class="progress-story-badge">Plain English</span>
-                    </div>
-                    <ul class="progress-story-list" id="plainEnglishList"></ul>
-                    <p class="progress-story-footer" id="plainEnglishFooter"></p>
-                </div>
-            </div>
-
-            <!-- Focus Plan Snapshot Card -->
-            <div class="card focus-plan-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">🎯</span>
-                        This Week's Focus
-                    </h3>
-                    <span class="card-badge badge-success" id="focusPlanBadge">Active Plan</span>
-                </div>
-                <div id="focusPlanContent">
-                    <div class="focus-plan-summary">
-                        <p><strong>What we're working on:</strong> Right now, Jasmine is learning to recognize when frustration is building, and practicing ways to calm down before anger takes over.</p>
-                        <p><strong>Toughest moments:</strong> Homework time and transitions (like stopping screen time).</p>
-                        <p><strong>This week's goal:</strong> Use a calm-down tool once while supporting Jasmine through a frustrating moment.</p>
-                    </div>
-                    <div class="focus-plan-grid">
-                        <div class="focus-plan-block">
-                            <h4>Skills We're Building</h4>
-                            <div class="plan-chips">
-                                <span class="plan-chip skill-chip">Calming Strategies</span>
-                                <span class="plan-chip skill-chip">Emotional Identification</span>
+        <!-- ========== WEEKLY CHECK-IN PANEL ========== -->
+        <div id="checkinPanel" class="hidden">
+            <div class="weekly-checkin-section">
+                <div class="checkin-grid">
+                    <div class="pi-card">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 16px;">
+                            <span style="font-size: 26px;">🗓️</span>
+                            <div>
+                                <h3 style="margin:0; font-size: 18px; font-weight: 700;">Weekly Check-In</h3>
+                                <p style="margin:4px 0 0; color:var(--text-muted); font-size:12px;">Quick check-in for this week (30 seconds)</p>
                             </div>
                         </div>
-                        <div class="focus-plan-block">
-                            <h4>Watch For These Triggers</h4>
-                            <div class="plan-chips">
-                                <span class="plan-chip emotion-chip">Anger</span>
-                                <span class="plan-chip emotion-chip">Frustration</span>
+
+                        <!-- Goal Follow-Up (shown dynamically) -->
+                        <div id="goalFollowUpSection" class="pi-goal-followup hidden" style="margin-bottom: 20px;">
+                            <h3>How did last week's goal go?</h3>
+                            <p id="goalFollowUpText"></p>
+                            <div class="pi-goal-options">
+                                <button type="button" class="pi-goal-option" data-value="nailed_it">Nailed it</button>
+                                <button type="button" class="pi-goal-option" data-value="tried_it">Tried it</button>
+                                <button type="button" class="pi-goal-option" data-value="didnt_get_to_it">Didn't get to it</button>
                             </div>
+                            <input type="hidden" id="goalFollowUpValue">
                         </div>
-                        <div class="focus-plan-block">
-                            <h4>Tools to Try at Home</h4>
-                            <div class="plan-chips">
-                                <span class="plan-chip tool-chip">Volcano Scale (1-5)</span>
-                                <span class="plan-chip tool-chip">3 Deep Breaths</span>
+
+                        <form id="weeklyCheckinForm">
+                            <div class="form-group">
+                                <label class="form-label">How big were the big feelings this week?</label>
+                                <div style="display:flex; gap:6px;">
+                                    <button type="button" class="checkin-scale" data-value="1">1<br><small>Mostly calm</small></button>
+                                    <button type="button" class="checkin-scale" data-value="2">2</button>
+                                    <button type="button" class="checkin-scale" data-value="3">3<br><small>A few hard moments</small></button>
+                                    <button type="button" class="checkin-scale" data-value="4">4</button>
+                                    <button type="button" class="checkin-scale" data-value="5">5<br><small>Really tough week</small></button>
+                                </div>
+                                <input type="hidden" id="checkinIntensity" required>
                             </div>
-                        </div>
+
+                            <div class="form-group">
+                                <label class="form-label">What was the hardest moment to manage?</label>
+                                <select class="form-select" id="checkinChallenge" required>
+                                    <option value="">Select one</option>
+                                    <option>Morning routine</option>
+                                    <option>School refusal / drop-off</option>
+                                    <option>Homework / focus</option>
+                                    <option>Bedtime</option>
+                                    <option>Sibling conflict</option>
+                                    <option>Social worries</option>
+                                    <option>Anger outbursts</option>
+                                    <option>Sensory overwhelm</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Which feelings showed up most?</label>
+                                <div id="checkinTriggers" class="trigger-chips"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Pick one small goal for this week</label>
+                                <select class="form-select" id="checkinGoal">
+                                    <option value="">Choose a goal</option>
+                                    <option>Use a calm-down tool once</option>
+                                    <option>Name emotions once a day</option>
+                                    <option>Practice a coping tool 3 times</option>
+                                    <option>Handle a transition better (school/bed)</option>
+                                    <option>Try one brave step</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Anything you want us to know? <span class="optional">(optional)</span></label>
+                                <textarea class="form-textarea" id="checkinNotes" rows="2" maxlength="200" placeholder="Max 200 characters"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn-submit" id="checkinSubmitButton">
+                                <span id="checkinSubmitText">Save & build our plan</span>
+                                <span id="checkinSubmitSpinner" class="spinner-small hidden"></span>
+                            </button>
+                            <div id="checkinMessage" class="form-message hidden"></div>
+                        </form>
                     </div>
-                    <div class="focus-plan-footer">
-                        <strong>What to say:</strong> <em>"I can see you're really angry. You're not in trouble. Let's do 3 slow breaths together."</em>
+
+                    <div class="pi-card">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                            <span style="font-size:26px;">📝</span>
+                            <h3 style="margin:0; font-size:18px; font-weight: 700;">This Week's Plan</h3>
+                        </div>
+                        <div id="weeklyPlanSummary" class="plan-summary">
+                            <p style="margin:0; color:var(--text-muted);">Complete a quick check-in to generate a tailored plan.</p>
+                        </div>
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Focus Skills</h4>
+                            <div id="planSkills" class="plan-chips"></div>
+                        </div>
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Key Feelings / Triggers</h4>
+                            <div id="planEmotions" class="plan-chips"></div>
+                        </div>
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Tools to Try</h4>
+                            <div id="planTools" class="plan-chips"></div>
+                        </div>
+                        <div class="plan-section">
+                            <h4 class="plan-section-title">Parent Script Spotlight</h4>
+                            <div id="planScript" class="plan-script">
+                                <p style="margin:0; color:var(--text-muted);">We'll surface a script once a plan is created.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -806,503 +275,767 @@
     </main>
 
     <script type="module">
-        import { supabase } from './src/supabaseClient.js';
+        import { supabase } from './src/supabaseClient.js'
+        import { computeInsights } from './src/features/dashboard/parentInsightsEngine.js'
 
-        const PATHWAY_META = {
-            anger: { label: 'Anger Management', color: '#E76F51', icon: '🔥' },
-            anxiety: { label: 'Anxiety Skills', color: '#AB47BC', icon: '🌧️' },
-            depression: { label: 'Mood Resilience', color: '#002657', icon: '🌙' },
-            emotions: { label: 'Emotional Awareness', color: '#5FAD56', icon: '💭' },
-            social: { label: 'Social Skills', color: '#5B9BD5', icon: '👫' },
-            body: { label: 'Body Awareness', color: '#F4A73B', icon: '💪' },
-            cognitive: { label: 'Thinking Skills', color: '#8B5CF6', icon: '🧠' },
-            general: { label: 'General Wellbeing', color: '#4C6C96', icon: '📚' }
-        };
+        // ── State ──
+        let currentChildId = null
+        let currentUserId = null
+        let selectedGoalResult = null
+        let insightsChart = null
+        let rawMoodCheckins = []
+        let rawWeeklyCheckins = []
 
-        const CATEGORY_ALIASES = {
-            'brain-builder': 'cognitive',
-            'thought-driver': 'cognitive',
-            'emotion-navigator': 'emotions',
-            'body-boss': 'body',
-            'connection-captain': 'social',
-            'calm-controller': 'anxiety',
-            'resilience-ranger': 'depression'
-        };
+        // ── Trigger list for check-in form ──
+        const TRIGGER_LIST = ['Anger', 'Worry/Anxiety', 'Sadness', 'Frustration', 'Overwhelm', 'Fear', 'Jealousy', 'Shame', 'Excitement (too much)']
+        const selectedTriggers = new Set()
 
-        const MOOD_LABELS = {
-            1: { label: 'Very sad', emoji: '😢' },
-            2: { label: 'Frustrated / Worried', emoji: '😣' },
-            3: { label: 'Okay-ish', emoji: '😐' },
-            4: { label: 'Calm', emoji: '😌' },
-            5: { label: 'Happy', emoji: '😄' }
-        };
+        // ── Plan generation helpers ──
+        const triggerToSkills = {
+            'Anger': ['Calming Strategies', 'Emotional Identification'],
+            'Worry/Anxiety': ['Anxiety Management', 'Mindfulness'],
+            'Sadness': ['Mood Resilience', 'Self-Compassion'],
+            'Frustration': ['Problem Solving', 'Patience Building'],
+            'Overwhelm': ['Grounding Techniques', 'Task Management'],
+            'Fear': ['Courage Building', 'Safety Planning'],
+            'Jealousy': ['Social Skills', 'Self-Worth'],
+            'Shame': ['Self-Compassion', 'Emotional Identification'],
+            'Excitement (too much)': ['Self-Regulation', 'Body Awareness']
+        }
 
-        let progressChart = null;
+        const triggerToTools = {
+            'Anger': ['Volcano Scale (1-5)', '3 Deep Breaths', 'Walk Away & Return'],
+            'Worry/Anxiety': ['Belly Breathing', '5-4-3-2-1 Grounding', 'Worry Box'],
+            'Sadness': ['Feelings Journal', 'Comfort Kit', 'Talk to Someone'],
+            'Frustration': ['Fix-It / Accept-It', 'Break it Down', 'Timer Technique'],
+            'Overwhelm': ['5-4-3-2-1 Grounding', 'Calm Corner', 'Body Scan'],
+            'Fear': ['Brave Ladder', 'Safety Thought', 'Power Pose'],
+            'Jealousy': ['Gratitude Moment', 'Talk it Out', 'Reframe Thought'],
+            'Shame': ['Kind Self-Talk', 'Mistake = Learning', 'Comfort Kit'],
+            'Excitement (too much)': ['Body Scan', 'Counting Breaths', 'Heavy Work']
+        }
 
-        function normalizeCategoryKey(rawKey) {
-            if (!rawKey) return 'general';
-            const key = String(rawKey).toLowerCase().trim();
-            return CATEGORY_ALIASES[key] || (PATHWAY_META[key] ? key : 'general');
+        const triggerToScripts = {
+            'Anger': '"I can see you\'re really angry. You\'re not in trouble. I\'m here. Let\'s do 3 slow breaths together."',
+            'Worry/Anxiety': '"Thanks for telling me. Worry is trying to protect you. Let\'s take a breath and then make a plan."',
+            'Sadness': '"It\'s okay to feel sad. You don\'t have to fix it. I\'m right here with you."',
+            'Frustration': '"That was really hard. I get it. When you\'re ready, let\'s figure out one thing that might help."',
+            'Overwhelm': '"This feels like too much right now. Let\'s make it smaller. What\'s one tiny next step?"',
+            'Fear': '"Being scared is okay — it means you care. Let\'s figure out one brave step together."',
+            'Jealousy': '"It\'s hard when someone else has what you want. Your feelings make sense."',
+            'Shame': '"Everyone makes mistakes. That doesn\'t change how much I love you."',
+            'Excitement (too much)': '"I love your energy! Let\'s find a way to use it that keeps everyone safe."'
+        }
+
+        // ── Init ──
+        async function init() {
+            currentChildId = getChildIdFromContext()
+            if (!currentChildId) {
+                document.getElementById('loadingState').innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:48px;">No child selected. Go back to the dashboard and select a child.</p>'
+                return
+            }
+
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                window.location.href = '/login.html'
+                return
+            }
+            currentUserId = user.id
+
+            setupSubtabs()
+            setupCheckinForm()
+            await loadInsights()
+            await loadLatestPlan()
+            await loadGoalFollowUp()
         }
 
         function getChildIdFromContext() {
-            const params = new URLSearchParams(window.location.search);
-            const fromUrl = params.get('childId');
-            if (fromUrl) return fromUrl;
+            const params = new URLSearchParams(window.location.search)
+            return params.get('childId') || null
+        }
 
+        // ── Load Insights ──
+        async function loadInsights() {
             try {
-                const state = JSON.parse(localStorage.getItem('dashboard_app_state') || '{}');
-                if (state?.selectedChild?.id) return state.selectedChild.id;
-            } catch (error) {
-                console.warn('Could not read dashboard state from localStorage:', error);
-            }
+                const [childRes, childModulesRes, modulesRes, weeklyRes, moodRes, superSkillsRes] = await Promise.all([
+                    supabase.from('children').select('*').eq('id', currentChildId).single(),
+                    supabase.from('child_modules').select('*').eq('child_id', currentChildId),
+                    supabase.from('modules').select('*'),
+                    supabase.from('weekly_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(20),
+                    supabase.from('child_mood_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(30),
+                    supabase.from('super_skills').select('*')
+                ])
 
-            return null;
-        }
+                if (childRes.error) throw childRes.error
 
-        function formatDate(dateValue) {
-            if (!dateValue) return 'Unknown';
-            return new Date(dateValue).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
-        }
-
-        function updateHeader(child, moduleStats, assessments, moodStats) {
-            document.getElementById('heroTitle').textContent = `${child.name}'s Progress 🎉`;
-            document.getElementById('heroGreeting').textContent = `${child.name}'s emotional growth journey`;
-
-            const heroSubtitle = document.getElementById('heroSubtitle');
-            const lastCheckin = assessments.length ? assessments[assessments.length - 1].created_at : null;
-            heroSubtitle.textContent = lastCheckin
-                ? `Last check-in: ${formatDate(lastCheckin)} • Live insights from check-ins, modules, and skill pathways.`
-                : `${child.name} is building real emotional skills through consistent practice.`;
-
-            document.getElementById('heroStats').innerHTML = `
-                <div class="hero-stat">
-                    <span class="hero-stat-value">${moduleStats.completedModules}</span>
-                    <span class="hero-stat-label">Modules Completed</span>
-                </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-value">${moduleStats.totalStars}</span>
-                    <span class="hero-stat-label">Stars Earned</span>
-                </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-value">${moodStats.total}</span>
-                    <span class="hero-stat-label">Mood Check-ins</span>
-                </div>
-            `;
-
-            document.getElementById('childTabs').innerHTML = `<button class="child-tab active">👧 ${child.name}</button>`;
-        }
-
-        function buildModuleStats(childModules, allModules) {
-            const completed = childModules.filter(cm => cm.is_completed);
-            const moduleById = new Map(allModules.map(m => [m.id, m]));
-            const completedModules = completed.map(cm => ({ ...cm, module: moduleById.get(cm.module_id) }));
-
-            const categoryCounts = {};
-            const recentTitles = [];
-
-            completedModules
-                .sort((a, b) => new Date(b.completed_at || b.updated_at || b.created_at) - new Date(a.completed_at || a.updated_at || a.created_at))
-                .forEach((cm, index) => {
-                    const categoryRaw = cm.module?.pathway_category || cm.module?.category || 'general';
-                    const category = normalizeCategoryKey(categoryRaw);
-                    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-                    if (index < 5) recentTitles.push(cm.module?.title || cm.module?.name || 'Module');
-                });
-
-            const strongestCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-
-            return {
-                completedModules: completed.length,
-                completedCycles: Math.floor(completed.length / 3),
-                totalStars: childModules.reduce((sum, cm) => sum + (cm.stars_earned || 0), 0),
-                categoryCounts,
-                strongestCategory,
-                recentTitles,
-                inProgressCount: childModules.filter(cm => !cm.is_completed && (cm.stars_earned || 0) > 0).length
-            };
-        }
-
-        function buildTrendSummary(assessments) {
-            if (assessments.length < 2) return { direction: 'steady', text: 'We need more check-ins to identify a reliable trend.' };
-            const current = assessments[assessments.length - 1];
-            const previous = assessments[assessments.length - 2];
-            const improved = current.total_score < previous.total_score;
-            const declined = current.total_score > previous.total_score;
-
-            if (improved) return { direction: 'up', text: 'Your child’s latest check-in improved compared with the previous one.' };
-            if (declined) return { direction: 'down', text: 'The latest check-in was tougher than the previous one, which is normal during growth.' };
-            return { direction: 'steady', text: 'Recent check-ins are stable, showing a consistent baseline.' };
-        }
-
-        function toGrowthScore(raw) {
-            if (!Number.isFinite(raw)) return null;
-            return Math.max(0, Math.min(100, Math.round(((24 - raw) / 24) * 100)));
-        }
-
-        function latestScoresByPathway(assessments) {
-            const latest = {};
-            assessments.forEach(item => {
-                const key = normalizeCategoryKey(item.pathway_category);
-                latest[key] = item;
-            });
-            return latest;
-        }
-
-        function average(items) {
-            const valid = items.filter(v => Number.isFinite(v));
-            if (!valid.length) return null;
-            return valid.reduce((a, b) => a + b, 0) / valid.length;
-        }
-
-        function buildMoodStats(moodCheckins) {
-            const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-            const labelCounts = {};
-
-            (moodCheckins || []).forEach(entry => {
-                if (counts[entry.mood_score] !== undefined) counts[entry.mood_score] += 1;
-                const label = entry.mood_label || MOOD_LABELS[entry.mood_score]?.label || 'Mood check-in';
-                const emoji = entry.mood_emoji || MOOD_LABELS[entry.mood_score]?.emoji || '✨';
-                if (!labelCounts[label]) {
-                    labelCounts[label] = { label, emoji, count: 0 };
+                const child = childRes.data
+                const rawData = {
+                    child: child,
+                    childModules: childModulesRes.data || [],
+                    modules: modulesRes.data || [],
+                    weeklyCheckins: weeklyRes.data || [],
+                    moodCheckins: moodRes.data || [],
+                    superSkills: superSkillsRes.data || []
                 }
-                labelCounts[label].count += 1;
-            });
 
-            const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
-            const averageScore = total
-                ? ((Object.entries(counts).reduce((sum, [score, count]) => sum + (Number(score) * count), 0)) / total)
-                : null;
+                // Update child tab
+                document.getElementById('childTabs').innerHTML = '<button class="child-tab active">' + (child.name || 'Child') + '</button>'
 
-            const topMood = Object.values(labelCounts).sort((a, b) => b.count - a.count)[0] || null;
-            const latestEntry = (moodCheckins || []).length ? moodCheckins[moodCheckins.length - 1] : null;
+                rawMoodCheckins = rawData.moodCheckins
+                rawWeeklyCheckins = rawData.weeklyCheckins
 
-            return {
-                total,
-                counts,
-                labelCounts,
-                averageScore,
-                topMood,
-                latestEntry
-            };
+                const insights = computeInsights(rawData)
+                renderInsights(insights)
+                renderChart(rawData.moodCheckins, rawData.weeklyCheckins, rawData.childModules)
+
+                document.getElementById('loadingState').classList.add('hidden')
+                document.getElementById('overviewPanel').classList.remove('hidden')
+            } catch (error) {
+                console.error('Failed to load insights:', error)
+                document.getElementById('loadingState').innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:48px;">Something went wrong loading insights. Please try again.</p>'
+            }
         }
 
-        function renderDevelopmentIntelligence(moduleStats, assessments, childName) {
-            const latest = latestScoresByPathway(assessments);
-            const emotionalRegulation = Math.round(average([
-                toGrowthScore(latest.anger?.total_score),
-                toGrowthScore(latest.emotions?.total_score),
-                toGrowthScore(latest.body?.total_score)
-            ]) ?? 68);
-            const socialConfidence = Math.round(average([
-                toGrowthScore(latest.social?.total_score),
-                toGrowthScore(latest.general?.total_score)
-            ]) ?? 64);
-            const resilience = Math.round(average([
-                toGrowthScore(latest.cognitive?.total_score),
-                toGrowthScore(latest.depression?.total_score),
-                toGrowthScore(latest.general?.total_score)
-            ]) ?? 66);
-
-            const trajectory = buildTrendSummary(assessments);
-            const anxietyNow = latest.anxiety?.total_score;
-            const anxietyHistory = assessments
-                .filter(a => normalizeCategoryKey(a.pathway_category) === 'anxiety')
-                .map(a => a.total_score);
-            const anxietyPrev = anxietyHistory.length > 1 ? anxietyHistory[anxietyHistory.length - 2] : null;
-            const anxietyMarkerText = (Number.isFinite(anxietyNow) && Number.isFinite(anxietyPrev) && anxietyNow < anxietyPrev)
-                ? '↓ improving'
-                : (Number.isFinite(anxietyNow) && Number.isFinite(anxietyPrev) && anxietyNow > anxietyPrev)
-                    ? '↑ watch closely'
-                    : '→ stable';
-
-            const composite = Math.round(average([emotionalRegulation, socialConfidence, resilience]) ?? 67);
-            const velocityPercentile = Math.max(52, Math.min(89, Math.round(composite - 2 + moduleStats.completedCycles * 3 + (trajectory.direction === 'up' ? 6 : trajectory.direction === 'down' ? -4 : 1))));
-
-            document.getElementById('developmentScoreLabel').textContent = `${childName}’s Development Score`;
-            document.getElementById('developmentScoreValue').textContent = `${composite} / 100`;
-            document.getElementById('developmentBreakdownGrid').innerHTML = `
-                <div class="dev-breakdown-item">Emotional regulation<strong>${emotionalRegulation}</strong></div>
-                <div class="dev-breakdown-item">Social confidence<strong>${socialConfidence}</strong></div>
-                <div class="dev-breakdown-item">Resilience<strong>${resilience}</strong></div>
-                <div class="dev-breakdown-item">Anxiety markers<strong>${anxietyMarkerText}</strong></div>
-            `;
-
-            const forecastText = trajectory.direction === 'up'
-                ? `${childName} is likely to show stronger conflict-resolution and self-calming skills within 3 months if this pace continues.`
-                : trajectory.direction === 'down'
-                    ? `${childName} may need extra support over the next 3 months, but consistent routines can quickly rebuild momentum.`
-                    : `${childName} is on a steady path; with consistent practice, confidence and recovery skills should strengthen over the next 3 months.`;
-            document.getElementById('developmentForecastText').textContent = forecastText;
-
-            const actionList = [
-                'Encourage one brave social interaction this week (e.g. say hello, ask a question, or invite a friend).',
-                'Let your child lead one small independence task (order food, ask for help, or choose the plan).',
-                'Praise effort and strategy (“You kept trying”) rather than only outcomes.'
-            ];
-            if (trajectory.direction === 'down') {
-                actionList.unshift('Add a 2-minute daily emotional check-in before bedtime using “name the feeling + one tool”.');
+        // ── Render Insights ──
+        function renderInsights(insights) {
+            if (insights.isNewUser) {
+                document.getElementById('welcomeState').classList.remove('hidden')
+                document.getElementById('insightsContent').classList.add('hidden')
+                return
             }
-            document.getElementById('developmentActionList').innerHTML = actionList.map(item => `<li>${item}</li>`).join('');
 
-            document.getElementById('developmentOutcomesList').innerHTML = [
-                'Better problem solving during stressful situations at school.',
-                'Stronger friendship confidence and lower social hesitation.',
-                'Faster recovery after setbacks and frustration spikes.'
-            ].map(item => `<li>${item}</li>`).join('');
+            renderHero(insights.hero)
+            renderObservations(insights.observations)
+            renderPatterns(insights.patterns)
+            renderHomeContext(insights.homeContext)
+            renderActions(insights.actions)
+            renderCelebrations(insights.celebrations)
+        }
 
-            const riskAlert = document.getElementById('developmentRiskAlert');
-            const recent = assessments.slice(-2);
-            const riskTriggered = recent.length === 2 && Number.isFinite(recent[0].total_score) && Number.isFinite(recent[1].total_score) && (recent[1].total_score - recent[0].total_score) >= 2;
-            if (riskTriggered) {
-                riskAlert.style.display = 'block';
-                riskAlert.textContent = '⚠️ Recent check-ins show an upward challenge trend. Children with this pattern can show social hesitation or emotional overload. Recommended response: increase short daily coaching moments this week.';
+        function renderHero(hero) {
+            document.getElementById('heroGreeting').textContent = 'Insights for'
+            document.getElementById('heroName').textContent = hero.name
+            document.getElementById('levelNum').textContent = hero.level
+            document.getElementById('xpText').textContent = hero.xpIntoLevel + ' / ' + hero.xpPerLevel + ' XP'
+            document.getElementById('xpFill').style.width = hero.progressPercent + '%'
+            document.getElementById('heroEngagement').textContent = hero.engagementLine
+
+            // Level ring progress
+            var circumference = 2 * Math.PI * 34
+            var offset = circumference - (hero.progressPercent / 100) * circumference
+            document.getElementById('levelRing').style.strokeDashoffset = offset
+
+            // Stats grid
+            var stats = ''
+            stats += '<div class="pi-hero-stat"><strong>' + hero.modulesCompleted + '</strong><span>Modules</span></div>'
+            stats += '<div class="pi-hero-stat"><strong>' + hero.totalStars + '</strong><span>Stars</span></div>'
+            stats += '<div class="pi-hero-stat"><strong>' + hero.totalCheckins + '</strong><span>Check-ins</span></div>'
+            if (hero.modulesInProgress > 0) {
+                stats += '<div class="pi-hero-stat"><strong>' + hero.modulesInProgress + '</strong><span>In progress</span></div>'
+            }
+            document.getElementById('heroStats').innerHTML = stats
+        }
+
+        function renderObservations(obs) {
+            var html = '<div class="pi-obs-grid">'
+
+            // Left column: Modules
+            html += '<div class="pi-obs-section">'
+            html += '<h4>Learning Journey</h4>'
+            if (obs.recentModules.length > 0) {
+                html += '<div class="pi-module-list">'
+                obs.recentModules.forEach(function(m) {
+                    var reflectionHtml = m.reflection ? '<span class="pi-module-item-reflection">' + '⭐'.repeat(m.reflection) + '</span>' : ''
+                    html += '<div class="pi-module-item">'
+                    html += '<span class="pi-module-item-icon completed">✓</span>'
+                    html += '<div class="pi-module-item-body"><span class="pi-module-item-title">' + m.title + '</span>' + reflectionHtml + '</div>'
+                    html += '</div>'
+                })
+                html += '</div>'
+            }
+            if (obs.inProgressModules.length > 0) {
+                html += '<p style="font-size:12px; font-weight:600; color:var(--text-muted); margin:12px 0 6px; text-transform:uppercase; letter-spacing:0.3px;">In progress</p>'
+                html += '<div class="pi-module-list">'
+                obs.inProgressModules.forEach(function(m) {
+                    html += '<div class="pi-module-item">'
+                    html += '<span class="pi-module-item-icon in-progress">◔</span>'
+                    html += '<div class="pi-module-item-body"><span class="pi-module-item-title">' + m.title + '</span></div>'
+                    html += '</div>'
+                })
+                html += '</div>'
+            }
+            if (obs.recentModules.length === 0 && obs.inProgressModules.length === 0) {
+                html += '<p style="color:var(--text-muted); font-size:14px;">No modules started yet</p>'
+            }
+            html += '</div>'
+
+            // Right column: Mood & Check-in
+            html += '<div class="pi-obs-section">'
+            html += '<h4>Emotional Pulse</h4>'
+            if (obs.moodTrend.recentMoods.length > 0) {
+                html += '<div class="pi-mood-dots">'
+                obs.moodTrend.recentMoods.forEach(function(m) {
+                    var tooltip = m.label + (m.note ? ' — ' + m.note : '')
+                    html += '<div class="pi-mood-dot" title="' + tooltip + '">' + (m.emoji || '😐') + '</div>'
+                })
+                html += '</div>'
+                if (obs.moodTrend.direction) {
+                    var dirLabel = obs.moodTrend.direction === 'improving' ? '↗ Trending up' : obs.moodTrend.direction === 'dipping' ? '↘ Trending down' : '→ Stable'
+                    var dirClass = obs.moodTrend.direction === 'improving' ? 'improving' : obs.moodTrend.direction === 'dipping' ? 'dipping' : 'stable'
+                    html += '<p class="pi-mood-direction ' + dirClass + '">' + dirLabel + '</p>'
+                }
+                if (obs.moodTrend.average) {
+                    html += '<p style="font-size:13px; color:var(--text-muted); margin-top:4px;">Average: ' + obs.moodTrend.average + ' / 5</p>'
+                }
             } else {
-                riskAlert.style.display = 'none';
+                html += '<p style="color:var(--text-muted); font-size:14px;">No mood check-ins yet</p>'
             }
 
-            const first = assessments[0];
-            const latestAssessment = assessments[assessments.length - 1];
-            if (first && latestAssessment) {
-                const shift = latestAssessment.total_score - first.total_score;
-                document.getElementById('developmentTimeMachine').textContent = `⏳ Time Machine: ${formatDate(first.created_at)} vs ${formatDate(latestAssessment.created_at)} - overall challenge score ${shift < 0 ? 'improved by ' + Math.abs(shift) : shift > 0 ? 'increased by ' + shift : 'is unchanged'}.`;
+            if (obs.latestCheckin) {
+                var c = obs.latestCheckin
+                html += '<div class="pi-checkin-summary">'
+                html += '<p class="pi-checkin-label">Latest check-in</p>'
+                html += '<p class="pi-checkin-detail">Intensity: <strong>' + c.intensity + '/5</strong></p>'
+                if (c.challenge) html += '<p class="pi-checkin-detail">Challenge: ' + c.challenge + '</p>'
+                if (c.goal) html += '<p class="pi-checkin-detail">Goal: ' + c.goal + '</p>'
+                if (c.triggers && c.triggers.length > 0) {
+                    html += '<div class="pi-checkin-triggers">'
+                    c.triggers.forEach(function(t) { html += '<span class="pi-trigger-tag">' + t + '</span>' })
+                    html += '</div>'
+                }
+                html += '</div>'
+            }
+            html += '</div>'
+
+            html += '</div>' // close pi-obs-grid
+
+            document.getElementById('recentModules').innerHTML = html
+            document.getElementById('moodTrend').innerHTML = ''
+            document.getElementById('latestCheckin').innerHTML = ''
+            document.getElementById('dataLabel').textContent = obs.dataLabel
+        }
+
+        function renderPatterns(patterns) {
+            if (!patterns.show) return
+            document.getElementById('patternsCard').classList.remove('hidden')
+
+            var badge = document.getElementById('confidenceBadge')
+            badge.textContent = patterns.confidenceLabel
+            badge.className = 'pi-confidence-badge ' + patterns.confidenceLevel
+
+            // Triggers
+            var trigHtml = ''
+            if (patterns.triggerFrequency.length > 0) {
+                var maxCount = patterns.triggerFrequency[0].count
+                trigHtml = '<div class="pi-pattern-item"><h4>Most common triggers</h4>'
+                patterns.triggerFrequency.forEach(function(t) {
+                    var pct = Math.round((t.count / maxCount) * 100)
+                    trigHtml += '<div class="pi-pattern-bar"><span class="pi-pattern-bar-label">' + t.trigger + '</span><div style="flex:1;background:#e5e7eb;border-radius:4px;height:8px;"><div class="pi-pattern-bar-fill" style="width:' + pct + '%;"></div></div><span class="pi-pattern-bar-count">' + t.count + '</span></div>'
+                })
+                trigHtml += '</div>'
+            }
+
+            // Skill areas
+            var skillHtml = ''
+            if (patterns.skillAreas.length > 0) {
+                skillHtml = '<div class="pi-pattern-item" style="margin-top:16px;"><h4>Skill areas explored</h4>'
+                patterns.skillAreas.forEach(function(s) {
+                    skillHtml += '<div class="pi-pattern-bar"><span class="pi-pattern-bar-label">' + s.area + '</span><span class="pi-pattern-bar-count">' + s.count + ' modules</span></div>'
+                })
+                skillHtml += '</div>'
+            }
+
+            // Intensity trend
+            var intHtml = ''
+            if (patterns.intensityTrend) {
+                var trendLabel = patterns.intensityTrend === 'easing' ? 'Intensity easing over time' : patterns.intensityTrend === 'increasing' ? 'Intensity increasing — extra support may help' : 'Intensity steady'
+                intHtml = '<p style="font-size:14px; margin:16px 0 0; padding:10px 14px; background:#f8f9fa; border-radius:10px;">' + trendLabel + '</p>'
+            }
+
+            document.getElementById('triggerFrequency').innerHTML = trigHtml
+            document.getElementById('skillAreas').innerHTML = skillHtml
+            document.getElementById('intensityTrend').innerHTML = intHtml
+            document.getElementById('patternExplanation').textContent = patterns.explanation
+        }
+
+        function renderHomeContext(homeContext) {
+            if (!homeContext) return
+            document.getElementById('homeContextCard').classList.remove('hidden')
+            document.getElementById('homeDescription').innerHTML = '<div class="pi-home-context-body">' + homeContext.description + '</div>'
+            document.getElementById('homeBasis').textContent = homeContext.basis
+        }
+
+        function renderActions(actions) {
+            var html = ''
+
+            // Tool
+            html += '<div class="pi-action-card"><div class="pi-action-icon">🛠</div><div class="pi-action-content">'
+            html += '<h4>' + actions.todayAction.label + '</h4>'
+            html += '<p>' + actions.todayAction.description + '</p>'
+            html += '</div></div>'
+
+            // Script
+            html += '<div class="pi-action-card pi-action-script"><div class="pi-action-icon">💬</div><div class="pi-action-content">'
+            html += '<h4>' + actions.parentScript.title + '</h4>'
+            html += '<blockquote>' + actions.parentScript.script + '</blockquote>'
+            html += '<small>' + actions.parentScript.context + '</small>'
+            html += '</div></div>'
+
+            // Celebrate
+            html += '<div class="pi-action-card pi-action-celebrate"><div class="pi-action-icon">🎉</div><div class="pi-action-content">'
+            html += '<h4>Something to celebrate</h4>'
+            html += '<p>' + actions.celebrate.text + '</p>'
+            html += '</div></div>'
+
+            document.getElementById('actionsGrid').innerHTML = html
+        }
+
+        function renderCelebrations(celebrations) {
+            if (celebrations.length === 0) {
+                document.getElementById('celebrationsList').innerHTML = '<p style="color:var(--text-muted); font-size:14px;">Complete modules and check-ins to unlock celebrations!</p>'
+                return
+            }
+            var html = '<div class="pi-celebrations-list">'
+            celebrations.forEach(function(win) {
+                html += '<div class="pi-celebration-item"><span class="pi-celebration-icon">' + win.icon + '</span><div class="pi-celebration-text"><h4>' + win.title + '</h4><p>' + win.detail + '</p></div></div>'
+            })
+            html += '</div>'
+            document.getElementById('celebrationsList').innerHTML = html
+        }
+
+        // ── Chart ──
+        function renderChart(moodCheckins, weeklyCheckins, childModules) {
+            var chartCard = document.getElementById('chartCard')
+            var basisEl = document.getElementById('chartBasis')
+            var badgeEl = document.getElementById('chartBadge')
+
+            // Need at least 2 data points for a meaningful chart
+            if (moodCheckins.length < 2 && weeklyCheckins.length < 2) {
+                chartCard.style.display = 'none'
+                return
+            }
+            chartCard.style.display = ''
+
+            // Build unified timeline from mood + weekly check-ins
+            var dataPoints = []
+
+            moodCheckins.forEach(function(m) {
+                dataPoints.push({
+                    date: new Date(m.created_at),
+                    mood: m.mood_score || m.score || null,
+                    intensity: null,
+                    type: 'mood'
+                })
+            })
+
+            weeklyCheckins.forEach(function(w) {
+                dataPoints.push({
+                    date: new Date(w.created_at),
+                    mood: null,
+                    intensity: w.intensity || null,
+                    type: 'weekly'
+                })
+            })
+
+            // Sort by date ascending
+            dataPoints.sort(function(a, b) { return a.date - b.date })
+
+            // Format labels and datasets
+            var labels = dataPoints.map(function(d) {
+                return d.date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+            })
+
+            var moodData = dataPoints.map(function(d) { return d.mood })
+            var intensityData = dataPoints.map(function(d) { return d.intensity })
+
+            // Confidence badge
+            var totalPoints = moodCheckins.length + weeklyCheckins.length
+            if (totalPoints < 5) {
+                badgeEl.textContent = 'Early signal'
+                badgeEl.className = 'pi-confidence-badge early-signal'
+                badgeEl.style.display = ''
+            } else if (totalPoints < 15) {
+                badgeEl.textContent = 'Building'
+                badgeEl.className = 'pi-confidence-badge building'
+                badgeEl.style.display = ''
             } else {
-                document.getElementById('developmentTimeMachine').textContent = '⏳ Time Machine: complete more check-ins to compare then vs now.';
+                badgeEl.textContent = 'Strong pattern'
+                badgeEl.className = 'pi-confidence-badge strong'
+                badgeEl.style.display = ''
             }
 
-            const milestone = trajectory.direction === 'up' && resilience >= 70
-                ? '🏆 Resilience milestone achieved: children at this stage typically recover faster from setbacks, persist longer, and show stronger independence.'
-                : '🎯 Milestone in progress: keep stacking small wins to unlock stronger resilience and confidence patterns.';
-            document.getElementById('developmentMilestone').textContent = milestone;
+            basisEl.textContent = 'Based on ' + moodCheckins.length + ' mood check-in' + (moodCheckins.length !== 1 ? 's' : '') + ' and ' + weeklyCheckins.length + ' weekly check-in' + (weeklyCheckins.length !== 1 ? 's' : '')
 
-            const parentConfidence = Math.max(45, Math.min(95, Math.round(55 + moduleStats.completedCycles * 4 + (trajectory.direction === 'up' ? 10 : trajectory.direction === 'down' ? -3 : 5))));
-            document.getElementById('parentConfidenceRow').textContent = `👨‍👩‍👧 Parent confidence score: ${parentConfidence}/100 (${trajectory.direction === 'up' ? 'up' : 'steady'}) - this reflects confidence in supporting your child emotionally with current tools.`;
-        }
-
-        function renderStatsSection(moduleStats, assessments, moodStats) {
-            const grid = document.getElementById('insightGrid');
-            const list = document.getElementById('progressStoryList');
-
-            const trend = buildTrendSummary(assessments);
-            const topAreas = Object.entries(moduleStats.categoryCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([key, count]) => `${PATHWAY_META[key]?.label || key}: ${count}`)
-                .join(' • ');
-
-            const recentCheckins = assessments.slice(-3)
-                .map(a => `${formatDate(a.created_at)} (${PATHWAY_META[normalizeCategoryKey(a.pathway_category)]?.label || 'General Wellbeing'})`)
-                .join(', ');
-
-            grid.innerHTML = `
-                <div class="insight-tile"><div class="insight-tile-label">Learning Cycles</div><div class="insight-tile-value">${moduleStats.completedCycles}</div></div>
-                <div class="insight-tile"><div class="insight-tile-label">In Progress Now</div><div class="insight-tile-value">${moduleStats.inProgressCount}</div></div>
-                <div class="insight-tile"><div class="insight-tile-label">Top Skill Track</div><div class="insight-tile-value">${PATHWAY_META[moduleStats.strongestCategory]?.label || 'Building Foundations'}</div></div>
-                <div class="insight-tile"><div class="insight-tile-label">Trend Signal</div><div class="insight-tile-value">${trend.direction === 'up' ? 'Improving' : trend.direction === 'down' ? 'Needs support' : 'Steady'}</div></div>
-                <div class="insight-tile"><div class="insight-tile-label">Mood Average</div><div class="insight-tile-value">${moodStats.averageScore ? moodStats.averageScore.toFixed(1) + '/5' : '-'}</div></div>
-            `;
-
-            list.innerHTML = `
-                <li><strong>Top growth areas:</strong> ${topAreas || 'General emotional skill-building'}.</li>
-                <li><strong>Recent check-ins:</strong> ${recentCheckins || 'No check-ins yet'}.</li>
-                <li><strong>Latest modules completed:</strong> ${moduleStats.recentTitles.join(', ') || 'Start a module to unlock more insight'}.</li>
-                <li><strong>Progress signal:</strong> ${trend.text}</li>
-                <li><strong>Daniel check-ins:</strong> ${moodStats.topMood ? `${moodStats.topMood.emoji} ${moodStats.topMood.label} selected ${moodStats.topMood.count} time${moodStats.topMood.count === 1 ? '' : 's'}` : 'No Daniel mood check-ins yet'}${moodStats.averageScore ? `, average mood score ${moodStats.averageScore.toFixed(1)}/5` : ''}.</li>
-            `;
-        }
-
-        function renderPlainEnglishSection(moduleStats, assessments, moodStats) {
-            const list = document.getElementById('plainEnglishList');
-            const footer = document.getElementById('plainEnglishFooter');
-
-            const primarySkill = PATHWAY_META[moduleStats.strongestCategory]?.label || 'emotional regulation';
-            const trend = buildTrendSummary(assessments);
-
-            const trendLine = trend.direction === 'up'
-                ? 'Your child is starting to use their tools more independently, especially after difficult moments.'
-                : trend.direction === 'down'
-                    ? 'Your child is having a harder stretch right now, which is common while learning new habits.'
-                    : 'Your child is showing a steady pattern, which means routines are starting to stick.';
-
-            list.innerHTML = `
-                <li><strong>What they’re learning:</strong> Through modules, your child is practising <strong>${primarySkill}</strong> in bite-sized steps.</li>
-                <li><strong>What this looks like at home:</strong> ${trendLine}</li>
-                <li><strong>How you can help:</strong> Ask one gentle question each day: “What helped you feel better today?” and praise effort, not perfection.</li>
-                <li><strong>Quick routine:</strong> 2 minutes each evening - name one feeling, one body signal, and one tool they can try tomorrow.</li>
-                <li><strong>Daniel mood pulse:</strong> ${moodStats.latestEntry ? `Latest emoji check-in was ${MOOD_LABELS[moodStats.latestEntry.mood_score]?.emoji || ''} ${MOOD_LABELS[moodStats.latestEntry.mood_score]?.label || 'recorded'} on ${formatDate(moodStats.latestEntry.created_at)}.` : 'Once your child starts using Daniel mood check-ins, you will see simple feeling trends here.'}</li>
-            `;
-
-            footer.textContent = moodStats.averageScore && moodStats.averageScore < 3
-                ? '💡 Parent tip: If mood scores stay low for several check-ins, keep language gentle and curious - “I noticed things have felt hard lately. Want to show me with an emoji or a colour?”'
-                : '💡 Parent tip: Keep language simple and warm - “I can see this is hard. Let’s try one small step together.”';
-        }
-
-        function renderChart(assessments) {
-            const chartArea = document.getElementById('progressChartArea');
-            const noData = document.getElementById('noAssessmentsMessage');
-
-            if (!assessments.length) {
-                chartArea.style.display = 'none';
-                noData.style.display = 'block';
-                return;
+            // Destroy previous chart if exists
+            if (insightsChart) {
+                insightsChart.destroy()
+                insightsChart = null
             }
 
-            chartArea.style.display = 'block';
-            noData.style.display = 'none';
+            var ctx = document.getElementById('insightsChart').getContext('2d')
 
-            const normalized = assessments
-                .filter(a => a.created_at)
-                .map(a => ({ ...a, normalizedPathway: normalizeCategoryKey(a.pathway_category) }))
-                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-            const labels = [...new Set(normalized.map(a => formatDate(a.created_at)))].slice(-10);
-            const pathways = [...new Set(normalized.map(a => a.normalizedPathway))];
-
-            const datasets = pathways.map(pathway => {
-                const meta = PATHWAY_META[pathway] || PATHWAY_META.general;
-                const points = labels.map(label => {
-                    const entries = normalized.filter(a => a.normalizedPathway === pathway && formatDate(a.created_at) === label);
-                    return entries.length ? entries[entries.length - 1].total_score : null;
-                });
-
-                const nonNullCount = points.filter(v => v !== null).length;
-
-                return {
-                    label: meta.label,
-                    data: points,
-                    borderColor: meta.color,
-                    backgroundColor: `${meta.color}22`,
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    tension: 0.35,
-                    spanGaps: true,
-                    showLine: nonNullCount > 1
-                };
-            });
-
-            if (progressChart) progressChart.destroy();
-            progressChart = new Chart(document.getElementById('progressChart').getContext('2d'), {
+            insightsChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels, datasets },
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Mood',
+                            data: moodData,
+                            borderColor: '#5a7ba5',
+                            backgroundColor: 'rgba(90, 123, 165, 0.1)',
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#5a7ba5',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            fill: true,
+                            tension: 0.35,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Intensity',
+                            data: intensityData,
+                            borderColor: '#f4a261',
+                            backgroundColor: 'rgba(244, 162, 97, 0.08)',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#f4a261',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointStyle: 'rectRounded',
+                            fill: true,
+                            tension: 0.35,
+                            spanGaps: true,
+                            borderDash: [6, 3]
+                        }
+                    ]
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'bottom',
+                            position: 'top',
+                            align: 'end',
                             labels: {
                                 usePointStyle: true,
                                 pointStyle: 'circle',
-                                padding: 14,
-                                font: { size: 13, weight: 600, family: 'Fredoka' }
+                                padding: 16,
+                                font: { size: 12, family: "'Inter', sans-serif" }
                             }
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(35, 43, 58, 0.92)',
+                            backgroundColor: 'rgba(30, 41, 59, 0.92)',
+                            titleFont: { size: 13, family: "'Inter', sans-serif" },
+                            bodyFont: { size: 12, family: "'Inter', sans-serif" },
+                            cornerRadius: 10,
                             padding: 12,
                             callbacks: {
-                                label(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y}/24`;
+                                label: function(context) {
+                                    if (context.raw === null) return null
+                                    return context.dataset.label + ': ' + context.raw + ' / 5'
                                 }
                             }
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
-                            max: 24,
-                            grid: { color: 'rgba(0,0,0,0.06)' },
-                            title: { display: true, text: 'Skill Level (Lower = Better for Challenges)' }
+                            min: 0,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1,
+                                font: { size: 11 },
+                                color: '#94a3b8',
+                                callback: function(value) {
+                                    var labels = ['', 'Very low', 'Low', 'Okay', 'Good', 'Great']
+                                    return labels[value] || value
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.04)',
+                                drawBorder: false
+                            }
                         },
-                        x: { grid: { display: false } }
-                    },
-                    interaction: { mode: 'index', intersect: false }
+                        x: {
+                            ticks: {
+                                font: { size: 11 },
+                                color: '#94a3b8',
+                                maxRotation: 45
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
                 }
-            });
+            })
+
+            // Add module completion markers as annotations
+            if (childModules && childModules.length > 0) {
+                var completedModules = childModules.filter(function(cm) { return cm.is_completed })
+                var moduleMarkers = completedModules.slice(-5).map(function(cm) {
+                    return new Date(cm.completed_at || cm.updated_at)
+                }).filter(function(d) { return !isNaN(d) })
+
+                // We'll skip annotations if Chart.js annotation plugin isn't loaded
+                // Instead, the modules show in the observations section
+            }
         }
 
-        async function init() {
-            const childId = getChildIdFromContext();
-            if (!childId) {
-                console.warn('No child ID found for parent insights page');
-                return;
+        // ── Subtabs ──
+        function setupSubtabs() {
+            var overviewBtn = document.getElementById('subtabOverview')
+            var checkinBtn = document.getElementById('subtabCheckin')
+            var overviewPanel = document.getElementById('overviewPanel')
+            var checkinPanel = document.getElementById('checkinPanel')
+
+            overviewBtn.addEventListener('click', function() {
+                overviewBtn.classList.add('active')
+                checkinBtn.classList.remove('active')
+                overviewPanel.classList.remove('hidden')
+                checkinPanel.classList.add('hidden')
+            })
+
+            checkinBtn.addEventListener('click', function() {
+                checkinBtn.classList.add('active')
+                overviewBtn.classList.remove('active')
+                checkinPanel.classList.remove('hidden')
+                overviewPanel.classList.add('hidden')
+            })
+        }
+
+        // ── Weekly Check-In Form ──
+        function setupCheckinForm() {
+            // Render trigger chips
+            var triggersContainer = document.getElementById('checkinTriggers')
+            if (triggersContainer) {
+                triggersContainer.innerHTML = TRIGGER_LIST.map(function(t) {
+                    return '<button type="button" class="trigger-chip" data-trigger="' + t + '">' + t + '</button>'
+                }).join('')
+
+                triggersContainer.addEventListener('click', function(e) {
+                    var chip = e.target.closest('.trigger-chip')
+                    if (!chip) return
+                    var trigger = chip.dataset.trigger
+                    if (selectedTriggers.has(trigger)) {
+                        selectedTriggers.delete(trigger)
+                        chip.classList.remove('selected')
+                    } else {
+                        selectedTriggers.add(trigger)
+                        chip.classList.add('selected')
+                    }
+                })
             }
 
-            const [{ data: child, error: childError }, { data: childModules, error: modulesError }, { data: modules, error: allModulesError }, { data: assessments, error: assessmentsError }, { data: moodCheckins, error: moodError }] = await Promise.all([
-                supabase.from('children').select('*').eq('id', childId).single(),
-                supabase.from('child_modules').select('*').eq('child_id', childId),
-                supabase.from('modules').select('*'),
-                supabase.from('pathway_assessments').select('*').eq('child_id', childId).order('created_at', { ascending: true }),
-                supabase.from('child_mood_checkins').select('*').eq('child_id', childId).order('created_at', { ascending: true })
-            ]);
+            // Intensity buttons
+            document.querySelectorAll('.checkin-scale').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.checkin-scale').forEach(function(b) { b.classList.remove('selected') })
+                    btn.classList.add('selected')
+                    document.getElementById('checkinIntensity').value = btn.dataset.value
+                })
+            })
 
-            if (childError || modulesError || allModulesError || assessmentsError || moodError) {
-                console.error('Parent insights load failed:', { childError, modulesError, allModulesError, assessmentsError, moodError });
-                return;
+            // Goal follow-up buttons
+            document.querySelectorAll('.pi-goal-option').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.pi-goal-option').forEach(function(b) { b.classList.remove('selected') })
+                    btn.classList.add('selected')
+                    selectedGoalResult = btn.dataset.value
+                    document.getElementById('goalFollowUpValue').value = btn.dataset.value
+                })
+            })
+
+            // Form submit
+            var form = document.getElementById('weeklyCheckinForm')
+            if (form) {
+                form.addEventListener('submit', handleCheckinSubmit)
+            }
+        }
+
+        async function handleCheckinSubmit(e) {
+            e.preventDefault()
+
+            var intensity = parseInt(document.getElementById('checkinIntensity').value)
+            var challenge = document.getElementById('checkinChallenge').value
+            var triggersArray = Array.from(selectedTriggers)
+            var goal = document.getElementById('checkinGoal').value
+            var notes = document.getElementById('checkinNotes').value
+
+            if (!intensity || !challenge) {
+                showCheckinMessage('Please fill in the intensity and challenge fields.', 'error')
+                return
             }
 
-            const moduleStats = buildModuleStats(childModules || [], modules || []);
-            const safeAssessments = assessments || [];
-            const moodStats = buildMoodStats(moodCheckins || []);
+            setCheckinLoading(true)
 
-            updateHeader(child, moduleStats, safeAssessments, moodStats);
-            renderChart(safeAssessments);
-            renderDevelopmentIntelligence(moduleStats, safeAssessments, child.name);
-            renderStatsSection(moduleStats, safeAssessments, moodStats);
-            renderPlainEnglishSection(moduleStats, safeAssessments, moodStats);
-            renderFocusPlan(moduleStats, safeAssessments);
+            try {
+                var planPayload = generateWeeklyPlan({ intensity, challenge, triggers: triggersArray, goal, notes })
+
+                var insertData = {
+                    parent_user_id: currentUserId,
+                    child_id: currentChildId,
+                    intensity: intensity,
+                    challenge: challenge,
+                    triggers: triggersArray,
+                    goal: goal || null,
+                    notes: notes || null,
+                    generated_plan: planPayload
+                }
+
+                // Include goal follow-up if answered
+                if (selectedGoalResult) {
+                    insertData.previous_goal_result = selectedGoalResult
+                }
+
+                var { data, error } = await supabase.from('weekly_checkins').insert([insertData]).select().single()
+                if (error) throw error
+
+                // Reset form
+                document.getElementById('weeklyCheckinForm').reset()
+                selectedTriggers.clear()
+                selectedGoalResult = null
+                document.querySelectorAll('.trigger-chip').forEach(function(c) { c.classList.remove('selected') })
+                document.querySelectorAll('.checkin-scale').forEach(function(b) { b.classList.remove('selected') })
+                document.querySelectorAll('.pi-goal-option').forEach(function(b) { b.classList.remove('selected') })
+                document.getElementById('checkinIntensity').value = ''
+                document.getElementById('goalFollowUpValue').value = ''
+
+                // Hide goal follow-up after submission
+                document.getElementById('goalFollowUpSection').classList.add('hidden')
+
+                renderWeeklyPlan(data?.generated_plan || planPayload)
+                showCheckinMessage('Plan saved! You can view it on the right.', 'success')
+            } catch (error) {
+                console.error('Weekly check-in save failed:', error)
+                showCheckinMessage(error.message || 'Failed to save check-in. Please try again.', 'error')
+            } finally {
+                setCheckinLoading(false)
+            }
         }
 
-        function renderFocusPlan(moduleStats, assessments) {
-            const focusPlan = document.getElementById('focusPlanContent');
-            const latestAssessment = assessments.length ? assessments[assessments.length - 1] : null;
-            const focusCategory = normalizeCategoryKey(latestAssessment?.pathway_category || moduleStats.strongestCategory || 'general');
-            const focusMeta = PATHWAY_META[focusCategory] || PATHWAY_META.general;
-            const trend = buildTrendSummary(assessments);
+        function generateWeeklyPlan({ intensity, challenge, triggers, goal, notes }) {
+            var uniqueTriggers = Array.from(new Set(triggers))
+            var skillSet = new Set()
+            uniqueTriggers.forEach(function(trigger) {
+                (triggerToSkills[trigger] || []).forEach(function(skill) { skillSet.add(skill) })
+            })
+            if (skillSet.size === 0) skillSet.add('Emotional Awareness')
 
-            const chips = Object.entries(moduleStats.categoryCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([key]) => `<span class="plan-chip skill-chip">${PATHWAY_META[key]?.label || key}</span>`)
-                .join('') || '<span class="plan-chip skill-chip">Emotional Skills</span>';
+            var toolSet = new Set()
+            uniqueTriggers.forEach(function(trigger) {
+                (triggerToTools[trigger] || []).forEach(function(tool) { toolSet.add(tool) })
+            })
+            if (toolSet.size === 0) toolSet.add('Deep Breathing')
 
-            focusPlan.innerHTML = `
-                <div class="focus-plan-summary">
-                    <p><strong>What we’re building now:</strong> <strong>${focusMeta.label}</strong> is the current focus from check-ins and completed learning activities.</p>
-                    <p><strong>Progress signal:</strong> ${trend.text}</p>
-                    <p><strong>Parent action this week:</strong> Pick one tool, practise it after school for 2 minutes, and celebrate effort immediately.</p>
-                </div>
-                <div class="focus-plan-grid">
-                    <div class="focus-plan-block">
-                        <h4>Skills Being Built Most</h4>
-                        <div class="plan-chips">${chips}</div>
-                    </div>
-                    <div class="focus-plan-block">
-                        <h4>Module Momentum</h4>
-                        <div class="plan-chips">
-                            <span class="plan-chip emotion-chip">${moduleStats.completedModules} Completed</span>
-                            <span class="plan-chip emotion-chip">${moduleStats.inProgressCount} In Progress</span>
-                            <span class="plan-chip emotion-chip">${moduleStats.completedCycles} Cycles</span>
-                        </div>
-                    </div>
-                    <div class="focus-plan-block">
-                        <h4>Tools to Try at Home</h4>
-                        <div class="plan-chips">
-                            <span class="plan-chip tool-chip">Name feeling + body signal</span>
-                            <span class="plan-chip tool-chip">3 deep breaths + reset</span>
-                            <span class="plan-chip tool-chip">One win reflection at bedtime</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="focus-plan-footer">
-                    <strong>What to say:</strong> <em>“I can see you’re trying. Which tool should we use right now?”</em>
-                </div>
-            `;
+            var script = triggerToScripts[uniqueTriggers[0]] || '"I can see this is hard. Let\'s try one small step together."'
+
+            return {
+                skills: Array.from(skillSet).slice(0, 4),
+                emotions: uniqueTriggers.slice(0, 4),
+                tools: Array.from(toolSet).slice(0, 4),
+                script: script,
+                summary: 'This week, focus on ' + (Array.from(skillSet).slice(0, 2).join(' and ') || 'emotional awareness') + '. The biggest challenge was ' + challenge.toLowerCase() + (intensity >= 4 ? ', and it was a tough week — be gentle with yourselves.' : '.') + (goal ? ' Goal: ' + goal + '.' : '')
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', init);
+        function renderWeeklyPlan(plan) {
+            if (!plan) return
+
+            var summaryEl = document.getElementById('weeklyPlanSummary')
+            if (summaryEl && plan.summary) {
+                summaryEl.innerHTML = '<p style="margin:0; font-size:14px; line-height:1.6;">' + plan.summary + '</p>'
+            }
+
+            renderChips('planSkills', plan.skills, 'skill-chip')
+            renderChips('planEmotions', plan.emotions, 'emotion-chip')
+            renderChips('planTools', plan.tools, 'tool-chip')
+
+            var scriptEl = document.getElementById('planScript')
+            if (scriptEl && plan.script) {
+                scriptEl.innerHTML = '<p style="margin:0; font-size:15px; line-height:1.6; font-style:italic;">' + plan.script + '</p>'
+            }
+        }
+
+        function renderChips(containerId, items, chipClass) {
+            var el = document.getElementById(containerId)
+            if (!el || !items || items.length === 0) return
+            el.innerHTML = items.map(function(item) {
+                return '<span class="plan-chip ' + chipClass + '">' + item + '</span>'
+            }).join('')
+        }
+
+        async function loadLatestPlan() {
+            try {
+                var { data } = await supabase
+                    .from('weekly_checkins')
+                    .select('generated_plan')
+                    .eq('child_id', currentChildId)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle()
+
+                if (data?.generated_plan) {
+                    renderWeeklyPlan(data.generated_plan)
+                }
+            } catch (e) {
+                console.warn('Could not load latest plan:', e)
+            }
+        }
+
+        // ── Goal Follow-Up (#8) ──
+        async function loadGoalFollowUp() {
+            try {
+                var { data } = await supabase
+                    .from('weekly_checkins')
+                    .select('goal, previous_goal_result')
+                    .eq('child_id', currentChildId)
+                    .order('created_at', { ascending: false })
+                    .limit(2)
+
+                if (!data || data.length < 1) return
+
+                // If the latest check-in had a goal and no follow-up recorded yet
+                var latest = data[0]
+                if (latest.goal && !latest.previous_goal_result) {
+                    // Show follow-up for the goal from the latest check-in
+                    var section = document.getElementById('goalFollowUpSection')
+                    document.getElementById('goalFollowUpText').textContent = 'Last week\'s goal: "' + latest.goal + '"'
+                    section.classList.remove('hidden')
+                }
+            } catch (e) {
+                console.warn('Could not load goal follow-up:', e)
+            }
+        }
+
+        // ── UI Helpers ──
+        function showCheckinMessage(text, type) {
+            var el = document.getElementById('checkinMessage')
+            if (!el) return
+            el.textContent = text
+            el.className = 'form-message ' + type
+            el.classList.remove('hidden')
+            setTimeout(function() { el.classList.add('hidden') }, 5000)
+        }
+
+        function setCheckinLoading(loading) {
+            var btn = document.getElementById('checkinSubmitButton')
+            var text = document.getElementById('checkinSubmitText')
+            var spinner = document.getElementById('checkinSubmitSpinner')
+            if (btn) btn.disabled = loading
+            if (text) text.style.opacity = loading ? '0' : '1'
+            if (spinner) spinner.classList.toggle('hidden', !loading)
+        }
+
+        // ── Boot ──
+        document.addEventListener('DOMContentLoaded', init)
     </script>
 </body>
 </html>

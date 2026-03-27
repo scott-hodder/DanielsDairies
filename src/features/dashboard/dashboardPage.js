@@ -1060,7 +1060,6 @@ async function handleWeeklyCheckinSubmit(e) {
     clearIntensityButtonClasses()
 
     renderWeeklyPlan(state.currentWeeklyPlan)
-    updateParentInsights()
     showCheckinMessage('Plan saved! You can view it on the right.', 'success')
   } catch (error) {
     console.error('Weekly check-in save failed:', error)
@@ -4414,8 +4413,6 @@ function showTab(tabName) {
     tabParentInsights.classList.add('active')
     showElement(parentInsightsTabContent)
     setParentInsightsSubtab(state.currentInsightsSubtab)
-    // Update insights when tab is shown
-    updateParentInsights()
   }
 }
 
@@ -4516,210 +4513,6 @@ async function updateDashboardStats() {
     progressText.textContent = `${completedCount} of ${totalCount}`
   }
   
-  // Update Parent Insights
-  updateParentInsights()
-}
-
-// Update Parent Insights Panel
-function normalizeTextArray(value) {
-  if (!value) return []
-  if (Array.isArray(value)) {
-    return value
-      .map(item => (typeof item === 'string' ? item.trim() : item))
-      .filter(Boolean)
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    if (!trimmed) return []
-
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map(item => (typeof item === 'string' ? item.trim() : item))
-          .filter(Boolean)
-      }
-    } catch (_) {
-      // Ignore JSON parse errors and fall back to brace/comma parsing
-    }
-
-    const noBraces = trimmed.replace(/[\{\}\[\]]/g, '')
-    return noBraces
-      .split(',')
-      .map(item => item.replace(/^"|"$/g, '').trim())
-      .filter(Boolean)
-  }
-
-  return []
-}
-
-function buildInsightList(items, accent = '#4caf50', icon = '✓') {
-  if (!items || items.length === 0) return ''
-  return items.map(item => `
-    <div style="display: flex; align-items: center; gap: 8px; margin: 6px 0;">
-      <span style="color: ${accent};">${icon}</span>
-      <span>${item}</span>
-    </div>
-  `).join('')
-}
-
-function updateParentInsights() {
-  if (!state.selectedChild || !state.childModules || !state.modules) return
-  
-  // Get completed modules with their details
-  const completedModules = state.childModules
-    .filter(cm => cm.is_completed === true)
-    .map(cm => state.modules.find(m => m.id === cm.module_id))
-    .filter(m => m) // Remove any undefined
-  
-  // Get recently started modules (in progress)
-  const inProgressModules = state.childModules
-    .filter(cm => cm.is_completed === false && cm.stars_earned > 0)
-    .map(cm => state.modules.find(m => m.id === cm.module_id))
-    .filter(m => m)
-  
-  const totalStars = state.selectedChild.stars || 0
-  const completedCount = completedModules.length
-  
-  // Reinforcement suggestions keyed by workbook
-  const moduleReinforcements = {
-    'MODULE1': 'Practice the "feelings check-in" at bedtime. Ask: "What emotion did you feel most today?"',
-    'MODULE2': 'Try the "5-4-3-2-1" grounding technique together when your child feels overwhelmed.',
-    'MODULE3': 'Role-play friendship scenarios at home. Practice saying "no" kindly and setting boundaries.',
-    'MODULE4': 'Create a "calm-down corner" at home with breathing exercises and sensory tools.',
-    'MODULE5': 'Practice the "worry time" technique: set aside 10 minutes daily for worries, then move on.',
-    'MODULE6': 'Start a "wins journal" - write down 3 things your child did well each day.',
-    'MODULE7': 'Create a memory box together. Talk openly about feelings and validate their emotions.',
-    'MODULE8': 'Practice "emotion detective" - watch shows together and identify characters\' feelings.'
-  }
-  
-  // Update "Your Journey So Far" stats with level and XP
-  const currentLevel = state.selectedChild?.level || 1
-  const totalXp = state.selectedChild?.total_xp || 0
-  
-  // Calculate XP needed for next level
-  const xpPerLevel = 500
-  const xpForCurrentLevel = (currentLevel - 1) * xpPerLevel
-  const xpForNextLevel = currentLevel * xpPerLevel
-  const xpIntoCurrentLevel = totalXp - xpForCurrentLevel
-  const xpNeededForNext = Math.max(0, xpForNextLevel - totalXp)
-  const progressPercent = xpNeededForNext === 0 ? 100 : Math.min(100, (xpIntoCurrentLevel / xpPerLevel) * 100)
-
-  // Update level display
-  const currentLevelEl = document.getElementById('currentLevelDisplay')
-  if (currentLevelEl) currentLevelEl.textContent = currentLevel
-
-  // Update total XP display
-  const totalXpEl = document.getElementById('totalXpDisplay')
-  if (totalXpEl) totalXpEl.textContent = totalXp
-
-  // Update XP progress bar and text
-  const xpProgressBar = document.getElementById('xpProgressBar')
-  if (xpProgressBar) xpProgressBar.style.width = progressPercent + '%'
-
-  const xpProgressText = document.getElementById('xpProgressText')
-  if (xpProgressText) xpProgressText.textContent = xpIntoCurrentLevel + ' / ' + xpPerLevel + ' XP'
-
-  // Update level ring SVG progress
-  const levelRing = document.getElementById('levelRingProgress')
-  if (levelRing) {
-    const circumference = 2 * Math.PI * 34 // r=34 from SVG
-    const offset = circumference - (progressPercent / 100) * circumference
-    levelRing.style.strokeDashoffset = offset
-  }
-
-  // Reinforcement tips sourced from active modules
-  const reinforcements = []
-  inProgressModules.forEach(module => {
-    const tip = moduleReinforcements[module.workbook_id]
-    if (tip) {
-      reinforcements.push(tip)
-    }
-  })
-  
-  // Update Weekly Activity
-  const weeklyActivityEl = document.getElementById('weeklyActivity')
-  if (weeklyActivityEl) {
-    if (completedCount === 0 && inProgressModules.length === 0) {
-      weeklyActivityEl.innerHTML = `
-        <p style="margin: 8px 0;">🌱 <strong>Getting Started:</strong> Your child hasn't started any modules yet.</p>
-        <p style="margin: 8px 0;">💡 Encourage them to explore the available modules and choose one that interests them!</p>
-      `
-    } else {
-      const activityText = []
-      if (inProgressModules.length > 0) {
-        activityText.push(`<p style="margin: 8px 0;">📚 <strong>Currently working on:</strong> ${inProgressModules.map(m => m.title).join(', ')}</p>`)
-      }
-      if (completedCount > 0) {
-        activityText.push(`<p style="margin: 8px 0;">✅ <strong>Completed ${completedCount} module${completedCount > 1 ? 's' : ''}:</strong> ${completedModules.slice(-3).map(m => m.title).join(', ')}</p>`)
-      }
-      activityText.push(`<p style="margin: 8px 0;">⭐ <strong>Total stars earned:</strong> ${totalStars} - Great progress!</p>`)
-      weeklyActivityEl.innerHTML = activityText.join('')
-    }
-  }
-  
-  // Update Skills Practiced
-  const skillsPracticedEl = document.getElementById('skillsPracticed')
-  if (skillsPracticedEl) {
-    if (completedSkills.size === 0) {
-      skillsPracticedEl.innerHTML = '<p style="margin: 4px 0; color: #999;">No skills practiced yet</p>'
-    } else {
-      const insightList = buildInsightList(Array.from(completedSkills).slice(0, 6))
-      skillsPracticedEl.innerHTML = insightList
-    }
-  }
-  
-  // Update Emotions Explored
-  const emotionsExploredEl = document.getElementById('emotionsExplored')
-  if (emotionsExploredEl) {
-    if (completedEmotions.size === 0) {
-      emotionsExploredEl.innerHTML = '<p style="margin: 4px 0; color: #999;">No emotions explored yet</p>'
-    } else {
-      const emotionsList = buildInsightList(Array.from(completedEmotions).slice(0, 6), '#1976d2', '●')
-      emotionsExploredEl.innerHTML = emotionsList
-    }
-  }
-  
-  // Update Reinforcement Suggestions
-  const reinforcementEl = document.getElementById('reinforcementSuggestions')
-  if (reinforcementEl) {
-    if (reinforcements.length === 0) {
-      reinforcementEl.innerHTML = `
-        <p style="margin: 4px 0;"><strong>💡 General tip:</strong> Create a consistent routine for emotional check-ins. Ask your child daily: "What was your favorite part of today?" and "Was there anything that felt hard?"</p>
-        <p style="margin: 8px 0 4px 0;"><strong>🎯 Next step:</strong> Encourage your child to start a module that interests them!</p>
-      `
-    } else {
-      const suggestionText = reinforcements[0] // Show most recent
-      reinforcementEl.innerHTML = `<p style="margin: 4px 0;">${suggestionText}</p>`
-    }
-  }
-  
-  // Update Recent Achievements
-  const achievementsEl = document.getElementById('recentAchievements')
-  if (achievementsEl) {
-    const achievements = []
-    
-    if (completedCount > 0) {
-      achievements.push(`🎉 Completed ${completedCount} module${completedCount > 1 ? 's' : ''}!`)
-    }
-    if (totalStars >= 50) {
-      achievements.push(`⭐ Earned ${totalStars} stars - Excellent dedication!`)
-    } else if (totalStars >= 20) {
-      achievements.push(`⭐ Earned ${totalStars} stars - Great progress!`)
-    } else if (totalStars > 0) {
-      achievements.push(`⭐ Started earning stars - Keep going!`)
-    }
-    if (inProgressModules.length > 0) {
-      achievements.push(`📖 Actively engaged in ${inProgressModules.length} module${inProgressModules.length > 1 ? 's' : ''}`)
-    }
-    
-    if (achievements.length === 0) {
-      achievementsEl.innerHTML = '<p style="margin: 4px 0;">🌟 Ready to start the journey! Every small step counts.</p>'
-    } else {
-      achievementsEl.innerHTML = achievements.map(a => `<p style="margin: 6px 0;">• ${a}</p>`).join('')
-    }
-  }
 }
 
 // Render leaderboard
@@ -5030,7 +4823,7 @@ function showDanielMoodModalRate() {
   overlay.setAttribute('aria-hidden', 'false')
 }
 
-async function saveMoodCheckin(score) {
+async function saveMoodCheckin(score, moodNote) {
   if (!state.selectedChild?.id || !state.currentUser?.id) return
 
   const mood = getMoodOptionByScore(score)
@@ -5041,6 +4834,7 @@ async function saveMoodCheckin(score) {
     mood_label: mood?.label || null,
     mood_emoji: mood?.emoji || null
   }
+  if (moodNote) payload.mood_note = moodNote.substring(0, 100)
 
   const { error } = await supabase
     .from('child_mood_checkins')
@@ -5050,18 +4844,60 @@ async function saveMoodCheckin(score) {
 }
 
 async function handleDanielMoodOptionClick(score) {
-  const { footer } = getDanielMoodModalElements()
-  try {
-    if (footer) footer.textContent = 'Saving your feeling...'
-    await saveMoodCheckin(score)
-    await refreshMoodCheckinState()
-    const mood = getMoodOptionByScore(score)
-    if (footer) footer.textContent = `Lovely sharing, ${state.selectedChild?.name || 'friend'}! You picked ${mood?.emoji || ''} ${mood?.shortLabel || ''}.`
-    setTimeout(() => closeDanielMoodModal(), 900)
-  } catch (error) {
-    console.error('Error saving mood check-in:', error)
-    if (footer) footer.textContent = 'I could not save that check-in yet. Please try again after the database table is added.'
+  const { title, subtitle, options, footer } = getDanielMoodModalElements()
+
+  // Show optional note step
+  const mood = getMoodOptionByScore(score)
+  if (title) title.textContent = `${mood?.emoji || ''} ${mood?.label || 'Got it!'}`
+  if (subtitle) subtitle.textContent = 'Want to add a quick note? (optional)'
+  if (options) {
+    options.style.display = 'flex'
+    options.style.flexDirection = 'column'
+    options.style.gridTemplateColumns = 'unset'
+    options.innerHTML = `
+      <div style="width:100%; padding: 4px 0;">
+        <input type="text" id="danielMoodNote" maxlength="100" placeholder="What's on your mind?" style="width:100%; padding:12px 14px; border:2px solid #e5e7eb; border-radius:10px; font-size:14px; font-family:inherit; outline:none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#405878'" onblur="this.style.borderColor='#e5e7eb'">
+        <p style="font-size:11px; color:#9ca3af; margin-top:4px; text-align:right;"><span id="danielMoodNoteCount">0</span>/100</p>
+      </div>
+      <div style="display:flex; gap:10px; width:100%; margin-top:4px;">
+        <button type="button" id="danielMoodSkipNote" style="flex:1; padding:12px; border:2px solid #e5e7eb; border-radius:10px; background:white; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit;">Skip</button>
+        <button type="button" id="danielMoodSaveNote" style="flex:1; padding:12px; border:none; border-radius:10px; background:linear-gradient(135deg, #405878, #4c6c96); color:white; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit;">Save</button>
+      </div>
+    `
+    const noteInput = document.getElementById('danielMoodNote')
+    const noteCount = document.getElementById('danielMoodNoteCount')
+    if (noteInput && noteCount) {
+      noteInput.addEventListener('input', () => { noteCount.textContent = noteInput.value.length })
+    }
+
+    const saveWithNote = async (note) => {
+      if (footer) footer.textContent = 'Saving your feeling...'
+      try {
+        await saveMoodCheckin(score, note || null)
+        await refreshMoodCheckinState()
+        if (footer) footer.textContent = `Lovely sharing, ${state.selectedChild?.name || 'friend'}! You picked ${mood?.emoji || ''} ${mood?.shortLabel || ''}.`
+        setTimeout(() => closeDanielMoodModal(), 900)
+      } catch (error) {
+        console.error('Error saving mood check-in:', error)
+        if (footer) footer.textContent = 'I could not save that check-in yet. Please try again.'
+      }
+    }
+
+    document.getElementById('danielMoodSkipNote')?.addEventListener('click', () => saveWithNote(null))
+    document.getElementById('danielMoodSaveNote')?.addEventListener('click', () => {
+      const note = document.getElementById('danielMoodNote')?.value?.trim() || null
+      saveWithNote(note)
+    })
+    // Allow Enter key to save
+    noteInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        const note = noteInput.value?.trim() || null
+        saveWithNote(note)
+      }
+    })
   }
+  if (footer) footer.textContent = ''
 }
 
 async function handleDanielClick() {

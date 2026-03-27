@@ -563,45 +563,84 @@ function createModal() {
         width: 98vw;
       }
       .owt-image-area {
-        padding: 12px;
+        padding: 10px;
+        flex: 3;
+        min-height: 0;
+      }
+      .owt-images {
+        height: 100%;
       }
       .owt-images img {
         max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
       }
       .owt-images.owt-two-images img {
         max-height: 100%;
-      }
-      .owt-title {
-        font-size: 20px;
-      }
-      .owt-desc {
-        font-size: 14px;
+        max-width: 100%;
       }
       .owt-text-area {
-        padding: 18px 20px 6px;
+        padding: 12px 16px 4px;
+        flex-shrink: 0;
+      }
+      .owt-step-counter {
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .owt-title {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      .owt-desc {
+        font-size: 13px;
+        line-height: 1.4;
       }
       .owt-footer {
-        padding: 12px 20px 8px;
+        padding: 8px 16px 6px;
+        gap: 8px;
+        flex-shrink: 0;
       }
       .owt-btn {
-        padding: 10px 20px;
-        min-width: 90px;
+        padding: 8px 18px;
+        min-width: 80px;
+        font-size: 14px;
+      }
+      .owt-dots {
+        gap: 6px;
+      }
+      .owt-dot {
+        width: 8px;
+        height: 8px;
+      }
+      .owt-dot.owt-dot-active {
+        width: 20px;
+      }
+      .owt-dont-show {
+        padding: 0 16px 12px;
+        font-size: 12px;
       }
       .owt-final-card {
         flex-direction: column;
-        gap: 20px;
-        padding: 28px 24px;
+        gap: 16px;
+        padding: 24px 20px;
         text-align: center;
       }
       .owt-final-character {
-        width: 120px;
-        height: 120px;
+        width: 100px;
+        height: 100px;
       }
       .owt-final-heading {
-        font-size: 24px;
+        font-size: 22px;
+      }
+      .owt-final-text {
+        font-size: 13px;
       }
       .owt-final-stats {
         justify-content: center;
+        gap: 12px;
+      }
+      .owt-final-stat {
+        font-size: 12px;
       }
     }
   `
@@ -788,9 +827,25 @@ function prevStep() {
   }
 }
 
+function preloadAllImages() {
+  ONBOARDING_STEPS.forEach(step => {
+    if (step.images) {
+      step.images.forEach(src => {
+        const img = new Image()
+        img.src = src
+      })
+    }
+    if (step.characterImage) {
+      const img = new Image()
+      img.src = step.characterImage
+    }
+  })
+}
+
 export function openWalkthrough() {
   currentStep = 0
   isAnimating = false
+  preloadAllImages()
   const el = createModal()
   el.style.display = 'flex'
   document.body.style.overflow = 'hidden'
@@ -820,6 +875,8 @@ export function closeWalkthrough() {
 export function maybeShowOnboarding(childId) {
   if (!childId) return
   if (hasSeenOnboarding(childId)) return
+  // Start preloading images immediately so they're cached by the time modal opens
+  preloadAllImages()
   // Small delay so the dashboard finishes rendering first
   setTimeout(() => openWalkthrough(), 800)
 }

@@ -687,9 +687,14 @@ input[name="plan"] {
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
+    .signup-page {
+        align-items: flex-start;
+    }
+
     .signup-container {
         grid-template-columns: 1fr;
         max-width: 520px;
+        overflow: visible;
     }
 
     .signup-sidebar {
@@ -706,6 +711,8 @@ input[name="plan"] {
 
     .signup-form-area {
         padding: 36px 28px;
+        max-height: none;
+        overflow-y: visible;
     }
 
     .plan-cards {
@@ -715,23 +722,31 @@ input[name="plan"] {
 
 @media (max-width: 600px) {
     .signup-page {
-        padding: 20px 16px;
+        padding: 12px 10px;
+        align-items: flex-start;
     }
 
     .signup-container {
         border-radius: 20px;
+        overflow: visible;
     }
 
     .signup-form-area {
-        padding: 28px 20px;
+        padding: 24px 16px;
+        max-height: none;
+        overflow-y: visible;
     }
 
     .signup-sidebar {
-        padding: 28px 20px 20px;
+        padding: 24px 16px 16px;
     }
 
     .sidebar-title {
-        font-size: 24px;
+        font-size: 22px;
+    }
+
+    .sidebar-description {
+        font-size: 13px;
     }
 
     .form-row {
@@ -739,7 +754,50 @@ input[name="plan"] {
     }
 
     .form-header h2 {
-        font-size: 24px;
+        font-size: 22px;
+    }
+
+    .form-header p {
+        font-size: 13px;
+    }
+
+    /* Compact plan cards on mobile */
+    .plan-card {
+        padding: 16px 14px;
+    }
+
+    .plan-card-name {
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+
+    .plan-card-price {
+        font-size: 26px;
+    }
+
+    .plan-card-detail {
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .plan-card-tagline {
+        font-size: 12px;
+        margin-top: 6px;
+        padding-top: 6px;
+    }
+
+    .plan-card-features-list li {
+        font-size: 13px;
+        padding: 4px 0;
+    }
+
+    .plan-card-popular {
+        font-size: 10px;
+        top: -8px;
+    }
+
+    .step-indicator {
+        margin-bottom: 20px;
     }
 }
 

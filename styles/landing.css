@@ -90,6 +90,28 @@ body {
 }
 
 /* Welcome Section */
+.welcome-daniel-img {
+    display: block;
+    margin: 0 auto;
+    height: 280px;
+    width: auto;
+}
+
+@media (max-width: 768px) {
+    .welcome-daniel-img {
+        height: 55vw;
+        max-height: 300px;
+        min-height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .welcome-daniel-img {
+        width: 200px;
+        height: 200px;
+    }
+}
+
 .welcome-section {
     text-align: center;
     margin-bottom: 32px;
