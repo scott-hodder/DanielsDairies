@@ -62,6 +62,7 @@
             <button class="tab" onclick="switchTab(event, 'generalSettings')">Check Ins</button>
             <button class="tab" onclick="switchTab(event, 'billing')">Billing</button>
             <button class="tab" onclick="switchTab(event, 'users')">Users</button>
+            <button class="tab" onclick="switchTab(event, 'feedback')">Feedback</button>
         </div>
 
         <!-- Tab Content: Check Ins -->
@@ -418,10 +419,14 @@
                             <textarea class="form-textarea" id="editContentBrief" rows="4" style="font-family: monospace; font-size: 13px;"></textarea>
                         </div>
 
-                        <div class="form-group" style="display: flex; gap: 12px; justify-content: space-between;">
+                        <div class="form-group" style="display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap;">
                             <button type="button" class="btn-delete" onclick="deleteModule()">🗑️ Delete Module</button>
-                            <button class="btn-save" onclick="saveModuleChanges()">💾 Save Changes</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-save" onclick="generateNarrationForModule()" style="background: #7c3aed;" id="genNarrationBtn">🔊 Generate Narration</button>
+                                <button class="btn-save" onclick="saveModuleChanges()">💾 Save Changes</button>
+                            </div>
                         </div>
+                        <div id="narrationStatus" style="display:none; margin-top:8px; padding:10px 14px; border-radius:8px; font-size:12px;"></div>
                     </div>
                     <div id="moduleEditPlaceholder" style="text-align: center; padding: 60px 20px; color: #6b7c8f;">
                         <p style="font-size: 18px;">👈 Select a module from the list to edit</p>
@@ -1147,6 +1152,25 @@
             </div>
         </div>
         <!-- End Users Tab -->
+
+        <!-- Feedback Tab -->
+        <div id="feedbackTab" class="tab-content">
+            <div class="rewards-panel" style="max-width: 1000px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h2 class="panel-title" style="margin-bottom:4px;">User Feedback</h2>
+                        <p style="font-size:13px; color:#6b7c8f; margin:0;">Feedback submitted from the profile page</p>
+                    </div>
+                    <span id="feedbackCount" style="font-size:13px; color:#6b7c8f; font-weight:600;"></span>
+                </div>
+                <div id="feedbackTableContainer" style="max-height:600px; overflow-y:auto;">
+                    <div style="text-align:center; padding:40px; color:#6b7c8f;">
+                        <p style="margin:0;">Loading feedback...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Feedback Tab -->
 
         <!-- Add Tier Modal -->
         <div class="modal" id="addTierModal">

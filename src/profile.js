@@ -231,7 +231,29 @@ function renderBasicProfileSections(container) {
         </div>
       </div>
     </section>
-    
+
+    <!-- Feedback Section -->
+    <section class="profile-hub" style="margin-top:24px;">
+      <div class="profile-hub-header">
+        <h2 class="profile-hub-title">💬 Send Us Feedback</h2>
+        <p class="profile-hub-subtitle">We'd love to hear what you think — your feedback helps us improve</p>
+      </div>
+      <div style="padding:0 24px 24px;">
+        <div class="feedback-stars" id="feedbackStars" style="display:flex; gap:6px; margin-bottom:16px;">
+          <button type="button" class="feedback-star" data-rating="1" aria-label="1 star" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="2" aria-label="2 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="3" aria-label="3 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="4" aria-label="4 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="5" aria-label="5 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+        </div>
+        <textarea id="feedbackText" placeholder="What's working well? What could be better?" rows="4" style="width:100%; padding:12px 14px; border:1.5px solid #d4dbe6; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; resize:vertical; box-sizing:border-box; color:#2b3a55; line-height:1.5;"></textarea>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
+          <button id="feedbackSubmitBtn" type="button" style="padding:10px 24px; background:linear-gradient(135deg,#14b8a6,#0d9488); color:white; border:none; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s;">Send Feedback</button>
+          <span id="feedbackStatus" style="font-size:13px; color:#6b7c8f;"></span>
+        </div>
+      </div>
+    </section>
+
     <style>
       .profile-section-content.collapsed {
         display: none;
@@ -244,6 +266,10 @@ function renderBasicProfileSections(container) {
       }
       .profile-section-arrow {
         transition: transform 0.2s ease;
+      }
+      .feedback-star.active {
+        opacity: 1 !important;
+        transform: scale(1.15);
       }
     </style>
   `
@@ -268,6 +294,64 @@ function renderBasicProfileSections(container) {
   // Wire plan action buttons
   document.getElementById('changePlanBtn')?.addEventListener('click', openChangePlanModal)
   document.getElementById('makePaymentBtn')?.addEventListener('click', openMakePaymentModal)
+
+  // Feedback star rating
+  let feedbackRating = 0
+  const stars = container.querySelectorAll('.feedback-star')
+  stars.forEach(star => {
+    star.addEventListener('click', () => {
+      feedbackRating = parseInt(star.dataset.rating)
+      stars.forEach((s, i) => {
+        s.classList.toggle('active', i < feedbackRating)
+      })
+    })
+  })
+
+  // Feedback submit
+  const feedbackBtn = document.getElementById('feedbackSubmitBtn')
+  const feedbackText = document.getElementById('feedbackText')
+  const feedbackStatus = document.getElementById('feedbackStatus')
+
+  if (feedbackBtn) {
+    feedbackBtn.addEventListener('click', async () => {
+      const message = feedbackText.value.trim()
+      if (!message && feedbackRating === 0) {
+        feedbackStatus.textContent = 'Please add a rating or message.'
+        feedbackStatus.style.color = '#ef4444'
+        return
+      }
+
+      feedbackBtn.disabled = true
+      feedbackBtn.textContent = 'Sending...'
+      feedbackStatus.textContent = ''
+
+      try {
+        const user = state.currentUser
+        const { error } = await supabase.from('user_feedback').insert({
+          user_id: user?.id || null,
+          email: user?.email || 'unknown',
+          rating: feedbackRating || null,
+          message: message || null
+        })
+
+        if (error) throw error
+
+        feedbackText.value = ''
+        feedbackRating = 0
+        stars.forEach(s => s.classList.remove('active'))
+        feedbackStatus.textContent = 'Thank you for your feedback!'
+        feedbackStatus.style.color = '#0d9488'
+        feedbackBtn.textContent = 'Send Feedback'
+        feedbackBtn.disabled = false
+      } catch (err) {
+        console.error('Feedback error:', err)
+        feedbackStatus.textContent = 'Something went wrong. Please try again.'
+        feedbackStatus.style.color = '#ef4444'
+        feedbackBtn.textContent = 'Send Feedback'
+        feedbackBtn.disabled = false
+      }
+    })
+  }
 }
 
 // Render plan section content

@@ -478,3 +478,92 @@ function filterSelectOptions(selectElement, searchQuery) {
         option.style.display = option.textContent.toLowerCase().includes(query) ? '' : 'none';
     });
 }
+
+// ================================================================================
+// GENERATE NARRATION (TTS)
+// ================================================================================
+window.generateNarrationForModule = async function() {
+    if (!selectedModule) { alert('Please select a module first.'); return; }
+
+    const btn = document.getElementById('genNarrationBtn');
+    const statusEl = document.getElementById('narrationStatus');
+    if (!btn || !statusEl) return;
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating...';
+    statusEl.style.display = 'block';
+    statusEl.style.background = '#f0f4ff';
+    statusEl.style.color = '#405878';
+    statusEl.textContent = 'Generating narration audio... This may take 1-2 minutes.';
+
+    try {
+        const isMultiAge = selectedModule.is_multi_age === true;
+        let totalReady = 0, totalSkipped = 0, totalErrors = 0;
+
+        // Helper: call edge function with raw fetch for better error visibility
+        const callNarration = async (body) => {
+            const session = (await supabase.auth.getSession()).data.session;
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            const response = await fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token || supabaseKey}`,
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify(body)
+            });
+            const text = await response.text();
+            let data;
+            try { data = JSON.parse(text); } catch { data = null; }
+            if (!response.ok) {
+                console.error(`Narration HTTP ${response.status}:`, data?.error || text.slice(0, 300));
+                return null;
+            }
+            return data;
+        };
+
+        if (isMultiAge) {
+            const { data: variants } = await supabase
+                .from('module_variants')
+                .select('id, age_band, narration_data')
+                .eq('module_id', selectedModule.id);
+
+            if (variants && variants.length > 0) {
+                for (let v = 0; v < variants.length; v++) {
+                    const variant = variants[v];
+                    statusEl.textContent = `Generating variant ${v + 1}/${variants.length} (ages ${variant.age_band})...`;
+
+                    const data = await callNarration({ moduleId: selectedModule.id, variantId: variant.id, force: false });
+                    if (data) {
+                        totalReady += data.readyCount || 0;
+                        totalSkipped += data.skippedCount || 0;
+                        totalErrors += data.errorCount || 0;
+                    }
+                }
+            }
+        } else {
+            statusEl.textContent = 'Generating narration audio...';
+            const data = await callNarration({ moduleId: selectedModule.id, force: false });
+            if (data) {
+                totalReady = data.readyCount || 0;
+                totalSkipped = data.skippedCount || 0;
+                totalErrors = data.errorCount || 0;
+            }
+        }
+
+        statusEl.style.background = '#d1fae5';
+        statusEl.style.color = '#059669';
+        statusEl.innerHTML = `<strong>Narration complete!</strong> ${totalReady} pages ready, ${totalSkipped} skipped` +
+            (totalErrors > 0 ? `, <span style="color:#dc2626;">${totalErrors} errors</span>` : '');
+    } catch (err) {
+        console.error('Narration generation error:', err);
+        statusEl.style.background = '#fee2e2';
+        statusEl.style.color = '#dc2626';
+        statusEl.textContent = 'Error: ' + (err.message || 'Unknown error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔊 Generate Narration';
+    }
+};

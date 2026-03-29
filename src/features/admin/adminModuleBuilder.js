@@ -9,6 +9,248 @@ import {
 } from './adminPage.js';
 
 // ================================================================================
+// TTS NARRATION - Background generation after module save
+// ================================================================================
+
+// Fire-and-forget: triggers narration for all variants (or single module) in background
+function triggerNarrationBackground(moduleId, isMultiAge) {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) return;
+
+    const callNarration = (body) => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token || supabaseKey}`,
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify(body)
+            }).then(r => r.json()).then(data => {
+                console.log('[TTS Background]', data);
+            }).catch(err => {
+                console.error('[TTS Background] Error:', err);
+            });
+        });
+    };
+
+    if (isMultiAge) {
+        supabase.from('module_variants').select('id, age_band')
+            .eq('module_id', moduleId).then(({ data: variants }) => {
+                if (variants) {
+                    variants.forEach(v => {
+                        console.log(`[TTS Background] Starting variant ${v.age_band}...`);
+                        callNarration({ moduleId, variantId: v.id, force: false });
+                    });
+                }
+            });
+    } else {
+        console.log('[TTS Background] Starting narration generation...');
+        callNarration({ moduleId, force: false });
+    }
+}
+
+const TTS_BATCH_SIZE = 8;
+
+function showNarrationOverlay() {
+    let overlay = document.getElementById('ttsNarrationOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'ttsNarrationOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;justify-content:center;align-items:center;';
+        overlay.innerHTML = `
+            <div style="background:#1a1a2e;border-radius:16px;padding:40px;max-width:500px;width:90%;text-align:center;color:white;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                <div id="ttsSpinner" style="border:5px solid rgba(255,255,255,0.2);border-top:5px solid #7b3ff2;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
+                <h2 style="font-size:20px;margin:0 0 8px;font-weight:600;" id="ttsOverlayTitle">Generating Audio Narration</h2>
+                <p style="font-size:14px;color:#a0a0c0;margin:0 0 20px;" id="ttsOverlayStatus">Starting...</p>
+                <div style="background:#2a2a4a;border-radius:8px;padding:12px;margin-bottom:16px;max-height:150px;overflow-y:auto;text-align:left;font-size:12px;font-family:monospace;" id="ttsOverlayLog"></div>
+                <div style="background:#333;border-radius:8px;height:8px;overflow:hidden;margin-bottom:20px;">
+                    <div id="ttsProgressBar" style="height:100%;background:linear-gradient(90deg,#7b3ff2,#a855f7);width:0%;transition:width 0.3s;border-radius:8px;"></div>
+                </div>
+                <p style="font-size:12px;color:#666;margin:0;" id="ttsOverlayWarning">Please don't close this window</p>
+                <button id="ttsOverlayClose" style="display:none;margin-top:16px;padding:10px 24px;background:#7b3ff2;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;" onclick="document.getElementById('ttsNarrationOverlay').remove();window.location.reload();">Done — Reload Page</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    return {
+        setTitle(t) { document.getElementById('ttsOverlayTitle').textContent = t; },
+        setStatus(s) { document.getElementById('ttsOverlayStatus').textContent = s; },
+        setProgress(pct) { document.getElementById('ttsProgressBar').style.width = pct + '%'; },
+        log(msg, isError) {
+            const el = document.getElementById('ttsOverlayLog');
+            const line = document.createElement('div');
+            line.style.cssText = isError ? 'color:#f87171;margin-bottom:4px;' : 'color:#86efac;margin-bottom:4px;';
+            line.textContent = msg;
+            el.appendChild(line);
+            el.scrollTop = el.scrollHeight;
+        },
+        finish(success) {
+            document.getElementById('ttsSpinner').style.display = 'none';
+            document.getElementById('ttsOverlayWarning').style.display = 'none';
+            document.getElementById('ttsOverlayClose').style.display = 'inline-block';
+            if (success) {
+                document.getElementById('ttsOverlayTitle').textContent = 'Narration Complete!';
+                document.getElementById('ttsOverlayTitle').style.color = '#86efac';
+            } else {
+                document.getElementById('ttsOverlayTitle').textContent = 'Narration Finished (with errors)';
+                document.getElementById('ttsOverlayTitle').style.color = '#fbbf24';
+            }
+        }
+    };
+}
+
+async function triggerNarrationGeneration(moduleId, isMultiAge) {
+    const ui = showNarrationOverlay();
+    let totalReady = 0, totalErrors = 0, totalSkipped = 0;
+
+    try {
+        if (isMultiAge) {
+            const { data: variants, error: fetchErr } = await supabase
+                .from('module_variants')
+                .select('id, age_band, narration_data')
+                .eq('module_id', moduleId);
+
+            if (fetchErr) {
+                ui.log('Error fetching variants: ' + fetchErr.message, true);
+                ui.finish(false);
+                return;
+            }
+
+            if (!variants || variants.length === 0) {
+                ui.log('No variants found for module', true);
+                ui.finish(false);
+                return;
+            }
+
+            ui.setStatus(`Processing ${variants.length} age variants...`);
+            ui.log(`Found ${variants.length} variants: ${variants.map(v => v.age_band).join(', ')}`);
+
+            let totalPages = variants.reduce((sum, v) => sum + (v.narration_data?.length || 0), 0);
+            let pagesProcessed = 0;
+
+            for (let vi = 0; vi < variants.length; vi++) {
+                const variant = variants[vi];
+                const pageCount = variant.narration_data?.length || 0;
+                ui.setStatus(`Variant ${vi + 1}/${variants.length} (ages ${variant.age_band}) — ${pageCount} pages`);
+                ui.log(`--- Variant: ages ${variant.age_band} (${pageCount} pages) ---`);
+
+                const result = await generateNarrationBatched(moduleId, variant.id, pageCount, ui, pagesProcessed, totalPages);
+                totalReady += result.ready;
+                totalErrors += result.errors;
+                totalSkipped += result.skipped;
+                pagesProcessed += pageCount;
+            }
+        } else {
+            const { data: mod, error: fetchErr } = await supabase
+                .from('modules')
+                .select('narration_data')
+                .eq('id', moduleId)
+                .single();
+
+            if (fetchErr) {
+                ui.log('Error fetching module: ' + fetchErr.message, true);
+                ui.finish(false);
+                return;
+            }
+
+            const pageCount = mod?.narration_data?.length || 0;
+            ui.setStatus(`Processing ${pageCount} pages...`);
+            ui.log(`Module has ${pageCount} pages`);
+
+            const result = await generateNarrationBatched(moduleId, null, pageCount, ui, 0, pageCount);
+            totalReady = result.ready;
+            totalErrors = result.errors;
+            totalSkipped = result.skipped;
+        }
+
+        ui.setProgress(100);
+        ui.log(`Done! ${totalReady} ready, ${totalSkipped} skipped, ${totalErrors} errors`);
+        ui.setStatus(`${totalReady} pages ready, ${totalSkipped} skipped, ${totalErrors} errors`);
+        ui.finish(totalErrors === 0);
+    } catch (err) {
+        ui.log('Fatal error: ' + (err.message || String(err)), true);
+        ui.setStatus('Error: ' + (err.message || 'Unknown'));
+        ui.finish(false);
+    }
+}
+
+async function generateNarrationBatched(moduleId, variantId, totalPages, ui, pagesOffset, grandTotal) {
+    let ready = 0, errors = 0, skipped = 0;
+
+    if (totalPages === 0) {
+        ui.log('No pages to process');
+        return { ready, errors, skipped };
+    }
+
+    for (let start = 0; start < totalPages; start += TTS_BATCH_SIZE) {
+        const pages = [];
+        for (let i = start; i < Math.min(start + TTS_BATCH_SIZE, totalPages); i++) {
+            pages.push(i);
+        }
+
+        const batchLabel = `pages ${pages[0] + 1}-${pages[pages.length - 1] + 1} of ${totalPages}`;
+        ui.log(`Generating ${batchLabel}...`);
+
+        try {
+            // Use raw fetch for better error visibility (supabase.functions.invoke swallows response body on errors)
+            const session = (await supabase.auth.getSession()).data.session;
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+            if (!supabaseUrl || !supabaseKey) {
+                ui.log(`Missing env: URL=${!!supabaseUrl} KEY=${!!supabaseKey}`, true);
+                errors += pages.length;
+                continue;
+            }
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token || supabaseKey}`,
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify({ moduleId, variantId, pages, force: false })
+            });
+
+            const responseText = await response.text();
+            let data;
+            try { data = JSON.parse(responseText); } catch { data = null; }
+
+            if (!response.ok) {
+                ui.log(`HTTP ${response.status}: ${data?.error || responseText.slice(0, 200)}`, true);
+                errors += pages.length;
+            } else if (data?.error) {
+                ui.log(`Function error: ${data.error}`, true);
+                errors += pages.length;
+            } else {
+                const batchReady = data?.readyCount || 0;
+                const batchSkipped = data?.skippedCount || 0;
+                const batchErrors = data?.errorCount || 0;
+                ready += batchReady;
+                skipped += batchSkipped;
+                errors += batchErrors;
+                ui.log(`${batchLabel}: ${batchReady} ready, ${batchSkipped} skipped${batchErrors > 0 ? ', ' + batchErrors + ' errors' : ''}`);
+            }
+        } catch (err) {
+            ui.log(`Call failed: ${err.message || String(err)}`, true);
+            errors += pages.length;
+        }
+
+        // Update progress bar
+        const pct = Math.round(((pagesOffset + start + pages.length) / grandTotal) * 100);
+        ui.setProgress(pct);
+    }
+
+    return { ready, errors, skipped };
+}
+
+
+// ================================================================================
 // GLOBALS (window-level for module-content-creator.js and inline handlers)
 // ================================================================================
 window.generalCategories = window.generalCategories || [];
@@ -1070,6 +1312,10 @@ window.generateModuleWithAI = async function() {
 
             window.generatedModuleHTML = result.html.replace(/&#039;/g, "'");
             generatedModuleHTML = window.generatedModuleHTML;
+            window.generatedNarrationTexts = result.narrationTexts || [];
+            window.generatedNarrationData = result.narrationData || null;
+            window.generatedNarrationStatus = result.narrationStatus || null;
+            window.generatedVariantNarrationData = result.variantNarrationData || null;
             window.currentGenerationSpec = result.spec;
             currentGenerationSpec = window.currentGenerationSpec;
             applyGeneratedMetadataToForm(currentGenerationSpec?.metadata);
@@ -1200,6 +1446,17 @@ window.saveGeneratedModule = async function() {
 
         // For multi-age modules, store the first variant's HTML as the fallback
         // html_content and set is_multi_age flag. Variant HTML is stored separately.
+        // Narration data — texts only, audio generated separately after save
+        const narrationData = window.generatedNarrationData || (window.generatedNarrationTexts || []).map((text, i) => ({
+            pageIndex: i,
+            text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+            fullText: text,
+            audioUrl: null,
+            contentHash: null,
+            status: 'pending'
+        }));
+        const narrationStatus = 'pending';
+
         const { data: newModule, error: insertError } = await supabase
             .from('modules')
             .insert({
@@ -1210,6 +1467,8 @@ window.saveGeneratedModule = async function() {
                 dss_sedi_id: dssSediId, neuroscience_concept: neuroscienceConcept,
                 brain_town_metaphor: brainTownMetaphor, module_summary: moduleSummary,
                 is_multi_age: isMultiAge,
+                narration_data: narrationData,
+                narration_status: narrationStatus,
             })
             .select()
             .single();
@@ -1219,11 +1478,15 @@ window.saveGeneratedModule = async function() {
             const variantEntries = Object.entries(window.generatedVariantHtml);
             for (const [band, html] of variantEntries) {
                 try {
+                    // Per-variant narration data (texts match variant's HTML)
+                    const variantNarration = window.generatedVariantNarrationData?.[band] || narrationData;
                     await supabase.from('module_variants').upsert({
                         module_id: newModule.id,
                         age_band: band,
                         html_content: html,
                         generated_at: new Date().toISOString(),
+                        narration_data: variantNarration,
+                        narration_status: 'pending',
                     }, { onConflict: 'module_id,age_band' });
                 } catch (variantErr) {
                     console.error(`Failed to save variant ${band}:`, variantErr);
@@ -1249,7 +1512,13 @@ window.saveGeneratedModule = async function() {
 
         window.closeAddModuleModal();
         if (loadingOverlay) loadingOverlay.style.display = 'none';
-        alert('✓ Module created successfully!');
+
+        // Trigger TTS narration in the background — don't make the admin wait
+        if (newModule?.id) {
+            triggerNarrationBackground(newModule.id, isMultiAge);
+        }
+
+        alert('Module created successfully! Audio narration is generating in the background.');
         window.location.reload();
     } catch (error) {
         console.error('Error saving module:', error);

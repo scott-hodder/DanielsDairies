@@ -41,8 +41,8 @@ const JOB_TIMEOUT_MS = 8 * 60 * 1000;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Page count range
-const MIN_PAGES = 18;
-const MAX_PAGES = 24;
+const MIN_PAGES = 22;
+const MAX_PAGES = 26;
 
 // ====================
 // TYPES

@@ -1419,6 +1419,12 @@ async function init() {
       subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
       updateCreditWalletBadge()
 
+      // Hide Parent Insights tab if tier doesn't include it
+      const userTierConfig = subscriptionTiers.find(t => t.tier === currentSubscription?.tier)
+      if (userTierConfig && userTierConfig.includes_parent_insights === false) {
+        if (tabParentInsights) tabParentInsights.style.display = 'none'
+      }
+
       if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
         const colors = {}
         categoryColorsResult.value.data.forEach(cc => {
@@ -4756,8 +4762,8 @@ function getDanielPromptText() {
   }
 
   const mood = getMoodOptionByScore(latestMoodCheckin?.mood_score)
-  const prefix = mood ? `You picked ${mood.emoji} ${mood.shortLabel} earlier.` : 'Thanks for checking in with me earlier.'
-  return `${prefix} Tap me for a kind quote until your next check-in.`
+  const prefix = mood ? `You picked ${mood.emoji} earlier.` : 'Checked in!'
+  return `${prefix} Tap me for a kind quote!`
 }
 
 function updateMoodHeroText() {

@@ -144,7 +144,7 @@ function firstPresent<T>(...values: Array<T | null | undefined>): T | null {
   return null;
 }
 
-function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): string {
+function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): { html: string; narrationTexts: string[] } {
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
   const ageRangeKey = getAgeRangeKey(metadata.targetAge);
@@ -254,6 +254,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   
   // Build page functions - using function body strings, not template literals
   const pageFunctions: string[] = [];
+  const narrationTexts: string[] = []; // Parallel array of narrable text per page
   
   for (let pageIndex = 0; pageIndex < pageStructure.length; pageIndex++) {
     const template = pageStructure[pageIndex];
@@ -503,6 +504,9 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
        
     }
     
+    // Extract narration text BEFORE escaping (clean HTML at this point)
+    narrationTexts.push(extractNarrationFromHtml(pageHtml, template.type));
+
     // Inject grown-up note if this page has one
     // Insert before the closing </div> of the max-w-4xl container
     const grownUpNoteHtml = renderGrownUpNote(pageIndex);
@@ -513,12 +517,12 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         pageHtml = pageHtml.replace(lastDivPattern, `${grownUpNoteHtml}</div></div>`);
       }
     }
-    
+
     // Escape backticks in the HTML content but preserve ${} for runtime evaluation
     const escapedHtml = pageHtml
       .replace(/\\/g, '\\\\')
       .replace(/`/g, '\\`');
-    
+
     pageFunctions.push(`function generatePage${pageIndex}() {
   return \`${escapedHtml}\`;
 }`);
@@ -536,7 +540,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   - series: ${metadata.series}
   `;
   
-  return `<!DOCTYPE html>
+  const htmlOutput = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2933,7 +2937,60 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   </script>
 </body>
 </html>`;
+
+  return { html: htmlOutput, narrationTexts };
 }
+
+/**
+ * Extract readable narration text from a page's HTML.
+ * Called during generation when we have clean, pre-escape HTML.
+ */
+function extractNarrationFromHtml(html: string, pageType: string): string {
+  // Skip page types that don't need narration
+  if (pageType === 'admin-verification') return '';
+
+  let cleaned = html;
+  // Remove script/style/svg/canvas tags
+  cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, '');
+  cleaned = cleaned.replace(/<style[\s\S]*?<\/style>/gi, '');
+  cleaned = cleaned.replace(/<svg[\s\S]*?<\/svg>/gi, '');
+  cleaned = cleaned.replace(/<canvas[\s\S]*?<\/canvas>/gi, '');
+  // Remove buttons (quiz answers, scenario options — contain answer text + feedback)
+  cleaned = cleaned.replace(/<button[\s\S]*?<\/button>/gi, '');
+  // Remove inputs, textareas, labels (checkboxes, "I finished my reflection!", etc.)
+  cleaned = cleaned.replace(/<(?:input|textarea)[^>]*\/?>/gi, '');
+  cleaned = cleaned.replace(/<label[\s\S]*?<\/label>/gi, '');
+  // Remove hidden feedback elements (quiz-feedback, scenario-feedback, followup-feedback, mascot-feedback)
+  cleaned = cleaned.replace(/<[^>]+class="[^"]*(?:quiz-feedback|scenario-feedback|followup-feedback|mascot-feedback)[^"]*"[\s\S]*?<\/[^>]+>/gi, '');
+  // Remove activity checkpoint containers (data-activity checkbox + label wrappers)
+  cleaned = cleaned.replace(/<div[^>]*class="[^"]*m-bg-light-green[^"]*"[\s\S]*?<\/div>/gi, '');
+  // Remove elements with display:none (hidden feedback)
+  cleaned = cleaned.replace(/<[^>]+style="[^"]*display:\s*none[^"]*"[\s\S]*?<\/[^>]+>/gi, '');
+  // Remove data-feedback attribute content that might leak through
+  cleaned = cleaned.replace(/\s*data-feedback="[^"]*"/gi, '');
+  cleaned = cleaned.replace(/\s*data-correct="[^"]*"/gi, '');
+  cleaned = cleaned.replace(/\s*data-good="[^"]*"/gi, '');
+  // Remove event handler attributes
+  cleaned = cleaned.replace(/\s(?:onclick|onchange|oninput|onsubmit)\s*=\s*"[^"]*"/gi, '');
+  // Block tag endings → newlines
+  cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
+  cleaned = cleaned.replace(/<\/(?:p|h[1-6]|div|li|tr|td|th|blockquote)>/gi, '\n');
+  cleaned = cleaned.replace(/<li[^>]*>/gi, '• ');
+  // Strip all remaining tags
+  cleaned = cleaned.replace(/<[^>]+>/g, ' ');
+  // Decode entities
+  cleaned = cleaned.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  cleaned = cleaned.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&apos;/g, "'").replace(/&nbsp;/g, ' ');
+  // Remove template expressions (${...})
+  cleaned = cleaned.replace(/\$\{[^}]+\}/g, '');
+  // Clean whitespace
+  cleaned = cleaned.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
+  // Filter out noise lines and common UI text
+  const skipPatterns = /^(I finished|I completed|I practiced|I thought about|Breaths completed|\/\s*\d+)$/i;
+  const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 2 && !skipPatterns.test(l));
+  return lines.join(' ').replace(/\s+/g, ' ').trim();
+}
+
 // PAGE RENDERERS
 // ====================
 
@@ -6006,13 +6063,13 @@ async function generateModule(
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
   
   await updateProgress("rendering", "Building interactive HTML...");
-  const html = renderHtml(content, pageStructure, moduleCode, categoryColor, seriesInfo);
-  
+  const { html, narrationTexts } = renderHtml(content, pageStructure, moduleCode, categoryColor, seriesInfo);
+
   const pageCount = pageStructure.length;
   const characterCount = html.length;
-  
+
   await updateProgress("complete", `Module generation complete! (${pageCount} pages)`);
-  
+
   const spec = {
     version: "3.0",
     moduleCode,
@@ -6022,8 +6079,8 @@ async function generateModule(
     moduleSummary: content.moduleSummary,
     generatedAt: new Date().toISOString(),
   };
-  
-  return { html, pageCount, characterCount, spec };
+
+  return { html, pageCount, characterCount, spec, narrationTexts };
 }
 
 // ====================
@@ -6128,11 +6185,11 @@ async function generateModuleMultiAge(
 
   // Render HTML for each variant
   await updateProgress("rendering", "Building interactive HTML for all variants...");
-  const variantResults: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number }> = {};
+  const variantResults: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number; narrationTexts: string[] }> = {};
 
   for (const [band, content] of variants) {
     const renderStart = Date.now();
-    const html = renderHtml(content, pageStructure, `${moduleCode}_${band.replace('-', '')}`, categoryColor, seriesInfo);
+    const { html, narrationTexts } = renderHtml(content, pageStructure, `${moduleCode}_${band.replace('-', '')}`, categoryColor, seriesInfo);
     const spec = {
       version: "3.0-multi-age",
       moduleCode,
@@ -6148,8 +6205,9 @@ async function generateModuleMultiAge(
     variantResults[band] = {
       html,
       spec,
-      tokenUsage: 0, // Individual tracking would require per-variant counters
+      tokenUsage: 0,
       durationMs: Date.now() - renderStart,
+      narrationTexts,
     };
   }
 
@@ -6185,23 +6243,36 @@ async function runAsyncGeneration(
   contentBrief: string,
   seriesInfo?: SeriesInfo | null,
   categoryColor?: string | null,
-  forcedTitle?: string | null
+  forcedTitle?: string | null,
 ) {
   const startTime = Date.now();
-  
+
   try {
     await supabaseClient
       .from("ai_generation_jobs")
       .update({ status: "running", updated_at: new Date().toISOString() })
       .eq("id", jobId);
-    
+
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error("Generation timeout")), JOB_TIMEOUT_MS);
     });
-    
+
     const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
-    
+
+    // Attach pending narration data (texts only, no audio yet — TTS runs separately after save)
+    if (result.narrationTexts && result.narrationTexts.length > 0) {
+      result.narrationData = result.narrationTexts.map((text: string, i: number) => ({
+        pageIndex: i,
+        text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+        fullText: text,
+        audioUrl: null,
+        contentHash: null,
+        status: 'pending',
+      }));
+      result.narrationStatus = 'pending';
+    }
+
     await supabaseClient
       .from("ai_generation_jobs")
       .update({
@@ -6210,27 +6281,16 @@ async function runAsyncGeneration(
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
-    
+
     // Save module_summary to the modules table if available
     if (result?.spec?.moduleSummary?.summary) {
       try {
-        // Find the module associated with this job and update its module_summary
-        const { data: jobData } = await supabaseClient
-          .from("ai_generation_jobs")
-          .select("result")
-          .eq("id", jobId)
-          .single();
-        
-        // The module_summary is stored in the job result for the admin to use
-        // It will be written to the modules table when the module is saved
         console.log("[AI] Module summary generated for continuity:", result.spec.moduleSummary.summary.substring(0, 100) + "...");
       } catch (e) {
         console.warn("[AI] Could not save module summary:", e);
       }
     }
-    
 
-    
   } catch (e) {
     const error = e instanceof Error ? e : new Error(String(e));
     console.error(`[AI] Job ${jobId} failed:`, error.message);
@@ -6285,6 +6345,23 @@ async function runAsyncMultiAgeGeneration(
     );
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
 
+    // Build per-variant pending narration data (texts only, no audio — TTS runs separately)
+    const variantNarrationData: Record<string, any[]> = {};
+    for (const [band, variant] of Object.entries(result.variants) as [string, any][]) {
+      if (variant.narrationTexts?.length > 0) {
+        variantNarrationData[band] = variant.narrationTexts.map((text: string, i: number) => ({
+          pageIndex: i,
+          text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+          fullText: text,
+          audioUrl: null,
+          contentHash: null,
+          status: 'pending',
+        }));
+      }
+    }
+
+    const firstBand = Object.keys(result.variants)[0];
+
     await supabaseClient
       .from("ai_generation_jobs")
       .update({
@@ -6294,21 +6371,21 @@ async function runAsyncMultiAgeGeneration(
           moduleCode: result.moduleCode,
           pageCount: result.pageCount,
           core: result.core,
-          // Store variant specs (not full HTML - that goes to module_variants table)
           variantSpecs: Object.fromEntries(
             Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.spec])
           ),
-          // Store the first variant's HTML as preview for admin
           html: Object.values(result.variants)[0]?.html || '',
           spec: Object.values(result.variants)[0]?.spec || {},
           totalTokens: result.totalTokens,
           totalDurationMs: result.totalDurationMs,
-          // All variant HTML keys for client to access
           variantBands: Object.keys(result.variants),
-          // Individual variant HTML stored in result for admin preview
           variantHtml: Object.fromEntries(
             Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.html])
           ),
+          // Per-variant narration data (texts only, pending audio generation)
+          narrationData: variantNarrationData[firstBand] || null,
+          narrationStatus: 'pending',
+          variantNarrationData,
         },
         updated_at: new Date().toISOString(),
       })
@@ -6442,7 +6519,7 @@ serve(async (req) => {
     if (superSkillId) {
       const { data: superSkillData, error: superSkillError } = await supabaseClient
         .from("super_skills")
-        .select("name, description, domain, personality, nd_affirmation, relevant_theories, emoji, theme_color, character_name, character_image_url")
+        .select("name, description, domain, personality, nd_affirmation, relevant_theories, emoji, theme_color, character_name, character_image_url, voice_id")
         .eq("id", superSkillId)
         .single();
       
@@ -6914,7 +6991,7 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
           runAsyncMultiAgeGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle, requestedBands).catch(console.error);
         }
       } else {
-        // Legacy single-age generation path (unchanged)
+        // Legacy single-age generation path
         if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
           anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
         } else {
@@ -6936,6 +7013,7 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
       characterCount: result.characterCount,
       spec: result.spec,
       moduleSummary: result.spec.moduleSummary?.summary || null,
+      narrationTexts: result.narrationTexts || [],
     });
     
   } catch (e) {

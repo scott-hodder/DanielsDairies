@@ -1,136 +1,3696 @@
-You are working on the Daniel’s Diaries app.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>test narration 6</title>
+  <!-- DEBUG: 
+  Series Info Debug:
+  - characterName: Kai
+  - characterEmoji: 🤝
+  - characterType: kai
+  - series: Kai
+   -->
+  <!-- CATEGORY_COLOR: #405878 -->
+  <!-- PALETTE: primary=#F4A261 secondary=#2A9D8F accent=#E76F51 -->
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Module Stylesheets -->
+  <link rel="stylesheet" href="./modules/shared/module-theme.css">
+  <link rel="stylesheet" href="./modules/shared/module-header.css">
+  <link rel="stylesheet" href="./modules/shared/module-base.css">
+  <link rel="stylesheet" href="./modules/shared/module-utilities.css">
+  
+  <style>
+    /* Brand Colors - Dynamic based on category */
+    :root {
+      --primary: #F4A261;
+      --secondary: #2A9D8F;
+      --accent: #E76F51;
+      --dark: #264653;
+      --cream: #FFF8F0;
+      --light-green: #A8E6CF;
+      --soft-yellow: #FFE8A3;
+      --success: #A8E6CF;
+    }
+    
+    /* Typography */
+    .font-title { font-family: 'Fredoka One', cursive; }
+    .font-body { font-family: 'Nunito', sans-serif; }
+    body { font-family: 'Nunito', sans-serif; background: var(--cream); }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Fredoka One', cursive; }
+    
+    /* Page Layout */
+    .page { min-height: 100vh; padding-top: 80px; padding-bottom: 100px; }
+    .page.chapter-scene-page { min-height: 0 !important; height: calc(100vh - 75px) !important; max-height: calc(100vh - 75px) !important; padding: 0 !important; overflow: hidden !important; }
+    
+    /* Animations */
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      15% { transform: translateX(-8px); }
+      30% { transform: translateX(8px); }
+      45% { transform: translateX(-6px); }
+      60% { transform: translateX(6px); }
+      75% { transform: translateX(-3px); }
+      90% { transform: translateX(3px); }
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(244, 162, 97, 0.3); }
+      50% { box-shadow: 0 0 35px rgba(244, 162, 97, 0.6); }
+    }
+    .animate-glow { animation: pulse-glow 3s ease-in-out infinite; }
+    
+    /* Form Elements */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 30px;
+      border-radius: 15px;
+      background: linear-gradient(to right, var(--secondary), var(--soft-yellow), var(--primary), var(--accent));
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid var(--dark);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    /* Quiz Styles */
+    .quiz-answer.selected.correct { background-color: var(--success) !important; border-color: var(--secondary) !important; }
+    .quiz-answer.selected.incorrect { background-color: #fecaca !important; border-color: var(--accent) !important; }
+    
+    /* Scenario Styles */
+    .scenario-option.selected.good { background-color: var(--success) !important; }
+    .scenario-option.selected.not-good { background-color: #fef3c7 !important; }
+    
+    /* Interactive Option Styles */
+    .interactive-option { background-color: white; }
+    .interactive-option.option-selected { background-color: var(--success) !important; }
+    .interactive-option.option-incorrect { background-color: #fecaca !important; }
+    
+    /* Print Styles */
+    @media print {
+      .no-print { display: none !important; }
+      .page { page-break-after: always; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body class="module-theme" data-series="Kai" data-age-range="6, 8">
+  <div id="moduleHeaderRoot"></div>
+  
+  <main class="module-content">
+    <section id="pageContainer"></section>
+  </main>
+  
+  <script type="module">
+    // Import external module header component
+    import { initModuleHeader } from './modules/shared/module-header.js';
+    
+    // Embedded module functions (no external dependencies)
+    
+    // Module database functions - stub implementation for local preview
+    async function initializeModule() {
+      return true;
+    }
 
-I want you to build a polished onboarding/help modal that teaches users how the app works using a sequence of screenshots.
+    async function loadStarsFromDB() {
+      const saved = localStorage.getItem('moduleStars');
+      return saved ? parseInt(saved, 10) : 0;
+    }
 
-Goal
-Create a reusable multi-step instruction modal / walkthrough component that displays a set of onboarding images with titles, short descriptions, progress indicators, and next/back controls.
+    async function saveStarsToDB(stars) {
+      localStorage.setItem('moduleStars', String(stars));
+      return stars;
+    }
 
-Context
-This app is a child-focused psychoeducational product. The UI should feel:
-- friendly
-- soft
-- playful
-- polished
-- very clear
-- not cluttered
-- consistent with the existing app styling
+    async function awardSingleStar(currentStars) {
+      const newStars = currentStars + 1;
+      await saveStarsToDB(newStars);
+      return newStars;
+    }
 
-Important
-Do NOT redesign the whole app.
-Do NOT create a separate page.
-Do NOT overcomplicate this.
-I want a clean modal-based walkthrough that can be opened on demand and optionally shown on first visit.
+    async function resolveChildDisplayName() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childName') || 'Friend';
+    }
 
-Use these screenshots as the instructional images:
-- /images/steps/step1.png
-- /images/steps/step2.png
-- /images/steps/step3.png
-- /images/steps/step4.png
-- /images/steps/step5.1.png
-- /images/steps/step5.2.png
-- /images/steps/step6.1.png
-- /images/steps/step6.2.png
+    async function getChildId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('childId') || 'unknown';
+    }
 
-What to build
-Build a modal carousel / onboarding wizard with:
-1. Large screenshot area
-2. Step title
-3. Short explanation text
-4. Current step indicator (for example: 1 of 8)
-5. Dots or progress bar
-6. Back and Next buttons
-7. Close button
-8. Final CTA button on the last step such as:
-   - “Got it”
-   - “Start Exploring”
-9. Optional “Don’t show again” checkbox for first-time onboarding
+    async function completeModuleDB() {
+      // Stub implementation - just mark as completed
+      localStorage.setItem('moduleCompleted', 'true');
+      return true;
+    }
+    
+    // Module completion handling
+    let moduleCompletionHandled = false;
 
-Functional requirements
-- Modal opens centered over a dimmed backdrop
-- Responsive on desktop and tablet
-- Image scales to fit without distortion
-- User can move forward/backward through steps
-- Escape key closes modal
-- Clicking backdrop closes modal
-- Modal state resets properly when reopened unless we intentionally persist progress
-- Support keyboard navigation:
-  - Left arrow = previous
-  - Right arrow = next
-- On the last step, replace “Next” with “Start Exploring”
-- Add a prop/config to allow:
-  - `showOnFirstVisit`
-  - `open`
-  - `onClose`
-  - `steps`
-- Persist “don’t show again” using localStorage
-- Expose a help button somewhere suitable so users can reopen the walkthrough later
+    function handleModuleCompletion() {
+      // Prevent multiple completions
+      if (moduleCompletionHandled) {
+        return;
+      }
+      moduleCompletionHandled = true;
 
-Design requirements
-- Match the app’s existing soft, child-friendly styling
-- Rounded corners
-- Soft shadows
-- Clean spacing
-- Clear readable typography
-- Do not use harsh/dark enterprise styling
-- The screenshot should be the main focus
-- Keep the text short and easy to scan
-- Avoid giant paragraphs
 
-Recommended step content
-Use the screenshots in this order and create copy similar to the following:
+      // Get module parameters from URL
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const childId = params.get('childId');
+        const moduleId = params.get('moduleId');
+        
+        
+        if (childId && moduleId) {
+          // Mark module as completed
+          completeModule(childId, moduleId);
+        } else {
+          console.error('[ModuleHeader] Missing childId or moduleId in URL');
+        }
+      } catch (error) {
+        console.error('[ModuleHeader] Error parsing URL for module completion:', error);
+      }
+    }
 
-1. Title: “Welcome to your dashboard”
-   Description: “This is your home base. You can see your character, stars, streak, rank, level, and today’s Daily Quest.”
+    async function completeModule(childId, moduleId) {
+      try {
+        // Use the completeModuleDB function for generated modules
+        if (typeof window.completeModuleDB === 'function') {
+          await window.completeModuleDB();
+        }
+        
+        
+        // Navigate back to dashboard
+        goHome();
+      } catch (error) {
+        console.error('[ModuleHeader] Error completing module:', error);
+      }
+    }
 
-2. Title: “Explore your Adventure Map”
-   Description: “Your map shows your progress through each skill and cycle. Complete modules to move along the path.”
+    function showCompletionCelebration() {
+      try {
+        // Create celebration modal
+        const celebrationModal = document.createElement('div');
+        celebrationModal.className = 'module-completion-modal';
+        celebrationModal.innerHTML = '<div class="module-completion-content"><div class="completion-emoji">🎉</div><h2 class="completion-title">Module Complete!</h2><p class="completion-message">Congratulations! You have finished this module and learned valuable emotional skills.</p><div class="completion-confetti" id="completionConfetti"></div><button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button></div>';
+        
+        document.body.appendChild(celebrationModal);
+        
+        // Generate confetti
+        if (typeof generateCompletionConfetti === 'function') {
+          generateCompletionConfetti();
+        }
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          closeCompletionModal();
+        }, 5000);
+      } catch (e) {
+        console.error('Error showing completion celebration:', e);
+      }
+    }
 
-3. Title: “Unlock new places as you grow”
-   Description: “As you complete more modules, your path grows from Trailhead to Village, Town Center, and beyond.”
+    function generateCompletionConfetti() {
+      const container = document.getElementById('completionConfetti');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const pieceCount = 40;
+      
+      for (let i = 0; i < pieceCount; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'completion-confetti-piece';
+        
+        const randomX = Math.random() * 300 - 150;
+        const randomDelay = Math.random() * 0.3;
+        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.top = Math.random() * 50 + '%';
+        piece.style.setProperty('--tx', randomX + 'px');
+        piece.style.animationDelay = randomDelay + 's';
+        piece.style.backgroundColor = randomColor;
+        
+        container.appendChild(piece);
+      }
+    }
 
-4. Title: “Choose a skill and cycle”
-   Description: “Use the dropdowns to switch between different super skills and learning cycles.”
+    // Make close function globally accessible
+    window.closeCompletionModal = function() {
+      const modal = document.querySelector('.module-completion-modal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+    
+    const WORKBOOK_ID = "MOD_MN9QIIG5_68";
+    const MODULE_CODE = "MOD_MN9QIIG5_68";
+    const MAX_STARS = 9;
+    const TOTAL_PAGES = 18;
+    
+    let currentPage = 0;
+    let totalStars = 0;
+    let completedActivities = {};
+    let formData = {};
+    let header;
+    let childDisplayName = 'Friend';
+    const IS_ADMIN = new URLSearchParams(window.location.search).get('isAdmin') === 'true';
+    
+    // Load saved data
+    function loadProgress() {
+      const saved = localStorage.getItem('cbtProgress_' + WORKBOOK_ID);
+      if (saved) {
+        try { completedActivities = JSON.parse(saved); } catch (e) {}
+      }
+    }
+    
+    function saveProgress() {
+      localStorage.setItem('cbtProgress_' + WORKBOOK_ID, JSON.stringify(completedActivities));
+    }
+    
+    function loadFormData() {
+      const saved = localStorage.getItem('cbtData_' + WORKBOOK_ID);
+      if (saved) {
+        try { formData = JSON.parse(saved); } catch (e) {}
+      }
+    }
+    
+    function saveFormData(key, value) {
+      formData[key] = value;
+      localStorage.setItem('cbtData_' + WORKBOOK_ID, JSON.stringify(formData));
+    }
+    
+    // Child name helper - this is called from page templates
+    function getChildName() {
+      return childDisplayName || formData.userName || 'Friend';
+    }
+    
+    // Page generators
+    function generatePage0() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8 m-page-cover" data-page="cover">
+      <div class="text-center max-w-4xl m-cover-center">
+        <!-- Big Character Front and Center -->
+        <div class="mb-4 animate-bounce-slow">
+          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/Kai.png" alt="Kai" class="object-contain mx-auto drop-shadow-2xl m-character-img--cover">
+        </div>
+        
+        <!-- Character Name Badge -->
+        <div class="inline-block px-6 py-2 rounded-full mb-4 m-bg-primary">
+          <span class="text-white font-title text-xl">Meet Kai!</span>
+        </div>
+        
+        <h1 class="text-5xl md:text-6xl mb-3 font-title m-color-dark">test narration 6</h1>
+        <h2 class="text-2xl md:text-3xl mb-6 font-title m-color-primary">Building bridges that go both ways</h2>
+        <div class="text-xl mb-6 font-body m-color-secondary">
+          <p class="mb-2">An Interactive Adventure for Ages 6, 8</p>
+        </div>
+        <div class="border-4 rounded-3xl p-6 inline-block animate-glow m-border-primary m-bg-white">
+          <p class="font-semibold mb-2 font-body text-lg m-color-dark">This adventure belongs to:</p>
+          <div class="text-3xl font-title m-color-primary" id="childNameDisplay">
+            Friend
+          </div>
+        </div>
+        <div class="mt-6">
+          <p class="text-lg font-body m-color-secondary">⭐ Earn stars by completing activities! ⭐</p>
+        </div>
+      </div>
+    </div>`;
+}
 
-5. Title: “Complete your Daily Quest”
-   Description: “Daily Quests are quick check-ins that help you build habits and reflect on how you feel.”
+    function generatePage1() {
+  return `
+    <div class="page min-h-screen p-6 md:p-8 m-bg-cream" data-page="welcome">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-4 mb-4">
+          <img src="https://mikxrneopcwuldmykswq.supabase.co/storage/v1/object/public/characters/Kai.png" alt="Kai" class="object-contain flex-shrink-0 m-character-img--welcome">
+          <h1 class="text-3xl md:text-4xl font-title m-color-dark">Welcome, Town Planner! Kai 🤝 is here!</h1>
+        </div>
+        
+        <div class="rounded-3xl shadow-xl p-6 mb-4" style="background-color: white; border-left: 6px solid var(--primary);">
+          <p class="text-lg mb-3 last:mb-0 leading-relaxed font-body m-color-dark">Hi there! I&amp;#039;m Kai 🤝 and I&amp;#039;m so excited to meet you! You&amp;#039;re going to be the town planner for your amazing brain town. Daniel 🐕 will be learning right along with you too!</p><p class="text-lg mb-3 last:mb-0 leading-relaxed font-body m-color-dark">Together we&amp;#039;ll learn how to build strong bridges between towns. You&amp;#039;ll discover how to share your thoughts and listen to others at the same time. Your brain town is going to grow in wonderful ways! 🌟</p>
+        </div>
+        
+        <div class="rounded-xl p-4 text-center m-bg-soft-yellow">
+          <p class="text-lg font-semibold font-body m-color-dark">
+            "All feelings are okay, even the big ones!" 💛
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
 
-6. Title: “Answer simple check-in questions”
-   Description: “Some quests ask you to notice what is happening in your body and emotions.”
+    function generatePage2() {
+  return `
+    <div class="page chapter-scene-page m-chapter-scene" data-page="chapter">
 
-7. Title: “Finish modules and earn rewards”
-   Description: “As you move through a module, answer questions, complete activities, and earn stars.”
+      <!-- Daytime sky -->
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+        color-mix(in srgb, var(--primary) 12%, #e0f0ff) 0%,
+        color-mix(in srgb, var(--primary) 8%, #f0f7ff) 25%,
+        color-mix(in srgb, var(--cream) 50%, #f8fbff) 55%,
+        var(--cream) 100%
+      );"></div>
 
-8. Title: “Spend your stars”
-   Description: “Use your stars in Daniel’s Star Shop to unlock rewards and celebrate progress.”
+      <!-- Sun glow -->
+      <div class="m-chapter-sun"></div>
 
-If the screenshots suggest a better ordering or wording, improve it, but keep the structure simple and intuitive.
+      <!-- Soft clouds (pure CSS) -->
+      <div class="m-chapter-stars">
+        <div class="ch-cloud ch-cloud-1"></div>
+        <div class="ch-cloud ch-cloud-2"></div>
+        <div class="ch-cloud ch-cloud-3"></div>
+        <div class="ch-cloud ch-cloud-4"></div>
+      </div>
 
-Implementation details
-- First inspect the existing codebase and identify the right place to mount this modal
-- Reuse existing design tokens, button styles, modal patterns, and typography where possible
-- Do not duplicate app-wide styles unnecessarily
-- Keep code modular and reusable
-- If the project uses React, build this as a reusable React component
-- If the project is vanilla JS, build it in the same architectural style already used in the app
-- Keep implementation aligned with the current stack and conventions
-- Add minimal comments only where useful
-- Avoid bloated code
+      <!-- Landscape at bottom - 280px -->
+      <div class="m-chapter-hills">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
+          
+    <!-- Far hills -->
+    <ellipse cx="150" cy="200" rx="280" ry="90" fill="var(--hill-far)"/>
+    <ellipse cx="550" cy="200" rx="350" ry="110" fill="var(--hill-near)"/>
+    <ellipse cx="950" cy="200" rx="300" ry="95" fill="var(--hill-far)"/>
+    <ellipse cx="1150" cy="200" rx="200" ry="70" fill="var(--hill-near)"/>
+    <!-- Trees -->
+    <rect x="220" y="128" width="6" height="32" fill="var(--tree-trunk)"/>
+    <ellipse cx="223" cy="122" rx="20" ry="18" fill="var(--tree-crown)"/>
+    <rect x="700" y="135" width="5" height="28" fill="var(--tree-trunk)"/>
+    <ellipse cx="702" cy="130" rx="16" ry="15" fill="var(--tree-crown-alt)"/>
+    <!-- Fence -->
+    <rect x="430" y="155" width="3" height="22" fill="var(--fence)"/>
+    <rect x="460" y="155" width="3" height="22" fill="var(--fence)"/>
+    <rect x="490" y="155" width="3" height="22" fill="var(--fence)"/>
+    <rect x="520" y="155" width="3" height="22" fill="var(--fence)"/>
+    <line x1="430" y1="162" x2="520" y2="162" stroke="var(--fence)" stroke-width="2"/>
+    <line x1="430" y1="170" x2="520" y2="170" stroke="var(--fence)" stroke-width="2"/>
+    <!-- Flowers -->
+    <circle cx="340" cy="172" r="4" fill="var(--accent)"/>
+    <circle cx="355" cy="168" r="3" fill="var(--soft-yellow)"/>
+    <circle cx="365" cy="174" r="4" fill="var(--accent)"/>
+    <circle cx="800" cy="165" r="3" fill="var(--soft-yellow)"/>
+    <circle cx="815" cy="170" r="4" fill="var(--accent)"/>
+          <!-- Road surface -->
+          <rect x="0" y="185" width="1200" height="15" fill="color-mix(in srgb, var(--dark) 85%, var(--primary))" rx="0"/>
+          <!-- Road centre line -->
+          <line x1="0" y1="192" x2="1200" y2="192" stroke="var(--accent)" stroke-width="2" stroke-dasharray="12 12" class="ch-road-dash"/>
+        </svg>
+      </div>
 
-Deliverables
-1. The new onboarding modal component
-2. Supporting styles
-3. Hookup logic to open it from a help/info button
-4. Optional first-visit auto-open logic
-5. Step configuration data separated from rendering if appropriate
+      <!-- Content - centred above scene -->
+      <div class="m-chapter-content">
+        <!-- Journey badge -->
+        <div class="m-chapter-badge">
+          <span class="m-chapter-badge__emoji">🌿</span>
+          <span class="m-chapter-badge__label">Setting Out</span>
+        </div>
 
-Before coding
-First inspect the existing app structure and determine:
-- framework being used for this UI area
-- where modals are currently implemented
-- whether there is already a help button or onboarding pattern
-- whether localStorage is already used
+        <!-- Chapter number + title -->
+        <div class="m-chapter-title-wrap">
+          <h1 class="m-chapter-number">
+            Chapter 1
+          </h1>
+          <h2 class="m-chapter-heading">
+            Watching and Learning
+          </h2>
+        </div>
 
-Then implement the feature in the most consistent way for this codebase.
+        <!-- Decorative dashes in accent colour -->
+        <div class="m-chapter-dots">
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot--active"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+        </div>
 
-Do not just output pseudocode.
-Make the actual code changes.
+        <!-- Subtitle -->
+        <p class="m-chapter-subtitle">
+          How we learn from others around us
+        </p>
+      </div>
+
+      <!-- Scoped styles - all derived from theme vars for colour harmony -->
+      <style>
+        .chapter-scene-page {
+          /* Hill colours: darken primary & secondary to earthy greens */
+          --hill-near: color-mix(in srgb, var(--secondary) 40%, #3a7a5a);
+          --hill-far: color-mix(in srgb, var(--primary) 30%, #4a8a6a);
+          /* Tree colours */
+          --tree-trunk: color-mix(in srgb, var(--dark) 60%, #6b5b3a);
+          --tree-crown: color-mix(in srgb, var(--secondary) 45%, #4a8a5a);
+          --tree-crown-alt: color-mix(in srgb, var(--primary) 35%, #5a9a6a);
+          /* Building colours */
+          --bld-dark: color-mix(in srgb, var(--dark) 80%, var(--primary));
+          --bld-light: color-mix(in srgb, var(--dark) 60%, var(--cream));
+          --bld-tower: color-mix(in srgb, var(--primary) 55%, var(--dark));
+          --bld-roof: color-mix(in srgb, var(--accent) 60%, var(--dark));
+          --bld-door: color-mix(in srgb, var(--dark) 85%, var(--accent));
+          /* Window colours */
+          --win-lit: var(--soft-yellow);
+          --win-dim: color-mix(in srgb, var(--cream) 50%, var(--secondary) 20%);
+          /* Fence */
+          --fence: color-mix(in srgb, var(--dark) 45%, var(--cream));
+        }
+        @keyframes chRoadDash{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+        .ch-road-dash{animation:chRoadDash 1s linear infinite}
+        @keyframes chCloudDrift{from{transform:translateX(-300px)}to{transform:translateX(calc(100vw + 300px))}}
+        .ch-cloud{position:absolute;border-radius:200px;background:rgba(255,255,255,0.45);filter:blur(8px);animation:chCloudDrift linear infinite;will-change:transform}
+        .ch-cloud-1{top:10%;width:140px;height:50px;animation-duration:55s;animation-delay:-10s;opacity:0.3}
+        .ch-cloud-2{top:18%;width:100px;height:38px;animation-duration:45s;animation-delay:-25s;opacity:0.25}
+        .ch-cloud-3{top:8%;width:170px;height:60px;animation-duration:65s;animation-delay:-40s;opacity:0.2}
+        .ch-cloud-4{top:25%;width:110px;height:42px;animation-duration:50s;animation-delay:-5s;opacity:0.3}
+      </style>
+    </div>`;
+}
+
+    function generatePage3() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">What Does Speaking Up Look Like?</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 leading-relaxed font-body m-color-dark">Sometimes you want to say something but feel a bit worried. Your brain town has special roads for speaking up! Let&amp;#039;s see what that looks like.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">When you see someone speak up for what they want, how do they look?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Running away quickly
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Calm and looking at the person
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Quiet and looking down
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 0, true, 1)">
+                Shouting really loud
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body m-color-dark">Great spotting! When people speak up well, they stay calm and look at the other person. That&amp;#039;s how your brain town builds strong bridges! 🌉</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
+          <span class="text-3xl">🤝</span>
+          <p class="font-body font-semibold m-color-dark">You&amp;#039;re getting good at noticing how people use their voice! That&amp;#039;s what I love to see! 🤝</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-soft-yellow">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+            data-activity="interactive_0"
+            disabled
+            onchange="markActivityComplete('interactive_0')"
+            
+          >
+          <label class="font-title text-xl m-color-dark">I participated!</label>
+        </div>
+      
+      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
+        <button 
+          onclick="toggleGrownUpNote('grownup-note-3')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
+        >
+          <span class="flex items-center gap-2 font-semibold text-sm">
+            <span>👨‍👩‍👧</span>
+            <span>Grown-Up Note</span>
+          </span>
+          <svg id="grownup-note-3-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="grownup-note-3" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
+            Active Learning Theory
+          </div>
+          <p class="text-sm mb-3 m-color-dark">
+            Children learn assertiveness best by watching others and practising in safe spaces. When they see confident communication modelled, they build their own skills naturally through observation and trial.
+          </p>
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
+            Try asking:
+          </div>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"What did you notice about how the characters spoke up for themselves in today's activity?"</li><li class="mb-1">"You could try practising kind but clear communication during everyday moments like asking for help or sharing your ideas at dinner time."</li>
+          </ul>
+        </div>
+      </div></div></div>`;
+}
+
+    function generatePage4() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Watching and Learning 👀</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-4 leading-relaxed font-body m-color-dark">You can learn by watching other people! When you see someone being kind or brave, your brain town builds new roads. These roads help you try new things too.</p><p class="text-lg mb-4 leading-relaxed font-body m-color-dark">Daniel 🐕 watched his friend ask for help nicely. Then Daniel learnt how to ask for help the same way. Watching others helps us grow stronger roads in our brain town.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6 m-bg-soft-yellow">
+      <h3 class="text-xl font-title mb-2 m-color-dark">💡 Brain Town Builder</h3>
+      <p class="font-body m-color-dark">Every time you watch someone do something well, you build a new road in your brain town!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+      <span class="text-3xl">🤝</span>
+      <p class="font-body font-semibold m-color-dark">Kai says: Look for people who speak kindly and stand tall. Your brain learns from watching! 🤝</p>
+    </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage5() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="drawing">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">My Brave Voice Bridge 🌉</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">Draw yourself talking to a friend. Show your mouth open and your friend listening. Draw a bridge between you both.</p>
+          
+          <div class="border-4 rounded-xl mb-4 overflow-hidden m-border-primary m-bg-white">
+            <canvas class="drawing-canvas w-full cursor-crosshair" width="700" height="400" data-drawing-key="drawing_canvas_1" style="touch-action: none; display: block;"></canvas>
+          </div>
+          
+          <div class="flex flex-wrap gap-2 mb-6">
+            <button class="clear-canvas-btn px-4 py-2 rounded-lg text-white font-bold font-body" style="background-color: var(--accent);">
+              Clear
+            </button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#264653" style="background-color: #264653;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#F4A261" style="background-color: #F4A261;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#E76F51" style="background-color: #E76F51;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#2A9D8F" style="background-color: #2A9D8F;"></button>
+            <button class="color-btn w-10 h-10 rounded-full border-2 border-white shadow" data-color="#9b59b6" style="background-color: #9b59b6;"></button>
+          </div>
+          
+          <div class="mb-6">
+            <label class="block font-semibold mb-2 font-body m-color-dark">How does your friend look when you use your brave voice?</label>
+            <input 
+              type="text" 
+              class="w-full rounded-xl p-3 font-body text-lg m-input-cream" style="min-height: auto;"
+              placeholder="Type your answer here..."
+              data-form-key="drawing_answer_1"
+              onchange="saveFormData('drawing_answer_1', this.value)"
+            >
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input 
+              type="checkbox" 
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+              data-activity="drawing_1"
+              onchange="markActivityComplete('drawing_1')"
+              
+            >
+            <label class="font-title text-xl m-color-dark">I completed my drawing! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage6() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="body-map">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Watching Others Helps Me Feel Brave 💪</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body m-color-dark">Let&amp;#039;s explore how your body feels when you watch someone be brave and speak up! Point to each body part as we talk about it.</p>
+          <div class="grid gap-3 mb-6">
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left m-option-secondary" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">🧠</span>
+      <div>
+        <span class="font-title text-lg">Head</span>
+        <p class="font-body text-sm m-color-secondary">Your brain town planner notices how others talk bravely. Your head feels curious and ready to learn new roads.</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left m-option-secondary" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">💗</span>
+      <div>
+        <span class="font-title text-lg">Chest</span>
+        <p class="font-body text-sm m-color-secondary">Your heart beats a bit faster with excitement. You feel proud watching someone speak up for themselves.</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left m-option-secondary" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">🦋</span>
+      <div>
+        <span class="font-title text-lg">Tummy</span>
+        <p class="font-body text-sm m-color-secondary">Butterflies might flutter when you think about being brave too. Your tummy feels warm and hopeful.</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left m-option-secondary" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">✋</span>
+      <div>
+        <span class="font-title text-lg">Hands</span>
+        <p class="font-body text-sm m-color-secondary">Your hands want to clap or give thumbs up. They feel ready to try speaking up like you saw.</p>
+      </div>
+    </button>
+    <button class="body-part-btn flex items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer w-full text-left m-option-secondary" onclick="this.classList.toggle('selected'); this.style.backgroundColor = this.classList.contains('selected') ? 'var(--light-green)' : 'white';">
+      <span class="text-3xl">🦵</span>
+      <div>
+        <span class="font-title text-lg">Legs</span>
+        <p class="font-body text-sm m-color-secondary">Your legs feel stronger and more steady. They want to stand tall like the brave person you watched.</p>
+      </div>
+    </button></div>
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="bodymap_2" onchange="markActivityComplete('bodymap_2')" >
+            <label class="font-title text-xl m-color-dark">I explored my body map! ⭐</label>
+          </div>
+        </div>
+      
+      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
+        <button 
+          onclick="toggleGrownUpNote('grownup-note-6')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
+        >
+          <span class="flex items-center gap-2 font-semibold text-sm">
+            <span>👨‍👩‍👧</span>
+            <span>Grown-Up Note</span>
+          </span>
+          <svg id="grownup-note-6-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="grownup-note-6" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
+            Somatic Awareness / Interoception
+          </div>
+          <p class="text-sm mb-3 m-color-dark">
+            When children learn to notice body sensations, they develop better emotional awareness and self, regulation skills. This body mapping activity helps them connect physical feelings with emotions through observation and practice.
+          </p>
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
+            Try asking:
+          </div>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"What did you notice in your body when you felt happy today?"</li><li class="mb-1">"You could try naming body feelings together during daily activities like eating or playing"</li>
+          </ul>
+        </div>
+      </div></div></div>`;
+}
+
+    function generatePage7() {
+  return `
+    <div class="page chapter-scene-page m-chapter-scene" data-page="chapter">
+
+      <!-- Daytime sky -->
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+        color-mix(in srgb, var(--primary) 12%, #e0f0ff) 0%,
+        color-mix(in srgb, var(--primary) 8%, #f0f7ff) 25%,
+        color-mix(in srgb, var(--cream) 50%, #f8fbff) 55%,
+        var(--cream) 100%
+      );"></div>
+
+      <!-- Sun glow -->
+      <div class="m-chapter-sun"></div>
+
+      <!-- Soft clouds (pure CSS) -->
+      <div class="m-chapter-stars">
+        <div class="ch-cloud ch-cloud-1"></div>
+        <div class="ch-cloud ch-cloud-2"></div>
+        <div class="ch-cloud ch-cloud-3"></div>
+        <div class="ch-cloud ch-cloud-4"></div>
+      </div>
+
+      <!-- Landscape at bottom - 280px -->
+      <div class="m-chapter-hills">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
+          
+    <ellipse cx="200" cy="200" rx="300" ry="100" fill="var(--hill-far)"/>
+    <ellipse cx="650" cy="200" rx="380" ry="115" fill="var(--hill-near)"/>
+    <ellipse cx="1050" cy="200" rx="280" ry="90" fill="var(--hill-far)"/>
+    <!-- House 1 -->
+    <rect x="130" y="148" width="42" height="52" rx="2" fill="var(--bld-light)"/>
+    <polygon points="125,148 172,148 151,128" fill="var(--bld-roof)"/>
+    <rect x="139" y="162" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="155" y="162" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="147" y="182" width="12" height="18" rx="1" fill="var(--bld-door)"/>
+    <!-- House 2 with chimney -->
+    <rect x="280" y="138" width="52" height="62" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="275,138 332,138 303,115" fill="var(--bld-roof)"/>
+    <rect x="315" y="110" width="8" height="28" fill="var(--bld-dark)"/>
+    <rect x="289" y="150" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="305" y="150" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="289" y="170" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="305" y="170" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Small shop -->
+    <rect x="450" y="155" width="48" height="45" rx="2" fill="var(--bld-light)"/>
+    <rect x="452" y="155" width="44" height="6" fill="var(--accent)"/>
+    <rect x="459" y="168" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="479" y="168" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- House 3 -->
+    <rect x="720" y="145" width="42" height="55" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="715,145 762,145 738,125" fill="var(--bld-roof)"/>
+    <rect x="729" y="158" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="745" y="158" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Tree -->
+    <rect x="600" y="142" width="5" height="25" fill="var(--tree-trunk)"/>
+    <ellipse cx="602" cy="137" rx="16" ry="14" fill="var(--tree-crown)"/>
+    <!-- Signpost -->
+    <rect x="880" y="152" width="4" height="28" fill="var(--fence)"/>
+    <rect x="870" y="150" width="32" height="14" rx="3" fill="var(--bld-light)"/>
+    <!-- Flowers -->
+    <circle cx="390" cy="175" r="4" fill="var(--accent)"/>
+    <circle cx="405" cy="178" r="3" fill="var(--soft-yellow)"/>
+    <circle cx="660" cy="170" r="3" fill="var(--accent)"/>
+          <!-- Road surface -->
+          <rect x="0" y="185" width="1200" height="15" fill="color-mix(in srgb, var(--dark) 85%, var(--primary))" rx="0"/>
+          <!-- Road centre line -->
+          <line x1="0" y1="192" x2="1200" y2="192" stroke="var(--accent)" stroke-width="2" stroke-dasharray="12 12" class="ch-road-dash"/>
+        </svg>
+      </div>
+
+      <!-- Content - centred above scene -->
+      <div class="m-chapter-content">
+        <!-- Journey badge -->
+        <div class="m-chapter-badge">
+          <span class="m-chapter-badge__emoji">🏡</span>
+          <span class="m-chapter-badge__label">Growing Stronger</span>
+        </div>
+
+        <!-- Chapter number + title -->
+        <div class="m-chapter-title-wrap">
+          <h1 class="m-chapter-number">
+            Chapter 2
+          </h1>
+          <h2 class="m-chapter-heading">
+            Building Your Voice
+          </h2>
+        </div>
+
+        <!-- Decorative dashes in accent colour -->
+        <div class="m-chapter-dots">
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot--active"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+        </div>
+
+        <!-- Subtitle -->
+        <p class="m-chapter-subtitle">
+          Speaking up while caring for others
+        </p>
+      </div>
+
+      <!-- Scoped styles - all derived from theme vars for colour harmony -->
+      <style>
+        .chapter-scene-page {
+          /* Hill colours: darken primary & secondary to earthy greens */
+          --hill-near: color-mix(in srgb, var(--secondary) 40%, #3a7a5a);
+          --hill-far: color-mix(in srgb, var(--primary) 30%, #4a8a6a);
+          /* Tree colours */
+          --tree-trunk: color-mix(in srgb, var(--dark) 60%, #6b5b3a);
+          --tree-crown: color-mix(in srgb, var(--secondary) 45%, #4a8a5a);
+          --tree-crown-alt: color-mix(in srgb, var(--primary) 35%, #5a9a6a);
+          /* Building colours */
+          --bld-dark: color-mix(in srgb, var(--dark) 80%, var(--primary));
+          --bld-light: color-mix(in srgb, var(--dark) 60%, var(--cream));
+          --bld-tower: color-mix(in srgb, var(--primary) 55%, var(--dark));
+          --bld-roof: color-mix(in srgb, var(--accent) 60%, var(--dark));
+          --bld-door: color-mix(in srgb, var(--dark) 85%, var(--accent));
+          /* Window colours */
+          --win-lit: var(--soft-yellow);
+          --win-dim: color-mix(in srgb, var(--cream) 50%, var(--secondary) 20%);
+          /* Fence */
+          --fence: color-mix(in srgb, var(--dark) 45%, var(--cream));
+        }
+        @keyframes chRoadDash{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+        .ch-road-dash{animation:chRoadDash 1s linear infinite}
+        @keyframes chCloudDrift{from{transform:translateX(-300px)}to{transform:translateX(calc(100vw + 300px))}}
+        .ch-cloud{position:absolute;border-radius:200px;background:rgba(255,255,255,0.45);filter:blur(8px);animation:chCloudDrift linear infinite;will-change:transform}
+        .ch-cloud-1{top:10%;width:140px;height:50px;animation-duration:55s;animation-delay:-10s;opacity:0.3}
+        .ch-cloud-2{top:18%;width:100px;height:38px;animation-duration:45s;animation-delay:-25s;opacity:0.25}
+        .ch-cloud-3{top:8%;width:170px;height:60px;animation-duration:65s;animation-delay:-40s;opacity:0.2}
+        .ch-cloud-4{top:25%;width:110px;height:42px;animation-duration:50s;animation-delay:-5s;opacity:0.3}
+      </style>
+    </div>`;
+}
+
+    function generatePage8() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">When Friends Need Help Speaking Up</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 leading-relaxed font-body m-color-dark">Sometimes your friends might feel shy about asking for what they need. You can help them by showing how to speak up in a kind way! Let&amp;#039;s think about how you could help a friend.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">Your friend wants to join a game but feels too shy to ask. What could you do to help them?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 3, true, 1)">
+                Whisper that they should forget about it
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 3, true, 1)">
+                Ask the other kids if your friend can play too
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 3, true, 1)">
+                Walk away and play something else
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 3, true, 1)">
+                Tell your friend to just watch instead
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body m-color-dark">Great thinking! When you speak up for friends, you show them how to use their voice too. This helps everyone feel included! 🤝</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
+          <span class="text-3xl">🤝</span>
+          <p class="font-body font-semibold m-color-dark">You&amp;#039;re such a good friend, helping others find their voice! That&amp;#039;s what building bridges is all about! 🌈</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-soft-yellow">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+            data-activity="interactive_3"
+            disabled
+            onchange="markActivityComplete('interactive_3')"
+            
+          >
+          <label class="font-title text-xl m-color-dark">I participated!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage9() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Trying What You See 🌟</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-4 leading-relaxed font-body m-color-dark">When you watch someone speak up nicely, you can try it too! Your brain remembers what you saw. Then you get to practise building those same strong roads.</p><p class="text-lg mb-4 leading-relaxed font-body m-color-dark">You might see a friend say 'Please may I have a turn?' in a calm voice. You can try using that same calm voice when you want something. Your brain town grows when you practise what you see.</p>
+        </div>
+        
+        
+    <div class="rounded-2xl p-6 mb-6 m-bg-soft-yellow">
+      <h3 class="text-xl font-title mb-2 m-color-dark">💡 Practice Power</h3>
+      <p class="font-body m-color-dark">The more you try what you see, the stronger your brain town roads become!</p>
+    </div>
+        
+    <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+      <span class="text-3xl">🤝</span>
+      <p class="font-body font-semibold m-color-dark">Kai says: Start small! Try copying one nice thing you see someone do today. 🤝</p>
+    </div>
+      
+      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
+        <button 
+          onclick="toggleGrownUpNote('grownup-note-9')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
+        >
+          <span class="flex items-center gap-2 font-semibold text-sm">
+            <span>👨‍👩‍👧</span>
+            <span>Grown-Up Note</span>
+          </span>
+          <svg id="grownup-note-9-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="grownup-note-9" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
+            Social, Emotional Learning
+          </div>
+          <p class="text-sm mb-3 m-color-dark">
+            Children learn assertiveness by watching others and practising new ways to express their needs. When they see positive examples, they build confidence to try these skills themselves.
+          </p>
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
+            Try asking:
+          </div>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"What did you notice about how people in your day spoke up for what they needed?"</li><li class="mb-1">"You could try practising together, maybe role, play asking for help or expressing a preference in a kind way."</li>
+          </ul>
+        </div>
+      </div></div></div>`;
+}
+
+    function generatePage10() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="breathing">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Calm Town Breathing 🌬️</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-6 font-body text-center m-color-dark">When your town feels busy, you can help it feel calm with special breathing. Kai 🤝 loves this way to make roads in your brain town feel peaceful.</p>
+          
+          <!-- Animated Breathing Circle -->
+          <div class="text-center mb-6">
+            <div id="breathingExercise_4" class="breathing-circle mx-auto rounded-full flex items-center justify-center cursor-pointer"
+                 style="width: 160px; height: 160px; background: linear-gradient(135deg, var(--light-green), var(--secondary)); transition: transform 4s ease-in-out, box-shadow 4s ease-in-out;"
+                 onclick="window.toggleBreathing('breathingExercise_4')">
+              <div class="text-center">
+                <div class="breathing-emoji text-5xl mb-1">🌬️</div>
+                <div class="breathing-text font-title text-lg m-color-dark">Tap to Start</div>
+              </div>
+            </div>
+            <div class="mt-3 font-body text-sm" style="color: var(--dark); opacity: 0.7;">Tap the circle to begin</div>
+          </div>
+          
+          <!-- Phase Cards -->
+          <div class="grid md:grid-cols-3 gap-4 mb-6">
+            <div id="breathingExercise_4_inhale" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--light-green); opacity: 0.5; transform: scale(0.95);">
+              <div class="text-3xl mb-2">😤</div>
+              <h3 class="font-title text-lg mb-1 m-color-dark">Breathe In</h3>
+              <p class="font-body text-sm m-color-dark">Breathing in calm air</p>
+              <div class="breathing-timer font-title text-2xl mt-2 m-feedback-hidden-primary">4</div>
+            </div>
+            <div id="breathingExercise_4_hold" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--soft-yellow); opacity: 0.5; transform: scale(0.95);">
+              <div class="text-3xl mb-2">😊</div>
+              <h3 class="font-title text-lg mb-1 m-color-dark">Hold</h3>
+              <p class="font-body text-sm m-color-dark">Keeping calm inside</p>
+              <div class="breathing-timer font-title text-2xl mt-2 m-feedback-hidden-primary">4</div>
+            </div>
+            <div id="breathingExercise_4_exhale" class="breathing-phase rounded-2xl p-5 text-center transition-all duration-300" style="background-color: var(--primary); opacity: 0.5; transform: scale(0.95);">
+              <div class="text-3xl mb-2">😌</div>
+              <h3 class="font-title text-lg mb-1 m-color-white">Breathe Out</h3>
+              <p class="font-body text-sm m-color-white">Letting busy feelings go</p>
+              <div class="breathing-timer font-title text-2xl mt-2" style="color: white; display: none;">4</div>
+            </div>
+          </div>
+          
+          <!-- Breath Counter -->
+          <div class="text-center mb-6">
+            <span class="font-body m-color-dark">Breaths completed: </span>
+            <span id="breathingExercise_4_count" class="font-title text-xl m-color-primary">0</span>
+            <span class="font-body m-color-dark"> / 3</span>
+          </div>
+          
+          <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+            <input 
+              type="checkbox" 
+              id="breathing_4_checkbox"
+              class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+              data-activity="breathing_4"
+              onchange="markActivityComplete('breathing_4')"
+              
+            />
+            <label class="font-title text-xl m-color-dark">I practiced calm breathing! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage11() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="magic-potion" data-activity="potion_5">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">Brave Voice Potion Lab 🧪</h1>
+        <div class="rounded-3xl shadow-xl p-8 m-bg-white">
+          <p class="text-lg mb-4 font-body text-center m-color-dark">Mix magical ingredients to brew potions that help you speak up! Watch Kai 🤝 show you how other kids use their brave voices.</p>
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-center">Welcome to Kai&amp;#039;s special potion lab! Here in Brain Town, we watch how other kids speak up for what they need. When you see someone use their brave voice well, you can learn their secret recipe!</p>
+          </div>
+          <div class="cauldron p-6 rounded-2xl mb-6 text-center" style="background: linear-gradient(180deg, #4a1d96, #7c3aed);">
+            <span class="text-8xl">🧙‍♂️</span>
+            <div class="cauldron-contents mt-4 flex justify-center gap-2 flex-wrap" id="cauldron_5">
+              <span class="font-body text-white">Add ingredients...</span>
+            </div>
+          </div>
+          <button class="w-full py-3 rounded-xl font-title text-lg cursor-pointer mb-6 m-btn-primary" onclick="window.brewPotion('5')">✨ Brew Potion!</button>
+          <p class="font-title text-lg text-center mb-3">Magical Ingredients ✨</p>
+          <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6"><button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer m-card-bordered" onclick="window.addIngredient('5', 'ing1', '👀', 'Watch & Learn Drops')"><span class="text-3xl">👀</span><p class="font-body text-xs mt-1">Watch &amp; Learn Drops</p><p class="font-body text-xs m-color-secondary">observation</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer m-card-bordered" onclick="window.addIngredient('5', 'ing2', '🐱', 'Copy Cat Crystals')"><span class="text-3xl">🐱</span><p class="font-body text-xs mt-1">Copy Cat Crystals</p><p class="font-body text-xs m-color-secondary">modelling</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer m-card-bordered" onclick="window.addIngredient('5', 'ing3', '⭐', 'I Can Do It Dust')"><span class="text-3xl">⭐</span><p class="font-body text-xs mt-1">I Can Do It Dust</p><p class="font-body text-xs m-color-secondary">confidence</p></button><button class="p-3 rounded-xl border-2 transition-all hover:scale-110 cursor-pointer m-card-bordered" onclick="window.addIngredient('5', 'ing4', '💛', 'Kind Words Powder')"><span class="text-3xl">💛</span><p class="font-body text-xs mt-1">Kind Words Powder</p><p class="font-body text-xs m-color-secondary">respect</p></button></div>
+          <p class="font-title text-lg text-center mb-3">Recipe Book 📖</p>
+          <div class="grid grid-cols-2 gap-3 mb-6"><div class="p-3 rounded-xl" style="background-color: #10b98120; border: 2px solid #10b981;"><div class="flex items-center gap-2 mb-1"><span class="text-2xl">🎪</span><span class="font-title text-sm">Playground Voice Potion</span></div><p class="font-body text-xs">Ask friends to play nicely!</p></div><div class="p-3 rounded-xl" style="background-color: #f59e0b20; border: 2px solid #f59e0b;"><div class="flex items-center gap-2 mb-1"><span class="text-2xl">🤝</span><span class="font-title text-sm">Helper Request Brew</span></div><p class="font-body text-xs">Ask grown, ups for help kindly</p></div><div class="p-3 rounded-xl" style="background-color: #8b5cf620; border: 2px solid #8b5cf6;"><div class="flex items-center gap-2 mb-1"><span class="text-2xl">🌈</span><span class="font-title text-sm">Share Time Elixir</span></div><p class="font-body text-xs">Ask for turns without being mean</p></div></div>
+          <div class="p-6 rounded-2xl text-center" id="potionResult_5" class="m-feedback-hidden">
+            <p class="text-5xl mb-2" id="potionEmoji_5">✨</p>
+            <p class="font-title text-2xl" id="potionMessage_5">You made a brilliant potion! When you watch others and try their good ideas, your voice gets stronger in Brain Town!</p>
+          </div>
+          <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-feedback-hidden-green" id="potionComplete_5">
+            <input type="checkbox" class="w-8 h-8 rounded cursor-pointer m-accent-primary" data-activity="potion_5" onchange="markActivityComplete('potion_5')" >
+            <label class="font-title text-xl m-color-dark">I'm a potion master! ⭐</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage12() {
+  return `
+    <div class="page chapter-scene-page m-chapter-scene" data-page="chapter">
+
+      <!-- Daytime sky -->
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+        color-mix(in srgb, var(--primary) 12%, #e0f0ff) 0%,
+        color-mix(in srgb, var(--primary) 8%, #f0f7ff) 25%,
+        color-mix(in srgb, var(--cream) 50%, #f8fbff) 55%,
+        var(--cream) 100%
+      );"></div>
+
+      <!-- Sun glow -->
+      <div class="m-chapter-sun"></div>
+
+      <!-- Soft clouds (pure CSS) -->
+      <div class="m-chapter-stars">
+        <div class="ch-cloud ch-cloud-1"></div>
+        <div class="ch-cloud ch-cloud-2"></div>
+        <div class="ch-cloud ch-cloud-3"></div>
+        <div class="ch-cloud ch-cloud-4"></div>
+      </div>
+
+      <!-- Landscape at bottom - 280px -->
+      <div class="m-chapter-hills">
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
+          
+    <ellipse cx="200" cy="200" rx="300" ry="100" fill="var(--hill-far)"/>
+    <ellipse cx="600" cy="200" rx="420" ry="120" fill="var(--hill-near)"/>
+    <ellipse cx="1000" cy="200" rx="320" ry="100" fill="var(--hill-far)"/>
+    <!-- Tall building left -->
+    <rect x="75" y="108" width="46" height="92" rx="2" fill="var(--bld-dark)"/>
+    <rect x="83" y="118" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="99" y="118" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="83" y="138" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="99" y="138" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="83" y="158" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="99" y="158" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="83" y="178" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Medium building -->
+    <rect x="135" y="128" width="56" height="72" rx="2" fill="var(--bld-light)"/>
+    <rect x="137" y="128" width="52" height="6" fill="var(--accent)" opacity="0.6"/>
+    <rect x="144" y="142" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="162" y="142" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="144" y="162" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="162" y="162" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Small house -->
+    <rect x="215" y="152" width="42" height="48" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="210,152 257,152 233,134" fill="var(--bld-roof)"/>
+    <rect x="224" y="165" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="240" y="165" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <!-- ★ Brain Town Tower (HQ) -->
+    <rect x="315" y="88" width="52" height="112" rx="2" fill="var(--bld-tower)"/>
+    <rect x="317" y="88" width="48" height="8" fill="var(--accent)" opacity="0.7"/>
+    <rect x="323" y="104" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="343" y="104" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="323" y="124" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="343" y="124" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="323" y="144" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="343" y="144" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="323" y="164" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="343" y="164" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="323" y="180" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="343" y="180" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Antenna + beacon -->
+    <line x1="341" y1="88" x2="341" y2="72" stroke="var(--fence)" stroke-width="2"/>
+    <circle cx="341" cy="70" r="4" fill="var(--accent)"/>
+    <!-- Clock face -->
+    <circle cx="341" cy="97" r="6" fill="var(--win-dim)" opacity="0.5"/>
+    <circle cx="341" cy="97" r="5" fill="none" stroke="var(--bld-dark)" stroke-width="1"/>
+    <!-- Buildings cluster mid -->
+    <rect x="415" y="138" width="46" height="62" rx="2" fill="var(--bld-light)"/>
+    <rect x="423" y="150" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="439" y="150" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="423" y="170" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="439" y="170" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="475" y="122" width="56" height="78" rx="2" fill="var(--bld-dark)"/>
+    <rect x="483" y="134" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="503" y="134" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="483" y="154" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="503" y="154" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="483" y="174" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Park trees -->
+    <rect x="558" y="158" width="5" height="22" fill="var(--tree-trunk)"/>
+    <ellipse cx="560" cy="153" rx="15" ry="13" fill="var(--tree-crown)"/>
+    <rect x="590" y="152" width="5" height="26" fill="var(--tree-trunk)"/>
+    <ellipse cx="592" cy="147" rx="17" ry="15" fill="var(--tree-crown-alt)"/>
+    <!-- Right buildings -->
+    <rect x="695" y="132" width="50" height="68" rx="2" fill="var(--bld-light)"/>
+    <polygon points="690,132 745,132 717,112" fill="var(--bld-roof)"/>
+    <rect x="704" y="145" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="722" y="145" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="704" y="165" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="722" y="165" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="765" y="148" width="40" height="52" rx="2" fill="var(--bld-dark)"/>
+    <rect x="773" y="160" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="789" y="160" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="835" y="118" width="58" height="82" rx="2" fill="var(--bld-light)"/>
+    <rect x="837" y="118" width="54" height="6" fill="var(--accent)" opacity="0.5"/>
+    <rect x="844" y="132" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="864" y="132" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="844" y="152" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="864" y="152" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="844" y="172" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+    <rect x="864" y="172" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <!-- Far right houses -->
+    <rect x="945" y="155" width="42" height="45" rx="2" fill="var(--bld-dark)"/>
+    <polygon points="940,155 987,155 963,138" fill="var(--bld-roof)"/>
+    <rect x="954" y="168" width="10" height="12" rx="1" fill="var(--win-lit)"/>
+    <rect x="1020" y="162" width="36" height="38" rx="2" fill="var(--bld-light)"/>
+    <rect x="1028" y="172" width="10" height="12" rx="1" fill="var(--win-dim)"/>
+          <!-- Road surface -->
+          <rect x="0" y="185" width="1200" height="15" fill="color-mix(in srgb, var(--dark) 85%, var(--primary))" rx="0"/>
+          <!-- Road centre line -->
+          <line x1="0" y1="192" x2="1200" y2="192" stroke="var(--accent)" stroke-width="2" stroke-dasharray="12 12" class="ch-road-dash"/>
+        </svg>
+      </div>
+
+      <!-- Content - centred above scene -->
+      <div class="m-chapter-content">
+        <!-- Journey badge -->
+        <div class="m-chapter-badge">
+          <span class="m-chapter-badge__emoji">🏘️</span>
+          <span class="m-chapter-badge__label">Welcome to Brain Town</span>
+        </div>
+
+        <!-- Chapter number + title -->
+        <div class="m-chapter-title-wrap">
+          <h1 class="m-chapter-number">
+            Chapter 3
+          </h1>
+          <h2 class="m-chapter-heading">
+            Strong Bridges Everywhere
+          </h2>
+        </div>
+
+        <!-- Decorative dashes in accent colour -->
+        <div class="m-chapter-dots">
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot--active"></div>
+          <div class="m-chapter-dot"></div>
+          <div class="m-chapter-dot"></div>
+        </div>
+
+        <!-- Subtitle -->
+        <p class="m-chapter-subtitle">
+          Using your skills in all parts of life
+        </p>
+      </div>
+
+      <!-- Scoped styles - all derived from theme vars for colour harmony -->
+      <style>
+        .chapter-scene-page {
+          /* Hill colours: darken primary & secondary to earthy greens */
+          --hill-near: color-mix(in srgb, var(--secondary) 40%, #3a7a5a);
+          --hill-far: color-mix(in srgb, var(--primary) 30%, #4a8a6a);
+          /* Tree colours */
+          --tree-trunk: color-mix(in srgb, var(--dark) 60%, #6b5b3a);
+          --tree-crown: color-mix(in srgb, var(--secondary) 45%, #4a8a5a);
+          --tree-crown-alt: color-mix(in srgb, var(--primary) 35%, #5a9a6a);
+          /* Building colours */
+          --bld-dark: color-mix(in srgb, var(--dark) 80%, var(--primary));
+          --bld-light: color-mix(in srgb, var(--dark) 60%, var(--cream));
+          --bld-tower: color-mix(in srgb, var(--primary) 55%, var(--dark));
+          --bld-roof: color-mix(in srgb, var(--accent) 60%, var(--dark));
+          --bld-door: color-mix(in srgb, var(--dark) 85%, var(--accent));
+          /* Window colours */
+          --win-lit: var(--soft-yellow);
+          --win-dim: color-mix(in srgb, var(--cream) 50%, var(--secondary) 20%);
+          /* Fence */
+          --fence: color-mix(in srgb, var(--dark) 45%, var(--cream));
+        }
+        @keyframes chRoadDash{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+        .ch-road-dash{animation:chRoadDash 1s linear infinite}
+        @keyframes chCloudDrift{from{transform:translateX(-300px)}to{transform:translateX(calc(100vw + 300px))}}
+        .ch-cloud{position:absolute;border-radius:200px;background:rgba(255,255,255,0.45);filter:blur(8px);animation:chCloudDrift linear infinite;will-change:transform}
+        .ch-cloud-1{top:10%;width:140px;height:50px;animation-duration:55s;animation-delay:-10s;opacity:0.3}
+        .ch-cloud-2{top:18%;width:100px;height:38px;animation-duration:45s;animation-delay:-25s;opacity:0.25}
+        .ch-cloud-3{top:8%;width:170px;height:60px;animation-duration:65s;animation-delay:-40s;opacity:0.2}
+        .ch-cloud-4{top:25%;width:110px;height:42px;animation-duration:50s;animation-delay:-5s;opacity:0.3}
+      </style>
+    </div>`;
+}
+
+    function generatePage13() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="interactive-lesson">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Making Your Voice Strong</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <p class="text-lg mb-6 leading-relaxed font-body m-color-dark">You&amp;#039;ve been learning about speaking up! Now it&amp;#039;s time to think about your own voice. When you want something at home or school, you can use your strong voice too.</p>
+          
+          
+        <div class="interactive-group">
+          <p class="text-lg mb-4 font-body font-semibold m-color-dark">You really want to play with a toy your sister is using. What&amp;#039;s the best way to use your strong voice?</p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="0"
+                      onclick="handleInteractiveChoice(this, 6, true, 3)">
+                Grab the toy without saying anything
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="1"
+                      onclick="handleInteractiveChoice(this, 6, true, 3)">
+                Tell mum that your sister is being mean
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="false"
+                      data-index="2"
+                      onclick="handleInteractiveChoice(this, 6, true, 3)">
+                Cry loudly until she gives it to you
+              </button>
+            
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+                      style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
+                      data-correct="true"
+                      data-index="3"
+                      onclick="handleInteractiveChoice(this, 6, true, 3)">
+                Say &amp;#039;Can I please have a turn when you&amp;#039;re done?&amp;#039;
+              </button>
+            
+          </div>
+          <div class="interactive-feedback p-3 rounded-xl mb-2 m-hidden"></div>
+        </div>
+          
+          <div class="followup-feedback mt-6 p-4 rounded-xl" style="background-color: var(--cream); display: none;">
+            <p class="font-body m-color-dark">Well done! Using kind words and asking nicely shows you can speak up the right way. Your voice is getting stronger every day!</p>
+          </div>
+        </div>
+        
+        <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
+          <span class="text-3xl">🤝</span>
+          <p class="font-body font-semibold m-color-dark">Great choice! Kai 🤝 loves how you&amp;#039;re building strong bridges with your words. You&amp;#039;re becoming such a good town planner!</p>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 mt-4 m-bg-soft-yellow">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+            data-activity="interactive_6"
+            disabled
+            onchange="markActivityComplete('interactive_6')"
+            
+          >
+          <label class="font-title text-xl m-color-dark">I participated!</label>
+        </div>
+      
+      <div class="mt-6 rounded-xl border-2 overflow-hidden" style="border-color: var(--secondary); background-color: rgba(255,255,255,0.7);">
+        <button 
+          onclick="toggleGrownUpNote('grownup-note-13')"
+          class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/50 transition-colors m-color-secondary"
+        >
+          <span class="flex items-center gap-2 font-semibold text-sm">
+            <span>👨‍👩‍👧</span>
+            <span>Grown-Up Note</span>
+          </span>
+          <svg id="grownup-note-13-icon" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="grownup-note-13" class="hidden px-4 pb-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-2 m-color-secondary">
+            Active Learning Theory
+          </div>
+          <p class="text-sm mb-3 m-color-dark">
+            Children learn best by watching others and trying things themselves. This activity helps your child build confidence by seeing how others handle social situations and practising new skills.
+          </p>
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1 m-color-secondary">
+            Try asking:
+          </div>
+          <ul class="text-sm list-disc list-inside m-color-dark">
+            <li class="mb-1">"Who did you notice being really good at speaking up today? What did they do that worked well?"</li><li class="mb-1">"You could try practising together, maybe role play asking for something you need at the shops or with friends."</li>
+          </ul>
+        </div>
+      </div></div></div>`;
+}
+
+    function generatePage14() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="thought-bubbles">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Watch and Learn 💭</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-lg m-color-dark"><strong>Scenario:</strong> Maya sees her friend Sam ask the teacher for help with maths. The teacher smiles and helps Sam work it out.</p>
+          </div>
+          
+          <div class="flex items-start gap-4 mb-6">
+            <span class="text-5xl">😰</span>
+            <div class="flex-1 p-4 rounded-2xl relative" style="background-color: #fecaca; border: 2px solid var(--accent);">
+              <p class="font-body text-lg m-color-dark"><strong>Unhelpful thought:</strong> "I could never ask for help like that. Teachers get cross with me."</p>
+            </div>
+          </div>
+          
+          <div class="p-4 rounded-xl mb-4 m-bg-light-green">
+            <p class="font-body font-semibold mb-3 m-color-dark">What did Maya see happen when Sam asked for help? How did the teacher act?</p>
+            <textarea class="w-full p-3 rounded-lg border-2 font-body" style="border-color: var(--secondary); min-height: 80px;" placeholder="Write a helpful thought..." onchange="saveFormData('helpful_thought_7', this.value)"></textarea>
+          </div>
+          
+          <div class="p-3 rounded-lg text-sm m-bg-cream">
+            <p class="font-body m-color-secondary"><strong>Example:</strong> "Sam asked nicely and got help. The teacher was happy to help. I can try asking too."</p>
+          </div>
+          
+          <div class="mt-6 p-4 rounded-xl m-bg-soft-yellow">
+            <p class="font-body m-color-dark">When you watch other kids do something brave, how does it make you feel about trying it yourself?</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+            data-activity="thought_7"
+            onchange="markActivityComplete('thought_7')"
+            
+          >
+          <label class="font-title text-xl m-color-dark">I challenged my thoughts!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage15() {
+  return `
+    <div class="page min-h-screen p-8 m-bg-cream" data-page="comic-strip">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">Watch and Learn Comic 📚</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-6 m-bg-white">
+          <div class="p-4 rounded-xl mb-6 m-bg-soft-yellow">
+            <p class="font-body text-lg m-color-dark">Maya saw her friend Tom ask the teacher for help with maths. She learnt she could do it too!</p>
+          </div>
+          
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white m-bg-primary">1</span>
+        <p class="font-body text-sm m-color-dark">Draw: Maya watching Tom raise his hand</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" data-drawing-key="comic_canvas_8_1" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm m-border-secondary" placeholder="Draw Maya looking..." onchange="saveFormData('comic_8_1', this.value)">
+    </div>
+  
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white m-bg-primary">2</span>
+        <p class="font-body text-sm m-color-dark">Draw: How Maya felt when she saw Tom</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" data-drawing-key="comic_canvas_8_2" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm m-border-secondary" placeholder="Show Maya&amp;#039;s feeling..." onchange="saveFormData('comic_8_2', this.value)">
+    </div>
+  
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white m-bg-primary">3</span>
+        <p class="font-body text-sm m-color-dark">Draw: Maya trying what Tom did</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" data-drawing-key="comic_canvas_8_3" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm m-border-secondary" placeholder="Draw Maya&amp;#039;s turn..." onchange="saveFormData('comic_8_3', this.value)">
+    </div>
+  
+    <div class="comic-panel rounded-xl border-3 p-4" style="border-color: var(--dark); background-color: white;">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-title text-white m-bg-primary">4</span>
+        <p class="font-body text-sm m-color-dark">Draw: Maya feeling proud after asking</p>
+      </div>
+      <div class="comic-canvas-container w-full rounded-lg mb-2" style="background-color: var(--cream); border: 2px dashed var(--secondary);">
+        <canvas class="comic-drawing-canvas w-full cursor-crosshair" width="300" height="150" data-drawing-key="comic_canvas_8_4" style="touch-action: none; display: block; border-radius: 0.5rem;"></canvas>
+      </div>
+      <input type="text" class="w-full p-2 rounded-lg border font-body text-sm m-border-secondary" placeholder="Happy Maya!" onchange="saveFormData('comic_8_4', this.value)">
+    </div>
+  
+          </div>
+          
+          <div class="p-4 rounded-xl m-bg-light-green">
+            <p class="font-body font-semibold m-color-dark">Tell someone about a time you learnt by watching a friend. What did you see them do that helped you try it too?</p>
+          </div>
+        </div>
+        
+        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
+          <input 
+            type="checkbox" 
+            class="w-8 h-8 rounded cursor-pointer m-accent-primary"
+            data-activity="comic_8"
+            onchange="markActivityComplete('comic_8')"
+            
+          >
+          <label class="font-title text-xl m-color-dark">I created my comic!</label>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage16() {
+  return `
+    <div class="page min-h-screen p-8" style="background: linear-gradient(135deg, #fef9e7, #edf7f2);" data-page="summary">
+      <div class="max-w-4xl mx-auto">
+        <div class="rounded-3xl shadow-2xl p-8 md:p-10 border-4" style="background-color: white; border-color: #e6c777;">
+          <div class="text-center mb-6">
+            <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF ACHIEVEMENT</p>
+            <h1 class="text-3xl md:text-4xl mt-2 font-title m-color-dark">What You Learnt! 🌟</h1>
+            <p class="font-body text-lg mt-2 m-color-secondary">Awarded to <strong id="childNameDisplay">Friend</strong></p>
+          </div>
+
+          <div class="p-5 rounded-2xl mb-6" style="background-color: var(--cream); border: 2px dashed var(--primary);">
+            <p class="font-title text-xl mb-2 m-color-dark">Sub-skill focus</p>
+            <p class="font-body text-lg m-color-dark">In this module, you practiced <strong>Building self, efficacy through social observation and modelling</strong> by spotting feelings, choosing calming actions, and using kind self-talk in tricky moments.</p>
+          </div>
+
+          <div class="mb-6">
+            <p class="font-title text-xl mb-2 m-color-dark">What you learned</p>
+            <ul class="list-disc pl-6 space-y-2">
+    <li class="font-body text-lg m-color-dark">You can watch others to learn new ways to speak up! 👀</li>
+    <li class="font-body text-lg m-color-dark">Your brain town builds new roads when you see others being brave! 🛤️</li>
+    <li class="font-body text-lg m-color-dark">You get to choose how to ask for what you need! 🤝</li>
+    <li class="font-body text-lg m-color-dark">Watching friends helps you feel more sure you can do it too! 💪</li></ul>
+          </div>
+
+          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-4" style="border-top: 2px solid #f2e1a8;">
+            <div>
+              <p class="font-body text-sm m-color-secondary">Completed on</p>
+              <p class="font-title text-2xl" id="certificateDate" class="m-color-dark"></p>
+            </div>
+            <div class="text-right">
+              <p class="font-body text-sm m-color-secondary">Guide</p>
+              <p class="font-title text-xl m-color-dark">Kai 🤝</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-xl p-6 flex items-center gap-4 mt-6 m-bg-soft-yellow">
+          <span class="text-5xl">🤝</span>
+          <p class="font-body text-lg font-semibold m-color-dark">Well done, town planner! You&amp;#039;ve been watching and learning how to build strong bridges with others. Kai 🤝 is so proud of how you&amp;#039;re growing your brain town roads!</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+    function generatePage17() {
+  return `
+    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
+      <div class="text-center max-w-2xl">
+        <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
+        <h1 class="text-4xl md:text-5xl mb-6 font-title m-color-dark">Well Done, Town Planner! 🎉</h1>
+        
+        <div class="rounded-3xl shadow-xl p-8 mb-8 m-bg-white">
+          <p class="text-xl mb-4 font-body m-color-dark">You did it! You learnt how to build strong bridges in your brain town with Kai 🤝. Your town planner skills are getting better every day.</p>
+          <p class="text-lg font-body m-color-secondary">You can keep building your town and trying new bridge ideas. Your brain town is always growing!</p>
+        </div>
+        
+        <div class="flex flex-col gap-4">
+          <button 
+            onclick="const params = new URLSearchParams(window.location.search); const childId = params.get('childId'); const moduleId = params.get('moduleId'); if (childId && moduleId) completeModule(childId, moduleId);"
+            class="w-full py-4 px-8 rounded-xl text-white font-bold text-xl font-title shadow-lg hover:shadow-xl transition-all cursor-pointer"
+            style="background: linear-gradient(135deg, var(--secondary), #1ABC9C);"
+          >
+            ✅ Complete Module & Return Home
+          </button>
+          
+          <button 
+            onclick="jumpToPage(0)"
+            class="w-full py-3 px-6 rounded-xl font-semibold font-body cursor-pointer"
+            style="background-color: white; color: var(--dark); border: 2px solid var(--secondary);"
+          >
+            📖 Review This Module
+          </button>
+        </div>
+        
+        <div class="mt-8 flex items-center justify-center gap-2">
+          <span class="text-4xl">🤝</span>
+          <p class="font-body text-lg m-color-dark">
+            Kai is proud of you!
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
+    
+    const pages = [generatePage0, generatePage1, generatePage2, generatePage3, generatePage4, generatePage5, generatePage6, generatePage7, generatePage8, generatePage9, generatePage10, generatePage11, generatePage12, generatePage13, generatePage14, generatePage15, generatePage16, generatePage17];
+    
+    // Check if current page has an uncompleted required activity
+    function getCurrentPageActivityStatus() {
+      const page = document.querySelector('.page');
+      if (!page) return { hasActivity: false, isComplete: true };
+
+      // Check for activity checkbox on the page
+      const activityCheckbox = page.querySelector('[data-activity]');
+      if (!activityCheckbox) return { hasActivity: false, isComplete: true };
+
+      const activityId = activityCheckbox.getAttribute('data-activity');
+      const isComplete = completedActivities[activityId] || activityCheckbox.checked;
+
+      return { hasActivity: true, isComplete, activityId };
+    }
+
+    // Check if page has required text/drawing inputs that are empty
+    function validatePageInputs() {
+      const page = document.querySelector('.page');
+      if (!page) return true;
+
+      const pageType = page.getAttribute('data-page');
+
+      // Thought-bubbles: require text in textarea
+      if (pageType === 'thought-bubbles') {
+        const textareas = page.querySelectorAll('textarea');
+        for (var i = 0; i < textareas.length; i++) {
+          if (!textareas[i].value.trim()) {
+            showInputReminder('Write your thoughts before moving on!', textareas[i]);
+            return false;
+          }
+        }
+      }
+
+      // Comic-strip: require at least something drawn or typed in each panel
+      if (pageType === 'comic-strip') {
+        var canvases = page.querySelectorAll('.comic-drawing-canvas');
+        var textInputs = page.querySelectorAll('.comic-panel input[type="text"]');
+        var hasContent = false;
+
+        // Check if any canvas has been drawn on
+        for (var c = 0; c < canvases.length; c++) {
+          var ctx = canvases[c].getContext('2d');
+          var pixels = ctx.getImageData(0, 0, canvases[c].width, canvases[c].height).data;
+          for (var p = 3; p < pixels.length; p += 4) {
+            if (pixels[p] > 0) { hasContent = true; break; }
+          }
+          if (hasContent) break;
+        }
+
+        // Also check text inputs
+        if (!hasContent) {
+          for (var t = 0; t < textInputs.length; t++) {
+            if (textInputs[t].value.trim()) { hasContent = true; break; }
+          }
+        }
+
+        if (!hasContent) {
+          showInputReminder('Draw or write something in the panels first!', canvases[0]);
+          return false;
+        }
+      }
+
+      // Reflection pages: require text
+      if (pageType === 'reflection') {
+        var reflTextareas = page.querySelectorAll('textarea');
+        for (var r = 0; r < reflTextareas.length; r++) {
+          if (!reflTextareas[r].value.trim()) {
+            showInputReminder('Share your thoughts before moving on!', reflTextareas[r]);
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    function showInputReminder(message, element) {
+      var existing = document.querySelector('.activity-reminder');
+      if (existing) existing.remove();
+
+      var reminder = document.createElement('div');
+      reminder.className = 'activity-reminder';
+      reminder.innerHTML = '<div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; font-family: var(--font-body); font-size: 1rem; display: flex; align-items: center; gap: 10px;"><span>✏️</span><span>' + message + '</span></div>';
+      document.body.appendChild(reminder);
+      setTimeout(function() { reminder.remove(); }, 3000);
+
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.style.transition = 'box-shadow 0.3s';
+        element.style.boxShadow = '0 0 0 3px var(--primary)';
+        setTimeout(function() { element.style.boxShadow = ''; }, 2000);
+      }
+    }
+    
+    // Show a gentle reminder to complete the activity
+    function showActivityReminder() {
+      // Remove any existing reminder
+      const existing = document.querySelector('.activity-reminder');
+      if (existing) existing.remove();
+      
+      const reminder = document.createElement('div');
+      reminder.className = 'activity-reminder';
+      reminder.innerHTML = `
+        <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+                    background: var(--primary); color: white; padding: 16px 24px; 
+                    border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); 
+                    z-index: 9999; font-family: var(--font-body); font-size: 1rem;
+                    display: flex; align-items: center; gap: 10px;">
+          <span class="m-toast__emoji">✨</span>
+          <span>Complete the activity first to continue!</span>
+        </div>
+      `;
+      document.body.appendChild(reminder);
+      
+      // Auto-remove after 3 seconds
+      setTimeout(() => reminder.remove(), 3000);
+      
+      // Scroll to the activity checkbox
+      const activityCheckbox = document.querySelector('[data-activity]');
+      if (activityCheckbox) {
+        activityCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a brief highlight effect
+        const parent = activityCheckbox.closest('.rounded-xl, .rounded-2xl, div');
+        if (parent) {
+          parent.style.transition = 'box-shadow 0.3s';
+          parent.style.boxShadow = '0 0 0 3px var(--primary)';
+          setTimeout(() => { parent.style.boxShadow = ''; }, 2000);
+        }
+      }
+    }
+    
+    // Navigation
+    function nextPage() {
+      if (currentPage < pages.length - 1) {
+        if (!IS_ADMIN) {
+          // Check if text/drawing inputs are filled
+          if (!validatePageInputs()) {
+            return;
+          }
+
+          // Check if current page requires activity completion
+          const status = getCurrentPageActivityStatus();
+          if (status.hasActivity && !status.isComplete) {
+            showActivityReminder();
+            return;
+          }
+        }
+
+        currentPage++;
+        renderPage();
+      }
+    }
+    
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        renderPage();
+      }
+    }
+    
+    function jumpToPage(pageNum) {
+      if (pageNum >= 0 && pageNum < pages.length) {
+        // Only check activity completion when moving forward
+        if (pageNum > currentPage) {
+          const status = getCurrentPageActivityStatus();
+          if (status.hasActivity && !status.isComplete) {
+            showActivityReminder();
+            return;
+          }
+        }
+        currentPage = pageNum;
+        renderPage();
+      }
+    }
+    
+    function renderPage() {
+      const container = document.getElementById('pageContainer');
+      if (!container) return;
+      container.innerHTML = pages[currentPage]();
+      
+      if (header && typeof header.updatePage === 'function') {
+        header.updatePage(currentPage + 1, pages.length, {
+          canPrev: currentPage > 0,
+          canNext: currentPage < pages.length - 1
+        });
+      }
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      bindPageInteractions();
+      restoreFormState();
+      const certificateDateEl = document.getElementById('certificateDate');
+      if (certificateDateEl) {
+        const savedDate = formData.certificateDate || new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+        certificateDateEl.textContent = savedDate;
+        if (!formData.certificateDate) saveFormData('certificateDate', savedDate);
+      }
+    }
+    
+    // Restore form values from localStorage
+    function restoreFormState() {
+      // Restore all text inputs with data-form-key
+      document.querySelectorAll('input[type="text"][data-form-key]').forEach(input => {
+        const key = input.getAttribute('data-form-key');
+        if (key && formData[key]) {
+          input.value = formData[key];
+        }
+      });
+      
+      // Restore all text inputs by parsing onchange
+      document.querySelectorAll('input[type="text"]').forEach(input => {
+        const onchange = input.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          input.value = formData[match[1]];
+        }
+      });
+      
+      // Restore all textareas with data-form-key
+      document.querySelectorAll('textarea[data-form-key]').forEach(textarea => {
+        const key = textarea.getAttribute('data-form-key');
+        if (key && formData[key]) {
+          textarea.value = formData[key];
+        }
+      });
+      
+      // Restore all textareas by parsing onchange
+      document.querySelectorAll('textarea').forEach(textarea => {
+        const onchange = textarea.getAttribute('onchange') || '';
+        const match = onchange.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          textarea.value = formData[match[1]];
+        }
+      });
+      
+      // Restore range sliders
+      document.querySelectorAll('input[type="range"]').forEach(range => {
+        const oninput = range.getAttribute('oninput') || '';
+        const match = oninput.match(/saveFormData\(['"]([^'"]+)['"]/);
+        if (match && formData[match[1]]) {
+          range.value = formData[match[1]];
+          const valueDisplay = range.parentElement.querySelector('.thermometer-value');
+          if (valueDisplay) valueDisplay.textContent = formData[match[1]];
+        }
+      });
+      
+      // Restore completed activity checkboxes
+      document.querySelectorAll('input[type="checkbox"][data-activity]').forEach(checkbox => {
+        const activityId = checkbox.getAttribute('data-activity');
+        if (activityId && completedActivities[activityId]) {
+          checkbox.checked = true;
+          checkbox.disabled = true;
+        }
+      });
+
+      // Restore drawing canvases from cache
+      document.querySelectorAll('.drawing-canvas[data-drawing-key], .comic-drawing-canvas[data-drawing-key]').forEach(canvas => {
+        const drawingKey = canvas.getAttribute('data-drawing-key');
+        if (!drawingKey || !formData[drawingKey]) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = formData[drawingKey];
+      });
+
+      // Restore strength shield completion visibility
+      const shieldPage = document.querySelector('[data-page="strength-shield"]');
+      if (shieldPage) {
+        const shieldInputs = shieldPage.querySelectorAll('.shield-input');
+        const totalSections = shieldInputs.length;
+        const filled = Array.from(shieldInputs).filter(input => input.value.trim().length > 0).length;
+        const progressEl = document.getElementById('shieldProgress');
+        if (progressEl) progressEl.textContent = String(filled);
+        const shieldActivityId = shieldPage.getAttribute('data-activity') || '';
+        if (shieldActivityId) {
+          const savedDecorations = (formData['shield_' + shieldActivityId + '_decorations'] || '').split(',').filter(Boolean);
+          if (savedDecorations.length) {
+            const display = document.getElementById('shieldDecorations');
+            if (display) {
+              display.innerHTML = '🛡️';
+              savedDecorations.forEach(emoji => {
+                const span = document.createElement('span');
+                span.textContent = emoji;
+                span.style.display = 'inline-block';
+                span.style.margin = '2px';
+                display.appendChild(span);
+              });
+            }
+          }
+        }
+        if (filled >= totalSections && totalSections > 0) {
+          const win = document.getElementById('shieldWin');
+          const complete = document.getElementById('shieldComplete');
+          if (win) win.style.display = 'block';
+          if (complete) complete.style.display = 'flex';
+        }
+      }
+
+      // Restore potion state and brewed result visibility
+      const potionPage = document.querySelector('[data-page="magic-potion"]');
+      if (potionPage) {
+        const activityId = potionPage.getAttribute('data-activity') || '';
+        const starIndex = activityId.split('_')[1];
+        if (starIndex) {
+          const savedIngredients = formData['potion_' + starIndex + '_ingredients'];
+          if (savedIngredients) {
+            const cauldron = document.getElementById('cauldron_' + starIndex);
+            if (cauldron) {
+              cauldron.innerHTML = savedIngredients
+                .split(',')
+                .filter(Boolean)
+                .map(emoji => '<span class="text-4xl">' + emoji + '</span>')
+                .join('');
+            }
+          }
+
+          if (formData['potion_' + starIndex + '_brewed'] === 'true') {
+            const result = document.getElementById('potionResult_' + starIndex);
+            const complete = document.getElementById('potionComplete_' + starIndex);
+            if (result) result.style.display = 'block';
+            if (complete) complete.style.display = 'flex';
+          }
+        }
+      }
+
+      // Restore volcano state and UI
+      const volcanoPage = document.querySelector('[data-page="feeling-volcano"]');
+      if (volcanoPage) {
+        const activityId = volcanoPage.getAttribute('data-activity') || '';
+        const savedTemp = Number(formData['volcano_' + activityId]);
+        if (!Number.isNaN(savedTemp) && savedTemp >= 0) {
+          volcanoTemp = savedTemp;
+          const tempEl = document.getElementById('volcanoTemp');
+          const lavaEl = document.getElementById('volcanoLava');
+          const indicatorEl = document.getElementById('volcanoIndicator');
+          if (tempEl) tempEl.textContent = String(volcanoTemp);
+          if (lavaEl) lavaEl.style.opacity = String(Math.max(0, Math.min(1, volcanoTemp / 100)));
+          const emojis = ['😌', '😊', '😤', '🔥', '🌋'];
+          const level = Math.max(1, Math.ceil(volcanoTemp / 25));
+          if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
+          for (let i = 1; i <= 5; i++) {
+            const lvl = document.getElementById('volcanoLevel' + i);
+            if (lvl) lvl.classList.toggle('active', i === level);
+          }
+          if (volcanoTemp <= 0) {
+            const safeEl = document.getElementById('volcanoSafe');
+            const completeEl = document.getElementById('volcanoComplete');
+            if (safeEl) safeEl.style.display = 'block';
+            if (completeEl) completeEl.style.display = 'flex';
+          }
+        }
+      }
+      
+      // Update child name display
+      const childNameEl = document.getElementById('childNameDisplay');
+      if (childNameEl) {
+        childNameEl.textContent = getChildName();
+      }
+      
+      // Restore button selections (rate-scale only - not polls, as those should be re-answered)
+      Object.keys(formData).forEach(key => {
+        if (key.startsWith('rate_')) {
+          const buttons = document.querySelectorAll('.interactive-option');
+          buttons.forEach(btn => {
+            if (btn.textContent.trim() === String(formData[key])) {
+              btn.classList.add('option-selected');
+            }
+          });
+        }
+        if (key.startsWith('tf_')) {
+          const page = document.querySelector('[data-page="interactive-lesson"]');
+          if (page) {
+            const ff = page.querySelector('.followup-feedback');
+            const mf = page.querySelector('.mascot-feedback');
+            if (ff) ff.style.display = 'block';
+            if (mf) mf.style.display = 'flex';
+            const btns = page.querySelectorAll('.interactive-option');
+            if (formData[key] === 'agree' && btns[0]) btns[0].classList.add('option-selected');
+            if (formData[key] === 'disagree' && btns[1]) btns[1].classList.add('option-incorrect');
+          }
+        }
+      });
+    }
+    
+    // Stars
+    async function loadStarData() {
+      try {
+        totalStars = await loadStarsFromDB();
+      } catch (e) {
+        totalStars = 0;
+      }
+      if (header) header.updateStars(totalStars);
+    }
+    
+    async function saveStarData() {
+      try {
+        await saveStarsToDB(totalStars);
+      } catch (e) {
+        console.error('Failed to save stars:', e);
+      }
+      if (header) header.updateStars(totalStars);
+    }
+    
+    // Toggle grown-up note accordion
+    function toggleGrownUpNote(accordionId) {
+      const content = document.getElementById(accordionId);
+      const icon = document.getElementById(accordionId + '-icon');
+      if (content && icon) {
+        const isHidden = content.classList.contains('hidden');
+        content.classList.toggle('hidden');
+        icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+      }
+    }
+    
+    async function markActivityComplete(activityId) {
+      if (completedActivities[activityId]) return;
+
+      // Validate that content has been filled before allowing completion
+      var page = document.querySelector('.page');
+      if (page) {
+        var pageType = page.getAttribute('data-page');
+
+        // Comic-strip: check drawings/text exist
+        if (pageType === 'comic-strip') {
+          var hasContent = false;
+          var canvases = page.querySelectorAll('.comic-drawing-canvas');
+          for (var c = 0; c < canvases.length; c++) {
+            var ctx = canvases[c].getContext('2d');
+            var pixels = ctx.getImageData(0, 0, canvases[c].width, canvases[c].height).data;
+            for (var p = 3; p < pixels.length; p += 4) {
+              if (pixels[p] > 0) { hasContent = true; break; }
+            }
+            if (hasContent) break;
+          }
+          if (!hasContent) {
+            var textInputs = page.querySelectorAll('.comic-panel input[type="text"]');
+            for (var t = 0; t < textInputs.length; t++) {
+              if (textInputs[t].value.trim()) { hasContent = true; break; }
+            }
+          }
+          if (!hasContent) {
+            showInputReminder('Draw or write in the panels first!', canvases[0]);
+            // Uncheck the checkbox
+            var cb = page.querySelector('[data-activity="' + activityId + '"]');
+            if (cb) cb.checked = false;
+            return;
+          }
+        }
+
+        // Thought-bubbles: check textarea filled
+        if (pageType === 'thought-bubbles') {
+          var textareas = page.querySelectorAll('textarea');
+          var allFilled = true;
+          for (var i = 0; i < textareas.length; i++) {
+            if (!textareas[i].value.trim()) { allFilled = false; break; }
+          }
+          if (!allFilled) {
+            showInputReminder('Write your thoughts first!', textareas[0]);
+            var cb2 = page.querySelector('[data-activity="' + activityId + '"]');
+            if (cb2) cb2.checked = false;
+            return;
+          }
+        }
+      }
+
+      completedActivities[activityId] = true;
+
+      // Star celebration animation (show immediately, save in background)
+      var star = document.createElement('div');
+      star.innerHTML = '⭐';
+      star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
+      document.body.appendChild(star);
+      star.animate([
+        { transform: 'translate(-50%,-50%) scale(0.5)', opacity: 1 },
+        { transform: 'translate(-50%,-150%) scale(2)', opacity: 0 }
+      ], { duration: 1200, easing: 'ease-out' }).onfinish = function() { star.remove(); };
+
+      // Update star count in UI immediately
+      totalStars++;
+      renderPage();
+
+      // Save to DB in background (don't await - keep UI snappy)
+      awardSingleStar(totalStars - 1).then(function(dbStars) {
+        totalStars = dbStars;
+      }).catch(function() {});
+      saveStarData();
+      saveProgress();
+    }
+    
+    function bindPageInteractions() {
+      // Quiz answers
+      document.querySelectorAll('.quiz-answer').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const isCorrect = this.dataset.correct === 'true';
+          const feedback = this.dataset.feedback;
+          document.querySelectorAll('.quiz-answer').forEach(b => b.classList.remove('selected', 'correct', 'incorrect'));
+          this.classList.add('selected', isCorrect ? 'correct' : 'incorrect');
+          
+          const feedbackEl = document.querySelector('.quiz-feedback');
+          if (feedbackEl) {
+            feedbackEl.textContent = feedback;
+            feedbackEl.style.display = 'block';
+          }
+          
+          const completeBox = document.querySelector('[data-activity^="quiz"]');
+          if (completeBox && isCorrect) {
+            completeBox.disabled = false;
+          }
+        });
+      });
+      
+      // Scenario options
+      document.querySelectorAll('.scenario-option').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const isGood = this.dataset.good === 'true';
+          const feedback = this.dataset.feedback;
+          document.querySelectorAll('.scenario-option').forEach(b => b.classList.remove('selected', 'good', 'not-good'));
+          this.classList.add('selected', isGood ? 'good' : 'not-good');
+          
+          const feedbackEl = document.querySelector('.scenario-feedback');
+          if (feedbackEl) {
+            feedbackEl.textContent = feedback;
+            feedbackEl.style.display = 'block';
+          }
+          
+          const completeBox = document.querySelector('[data-activity^="scenario"]');
+          if (completeBox) {
+            completeBox.disabled = false;
+          }
+        });
+      });
+      
+      // Checklists
+      const checklistItems = document.querySelectorAll('.checklist-item');
+      const checklistComplete = document.querySelector('[data-activity^="checklist"]');
+      if (checklistComplete && checklistItems.length) {
+        const updateChecklist = () => {
+          const allChecked = Array.from(checklistItems).every(item => item.checked);
+          checklistComplete.disabled = !allChecked;
+        };
+        checklistItems.forEach(item => item.addEventListener('change', updateChecklist));
+        updateChecklist();
+      }
+      
+      // Reflection
+      const reflectionInput = document.querySelector('.reflection-input');
+      const reflectionComplete = document.querySelector('[data-activity^="reflection"]');
+      if (reflectionComplete && reflectionInput) {
+        const updateReflection = () => {
+          reflectionComplete.disabled = reflectionInput.value.trim().length < 20;
+        };
+        reflectionInput.addEventListener('input', updateReflection);
+        updateReflection();
+      }
+
+      // Matching activity
+      document.querySelectorAll('.matching-activity').forEach(activity => {
+        initMatchingActivity(activity);
+      });
+      
+      // Drawing canvas - init ALL drawing canvases (not just the first)
+      document.querySelectorAll('.drawing-canvas').forEach(canvas => {
+        initDrawingCanvas(canvas);
+      });
+      
+      // Comic strip canvases
+      document.querySelectorAll('.comic-drawing-canvas').forEach(canvas => {
+        initDrawingCanvas(canvas);
+      });
+
+      // Volcano drag and drop
+      const volcanoPage = document.querySelector('[data-page="feeling-volcano"]');
+      if (volcanoPage) {
+        const dropZone = volcanoPage.querySelector('.volcano-drop-zone');
+        const tools = volcanoPage.querySelectorAll('.cooling-action[draggable="true"]');
+        let draggedTool = null;
+
+        tools.forEach(tool => {
+          tool.addEventListener('dragstart', () => {
+            draggedTool = tool;
+            tool.classList.add('opacity-70');
+          });
+          tool.addEventListener('dragend', () => {
+            tool.classList.remove('opacity-70');
+          });
+        });
+
+        if (dropZone) {
+          dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('ring-4');
+            dropZone.style.setProperty('box-shadow', '0 0 0 4px rgba(76,108,150,0.35)');
+          });
+          dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('ring-4');
+            dropZone.style.boxShadow = 'none';
+          });
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('ring-4');
+            dropZone.style.boxShadow = 'none';
+            if (!draggedTool) return;
+            const activityId = dropZone.getAttribute('data-activity-id');
+            const power = Number(draggedTool.getAttribute('data-power') || '0');
+            if (!activityId || power <= 0) return;
+            window.handleVolcanoCool(draggedTool, activityId, power);
+          });
+        }
+      }
+    }
+
+    function initMatchingActivity(activity) {
+      const board = activity.querySelector('.matching-board');
+      const svg = activity.querySelector('.matching-lines');
+      const leftItems = Array.from(activity.querySelectorAll('.match-item-left'));
+      const rightColumn = activity.querySelector('.match-column-right');
+      const status = activity.querySelector('.matching-status');
+      const completeBox = activity.closest('.rounded-3xl')?.querySelector('[data-activity^="matching_"]');
+
+      if (!board || !svg || !rightColumn) return;
+
+      const shuffle = (arr) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
+      const rightItems = shuffle(Array.from(rightColumn.querySelectorAll('.match-item-right')));
+      rightItems.forEach(item => rightColumn.appendChild(item));
+
+      let selectedLeft = null;
+      const connections = new Map();
+
+      const updateStatus = () => {
+        if (!status) return;
+        if (connections.size === 0) {
+          status.textContent = 'Tap a left item, then a right item to draw a line.';
+          return;
+        }
+        const allMatched = connections.size === leftItems.length;
+        const allCorrect = Array.from(connections.entries()).every(([leftId, rightId]) => leftId === rightId);
+        if (allMatched && allCorrect) {
+          status.textContent = 'All matched correctly! 🎉';
+        } else if (allMatched) {
+          status.textContent = 'Nice try! Some lines need adjusting.';
+        } else {
+          status.textContent = 'Keep going! Connect all the pairs.';
+        }
+      };
+
+      const updateCompleteBox = () => {
+        if (!completeBox) return;
+        const allMatched = connections.size === leftItems.length;
+        const allCorrect = Array.from(connections.entries()).every(([leftId, rightId]) => leftId === rightId);
+        completeBox.disabled = !(allMatched && allCorrect);
+      };
+
+      const drawLines = () => {
+        if (!document.body.contains(activity)) return;
+        const rect = board.getBoundingClientRect();
+        svg.setAttribute('width', rect.width);
+        svg.setAttribute('height', rect.height);
+        svg.setAttribute('viewBox', '0 0 ' + rect.width + ' ' + rect.height);
+        svg.innerHTML = '';
+        connections.forEach((rightId, leftId) => {
+          const leftEl = activity.querySelector('.match-item-left[data-match-id="' + leftId + '"]');
+          const rightEl = activity.querySelector('.match-item-right[data-match-id="' + rightId + '"]');
+          if (!leftEl || !rightEl) return;
+          const leftRect = leftEl.getBoundingClientRect();
+          const rightRect = rightEl.getBoundingClientRect();
+          const x1 = leftRect.right - rect.left;
+          const y1 = leftRect.top + leftRect.height / 2 - rect.top;
+          const x2 = rightRect.left - rect.left;
+          const y2 = rightRect.top + rightRect.height / 2 - rect.top;
+          const correct = leftId === rightId;
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke', correct ? 'var(--primary)' : 'var(--accent)');
+          line.setAttribute('stroke-width', '4');
+          line.setAttribute('stroke-linecap', 'round');
+          svg.appendChild(line);
+        });
+      };
+
+      const handleLeftClick = (item) => {
+        leftItems.forEach(el => el.classList.remove('selected'));
+        if (selectedLeft === item) {
+          selectedLeft = null;
+        } else {
+          selectedLeft = item;
+          item.classList.add('selected');
+        }
+      };
+
+      const handleRightClick = (item) => {
+        if (!selectedLeft) return;
+        const leftId = selectedLeft.dataset.matchId;
+        const rightId = item.dataset.matchId;
+        connections.forEach((value, key) => {
+          if (value === rightId) connections.delete(key);
+        });
+        connections.delete(leftId);
+        connections.set(leftId, rightId);
+        selectedLeft.classList.remove('selected');
+        selectedLeft = null;
+        updateStatus();
+        updateCompleteBox();
+        drawLines();
+      };
+
+      leftItems.forEach(item => item.addEventListener('click', () => handleLeftClick(item)));
+      rightItems.forEach(item => item.addEventListener('click', () => handleRightClick(item)));
+
+      const resizeHandler = () => {
+        if (!document.body.contains(activity)) {
+          window.removeEventListener('resize', resizeHandler);
+          return;
+        }
+        drawLines();
+      };
+      window.addEventListener('resize', resizeHandler);
+
+      updateStatus();
+      updateCompleteBox();
+      drawLines();
+    }
+    
+    function initDrawingCanvas(canvas) {
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+      let currentColor = '#264653';
+      const drawingKey = canvas.getAttribute('data-drawing-key');
+      const container = canvas.closest('.rounded-3xl') || canvas.parentElement?.parentElement;
+      
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const touch = e.touches?.[0];
+        return {
+          x: ((touch?.clientX || e.clientX) - rect.left) * scaleX,
+          y: ((touch?.clientY || e.clientY) - rect.top) * scaleY
+        };
+      };
+      
+      const start = (e) => {
+        drawing = true;
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      };
+      
+      const move = (e) => {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = getPos(e);
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = currentColor;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      };
+      
+      const saveCanvasState = () => {
+        if (!drawingKey) return;
+        try {
+          saveFormData(drawingKey, canvas.toDataURL('image/png'));
+        } catch (e) {
+          console.warn('Failed to save drawing state:', e);
+        }
+      };
+
+      const end = () => {
+        if (!drawing) return;
+        drawing = false;
+        saveCanvasState();
+      };
+      
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      canvas.addEventListener('mouseup', end);
+      canvas.addEventListener('mouseleave', end);
+      canvas.addEventListener('touchstart', start, { passive: false });
+      canvas.addEventListener('touchmove', move, { passive: false });
+      canvas.addEventListener('touchend', end);
+      
+      // Color buttons - scope to this canvas's container
+      const colorBtns = container ? container.querySelectorAll('.color-btn') : document.querySelectorAll('.color-btn');
+      colorBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentColor = btn.dataset.color;
+        });
+      });
+      
+      // Clear button - scope to this canvas's container
+      const clearBtn = container ? container.querySelector('.clear-canvas-btn') : document.querySelector('.clear-canvas-btn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          saveCanvasState();
+        });
+      }
+    }
+    
+    function goHome() {
+      saveStarData().then(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const childId = urlParams.get('childId');
+        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
+      }).catch(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const childId = urlParams.get('childId');
+        window.location.href = childId ? '/dashboard.html?childId=' + childId : '/dashboard.html';
+      });
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadProgress();
+      loadFormData();
+      
+      try {
+        await initializeModule(WORKBOOK_ID);
+        const childId = getChildId();
+        childDisplayName = await resolveChildDisplayName(childId) || 'Friend';
+      } catch (e) {
+        console.warn('Module DB init failed, using local storage only:', e);
+        childDisplayName = formData.userName || 'Friend';
+      }
+      
+      try {
+        header = initModuleHeader({
+          title: "test narration 6",
+          childName: childDisplayName,
+          onNext: nextPage,
+          onPrev: prevPage,
+          onGoToPage: jumpToPage,
+          onShowStars: () => {},
+          onPrint: () => window.print(),
+          initialPage: { current: 1, total: pages.length }
+        });
+        await loadStarData();
+      } catch (e) {
+        console.warn('Header init failed:', e);
+      }
+      
+      renderPage();
+    });
+    
+    // Global exports for onclick handlers
+    window.nextPage = nextPage;
+    window.prevPage = prevPage;
+    window.jumpToPage = jumpToPage;
+    window.saveFormData = saveFormData;
+    window.markActivityComplete = markActivityComplete;
+    window.goHome = goHome;
+    window.completeModule = completeModule;
+    window.getChildName = getChildName;
+    window.toggleGrownUpNote = toggleGrownUpNote;
+    window.pages = pages;  // Expose pages array for print functionality
+    window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
+    
+    // Interactive lesson choice handler
+    window.handleInteractiveChoice = function(btn, starIndex, hasCorrectAnswer, correctIdx) {
+      const page = btn.closest('.page');
+      const buttons = btn.parentElement.querySelectorAll('.interactive-option');
+      const feedbackEl = page.querySelector('.interactive-feedback');
+      const ffEl = page.querySelector('.followup-feedback');
+      const mfEl = page.querySelector('.mascot-feedback');
+      const selectedIdx = parseInt(btn.dataset.index);
+      
+      // Reset all buttons - remove selection classes
+      buttons.forEach(b => {
+        b.classList.remove('option-selected', 'option-incorrect');
+        b.style.borderColor = 'var(--secondary)';
+      });
+      
+      if (hasCorrectAnswer) {
+        // Has a correct answer - show feedback
+        const isCorrect = selectedIdx === correctIdx;
+        btn.classList.add(isCorrect ? 'option-selected' : 'option-incorrect');
+        btn.style.borderColor = isCorrect ? 'var(--secondary)' : 'var(--accent)';
+        
+        if (feedbackEl) {
+          feedbackEl.style.display = 'block';
+          feedbackEl.style.backgroundColor = isCorrect ? 'var(--success)' : '#fecaca';
+          feedbackEl.innerHTML = isCorrect 
+            ? '<span class="font-body m-color-dark">✓ Great choice! That is right!</span>'
+            : '<span class="font-body m-color-dark">✗ Not quite - try again or tap another option!</span>';
+        }
+        
+        // Only show followup and mascot feedback on correct answer, and enable completion
+        if (isCorrect) {
+          if (ffEl) ffEl.style.display = 'block';
+          if (mfEl) mfEl.style.display = 'flex';
+          // Enable the completion checkbox
+          const completeBox = page.querySelector('[data-activity]');
+          if (completeBox) completeBox.disabled = false;
+        }
+      } else {
+        // Opinion-based - all answers valid
+        btn.classList.add('option-selected');
+        if (ffEl) ffEl.style.display = 'block';
+        if (mfEl) mfEl.style.display = 'flex';
+        // Enable the completion checkbox for opinion-based questions
+        const completeBox = page.querySelector('[data-activity]');
+        if (completeBox) completeBox.disabled = false;
+      }
+      
+      saveFormData('poll_' + starIndex, btn.textContent.trim());
+    };
+    
+    // Breathing exercise animation
+    const breathingStates = {};
+    window.toggleBreathing = function(breathingId) {
+      if (breathingStates[breathingId]?.running) {
+        stopBreathing(breathingId);
+      } else {
+        startBreathing(breathingId);
+      }
+    };
+    
+    function startBreathing(breathingId) {
+      const circle = document.getElementById(breathingId);
+      const inhaleCard = document.getElementById(breathingId + '_inhale');
+      const holdCard = document.getElementById(breathingId + '_hold');
+      const exhaleCard = document.getElementById(breathingId + '_exhale');
+      const countEl = document.getElementById(breathingId + '_count');
+      
+      if (!circle) return;
+      
+      breathingStates[breathingId] = { running: true, count: 0, phase: 'ready' };
+      
+      const textEl = circle.querySelector('.breathing-text');
+      const emojiEl = circle.querySelector('.breathing-emoji');
+      
+      function resetCards() {
+        [inhaleCard, holdCard, exhaleCard].forEach(card => {
+          if (card) {
+            card.style.opacity = '0.5';
+            card.style.transform = 'scale(0.95)';
+            const timer = card.querySelector('.breathing-timer');
+            if (timer) timer.style.display = 'none';
+          }
+        });
+      }
+      
+      function activateCard(card, duration) {
+        resetCards();
+        if (card) {
+          card.style.opacity = '1';
+          card.style.transform = 'scale(1.02)';
+          const timer = card.querySelector('.breathing-timer');
+          if (timer) {
+            timer.style.display = 'block';
+            let remaining = duration;
+            timer.textContent = remaining;
+            const interval = setInterval(() => {
+              remaining--;
+              if (remaining > 0 && breathingStates[breathingId]?.running) {
+                timer.textContent = remaining;
+              } else {
+                clearInterval(interval);
+              }
+            }, 1000);
+          }
+        }
+      }
+      
+      function runBreathCycle() {
+        if (!breathingStates[breathingId]?.running) return;
+        
+        // INHALE - 4 seconds
+        breathingStates[breathingId].phase = 'inhale';
+        circle.style.transform = 'scale(1.3)';
+        circle.style.boxShadow = '0 0 40px rgba(168, 230, 207, 0.6)';
+        if (textEl) textEl.textContent = 'Breathe In...';
+        if (emojiEl) emojiEl.textContent = '😤';
+        activateCard(inhaleCard, 4);
+        
+        setTimeout(() => {
+          if (!breathingStates[breathingId]?.running) return;
+          
+          // HOLD - 4 seconds
+          breathingStates[breathingId].phase = 'hold';
+          circle.style.transform = 'scale(1.3)';
+          circle.style.boxShadow = '0 0 30px rgba(255, 232, 163, 0.6)';
+          if (textEl) textEl.textContent = 'Hold...';
+          if (emojiEl) emojiEl.textContent = '😊';
+          activateCard(holdCard, 4);
+          
+          setTimeout(() => {
+            if (!breathingStates[breathingId]?.running) return;
+            
+            // EXHALE - 4 seconds
+            breathingStates[breathingId].phase = 'exhale';
+            circle.style.transform = 'scale(1)';
+            circle.style.boxShadow = '0 0 20px rgba(125, 44, 52, 0.3)';
+            if (textEl) textEl.textContent = 'Breathe Out...';
+            if (emojiEl) emojiEl.textContent = '😌';
+            activateCard(exhaleCard, 4);
+            
+            setTimeout(() => {
+              if (!breathingStates[breathingId]?.running) return;
+              
+              // Increment breath count
+              breathingStates[breathingId].count++;
+              if (countEl) countEl.textContent = breathingStates[breathingId].count;
+              
+              // Check if completed 3 breaths
+              if (breathingStates[breathingId].count >= 3) {
+                stopBreathing(breathingId);
+                if (textEl) textEl.textContent = 'Great job! 🎉';
+                if (emojiEl) emojiEl.textContent = '⭐';
+                resetCards();
+                // Auto-check the checkbox
+                const checkbox = document.getElementById('breathing_' + breathingId.split('_')[1] + '_checkbox');
+                if (checkbox && !checkbox.checked) {
+                  checkbox.checked = true;
+                  checkbox.dispatchEvent(new Event('change'));
+                }
+              } else {
+                // Continue to next breath
+                runBreathCycle();
+              }
+            }, 4000);
+          }, 4000);
+        }, 4000);
+      }
+      
+      runBreathCycle();
+    }
+    
+    function stopBreathing(breathingId) {
+      const circle = document.getElementById(breathingId);
+      if (breathingStates[breathingId]) {
+        breathingStates[breathingId].running = false;
+      }
+      if (circle) {
+        circle.style.transform = 'scale(1)';
+        circle.style.boxShadow = 'none';
+        const textEl = circle.querySelector('.breathing-text');
+        if (textEl) textEl.textContent = 'Tap to Start';
+        const emojiEl = circle.querySelector('.breathing-emoji');
+        if (emojiEl) emojiEl.textContent = '🌬️';
+      }
+    }
+    
+    // Fill-blank input handler for inline text fields
+    window.handleFillBlankInput = function(input, starIndex) {
+      const page = input.closest('.page');
+      const blankIndex = input.dataset.blankIndex;
+      
+      // Save this blank's value
+      saveFormData('fillblank_' + starIndex + '_' + blankIndex, input.value);
+      
+      // Enable completion checkbox when user fills in something
+      if (input.value.trim().length > 0) {
+        const completeBox = page.querySelector('[data-activity]');
+        if (completeBox) completeBox.disabled = false;
+      }
+    };
+    
+    // Sorting activity functions
+    let selectedSortItem = null;
+    window.selectSortItem = function(item) {
+      // Deselect previous
+      document.querySelectorAll('.sort-item.selected').forEach(el => {
+        el.classList.remove('selected');
+        el.style.backgroundColor = 'white';
+        el.style.borderColor = 'var(--primary)';
+      });
+      // Select this one
+      item.classList.add('selected');
+      item.style.backgroundColor = 'var(--soft-yellow)';
+      item.style.borderColor = 'var(--dark)';
+      selectedSortItem = item;
+    };
+    
+    window.sortSelectedItem = function(category, categoryName, starIndex) {
+      if (!selectedSortItem) return;
+      
+      var droppedArea = category.querySelector('.dropped-items');
+      var itemText = selectedSortItem.textContent.trim();
+      var correctCategory = selectedSortItem.dataset.correctCategory;
+      var explanation = selectedSortItem.dataset.explanation;
+      var isCorrect = correctCategory === categoryName;
+      
+      if (isCorrect) {
+        // Correct: move item to the category box
+        var sortedItem = document.createElement('div');
+        sortedItem.className = 'p-2 rounded-lg font-body text-sm mb-1';
+        sortedItem.style.backgroundColor = 'white';
+        sortedItem.style.border = '2px solid var(--secondary)';
+        sortedItem.innerHTML = '✓ ' + itemText;
+        sortedItem.title = explanation;
+        droppedArea.appendChild(sortedItem);
+        
+        // Remove from items list
+        selectedSortItem.remove();
+        selectedSortItem = null;
+      } else {
+        // Wrong: shake the item and show feedback, do NOT move it to the box
+        var item = selectedSortItem;
+        item.style.backgroundColor = '#fecaca';
+        item.style.borderColor = 'var(--accent)';
+        item.style.animation = 'shake 0.5s ease-in-out';
+        
+        // Show inline feedback briefly
+        var feedbackSpan = document.createElement('span');
+        feedbackSpan.className = 'font-body text-xs';
+        feedbackSpan.style.color = 'var(--accent)';
+        feedbackSpan.style.display = 'block';
+        feedbackSpan.style.marginTop = '4px';
+        feedbackSpan.textContent = '✗ Try a different category!';
+        item.appendChild(feedbackSpan);
+        
+        // Reset after delay
+        setTimeout(function() {
+          item.style.backgroundColor = 'white';
+          item.style.borderColor = 'var(--primary)';
+          item.style.animation = '';
+          item.classList.remove('selected');
+          if (feedbackSpan.parentNode) feedbackSpan.remove();
+        }, 1500);
+        
+        selectedSortItem = null;
+      }
+      
+      // Save to form data
+      saveFormData('sort_' + starIndex + '_' + itemText.substring(0,20), categoryName + (isCorrect ? '_correct' : '_wrong'));
+    };
+    
+    // v5 CHALLENGE HANDLERS
+    let weatherCalmLevel = 0;
+    let weatherCooldown = false;
+    let weatherClickedButtons = new Set();
+    window.handleWeatherAction = function(btn, activityId, points) {
+      if (weatherCooldown || completedActivities[activityId]) return;
+      
+      // Get total number of action buttons to calculate percentage
+      const allButtons = btn.parentElement.querySelectorAll('.weather-action');
+      const totalButtons = allButtons.length;
+      const pointsPerButton = Math.floor(100 / totalButtons);
+      
+      // Only add points if this button hasn't been clicked yet
+      const buttonId = btn.dataset.actionId;
+      if (weatherClickedButtons.has(buttonId)) return;
+      
+      weatherCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { weatherCooldown = false; btn.classList.remove('cooldown'); }, 800);
+      
+      weatherClickedButtons.add(buttonId);
+      weatherCalmLevel = Math.min(100, weatherCalmLevel + pointsPerButton);
+      
+      const meterEl = document.getElementById('calmMeter');
+      const percentEl = document.getElementById('calmPercent');
+      const feedbackEl = document.getElementById('weatherFeedback');
+      const feedbackText = document.getElementById('feedbackText');
+      if (meterEl) meterEl.style.width = weatherCalmLevel + '%';
+      if (percentEl) percentEl.textContent = weatherCalmLevel;
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackText.textContent = btn.dataset.feedback; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      const overlayEl = document.getElementById('weatherOverlay');
+      const clearEl = document.getElementById('weatherClear');
+      if (overlayEl) overlayEl.style.opacity = 1 - (weatherCalmLevel / 100);
+      if (clearEl) clearEl.style.opacity = weatherCalmLevel / 100;
+      btn.classList.add('used');
+      btn.disabled = true;
+      
+      // Check if all buttons clicked
+      if (weatherClickedButtons.size >= totalButtons) { 
+        weatherCalmLevel = 100;
+        if (meterEl) meterEl.style.width = '100%';
+        if (percentEl) percentEl.textContent = '100';
+        document.getElementById('weatherWin').style.display = 'block'; 
+        document.getElementById('weatherComplete').style.display = 'flex'; 
+      }
+      saveFormData('weather_' + activityId, weatherCalmLevel);
+    };
+    
+    let collectedPowerUps = [];
+    window.handlePowerUpClick = function(btn, activityId, targetCount) {
+      if (btn.classList.contains('collected') || completedActivities[activityId]) return;
+      const isPositive = btn.dataset.positive === 'true';
+      const feedbackEl = document.getElementById('powerupFeedback');
+      const feedbackText = document.getElementById('powerupFeedbackText');
+      const displayEl = document.getElementById('collectedDisplay');
+      const countEl = document.getElementById('collectedCount');
+      if (isPositive) {
+        btn.classList.add('collected');
+        collectedPowerUps.push(btn.dataset.name);
+        if (collectedPowerUps.length === 1 && displayEl) displayEl.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'inline-block px-3 py-1 m-1 rounded-full font-body text-sm';
+        badge.style.backgroundColor = 'var(--light-green)';
+        badge.textContent = btn.querySelector('.text-4xl').textContent + ' ' + btn.dataset.name;
+        if (displayEl) displayEl.appendChild(badge);
+        if (countEl) countEl.textContent = collectedPowerUps.length;
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '✓ Great choice!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+        if (collectedPowerUps.length >= targetCount) { 
+          document.getElementById('powerupWin').style.display = 'block'; 
+          // Don't automatically show completion checkbox - user must manually check it
+        }
+      } else {
+        btn.classList.add('wrong');
+        setTimeout(() => btn.classList.remove('wrong'), 500);
+        if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = '#fecaca'; feedbackText.textContent = '✗ That one might not help - try another!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1500); }
+      }
+      saveFormData('powerup_' + activityId, collectedPowerUps.join(','));
+    };
+    
+    let mazeStep = 0;
+    window.handleMazeChoice = function(btn, stepIdx, totalSteps, activityId) {
+      if (btn.classList.contains('disabled') || completedActivities[activityId]) return;
+      const isCorrect = btn.dataset.correct === 'true';
+      const feedback = btn.dataset.feedback;
+      const feedbackEl = document.getElementById('mazeFeedback' + stepIdx);
+      
+      if (isCorrect) {
+        // Correct: disable all options and highlight the correct one
+        btn.parentElement.querySelectorAll('.maze-option').forEach(b => b.classList.add('disabled'));
+        btn.classList.add('correct');
+      } else {
+        // Wrong: only disable the wrong button so user can try other options
+        btn.classList.add('wrong', 'disabled');
+      }
+      
+      if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca'; feedbackEl.innerHTML = isCorrect ? '<p class="font-body">' + feedback + '</p>' : '<p class="font-body">' + feedback + ' Try another path!</p>'; }
+      if (isCorrect) {
+        mazeStep++;
+        const progress = (mazeStep / totalSteps) * 100;
+        const progressEl = document.getElementById('mazeProgress');
+        const markerEl = document.getElementById('mazeMarker');
+        if (progressEl) progressEl.style.width = progress + '%';
+        if (markerEl) markerEl.style.left = progress + '%';
+        setTimeout(() => {
+          if (mazeStep < totalSteps) {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeStep' + (stepIdx + 1)).style.display = 'block';
+          } else {
+            document.getElementById('mazeStep' + stepIdx).style.display = 'none';
+            document.getElementById('mazeWin').style.display = 'block';
+            document.getElementById('mazeComplete').style.display = 'flex';
+          }
+        }, 1500);
+      }
+      saveFormData('maze_' + activityId + '_step' + stepIdx, isCorrect ? 'correct' : 'wrong');
+    };
+    
+    window.handleShieldInput = function(activityId, totalSections) {
+      const inputs = document.querySelectorAll('.shield-input');
+      let filled = 0;
+      inputs.forEach(input => { if (input.value.trim().length > 0) filled++; });
+      const progressEl = document.getElementById('shieldProgress');
+      if (progressEl) progressEl.textContent = filled;
+      if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; }
+    };
+    
+    window.addShieldDecoration = function(emoji, activityId) {
+      const display = document.getElementById('shieldDecorations');
+      if (display) {
+        // Create a span for each decoration to allow proper wrapping and display
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.style.display = 'inline-block';
+        span.style.margin = '2px';
+        display.appendChild(span);
+      }
+      if (activityId) {
+        const existing = (formData['shield_' + activityId + '_decorations'] || '').split(',').filter(Boolean);
+        existing.push(emoji);
+        saveFormData('shield_' + activityId + '_decorations', existing.join(','));
+      }
+    };
+    
+    let volcanoTemp = 100;
+    let volcanoCooldown = false;
+    window.handleVolcanoCool = function(btn, activityId, coolingPower) {
+      if (volcanoCooldown || volcanoTemp <= 0 || completedActivities[activityId]) return;
+      volcanoCooldown = true;
+      btn.classList.add('cooldown');
+      setTimeout(() => { volcanoCooldown = false; btn.classList.remove('cooldown'); }, 600);
+      volcanoTemp = Math.max(0, volcanoTemp - coolingPower);
+      const tempEl = document.getElementById('volcanoTemp');
+      const lavaEl = document.getElementById('volcanoLava');
+      const indicatorEl = document.getElementById('volcanoIndicator');
+      const feedbackEl = document.getElementById('volcanoFeedback');
+      const feedbackText = document.getElementById('volcanoFeedbackText');
+      if (tempEl) tempEl.textContent = volcanoTemp;
+      if (lavaEl) lavaEl.style.opacity = volcanoTemp / 100;
+      const emojis = ['😌', '😊', '😤', '🔥', '🌋'];
+      const level = Math.ceil(volcanoTemp / 25);
+      if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
+      for (let i = 1; i <= 5; i++) { const lvl = document.getElementById('volcanoLevel' + i); if (lvl) lvl.classList.toggle('active', i === level); }
+      if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '❄️ ' + btn.dataset.action + ' - Cooling down!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
+      if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; }
+      saveFormData('volcano_' + activityId, volcanoTemp);
+    };
+
+    // ===== v7 GAME ACTIVITY HANDLERS =====
+    const balloonState = {};
+    window.useCalmingTool = function(toolId, power, toolName) {
+      const page = document.querySelector('[data-page="balloon-pop"]');
+      if (!page) return;
+      const activityId = page.dataset.activity;
+      const starIndex = activityId.split('_')[1];
+      
+      if (!balloonState[starIndex]) balloonState[starIndex] = { power: 0, popped: [] };
+      balloonState[starIndex].power = Math.min(100, balloonState[starIndex].power + power);
+      
+      document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
+      document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
+  
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '💪 +' + power + ' calming power! (' + balloonState[starIndex].power + '%)');
+      
+      // At 100% power, show encouraging message to pop balloons
+      if (balloonState[starIndex].power >= 100) {
+        window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '🌟 Full calming power! Now tap the worry balloons to pop them!');
+      }
+    };
+
+    window.popBalloon = function(balloonId, activityId, total) {
+      const starIndex = activityId.split('_')[1];
+      if (!balloonState[starIndex]) balloonState[starIndex] = { power: 0, popped: [] };
+      
+      if (balloonState[starIndex].power < 20) {
+        window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '🧰 Build up your calming power first using the tools above!');
+        return;
+      }
+      
+      const balloon = document.getElementById('balloon_' + balloonId);
+      if (balloon.classList.contains('popped')) return;
+      
+      balloon.classList.add('popped');
+      balloonState[starIndex].popped.push(balloonId);
+      
+      // Deduct some power per pop (but less than before so it feels fair)
+      balloonState[starIndex].power = Math.max(0, balloonState[starIndex].power - 15);
+      document.getElementById('balloonPower_' + starIndex).textContent = balloonState[starIndex].power + '%';
+      document.getElementById('balloonPowerBar_' + starIndex).style.width = balloonState[starIndex].power + '%';
+      
+      window.showFeedback('balloonFeedback_' + starIndex, 'balloonFeedbackText_' + starIndex, '💥 POP! ' + balloon.dataset.response);
+      
+      if (balloonState[starIndex].popped.length >= total) {
+        document.getElementById('balloonVictory_' + starIndex).style.display = 'block';
+        document.getElementById('balloonComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== TREASURE HUNT =====
+    const treasureState = {};
+    window.exploreTreasure = function(starIndex, locId, total) {
+      const loc = document.getElementById('loc_' + starIndex + '_' + locId);
+      if (loc.classList.contains('explored')) return;
+      
+      loc.classList.add('explored');
+      document.getElementById('tc_' + starIndex + '_' + locId).style.display = 'block';
+      
+      if (!treasureState[starIndex]) treasureState[starIndex] = [];
+      treasureState[starIndex].push(locId);
+      document.getElementById('treasureCount_' + starIndex).textContent = treasureState[starIndex].length;
+      
+      if (treasureState[starIndex].length >= total) {
+        document.getElementById('treasureVictory_' + starIndex).style.display = 'block';
+        document.getElementById('treasureComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== MONSTER TAMER =====
+    const monsterState = {};
+    window.tameMonster = function(starIndex, shrinkPower, message) {
+      if (!monsterState[starIndex]) monsterState[starIndex] = 100;
+      monsterState[starIndex] = Math.max(0, monsterState[starIndex] - shrinkPower);
+      
+      const visual = document.getElementById('monsterVisual_' + starIndex);
+      visual.style.fontSize = (8 * Math.max(0.3, monsterState[starIndex] / 100)) + 'rem';
+      
+      document.getElementById('monsterSize_' + starIndex).textContent = monsterState[starIndex] + '%';
+      document.getElementById('monsterBar_' + starIndex).style.width = monsterState[starIndex] + '%';
+      
+      window.showFeedback('monsterFeedback_' + starIndex, 'monsterFeedbackText_' + starIndex, message);
+      
+      // Update stages
+      const stage = monsterState[starIndex] > 75 ? 4 : monsterState[starIndex] > 50 ? 3 : monsterState[starIndex] > 25 ? 2 : 1;
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('stage_' + starIndex + '_' + i);
+        if (el) el.style.backgroundColor = i === stage ? 'var(--primary)' : 'var(--cream)';
+      }
+      
+      if (monsterState[starIndex] <= 0) {
+        visual.textContent = '😊';
+        document.getElementById('monsterFriend_' + starIndex).style.display = 'block';
+        document.getElementById('monsterComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== GARDEN GROWER =====
+    const gardenState = {};
+    window.waterPlant = function(starIndex, plantId, stages, total) {
+      if (!gardenState[starIndex]) gardenState[starIndex] = {};
+      if (!gardenState[starIndex][plantId]) gardenState[starIndex][plantId] = 0;
+      if (gardenState[starIndex][plantId] >= stages.length - 1) return;
+      
+      gardenState[starIndex][plantId]++;
+      const currentStage = gardenState[starIndex][plantId];
+      
+      // Update the plant emoji
+      var emojiEl = document.getElementById('plantEmoji_' + starIndex + '_' + plantId);
+      if (emojiEl) {
+        emojiEl.textContent = stages[currentStage];
+        // Quick grow animation
+        emojiEl.style.transform = 'scale(1.3)';
+        setTimeout(function() { emojiEl.style.transform = 'scale(1)'; }, 300);
+      }
+      
+      // Update the action text to show progress
+      var actionEl = document.getElementById('plantAction_' + starIndex + '_' + plantId);
+      if (actionEl) {
+        if (currentStage >= stages.length - 1) {
+          actionEl.textContent = '🌟 Fully grown!';
+          actionEl.style.backgroundColor = 'var(--light-green)';
+        } else {
+          actionEl.textContent = '💧 Growing... (' + (currentStage + 1) + '/' + stages.length + ')';
+        }
+      }
+      
+      // Update progress dots
+      for (var i = 0; i <= currentStage; i++) {
+        var dot = document.getElementById('growth_' + starIndex + '_' + plantId + '_' + i);
+        if (dot) dot.style.backgroundColor = 'var(--primary)';
+      }
+      
+      if (currentStage >= stages.length - 1) {
+        var plantEl = document.getElementById('plant_' + starIndex + '_' + plantId);
+        if (plantEl) plantEl.classList.add('grown');
+      }
+      
+      // Count fully grown - compare against each plant's own stage count
+      var fullyGrown = 0;
+      var keys = Object.keys(gardenState[starIndex]);
+      for (var k = 0; k < keys.length; k++) {
+        // A plant is fully grown if its stage >= stages.length - 1
+        // Since all plants in this garden have same stages length, this works
+        if (gardenState[starIndex][keys[k]] >= stages.length - 1) fullyGrown++;
+      }
+      document.getElementById('gardenProgress_' + starIndex).textContent = fullyGrown;
+      
+      if (fullyGrown >= total) {
+        document.getElementById('gardenHarvest_' + starIndex).style.display = 'block';
+        document.getElementById('gardenComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== SUPERHERO CREATOR =====
+    const heroState = {};
+    window.selectHero = function(starIndex, type, emoji) {
+      if (!heroState[starIndex]) heroState[starIndex] = {};
+      heroState[starIndex][type] = emoji;
+      document.getElementById('hero_' + starIndex + '_' + type).textContent = emoji;
+      window.checkHeroComplete(starIndex);
+    };
+
+    window.checkHeroComplete = function(starIndex) {
+      const state = heroState[starIndex] || {};
+      if (state.power && state.costume && state.sidekick) {
+        document.getElementById('heroDone_' + starIndex).style.display = 'block';
+        document.getElementById('heroComplete_' + starIndex).style.display = 'flex';
+      }
+    };
+
+    // ===== FEELINGS ORCHESTRA =====
+    window.playInstrument = function(starIndex, emoji, sound, feeling, instrumentName) {
+      const display = document.getElementById('soundDisplay_' + starIndex);
+      display.innerHTML = '<p class="text-5xl">' + emoji + '</p><p class="font-title text-2xl">' + sound + '</p><p class="font-body">' + feeling + '</p>';
+
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!window.__instrumentAudioCtx) {
+          window.__instrumentAudioCtx = new AudioContextClass();
+        }
+        const ctx = window.__instrumentAudioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+        const now = ctx.currentTime;
+        
+        // Combine all text fields for keyword matching
+        const allText = ((sound || '') + ' ' + (instrumentName || '') + ' ' + (feeling || '')).toLowerCase();
+        
+        // Helper to detect instrument type from any of the text fields
+        function has(keyword) { return allText.includes(keyword); }
+        
+        // ========== VIOLIN / STRINGS ==========
+        if (has('violin') || has('string') || has('cello') || has('viola') || has('fiddle')) {
+          // Violin: layered sawtooth oscillators with vibrato and slow attack for bowing effect
+          var baseFreq = has('cello') ? 220 : has('viola') ? 330 : 440;
+          var duration = 2.0;
+          
+          // Main tone - two detuned sawtooths for richness
+          for (var d = 0; d < 2; d++) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            var filt = ctx.createBiquadFilter();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(baseFreq + (d * 1.5 - 0.75), now); // slight detune
+            filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(1200, now);
+            filt.frequency.linearRampToValueAtTime(2500, now + 0.3);
+            filt.frequency.linearRampToValueAtTime(1800, now + duration);
+            filt.Q.value = 1.5;
+            // Slow attack like a bow stroke
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.12, now + 0.15);
+            gn.gain.linearRampToValueAtTime(0.10, now + duration * 0.7);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            // Vibrato
+            var lfo = ctx.createOscillator();
+            var lfoGn = ctx.createGain();
+            lfo.frequency.value = 5.5;
+            lfoGn.gain.value = 4;
+            lfo.connect(lfoGn);
+            lfoGn.connect(osc.frequency);
+            lfo.start(now + 0.2);
+            lfo.stop(now + duration);
+            osc.connect(filt);
+            filt.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          }
+          return;
+        }
+        
+        // ========== DRUMS ==========
+        if (has('drum') || has('thunder') || has('boom') || has('thump') || has('beat') || has('snare') || has('percussion')) {
+          var duration = 0.6;
+          // Kick/body - low sine with pitch drop
+          var kick = ctx.createOscillator();
+          var kickGn = ctx.createGain();
+          kick.type = 'sine';
+          kick.frequency.setValueAtTime(150, now);
+          kick.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+          kickGn.gain.setValueAtTime(0.5, now);
+          kickGn.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+          kick.connect(kickGn);
+          kickGn.connect(ctx.destination);
+          kick.start(now);
+          kick.stop(now + 0.5);
+          
+          // Snare/hit noise layer
+          var bufSize = ctx.sampleRate * 0.2;
+          var noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+          var noiseData = noiseBuf.getChannelData(0);
+          for (var s = 0; s < bufSize; s++) noiseData[s] = Math.random() * 2 - 1;
+          var noise = ctx.createBufferSource();
+          noise.buffer = noiseBuf;
+          var noiseFilt = ctx.createBiquadFilter();
+          noiseFilt.type = 'highpass';
+          noiseFilt.frequency.value = 1000;
+          var noiseGn = ctx.createGain();
+          noiseGn.gain.setValueAtTime(0.3, now);
+          noiseGn.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+          noise.connect(noiseFilt);
+          noiseFilt.connect(noiseGn);
+          noiseGn.connect(ctx.destination);
+          noise.start(now);
+          noise.stop(now + 0.3);
+          
+          // Second hit slightly delayed for thunder effect
+          if (has('thunder')) {
+            var kick2 = ctx.createOscillator();
+            var kick2Gn = ctx.createGain();
+            kick2.type = 'sine';
+            kick2.frequency.setValueAtTime(120, now + 0.12);
+            kick2.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+            kick2Gn.gain.setValueAtTime(0.0001, now);
+            kick2Gn.gain.linearRampToValueAtTime(0.35, now + 0.12);
+            kick2Gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+            kick2.connect(kick2Gn);
+            kick2Gn.connect(ctx.destination);
+            kick2.start(now);
+            kick2.stop(now + 0.6);
+          }
+          return;
+        }
+        
+        // ========== CYMBALS / CRASH ==========
+        if (has('cymbal') || has('crash') || has('clash') || has('clang')) {
+          var duration = 1.5;
+          var bufSize = ctx.sampleRate * duration;
+          var noiseBuf = ctx.createBuffer(2, bufSize, ctx.sampleRate);
+          for (var ch = 0; ch < 2; ch++) {
+            var data = noiseBuf.getChannelData(ch);
+            for (var s = 0; s < bufSize; s++) data[s] = Math.random() * 2 - 1;
+          }
+          var noise = ctx.createBufferSource();
+          noise.buffer = noiseBuf;
+          // Band pass to get metallic shimmer
+          var bp1 = ctx.createBiquadFilter();
+          bp1.type = 'bandpass';
+          bp1.frequency.value = 5000;
+          bp1.Q.value = 0.5;
+          var hp = ctx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.value = 3000;
+          var noiseGn = ctx.createGain();
+          noiseGn.gain.setValueAtTime(0.0001, now);
+          noiseGn.gain.linearRampToValueAtTime(0.35, now + 0.005);
+          noiseGn.gain.exponentialRampToValueAtTime(0.08, now + 0.3);
+          noiseGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          noise.connect(bp1);
+          bp1.connect(hp);
+          hp.connect(noiseGn);
+          noiseGn.connect(ctx.destination);
+          // Add a metallic ring
+          var ring = ctx.createOscillator();
+          var ringGn = ctx.createGain();
+          ring.type = 'square';
+          ring.frequency.value = 340;
+          ringGn.gain.setValueAtTime(0.04, now);
+          ringGn.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+          ring.connect(ringGn);
+          ringGn.connect(ctx.destination);
+          ring.start(now);
+          ring.stop(now + 1.0);
+          noise.start(now);
+          noise.stop(now + duration + 0.1);
+          return;
+        }
+        
+        // ========== FLUTE ==========
+        if (has('flute') || has('whistle') || has('breeze') || has('wind') || has('ocean flute') || has('pipe')) {
+          var baseFreq = 580;
+          var duration = 1.8;
+          // Pure sine with breathy noise layer and vibrato
+          var osc = ctx.createOscillator();
+          var oscGn = ctx.createGain();
+          var filt = ctx.createBiquadFilter();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(baseFreq, now);
+          // Gentle pitch rise
+          osc.frequency.linearRampToValueAtTime(baseFreq * 1.02, now + 0.5);
+          osc.frequency.linearRampToValueAtTime(baseFreq, now + duration);
+          filt.type = 'lowpass';
+          filt.frequency.value = 3000;
+          // Breath-like attack
+          oscGn.gain.setValueAtTime(0.0001, now);
+          oscGn.gain.linearRampToValueAtTime(0.15, now + 0.12);
+          oscGn.gain.linearRampToValueAtTime(0.12, now + duration * 0.8);
+          oscGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          // Vibrato
+          var lfo = ctx.createOscillator();
+          var lfoGn = ctx.createGain();
+          lfo.frequency.value = 5;
+          lfoGn.gain.value = 6;
+          lfo.connect(lfoGn);
+          lfoGn.connect(osc.frequency);
+          lfo.start(now + 0.3);
+          lfo.stop(now + duration);
+          osc.connect(filt);
+          filt.connect(oscGn);
+          oscGn.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration + 0.1);
+          // Breath noise layer
+          var breathSize = ctx.sampleRate * duration;
+          var breathBuf = ctx.createBuffer(1, breathSize, ctx.sampleRate);
+          var bData = breathBuf.getChannelData(0);
+          for (var s = 0; s < breathSize; s++) bData[s] = Math.random() * 2 - 1;
+          var breath = ctx.createBufferSource();
+          breath.buffer = breathBuf;
+          var breathFilt = ctx.createBiquadFilter();
+          breathFilt.type = 'bandpass';
+          breathFilt.frequency.value = 2000;
+          breathFilt.Q.value = 2;
+          var breathGn = ctx.createGain();
+          breathGn.gain.setValueAtTime(0.0001, now);
+          breathGn.gain.linearRampToValueAtTime(0.025, now + 0.1);
+          breathGn.gain.linearRampToValueAtTime(0.015, now + duration * 0.8);
+          breathGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          breath.connect(breathFilt);
+          breathFilt.connect(breathGn);
+          breathGn.connect(ctx.destination);
+          breath.start(now);
+          breath.stop(now + duration + 0.1);
+          return;
+        }
+        
+        // ========== TRUMPET / HORN / BRASS ==========
+        if (has('trumpet') || has('horn') || has('brass') || has('fanfare') || has('trombone') || has('tuba')) {
+          var baseFreq = 370;
+          var duration = 1.5;
+          // Brass: sawtooth with lowpass filter sweep
+          var osc = ctx.createOscillator();
+          var osc2 = ctx.createOscillator();
+          var oscGn = ctx.createGain();
+          var filt = ctx.createBiquadFilter();
+          osc.type = 'sawtooth';
+          osc2.type = 'square';
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc2.frequency.setValueAtTime(baseFreq * 1.003, now); // slight detune for fatness
+          filt.type = 'lowpass';
+          filt.frequency.setValueAtTime(400, now);
+          filt.frequency.linearRampToValueAtTime(2800, now + 0.08); // bright attack
+          filt.frequency.linearRampToValueAtTime(1800, now + 0.5);
+          filt.frequency.linearRampToValueAtTime(1200, now + duration);
+          filt.Q.value = 2;
+          // Brass attack envelope
+          oscGn.gain.setValueAtTime(0.0001, now);
+          oscGn.gain.linearRampToValueAtTime(0.14, now + 0.04);
+          oscGn.gain.linearRampToValueAtTime(0.11, now + 0.2);
+          oscGn.gain.linearRampToValueAtTime(0.09, now + duration * 0.8);
+          oscGn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          // Vibrato
+          var lfo = ctx.createOscillator();
+          var lfoGn = ctx.createGain();
+          lfo.frequency.value = 5;
+          lfoGn.gain.value = 3;
+          lfo.connect(lfoGn);
+          lfoGn.connect(osc.frequency);
+          lfo.start(now + 0.4);
+          lfo.stop(now + duration);
+          var merge = ctx.createGain();
+          merge.gain.value = 0.5;
+          osc.connect(merge);
+          osc2.connect(merge);
+          merge.connect(filt);
+          filt.connect(oscGn);
+          oscGn.connect(ctx.destination);
+          osc.start(now);
+          osc2.start(now);
+          osc.stop(now + duration + 0.1);
+          osc2.stop(now + duration + 0.1);
+          return;
+        }
+        
+        // ========== HARP ==========
+        if (has('harp') || has('lyre') || has('pluck') || has('strum')) {
+          // Harp arpeggio: series of plucked notes
+          var baseFreq = 330;
+          var ratios = [1, 5/4, 3/2, 2, 5/2, 3];
+          ratios.forEach(function(ratio, idx) {
+            var freq = baseFreq * ratio;
+            var startTime = now + idx * 0.1;
+            var dur = 1.5 - idx * 0.1;
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            var filt = ctx.createBiquadFilter();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, startTime);
+            filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(4000, startTime);
+            filt.frequency.exponentialRampToValueAtTime(800, startTime + dur);
+            // Pluck envelope: instant attack, slow decay
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.18 / (idx + 1), startTime + 0.005);
+            gn.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
+            osc.connect(filt);
+            filt.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + dur + 0.1);
+          });
+          return;
+        }
+        
+        // ========== BELL / CHIME ==========
+        if (has('bell') || has('chime') || has('ding') || has('gong') || has('ring') || has('tinkle')) {
+          var baseFreq = 660;
+          var duration = 2.5;
+          // Bells have inharmonic partials
+          var partials = [1, 2.0, 2.76, 4.07, 5.4, 6.8];
+          var amps = [0.15, 0.08, 0.06, 0.03, 0.02, 0.01];
+          partials.forEach(function(p, idx) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq * p, now);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(amps[idx], now + 0.003);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration - idx * 0.2);
+            osc.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== XYLOPHONE / MARIMBA ==========
+        if (has('xylophone') || has('marimba') || has('glockenspiel') || has('kalimba')) {
+          var baseFreq = 520;
+          var duration = 0.8;
+          // Xylophone: sine + 3rd harmonic, fast decay
+          [1, 3].forEach(function(h) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq * h, now);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.2 / h, now + 0.003);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== PIANO ==========
+        if (has('piano') || has('key')) {
+          var baseFreq = 440;
+          var duration = 2.0;
+          var harmonics = [1, 2, 3, 4, 5, 6];
+          var amps = [0.15, 0.10, 0.05, 0.03, 0.015, 0.008];
+          harmonics.forEach(function(h, idx) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq * h, now);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(amps[idx], now + 0.005);
+            gn.gain.exponentialRampToValueAtTime(amps[idx] * 0.3, now + 0.5);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== GUITAR ==========
+        if (has('guitar') || has('ukulele') || has('strum') || has('chord')) {
+          var baseFreq = 330;
+          var duration = 1.2;
+          // Plucked string with harmonics
+          [1, 2, 3, 4, 5].forEach(function(h) {
+            var osc = ctx.createOscillator();
+            var gn = ctx.createGain();
+            var filt = ctx.createBiquadFilter();
+            osc.type = h <= 2 ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(baseFreq * h, now);
+            filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(3000, now);
+            filt.frequency.exponentialRampToValueAtTime(500, now + duration);
+            gn.gain.setValueAtTime(0.0001, now);
+            gn.gain.linearRampToValueAtTime(0.12 / h, now + 0.003);
+            gn.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(filt);
+            filt.connect(gn);
+            gn.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+          });
+          return;
+        }
+        
+        // ========== DEFAULT: gentle melodic tone ==========
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.2);
+      } catch (e) {
+        console.warn('Instrument audio failed:', e);
+      }
+    };
+
+    // ===== CALM AQUARIUM =====
+    window.addToAquarium = function(starIndex, type, emoji, trait) {
+      const tank = document.getElementById('tank_' + starIndex);
+      const item = document.createElement('span');
+      item.className = 'text-4xl';
+      item.textContent = emoji;
+      item.style.animation = 'float 3s ease-in-out infinite';
+      tank.appendChild(item);
+    };
+
+    // ===== ROCKET LAUNCHER =====
+    const rocketState = {};
+    window.addFuel = function(starIndex, amount) {
+      if (!rocketState[starIndex]) rocketState[starIndex] = 0;
+      rocketState[starIndex] = Math.min(100, rocketState[starIndex] + amount);
+      document.getElementById('fuelDisplay_' + starIndex).textContent = rocketState[starIndex] + '%';
+      document.getElementById('fuelBar_' + starIndex).style.width = rocketState[starIndex] + '%';
+    };
+
+    window.launchRocket = function(starIndex) {
+      if (!rocketState[starIndex] || rocketState[starIndex] < 100) {
+        alert('Need 100% fuel to launch!');
+        return;
+      }
+      document.getElementById('planets_' + starIndex).style.display = 'block';
+      document.getElementById('rocketReturn_' + starIndex).style.display = 'block';
+      document.getElementById('rocketComplete_' + starIndex).style.display = 'flex';
+    };
+
+    // ===== MAGIC POTION =====
+    const potionState = {};
+    window.addIngredient = function(starIndex, id, emoji, name) {
+      if (!potionState[starIndex]) potionState[starIndex] = [];
+      if (potionState[starIndex].length >= 3) return;
+      if (potionState[starIndex].some(i => i.id === id)) return;
+      potionState[starIndex].push({ id, emoji, name });
+      const cauldron = document.getElementById('cauldron_' + starIndex);
+      cauldron.innerHTML = potionState[starIndex].map(i => '<span class="text-4xl">' + i.emoji + '</span>').join('');
+      saveFormData('potion_' + starIndex + '_ingredients', potionState[starIndex].map(i => i.emoji).join(','));
+    };
+
+    window.brewPotion = function(starIndex) {
+      if (!potionState[starIndex] || potionState[starIndex].length < 2) {
+        alert('Add at least 2 ingredients!');
+        return;
+      }
+      const resultEl = document.getElementById('potionResult_' + starIndex);
+      const messageEl = document.getElementById('potionMessage_' + starIndex);
+      const emojiEl = document.getElementById('potionEmoji_' + starIndex);
+      const recipeTag = potionState[starIndex].map(i => i.id).sort().join('-');
+
+      if (messageEl && emojiEl) {
+        if (recipeTag.includes('calm') || recipeTag.includes('breathe')) {
+          emojiEl.textContent = '😌';
+          messageEl.textContent = 'Calm Potion brewed! You made a soothing blend for big feelings.';
+        } else if (recipeTag.includes('brave') || recipeTag.includes('lion')) {
+          emojiEl.textContent = '🦁';
+          messageEl.textContent = 'Brave Potion brewed! You mixed courage to face tricky moments.';
+        } else {
+          emojiEl.textContent = '✨';
+          messageEl.textContent = 'Friendship Potion brewed! Your mix helps feelings feel safer.';
+        }
+      }
+
+      if (resultEl) resultEl.style.display = 'block';
+      const complete = document.getElementById('potionComplete_' + starIndex);
+      if (complete) complete.style.display = 'flex';
+      saveFormData('potion_' + starIndex + '_brewed', 'true');
+      saveFormData('potion_' + starIndex + '_recipe', recipeTag);
+    };
+
+    // ===== FEELINGS BINGO =====
+    window.markBingoSquare = function(starIndex, squareId) {
+      const square = document.getElementById('bingo_' + starIndex + '_' + squareId);
+      square.classList.toggle('marked');
+    };
+
+    // ===== HELPER =====
+    window.showFeedback = function(containerId, textId, message) {
+      const container = document.getElementById(containerId);
+      const text = document.getElementById(textId);
+      if (container && text) {
+        text.textContent = message;
+        container.style.display = 'block';
+        setTimeout(() => { container.style.display = 'none'; }, 3000);
+      }
+    };
+
+// =====================================================
+    // v6 ACTIVITY HANDLERS
+    // =====================================================
+    
+    // Spin the Wheel
+    window.spinWheel = function(starIndex, segmentCount) {
+      const wheel = document.querySelector('.wheel-container');
+      if (!wheel) return;
+      
+      const randomDeg = Math.floor(Math.random() * 360) + 720; // At least 2 full spins
+      wheel.style.transition = 'transform 3s ease-out';
+      wheel.style.transform = 'rotate(' + randomDeg + 'deg)';
+      
+      setTimeout(() => {
+        const finalAngle = randomDeg % 360;
+        const segmentAngle = 360 / segmentCount;
+        const selectedIdx = Math.floor((360 - finalAngle + segmentAngle/2) % 360 / segmentAngle);
+        
+        document.getElementById('wheelCelebration_' + starIndex).style.display = 'block';
+        document.getElementById('wheelComplete_' + starIndex).style.display = 'flex';
+      }, 3000);
+    };
+    
+    window.selectWheelSegment = function(starIndex, segId, response) {
+      // Show result
+      document.getElementById('wheelResult_' + starIndex).style.display = 'block';
+      document.getElementById('wheelResultText_' + starIndex).textContent = response;
+      document.getElementById('wheelCelebration_' + starIndex).style.display = 'block';
+      document.getElementById('wheelComplete_' + starIndex).style.display = 'flex';
+      
+      // Highlight selected segment
+      document.querySelectorAll('[id^="seg_' + starIndex + '_"]').forEach(seg => {
+        seg.style.opacity = seg.id === 'seg_' + starIndex + '_' + segId ? '1' : '0.5';
+      });
+      
+      saveFormData('wheel_' + starIndex, segId);
+    };
+    
+    // Sticker Collector
+    const collectedStickers = {};
+    window.collectSticker = function(starIndex, challengeId, emoji, total) {
+      const challenge = document.getElementById('challenge_' + starIndex + '_' + challengeId);
+      if (challenge.classList.contains('collected')) return;
+      
+      challenge.classList.add('collected');
+      
+      if (!collectedStickers[starIndex]) collectedStickers[starIndex] = [];
+      collectedStickers[starIndex].push(emoji);
+      
+      // Update collection display
+      const collection = document.getElementById('stickerCollection_' + starIndex);
+      if (collectedStickers[starIndex].length === 1) collection.innerHTML = '';
+      
+      const stickerSpan = document.createElement('span');
+      stickerSpan.className = 'text-3xl animate-bounce-slow';
+      stickerSpan.textContent = emoji;
+      collection.appendChild(stickerSpan);
+      
+      document.getElementById('stickerCount_' + starIndex).textContent = collectedStickers[starIndex].length;
+      
+      if (collectedStickers[starIndex].length >= total) {
+        document.getElementById('stickerComplete_' + starIndex).style.display = 'block';
+        document.getElementById('stickerDone_' + starIndex).style.display = 'flex';
+      }
+      
+      saveFormData('stickers_' + starIndex, collectedStickers[starIndex].join(','));
+    };
+    
+    // Mindful Adventure
+    const adventureProgress = {};
+    window.checkAdventureComplete = function(starIndex, totalScenes) {
+      if (!adventureProgress[starIndex]) adventureProgress[starIndex] = new Set();
+      
+      // Check all textareas in scenes
+      document.querySelectorAll('[id^="scene_' + starIndex + '_"] textarea').forEach(textarea => {
+        if (textarea.value.trim().length > 0) {
+          const sceneId = textarea.closest('[id^="scene_"]').id.split('_').pop();
+          adventureProgress[starIndex].add(sceneId);
+        }
+      });
+      
+      document.getElementById('adventureProgress_' + starIndex).textContent = adventureProgress[starIndex].size;
+      
+      if (adventureProgress[starIndex].size >= totalScenes) {
+        document.getElementById('adventureClosing_' + starIndex).style.display = 'block';
+        document.getElementById('adventureDone_' + starIndex).style.display = 'flex';
+      }
+    };
+    
+    // Emotion Detective
+    window.solveCase = function(starIndex, optionIdx, isCorrect, explanation) {
+      const feedbackEl = document.getElementById('detectiveFeedback_' + starIndex);
+      const feedbackText = document.getElementById('detectiveFeedbackText_' + starIndex);
+      
+      // Reset all options
+      document.querySelectorAll('.detective-option').forEach(opt => {
+        opt.classList.remove('correct', 'wrong');
+      });
+      
+      // Mark selected option
+      const selectedBtn = document.querySelectorAll('.detective-option')[optionIdx];
+      selectedBtn.classList.add(isCorrect ? 'correct' : 'wrong');
+      
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.backgroundColor = isCorrect ? 'var(--light-green)' : '#fecaca';
+      feedbackText.textContent = explanation;
+      
+      if (isCorrect) {
+        document.getElementById('detectiveReveal_' + starIndex).style.display = 'block';
+        document.getElementById('detectiveDone_' + starIndex).style.display = 'flex';
+      }
+      
+      saveFormData('detective_' + starIndex, isCorrect ? 'solved' : 'attempted');
+    };
+  </script>
+</body>
+</html>
