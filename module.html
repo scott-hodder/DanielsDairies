@@ -787,6 +787,9 @@
 
     async function completeModuleAndCelebrate() {
       try {
+        // Capture pre-award level for level-up detection
+        const { data: preChild } = await supabase.from('children').select('level').eq('id', _state.childId).single();
+        window._preAwardLevel = preChild?.level || 1;
         await window.completeModuleDB();
         // Wait a moment for the database to update, then show celebration with fresh data
         setTimeout(() => {
@@ -802,6 +805,69 @@
         return;
       }
       
+      // Show modal IMMEDIATELY with loading state, then update with XP info
+      const celebrationModal = document.createElement('div');
+      celebrationModal.className = 'module-completion-modal';
+      celebrationModal.innerHTML = `
+        <div class="module-completion-content">
+          <div class="completion-emoji">🎊</div>
+          <h2 class="completion-title">Fantastic Work!</h2>
+          <p class="completion-message">Congratulations! You've completed this module and learned valuable emotional skills.</p>
+          <div id="xpProgressSection" style="margin: 24px 0; padding: 20px; background: rgba(255, 255, 255, 0.3); border-radius: 12px;">
+            <div style="text-align: center; color: #405878;">Loading XP info...</div>
+          </div>
+          <div id="reflectionRating" style="margin: 20px 0; padding: 16px; background: rgba(255,255,255,0.3); border-radius: 12px; text-align: center;">
+            <p style="font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 10px;">How did that feel?</p>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px;" id="reflectionButtons">
+              <button type="button" class="reflection-btn" data-rating="1" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;" title="Hard">😣</button>
+              <button type="button" class="reflection-btn" data-rating="2" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;" title="Tricky">😕</button>
+              <button type="button" class="reflection-btn" data-rating="3" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;" title="OK">😐</button>
+              <button type="button" class="reflection-btn" data-rating="4" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;" title="Good">😊</button>
+              <button type="button" class="reflection-btn" data-rating="5" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;" title="Great">😄</button>
+            </div>
+          </div>
+          <div class="completion-confetti" id="completionConfetti"></div>
+          <button class="completion-btn" onclick="window.closeCompletionModal()">Continue Journey</button>
+        </div>
+      `;
+      document.body.appendChild(celebrationModal);
+      generateCompletionConfetti();
+      
+      // Wire up reflection buttons immediately
+      celebrationModal.querySelectorAll('.reflection-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const rating = parseInt(btn.dataset.rating);
+          celebrationModal.querySelectorAll('.reflection-btn').forEach(b => {
+            b.style.border = '2px solid #e5e7eb';
+            b.style.background = 'white';
+            b.style.transform = 'scale(1)';
+          });
+          btn.style.border = '2px solid #405878';
+          btn.style.background = '#eef2ff';
+          btn.style.transform = 'scale(1.15)';
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const moduleCode = params.get('code');
+            if (moduleCode && _state.childId) {
+              const { data: mod } = await supabase.from('modules').select('id').eq('code', moduleCode).single();
+              if (mod) {
+                await supabase.from('child_modules').update({ reflection_rating: rating }).eq('child_id', _state.childId).eq('module_id', mod.id);
+              }
+            }
+            const ratingEl = document.getElementById('reflectionRating');
+            if (ratingEl) ratingEl.innerHTML = '<p style="font-size:14px; color:#405878; font-weight:600;">Thanks for sharing! ' + btn.textContent + '</p>';
+          } catch (e) {
+            console.warn('Could not save reflection:', e);
+          }
+        });
+      });
+      
+      // Auto-close after 15 seconds
+      setTimeout(() => {
+        window.closeCompletionModal();
+      }, 15000); // Give more time to read XP info
+      
+      // Now fetch XP info in background and update the modal
       try {
         // Get XP information for display
         const getXpInfo = async () => {
@@ -826,43 +892,34 @@
             const xpReward = mod?.xp_reward || 0;
             const moduleTitle = mod?.title || 'this module';
 
-            const currentXp = childResult.data?.total_xp || 0;
+            // XP has already been awarded by awardModuleXp — read the updated values directly
+            const totalXp = childResult.data?.total_xp || 0;
             const currentLevel = childResult.data?.level || 1;
-            const newTotalXp = currentXp + xpReward;
 
             const levels = levelsResult.data || [];
-            let nextLevelXp = 0;
-            let currentLevelXp = 0;
-            let newLevel = currentLevel;
 
             const currentLevelInfo = levels.find(l => l.level === currentLevel);
             const nextLevelInfo = levels.find(l => l.level === currentLevel + 1);
-            currentLevelXp = currentLevelInfo?.xp_required || 0;
+            const currentLevelXp = currentLevelInfo?.xp_required || 0;
+            const nextLevelXp = nextLevelInfo?.xp_required || Math.floor(currentLevelXp * 1.5);
 
-            if (nextLevelInfo) {
-              nextLevelXp = nextLevelInfo.xp_required;
-              // Find highest level achieved
-              const achievedLevel = levels.filter(l => l.xp_required <= newTotalXp).pop();
-              newLevel = achievedLevel?.level || currentLevel;
-            } else {
-              nextLevelXp = Math.floor(currentLevelXp * 1.5);
-            }
-            
             const xpNeededForNextLevel = nextLevelXp - currentLevelXp;
-            const currentLevelProgress = currentXp - currentLevelXp;
-            const newLevelProgress = newTotalXp - currentLevelXp;
-            
+            const levelProgress = totalXp - currentLevelXp;
+
+            const preLevel = window._preAwardLevel || currentLevel;
+            const leveledUp = currentLevel > preLevel;
+
             return {
               xpReward,
               moduleTitle,
-              currentXp,
-              newTotalXp,
+              currentXp: totalXp,
+              newTotalXp: totalXp,
               currentLevel,
-              newLevel,
+              newLevel: currentLevel,
               xpNeededForNextLevel,
-              currentLevelProgress,
-              newLevelProgress,
-              leveledUp: newLevel > currentLevel
+              currentLevelProgress: levelProgress,
+              newLevelProgress: levelProgress,
+              leveledUp
             };
           } catch (error) {
             console.error('[showCompletionCelebration] Error getting XP info:', error);
@@ -881,27 +938,37 @@
           }
         };
         
-        // Create and show modal
-        const createModal = async () => {
+        // Update the XP section with fetched data
+        const updateXpSection = async () => {
           const xpInfo = await getXpInfo();
+          const xpSection = document.getElementById('xpProgressSection');
+          if (!xpSection) return;
           
-          const celebrationModal = document.createElement('div');
-          celebrationModal.className = 'module-completion-modal';
+          // Update title and message if level up
+          if (xpInfo.leveledUp) {
+            const titleEl = celebrationModal.querySelector('.completion-title');
+            const emojiEl = celebrationModal.querySelector('.completion-emoji');
+            const msgEl = celebrationModal.querySelector('.completion-message');
+            if (titleEl) titleEl.textContent = 'Level Up!';
+            if (emojiEl) emojiEl.textContent = '🎉';
+            if (msgEl) msgEl.textContent = `Amazing! You completed "${xpInfo.moduleTitle}" and reached Level ${xpInfo.newLevel}!`;
+          } else {
+            const msgEl = celebrationModal.querySelector('.completion-message');
+            if (msgEl) msgEl.textContent = `Congratulations! You've completed "${xpInfo.moduleTitle}" and learned valuable emotional skills.`;
+          }
           
-          // XP progress bar HTML
-          const progressBarHtml = xpInfo.xpReward > 0 ? `
-            <div style="margin: 24px 0; padding: 20px; background: rgba(255, 255, 255, 0.3); border-radius: 12px;">
+          // Update XP progress section
+          if (xpInfo.xpReward > 0) {
+            xpSection.innerHTML = `
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                 <span style="font-size: 20px;">⭐</span>
                 <span style="font-size: 14px; font-weight: 700; color: #405878;">XP Earned: +${xpInfo.xpReward}</span>
               </div>
-              
               ${xpInfo.leveledUp ? `
                 <div style="background: #4ade80; color: white; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-weight: 700;">
                   🎉 LEVEL UP! You reached Level ${xpInfo.newLevel}!
                 </div>
               ` : ''}
-              
               <div style="margin-bottom: 8px;">
                 <div style="font-size: 12px; color: #405878; margin-bottom: 4px;">
                   Progress to Level ${xpInfo.currentLevel + (xpInfo.leveledUp ? 2 : 1)}
@@ -917,76 +984,13 @@
                   }
                 </div>
               </div>
-            </div>
-          ` : '';
-          
-          celebrationModal.innerHTML = `
-            <div class="module-completion-content">
-              <div class="completion-emoji">${xpInfo.leveledUp ? '🎉' : '🎊'}</div>
-              <h2 class="completion-title">${xpInfo.leveledUp ? 'Level Up!' : 'Fantastic Work!'}</h2>
-              <p class="completion-message">
-                ${xpInfo.leveledUp ?
-                  `Amazing! You completed "${xpInfo.moduleTitle}" and reached Level ${xpInfo.newLevel}!` :
-                  `Congratulations! You've completed "${xpInfo.moduleTitle}" and learned valuable emotional skills.`
-                }
-              </p>
-              ${progressBarHtml}
-              <div id="reflectionRating" style="margin: 20px 0; padding: 16px; background: rgba(255,255,255,0.3); border-radius: 12px; text-align: center;">
-                <p style="font-size: 14px; font-weight: 600; color: #405878; margin-bottom: 10px;">How did that feel?</p>
-                <div style="display: flex; justify-content: center; gap: 10px;" id="reflectionButtons">
-                  <button type="button" class="reflection-btn" data-rating="1" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Hard">😣</button>
-                  <button type="button" class="reflection-btn" data-rating="2" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Tricky">😕</button>
-                  <button type="button" class="reflection-btn" data-rating="3" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="OK">😐</button>
-                  <button type="button" class="reflection-btn" data-rating="4" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Good">😊</button>
-                  <button type="button" class="reflection-btn" data-rating="5" style="width:48px; height:48px; border-radius:50%; border:2px solid #e5e7eb; background:white; font-size:22px; cursor:pointer; transition:all 0.2s;" title="Great">😄</button>
-                </div>
-              </div>
-              <div class="completion-confetti" id="completionConfetti"></div>
-              <button class="completion-btn" onclick="window.closeCompletionModal()">Continue Journey</button>
-            </div>
-          `;
-
-          // Wire up reflection buttons
-          celebrationModal.querySelectorAll('.reflection-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const rating = parseInt(btn.dataset.rating);
-              // Visual feedback
-              celebrationModal.querySelectorAll('.reflection-btn').forEach(b => {
-                b.style.border = '2px solid #e5e7eb';
-                b.style.background = 'white';
-                b.style.transform = 'scale(1)';
-              });
-              btn.style.border = '2px solid #405878';
-              btn.style.background = '#eef2ff';
-              btn.style.transform = 'scale(1.15)';
-
-              // Save reflection
-              try {
-                const params = new URLSearchParams(window.location.search);
-                const moduleCode = params.get('code');
-                if (moduleCode && _state.childId) {
-                  const { data: mod } = await supabase.from('modules').select('id').eq('code', moduleCode).single();
-                  if (mod) {
-                    await supabase.from('child_modules').update({ reflection_rating: rating }).eq('child_id', _state.childId).eq('module_id', mod.id);
-                  }
-                }
-                const ratingEl = document.getElementById('reflectionRating');
-                if (ratingEl) ratingEl.innerHTML = '<p style="font-size:14px; color:#405878; font-weight:600;">Thanks for sharing! ' + btn.textContent + '</p>';
-              } catch (e) {
-                console.warn('Could not save reflection:', e);
-              }
-            });
-          });
-          
-          document.body.appendChild(celebrationModal);
-          generateCompletionConfetti();
-          
-          setTimeout(() => {
-            window.closeCompletionModal();
-          }, 10000); // Give more time to read XP info
+            `;
+          } else {
+            xpSection.style.display = 'none';
+          }
         };
         
-        createModal();
+        updateXpSection();
       } catch (e) {
         console.error('[showCompletionCelebration] Error:', e);
       }
@@ -1763,7 +1767,7 @@
           'script', 'style', 'svg', 'canvas', 'button', 'input', 'textarea', 'label',
           '.tts-player', '.module-header', 'nav', '[aria-hidden="true"]',
           '.quiz-feedback', '.scenario-feedback', '.followup-feedback', '.mascot-feedback',
-          '[data-activity]', '.m-bg-light-green'
+          '[class*="m-feedback-hidden"]', '[data-activity]', '.m-bg-light-green'
         ].join(', ')).forEach(el => el.remove());
         // Also remove any display:none elements
         clone.querySelectorAll('[style]').forEach(el => {
@@ -1807,7 +1811,8 @@
       _playAudio(url, pageIdx) {
         this._currentPageIndex = pageIdx;
         this._usingSpeechSynth = false;
-        this.audioEl.src = url;
+        // Cache-bust to avoid stale audio after regeneration
+        this.audioEl.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
         this.audioEl.playbackRate = this.playbackRate;
         this.audioEl.play().then(() => {
           this.setPlaying(true);

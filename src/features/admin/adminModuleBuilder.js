@@ -5,51 +5,49 @@
 import {
     supabase, requireSupabaseEnv,
     allModules, ageRanges, coreTheories, setAgeRanges, setCoreTheories,
-    getModuleKey
+    getModuleKey, loadAllModules, updateStats
 } from './adminPage.js';
 
 // ================================================================================
 // TTS NARRATION - Background generation after module save
 // ================================================================================
 
-// Fire-and-forget: triggers narration for all variants (or single module) in background
-function triggerNarrationBackground(moduleId, isMultiAge) {
+// Triggers narration generation — awaits until requests are sent, then returns.
+// The edge function continues processing on the server after we navigate away.
+async function triggerNarrationBackground(moduleId, isMultiAge) {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     if (!supabaseUrl || !supabaseKey) return;
 
-    const callNarration = (body) => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token || supabaseKey}`,
-                    'apikey': supabaseKey
-                },
-                body: JSON.stringify(body)
-            }).then(r => r.json()).then(data => {
-                console.log('[TTS Background]', data);
-            }).catch(err => {
-                console.error('[TTS Background] Error:', err);
-            });
-        });
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || supabaseKey}`,
+        'apikey': supabaseKey
+    };
+
+    const fireRequest = (body) => {
+        // Use keepalive so the request survives page navigation
+        return fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+            keepalive: true
+        }).catch(err => console.error('[TTS Background] Send error:', err));
     };
 
     if (isMultiAge) {
-        supabase.from('module_variants').select('id, age_band')
-            .eq('module_id', moduleId).then(({ data: variants }) => {
-                if (variants) {
-                    variants.forEach(v => {
-                        console.log(`[TTS Background] Starting variant ${v.age_band}...`);
-                        callNarration({ moduleId, variantId: v.id, force: false });
-                    });
-                }
-            });
+        const { data: variants } = await supabase.from('module_variants')
+            .select('id, age_band').eq('module_id', moduleId);
+        if (variants && variants.length > 0) {
+            console.log(`[TTS Background] Firing narration for ${variants.length} variants...`);
+            await Promise.all(variants.map(v => fireRequest({ moduleId, variantId: v.id, force: false })));
+        }
     } else {
-        console.log('[TTS Background] Starting narration generation...');
-        callNarration({ moduleId, force: false });
+        console.log('[TTS Background] Firing narration request...');
+        await fireRequest({ moduleId, force: false });
     }
+    console.log('[TTS Background] Requests sent — server will continue processing.');
 }
 
 const TTS_BATCH_SIZE = 8;
@@ -1257,10 +1255,31 @@ window.generateModuleWithAI = async function() {
         // All modules are now multi-age by default
         const isMultiAge = true;
 
-        if (!title) { alert('❌ Please enter a module title'); document.getElementById('newModuleTitle').focus(); return; }
-        if (!superSkillId) { alert('❌ Please select a Super Skill'); document.getElementById('newModuleSuperSkill').focus(); return; }
-        if (!coreTheoryId) { alert('❌ Please select a Core Theory'); coreTheoryEl?.focus(); return; }
-        if (!brainTownAnalogy) { alert('❌ Please provide a Brain Town Analogy'); brainTownEl?.focus(); return; }
+        // Validate all required fields (Steps 1-9)
+        if (!title) { alert('❌ Step 1: Please enter a module title'); document.getElementById('newModuleTitle').focus(); return; }
+        if (!superSkillId) { alert('❌ Step 2: Please select a Super Skill'); document.getElementById('newModuleSuperSkill').focus(); return; }
+        // Step 3 (Age Variants) is auto-set to multi-age
+        // Step 4 (Character) is auto-populated from Super Skill
+        if (!subSkillId) { alert('❌ Step 5: Please select a Sub-Skill'); subSkillEl?.focus(); return; }
+        if (!cycleId) { alert('❌ Step 6: Please select a Cycle'); document.getElementById('newModuleCycle')?.focus(); return; }
+        if (!weekNumber) { alert('❌ Step 7: Please enter a Week number'); document.getElementById('newModuleOrder')?.focus(); return; }
+
+        // Check for duplicate week/cycle/super_skill combination
+        const existingModule = allModules.find(m => 
+            m.super_skill_id === superSkillId && 
+            m.cycle_id === cycleId && 
+            String(m.week_number) === String(weekNumber)
+        );
+        if (existingModule) {
+            const superSkillName = superSkillEl?.selectedOptions?.[0]?.text?.trim() || 'this Super Skill';
+            const cycleName = document.getElementById('newModuleCycle')?.selectedOptions?.[0]?.text?.trim() || 'this Cycle';
+            alert(`❌ Step 7: A module already exists for Week ${weekNumber} in ${cycleName} for ${superSkillName}.\n\nExisting module: "${existingModule.title}"\n\nPlease choose a different week number.`);
+            document.getElementById('newModuleOrder')?.focus();
+            return;
+        }
+
+        if (!coreTheoryId) { alert('❌ Step 8: Please select a Core Theory'); coreTheoryEl?.focus(); return; }
+        if (!brainTownAnalogy) { alert('❌ Step 9: Please provide a Brain Town Analogy'); brainTownEl?.focus(); return; }
 
         showGenerationPipeline();
         generateBtn.disabled = true;
@@ -1513,13 +1532,19 @@ window.saveGeneratedModule = async function() {
         window.closeAddModuleModal();
         if (loadingOverlay) loadingOverlay.style.display = 'none';
 
-        // Trigger TTS narration in the background — don't make the admin wait
+        // Fire narration requests to the server in the background
         if (newModule?.id) {
-            triggerNarrationBackground(newModule.id, isMultiAge);
+            await triggerNarrationBackground(newModule.id, isMultiAge);
         }
 
+        // Refresh the modules grid without a full page reload
+        await loadAllModules();
+        if (typeof window._adminRenderAllModulesList === 'function') {
+            window._adminRenderAllModulesList();
+        }
+        await updateStats();
+
         alert('Module created successfully! Audio narration is generating in the background.');
-        window.location.reload();
     } catch (error) {
         console.error('Error saving module:', error);
         alert('Failed to save module: ' + error.message);

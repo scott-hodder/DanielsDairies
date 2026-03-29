@@ -2960,12 +2960,15 @@ function extractNarrationFromHtml(html: string, pageType: string): string {
   // Remove inputs, textareas, labels (checkboxes, "I finished my reflection!", etc.)
   cleaned = cleaned.replace(/<(?:input|textarea)[^>]*\/?>/gi, '');
   cleaned = cleaned.replace(/<label[\s\S]*?<\/label>/gi, '');
-  // Remove hidden feedback elements (quiz-feedback, scenario-feedback, followup-feedback, mascot-feedback)
-  cleaned = cleaned.replace(/<[^>]+class="[^"]*(?:quiz-feedback|scenario-feedback|followup-feedback|mascot-feedback)[^"]*"[\s\S]*?<\/[^>]+>/gi, '');
-  // Remove activity checkpoint containers (data-activity checkbox + label wrappers)
-  cleaned = cleaned.replace(/<div[^>]*class="[^"]*m-bg-light-green[^"]*"[\s\S]*?<\/div>/gi, '');
-  // Remove elements with display:none (hidden feedback)
-  cleaned = cleaned.replace(/<[^>]+style="[^"]*display:\s*none[^"]*"[\s\S]*?<\/[^>]+>/gi, '');
+  // Remove feedback/hidden div elements by matching class
+  const feedbackClasses = /quiz-feedback|scenario-feedback|followup-feedback|mascot-feedback|m-feedback-hidden|m-bg-light-green/;
+  cleaned = cleaned.replace(/<div[^>]*class="([^"]*)"[^>]*>[\s\S]*?<\/div>/gi, (match, cls) => {
+    return feedbackClasses.test(cls) ? '' : match;
+  });
+  // Also catch <p> feedback elements (quiz-feedback, scenario-feedback are <p> tags)
+  cleaned = cleaned.replace(/<p[^>]*class="[^"]*(?:quiz-feedback|scenario-feedback)[^"]*"[^>]*>[\s\S]*?<\/p>/gi, '');
+  // Remove display:none elements
+  cleaned = cleaned.replace(/<[^>]+style="[^"]*display:\s*none[^"]*"[^>]*>[\s\S]*?<\/(?:div|p|span)>/gi, '');
   // Remove data-feedback attribute content that might leak through
   cleaned = cleaned.replace(/\s*data-feedback="[^"]*"/gi, '');
   cleaned = cleaned.replace(/\s*data-correct="[^"]*"/gi, '');

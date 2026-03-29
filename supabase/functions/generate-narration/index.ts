@@ -164,9 +164,9 @@ serve(async (req) => {
 
     console.log("[TTS] Target:", targetTable, targetId, "| Pages:", existingNarration?.length || 0);
 
-    // 3. If no pre-extracted narration texts, extract from HTML
-    if (!existingNarration || existingNarration.length === 0) {
-      console.log("[TTS] No pre-extracted texts, extracting from HTML...");
+    // 3. If no narration texts OR force=true, re-extract fresh from HTML
+    if (!existingNarration || existingNarration.length === 0 || force) {
+      console.log("[TTS] Extracting narration text fresh from HTML...");
 
       const htmlTable = variantId ? "module_variants" : "modules";
       const { data: htmlRecord } = await supabaseClient
@@ -194,10 +194,16 @@ serve(async (req) => {
         text = text.replace(/<button[\s\S]*?<\/button>/gi, '');
         text = text.replace(/<(?:input|textarea)[^>]*\/?>/gi, '');
         text = text.replace(/<label[\s\S]*?<\/label>/gi, '');
-        // Remove hidden feedback elements
-        text = text.replace(/<[^>]+class="[^"]*(?:quiz-feedback|scenario-feedback|followup-feedback|mascot-feedback)[^"]*"[\s\S]*?<\/[^>]+>/gi, '');
-        text = text.replace(/<div[^>]*class="[^"]*m-bg-light-green[^"]*"[\s\S]*?<\/div>/gi, '');
-        text = text.replace(/<[^>]+style="[^"]*display:\s*none[^"]*"[\s\S]*?<\/[^>]+>/gi, '');
+        // Remove feedback/hidden elements — match opening tag through to its balanced </div>
+        // These contain nested tags so we can't use simple [\s\S]*?<\/tag> — use a greedy match to the LAST </div> in the block
+        const feedbackClasses = /quiz-feedback|scenario-feedback|followup-feedback|mascot-feedback|m-feedback-hidden|m-bg-light-green/;
+        text = text.replace(/<div[^>]*class="([^"]*)"[^>]*>[\s\S]*?<\/div>/gi, (match, cls) => {
+          return feedbackClasses.test(cls) ? '' : match;
+        });
+        // Also catch <p> feedback elements (quiz-feedback is a <p>)
+        text = text.replace(/<p[^>]*class="[^"]*(?:quiz-feedback|scenario-feedback)[^"]*"[^>]*>[\s\S]*?<\/p>/gi, '');
+        // Remove display:none elements
+        text = text.replace(/<[^>]+style="[^"]*display:\s*none[^"]*"[^>]*>[\s\S]*?<\/(?:div|p|span)>/gi, '');
         text = text.replace(/\s*data-feedback="[^"]*"/gi, '');
         text = text.replace(/\s*data-correct="[^"]*"/gi, '');
         text = text.replace(/\s*data-good="[^"]*"/gi, '');
@@ -241,88 +247,97 @@ serve(async (req) => {
       .update({ narration_status: "generating" })
       .eq("id", targetId);
 
-    // 5. Process each page
+    // 5. Process pages in parallel batches of 5 for speed
+    const PARALLEL_BATCH = 5;
     const narrationData: NarrationEntry[] = [...existingNarration];
     let hasErrors = false;
     let pagesGenerated = 0;
     const pagesToProcess = requestedPages || existingNarration.map((_: NarrationEntry, i: number) => i);
 
+    // Build list of pages that actually need generation
+    const workItems: { i: number; text: string; hash: string }[] = [];
     for (let i = 0; i < existingNarration.length; i++) {
+      if (!pagesToProcess.includes(i)) continue;
       const entry = existingNarration[i];
       const narrationText = entry.fullText || entry.text || "";
-
-      if (!pagesToProcess.includes(i)) continue;
-
-      // Skip very short pages (cover pages, dividers)
       if (narrationText.length < 20) {
         narrationData[i] = { ...entry, audioUrl: null, status: "skipped" };
         continue;
       }
-
-      // Truncate very long texts (OpenAI TTS supports up to 4096 chars)
       const textToSpeak = narrationText.length > 4000
         ? narrationText.slice(0, 4000) + "..."
         : narrationText;
-
       const contentHash = await hashText(textToSpeak);
-
-      // Skip unchanged pages that already have audio unless force=true
       if (!force && entry.audioUrl && entry.contentHash === contentHash && entry.status === "ready") {
         continue;
       }
+      workItems.push({ i, text: textToSpeak, hash: contentHash });
+    }
 
-      try {
-        console.log(`[TTS] Page ${i} (${textToSpeak.length} chars)...`);
-        const audioBuffer = await generateAudio(textToSpeak, apiKey);
+    console.log(`[TTS] ${workItems.length} pages to generate (parallel batch size: ${PARALLEL_BATCH})`);
 
-        // Upload to Supabase Storage
+    // Process in parallel batches
+    for (let b = 0; b < workItems.length; b += PARALLEL_BATCH) {
+      const batch = workItems.slice(b, b + PARALLEL_BATCH);
+      console.log(`[TTS] Batch ${Math.floor(b / PARALLEL_BATCH) + 1}: pages ${batch.map(w => w.i).join(', ')}`);
+
+      const results = await Promise.allSettled(batch.map(async (work) => {
+        const { i, text, hash } = work;
+        const entry = existingNarration[i];
+        const narrationText = entry.fullText || entry.text || "";
+
+        const audioBuffer = await generateAudio(text, apiKey);
         const fileName = `${storagePath}/page-${i}.mp3`;
         const { error: uploadError } = await supabaseClient.storage
           .from("tts-audio")
-          .upload(fileName, audioBuffer, {
-            contentType: "audio/mpeg",
-            upsert: true,
-          });
-
-        if (uploadError) {
-          throw new Error(`Storage upload failed: ${uploadError.message}`);
-        }
+          .upload(fileName, audioBuffer, { contentType: "audio/mpeg", upsert: true });
+        if (uploadError) throw new Error(`Storage upload: ${uploadError.message}`);
 
         const { data: urlData } = supabaseClient.storage
           .from("tts-audio")
           .getPublicUrl(fileName);
 
-        narrationData[i] = {
-          pageIndex: i,
-          text: narrationText.slice(0, 200) + (narrationText.length > 200 ? "..." : ""),
-          fullText: narrationText,
-          audioUrl: urlData.publicUrl,
-          contentHash,
-          status: "ready",
-        };
+        return { i, narrationText, hash, audioUrl: urlData.publicUrl };
+      }));
 
-        pagesGenerated++;
-        console.log(`[TTS] Page ${i} done`);
+      // Process results
+      for (let r = 0; r < results.length; r++) {
+        const result = results[r];
+        const work = batch[r];
+        const entry = existingNarration[work.i];
+        const narrationText = entry.fullText || entry.text || "";
 
-        // Incremental save after each page
-        await supabaseClient
-          .from(targetTable)
-          .update({ narration_data: narrationData, narration_status: "generating" })
-          .eq("id", targetId);
-
-      } catch (err) {
-        console.error(`[TTS] Page ${i} error:`, err);
-        hasErrors = true;
-        narrationData[i] = {
-          pageIndex: i,
-          text: narrationText.slice(0, 200) + "...",
-          fullText: narrationText,
-          audioUrl: null,
-          contentHash,
-          status: "error",
-          error: err instanceof Error ? err.message : String(err),
-        };
+        if (result.status === "fulfilled") {
+          const { i, hash, audioUrl } = result.value;
+          narrationData[i] = {
+            pageIndex: i,
+            text: narrationText.slice(0, 200) + (narrationText.length > 200 ? "..." : ""),
+            fullText: narrationText,
+            audioUrl,
+            contentHash: hash,
+            status: "ready",
+          };
+          pagesGenerated++;
+        } else {
+          hasErrors = true;
+          narrationData[work.i] = {
+            pageIndex: work.i,
+            text: narrationText.slice(0, 200) + "...",
+            fullText: narrationText,
+            audioUrl: null,
+            contentHash: work.hash,
+            status: "error",
+            error: result.reason?.message || String(result.reason),
+          };
+          console.error(`[TTS] Page ${work.i} error:`, result.reason);
+        }
       }
+
+      // Save progress after each batch
+      await supabaseClient
+        .from(targetTable)
+        .update({ narration_data: narrationData, narration_status: "generating" })
+        .eq("id", targetId);
     }
 
     // 6. Final save

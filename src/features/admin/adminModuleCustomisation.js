@@ -279,7 +279,7 @@ window.bulkDeactivateModules = async function() {
 // ================================================================================
 // SELECT MODULE FOR EDITING
 // ================================================================================
-window.selectModuleForEdit = function(moduleId) {
+window.selectModuleForEdit = async function(moduleId) {
     const module = allModules.find(m => m.id === moduleId);
     setSelectedModule(module || null);
     if (!module) { console.error('Module not found with ID:', moduleId); return; }
@@ -310,11 +310,15 @@ window.selectModuleForEdit = function(moduleId) {
     document.getElementById('editContentBrief').value = module.additional_context || module.content_brief || '';
 
     const editSuperSkill = document.getElementById('editSuperSkill');
-    if (editSuperSkill) { editSuperSkill.value = module.super_skill_id || ''; window.onEditSuperSkillChange(); }
-    const editSubSkill = document.getElementById('editSubSkill');
-    if (editSubSkill) editSubSkill.value = module.sub_skill_id || '';
-    const editCycle = document.getElementById('editCycle');
-    if (editCycle) editCycle.value = module.cycle_id || '';
+    if (editSuperSkill) {
+        editSuperSkill.value = module.super_skill_id || '';
+        // Await the async dropdown population, then set sub-skill and cycle values
+        await window.onEditSuperSkillChange();
+        const editSubSkill = document.getElementById('editSubSkill');
+        if (editSubSkill) editSubSkill.value = module.sub_skill_id || '';
+        const editCycle = document.getElementById('editCycle');
+        if (editCycle) editCycle.value = module.cycle_id || '';
+    }
 
     const editCoreTheory = document.getElementById('editCoreTheorySelect');
     if (editCoreTheory && module.core_theory_id) {
@@ -535,7 +539,7 @@ window.generateNarrationForModule = async function() {
                     const variant = variants[v];
                     statusEl.textContent = `Generating variant ${v + 1}/${variants.length} (ages ${variant.age_band})...`;
 
-                    const data = await callNarration({ moduleId: selectedModule.id, variantId: variant.id, force: false });
+                    const data = await callNarration({ moduleId: selectedModule.id, variantId: variant.id, force: true });
                     if (data) {
                         totalReady += data.readyCount || 0;
                         totalSkipped += data.skippedCount || 0;
@@ -545,7 +549,7 @@ window.generateNarrationForModule = async function() {
             }
         } else {
             statusEl.textContent = 'Generating narration audio...';
-            const data = await callNarration({ moduleId: selectedModule.id, force: false });
+            const data = await callNarration({ moduleId: selectedModule.id, force: true });
             if (data) {
                 totalReady = data.readyCount || 0;
                 totalSkipped = data.skippedCount || 0;

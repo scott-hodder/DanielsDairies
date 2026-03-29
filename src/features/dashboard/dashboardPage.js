@@ -2109,6 +2109,22 @@ async function selectChild(child) {
     return
   }
   
+  // Fetch fresh child data to ensure we have latest level/XP values
+  try {
+    const { data: freshChild, error } = await supabase
+      .from('children')
+      .select('*')
+      .eq('id', child.id)
+      .single()
+    
+    
+    if (!error && freshChild) {
+      child = freshChild
+    }
+  } catch (err) {
+    console.warn('Could not fetch fresh child data:', err)
+  }
+  
   setSelectedChild(child)
   setAppState('selectedChild', child)
   rememberSelectedChildId(child.id)
@@ -4467,7 +4483,7 @@ async function updateDashboardStats() {
   const totalXp = state.selectedChild.total_xp || 0
   const currentLevel = state.selectedChild.level || 1
   
-  // Get XP required for next level
+  // Get XP required for current and next level
   let nextLevelXp = 0
   let currentLevelXp = 0
   
@@ -4475,26 +4491,49 @@ async function updateDashboardStats() {
     // Get XP required for current level (to show progress from)
     const currentLevelInfo = await getLevelInfo(currentLevel)
     currentLevelXp = currentLevelInfo?.xp_required || 0
-    
+  } catch (error) {
+    console.error('Error getting current level info:', error)
+    // Fallback: estimate based on 500 XP per level
+    currentLevelXp = (currentLevel - 1) * 500
+  }
+  
+  try {
     // Get XP required for next level
     nextLevelXp = await getXpForNextLevel(currentLevel)
   } catch (error) {
-    console.error('Error getting level info:', error)
-    // Fallback to simple calculation
+    console.error('Error getting next level info:', error)
+    // Fallback: estimate next level as current + 500-700 XP
+    nextLevelXp = currentLevelXp + 500 + (currentLevel * 100)
+  }
+  
+  // Ensure nextLevelXp is always greater than currentLevelXp
+  if (nextLevelXp <= currentLevelXp) {
     nextLevelXp = currentLevelXp + 500
   }
   
   // Calculate progress within current level
-  const levelProgress = totalXp - currentLevelXp
+  const levelProgress = Math.max(0, totalXp - currentLevelXp)
   const xpNeededForNextLevel = nextLevelXp - currentLevelXp
   const levelPercent = xpNeededForNextLevel > 0 ? Math.min(100, Math.round((levelProgress / xpNeededForNextLevel) * 100)) : 0
   
-  const levelValueEl = document.getElementById('childLevel')
-  const levelProgressBarEl = document.getElementById('levelProgressBar')
-  const levelProgressTextEl = document.getElementById('levelProgressText')
+  // Update level display elements (matching dashboard.html IDs)
+  const levelValueEl = document.getElementById('currentLevelDisplay')
+  const totalXpEl = document.getElementById('totalXpDisplay')
+  const levelProgressBarEl = document.getElementById('xpProgressBar')
+  const levelProgressTextEl = document.getElementById('xpProgressText')
+  const levelRingEl = document.getElementById('levelRingProgress')
+  
   if (levelValueEl) levelValueEl.textContent = currentLevel
+  if (totalXpEl) totalXpEl.textContent = totalXp
   if (levelProgressBarEl) levelProgressBarEl.style.width = `${levelPercent}%`
-  if (levelProgressTextEl) levelProgressTextEl.textContent = `${levelProgress} / ${xpNeededForNextLevel} XP`
+  if (levelProgressTextEl) levelProgressTextEl.textContent = `${totalXp} / ${nextLevelXp} XP`
+  
+  // Update the SVG ring progress (circumference is 213.6, so offset = circumference * (1 - percent/100))
+  if (levelRingEl) {
+    const circumference = 213.6
+    const offset = circumference * (1 - levelPercent / 100)
+    levelRingEl.style.strokeDashoffset = offset
+  }
   
   // Get rank from leaderboard
   try {
