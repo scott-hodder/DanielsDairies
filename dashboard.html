@@ -18,6 +18,7 @@
     <!-- Adventure UI Overhaul -->
     <link href="/styles/dashboard-adventure.css" rel="stylesheet">
 
+    <style>#dashboardFooter:not(.dashboard-footer-visible) { display: none !important; }</style>
 
 </head>
 <body>
@@ -437,8 +438,8 @@
 
                             <!-- Guardrails Footer -->
                             <div class="pi-guardrails">
-                                <p>These insights reflect your child's activity in Daniel's Diaries and are based on modules completed, check-ins submitted, and mood ratings shared.</p>
-                                <p>This is not a clinical assessment or diagnosis. More check-ins and completed modules help us show better patterns over time.</p>
+                                <p>These insights reflect your child's activity in Daniel's Diaries and are based on modules completed, check-ins submitted, and mood ratings shared. They are generated using evidence-based principles and are designed to support — not replace — your own observations as a parent.</p>
+                                <p>Daniel's Diaries is an educational wellbeing tool, not a therapeutic or clinical service. This is not a clinical assessment, diagnosis, or professional recommendation. If you have concerns about your child's emotional or mental health, please consult a qualified professional.</p>
                             </div>
                         </div>
                     </div>
@@ -545,6 +546,14 @@
             </div>
         </div>
     </main>
+
+    <footer class="dashboard-footer" style="display: none !important;" id="dashboardFooter">
+        <div class="dashboard-footer-content">
+            <p class="dashboard-footer-text">
+                <strong>Daniel's Diaries</strong> is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice. If you have concerns about your child's wellbeing, please consult a qualified professional.
+            </p>
+        </div>
+    </footer>
 
     <!-- Add Child Modal -->
     <div id="addChildModal" class="modal-overlay hidden">

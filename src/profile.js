@@ -2,7 +2,7 @@
 import { signOut, getCurrentUser } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
 import { showElement, hideElement } from './utils/dom.js'
-import { switchStripeSubscriptionPlan } from './services/databaseService.js'
+import { switchStripeSubscriptionPlan, manageSubscription } from './services/databaseService.js'
 import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
 
 const supabase = getSupabaseClient()
@@ -123,7 +123,7 @@ async function loadData() {
       supabase.from('modules').select('*, super_skills(*)').eq('is_active', true).order('pathway_order', { ascending: true }),
       supabase.from('subscription_tiers').select('*').eq('is_active', true).order('created_at', { ascending: true }),
       supabase.from('parent_subscriptions').select('*, subscription_tiers(*)').eq('parent_id', userId).maybeSingle(),
-      supabase.from('parent_profiles').select('credits').eq('user_id', userId).maybeSingle()
+      supabase.from('parent_profiles').select('credits').eq('id', userId).maybeSingle()
     ])
 
     // Children
@@ -231,7 +231,29 @@ function renderBasicProfileSections(container) {
         </div>
       </div>
     </section>
-    
+
+    <!-- Feedback Section -->
+    <section class="profile-hub" style="margin-top:24px;">
+      <div class="profile-hub-header">
+        <h2 class="profile-hub-title">💬 Send Us Feedback</h2>
+        <p class="profile-hub-subtitle">We'd love to hear what you think — your feedback helps us improve</p>
+      </div>
+      <div style="padding:0 24px 24px;">
+        <div class="feedback-stars" id="feedbackStars" style="display:flex; gap:6px; margin-bottom:16px;">
+          <button type="button" class="feedback-star" data-rating="1" aria-label="1 star" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="2" aria-label="2 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="3" aria-label="3 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="4" aria-label="4 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+          <button type="button" class="feedback-star" data-rating="5" aria-label="5 stars" style="background:none; border:none; font-size:28px; cursor:pointer; opacity:0.35; transition:opacity 0.15s, transform 0.15s;">⭐</button>
+        </div>
+        <textarea id="feedbackText" placeholder="What's working well? What could be better?" rows="4" style="width:100%; padding:12px 14px; border:1.5px solid #d4dbe6; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; resize:vertical; box-sizing:border-box; color:#2b3a55; line-height:1.5;"></textarea>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
+          <button id="feedbackSubmitBtn" type="button" style="padding:10px 24px; background:linear-gradient(135deg,#14b8a6,#0d9488); color:white; border:none; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s;">Send Feedback</button>
+          <span id="feedbackStatus" style="font-size:13px; color:#6b7c8f;"></span>
+        </div>
+      </div>
+    </section>
+
     <style>
       .profile-section-content.collapsed {
         display: none;
@@ -244,6 +266,10 @@ function renderBasicProfileSections(container) {
       }
       .profile-section-arrow {
         transition: transform 0.2s ease;
+      }
+      .feedback-star.active {
+        opacity: 1 !important;
+        transform: scale(1.15);
       }
     </style>
   `
@@ -268,6 +294,78 @@ function renderBasicProfileSections(container) {
   // Wire plan action buttons
   document.getElementById('changePlanBtn')?.addEventListener('click', openChangePlanModal)
   document.getElementById('makePaymentBtn')?.addEventListener('click', openMakePaymentModal)
+
+  // Subscription management buttons
+  document.getElementById('cancelSubscriptionBtn')?.addEventListener('click', () => {
+    showSubscriptionConfirmModal('cancel')
+  })
+  document.getElementById('pauseSubscriptionBtn')?.addEventListener('click', () => {
+    showSubscriptionConfirmModal('pause')
+  })
+  document.getElementById('resumeSubscriptionBtn')?.addEventListener('click', (e) => {
+    handleSubscriptionAction('resume', e.target)
+  })
+  document.getElementById('retryPaymentBtn')?.addEventListener('click', () => {
+    openMakePaymentModal()
+  })
+
+  // Feedback star rating
+  let feedbackRating = 0
+  const stars = container.querySelectorAll('.feedback-star')
+  stars.forEach(star => {
+    star.addEventListener('click', () => {
+      feedbackRating = parseInt(star.dataset.rating)
+      stars.forEach((s, i) => {
+        s.classList.toggle('active', i < feedbackRating)
+      })
+    })
+  })
+
+  // Feedback submit
+  const feedbackBtn = document.getElementById('feedbackSubmitBtn')
+  const feedbackText = document.getElementById('feedbackText')
+  const feedbackStatus = document.getElementById('feedbackStatus')
+
+  if (feedbackBtn) {
+    feedbackBtn.addEventListener('click', async () => {
+      const message = feedbackText.value.trim()
+      if (!message && feedbackRating === 0) {
+        feedbackStatus.textContent = 'Please add a rating or message.'
+        feedbackStatus.style.color = '#ef4444'
+        return
+      }
+
+      feedbackBtn.disabled = true
+      feedbackBtn.textContent = 'Sending...'
+      feedbackStatus.textContent = ''
+
+      try {
+        const user = state.currentUser
+        const { error } = await supabase.from('user_feedback').insert({
+          user_id: user?.id || null,
+          email: user?.email || 'unknown',
+          rating: feedbackRating || null,
+          message: message || null
+        })
+
+        if (error) throw error
+
+        feedbackText.value = ''
+        feedbackRating = 0
+        stars.forEach(s => s.classList.remove('active'))
+        feedbackStatus.textContent = 'Thank you for your feedback!'
+        feedbackStatus.style.color = '#0d9488'
+        feedbackBtn.textContent = 'Send Feedback'
+        feedbackBtn.disabled = false
+      } catch (err) {
+        console.error('Feedback error:', err)
+        feedbackStatus.textContent = 'Something went wrong. Please try again.'
+        feedbackStatus.style.color = '#ef4444'
+        feedbackBtn.textContent = 'Send Feedback'
+        feedbackBtn.disabled = false
+      }
+    })
+  }
 }
 
 // Render plan section content
@@ -300,8 +398,41 @@ function renderPlanSection() {
     }
   }
   
+  const isPastDue = sub && sub.status === 'past_due'
+  const isPaused = sub && sub.status === 'paused'
+  const isCancelScheduled = sub && sub.cancel_at_period_end
+
+  let statusBanner = ''
+  if (isPastDue) {
+    statusBanner = `
+      <div class="plan-status-banner plan-status-banner-warning">
+        <strong>Payment issue</strong>
+        <p>We had trouble with your last payment. Please update your payment method to keep your subscription active.</p>
+        <button type="button" id="retryPaymentBtn" class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Update Payment</button>
+      </div>`
+  } else if (isPaused) {
+    statusBanner = `
+      <div class="plan-status-banner plan-status-banner-info">
+        <strong>Subscription paused</strong>
+        <p>Your subscription is currently paused. You won't be charged until you resume.</p>
+        <button type="button" id="resumeSubscriptionBtn" class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Resume Subscription</button>
+      </div>`
+  } else if (isCancelScheduled) {
+    statusBanner = `
+      <div class="plan-status-banner plan-status-banner-info">
+        <strong>Cancellation scheduled</strong>
+        <p>Your subscription will end on ${nextPayment}. You can still use it until then.</p>
+        <button type="button" id="resumeSubscriptionBtn" class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Keep Subscription</button>
+      </div>`
+  }
+
+  const manageLinks =
+    (!isPaused && !isCancelScheduled ? '<button type="button" id="pauseSubscriptionBtn" class="plan-manage-link">Pause subscription</button>' : '') +
+    (!isCancelScheduled ? '<button type="button" id="cancelSubscriptionBtn" class="plan-manage-link plan-manage-link-danger">Cancel subscription</button>' : '')
+
   return `
     <div class="plan-overview">
+      ${statusBanner}
       <div class="plan-current-info">
         <div class="plan-tier-badge">${tierBadge}</div>
         <h3>Current Plan Details</h3>
@@ -340,6 +471,9 @@ function renderPlanSection() {
       <div class="plan-actions">
         <button class="profile-action-btn" id="changePlanBtn">Change Plan</button>
         <button class="profile-action-btn profile-action-btn-primary" id="makePaymentBtn">Make a Payment</button>
+      </div>
+      <div class="plan-manage-links">
+        ${manageLinks}
       </div>
     </div>
   `
@@ -784,6 +918,92 @@ async function callCheckoutSession(payload) {
     throw new Error(result?.error || result?.message || `Request failed (${response.status})`)
   }
   return result
+}
+
+function showSubscriptionConfirmModal(action) {
+  const isCancel = action === 'cancel'
+  const overlay = document.createElement('div')
+  overlay.className = 'module-modal-overlay active'
+  overlay.id = 'subscriptionConfirmModal'
+  overlay.innerHTML = `
+    <div class="module-modal" style="max-width:400px; padding:28px; text-align:center;">
+      <h3 style="margin:0 0 12px; color:#1F2937;">${isCancel ? 'Cancel subscription?' : 'Pause subscription?'}</h3>
+      <p style="color:#64748B; font-size:14px; margin:0 0 8px;">
+        ${isCancel
+          ? 'Your subscription will remain active until the end of your current billing period.'
+          : "Billing will be paused and you won't be charged. You can resume anytime."}
+      </p>
+      ${isCancel ? '<p style="color:#64748B; font-size:14px; margin:0 0 20px;">You can resubscribe anytime.</p>' : '<div style="height:12px;"></div>'}
+      <div style="display:flex; gap:10px; justify-content:center;">
+        <button type="button" id="confirmModalBack" class="profile-action-btn" style="flex:1;">${isCancel ? 'Keep subscription' : 'Go back'}</button>
+        <button type="button" id="confirmModalYes" class="profile-action-btn" style="flex:1; background:${isCancel ? '#DC2626' : '#F59E0B'}; color:white; border-color:${isCancel ? '#DC2626' : '#F59E0B'};">${isCancel ? 'Cancel' : 'Pause'}</button>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(overlay)
+  document.body.style.overflow = 'hidden'
+
+  const closeModal = () => {
+    overlay.remove()
+    document.body.style.overflow = ''
+  }
+
+  overlay.querySelector('#confirmModalBack').addEventListener('click', closeModal)
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal() })
+  overlay.querySelector('#confirmModalYes').addEventListener('click', () => {
+    const btn = overlay.querySelector('#confirmModalYes')
+    handleSubscriptionAction(action, btn, closeModal)
+  })
+}
+
+async function handleSubscriptionAction(action, button, onComplete) {
+  const originalLabel = button ? button.textContent : ''
+  if (button) {
+    button.disabled = true
+    button.textContent = 'Processing...'
+  }
+
+  try {
+    await manageSubscription(action)
+
+    const sub = window.currentSubscription || state.subscription
+    if (action === 'cancel') {
+      if (sub) sub.cancel_at_period_end = true
+      alert('Your subscription will be cancelled at the end of the billing period.')
+    } else if (action === 'pause') {
+      if (sub) sub.status = 'paused'
+      alert('Your subscription has been paused.')
+    } else if (action === 'resume') {
+      if (sub) {
+        sub.status = 'active'
+        sub.cancel_at_period_end = false
+      }
+      alert('Your subscription is active again!')
+    }
+
+    if (onComplete) onComplete()
+
+    // Re-render the plan section
+    const planContent = document.getElementById('profile-plan-content')
+    if (planContent) {
+      planContent.innerHTML = renderPlanSection()
+      // Re-wire the buttons
+      document.getElementById('changePlanBtn')?.addEventListener('click', openChangePlanModal)
+      document.getElementById('makePaymentBtn')?.addEventListener('click', openMakePaymentModal)
+      document.getElementById('cancelSubscriptionBtn')?.addEventListener('click', () => showSubscriptionConfirmModal('cancel'))
+      document.getElementById('pauseSubscriptionBtn')?.addEventListener('click', () => showSubscriptionConfirmModal('pause'))
+      document.getElementById('resumeSubscriptionBtn')?.addEventListener('click', (e) => handleSubscriptionAction('resume', e.target))
+      document.getElementById('retryPaymentBtn')?.addEventListener('click', () => openMakePaymentModal())
+    }
+  } catch (error) {
+    console.error('Subscription action failed:', error)
+    alert(error?.message || 'Something went wrong. Please try again.')
+    if (button) {
+      button.disabled = false
+      button.textContent = originalLabel
+    }
+  }
 }
 
 function openMakePaymentModal() {

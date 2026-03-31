@@ -111,7 +111,7 @@ function getAgeRangeKey(targetAge?: string): string {
   if (!targetAge) {
     return "6-8";
   }
-  const normalized = targetAge.replace(/[–-]/g, "-").trim();
+  const normalized = targetAge.replace(/[–-,]/g, "-").trim();
   const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
   if (match) {
     return `${match[1]}-${match[2]}`;
@@ -144,7 +144,7 @@ function firstPresent<T>(...values: Array<T | null | undefined>): T | null {
   return null;
 }
 
-function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): string {
+function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], moduleCode: string, categoryColor?: string | null, seriesInfo?: SeriesInfo | null): { html: string; narrationTexts: string[] } {
   const { metadata } = content;
   const palette = generatePaletteFromColor(categoryColor);
   const ageRangeKey = getAgeRangeKey(metadata.targetAge);
@@ -254,6 +254,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   
   // Build page functions - using function body strings, not template literals
   const pageFunctions: string[] = [];
+  const narrationTexts: string[] = []; // Parallel array of narrable text per page
   
   for (let pageIndex = 0; pageIndex < pageStructure.length; pageIndex++) {
     const template = pageStructure[pageIndex];
@@ -503,6 +504,9 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
        
     }
     
+    // Extract narration text BEFORE escaping (clean HTML at this point)
+    narrationTexts.push(extractNarrationFromHtml(pageHtml, template.type));
+
     // Inject grown-up note if this page has one
     // Insert before the closing </div> of the max-w-4xl container
     const grownUpNoteHtml = renderGrownUpNote(pageIndex);
@@ -513,12 +517,12 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         pageHtml = pageHtml.replace(lastDivPattern, `${grownUpNoteHtml}</div></div>`);
       }
     }
-    
+
     // Escape backticks in the HTML content but preserve ${} for runtime evaluation
     const escapedHtml = pageHtml
       .replace(/\\/g, '\\\\')
       .replace(/`/g, '\\`');
-    
+
     pageFunctions.push(`function generatePage${pageIndex}() {
   return \`${escapedHtml}\`;
 }`);
@@ -536,7 +540,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   - series: ${metadata.series}
   `;
   
-  return `<!DOCTYPE html>
+  const htmlOutput = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2933,7 +2937,63 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   </script>
 </body>
 </html>`;
+
+  return { html: htmlOutput, narrationTexts };
 }
+
+/**
+ * Extract readable narration text from a page's HTML.
+ * Called during generation when we have clean, pre-escape HTML.
+ */
+function extractNarrationFromHtml(html: string, pageType: string): string {
+  // Skip page types that don't need narration
+  if (pageType === 'admin-verification') return '';
+
+  let cleaned = html;
+  // Remove script/style/svg/canvas tags
+  cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, '');
+  cleaned = cleaned.replace(/<style[\s\S]*?<\/style>/gi, '');
+  cleaned = cleaned.replace(/<svg[\s\S]*?<\/svg>/gi, '');
+  cleaned = cleaned.replace(/<canvas[\s\S]*?<\/canvas>/gi, '');
+  // Remove buttons (quiz answers, scenario options — contain answer text + feedback)
+  cleaned = cleaned.replace(/<button[\s\S]*?<\/button>/gi, '');
+  // Remove inputs, textareas, labels (checkboxes, "I finished my reflection!", etc.)
+  cleaned = cleaned.replace(/<(?:input|textarea)[^>]*\/?>/gi, '');
+  cleaned = cleaned.replace(/<label[\s\S]*?<\/label>/gi, '');
+  // Remove feedback/hidden div elements by matching class
+  const feedbackClasses = /quiz-feedback|scenario-feedback|followup-feedback|mascot-feedback|m-feedback-hidden|m-bg-light-green/;
+  cleaned = cleaned.replace(/<div[^>]*class="([^"]*)"[^>]*>[\s\S]*?<\/div>/gi, (match, cls) => {
+    return feedbackClasses.test(cls) ? '' : match;
+  });
+  // Also catch <p> feedback elements (quiz-feedback, scenario-feedback are <p> tags)
+  cleaned = cleaned.replace(/<p[^>]*class="[^"]*(?:quiz-feedback|scenario-feedback)[^"]*"[^>]*>[\s\S]*?<\/p>/gi, '');
+  // Remove display:none elements
+  cleaned = cleaned.replace(/<[^>]+style="[^"]*display:\s*none[^"]*"[^>]*>[\s\S]*?<\/(?:div|p|span)>/gi, '');
+  // Remove data-feedback attribute content that might leak through
+  cleaned = cleaned.replace(/\s*data-feedback="[^"]*"/gi, '');
+  cleaned = cleaned.replace(/\s*data-correct="[^"]*"/gi, '');
+  cleaned = cleaned.replace(/\s*data-good="[^"]*"/gi, '');
+  // Remove event handler attributes
+  cleaned = cleaned.replace(/\s(?:onclick|onchange|oninput|onsubmit)\s*=\s*"[^"]*"/gi, '');
+  // Block tag endings → newlines
+  cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
+  cleaned = cleaned.replace(/<\/(?:p|h[1-6]|div|li|tr|td|th|blockquote)>/gi, '\n');
+  cleaned = cleaned.replace(/<li[^>]*>/gi, '• ');
+  // Strip all remaining tags
+  cleaned = cleaned.replace(/<[^>]+>/g, ' ');
+  // Decode entities
+  cleaned = cleaned.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  cleaned = cleaned.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&apos;/g, "'").replace(/&nbsp;/g, ' ');
+  // Remove template expressions (${...})
+  cleaned = cleaned.replace(/\$\{[^}]+\}/g, '');
+  // Clean whitespace
+  cleaned = cleaned.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
+  // Filter out noise lines and common UI text
+  const skipPatterns = /^(I finished|I completed|I practiced|I thought about|Breaths completed|\/\s*\d+)$/i;
+  const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 2 && !skipPatterns.test(l));
+  return lines.join(' ').replace(/\s+/g, ' ').trim();
+}
+
 // PAGE RENDERERS
 // ====================
 
@@ -2964,7 +3024,7 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
         <h1 class="text-5xl md:text-6xl mb-3 font-title m-color-dark">${escapeForTemplate(metadata.title)}</h1>
         <h2 class="text-2xl md:text-3xl mb-6 font-title m-color-primary">${escapeForTemplate(metadata.subtitle)}</h2>
         <div class="text-xl mb-6 font-body m-color-secondary">
-          <p class="mb-2">An Interactive Adventure for Ages ${escapeForTemplate(metadata.targetAge)}</p>
+          <p class="mb-2">An Interactive Adventure for Ages ${escapeForTemplate((metadata.targetAge || '').replace(/(\d+)\s*,\s*(\d+)/, '$1 - $2'))}</p>
         </div>
         <div class="border-4 rounded-3xl p-6 inline-block animate-glow m-border-primary m-bg-white">
           <p class="font-semibold mb-2 font-body text-lg m-color-dark">This adventure belongs to:</p>
@@ -3790,7 +3850,7 @@ function renderBalloonPopPage(balloon: BalloonPopContent, starIndex: number, met
           <div class="mb-6 p-4 rounded-xl m-bg-cream">
             <div class="flex justify-between mb-2">
               <span class="font-title m-color-dark">Calming Power:</span>
-              <span class="font-title text-xl" id="balloonPower_${starIndex}" class="m-color-primary">0%</span>
+              <span class="font-title text-xl m-color-primary" id="balloonPower_${starIndex}">0%</span>
             </div>
             <div class="h-6 rounded-full overflow-hidden m-bg-gray">
               <div class="h-full rounded-full transition-all duration-500" id="balloonPowerBar_${starIndex}" style="width: 0%; background: linear-gradient(90deg, var(--light-green), var(--primary));"></div>
@@ -3805,11 +3865,11 @@ function renderBalloonPopPage(balloon: BalloonPopContent, starIndex: number, met
           <p class="font-body text-sm text-center mb-3 m-color-secondary">Once you have enough calming power, tap each balloon to pop it!</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="balloons_${starIndex}">${balloonsHtml}</div>
           
-          <div class="p-4 rounded-xl text-center mb-4" id="balloonFeedback_${starIndex}" class="m-feedback-hidden-green">
+          <div class="p-4 rounded-xl text-center mb-4 m-feedback-hidden-green" id="balloonFeedback_${starIndex}">
             <p class="font-body text-lg" id="balloonFeedbackText_${starIndex}"></p>
           </div>
           
-          <div class="p-6 rounded-2xl text-center" id="balloonVictory_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="balloonVictory_${starIndex}">
             <p class="text-5xl mb-2">🎉</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(balloon.victoryMessage)}</p>
           </div>
@@ -3832,7 +3892,7 @@ function renderTreasureHuntPage(hunt: TreasureHuntContent, starIndex: number, me
   const activityId = `treasure_${starIndex}`;
   
   const locationsHtml = hunt.locations.map(loc => `
-    <div class="treasure-location p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105" id="loc_${starIndex}_${loc.id}" class="m-card-bordered" onclick="window.exploreTreasure('${starIndex}', '${loc.id}', ${hunt.locations.length})">
+    <div class="treasure-location p-4 rounded-2xl border-3 cursor-pointer transition-all hover:scale-105 m-card-bordered" id="loc_${starIndex}_${loc.id}" onclick="window.exploreTreasure('${starIndex}', '${loc.id}', ${hunt.locations.length})">
       <div class="flex items-center gap-3 mb-2">
         <span class="text-4xl">${loc.emoji}</span>
         <div>
@@ -3840,7 +3900,7 @@ function renderTreasureHuntPage(hunt: TreasureHuntContent, starIndex: number, me
           <p class="font-body text-sm m-color-secondary">${escapeForTemplate(loc.description)}</p>
         </div>
       </div>
-      <div class="treasure-content" id="tc_${starIndex}_${loc.id}" class="m-hidden">
+      <div class="treasure-content m-hidden" id="tc_${starIndex}_${loc.id}">
         <div class="p-3 rounded-xl my-3 m-bg-soft-yellow">
           <div class="flex items-center gap-2 mb-2">
             <span class="text-2xl">${loc.treasure.emoji}</span>
@@ -3869,7 +3929,7 @@ function renderTreasureHuntPage(hunt: TreasureHuntContent, starIndex: number, me
             <p class="font-title m-color-dark">Treasures: <span id="treasureCount_${starIndex}">0</span>/${hunt.locations.length}</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">${locationsHtml}</div>
-          <div class="p-6 rounded-2xl text-center" id="treasureVictory_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="treasureVictory_${starIndex}">
             <p class="text-5xl mb-2">🏆</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(hunt.completionMessage)}</p>
           </div>
@@ -3890,13 +3950,16 @@ function renderTreasureHuntPage(hunt: TreasureHuntContent, starIndex: number, me
 function renderMonsterTamerPage(tamer: MonsterTamerContent, starIndex: number, metadata: ModuleMetadata): string {
   const activityId = `monster_${starIndex}`;
   
-  const actionsHtml = tamer.tamingActions.map(a => `
-    <button class="taming-action p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2 m-card-bordered" onclick="window.tameMonster('${starIndex}', ${a.shrinkPower}, '${escapeForOnclick(a.message)}')">
+  const actionsHtml = tamer.tamingActions.map(a => {
+    const power = Math.abs(Number(a.shrinkPower) || 20);
+    return `
+    <button class="taming-action p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer flex flex-col items-center gap-2 m-card-bordered" onclick="window.tameMonster('${starIndex}', ${power}, '${escapeForOnclick(a.message)}')">
       <span class="text-3xl">${a.emoji}</span>
       <span class="font-body text-sm text-center m-color-dark">${escapeForTemplate(a.action)}</span>
-      <span class="text-xs px-2 py-1 rounded-full m-bg-light-green">-${a.shrinkPower}</span>
+      <span class="text-xs px-2 py-1 rounded-full m-bg-light-green">-${power}</span>
     </button>
-  `).join("");
+  `;
+  }).join("");
 
   const stagesHtml = tamer.stages.map((s, i) => `
     <div class="p-2 rounded-lg text-center transition-all" id="stage_${starIndex}_${s.level}" style="background-color: ${i === 0 ? 'var(--accent)' : 'var(--cream)'};">
@@ -3918,7 +3981,7 @@ function renderMonsterTamerPage(tamer: MonsterTamerContent, starIndex: number, m
             <div class="mt-4 w-full">
               <div class="flex justify-between mb-1">
                 <span class="font-body text-sm">Monster Size:</span>
-                <span class="font-title" id="monsterSize_${starIndex}" class="m-color-accent">100%</span>
+                <span class="font-title m-color-accent" id="monsterSize_${starIndex}">100%</span>
               </div>
               <div class="h-4 rounded-full overflow-hidden m-bg-gray">
                 <div class="h-full rounded-full transition-all duration-500" id="monsterBar_${starIndex}" style="width: 100%; background: linear-gradient(90deg, var(--accent), #ef4444);"></div>
@@ -3931,7 +3994,7 @@ function renderMonsterTamerPage(tamer: MonsterTamerContent, starIndex: number, m
           <div class="p-4 rounded-xl text-center mb-4" id="monsterFeedback_${starIndex}" style="display: none; background-color: var(--soft-yellow);">
             <p class="font-body text-lg" id="monsterFeedbackText_${starIndex}"></p>
           </div>
-          <div class="p-6 rounded-2xl text-center" id="monsterFriend_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="monsterFriend_${starIndex}">
             <p class="text-5xl mb-2">😊🤝👾</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(tamer.friendMessage)}</p>
           </div>
@@ -3954,11 +4017,11 @@ function renderGardenGrowerPage(garden: GardenGrowerContent, starIndex: number, 
   const plantsHtml = garden.plants.map(p => {
     const stagesAttr = p.growthStages.map(s => escapeForTemplate(s)).join('|');
     return `
-    <div class="garden-plant p-4 rounded-2xl border-2 transition-all" id="plant_${starIndex}_${p.id}" class="m-card-bordered">
+    <div class="garden-plant p-4 rounded-2xl border-2 transition-all m-card-bordered" id="plant_${starIndex}_${p.id}">
       <div class="text-center mb-2"><span class="text-5xl" id="plantEmoji_${starIndex}_${p.id}">${p.growthStages[0]}</span></div>
       <h3 class="font-title text-center mb-1 m-color-dark">${escapeForTemplate(p.name)}</h3>
       <p class="font-body text-xs text-center mb-2 m-color-secondary">${escapeForTemplate(p.feeling)}</p>
-      <p class="font-body text-sm text-center mb-3 p-2 rounded-lg" id="plantAction_${starIndex}_${p.id}" class="m-bg-cream">${escapeForTemplate(p.nurturingAction)}</p>
+      <p class="font-body text-sm text-center mb-3 p-2 rounded-lg m-bg-cream" id="plantAction_${starIndex}_${p.id}">${escapeForTemplate(p.nurturingAction)}</p>
       <div class="flex justify-center gap-1 mb-2">
         ${p.growthStages.map((_, i) => `<div class="w-3 h-3 rounded-full" id="growth_${starIndex}_${p.id}_${i}" style="background-color: ${i === 0 ? 'var(--primary)' : '#e5e7eb'};"></div>`).join("")}
       </div>
@@ -3980,7 +4043,7 @@ function renderGardenGrowerPage(garden: GardenGrowerContent, starIndex: number, 
             <p class="font-title">Plants Grown: <span id="gardenProgress_${starIndex}">0</span>/${garden.plants.length}</p>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">${plantsHtml}</div>
-          <div class="p-6 rounded-2xl text-center" id="gardenHarvest_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="gardenHarvest_${starIndex}">
             <p class="text-5xl mb-2">🌸🌻🌹🌷</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(garden.harvestMessage)}</p>
           </div>
@@ -4030,7 +4093,7 @@ function renderSuperheroCreatorPage(hero: SuperheroCreatorContent, starIndex: nu
             <p class="font-title mb-2">${escapeForTemplate(hero.missionPrompt)}</p>
             <textarea class="w-full p-2 rounded-lg border-2 font-body m-input-bordered-secondary" placeholder="My hero will..." onchange="saveFormData('hero_mission_${starIndex}', this.value); checkHeroComplete('${starIndex}')"></textarea>
           </div>
-          <div class="p-6 rounded-2xl text-center" id="heroDone_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="heroDone_${starIndex}">
             <p class="text-5xl mb-2">🦸‍♂️✨🦸‍♀️</p>
             <p class="font-title text-2xl">${escapeForTemplate(hero.completionMessage)}</p>
           </div>
@@ -4153,17 +4216,17 @@ function renderRocketLauncherPage(rocket: RocketLauncherContent, starIndex: numb
           </div>
           <div class="text-center mb-4"><span class="text-8xl" id="rocketEmoji_${starIndex}">🚀</span></div>
           <div class="mb-6 p-4 rounded-xl m-bg-cream">
-            <div class="flex justify-between mb-2"><span class="font-title">Fuel:</span><span class="font-title text-xl" id="fuelDisplay_${starIndex}" class="m-color-primary">0%</span></div>
+            <div class="flex justify-between mb-2"><span class="font-title">Fuel:</span><span class="font-title text-xl m-color-primary" id="fuelDisplay_${starIndex}">0%</span></div>
             <div class="h-6 rounded-full overflow-hidden m-bg-gray"><div class="h-full rounded-full transition-all duration-500" id="fuelBar_${starIndex}" style="width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));"></div></div>
           </div>
           <p class="font-title text-lg text-center mb-3">Fuel Actions ⚡</p>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${fuelHtml}</div>
-          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105" id="launchBtn_${starIndex}" class="m-btn-primary" onclick="window.launchRocket('${starIndex}')">🚀 LAUNCH!</button>
-          <div class="mt-6" id="planets_${starIndex}" class="m-hidden">
+          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105 m-btn-primary" id="launchBtn_${starIndex}" onclick="window.launchRocket('${starIndex}')">🚀 LAUNCH!</button>
+          <div class="mt-6 m-hidden" id="planets_${starIndex}">
             <p class="font-title text-lg text-center mb-3">Feeling Planets 🪐</p>
             <div class="grid grid-cols-2 gap-4">${planetsHtml}</div>
           </div>
-          <div class="p-6 rounded-2xl text-center mt-4" id="rocketReturn_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center mt-4 m-feedback-hidden" id="rocketReturn_${starIndex}">
             <p class="text-5xl mb-2">🏠🚀</p>
             <p class="font-title text-2xl">${escapeForTemplate(rocket.returnMessage)}</p>
           </div>
@@ -4206,7 +4269,7 @@ function renderMagicPotionPage(potion: MagicPotionContent, starIndex: number, me
           <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">${ingredientsHtml}</div>
           <p class="font-title text-lg text-center mb-3">Recipe Book 📖</p>
           <div class="grid grid-cols-2 gap-3 mb-6">${recipesHtml}</div>
-          <div class="p-6 rounded-2xl text-center" id="potionResult_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="potionResult_${starIndex}">
             <p class="text-5xl mb-2" id="potionEmoji_${starIndex}">✨</p>
             <p class="font-title text-2xl" id="potionMessage_${starIndex}">${escapeForTemplate(potion.magicMessage)}</p>
           </div>
@@ -4227,9 +4290,9 @@ function renderFeelingsBingoPage(bingo: FeelingsBingoContent, starIndex: number,
   const activityId = `bingo_${starIndex}`;
   
   // Create 3x3 grid (8 squares + 1 free space in middle)
-  const squaresHtml = bingo.squares.slice(0, 4).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" class="m-card-bordered" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("") +
+  const squaresHtml = bingo.squares.slice(0, 4).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center m-card-bordered" id="bingo_${starIndex}_${s.id}" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("") +
     `<div class="bingo-square p-3 rounded-xl border-2 flex flex-col items-center justify-center" style="background-color: var(--soft-yellow); border-color: var(--primary);"><span class="text-3xl">${bingo.freeSpace.emoji}</span><p class="font-title text-sm">FREE!</p><p class="font-body text-xs text-center">${escapeForTemplate(bingo.freeSpace.message)}</p></div>` +
-    bingo.squares.slice(4, 8).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center" id="bingo_${starIndex}_${s.id}" class="m-card-bordered" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("");
+    bingo.squares.slice(4, 8).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center m-card-bordered" id="bingo_${starIndex}_${s.id}" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("");
 
   return `
     <div class="page min-h-screen p-8 m-bg-cream" data-page="feelings-bingo" data-activity="${activityId}">
@@ -4245,7 +4308,7 @@ function renderFeelingsBingoPage(bingo: FeelingsBingoContent, starIndex: number,
             <p class="font-title mb-2">Win Patterns:</p>
             <p class="font-body text-sm">${bingo.bingoPatterns.join(' • ')}</p>
           </div>
-          <div class="p-6 rounded-2xl text-center" id="bingoWin_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="bingoWin_${starIndex}">
             <p class="text-5xl mb-2">🎉</p>
             <p class="font-title text-2xl">${escapeForTemplate(bingo.winMessage)}</p>
           </div>
@@ -4297,9 +4360,8 @@ function renderSpinTheWheelPage(wheel: SpinTheWheelContent, starIndex: number, m
             </div>
           </div>
           
-          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105 mb-6" 
+          <button class="w-full py-4 rounded-xl font-title text-xl cursor-pointer transition-all hover:scale-105 mb-6 m-btn-primary"
                   id="spinBtn_${starIndex}"
-                  class="m-btn-primary"
                   onclick="window.spinWheel('${starIndex}', ${wheel.segments.length})">
             🎡 SPIN THE WHEEL!
           </button>
@@ -4311,13 +4373,13 @@ function renderSpinTheWheelPage(wheel: SpinTheWheelContent, starIndex: number, m
           </div>
           
           <!-- Result Display -->
-          <div class="p-4 rounded-xl text-center mb-4" id="wheelResult_${starIndex}" class="m-feedback-hidden-green">
+          <div class="p-4 rounded-xl text-center mb-4 m-feedback-hidden-green" id="wheelResult_${starIndex}">
             <p class="text-4xl mb-2" id="wheelResultEmoji_${starIndex}"></p>
             <p class="font-body text-lg" id="wheelResultText_${starIndex}"></p>
           </div>
           
           <!-- Celebration -->
-          <div class="p-6 rounded-2xl text-center" id="wheelCelebration_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="wheelCelebration_${starIndex}">
             <p class="text-5xl mb-2">🎉</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(wheel.celebrationMessage)}</p>
           </div>
@@ -4335,9 +4397,8 @@ function renderStickerCollectorPage(sticker: StickerCollectorContent, starIndex:
   const activityId = `sticker_${starIndex}`;
   
   const challengesHtml = sticker.challenges.map(ch => `
-    <div class="sticker-challenge p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105"
+    <div class="sticker-challenge p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105 m-card-bordered"
          id="challenge_${starIndex}_${ch.id}"
-         class="m-card-bordered"
          onclick="window.collectSticker('${starIndex}', '${ch.id}', '${ch.emoji}', ${sticker.challenges.length})">
       <div class="flex items-center gap-3">
         <span class="text-4xl sticker-emoji" id="stickerEmoji_${starIndex}_${ch.id}">${ch.emoji}</span>
@@ -4376,7 +4437,7 @@ function renderStickerCollectorPage(sticker: StickerCollectorContent, starIndex:
           </div>
           
           <!-- Completion Message -->
-          <div class="p-6 rounded-2xl text-center" id="stickerComplete_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="stickerComplete_${starIndex}">
             <p class="text-5xl mb-2">🏆</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(sticker.completionMessage)}</p>
           </div>
@@ -4398,9 +4459,8 @@ function renderMindfulAdventurePage(adventure: MindfulAdventureContent, starInde
   const activityId = `adventure_${starIndex}`;
   
   const scenesHtml = adventure.scenes.map((scene, idx) => `
-    <div class="adventure-scene p-4 rounded-2xl border-2 mb-4" 
-         id="scene_${starIndex}_${scene.id}"
-         class="m-card-bordered">
+    <div class="adventure-scene p-4 rounded-2xl border-2 mb-4 m-card-bordered"
+         id="scene_${starIndex}_${scene.id}">
       <div class="flex items-center gap-3 mb-3">
         <span class="text-4xl">${scene.emoji}</span>
         <h3 class="font-title text-lg m-color-dark">${escapeForTemplate(scene.sceneName)}</h3>
@@ -4434,7 +4494,7 @@ function renderMindfulAdventurePage(adventure: MindfulAdventureContent, starInde
           ${scenesHtml}
           
           <!-- Closing Message -->
-          <div class="p-6 rounded-2xl text-center" id="adventureClosing_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="adventureClosing_${starIndex}">
             <p class="text-5xl mb-2">🌟</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(adventure.closingMessage)}</p>
           </div>
@@ -4496,12 +4556,12 @@ function renderEmotionDetectivePage(detective: EmotionDetectiveContent, starInde
           </div>
           
           <!-- Feedback -->
-          <div class="p-4 rounded-xl text-center mb-4" id="detectiveFeedback_${starIndex}" class="m-hidden">
+          <div class="p-4 rounded-xl text-center mb-4 m-hidden" id="detectiveFeedback_${starIndex}">
             <p class="font-body text-lg" id="detectiveFeedbackText_${starIndex}"></p>
           </div>
           
           <!-- Revelation -->
-          <div class="p-6 rounded-2xl text-center" id="detectiveReveal_${starIndex}" class="m-feedback-hidden">
+          <div class="p-6 rounded-2xl text-center m-feedback-hidden" id="detectiveReveal_${starIndex}">
             <p class="text-5xl mb-2">🎉</p>
             <p class="font-title text-2xl m-color-dark">${escapeForTemplate(detective.revelationMessage)}</p>
           </div>
@@ -4601,7 +4661,7 @@ function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): s
           <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-4" style="border-top: 2px solid #f2e1a8;">
             <div>
               <p class="font-body text-sm m-color-secondary">Completed on</p>
-              <p class="font-title text-2xl" id="certificateDate" class="m-color-dark"></p>
+              <p class="font-title text-2xl m-color-dark" id="certificateDate"></p>
             </div>
             <div class="text-right">
               <p class="font-body text-sm m-color-secondary">Guide</p>
@@ -5566,12 +5626,12 @@ function renderWeatherControllerPage(weather: WeatherControllerContent, starInde
           </div>
           
           <!-- Feedback Area -->
-          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all" id="weatherFeedback" class="m-feedback-hidden-green">
+          <div class="weather-feedback p-4 rounded-xl text-center mb-4 transition-all m-feedback-hidden-green" id="weatherFeedback">
             <p class="font-body text-lg m-color-dark" id="feedbackText"></p>
           </div>
           
           <!-- Win Message (hidden initially) -->
-          <div class="weather-win p-6 rounded-2xl text-center" id="weatherWin" class="m-feedback-hidden">
+          <div class="weather-win p-6 rounded-2xl text-center m-feedback-hidden" id="weatherWin">
             <p class="text-4xl mb-2">☀️</p>
             <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(weather.winText)}</p>
             <p class="font-body m-color-secondary">${escapeForTemplate(weather.encouragement)}</p>
@@ -5647,12 +5707,12 @@ function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starInde
           </div>
           
           <!-- Feedback Area -->
-          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all" id="powerupFeedback" class="m-hidden">
+          <div class="powerup-feedback p-4 rounded-xl text-center mb-4 transition-all m-hidden" id="powerupFeedback">
             <p class="font-body text-lg" id="powerupFeedbackText"></p>
           </div>
           
           <!-- Win Message (hidden initially) -->
-          <div class="powerup-win p-6 rounded-2xl text-center" id="powerupWin" class="m-feedback-hidden">
+          <div class="powerup-win p-6 rounded-2xl text-center m-feedback-hidden" id="powerupWin">
             <p class="text-4xl mb-2">🎉</p>
             <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(collector.winText)}</p>
             <p class="font-body m-color-secondary">${escapeForTemplate(collector.tipText)}</p>
@@ -5706,7 +5766,7 @@ function renderEmotionMazePage(maze: EmotionMazeContent, starIndex: number, meta
           </button>
         `).join("")}
       </div>
-      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center" id="mazeFeedback${idx}" class="m-hidden"></div>
+      <div class="maze-step-feedback p-3 rounded-lg mt-3 text-center m-hidden" id="mazeFeedback${idx}"></div>
     </div>
   `).join("");
 
@@ -5740,7 +5800,7 @@ function renderEmotionMazePage(maze: EmotionMazeContent, starIndex: number, meta
           ${stepsHtml}
           
           <!-- Win Message -->
-          <div class="maze-win p-6 rounded-2xl text-center" id="mazeWin" class="m-feedback-hidden">
+          <div class="maze-win p-6 rounded-2xl text-center m-feedback-hidden" id="mazeWin">
             <p class="text-4xl mb-2">${maze.goalEmotion.emoji}</p>
             <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(maze.completionMessage)}</p>
           </div>
@@ -5834,7 +5894,7 @@ function renderStrengthShieldPage(shield: StrengthShieldContent, starIndex: numb
           </div>
           
           <!-- Win Message -->
-          <div class="shield-win p-6 rounded-2xl text-center" id="shieldWin" class="m-feedback-hidden">
+          <div class="shield-win p-6 rounded-2xl text-center m-feedback-hidden" id="shieldWin">
             <p class="text-4xl mb-2">🛡️</p>
             <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(shield.completionMessage)}</p>
           </div>
@@ -5859,9 +5919,8 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
   const activityId = `volcano_${starIndex}`;
   
   const actionsHtml = volcano.coolingActions.map(action => `
-    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab"
+    <button class="cooling-action flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 cursor-grab m-card-bordered"
             draggable="true"
-            class="m-card-bordered"
             data-cooling="${action.coolingPower}"
             data-power="${action.coolingPower}"
             data-action="${escapeForTemplate(action.action)}">
@@ -5932,12 +5991,12 @@ function renderFeelingVolcanoPage(volcano: FeelingVolcanoContent, starIndex: num
           </div>
           
           <!-- Feedback -->
-          <div class="volcano-feedback p-4 rounded-xl text-center mb-4" id="volcanoFeedback" class="m-hidden">
+          <div class="volcano-feedback p-4 rounded-xl text-center mb-4 m-hidden" id="volcanoFeedback">
             <p class="font-body text-lg" id="volcanoFeedbackText"></p>
           </div>
           
           <!-- Safe Message -->
-          <div class="volcano-safe p-6 rounded-2xl text-center" id="volcanoSafe" class="m-feedback-hidden">
+          <div class="volcano-safe p-6 rounded-2xl text-center m-feedback-hidden" id="volcanoSafe">
             <p class="text-4xl mb-2">😌</p>
             <p class="font-title text-2xl mb-2 m-color-dark">${escapeForTemplate(volcano.safeMessage)}</p>
           </div>
@@ -6006,13 +6065,13 @@ async function generateModule(
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
   
   await updateProgress("rendering", "Building interactive HTML...");
-  const html = renderHtml(content, pageStructure, moduleCode, categoryColor, seriesInfo);
-  
+  const { html, narrationTexts } = renderHtml(content, pageStructure, moduleCode, categoryColor, seriesInfo);
+
   const pageCount = pageStructure.length;
   const characterCount = html.length;
-  
+
   await updateProgress("complete", `Module generation complete! (${pageCount} pages)`);
-  
+
   const spec = {
     version: "3.0",
     moduleCode,
@@ -6022,8 +6081,8 @@ async function generateModule(
     moduleSummary: content.moduleSummary,
     generatedAt: new Date().toISOString(),
   };
-  
-  return { html, pageCount, characterCount, spec };
+
+  return { html, pageCount, characterCount, spec, narrationTexts };
 }
 
 // ====================
@@ -6128,11 +6187,11 @@ async function generateModuleMultiAge(
 
   // Render HTML for each variant
   await updateProgress("rendering", "Building interactive HTML for all variants...");
-  const variantResults: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number }> = {};
+  const variantResults: Record<string, { html: string; spec: any; tokenUsage: number; durationMs: number; narrationTexts: string[] }> = {};
 
   for (const [band, content] of variants) {
     const renderStart = Date.now();
-    const html = renderHtml(content, pageStructure, `${moduleCode}_${band.replace('-', '')}`, categoryColor, seriesInfo);
+    const { html, narrationTexts } = renderHtml(content, pageStructure, `${moduleCode}_${band.replace('-', '')}`, categoryColor, seriesInfo);
     const spec = {
       version: "3.0-multi-age",
       moduleCode,
@@ -6148,8 +6207,9 @@ async function generateModuleMultiAge(
     variantResults[band] = {
       html,
       spec,
-      tokenUsage: 0, // Individual tracking would require per-variant counters
+      tokenUsage: 0,
       durationMs: Date.now() - renderStart,
+      narrationTexts,
     };
   }
 
@@ -6185,23 +6245,36 @@ async function runAsyncGeneration(
   contentBrief: string,
   seriesInfo?: SeriesInfo | null,
   categoryColor?: string | null,
-  forcedTitle?: string | null
+  forcedTitle?: string | null,
 ) {
   const startTime = Date.now();
-  
+
   try {
     await supabaseClient
       .from("ai_generation_jobs")
       .update({ status: "running", updated_at: new Date().toISOString() })
       .eq("id", jobId);
-    
+
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error("Generation timeout")), JOB_TIMEOUT_MS);
     });
-    
+
     const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
-    
+
+    // Attach pending narration data (texts only, no audio yet — TTS runs separately after save)
+    if (result.narrationTexts && result.narrationTexts.length > 0) {
+      result.narrationData = result.narrationTexts.map((text: string, i: number) => ({
+        pageIndex: i,
+        text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+        fullText: text,
+        audioUrl: null,
+        contentHash: null,
+        status: 'pending',
+      }));
+      result.narrationStatus = 'pending';
+    }
+
     await supabaseClient
       .from("ai_generation_jobs")
       .update({
@@ -6210,27 +6283,16 @@ async function runAsyncGeneration(
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
-    
+
     // Save module_summary to the modules table if available
     if (result?.spec?.moduleSummary?.summary) {
       try {
-        // Find the module associated with this job and update its module_summary
-        const { data: jobData } = await supabaseClient
-          .from("ai_generation_jobs")
-          .select("result")
-          .eq("id", jobId)
-          .single();
-        
-        // The module_summary is stored in the job result for the admin to use
-        // It will be written to the modules table when the module is saved
         console.log("[AI] Module summary generated for continuity:", result.spec.moduleSummary.summary.substring(0, 100) + "...");
       } catch (e) {
         console.warn("[AI] Could not save module summary:", e);
       }
     }
-    
 
-    
   } catch (e) {
     const error = e instanceof Error ? e : new Error(String(e));
     console.error(`[AI] Job ${jobId} failed:`, error.message);
@@ -6285,6 +6347,23 @@ async function runAsyncMultiAgeGeneration(
     );
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
 
+    // Build per-variant pending narration data (texts only, no audio — TTS runs separately)
+    const variantNarrationData: Record<string, any[]> = {};
+    for (const [band, variant] of Object.entries(result.variants) as [string, any][]) {
+      if (variant.narrationTexts?.length > 0) {
+        variantNarrationData[band] = variant.narrationTexts.map((text: string, i: number) => ({
+          pageIndex: i,
+          text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+          fullText: text,
+          audioUrl: null,
+          contentHash: null,
+          status: 'pending',
+        }));
+      }
+    }
+
+    const firstBand = Object.keys(result.variants)[0];
+
     await supabaseClient
       .from("ai_generation_jobs")
       .update({
@@ -6294,21 +6373,21 @@ async function runAsyncMultiAgeGeneration(
           moduleCode: result.moduleCode,
           pageCount: result.pageCount,
           core: result.core,
-          // Store variant specs (not full HTML - that goes to module_variants table)
           variantSpecs: Object.fromEntries(
             Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.spec])
           ),
-          // Store the first variant's HTML as preview for admin
           html: Object.values(result.variants)[0]?.html || '',
           spec: Object.values(result.variants)[0]?.spec || {},
           totalTokens: result.totalTokens,
           totalDurationMs: result.totalDurationMs,
-          // All variant HTML keys for client to access
           variantBands: Object.keys(result.variants),
-          // Individual variant HTML stored in result for admin preview
           variantHtml: Object.fromEntries(
             Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.html])
           ),
+          // Per-variant narration data (texts only, pending audio generation)
+          narrationData: variantNarrationData[firstBand] || null,
+          narrationStatus: 'pending',
+          variantNarrationData,
         },
         updated_at: new Date().toISOString(),
       })
@@ -6442,7 +6521,7 @@ serve(async (req) => {
     if (superSkillId) {
       const { data: superSkillData, error: superSkillError } = await supabaseClient
         .from("super_skills")
-        .select("name, description, domain, personality, nd_affirmation, relevant_theories, emoji, theme_color, character_name, character_image_url")
+        .select("name, description, domain, personality, nd_affirmation, relevant_theories, emoji, theme_color, character_name, character_image_url, voice_id")
         .eq("id", superSkillId)
         .single();
       
@@ -6914,7 +6993,7 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
           runAsyncMultiAgeGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle, requestedBands).catch(console.error);
         }
       } else {
-        // Legacy single-age generation path (unchanged)
+        // Legacy single-age generation path
         if (typeof anyGlobal?.EdgeRuntime?.waitUntil === "function") {
           anyGlobal.EdgeRuntime.waitUntil(runAsyncGeneration(supabaseClient, jobId, contentBrief, seriesInfo, categoryColor, forcedTitle));
         } else {
@@ -6936,6 +7015,7 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
       characterCount: result.characterCount,
       spec: result.spec,
       moduleSummary: result.spec.moduleSummary?.summary || null,
+      narrationTexts: result.narrationTexts || [],
     });
     
   } catch (e) {

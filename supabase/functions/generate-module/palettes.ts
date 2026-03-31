@@ -14,6 +14,7 @@ export const DEFAULT_PALETTE: CategoryPalette = {
   softYellow: '#FFE8A3'
 }
 
+// Keys MUST be uppercase to match the lookup in generatePaletteFromColor
 const SUPER_SKILL_PALETTES: Record<string, CategoryPalette> = {
   '#10B981': { primary: '#10B981', secondary: '#0D9488', accent: '#34D399', cream: '#ECFDF5', softYellow: '#A7F3D0' },
   '#EC4899': { primary: '#EC4899', secondary: '#8B5CF6', accent: '#F472B6', cream: '#FDF2F8', softYellow: '#FBCFE8' },
@@ -21,7 +22,9 @@ const SUPER_SKILL_PALETTES: Record<string, CategoryPalette> = {
   '#06B6D4': { primary: '#06B6D4', secondary: '#0891B2', accent: '#22D3EE', cream: '#ECFEFF', softYellow: '#A5F3FC' },
   '#EF4444': { primary: '#EF4444', secondary: '#DC2626', accent: '#F87171', cream: '#FEF2F2', softYellow: '#FECACA' },
   '#F59E0B': { primary: '#F59E0B', secondary: '#D97706', accent: '#FBBF24', cream: '#FFFBEB', softYellow: '#FDE68A' },
-  '#8B5CF6': { primary: '#8B5CF6', secondary: '#7C3AED', accent: '#A78BFA', cream: '#F5F3FF', softYellow: '#DDD6FE' }
+  '#8B5CF6': { primary: '#8B5CF6', secondary: '#7C3AED', accent: '#A78BFA', cream: '#F5F3FF', softYellow: '#DDD6FE' },
+  // Social Mapper - Cyan/Teal
+  '#0891B2': { primary: '#0891B2', secondary: '#0E7490', accent: '#22D3EE', cream: '#ECFEFF', softYellow: '#A5F3FC' }
 }
 
 export function generatePaletteFromColor(baseColor: string | null | undefined): CategoryPalette {

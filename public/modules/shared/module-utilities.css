@@ -10,6 +10,10 @@
  * PALETTE VARIABLES: same --primary, --secondary, --accent etc.
  */
 
+/* Override inline body background to show generated scenic backgrounds */
+body {
+  background: transparent !important;
+}
 
 /* ============================================
    1. COLOR UTILITIES
@@ -139,13 +143,9 @@
   background-color: var(--cream);
 }
 
-/* Cover page - gentler gradient */
+/* Cover page - transparent to show generated background */
 .m-page-cover {
-  background: linear-gradient(170deg, 
-    color-mix(in srgb, var(--soft-yellow) 35%, white) 0%, 
-    var(--cream) 60%,
-    color-mix(in srgb, var(--primary) 5%, var(--cream)) 100%
-  );
+  background: transparent;
   padding-top: 20px;
 }
 

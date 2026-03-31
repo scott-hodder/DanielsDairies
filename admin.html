@@ -62,6 +62,7 @@
             <button class="tab" onclick="switchTab(event, 'generalSettings')">Check Ins</button>
             <button class="tab" onclick="switchTab(event, 'billing')">Billing</button>
             <button class="tab" onclick="switchTab(event, 'users')">Users</button>
+            <button class="tab" onclick="switchTab(event, 'feedback')">Feedback</button>
         </div>
 
         <!-- Tab Content: Check Ins -->
@@ -418,10 +419,14 @@
                             <textarea class="form-textarea" id="editContentBrief" rows="4" style="font-family: monospace; font-size: 13px;"></textarea>
                         </div>
 
-                        <div class="form-group" style="display: flex; gap: 12px; justify-content: space-between;">
+                        <div class="form-group" style="display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap;">
                             <button type="button" class="btn-delete" onclick="deleteModule()">🗑️ Delete Module</button>
-                            <button class="btn-save" onclick="saveModuleChanges()">💾 Save Changes</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-save" onclick="generateNarrationForModule()" style="background: #7c3aed;" id="genNarrationBtn">🔊 Generate Narration</button>
+                                <button class="btn-save" onclick="saveModuleChanges()">💾 Save Changes</button>
+                            </div>
                         </div>
+                        <div id="narrationStatus" style="display:none; margin-top:8px; padding:10px 14px; border-radius:8px; font-size:12px;"></div>
                     </div>
                     <div id="moduleEditPlaceholder" style="text-align: center; padding: 60px 20px; color: #6b7c8f;">
                         <p style="font-size: 18px;">👈 Select a module from the list to edit</p>
@@ -1148,6 +1153,25 @@
         </div>
         <!-- End Users Tab -->
 
+        <!-- Feedback Tab -->
+        <div id="feedbackTab" class="tab-content">
+            <div class="rewards-panel" style="max-width: 1000px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h2 class="panel-title" style="margin-bottom:4px;">User Feedback</h2>
+                        <p style="font-size:13px; color:#6b7c8f; margin:0;">Feedback submitted from the profile page</p>
+                    </div>
+                    <span id="feedbackCount" style="font-size:13px; color:#6b7c8f; font-weight:600;"></span>
+                </div>
+                <div id="feedbackTableContainer" style="max-height:600px; overflow-y:auto;">
+                    <div style="text-align:center; padding:40px; color:#6b7c8f;">
+                        <p style="margin:0;">Loading feedback...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Feedback Tab -->
+
         <!-- Add Tier Modal -->
         <div class="modal" id="addTierModal">
             <div class="modal-content" style="max-width: 500px;">
@@ -1274,6 +1298,10 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
+}
+.required-asterisk {
+    color: #dc2626;
+    font-weight: 700;
 }
 .gm-select {
     width: 100%;
@@ -1580,13 +1608,13 @@
 
                     <!-- STEP 1 - Title -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 1 - Module Title</div>
+                        <div class="gm-step-label">Step 1 - Module Title <span class="required-asterisk">*</span></div>
                         <input type="text" class="gm-input form-input" id="newModuleTitle" required placeholder="e.g., Daniel's Diaries: My Big Feelings" oninput="updateDecisionLogic()">
                     </div>
 
                     <!-- STEP 2 - Super Skill -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 2 - Super Skill</div>
+                        <div class="gm-step-label">Step 2 - Super Skill <span class="required-asterisk">*</span></div>
                         <select class="gm-select form-select" id="newModuleSuperSkill" required onchange="onSuperSkillChange(); updateDecisionLogic();">
                             <option value="">Select Super Skill...</option>
                         </select>
@@ -1595,7 +1623,7 @@
 
                     <!-- STEP 3 - Age Variants (all modules are multi-age) -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 3 - Age Variants</div>
+                        <div class="gm-step-label">Step 3 - Age Variants <span class="required-asterisk">*</span></div>
                         <div style="padding: 10px 12px; background: #EEF2FF; border: 1px solid #6366F1; border-radius: 6px; font-size: 13px; color: #405878;">
                             Multi-age - generates 4 variants (6-8, 9-11, 12-14, 15-18)
                         </div>
@@ -1606,20 +1634,20 @@
 
                     <!-- STEP 4 - Character (auto) -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 4 - Character</div>
+                        <div class="gm-step-label">Step 4 - Character <span class="required-asterisk">*</span></div>
                         <input type="text" class="gm-input form-input" id="newModuleCharacter" readonly placeholder="Auto-populated from Super Skill">
                     </div>
 
                     <!-- STEP 5 - Sub-Skill & Cycle -->
                     <div class="gm-row">
                         <div class="gm-step-group">
-                            <div class="gm-step-label">Step 5 - Sub-Skill</div>
+                            <div class="gm-step-label">Step 5 - Sub-Skill <span class="required-asterisk">*</span></div>
                             <select class="gm-select form-select" id="newModuleSubSkill" onchange="updateDecisionLogic()">
                                 <option value="">Select sub-skill...</option>
                             </select>
                         </div>
                         <div class="gm-step-group">
-                            <div class="gm-step-label">Step 6 - Cycle</div>
+                            <div class="gm-step-label">Step 6 - Cycle <span class="required-asterisk">*</span></div>
                             <select class="gm-select form-select" id="newModuleCycle" onchange="onModuleCycleChange(); updateDecisionLogic();">
                                 <option value="">Select cycle...</option>
                             </select>
@@ -1629,7 +1657,7 @@
                     <!-- STEP 7 - Week & XP/Stars -->
                     <div class="gm-row">
                         <div class="gm-step-group">
-                            <div class="gm-step-label">Step 7 - Week</div>
+                            <div class="gm-step-label">Step 7 - Week <span class="required-asterisk">*</span></div>
                             <input type="number" class="gm-input form-input" id="newModuleOrder" min="1" max="12" placeholder="1-12" oninput="updateDecisionLogic()">
                         </div>
                         <div class="gm-step-group">
@@ -1644,7 +1672,7 @@
 
                     <!-- STEP 8 - Core Theory -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 8 - Core Theory</div>
+                        <div class="gm-step-label">Step 8 - Core Theory <span class="required-asterisk">*</span></div>
                         <select id="coreTheorySelect" class="gm-select form-select" required onchange="updateDecisionLogic(); if(typeof updateTheoryPreview==='function'){updateTheoryPreview({selectId:'coreTheorySelect',previewId:'theoryPreview',nameId:'theoryPreviewName',descriptionId:'theoryPreviewDescription'});}">
                             <option value="">Select psychological theory...</option>
                         </select>
@@ -1656,7 +1684,7 @@
 
                     <!-- STEP 9 - Brain Town Analogy -->
                     <div class="gm-step-group">
-                        <div class="gm-step-label">Step 9 - Brain Town Analogy</div>
+                        <div class="gm-step-label">Step 9 - Brain Town Analogy <span class="required-asterisk">*</span></div>
                         <textarea 
                             class="gm-textarea form-textarea" 
                             id="brainTownAnalogy" 

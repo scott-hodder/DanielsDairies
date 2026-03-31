@@ -119,30 +119,44 @@ serve(async (req) => {
 
   // Add credits to parent_profiles and all children for a given parent
   async function addCreditsToFamily(parentId: string, amount: number) {
-    // Update parent credits
+    // Update parent credits (parent_profiles PK is 'id', not 'user_id')
     const { data: parent } = await supabase
       .from('parent_profiles')
       .select('credits')
-      .eq('user_id', parentId)
+      .eq('id', parentId)
       .maybeSingle()
 
-    await supabase
+    const newCredits = (parent?.credits ?? 0) + amount
+    const { error: updateError } = await supabase
       .from('parent_profiles')
-      .update({ credits: (parent?.credits ?? 0) + amount })
-      .eq('user_id', parentId)
+      .update({ credits: newCredits })
+      .eq('id', parentId)
+
+    if (updateError) {
+      console.error(`[Webhook] addCreditsToFamily - failed to update parent credits:`, updateError)
+    } else {
+      console.log(`[Webhook] addCreditsToFamily - parent ${parentId} credits: ${parent?.credits ?? 0} -> ${newCredits}`)
+    }
 
     // Update all children's credits
-    const { data: children } = await supabase
+    const { data: children, error: childQueryError } = await supabase
       .from('children')
-      .select('id, credits')
+      .select('id, name, credits')
       .eq('parent_user_id', parentId)
+
+    console.log(`[Webhook] addCreditsToFamily - found ${children?.length ?? 0} children, queryError: ${childQueryError?.message ?? 'none'}`)
 
     if (children && children.length > 0) {
       for (const child of children) {
-        await supabase
+        const oldCredits = child.credits ?? 0
+        const newChildCredits = oldCredits + amount
+        const { data: updated, error: childUpdateError } = await supabase
           .from('children')
-          .update({ credits: (child.credits ?? 0) + amount })
+          .update({ credits: newChildCredits })
           .eq('id', child.id)
+          .select('id, credits')
+
+        console.log(`[Webhook] addCreditsToFamily - child ${child.id} (${child.name}): ${oldCredits} -> ${newChildCredits}, updateError: ${childUpdateError?.message ?? 'none'}, returned: ${JSON.stringify(updated)}`)
       }
     }
   }
@@ -178,10 +192,24 @@ serve(async (req) => {
   }
 
   async function grantCreditsFromInvoice(invoice: Stripe.Invoice) {
-    const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
+    // Support both old API (invoice.subscription) and new API (invoice.parent.subscription_details)
+    const invoiceAny = invoice as any
+    const subscriptionId =
+      (typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id) ||
+      invoiceAny.parent?.subscription_details?.subscription ||
+      invoiceAny.lines?.data?.[0]?.parent?.subscription_item_details?.subscription ||
+      null
     const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
+
+    console.log(`[Webhook] grantCreditsFromInvoice - subscriptionId: ${subscriptionId}, customerId: ${customerId}`)
+
     const parentId = await findParentId(customerId, subscriptionId)
-    if (!parentId || !subscriptionId) return
+    console.log(`[Webhook] grantCreditsFromInvoice - parentId: ${parentId}`)
+
+    if (!parentId || !subscriptionId) {
+      console.log(`[Webhook] grantCreditsFromInvoice - SKIPPED: parentId=${parentId}, subscriptionId=${subscriptionId}`)
+      return
+    }
 
     const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
       expand: ['items.data.price']
@@ -190,7 +218,12 @@ serve(async (req) => {
     const price = subscription.items.data[0]?.price
     const tier = extractTierFromPrice(price)
 
+    // Also check subscription metadata for tier (set during signup)
     let resolvedTier: string | null = normalizeTierCode(tier)
+    if (!resolvedTier) {
+      const subMeta = (subscription as any).metadata
+      resolvedTier = normalizeTierCode(subMeta?.tier) || normalizeTierCode(subMeta?.plan)
+    }
     if (!resolvedTier) {
       const { data: existing } = await supabase
         .from('parent_subscriptions')
@@ -200,7 +233,12 @@ serve(async (req) => {
       resolvedTier = normalizeTierCode(existing?.tier)
     }
 
-    if (!resolvedTier) return
+    console.log(`[Webhook] grantCreditsFromInvoice - resolvedTier: ${resolvedTier}, priceMeta: ${JSON.stringify(price?.metadata)}`)
+
+    if (!resolvedTier) {
+      console.log(`[Webhook] grantCreditsFromInvoice - SKIPPED: could not resolve tier`)
+      return
+    }
 
     const { data: tierRow, error: tierError } = await supabase
       .from('subscription_tiers')
@@ -214,9 +252,21 @@ serve(async (req) => {
     const periodStart = line?.period?.start ?? subscription.current_period_start
     const periodEnd = line?.period?.end ?? subscription.current_period_end
 
+    // Update subscription period dates
+    await upsertParentSubscription({
+      parentId,
+      customerId,
+      subscriptionId,
+      tier: resolvedTier,
+      stripeStatus: subscription.status,
+      currentPeriodStart: subscription.current_period_start,
+      currentPeriodEnd: subscription.current_period_end,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end
+    })
+
     // Grant credits directly to parent_profiles and children
     await addCreditsToFamily(parentId, tierRow.modules_per_month)
-    console.log(`Granted ${tierRow.modules_per_month} credits to family of ${parentId} (invoice ${invoice.id})`)
+    console.log(`[Webhook] Granted ${tierRow.modules_per_month} credits to family of ${parentId} (invoice ${invoice.id}, tier ${resolvedTier})`)
   }
 
   async function grantSubscriptionExtensionCredits(params: {
@@ -256,6 +306,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log(`[Webhook] Processing event: ${event.type} (${event.id})`)
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
@@ -414,16 +466,25 @@ serve(async (req) => {
 
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice
+        console.log(`[Webhook] invoice.paid received - invoice: ${invoice.id}, customer: ${invoice.customer}`)
         await grantCreditsFromInvoice(invoice)
         break
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
-        const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
+        const invoiceAny2 = invoice as any
+        const subscriptionId =
+          (typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id) ||
+          invoiceAny2.parent?.subscription_details?.subscription ||
+          null
         const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
         const parentId = await findParentId(customerId, subscriptionId)
         if (!parentId) break
+
+        // Determine retry attempt from Stripe's attempt_count
+        const attemptCount = invoice.attempt_count ?? 1
+        console.log(`[Webhook] Payment failed for ${parentId}, attempt ${attemptCount}`)
 
         await upsertParentSubscription({
           parentId,
@@ -431,6 +492,61 @@ serve(async (req) => {
           subscriptionId,
           stripeStatus: 'past_due'
         })
+
+        // Store the failure details for the frontend to display
+        await supabase.from('parent_subscriptions').update({
+          payment_failure_code: invoice.last_finalization_error?.code ?? 'payment_failed',
+          payment_failure_count: attemptCount,
+          payment_failed_at: new Date().toISOString(),
+        }).eq('parent_id', parentId)
+
+        // Send notification email to the parent about the failed payment
+        try {
+          const { data: parentProfile } = await supabase
+            .from('parent_profiles')
+            .select('email, first_name')
+            .eq('user_id', parentId)
+            .maybeSingle()
+
+          // Also try auth user email as fallback
+          let email = parentProfile?.email
+          if (!email && customerId) {
+            const customer = await stripe.customers.retrieve(customerId as string)
+            if (customer && !customer.deleted) {
+              email = (customer as Stripe.Customer).email
+            }
+          }
+
+          if (email) {
+            const firstName = parentProfile?.first_name || 'there'
+            const isFirstAttempt = attemptCount <= 1
+            const subject = isFirstAttempt
+              ? "Payment failed — let's get this sorted"
+              : `Payment failed (attempt ${attemptCount}) — action needed`
+
+            // Use Stripe's hosted invoice URL for easy retry
+            const retryUrl = invoice.hosted_invoice_url || ''
+
+            console.log(`[Webhook] Sending payment failure email to ${email} (attempt ${attemptCount})`)
+
+            // Send via Supabase edge function or direct (using existing send-feedback-email pattern)
+            await supabase.functions.invoke('send-payment-failure-email', {
+              body: {
+                to: email,
+                firstName,
+                attemptCount,
+                retryUrl,
+                subject,
+              }
+            }).catch((emailErr: unknown) => {
+              // Don't fail the webhook if email sending fails
+              console.error('[Webhook] Failed to send payment failure email:', emailErr)
+            })
+          }
+        } catch (notifyErr) {
+          console.error('[Webhook] Error preparing payment failure notification:', notifyErr)
+        }
+
         break
       }
 

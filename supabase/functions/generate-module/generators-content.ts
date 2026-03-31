@@ -429,7 +429,6 @@ const PAGES_WITH_GROWNUP_NOTES: string[] = [
   "reflection",
   "monster-tamer",
   "superhero-creator",
-  "strength-shield",
   "coping-cards",
   "gratitude-jar",
 ];

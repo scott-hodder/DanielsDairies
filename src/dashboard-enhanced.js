@@ -6,6 +6,15 @@
 import { getZoneState } from './adventure-map-zones.js';
 import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
 
+// Show the dashboard footer once the map is fully rendered
+function showDashboardFooter() {
+  var footer = document.getElementById('dashboardFooter');
+  if (footer) {
+    footer.removeAttribute('style');
+    footer.classList.add('dashboard-footer-visible');
+  }
+}
+
 // Import existing dashboard state and functions
 let dashboardModules = [];
 let dashboardChildModules = [];
@@ -708,6 +717,7 @@ class AdventureMapV4 {
       // Render roadblocks asynchronously to avoid blocking
       this.renderRoadblocks().then(function() {
         setTimeout(function() { self.centerOnCurrentModule(); }, 100);
+        showDashboardFooter();
         if (typeof window._dashboardRenderComplete === 'function') {
           window._dashboardRenderComplete();
           window._dashboardRenderComplete = null;
@@ -715,6 +725,7 @@ class AdventureMapV4 {
       }).catch(function(err) {
         console.log('Roadblock rendering error:', err);
         setTimeout(function() { self.centerOnCurrentModule(); }, 100);
+        showDashboardFooter();
         if (typeof window._dashboardRenderComplete === 'function') {
           window._dashboardRenderComplete();
           window._dashboardRenderComplete = null;
@@ -722,6 +733,7 @@ class AdventureMapV4 {
       });
     } else {
       // No modules to render - still signal completion
+      showDashboardFooter();
       if (typeof window._dashboardRenderComplete === 'function') {
         window._dashboardRenderComplete();
         window._dashboardRenderComplete = null;
@@ -2882,6 +2894,9 @@ function initEnhancedDashboard() {
   enhancedDashboardInitialized = true;
   window.enhancedDashboard = enhancedDashboard;
   enhancedDashboard.init();
+  
+  // Footer is shown after the adventure map finishes rendering
+  // (via window._dashboardRenderComplete below)
 }
 
 // OPTIMIZED: Use event-driven initialization instead of polling

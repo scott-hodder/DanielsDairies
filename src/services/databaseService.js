@@ -536,6 +536,44 @@ export async function switchStripeSubscriptionPlan(tier) {
   return data
 }
 
+export async function manageSubscription(action) {
+  console.log('[Billing] Invoking manage-subscription edge function', { action })
+
+  const { data, error } = await getSupabaseClient().functions.invoke('manage-subscription', {
+    body: { action }
+  })
+
+  if (error) {
+    const response = error?.context
+    let responseBody = null
+
+    if (typeof Response !== 'undefined' && response instanceof Response) {
+      try {
+        responseBody = await response.clone().json()
+      } catch (e) {
+        try {
+          responseBody = await response.clone().text()
+        } catch (e2) {
+          responseBody = null
+        }
+      }
+    }
+
+    const responseErrorMessage =
+      (responseBody && typeof responseBody === 'object' && (responseBody.error || responseBody.message)) ||
+      (typeof responseBody === 'string' ? responseBody : null)
+
+    console.error('[Billing] manage-subscription failed', { error, responseBody })
+    throw new Error(responseErrorMessage || error?.message || 'Unable to manage subscription right now.')
+  }
+
+  if (data?.error) {
+    throw new Error(data.error)
+  }
+
+  return data
+}
+
 export async function getCreditSummary(parentUserId, periodStart, periodEnd) {
   const { data, error } = await getSupabaseClient()
     .from('v_parent_credit_summary')
@@ -593,7 +631,7 @@ export async function getParentCredits(parentUserId) {
   const { data, error } = await getSupabaseClient()
     .from('parent_profiles')
     .select('credits')
-    .eq('user_id', parentUserId)
+    .eq('id', parentUserId)
     .single()
 
   if (error) throw error
@@ -608,7 +646,7 @@ export async function grantCreditsToFamily(parentUserId, amount) {
   const { data: parent, error: parentError } = await supabase
     .from('parent_profiles')
     .select('credits')
-    .eq('user_id', parentUserId)
+    .eq('id', parentUserId)
     .single()
 
   if (parentError) throw parentError
@@ -616,7 +654,7 @@ export async function grantCreditsToFamily(parentUserId, amount) {
   await supabase
     .from('parent_profiles')
     .update({ credits: (parent?.credits ?? 0) + amount })
-    .eq('user_id', parentUserId)
+    .eq('id', parentUserId)
 
   // Update all children's credits
   const { data: children, error: childError } = await supabase

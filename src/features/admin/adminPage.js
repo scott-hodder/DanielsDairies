@@ -255,6 +255,8 @@ window.switchTab = function(evt, tabName) {
         if (typeof window._adminLoadSubSkillsTheories === 'function') window._adminLoadSubSkillsTheories();
         if (typeof window._adminLoadFasdDomainsTheories === 'function') window._adminLoadFasdDomainsTheories();
         if (typeof window._adminLoadNdisDomainsTheories === 'function') window._adminLoadNdisDomainsTheories();
+        // Auto-load the first sub-tab (Super Skills)
+        if (typeof window.switchRefTab === 'function') window.switchRefTab(null, 'refSuperSkills');
     } else if (tabName === 'rewards') {
         document.getElementById('rewardsTab').classList.add('active');
         if (!rewards || rewards.length === 0) {
@@ -269,6 +271,9 @@ window.switchTab = function(evt, tabName) {
     } else if (tabName === 'users') {
         document.getElementById('usersTab').classList.add('active');
         if (typeof window._adminLoadUsersData === 'function') window._adminLoadUsersData();
+    } else if (tabName === 'feedback') {
+        document.getElementById('feedbackTab').classList.add('active');
+        if (typeof window._adminLoadFeedback === 'function') window._adminLoadFeedback();
     }
 };
 
@@ -284,6 +289,7 @@ import './adminReferenceData.js';
 import './adminGeneralSettings.js';
 import './adminBilling.js';
 import './adminUsers.js';
+import './adminFeedback.js';
 
 // ================================================================================
 // INITIALIZE

@@ -32,6 +32,7 @@ export function switchRefTab(ev, id) {
     var panel = document.getElementById(id + 'Panel');
     if (panel) panel.style.display = 'block';
     if (ev && ev.target) { ev.target.style.background = '#405878'; ev.target.style.color = 'white'; }
+    else { var activeBtn = document.querySelector('#refDataTabs .ref-tab[onclick*="' + id + '"]'); if (activeBtn) { activeBtn.style.background = '#405878'; activeBtn.style.color = 'white'; } }
     if (!_dataLoaded) {
         _showRefLoading();
         _ensureLoaded().then(function() { _hideRefLoading(); _render(id); });
@@ -364,7 +365,8 @@ var _editConfigs = {
             { key: 'name', get: function(d) { return d.name; } },
             { key: 'domain', get: function(d) { return d.domain || d.description || ''; } },
             { key: '_char_id', type: 'select', get: function(d) { var ch = d.characters || {}; return ch.name || d.character_name || ''; }, selectValue: function(d) { return d.character_id || (d.characters ? d.characters.id : ''); }, options: function() { return _chars.map(function(c) { return { v: c.id, t: c.name + ' (' + (c.species || '') + ')' }; }); }, onchange: '_onCharEditSelect' },
-            { key: '_char_personality', readonly: true, get: function(d) { var ch = d.characters || {}; return ch.personality_nd || d.personality || ''; } }
+            { key: '_char_personality', readonly: true, get: function(d) { var ch = d.characters || {}; return ch.personality_nd || d.personality || ''; } },
+            { key: 'voice_id', get: function(d) { return d.voice_id || ''; } }
         ],
         // Custom save: updates super_skills AND characters table
         customSave: async function(id, updates) {
@@ -373,6 +375,7 @@ var _editConfigs = {
             if (updates.name !== undefined) ssUpdates.name = updates.name;
             if (updates.domain !== undefined) { ssUpdates.domain = updates.domain; ssUpdates.description = updates.domain; }
             if (updates._char_id !== undefined) ssUpdates.character_id = updates._char_id || null;
+            if (updates.voice_id !== undefined) ssUpdates.voice_id = updates.voice_id || null;
             if (Object.keys(ssUpdates).length) {
                 var r = await window.supabase.from('super_skills').update(ssUpdates).eq('id', id);
                 if (r.error) throw r.error;
@@ -477,7 +480,7 @@ function _render(id) {
 function rSS() {
     var p = document.getElementById('refSuperSkillsPanel'); if (!p) return;
     var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div><h3 style="font-size:16px;margin:0;font-weight:700;">🧠 Super Skills & Character Assignments</h3><p style="font-size:12px;color:#6b7c8f;margin:4px 0 0;">Each with a locked character and domain. Daniel (Golden Retriever) narrates every module.</p></div><button class="btn-save" onclick="refInlineAdd(\'SS\')">+ Add Super Skill</button></div>';
-    h += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#405878;color:white;">' + TH('Code', 'width:55px;') + TH('Super Skill') + TH('Domain') + TH('Character') + TH('Personality & ND Affirmation', 'min-width:280px;') + TH('', 'text-align:center;width:50px;') + '</tr></thead><tbody id="tbSS">';
+    h += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#405878;color:white;">' + TH('Code', 'width:55px;') + TH('Super Skill') + TH('Domain') + TH('Character') + TH('Personality & ND Affirmation', 'min-width:280px;') + TH('Voice ID', 'width:120px;') + TH('', 'text-align:center;width:50px;') + '</tr></thead><tbody id="tbSS">';
     _ss.forEach(function(s, i) {
         var code = s.code || (s.slug ? s.slug.substring(0, 2).toUpperCase() : '');
         // Get character info from joined data or fallback to super_skills columns
@@ -488,9 +491,10 @@ function rSS() {
         var charCell = charImg
             ? '<div style="display:flex;align-items:center;gap:6px;"><img src="' + E(charImg) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" alt="' + E(charName) + '"><span>' + E(charName) + '</span></div>'
             : E(charName);
-        h += '<tr><td style="' + td(i, 'font-weight:700;') + '">' + E(code) + '</td><td style="' + td(i, 'font-weight:600;') + '">' + E(s.name) + '</td><td style="' + td(i) + '">' + E(s.domain || s.description || '') + '</td><td style="' + td(i, 'color:#2a8f8f;font-weight:600;') + '">' + charCell + '</td><td style="' + td(i, 'font-size:11px;line-height:1.4;') + '">' + E(charPersonality) + '</td><td style="' + td(i, 'text-align:center;') + '">' + editBtn("refEditRow('SS','" + s.id + "',this)") + '</td></tr>';
+        var voiceCell = s.voice_id ? '<span style="font-family:monospace;font-size:10px;color:#059669;" title="' + E(s.voice_id) + '">' + E(s.voice_id.substring(0, 12)) + '…</span>' : '<span style="color:#94a3b8;font-size:10px;">Not set</span>';
+        h += '<tr><td style="' + td(i, 'font-weight:700;') + '">' + E(code) + '</td><td style="' + td(i, 'font-weight:600;') + '">' + E(s.name) + '</td><td style="' + td(i) + '">' + E(s.domain || s.description || '') + '</td><td style="' + td(i, 'color:#2a8f8f;font-weight:600;') + '">' + charCell + '</td><td style="' + td(i, 'font-size:11px;line-height:1.4;') + '">' + E(charPersonality) + '</td><td style="' + td(i) + '">' + voiceCell + '</td><td style="' + td(i, 'text-align:center;') + '">' + editBtn("refEditRow('SS','" + s.id + "',this)") + '</td></tr>';
     });
-    if (!_ss.length) h += '<tr><td colspan="6" style="padding:20px;text-align:center;color:#6b7c8f;">No super skills found.</td></tr>';
+    if (!_ss.length) h += '<tr><td colspan="7" style="padding:20px;text-align:center;color:#6b7c8f;">No super skills found.</td></tr>';
     h += '</tbody></table></div>';
     p.innerHTML = h;
 }
