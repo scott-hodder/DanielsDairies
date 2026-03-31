@@ -107,22 +107,32 @@ serve(async (req) => {
       })
 
       const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
+        mode: 'subscription',
         customer: customer.id,
         line_items: [{
           price_data: {
             currency: 'aud',
             product_data: {
               name: `Daniel's Diaries - ${planName}`,
-              description: `First month: ${modules} guided modules`
+              description: `${modules} guided modules per month`
             },
-            unit_amount: monthlyPriceCents
+            unit_amount: monthlyPriceCents,
+            recurring: {
+              interval: 'month'
+            }
           },
           quantity: 1
         }],
         success_url: successUrl,
         cancel_url: cancelUrl,
         allow_promotion_codes: true,
+        subscription_data: {
+          metadata: {
+            payment_type: 'signup',
+            email,
+            plan: tierCode,
+          }
+        },
         metadata: {
           payment_type: 'signup',
           email,

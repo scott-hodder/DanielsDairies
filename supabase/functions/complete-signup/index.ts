@@ -189,21 +189,81 @@ serve(async (req) => {
       }
     }
 
-    // 4. Create parent_subscriptions record (paid plans only)
+    // 4. Create parent_subscriptions record and link Stripe subscription (paid plans only)
     if (!isFreeTrial && plan) {
-      console.log('[complete-signup] Step 4: Creating subscription record...')
+      console.log('[complete-signup] Step 4: Creating subscription record and linking Stripe...')
       const now = new Date()
       const periodEnd = new Date(now)
       periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-      const subPayload = {
+      // Try to find the Stripe customer and subscription by email
+      let stripeCustomerId: string | null = null
+      let stripeSubscriptionId: string | null = null
+      let stripePriceId: string | null = null
+      let stripePeriodStart: string | null = null
+      let stripePeriodEnd: string | null = null
+
+      try {
+        const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
+        if (stripeSecretKey) {
+          const { default: Stripe } = await import('https://esm.sh/stripe@14.25.0?target=denonext')
+          const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+
+          // Find customer by email
+          const customers = await stripe.customers.list({ email, limit: 1 })
+          if (customers.data.length > 0) {
+            const customer = customers.data[0]
+            stripeCustomerId = customer.id
+            console.log('[complete-signup] Step 4 - Found Stripe customer:', stripeCustomerId)
+
+            // Find their active subscription
+            const subscriptions = await stripe.subscriptions.list({
+              customer: customer.id,
+              status: 'active',
+              limit: 1
+            })
+
+            if (subscriptions.data.length > 0) {
+              const sub = subscriptions.data[0]
+              stripeSubscriptionId = sub.id
+              stripePriceId = sub.items.data[0]?.price?.id ?? null
+              stripePeriodStart = new Date(sub.current_period_start * 1000).toISOString()
+              stripePeriodEnd = new Date(sub.current_period_end * 1000).toISOString()
+              console.log('[complete-signup] Step 4 - Found Stripe subscription:', stripeSubscriptionId)
+
+              // Update subscription metadata with the new user ID
+              await stripe.subscriptions.update(sub.id, {
+                metadata: { parent_id: userId, tier: plan }
+              })
+              // Also update customer metadata
+              await stripe.customers.update(customer.id, {
+                metadata: { parent_id: userId }
+              })
+            } else {
+              console.log('[complete-signup] Step 4 - No active subscription found for customer')
+            }
+          } else {
+            console.log('[complete-signup] Step 4 - No Stripe customer found for email:', email)
+          }
+        }
+      } catch (stripeErr) {
+        console.error('[complete-signup] Step 4 - Stripe lookup error (non-fatal):', stripeErr)
+      }
+
+      const subPayload: Record<string, unknown> = {
         parent_id: userId,
         tier: plan,
         status: 'active',
-        current_period_start: now.toISOString().split('T')[0],
-        current_period_end: periodEnd.toISOString().split('T')[0],
-        cancel_at_period_end: false
+        current_period_start: stripePeriodStart ? stripePeriodStart.slice(0, 10) : now.toISOString().split('T')[0],
+        current_period_end: stripePeriodEnd ? stripePeriodEnd.slice(0, 10) : periodEnd.toISOString().split('T')[0],
+        cancel_at_period_end: false,
       }
+      if (stripeCustomerId) subPayload.stripe_customer_id = stripeCustomerId
+      if (stripeSubscriptionId) subPayload.stripe_subscription_id = stripeSubscriptionId
+      if (stripePriceId) subPayload.stripe_price_id = stripePriceId
+      if (stripePeriodStart) subPayload.stripe_current_period_start = stripePeriodStart
+      if (stripePeriodEnd) subPayload.stripe_current_period_end = stripePeriodEnd
+
       console.log('[complete-signup] Step 4 - Subscription payload:', JSON.stringify(subPayload))
 
       const { data: subData, error: subError } = await admin

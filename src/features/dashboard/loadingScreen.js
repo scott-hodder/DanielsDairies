@@ -101,4 +101,7 @@ export function hideLoadingScreen() {
   if (loadingState) {
     loadingState.classList.add('hidden');
   }
+  
+  // Footer is shown after the adventure map finishes rendering
+  // (via window._dashboardRenderComplete in dashboard-enhanced.js)
 }

@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix, getChildCredits, spendChildCredit } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, manageSubscription, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix, getChildCredits, spendChildCredit } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -5177,7 +5177,37 @@ class ModuleGallery {
     }
 
     renderPlanSection(activeTier, currentTierName) {
+        var subStatus = (currentSubscription && currentSubscription.status) || 'active';
+        var isPastDue = subStatus === 'past_due';
+        var isPaused = subStatus === 'paused';
+        var isCancelScheduled = currentSubscription && currentSubscription.cancel_at_period_end;
+
+        var statusBanner = '';
+        if (isPastDue) {
+            statusBanner =
+                '<div class="plan-status-banner plan-status-banner-warning">' +
+                    '<strong>Payment issue</strong>' +
+                    '<p>We had trouble with your last payment. Please update your payment method to keep your subscription active.</p>' +
+                    '<button type="button" id="retryPaymentBtn" class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Update Payment</button>' +
+                '</div>';
+        } else if (isPaused) {
+            statusBanner =
+                '<div class="plan-status-banner plan-status-banner-info">' +
+                    '<strong>Subscription paused</strong>' +
+                    '<p>Your subscription is currently paused. You won\'t be charged until you resume.</p>' +
+                    '<button type="button" id="resumeSubscriptionBtn" class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Resume Subscription</button>' +
+                '</div>';
+        } else if (isCancelScheduled) {
+            statusBanner =
+                '<div class="plan-status-banner plan-status-banner-info">' +
+                    '<strong>Cancellation scheduled</strong>' +
+                    '<p>Your subscription will end on ' + this.escapeHtml(this.getNextPaymentDateLabel()) + '. You can still use it until then.</p>' +
+                    '<button type="button" id="resumeSubscriptionBtn" class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Keep Subscription</button>' +
+                '</div>';
+        }
+
         return '<div class="plan-overview">' +
+            statusBanner +
             '<div class="plan-current-info">' +
                 '<div class="plan-tier-badge">' + this.escapeHtml(((activeTier && activeTier.tier) || currentTierName).toUpperCase()) + '</div>' +
                 '<h3>Current Plan Details</h3>' +
@@ -5192,7 +5222,7 @@ class ModuleGallery {
                     '</div>' +
                     '<div class="plan-stat">' +
                         '<span class="plan-stat-label">Status</span>' +
-                        '<span class="plan-stat-value">' + this.escapeHtml(((currentSubscription && currentSubscription.status) || 'active').toUpperCase()) + '</span>' +
+                        '<span class="plan-stat-value">' + this.escapeHtml(subStatus.toUpperCase()) + '</span>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
@@ -5216,6 +5246,14 @@ class ModuleGallery {
             '<div class="plan-actions">' +
                 '<button type="button" id="openChangePlanModal" class="profile-action-btn">Change Plan</button>' +
                 '<button type="button" id="openMakePaymentModal" class="profile-action-btn profile-action-btn-primary">Make Payment</button>' +
+            '</div>' +
+            '<div class="plan-manage-links">' +
+                (!isPaused && !isCancelScheduled
+                    ? '<button type="button" id="pauseSubscriptionBtn" class="plan-manage-link">Pause subscription</button>'
+                    : '') +
+                (!isCancelScheduled
+                    ? '<button type="button" id="cancelSubscriptionBtn" class="plan-manage-link plan-manage-link-danger">Cancel subscription</button>'
+                    : '') +
             '</div>' +
         '</div>';
     }
@@ -5329,6 +5367,47 @@ class ModuleGallery {
                 }
             });
         });
+
+        // Subscription management buttons
+        var self = this;
+
+        var cancelBtn = this.container.querySelector('#cancelSubscriptionBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                self.showCancelConfirmation();
+            });
+        }
+
+        var pauseBtn = this.container.querySelector('#pauseSubscriptionBtn');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                self.showPauseConfirmation();
+            });
+        }
+
+        var resumeBtn = this.container.querySelector('#resumeSubscriptionBtn');
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                self.handleSubscriptionAction('resume', resumeBtn);
+            });
+        }
+
+        var retryBtn = this.container.querySelector('#retryPaymentBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                // Open the make payment modal for retry
+                self.createMakePaymentModal();
+                if (self.makePaymentModal) {
+                    self.makePaymentModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    self.attachPaymentModalListeners();
+                }
+            });
+        }
     }
 
     renderTierAccordion(tiers, selectedTierName) {
@@ -5901,6 +5980,126 @@ class ModuleGallery {
                 parentUserId: parentUserId
             });
             this.notifyUser(error?.message || 'Unable to open Stripe checkout. Please try again.');
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalLabel;
+            }
+        }
+    }
+
+    showCancelConfirmation() {
+        var self = this;
+        var overlay = document.createElement('div');
+        overlay.className = 'module-modal-overlay active';
+        overlay.id = 'cancelConfirmModal';
+        overlay.innerHTML =
+            '<div class="module-modal" style="max-width:400px; padding:28px; text-align:center;">' +
+                '<h3 style="margin:0 0 12px; color:#1F2937;">Cancel subscription?</h3>' +
+                '<p style="color:#64748B; font-size:14px; margin:0 0 8px;">Your subscription will remain active until the end of your current billing period.</p>' +
+                '<p style="color:#64748B; font-size:14px; margin:0 0 20px;">You can resubscribe anytime.</p>' +
+                '<div style="display:flex; gap:10px; justify-content:center;">' +
+                    '<button type="button" id="cancelConfirmKeep" class="profile-action-btn" style="flex:1;">Keep subscription</button>' +
+                    '<button type="button" id="cancelConfirmYes" class="profile-action-btn" style="flex:1; background:#DC2626; color:white; border-color:#DC2626;">Cancel</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        overlay.querySelector('#cancelConfirmKeep').addEventListener('click', function() {
+            overlay.remove();
+            document.body.style.overflow = '';
+        });
+
+        overlay.querySelector('#cancelConfirmYes').addEventListener('click', function() {
+            var btn = overlay.querySelector('#cancelConfirmYes');
+            self.handleSubscriptionAction('cancel', btn, function() {
+                overlay.remove();
+                document.body.style.overflow = '';
+            });
+        });
+
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+                document.body.style.overflow = '';
+            }
+        });
+    }
+
+    showPauseConfirmation() {
+        var self = this;
+        var overlay = document.createElement('div');
+        overlay.className = 'module-modal-overlay active';
+        overlay.id = 'pauseConfirmModal';
+        overlay.innerHTML =
+            '<div class="module-modal" style="max-width:400px; padding:28px; text-align:center;">' +
+                '<h3 style="margin:0 0 12px; color:#1F2937;">Pause subscription?</h3>' +
+                '<p style="color:#64748B; font-size:14px; margin:0 0 20px;">Billing will be paused and you won\'t be charged. You can resume anytime.</p>' +
+                '<div style="display:flex; gap:10px; justify-content:center;">' +
+                    '<button type="button" id="pauseConfirmBack" class="profile-action-btn" style="flex:1;">Go back</button>' +
+                    '<button type="button" id="pauseConfirmYes" class="profile-action-btn" style="flex:1; background:#F59E0B; color:white; border-color:#F59E0B;">Pause</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        overlay.querySelector('#pauseConfirmBack').addEventListener('click', function() {
+            overlay.remove();
+            document.body.style.overflow = '';
+        });
+
+        overlay.querySelector('#pauseConfirmYes').addEventListener('click', function() {
+            var btn = overlay.querySelector('#pauseConfirmYes');
+            self.handleSubscriptionAction('pause', btn, function() {
+                overlay.remove();
+                document.body.style.overflow = '';
+            });
+        });
+
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+                document.body.style.overflow = '';
+            }
+        });
+    }
+
+    async handleSubscriptionAction(action, button, onComplete) {
+        var originalLabel = button ? button.textContent : '';
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Processing...';
+        }
+
+        try {
+            await manageSubscription(action);
+
+            // Update local state
+            if (action === 'cancel') {
+                if (currentSubscription) currentSubscription.cancel_at_period_end = true;
+                this.notifyUser('Your subscription will be cancelled at the end of the billing period.');
+            } else if (action === 'pause') {
+                if (currentSubscription) currentSubscription.status = 'paused';
+                this.notifyUser('Your subscription has been paused.');
+            } else if (action === 'resume') {
+                if (currentSubscription) {
+                    currentSubscription.status = 'active';
+                    currentSubscription.cancel_at_period_end = false;
+                }
+                this.notifyUser('Your subscription is active again!');
+            }
+
+            if (onComplete) onComplete();
+            this.render();
+            this.attachSectionListeners();
+            // Re-open the plan section
+            var planToggle = this.container.querySelector('[data-section="plan"]');
+            if (planToggle) planToggle.click();
+        } catch (error) {
+            console.error('Subscription action failed:', error);
+            this.notifyUser(error?.message || 'Something went wrong. Please try again.');
             if (button) {
                 button.disabled = false;
                 button.textContent = originalLabel;

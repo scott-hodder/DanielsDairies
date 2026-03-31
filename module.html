@@ -1500,6 +1500,16 @@
           // Strip the buggy stub functions from generated module
           code = stripStubFunctions(code);
           
+          // Fix common syntax errors in generated content
+          // Fix unescaped quotes in template literals and strings
+          code = code.replace(/`([^`]*?)(?<!\\)'(?!s\b)([^`]*?)`/g, (match, before, after) => {
+            // Only fix if it looks like an unescaped apostrophe in a template literal
+            if (match.includes("'s ") || match.includes("'t ") || match.includes("'re ") || match.includes("'ll ") || match.includes("'ve ")) {
+              return match; // Keep contractions as-is
+            }
+            return '`' + before + "\\'" + after + '`';
+          });
+          
           // Inject tracking into renderPage
           code = code.replace(
             /function\s+renderPage\s*\(\s*\)\s*\{/,

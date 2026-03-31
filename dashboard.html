@@ -18,6 +18,7 @@
     <!-- Adventure UI Overhaul -->
     <link href="/styles/dashboard-adventure.css" rel="stylesheet">
 
+    <style>#dashboardFooter:not(.dashboard-footer-visible) { display: none !important; }</style>
 
 </head>
 <body>
@@ -546,8 +547,12 @@
         </div>
     </main>
 
-    <footer style="text-align:center; padding:20px 16px 28px; font-size:11px; color:rgba(255,255,255,0.4); line-height:1.5; position:fixed; bottom:0; left:0; right:0; pointer-events:none; z-index:0;">
-        Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice. If you have concerns about your child's wellbeing, please consult a qualified professional.
+    <footer class="dashboard-footer" style="display: none !important;" id="dashboardFooter">
+        <div class="dashboard-footer-content">
+            <p class="dashboard-footer-text">
+                <strong>Daniel's Diaries</strong> is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice. If you have concerns about your child's wellbeing, please consult a qualified professional.
+            </p>
+        </div>
     </footer>
 
     <!-- Add Child Modal -->

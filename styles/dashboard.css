@@ -6889,6 +6889,64 @@ button:active, .btn:active {
   box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
 }
 
+/* Subscription status banners */
+.plan-status-banner {
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.plan-status-banner strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.plan-status-banner p {
+  margin: 0;
+}
+
+.plan-status-banner-warning {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+
+.plan-status-banner-info {
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  color: #0C4A6E;
+}
+
+/* Subtle cancel/pause links */
+.plan-manage-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.plan-manage-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #94A3B8;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.plan-manage-link:hover {
+  color: #64748B;
+}
+
+.plan-manage-link-danger:hover {
+  color: #DC2626;
+}
+
 /* Modules Section */
 .modules-overview {
   display: grid;
@@ -7147,5 +7205,45 @@ button:active, .btn:active {
 @media (max-width: 420px) {
     .daniel-mood-options {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
+   DASHBOARD FOOTER
+   ======================================== */
+.dashboard-footer {
+    display: none;
+    background: linear-gradient(135deg, #405878 0%, #364f66 100%);
+}
+
+.dashboard-footer.dashboard-footer-visible {
+    display: block;
+}
+
+.dashboard-footer-content {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.dashboard-footer-text {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.dashboard-footer-text strong {
+    color: #fff;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .dashboard-footer {
+        padding: 20px 16px;
+    }
+    
+    .dashboard-footer-text {
+        font-size: 12px;
     }
 }

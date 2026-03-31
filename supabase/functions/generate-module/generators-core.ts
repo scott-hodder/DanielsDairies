@@ -80,7 +80,7 @@ type PageType =
   | "weather-controller"
   | "power-up-collector"
   | "emotion-maze"
-  | "strength-shield"
+
   | "feeling-volcano"
   | "spin-the-wheel"
   | "sticker-collector"
@@ -309,7 +309,6 @@ const PAGE_TYPE_EVIDENCE_MAP: Record<string, { evidenceBase: string; conceptArea
   "reflection": { evidenceBase: "Metacognition / Reflective Practice", conceptArea: "self-awareness" },
   "monster-tamer": { evidenceBase: "Externalisation (Narrative Therapy)", conceptArea: "separating self from feelings" },
   "superhero-creator": { evidenceBase: "Strength-Based Approaches", conceptArea: "identifying personal strengths" },
-  "strength-shield": { evidenceBase: "Resilience & Protective Factors", conceptArea: "building resilience" },
 };
 
 interface FeelingThermometerContent {
@@ -1080,6 +1079,8 @@ function escapeForOnclick(s: string): string {
     .replace(/\\/g, "\\\\")  // Escape backslashes first
     .replace(/'/g, "\\'")    // Escape single quotes
     .replace(/"/g, "&quot;") // Escape double quotes for HTML attribute
+    .replace(/\n/g, " ")     // Replace newlines with spaces
+    .replace(/\r/g, "")      // Remove carriage returns
     .replace(/</g, "&lt;")   // Escape < for HTML safety
     .replace(/>/g, "&gt;");  // Escape > for HTML safety
 }
@@ -1575,7 +1576,6 @@ function generatePageStructure(): PageTemplate[] {
     { type: "weather-controller",  starReward: true },
     { type: "power-up-collector",  starReward: true },
     { type: "emotion-maze",        starReward: true },
-    { type: "strength-shield",     starReward: true },
     { type: "feeling-volcano",     starReward: true },
   ];
 
