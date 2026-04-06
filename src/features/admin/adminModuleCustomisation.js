@@ -498,7 +498,7 @@ window.generateNarrationForModule = async function() {
     statusEl.style.display = 'block';
     statusEl.style.background = '#f0f4ff';
     statusEl.style.color = '#405878';
-    statusEl.textContent = 'Generating narration audio... This may take 1-2 minutes.';
+    statusEl.textContent = 'Starting narration generation...';
 
     try {
         const isMultiAge = selectedModule.is_multi_age === true;
@@ -528,6 +528,24 @@ window.generateNarrationForModule = async function() {
             return data;
         };
 
+        // Process pages one at a time to avoid Voicebox queue flooding / timeouts
+        const processTarget = async (body, label) => {
+            // First call with no pages to extract text and get page count
+            const initData = await callNarration({ ...body, pages: [], force: body.force });
+            const totalPages = initData?.totalPages || 0;
+            if (!totalPages) return;
+
+            for (let p = 0; p < totalPages; p++) {
+                statusEl.textContent = `${label}Generating page ${p + 1} of ${totalPages}...`;
+                const data = await callNarration({ ...body, pages: [p] });
+                if (data) {
+                    totalReady += data.readyCount || 0;
+                    totalSkipped += data.skippedCount || 0;
+                    totalErrors += data.errorCount || 0;
+                }
+            }
+        };
+
         if (isMultiAge) {
             const { data: variants } = await supabase
                 .from('module_variants')
@@ -537,24 +555,17 @@ window.generateNarrationForModule = async function() {
             if (variants && variants.length > 0) {
                 for (let v = 0; v < variants.length; v++) {
                     const variant = variants[v];
-                    statusEl.textContent = `Generating variant ${v + 1}/${variants.length} (ages ${variant.age_band})...`;
-
-                    const data = await callNarration({ moduleId: selectedModule.id, variantId: variant.id, force: true });
-                    if (data) {
-                        totalReady += data.readyCount || 0;
-                        totalSkipped += data.skippedCount || 0;
-                        totalErrors += data.errorCount || 0;
-                    }
+                    await processTarget(
+                        { moduleId: selectedModule.id, variantId: variant.id, force: true },
+                        `Variant ${v + 1}/${variants.length} (${variant.age_band}): `
+                    );
                 }
             }
         } else {
-            statusEl.textContent = 'Generating narration audio...';
-            const data = await callNarration({ moduleId: selectedModule.id, force: true });
-            if (data) {
-                totalReady = data.readyCount || 0;
-                totalSkipped = data.skippedCount || 0;
-                totalErrors = data.errorCount || 0;
-            }
+            await processTarget(
+                { moduleId: selectedModule.id, force: true },
+                ''
+            );
         }
 
         statusEl.style.background = '#d1fae5';

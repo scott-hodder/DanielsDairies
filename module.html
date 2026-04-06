@@ -1567,9 +1567,20 @@
           document.body.appendChild(el);
         }
 
-        // Initialize TTS player after module content is loaded
-        setTimeout(() => {
+        // Initialize TTS player after module content is loaded (if feature enabled)
+        setTimeout(async () => {
           if (typeof TtsPlayer !== 'undefined' && _state.moduleDbId) {
+            try {
+              const { data: settings } = await supabase.from('settings').select('feature_flags').single();
+              const flags = settings?.feature_flags || {};
+              if (flags.text_to_voice === false) {
+                console.log('[TTS] Text-to-voice feature disabled by admin');
+                return;
+              }
+            } catch (e) {
+              // If settings check fails, default to showing TTS
+              console.warn('[TTS] Could not check feature flags, defaulting to enabled:', e.message);
+            }
             TtsPlayer.init(_state.moduleDbId, _state.variantId || null);
           }
         }, 1500);

@@ -63,6 +63,7 @@
             <button class="tab" onclick="switchTab(event, 'billing')">Billing</button>
             <button class="tab" onclick="switchTab(event, 'users')">Users</button>
             <button class="tab" onclick="switchTab(event, 'feedback')">Feedback</button>
+            <button class="tab" onclick="switchTab(event, 'features')">Features</button>
         </div>
 
         <!-- Tab Content: Check Ins -->
@@ -1171,6 +1172,22 @@
             </div>
         </div>
         <!-- End Feedback Tab -->
+
+        <!-- Features Tab -->
+        <div id="featuresTab" class="tab-content">
+            <div class="rewards-panel" style="max-width: 800px;">
+                <div style="margin-bottom: 20px;">
+                    <h2 class="panel-title" style="margin-bottom: 4px;">Feature Flags</h2>
+                    <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Toggle features on or off across the platform</p>
+                </div>
+                <div id="featureFlagsList">
+                    <div style="text-align:center; padding:40px; color:#6b7c8f;">
+                        <p style="margin:0;">Loading features...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Features Tab -->
 
         <!-- Add Tier Modal -->
         <div class="modal" id="addTierModal">

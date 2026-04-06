@@ -28,7 +28,7 @@ const corsHeaders: Record<string, string> = {
 };
 
 // Claude configuration
-const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 const CLAUDE_TEMPERATURE = 0.7;
 
 // Token budgets
@@ -1117,7 +1117,7 @@ function getAgeRangeKey(ageRange: string, ageData?: AgeRangeData): string {
   }
 
   // Fall back to parsing the provided ageRange string
-  const normalized = (ageRange || "").replace(/[–-]/g, "-").trim();
+  const normalized = (ageRange || "").replace(/[\u2013\-]/g, "-").trim();
   const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
   if (match) {
     return `${match[1]}-${match[2]}`;
@@ -1769,7 +1769,9 @@ async function callClaude(
     _runTokenUsage.input += data.usage.input_tokens || 0;
     _runTokenUsage.output += data.usage.output_tokens || 0;
   }
-  return (data?.content?.[0]?.text ?? "").toString();
+  const raw = (data?.content?.[0]?.text ?? "").toString();
+  // Strip em dashes and en dashes that slip past the system prompt
+  return raw.replace(/\u2014/g, ", ").replace(/\u2013/g, "-");
 }
 
 // ====================

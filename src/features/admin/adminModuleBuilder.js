@@ -27,25 +27,37 @@ async function triggerNarrationBackground(moduleId, isMultiAge) {
     };
 
     const fireRequest = (body) => {
-        // Use keepalive so the request survives page navigation
         return fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
             method: 'POST',
             headers,
             body: JSON.stringify(body),
             keepalive: true
-        }).catch(err => console.error('[TTS Background] Send error:', err));
+        }).then(r => r.json()).catch(err => { console.error('[TTS Background] error:', err); return null; });
+    };
+
+    // Process one page at a time to avoid queue flooding / timeouts
+    const processTarget = async (body) => {
+        const initData = await fireRequest({ ...body, pages: [] });
+        const totalPages = initData?.totalPages || 0;
+        if (!totalPages) return;
+        for (let p = 0; p < totalPages; p++) {
+            console.log(`[TTS Background] Page ${p + 1}/${totalPages}`);
+            await fireRequest({ ...body, pages: [p] });
+        }
     };
 
     if (isMultiAge) {
         const { data: variants } = await supabase.from('module_variants')
             .select('id, age_band').eq('module_id', moduleId);
         if (variants && variants.length > 0) {
-            console.log(`[TTS Background] Firing narration for ${variants.length} variants...`);
-            await Promise.all(variants.map(v => fireRequest({ moduleId, variantId: v.id, force: false })));
+            console.log(`[TTS Background] Generating narration for ${variants.length} variants...`);
+            for (const v of variants) {
+                await processTarget({ moduleId, variantId: v.id, force: false });
+            }
         }
     } else {
-        console.log('[TTS Background] Firing narration request...');
-        await fireRequest({ moduleId, force: false });
+        console.log('[TTS Background] Generating narration page by page...');
+        await processTarget({ moduleId, force: false });
     }
     console.log('[TTS Background] Requests sent — server will continue processing.');
 }

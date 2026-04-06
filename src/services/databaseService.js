@@ -1452,6 +1452,7 @@ export async function getSettings() {
               'Use kind words during conflict',
               'Ask for help when needed'
             ],
+            feature_flags: { text_to_voice: true },
             tools: [
               {
                 label: 'Volcano Scale (1-5)',

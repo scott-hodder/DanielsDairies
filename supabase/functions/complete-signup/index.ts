@@ -48,32 +48,43 @@ serve(async (req) => {
       return jsonResponse({ error: 'Missing required field: plan' }, 400)
     }
 
-    // 1. Create the auth user via admin API (bypasses email confirmation requirement)
-    console.log('[complete-signup] Step 1: Creating auth user...')
-    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    // 1. Create the auth user via regular signUp (triggers confirmation email via SMTP)
+    console.log('[complete-signup] Step 1: Creating auth user via signUp...')
+    const appUrl = Deno.env.get('APP_URL') || 'https://danielsdiaries.com.au'
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+
+    const { data: signUpData, error: signUpError } = await anonClient.auth.signUp({
       email,
       password,
-      email_confirm: false,
-      user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
-        full_name: `${firstName} ${lastName}`,
-        phone: phone || '',
-        plan: effectivePlan,
-        is_free_trial: !!isFreeTrial
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${firstName} ${lastName}`,
+          phone: phone || '',
+          plan: effectivePlan,
+          is_free_trial: !!isFreeTrial
+        },
+        emailRedirectTo: `${appUrl}/login.html?confirmed=true`
       }
     })
 
-    if (authError) {
-      console.error('[complete-signup] Step 1 FAILED - Auth error:', JSON.stringify(authError))
-      if (authError.message?.includes('already been registered') || authError.message?.includes('already exists')) {
+    if (signUpError) {
+      console.error('[complete-signup] Step 1 FAILED - SignUp error:', JSON.stringify(signUpError))
+      if (signUpError.message?.includes('already been registered') || signUpError.message?.includes('already exists')) {
         return jsonResponse({ error: 'An account with this email already exists. Please log in instead.' }, 409)
       }
-      return jsonResponse({ error: authError.message || 'Failed to create account' }, 400)
+      return jsonResponse({ error: signUpError.message || 'Failed to create account' }, 400)
     }
 
-    const userId = authData.user.id
-    console.log('[complete-signup] Step 1 OK - User created:', userId)
+    const userId = signUpData.user?.id
+    if (!userId) {
+      console.error('[complete-signup] Step 1 FAILED - No user ID returned')
+      return jsonResponse({ error: 'Account creation failed - no user ID returned' }, 500)
+    }
+    console.log('[complete-signup] Step 1 OK - User created:', userId, '(confirmation email sent)')
 
     // 2. Get tier details for credits
     console.log('[complete-signup] Step 2: Looking up credits for plan:', plan, 'isFreeTrial:', isFreeTrial)
@@ -280,27 +291,8 @@ serve(async (req) => {
       console.log('[complete-signup] Step 4: Skipped (free trial or no plan)')
     }
 
-    // 5. Send confirmation email
-    // Use a regular (anon) Supabase client to call auth.resend - same method as the working resend button
-    console.log('[complete-signup] Step 5: Sending confirmation email via auth.resend...')
-    try {
-      const anonClient = createClient(supabaseUrl, anonKey, {
-        auth: { autoRefreshToken: false, persistSession: false }
-      })
-
-      const { error: resendError } = await anonClient.auth.resend({
-        type: 'signup',
-        email
-      })
-
-      if (resendError) {
-        console.error('[complete-signup] Step 5 FAILED - auth.resend error:', JSON.stringify(resendError))
-      } else {
-        console.log('[complete-signup] Step 5 OK - Confirmation email sent to:', email)
-      }
-    } catch (emailErr) {
-      console.error('[complete-signup] Step 5 ERROR - Email sending exception:', emailErr)
-    }
+    // 5. Confirmation email already sent by auth.signUp in Step 1
+    console.log('[complete-signup] Step 5: Skipped (confirmation email sent in Step 1)')
 
     const result = {
       success: true,
