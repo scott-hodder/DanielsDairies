@@ -344,6 +344,8 @@ window.grantManualCredits = async function() {
     }
 
     try {
+        console.log(`[GrantCredits] Granting ${credits} credits to parent ${parentId}`);
+
         // Update parent_profiles.credits
         const { data: parent, error: parentFetchError } = await supabase
             .from('parent_profiles')
@@ -352,32 +354,58 @@ window.grantManualCredits = async function() {
             .single();
 
         if (parentFetchError) throw parentFetchError;
+        console.log(`[GrantCredits] Parent current credits: ${parent?.credits}`);
 
-        const { error: parentUpdateError } = await supabase
+        const newParentCredits = (parent?.credits ?? 0) + credits;
+        const { data: parentUpdated, error: parentUpdateError } = await supabase
             .from('parent_profiles')
-            .update({ credits: (parent?.credits ?? 0) + credits })
-            .eq('id', parentId);
+            .update({ credits: newParentCredits })
+            .eq('id', parentId)
+            .select('id, credits')
+            .single();
 
         if (parentUpdateError) throw parentUpdateError;
+        console.log(`[GrantCredits] Parent after update:`, parentUpdated);
+
+        if (!parentUpdated || parentUpdated.credits !== newParentCredits) {
+            throw new Error(`Parent credits not updated. Expected ${newParentCredits}, got ${parentUpdated?.credits}. RLS may be blocking the write.`);
+        }
 
         // Update all children's credits for this parent
         const { data: children, error: childFetchError } = await supabase
             .from('children')
-            .select('id, credits')
+            .select('id, name, credits')
             .eq('parent_user_id', parentId);
 
         if (childFetchError) throw childFetchError;
+        console.log(`[GrantCredits] Found ${children?.length || 0} children:`, children?.map(c => `${c.name}(${c.credits})`));
 
+        let childErrors = [];
         if (children && children.length > 0) {
             for (const child of children) {
-                await supabase
+                const newChildCredits = (child.credits ?? 0) + credits;
+                const { data: childUpdated, error: childUpdateError } = await supabase
                     .from('children')
-                    .update({ credits: (child.credits ?? 0) + credits })
-                    .eq('id', child.id);
+                    .update({ credits: newChildCredits })
+                    .eq('id', child.id)
+                    .select('id, credits')
+                    .single();
+
+                if (childUpdateError) {
+                    childErrors.push(`${child.name || child.id}: ${childUpdateError.message}`);
+                } else if (!childUpdated || childUpdated.credits !== newChildCredits) {
+                    childErrors.push(`${child.name || child.id}: Update silent failure — expected ${newChildCredits}, got ${childUpdated?.credits}`);
+                } else {
+                    console.log(`[GrantCredits] ${child.name}: ${child.credits} → ${childUpdated.credits}`);
+                }
             }
         }
 
-        alert(`Successfully granted ${credits} credit(s) to parent and ${children?.length || 0} child(ren).\n\nRefresh the dashboard to see updated credits.`);
+        if (childErrors.length > 0) {
+            alert(`Parent credits updated, but failed to update some children:\n${childErrors.join('\n')}`);
+        } else {
+            alert(`Successfully granted ${credits} credit(s) to parent and ${children?.length || 0} child(ren).\n\nRefresh the dashboard to see updated credits.`);
+        }
         document.getElementById('billingGrantCredits').value = '1';
         document.getElementById('billingGrantReason').value = '';
     } catch (error) {

@@ -111,7 +111,7 @@ function getAgeRangeKey(targetAge?: string): string {
   if (!targetAge) {
     return "6-8";
   }
-  const normalized = targetAge.replace(/[–-,]/g, "-").trim();
+  const normalized = targetAge.replace(/[\u2013,\-]/g, "-").trim();
   const match = normalized.match(/(\d{1,2})\s*-\s*(\d{1,2})/);
   if (match) {
     return `${match[1]}-${match[2]}`;

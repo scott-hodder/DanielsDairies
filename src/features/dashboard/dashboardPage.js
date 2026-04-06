@@ -1305,7 +1305,7 @@ async function init() {
     console.warn('Loading timeout reached - forcing UI to show')
     hideLoadingScreen()
     showElement(childrenView)
-  }, 4000)
+  }, 12000)
   
   try {
     // Check authentication first (required before anything else)
@@ -2070,7 +2070,7 @@ function closeEditChildModal() {
 // or after a safety timeout so the user is never stuck on the loading screen.
 function waitForDashboardRender() {
   return new Promise((resolve) => {
-    const SAFETY_TIMEOUT = 3000
+    const SAFETY_TIMEOUT = 10000
     let resolved = false
     
     const safetyTimer = setTimeout(() => {
@@ -2210,21 +2210,23 @@ async function selectChild(child) {
 
         // Render modules after onboarding is complete
         renderModules()
+        addHelpButton()
 
+        // Wait for adventure map to finish rendering before hiding loading screen
+        await waitForDashboardRender()
         hideLoadingScreen()
 
         // Show app walkthrough for first-time users after focus plan is set
-        addHelpButton()
         maybeShowOnboarding(child.id)
       })
       return // Don't show detail view yet - wait for onboarding
     }
 
-    // Show child detail view and hide loading screen IMMEDIATELY
-    // Adventure map renders asynchronously inside showChildDetailView
+    // Show child detail view, then wait for adventure map to finish rendering
     showChildDetailView(child)
     renderModules()
     addHelpButton()
+    await waitForDashboardRender()
     hideLoadingScreen()
     
   } catch (error) {
@@ -2235,7 +2237,9 @@ async function selectChild(child) {
     showChildDetailView(child)
     // Still try to render modules even with empty data
     renderModules()
+    // On error, hide loading screen immediately (don't wait for map)
     hideLoadingScreen()
+    window._dashboardRenderComplete = null
   } finally {
     // Always reset the selecting flag
     window.selectingChild = false

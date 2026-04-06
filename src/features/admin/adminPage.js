@@ -274,6 +274,9 @@ window.switchTab = function(evt, tabName) {
     } else if (tabName === 'feedback') {
         document.getElementById('feedbackTab').classList.add('active');
         if (typeof window._adminLoadFeedback === 'function') window._adminLoadFeedback();
+    } else if (tabName === 'features') {
+        document.getElementById('featuresTab').classList.add('active');
+        if (typeof window._adminLoadFeatures === 'function') window._adminLoadFeatures();
     }
 };
 
@@ -290,6 +293,7 @@ import './adminGeneralSettings.js';
 import './adminBilling.js';
 import './adminUsers.js';
 import './adminFeedback.js';
+import './adminFeatures.js';
 
 // ================================================================================
 // INITIALIZE

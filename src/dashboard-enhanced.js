@@ -8,6 +8,13 @@ import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboar
 
 // Show the dashboard footer once the map is fully rendered
 function showDashboardFooter() {
+  // Delay footer reveal until the loading screen is fully gone
+  var loadingEl = document.getElementById('loadingState');
+  if (loadingEl && !loadingEl.classList.contains('hidden')) {
+    // Loading screen still visible — wait and retry
+    setTimeout(showDashboardFooter, 500);
+    return;
+  }
   var footer = document.getElementById('dashboardFooter');
   if (footer) {
     footer.removeAttribute('style');
@@ -587,6 +594,11 @@ class AdventureMapV4 {
     css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
     css.push('@keyframes emojiShake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }');
     
+    // Available-next: unlocked modules beyond the current one — subtler style
+    css.push('.adventure-node.available-next { width: 72px; height: 72px; background: linear-gradient(145deg, #FDE68A 0%, #FCD34D 50%, #FBBF24 100%); border: 4px solid rgba(255,255,255,0.85); box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3), 0 0 0 3px rgba(251, 191, 36, 0.15); animation: nextAvailSoft 3s ease-in-out infinite; }');
+    css.push('.adventure-node.available-next .node-emoji { font-size: 28px; animation: none; opacity: 0.8; }');
+    css.push('@keyframes nextAvailSoft { 0%, 100% { box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3), 0 0 0 3px rgba(251, 191, 36, 0.15); } 50% { box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4), 0 0 0 5px rgba(251, 191, 36, 0.1); } }');
+
     // Node loading state - gentle pulse on click while async checks run
     css.push('@keyframes nodeLoadingPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }');
     css.push('.adventure-node.node-loading { animation: nodeLoadingPulse 0.8s ease-in-out infinite !important; pointer-events: none !important; }');
@@ -1992,7 +2004,12 @@ class AdventureMapV4 {
       // ── Normal Module Node ──
       moduleNumber++;
       var node = document.createElement('div');
-      node.className = 'adventure-node ' + module.status;
+      var nodeStatus = module.status;
+      // Distinguish the current module from other available (unlocked) ones
+      if (module.status === 'available' && index !== currentIndex) {
+        nodeStatus = 'available available-next';
+      }
+      node.className = 'adventure-node ' + nodeStatus;
       var nodeModuleId = module.id || (module.module && module.module.id);
       if (nodeModuleId) node.setAttribute('data-module-id', nodeModuleId);
       node.style.left = pos.x + 'px';
@@ -2037,7 +2054,7 @@ class AdventureMapV4 {
         badge.className = 'node-badge star';
         badge.textContent = '★';
         node.appendChild(badge);
-        statusLabel = 'Next';
+        statusLabel = (index === currentIndex) ? 'Next' : '';
       }
 
       if (statusLabel) {

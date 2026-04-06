@@ -1,18 +1,20 @@
 /**
  * TTS Narration Generator Edge Function
  * ======================================
- * Generates audio narration for module pages using OpenAI gpt-4o-mini-tts.
+ * Generates audio narration for module pages.
+ * Supports two TTS providers:
+ *   - Voicebox (voicebox.sh) — self-hosted, custom voice cloning (preferred)
+ *   - OpenAI gpt-4o-mini-tts — cloud fallback
  *
- * Narration texts are pre-extracted during module generation and stored
- * in narration_data[].fullText on the modules/module_variants table.
- * This function reads those texts and generates audio via OpenAI TTS.
+ * Set VOICEBOX_URL and VOICEBOX_PROFILE_ID env vars to use Voicebox.
+ * Falls back to OpenAI if Voicebox is not configured.
  *
  * Request body:
  *   { moduleId: string, variantId?: string, pages?: number[], force?: boolean }
  *
  * Flow:
  *   1. Read narration_data from module (pre-extracted texts from generation)
- *   2. Call OpenAI TTS API for each page with text
+ *   2. Call TTS API (Voicebox or OpenAI) for each page with text
  *   3. Upload audio to Supabase Storage (tts-audio bucket)
  *   4. Update narration_data with audio URLs and status
  */
@@ -26,11 +28,14 @@ const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// OpenAI TTS config
+// OpenAI TTS config (fallback)
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 const TTS_MODEL = "gpt-4o-mini-tts";
 const TTS_VOICE = "ash";
 const TTS_INSTRUCTIONS = "Young Australian male energy, happy, upbeat, warm, playful, child-friendly, clear pronunciation, natural pacing, never babyish, sounds like an encouraging guide for children. Speak at a brisk but clear pace — not slow, not rushed.";
+
+// Voicebox config (preferred when available)
+const VOICEBOX_INSTRUCT = "Warm, friendly, encouraging Australian voice for children. Clear pronunciation, natural pacing, upbeat and engaging.";
 
 interface NarrationEntry {
   pageIndex: number;
@@ -58,9 +63,103 @@ async function hashText(text: string): Promise<string> {
 }
 
 /**
+ * Determine which TTS provider to use.
+ */
+function getTtsProvider(): { provider: "voicebox" | "openai"; voiceboxUrl?: string; profileId?: string } {
+  const voiceboxUrl = Deno.env.get("VOICEBOX_URL");
+  const profileId = Deno.env.get("VOICEBOX_PROFILE_ID");
+  if (voiceboxUrl && profileId) {
+    return { provider: "voicebox", voiceboxUrl, profileId };
+  }
+  return { provider: "openai" };
+}
+
+/**
+ * Call Voicebox API to generate audio for text.
+ * Returns audio as ArrayBuffer (WAV format, converted to MP3-compatible upload).
+ */
+async function generateAudioVoicebox(
+  text: string,
+  voiceboxUrl: string,
+  profileId: string,
+): Promise<ArrayBuffer> {
+  // Generate speech via Voicebox REST API
+  const response = await fetch(`${voiceboxUrl}/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
+    body: JSON.stringify({
+      profile_id: profileId,
+      text,
+      language: "en",
+      instruct: VOICEBOX_INSTRUCT,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "Unknown error");
+    throw new Error(`Voicebox TTS error ${response.status}: ${errorBody}`);
+  }
+
+  const result = await response.json();
+  const generationId = result.id;
+
+  if (!generationId) {
+    throw new Error("Voicebox returned no generation id");
+  }
+
+  // Poll until generation is complete (status changes from "generating")
+  // CPU inference can be slow — allow up to 5 minutes per page
+  const maxAttempts = 150;
+  const pollInterval = 2000; // 2 seconds
+  let completed = false;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await new Promise((r) => setTimeout(r, pollInterval));
+
+    const statusRes = await fetch(`${voiceboxUrl}/history/${generationId}`, {
+      headers: { "ngrok-skip-browser-warning": "true" },
+    });
+    if (!statusRes.ok) {
+      throw new Error(`Voicebox status check error ${statusRes.status}`);
+    }
+
+    const statusData = await statusRes.json();
+    if (attempt % 5 === 0) {
+      console.log(`[Voicebox] Poll ${attempt + 1}: status=${statusData.status}, audio_path=${statusData.audio_path || "(empty)"}, duration=${statusData.duration}`);
+    }
+
+    if (statusData.status === "error" || statusData.status === "failed" || statusData.error) {
+      throw new Error(`Voicebox generation failed: ${statusData.error || "unknown error"}`);
+    }
+
+    // Wait until audio_path is populated — status can show "completed" before the file is ready
+    if (statusData.audio_path && statusData.duration > 0) {
+      completed = true;
+      break;
+    }
+  }
+
+  if (!completed) {
+    throw new Error("Voicebox generation timed out");
+  }
+
+  // Fetch the generated audio file by generation ID
+  const audioUrl = `${voiceboxUrl}/audio/${generationId}`;
+  const audioResponse = await fetch(audioUrl, {
+    headers: { "ngrok-skip-browser-warning": "true" },
+  });
+
+  if (!audioResponse.ok) {
+    throw new Error(`Voicebox audio fetch error ${audioResponse.status}`);
+  }
+
+  return audioResponse.arrayBuffer();
+}
+
+/**
  * Call OpenAI TTS API to generate audio for text.
  */
-async function generateAudio(
+async function generateAudioOpenAI(
   text: string,
   apiKey: string,
   voice: string = TTS_VOICE,
@@ -89,6 +188,22 @@ async function generateAudio(
   return response.arrayBuffer();
 }
 
+/**
+ * Generate audio using the configured TTS provider.
+ */
+async function generateAudio(
+  text: string,
+  apiKey: string,
+  ttsProvider: ReturnType<typeof getTtsProvider>,
+): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+  if (ttsProvider.provider === "voicebox") {
+    const buffer = await generateAudioVoicebox(text, ttsProvider.voiceboxUrl!, ttsProvider.profileId!);
+    return { buffer, contentType: "audio/wav" };
+  }
+  const buffer = await generateAudioOpenAI(text, apiKey);
+  return { buffer, contentType: "audio/mpeg" };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -98,12 +213,13 @@ serve(async (req) => {
     return jsonResponse({ error: "Use POST" }, 405);
   }
 
-  console.log("[TTS] ====== generate-narration (OpenAI) called ======");
+  const ttsProvider = getTtsProvider();
+  console.log(`[TTS] ====== generate-narration (${ttsProvider.provider}) called ======`);
 
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) {
-    console.error("[TTS] OPENAI_API_KEY is not set!");
-    return jsonResponse({ error: "OPENAI_API_KEY not configured" }, 500);
+  const apiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
+  if (ttsProvider.provider === "openai" && !apiKey) {
+    console.error("[TTS] OPENAI_API_KEY is not set and Voicebox is not configured!");
+    return jsonResponse({ error: "No TTS provider configured. Set VOICEBOX_URL + VOICEBOX_PROFILE_ID or OPENAI_API_KEY." }, 500);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -247,8 +363,24 @@ serve(async (req) => {
       .update({ narration_status: "generating" })
       .eq("id", targetId);
 
-    // 5. Process pages in parallel batches of 5 for speed
-    const PARALLEL_BATCH = 5;
+    // If pages is an empty array, just return page count (init/extract only)
+    if (Array.isArray(requestedPages) && requestedPages.length === 0) {
+      const readyCount = existingNarration.filter((n: NarrationEntry) => n.status === "ready").length;
+      const skippedCount = existingNarration.filter((n: NarrationEntry) => n.status === "skipped").length;
+      const errorCount = existingNarration.filter((n: NarrationEntry) => n.status === "error").length;
+      return jsonResponse({
+        success: true,
+        moduleId,
+        variantId: variantId || null,
+        totalPages: existingNarration.length,
+        readyCount,
+        skippedCount,
+        errorCount,
+      });
+    }
+
+    // 5. Process pages — sequential for Voicebox (CPU), parallel batches for OpenAI
+    const PARALLEL_BATCH = ttsProvider.provider === "voicebox" ? 1 : 5;
     const narrationData: NarrationEntry[] = [...existingNarration];
     let hasErrors = false;
     let pagesGenerated = 0;
@@ -274,7 +406,7 @@ serve(async (req) => {
       workItems.push({ i, text: textToSpeak, hash: contentHash });
     }
 
-    console.log(`[TTS] ${workItems.length} pages to generate (parallel batch size: ${PARALLEL_BATCH})`);
+    console.log(`[TTS] ${workItems.length} pages to generate (${ttsProvider.provider}, batch size: ${PARALLEL_BATCH})`);
 
     // Process in parallel batches
     for (let b = 0; b < workItems.length; b += PARALLEL_BATCH) {
@@ -286,11 +418,12 @@ serve(async (req) => {
         const entry = existingNarration[i];
         const narrationText = entry.fullText || entry.text || "";
 
-        const audioBuffer = await generateAudio(text, apiKey);
-        const fileName = `${storagePath}/page-${i}.mp3`;
+        const { buffer: audioBuffer, contentType } = await generateAudio(text, apiKey, ttsProvider);
+        const ext = contentType === "audio/wav" ? "wav" : "mp3";
+        const fileName = `${storagePath}/page-${i}.${ext}`;
         const { error: uploadError } = await supabaseClient.storage
           .from("tts-audio")
-          .upload(fileName, audioBuffer, { contentType: "audio/mpeg", upsert: true });
+          .upload(fileName, audioBuffer, { contentType, upsert: true });
         if (uploadError) throw new Error(`Storage upload: ${uploadError.message}`);
 
         const { data: urlData } = supabaseClient.storage

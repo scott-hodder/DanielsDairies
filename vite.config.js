@@ -20,7 +20,9 @@ export default defineConfig({
         admin: resolve(__dirname, 'admin.html'),
         module: resolve(__dirname, 'module.html'),
         parentInsights: resolve(__dirname, 'parent-insights.html'),
-        billing: resolve(__dirname, 'billing.html')
+        billing: resolve(__dirname, 'billing.html'),
+        privacyPolicy: resolve(__dirname, 'privacy-policy.html'),
+        termsOfService: resolve(__dirname, 'terms-of-service.html')
       }
     }
   },

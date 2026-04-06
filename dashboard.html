@@ -18,7 +18,12 @@
     <!-- Adventure UI Overhaul -->
     <link href="/styles/dashboard-adventure.css" rel="stylesheet">
 
-    <style>#dashboardFooter:not(.dashboard-footer-visible) { display: none !important; }</style>
+    <style>
+      body { display: flex; flex-direction: column; min-height: 100vh; }
+      body > main, body > .main-content { flex: 1; }
+      #dashboardFooter { display: none !important; opacity: 0; margin-top: auto; }
+      #dashboardFooter.dashboard-footer-visible { display: block !important; opacity: 1; transition: opacity 0.5s ease; }
+    </style>
 
 </head>
 <body>
@@ -547,7 +552,7 @@
         </div>
     </main>
 
-    <footer class="dashboard-footer" style="display: none !important;" id="dashboardFooter">
+    <footer class="dashboard-footer" id="dashboardFooter">
         <div class="dashboard-footer-content">
             <p class="dashboard-footer-text">
                 <strong>Daniel's Diaries</strong> is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice. If you have concerns about your child's wellbeing, please consult a qualified professional.

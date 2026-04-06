@@ -7214,6 +7214,7 @@ button:active, .btn:active {
 .dashboard-footer {
     display: none;
     background: linear-gradient(135deg, #405878 0%, #364f66 100%);
+    padding: 8px 16px;
 }
 
 .dashboard-footer.dashboard-footer-visible {
@@ -7239,11 +7240,7 @@ button:active, .btn:active {
 }
 
 @media (max-width: 640px) {
-    .dashboard-footer {
-        padding: 20px 16px;
-    }
-    
     .dashboard-footer-text {
-        font-size: 12px;
+        font-size: 11px;
     }
 }
