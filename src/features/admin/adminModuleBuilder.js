@@ -4,8 +4,8 @@
 // ================================================================================
 import {
     supabase, requireSupabaseEnv,
-    allModules, ageRanges, coreTheories, setAgeRanges, setCoreTheories,
-    getModuleKey, loadAllModules, updateStats
+    allModules, ageRanges, coreTheories, setAgeRanges, setCoreTheories, setAllModules,
+    getModuleKey, loadAllModules, updateStats, getSettings
 } from './adminPage.js';
 
 // ================================================================================
@@ -26,23 +26,30 @@ async function triggerNarrationBackground(moduleId, isMultiAge) {
         'apikey': supabaseKey
     };
 
-    const fireRequest = (body) => {
-        return fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(body),
-            keepalive: true
-        }).then(r => r.json()).catch(err => { console.error('[TTS Background] error:', err); return null; });
+    // CHUNKED background generation. Each variant runs sequential chunks of 6 pages
+    // so no single edge invocation runs long enough to be killed by client/server timeouts.
+    // Variants run in parallel.
+    const CHUNK_SIZE = 6;
+    const callOnce = async (body) => {
+        const res = await fetch(`${supabaseUrl}/functions/v1/generate-narration`, {
+            method: 'POST', headers, body: JSON.stringify(body)
+        });
+        try { return await res.json(); } catch { return null; }
     };
 
-    // Process one page at a time to avoid queue flooding / timeouts
-    const processTarget = async (body) => {
-        const initData = await fireRequest({ ...body, pages: [] });
-        const totalPages = initData?.totalPages || 0;
-        if (!totalPages) return;
-        for (let p = 0; p < totalPages; p++) {
-            console.log(`[TTS Background] Page ${p + 1}/${totalPages}`);
-            await fireRequest({ ...body, pages: [p] });
+    const runVariantChunked = async (body, label) => {
+        try {
+            const init = await callOnce({ ...body, pages: [] });
+            const total = init?.totalPages || 0;
+            console.log(`[TTS Background] ${label}: ${total} pages`);
+            for (let s = 0; s < total; s += CHUNK_SIZE) {
+                const pages = [];
+                for (let p = s; p < Math.min(s + CHUNK_SIZE, total); p++) pages.push(p);
+                const r = await callOnce({ ...body, pages, force: false });
+                console.log(`[TTS Background] ${label} chunk ${pages.join(',')}:`, r);
+            }
+        } catch (err) {
+            console.error(`[TTS Background] ${label} error:`, err);
         }
     };
 
@@ -50,16 +57,17 @@ async function triggerNarrationBackground(moduleId, isMultiAge) {
         const { data: variants } = await supabase.from('module_variants')
             .select('id, age_band').eq('module_id', moduleId);
         if (variants && variants.length > 0) {
-            console.log(`[TTS Background] Generating narration for ${variants.length} variants...`);
-            for (const v of variants) {
-                await processTarget({ moduleId, variantId: v.id, force: false });
-            }
+            console.log(`[TTS Background] Chunked narration for ${variants.length} variants in parallel...`);
+            // Don't await — let it run in background while UI continues
+            Promise.all(variants.map(v => runVariantChunked(
+                { moduleId, variantId: v.id }, `Ages ${v.age_band}`
+            ))).then(() => console.log('[TTS Background] All variants finished.'));
         }
     } else {
-        console.log('[TTS Background] Generating narration page by page...');
-        await processTarget({ moduleId, force: false });
+        console.log('[TTS Background] Chunked narration for module...');
+        runVariantChunked({ moduleId }, 'Module');
     }
-    console.log('[TTS Background] Requests sent — server will continue processing.');
+    console.log('[TTS Background] Dispatch initiated.');
 }
 
 const TTS_BATCH_SIZE = 8;
@@ -1544,19 +1552,38 @@ window.saveGeneratedModule = async function() {
         window.closeAddModuleModal();
         if (loadingOverlay) loadingOverlay.style.display = 'none';
 
-        // Fire narration requests to the server in the background
+        // Fire narration requests to the server in the background — only if feature enabled
+        let ttsEnabled = true;
         if (newModule?.id) {
-            await triggerNarrationBackground(newModule.id, isMultiAge);
+            try {
+                const settings = await getSettings();
+                ttsEnabled = settings?.feature_flags?.text_to_voice !== false;
+            } catch (e) {
+                console.warn('[TTS] feature flag check failed, defaulting to enabled:', e);
+            }
+            if (ttsEnabled) {
+                await triggerNarrationBackground(newModule.id, isMultiAge);
+            } else {
+                console.log('[TTS] text_to_voice feature disabled — skipping narration generation');
+            }
         }
 
-        // Refresh the modules grid without a full page reload
-        await loadAllModules();
-        if (typeof window._adminRenderAllModulesList === 'function') {
-            window._adminRenderAllModulesList();
+        // Optimistically add the new module to the in-memory list so it appears immediately
+        // (DB refetch sometimes has brief replica lag right after an insert)
+        if (newModule) {
+            const existing = allModules.filter(m => m.id !== newModule.id);
+            setAllModules([newModule, ...existing]);
+            if (typeof window._adminRenderAllModulesList === 'function') {
+                window._adminRenderAllModulesList();
+            }
         }
+        // Then refresh from DB in the background to pick up any server-side defaults
+        loadAllModules().catch(err => console.error('loadAllModules refresh failed:', err));
         await updateStats();
 
-        alert('Module created successfully! Audio narration is generating in the background.');
+        alert(ttsEnabled
+            ? 'Module created successfully! Audio narration is generating in the background.'
+            : 'Module created successfully!');
     } catch (error) {
         console.error('Error saving module:', error);
         alert('Failed to save module: ' + error.message);

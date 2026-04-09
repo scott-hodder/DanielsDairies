@@ -289,6 +289,15 @@ window.selectModuleForEdit = async function(moduleId) {
     document.getElementById('moduleEditForm').style.display = 'block';
     document.getElementById('moduleEditPlaceholder').style.display = 'none';
 
+    // Hide Generate Narration button if text_to_voice feature is disabled
+    try {
+        const { getSettings } = await import('./adminPage.js');
+        const settings = await getSettings();
+        const ttsEnabled = settings?.feature_flags?.text_to_voice !== false;
+        const genBtn = document.getElementById('genNarrationBtn');
+        if (genBtn) genBtn.style.display = ttsEnabled ? '' : 'none';
+    } catch (e) { /* default to showing */ }
+
     document.getElementById('editTitle').value = module.title || '';
     const editAgeRangeSelect = document.getElementById('editAgeRange');
     if (editAgeRangeSelect) {
@@ -502,10 +511,10 @@ window.generateNarrationForModule = async function() {
 
     try {
         const isMultiAge = selectedModule.is_multi_age === true;
-        let totalReady = 0, totalSkipped = 0, totalErrors = 0;
 
-        // Helper: call edge function with raw fetch for better error visibility
-        const callNarration = async (body) => {
+        // Helper: call the edge function synchronously. Each variant fires its own invocation,
+        // so firing in parallel gives real concurrency with each call getting its own wall-clock budget.
+        const fireSync = async (body) => {
             const session = (await supabase.auth.getSession()).data.session;
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
             const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -519,59 +528,121 @@ window.generateNarrationForModule = async function() {
                 body: JSON.stringify(body)
             });
             const text = await response.text();
-            let data;
-            try { data = JSON.parse(text); } catch { data = null; }
-            if (!response.ok) {
-                console.error(`Narration HTTP ${response.status}:`, data?.error || text.slice(0, 300));
-                return null;
-            }
-            return data;
+            try { return JSON.parse(text); } catch { return null; }
         };
 
-        // Process pages one at a time to avoid Voicebox queue flooding / timeouts
-        const processTarget = async (body, label) => {
-            // First call with no pages to extract text and get page count
-            const initData = await callNarration({ ...body, pages: [], force: body.force });
-            const totalPages = initData?.totalPages || 0;
-            if (!totalPages) return;
-
-            for (let p = 0; p < totalPages; p++) {
-                statusEl.textContent = `${label}Generating page ${p + 1} of ${totalPages}...`;
-                const data = await callNarration({ ...body, pages: [p] });
-                if (data) {
-                    totalReady += data.readyCount || 0;
-                    totalSkipped += data.skippedCount || 0;
-                    totalErrors += data.errorCount || 0;
-                }
-            }
-        };
-
+        // Build list of targets (one per variant, or one for the module itself)
+        let targets;
         if (isMultiAge) {
             const { data: variants } = await supabase
                 .from('module_variants')
-                .select('id, age_band, narration_data')
+                .select('id, age_band')
                 .eq('module_id', selectedModule.id);
-
-            if (variants && variants.length > 0) {
-                for (let v = 0; v < variants.length; v++) {
-                    const variant = variants[v];
-                    await processTarget(
-                        { moduleId: selectedModule.id, variantId: variant.id, force: true },
-                        `Variant ${v + 1}/${variants.length} (${variant.age_band}): `
-                    );
-                }
-            }
+            targets = (variants || []).map(v => ({
+                table: 'module_variants',
+                id: v.id,
+                label: `Ages ${v.age_band}`,
+                body: { moduleId: selectedModule.id, variantId: v.id, force: true }
+            }));
         } else {
-            await processTarget(
-                { moduleId: selectedModule.id, force: true },
-                ''
-            );
+            targets = [{
+                table: 'modules',
+                id: selectedModule.id,
+                label: 'Module',
+                body: { moduleId: selectedModule.id, force: true }
+            }];
         }
 
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#059669';
-        statusEl.innerHTML = `<strong>Narration complete!</strong> ${totalReady} pages ready, ${totalSkipped} skipped` +
-            (totalErrors > 0 ? `, <span style="color:#dc2626;">${totalErrors} errors</span>` : '');
+        if (targets.length === 0) {
+            throw new Error('No variants found to narrate.');
+        }
+
+        // CHUNKED MODE: process each variant in small chunks of pages so each invocation
+        // finishes well under any client/server timeout. Variants run in parallel; chunks
+        // within a variant run sequentially.
+        const CHUNK_SIZE = 6;
+        statusEl.textContent = `Generating narration for ${targets.length} target(s)...`;
+
+        const runVariantChunked = async (t) => {
+            // First call: extract pages (pages=[]) so we know the page count
+            const init = await fireSync({ ...t.body, pages: [] });
+            const total = init?.totalPages || 0;
+            console.log(`[TTS] ${t.label}: ${total} pages, ${Math.ceil(total / CHUNK_SIZE)} chunks`);
+            if (!total) return;
+            for (let start = 0; start < total; start += CHUNK_SIZE) {
+                const pages = [];
+                for (let p = start; p < Math.min(start + CHUNK_SIZE, total); p++) pages.push(p);
+                console.log(`[TTS] ${t.label}: chunk pages=${pages.join(',')}`);
+                const r = await fireSync({ ...t.body, pages, force: false });
+                console.log(`[TTS] ${t.label}: chunk result=`, r);
+            }
+        };
+
+        const generationPromises = targets.map(t => runVariantChunked(t).catch(err => {
+            console.error('[TTS] variant error:', err);
+            return null;
+        }));
+        // Track when all variants finish so we can break out of the poll loop
+        let allFinished = false;
+        Promise.all(generationPromises).then(() => { allFinished = true; });
+
+        // Poll the database to track progress
+        const pollProgress = async () => {
+            const ids = targets.map(t => t.id);
+            const table = targets[0].table;
+            const { data: rows } = await supabase
+                .from(table)
+                .select('id, narration_data, narration_status')
+                .in('id', ids);
+            if (!rows) return null;
+            let totalPages = 0, totalReady = 0, totalSkipped = 0, totalErrors = 0;
+            let allDone = true;
+            const perTarget = [];
+            for (const t of targets) {
+                const row = rows.find(r => r.id === t.id);
+                if (!row) { allDone = false; continue; }
+                const nd = row.narration_data || [];
+                const ready = nd.filter(n => n.status === 'ready').length;
+                const skipped = nd.filter(n => n.status === 'skipped').length;
+                const errors = nd.filter(n => n.status === 'error').length;
+                totalPages += nd.length;
+                totalReady += ready;
+                totalSkipped += skipped;
+                totalErrors += errors;
+                if (row.narration_status === 'generating' || row.narration_status === 'pending') allDone = false;
+                perTarget.push(`${t.label}: ${ready + skipped}/${nd.length}`);
+            }
+            return { totalPages, totalReady, totalSkipped, totalErrors, allDone, perTarget };
+        };
+
+        // Poll every 3 seconds, max 15 minutes
+        const maxPolls = 300;
+        let lastProgress = null;
+        for (let i = 0; i < maxPolls; i++) {
+            await new Promise(r => setTimeout(r, 3000));
+            const progress = await pollProgress();
+            if (progress) {
+                lastProgress = progress;
+                const overall = progress.totalPages > 0
+                    ? Math.round(((progress.totalReady + progress.totalSkipped) / progress.totalPages) * 100)
+                    : 0;
+                statusEl.innerHTML = `<strong>Generating narration… ${overall}%</strong><br><span style="font-size:12px;">${progress.perTarget.join(' • ')}</span>`;
+                if (progress.allDone) break;
+            }
+            // Also break if every variant invocation has resolved (success or error)
+            if (allFinished) {
+                // One more poll to capture the final state
+                const finalProgress = await pollProgress();
+                if (finalProgress) lastProgress = finalProgress;
+                break;
+            }
+        }
+
+        const final = lastProgress || { totalReady: 0, totalSkipped: 0, totalErrors: 0 };
+        statusEl.style.background = final.totalErrors > 0 ? '#fef3c7' : '#d1fae5';
+        statusEl.style.color = final.totalErrors > 0 ? '#92400e' : '#059669';
+        statusEl.innerHTML = `<strong>Narration complete!</strong> ${final.totalReady} pages ready, ${final.totalSkipped} skipped` +
+            (final.totalErrors > 0 ? `, <span style="color:#dc2626;">${final.totalErrors} errors</span>` : '');
     } catch (err) {
         console.error('Narration generation error:', err);
         statusEl.style.background = '#fee2e2';

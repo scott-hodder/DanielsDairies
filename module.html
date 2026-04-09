@@ -1651,8 +1651,6 @@
       playerEl: null,
       audioEl: null,
       enabled: false,
-      useFallback: false,       // true = no audio URLs, use Web Speech API
-      selectedVoice: null,
 
       async init(moduleDbId, variantId) {
         this.moduleDbId = moduleDbId;
@@ -1668,29 +1666,6 @@
 
         this.createPlayer();
         await this.loadNarrationData();
-
-        // Set up Web Speech API fallback voice
-        if (window.speechSynthesis) {
-          this._pickVoice();
-          if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = () => this._pickVoice();
-          }
-        }
-      },
-
-      _pickVoice() {
-        const voices = speechSynthesis.getVoices();
-        if (voices.length === 0) return;
-        const preferred = [
-          'Google UK English Female', 'Google US English', 'Samantha', 'Karen',
-          'Microsoft Zira', 'Microsoft Libby', 'Fiona', 'Moira',
-          'Google UK English Male', 'Daniel'
-        ];
-        for (const name of preferred) {
-          const v = voices.find(v => v.name.includes(name));
-          if (v) { this.selectedVoice = v; return; }
-        }
-        this.selectedVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
       },
 
       async loadNarrationData() {
@@ -1706,19 +1681,10 @@
           if (data?.narration_data?.length) {
             this.narrationData = data.narration_data;
             const withAudio = this.narrationData.filter(n => n.audioUrl && n.status === 'ready').length;
-            const withText = this.narrationData.filter(n => (n.fullText || n.text || '').length > 20).length;
-            console.log(`[TTS] Loaded ${withAudio} pages with audio, ${withText} with text`);
-            if (withAudio === 0) {
-              console.log('[TTS] No audio URLs — will use Web Speech API fallback');
-              this.useFallback = true;
-            }
-          } else {
-            console.log('[TTS] No narration data — will use live page text');
-            this.useFallback = true;
+            console.log(`[TTS] Loaded ${withAudio} pages with audio`);
           }
         } catch (err) {
           console.error('[TTS] Failed to load narration data:', err);
-          this.useFallback = true;
         }
       },
 
@@ -1752,11 +1718,6 @@
           this.playbackRate = speeds[(idx + 1) % speeds.length];
           document.getElementById('ttsSpeedBtn').textContent = this.playbackRate + 'x';
           if (this.audioEl) this.audioEl.playbackRate = this.playbackRate;
-          // If using speech synthesis fallback and currently playing, restart
-          if (this.isPlaying && this._usingSpeechSynth) {
-            this.stop();
-            this.playCurrentPage();
-          }
         });
 
         // Audio progress tracking
@@ -1801,37 +1762,20 @@
         const pageIdx = this.getCurrentPageIndex();
         const narration = this.narrationData.find(n => n.pageIndex === pageIdx);
 
-        // Try audio URL first
+        // Only play if generated audio is ready — no browser-TTS fallback.
         if (narration?.audioUrl && narration.status === 'ready') {
           this.stop();
           this._playAudio(narration.audioUrl, pageIdx);
           return;
         }
 
-        // Fallback: use text with Web Speech API
-        let text = narration?.fullText || narration?.text || '';
-        if (text.length < 20) text = this._extractPageText();
-        if (text.length < 20) {
-          const label = document.getElementById('ttsLabel');
-          if (label) label.textContent = 'No text on this page';
-          setTimeout(() => { if (label) label.textContent = 'Read to me'; }, 2000);
-          return;
-        }
-
-        if (!window.speechSynthesis) {
-          const label = document.getElementById('ttsLabel');
-          if (label) label.textContent = 'Audio not ready';
-          setTimeout(() => { if (label) label.textContent = 'Read to me'; }, 2000);
-          return;
-        }
-
-        this.stop();
-        this._speakText(text, pageIdx);
+        const label = document.getElementById('ttsLabel');
+        if (label) label.textContent = 'Audio not ready';
+        setTimeout(() => { if (label) label.textContent = 'Read to me'; }, 2000);
       },
 
       _playAudio(url, pageIdx) {
         this._currentPageIndex = pageIdx;
-        this._usingSpeechSynth = false;
         // Cache-bust to avoid stale audio after regeneration
         this.audioEl.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
         this.audioEl.playbackRate = this.playbackRate;
@@ -1841,44 +1785,15 @@
           if (progress) progress.style.display = 'block';
         }).catch(err => {
           console.error('[TTS] Audio play failed:', err);
-          // Fall back to speech synthesis
-          const narration = this.narrationData.find(n => n.pageIndex === pageIdx);
-          const text = narration?.fullText || narration?.text || '';
-          if (text.length > 20 && window.speechSynthesis) {
-            this._speakText(text, pageIdx);
-          }
+          const label = document.getElementById('ttsLabel');
+          if (label) label.textContent = 'Audio not ready';
+          setTimeout(() => { if (label) label.textContent = 'Read to me'; }, 2000);
         });
-      },
-
-      _speakText(text, pageIdx) {
-        if (!text || text.length < 5) return;
-        this._currentPageIndex = pageIdx;
-        this._usingSpeechSynth = true;
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = this.playbackRate * 0.9;
-        utterance.pitch = 1.05;
-        utterance.volume = 1.0;
-        if (this.selectedVoice) utterance.voice = this.selectedVoice;
-
-        utterance.onend = () => this.setPlaying(false);
-        utterance.onerror = (e) => {
-          if (e.error === 'canceled' || e.error === 'interrupted') return;
-          console.error('[TTS] Speech error:', e.error);
-          this.setPlaying(false);
-        };
-
-        speechSynthesis.speak(utterance);
-        this.setPlaying(true);
       },
 
       pause() {
         this.isPaused = true;
-        if (this._usingSpeechSynth) {
-          speechSynthesis.pause();
-        } else {
-          this.audioEl.pause();
-        }
+        this.audioEl.pause();
         const btn = document.getElementById('ttsPlayBtn');
         const label = document.getElementById('ttsLabel');
         if (btn) btn.textContent = '▶️';
@@ -1887,18 +1802,11 @@
 
       resume() {
         this.isPaused = false;
-        if (this._usingSpeechSynth) {
-          speechSynthesis.resume();
-        } else {
-          this.audioEl.play();
-        }
+        this.audioEl.play();
         this.setPlaying(true);
       },
 
       stop() {
-        if (this._usingSpeechSynth) {
-          speechSynthesis.cancel();
-        }
         if (this.audioEl) {
           this.audioEl.pause();
           this.audioEl.currentTime = 0;
@@ -1906,7 +1814,6 @@
         this.isPlaying = false;
         this.isPaused = false;
         this._currentPageIndex = -1;
-        this._usingSpeechSynth = false;
         this.setPlaying(false);
         const progress = document.getElementById('ttsProgress');
         if (progress) progress.style.display = 'none';
