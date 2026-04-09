@@ -383,13 +383,30 @@ window.deleteModule = async function() {
 
     try {
         const moduleToDelete = selectedModule;
-        const { data: assignments } = await supabase.from('child_modules').select('id').eq('module_id', moduleToDelete.id);
-        if (assignments) for (const a of assignments) await supabase.from('child_modules').delete().eq('id', a.id);
-        const { data: parentAssignments } = await supabase.from('parent_modules').select('id').eq('module_id', moduleToDelete.id);
-        if (parentAssignments) for (const a of parentAssignments) await supabase.from('parent_modules').delete().eq('id', a.id);
-        if (moduleToDelete.storage_path) await supabase.storage.from('modules').remove([moduleToDelete.storage_path]);
-        await supabase.from('modules_to_generate').delete().eq('generated_module_id', moduleToDelete.id);
-        const { error } = await supabase.from('modules').delete().eq('id', moduleToDelete.id);
+        const moduleId = moduleToDelete.id;
+
+        // Bulk-delete all referencing rows. Each delete checks for errors so we can surface them.
+        const cleanupTables = [
+            'child_modules',
+            'parent_modules',
+            'module_variants',
+            'child_module_progress',
+            'module_audit_results',
+        ];
+        for (const tbl of cleanupTables) {
+            const { error: delErr } = await supabase.from(tbl).delete().eq('module_id', moduleId);
+            // Ignore "table does not exist" but surface anything else
+            if (delErr && !/does not exist|relation .* does not exist/i.test(delErr.message || '')) {
+                throw new Error(`Failed clearing ${tbl}: ${delErr.message}`);
+            }
+        }
+
+        await supabase.from('modules_to_generate').delete().eq('generated_module_id', moduleId);
+        if (moduleToDelete.storage_path) {
+            await supabase.storage.from('modules').remove([moduleToDelete.storage_path]);
+        }
+
+        const { error } = await supabase.from('modules').delete().eq('id', moduleId);
         if (error) throw error;
 
         setSelectedModule(null);
