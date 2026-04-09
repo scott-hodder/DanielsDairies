@@ -297,6 +297,94 @@ function closeAuditModal() {
     if (m) m.style.display = 'none';
 }
 
+// ═══ AUDIT A SINGLE VARIANT ═══
+// Returns { sections, pct, verdict, vc, pass, tot, cF, iF, aF } or { error }
+function _auditSingleVariant(html, p, superSkill) {
+    var text = _extractText(html);
+    var lower = text.toLowerCase();
+
+    var theoryConn = _getTheoryConnection(superSkill?.id, p.cy);
+    var ageRange = _getAgeRange(p.ag);
+    var level = _getLevel(p.wk);
+    var cycle = _getCycle(p.cy);
+
+    var context = {
+        superSkill: superSkill,
+        theoryConnection: theoryConn,
+        ageRange: ageRange,
+        level: level,
+        cycle: cycle,
+        params: p,
+        forbiddenWords: _auditData.forbiddenWords,
+        forbiddenMetaphors: _auditData.forbiddenMetaphors
+    };
+
+    var sections = [];
+    _auditData.auditSections.forEach(function(section) {
+        var sectionRules = _getRulesForSection(section.id);
+        var checks = [];
+        if (sectionRules.length > 0) {
+            sectionRules.forEach(function(rule) {
+                var result = _executeRuleCheck(rule, text, lower, context);
+                checks.push({
+                    n: rule.rule_number + ' ' + rule.rule_name,
+                    p: result.passed,
+                    d: rule.description || '',
+                    e: result.evidence,
+                    r: !result.passed ? (rule.remediation || 'Fix required') : null
+                });
+            });
+        } else {
+            checks.push({
+                n: section.section_number + '.1 Manual Review',
+                p: true,
+                d: section.description || 'No automated rules defined',
+                e: 'Requires human audit',
+                r: null
+            });
+        }
+        sections.push({
+            n: section.section_number + '. ' + section.section_name,
+            sev: section.severity,
+            weight: section.weight,
+            checks: checks
+        });
+    });
+
+    if (sections.length === 0) {
+        return { error: 'No audit sections found in database. Please add audit rules in Reference Data.' };
+    }
+
+    var tot = 0, pass = 0, cF = 0, iF = 0, aF = 0;
+    var weightedScore = 0, totalWeight = 0;
+    sections.forEach(function(sec) {
+        sec.pc = 0;
+        sec.tc = sec.checks.length;
+        sec.checks.forEach(function(ch) {
+            tot++;
+            if (ch.p) { pass++; sec.pc++; }
+            else {
+                if (sec.sev === 'CRITICAL') cF++;
+                else if (sec.sev === 'IMPORTANT') iF++;
+                else aF++;
+            }
+        });
+        sec.pct = Math.round((sec.pc / sec.tc) * 100);
+        var sectionWeight = sec.weight || 10;
+        weightedScore += (sec.pct / 100) * sectionWeight;
+        totalWeight += sectionWeight;
+    });
+
+    var pct = totalWeight > 0 ? Math.round((weightedScore / totalWeight) * 100) : Math.round((pass / tot) * 100);
+    var verdict, vc;
+    if (cF > 0) { verdict = 'FAIL'; vc = 'fail'; }
+    else if (iF >= 2) { verdict = 'FAIL'; vc = 'fail'; }
+    else if (iF > 0) { verdict = 'CONDITIONAL PASS'; vc = 'conditional'; }
+    else { verdict = 'PASS'; vc = 'pass'; }
+
+    return { sections: sections, pct: pct, verdict: verdict, vc: vc, pass: pass, tot: tot, cF: cF, iF: iF, aF: aF };
+}
+
 // ═══ MAIN AUDIT ═══
 async function runModuleAudit() {
     // Always sync from the Add New Module HTML textarea first (single source of truth in UI)
@@ -313,195 +401,167 @@ async function runModuleAudit() {
         return;
     }
     
-    var html = window.generatedModuleHTML;
-    if (!html) {
-        alert('Please generate a module first.');
-        return;
-    }
-
     var p = _getParams();
-    if (!p.sk || !p.cy || !p.wk || !p.ag) {
-        alert('Cannot determine module parameters.\nPlease ensure Super Skill, Cycle, Week, and Age Band are all selected.');
+    if (!p.sk || !p.cy || !p.wk) {
+        alert('Cannot determine module parameters.\nPlease ensure Super Skill, Cycle, and Week are all selected.');
         return;
     }
 
-    var text = _extractText(html);
-    var lower = text.toLowerCase();
-    
-    // Get context data from database
     var superSkill = _getSuperSkill(p.sk) || _getSuperSkill(p.ssId);
-    var theoryConn = _getTheoryConnection(superSkill?.id, p.cy);
-    var ageRange = _getAgeRange(p.ag);
-    var level = _getLevel(p.wk);
-    var cycle = _getCycle(p.cy);
-    
-    // Build context object for rule checks
-    var context = {
-        superSkill: superSkill,
-        theoryConnection: theoryConn,
-        ageRange: ageRange,
-        level: level,
-        cycle: cycle,
-        params: p,
-        forbiddenWords: _auditData.forbiddenWords,
-        forbiddenMetaphors: _auditData.forbiddenMetaphors
-    };
-
     if (!superSkill) {
         alert('Could not find Super Skill: ' + p.sk);
         return;
     }
 
-    var sections = [];
-    
-    // Process each audit section from database
-    _auditData.auditSections.forEach(function(section) {
-        var sectionRules = _getRulesForSection(section.id);
-        var checks = [];
-        
-        // If section has rules, execute them
-        if (sectionRules.length > 0) {
-            sectionRules.forEach(function(rule) {
-                var result = _executeRuleCheck(rule, text, lower, context);
-                checks.push({
-                    n: rule.rule_number + ' ' + rule.rule_name,
-                    p: result.passed,
-                    d: rule.description || '',
-                    e: result.evidence,
-                    r: !result.passed ? (rule.remediation || 'Fix required') : null
-                });
-            });
-        } else {
-            // Section has no rules - add placeholder for manual review
-            checks.push({
-                n: section.section_number + '.1 Manual Review',
-                p: true,
-                d: section.description || 'No automated rules defined',
-                e: 'Requires human audit',
-                r: null
-            });
-        }
-        
-        sections.push({
-            n: section.section_number + '. ' + section.section_name,
-            sev: section.severity,
-            weight: section.weight,
-            checks: checks
+    // Build the list of variants to audit. If multi-age generation produced
+    // window.generatedVariantHtml, audit each band; otherwise fall back to
+    // the single window.generatedModuleHTML against p.ag (or 6-8 default).
+    var variants = [];
+    if (window.generatedVariantHtml && typeof window.generatedVariantHtml === 'object') {
+        var bands = window.generatedVariantBands && window.generatedVariantBands.length
+            ? window.generatedVariantBands
+            : Object.keys(window.generatedVariantHtml);
+        bands.forEach(function(band) {
+            var vh = window.generatedVariantHtml[band];
+            if (vh) variants.push({ ag: band, html: vh.replace(/&#039;/g, "'") });
         });
-    });
-    
-    // If no sections loaded, show error
-    if (sections.length === 0) {
-        alert('No audit sections found in database. Please add audit rules in Reference Data.');
-        return;
+    }
+    if (variants.length === 0) {
+        if (!window.generatedModuleHTML) {
+            alert('Please generate a module first.');
+            return;
+        }
+        variants.push({ ag: p.ag || '6-8', html: window.generatedModuleHTML });
     }
 
-    // ═══ CALCULATE ═══
-    var tot = 0, pass = 0, cF = 0, iF = 0, aF = 0;
-    var weightedScore = 0, totalWeight = 0;
-    
-    sections.forEach(function(sec) {
-        sec.pc = 0;
-        sec.tc = sec.checks.length;
-        sec.checks.forEach(function(ch) {
-            tot++;
-            if (ch.p) {
-                pass++;
-                sec.pc++;
-            } else {
-                if (sec.sev === 'CRITICAL') cF++;
-                else if (sec.sev === 'IMPORTANT') iF++;
-                else aF++;
-            }
+    // Audit each variant
+    var variantResults = [];
+    var allFailures = [];
+    var worstVc = 'pass'; // pass < conditional < fail
+
+    for (var vi = 0; vi < variants.length; vi++) {
+        var v = variants[vi];
+        var vp = Object.assign({}, p, { ag: v.ag });
+        var res = _auditSingleVariant(v.html, vp, superSkill);
+        if (res.error) { alert(res.error); return; }
+        variantResults.push({ ag: v.ag, p: vp, result: res });
+        res.sections.forEach(function(sec) {
+            sec.checks.forEach(function(ch) {
+                if (!ch.p) {
+                    allFailures.push({
+                        ageBand: v.ag,
+                        section: sec.n,
+                        severity: sec.sev,
+                        rule: ch.n,
+                        description: ch.d,
+                        evidence: ch.e,
+                        remediation: ch.r
+                    });
+                }
+            });
         });
-        sec.pct = Math.round((sec.pc / sec.tc) * 100);
-        
-        // Calculate weighted score
-        var sectionWeight = sec.weight || 10;
-        weightedScore += (sec.pct / 100) * sectionWeight;
-        totalWeight += sectionWeight;
-    });
-    
-    var pct = totalWeight > 0 ? Math.round((weightedScore / totalWeight) * 100) : Math.round((pass / tot) * 100);
-    var verdict, vc;
-    
-    if (cF > 0) { verdict = 'FAIL'; vc = 'fail'; }
-    else if (iF >= 2) { verdict = 'FAIL'; vc = 'fail'; }
-    else if (iF > 0) { verdict = 'CONDITIONAL PASS'; vc = 'conditional'; }
-    else { verdict = 'PASS'; vc = 'pass'; }
+        if (res.vc === 'fail') worstVc = 'fail';
+        else if (res.vc === 'conditional' && worstVc !== 'fail') worstVc = 'conditional';
+    }
 
-    // ═══ RENDER INTO MODAL ═══
-    var col = vc === 'pass' ? '#38A169' : vc === 'conditional' ? '#D69E2E' : '#C53030';
-    var bg = vc === 'pass' ? '#F0FFF4' : vc === 'conditional' ? '#FFFFF0' : '#FFF5F5';
-    var tcol = vc === 'pass' ? '#22543D' : vc === 'conditional' ? '#744210' : '#C53030';
-    
-    var mid = p.sk + '-' + p.ag + '-C' + p.cy + '-W' + p.wk;
+    // Overall verdict = worst of all variants
+    var overallVerdict = worstVc === 'pass' ? 'PASS' : worstVc === 'conditional' ? 'CONDITIONAL PASS' : 'FAIL';
+    var ocol = worstVc === 'pass' ? '#38A169' : worstVc === 'conditional' ? '#D69E2E' : '#C53030';
+    var obg = worstVc === 'pass' ? '#F0FFF4' : worstVc === 'conditional' ? '#FFFFF0' : '#FFF5F5';
+    var otcol = worstVc === 'pass' ? '#22543D' : worstVc === 'conditional' ? '#744210' : '#C53030';
 
-    var h = '<div style="padding:16px;border-radius:10px;background:' + bg + ';border:2px solid ' + col + ';margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">';
-    h += '<div><div style="font-size:20px;font-weight:800;text-transform:uppercase;color:' + col + ';letter-spacing:1px;">' + verdict + '</div>';
-    h += '<div style="font-size:11px;color:#718096;margin-top:2px;">' + mid + ' - ' + new Date().toLocaleDateString('en-AU') + '</div></div>';
-    h += '<div style="text-align:right;"><div style="font-size:36px;font-weight:800;font-family:monospace;color:' + col + ';">' + pct + '%</div>';
-    h += '<div style="font-size:10px;color:#718096;">' + pass + '/' + tot + ' passed (weighted)</div></div></div>';
+    var mid = p.sk + '-C' + p.cy + '-W' + p.wk;
+    var h = '';
 
-    h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">';
-    h += '<div style="padding:10px;border-radius:8px;text-align:center;background:#F7FAFC;color:#1B3A5C;"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + tot + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Total</div></div>';
-    h += '<div style="padding:10px;border-radius:8px;text-align:center;background:#F0FFF4;color:#38A169;"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + pass + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Passed</div></div>';
-    h += '<div style="padding:10px;border-radius:8px;text-align:center;background:#FFF5F5;color:#C53030;"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + (cF + iF + aF) + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Failed</div></div>';
-    h += '<div style="padding:10px;border-radius:8px;text-align:center;background:' + (cF > 0 ? '#FFF5F5' : '#F0FFF4') + ';color:' + (cF > 0 ? '#C53030' : '#38A169') + ';"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + cF + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Critical</div></div>';
-    h += '</div>';
+    // Overall summary header (only if multiple variants)
+    if (variantResults.length > 1) {
+        h += '<div style="padding:16px;border-radius:10px;background:' + obg + ';border:2px solid ' + ocol + ';margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">';
+        h += '<div><div style="font-size:20px;font-weight:800;text-transform:uppercase;color:' + ocol + ';letter-spacing:1px;">' + overallVerdict + ' (Overall)</div>';
+        h += '<div style="font-size:11px;color:#718096;margin-top:2px;">' + mid + ' - ' + variantResults.length + ' age variants - ' + new Date().toLocaleDateString('en-AU') + '</div></div>';
+        h += '<div style="font-size:11px;color:' + otcol + ';font-weight:600;text-align:right;">Worst verdict across all<br/>age variants shown.</div></div>';
 
-    var gi = verdict === 'PASS' ? '✅' : verdict === 'CONDITIONAL PASS' ? '⚠️' : '🛑';
-    var gm = verdict === 'PASS' ? '<strong>Ready for human audit.</strong> All automated checks passed.' : verdict === 'CONDITIONAL PASS' ? '<strong>Proceed with flags.</strong> ' + iF + ' important issue(s).' : '<strong>Return to generator.</strong> ' + cF + ' critical failure(s). Fix before saving.';
-    h += '<div style="padding:12px 16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;background:' + bg + ';border:2px solid ' + col + ';color:' + tcol + ';">';
-    h += '<span style="font-size:20px;">' + gi + '</span><div>' + gm + '</div></div>';
-
-    sections.forEach(function(sec) {
-        var sc = sec.pct === 100 ? '#C6F6D5' : sec.sev === 'CRITICAL' && sec.pct < 100 ? '#FED7D7' : '#FEFCBF';
-        var st = sec.pct === 100 ? '#22543D' : sec.sev === 'CRITICAL' && sec.pct < 100 ? '#C53030' : '#744210';
-        var sv = sec.sev === 'CRITICAL' ? '#FED7D7' : sec.sev === 'IMPORTANT' ? '#FEFCBF' : '#E2E8F0';
-        var svt = sec.sev === 'CRITICAL' ? '#C53030' : sec.sev === 'IMPORTANT' ? '#744210' : '#718096';
-        var open = sec.pct < 100;
-
-        h += '<div style="background:#fff;border-radius:8px;border:1px solid #E2E8F0;margin-bottom:8px;overflow:hidden;">';
-        h += '<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="var b=this.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';">';
-        h += '<div style="font-size:12px;font-weight:700;color:#1B3A5C;display:flex;align-items:center;gap:8px;">';
-        h += '<span style="padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800;text-transform:uppercase;background:' + sv + ';color:' + svt + ';">' + sec.sev + '</span>';
-        h += '<span style="padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;background:#E2E8F0;color:#4A5568;">' + (sec.weight || 10) + '%</span>';
-        h += sec.n + '</div>';
-        h += '<span style="padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;font-family:monospace;background:' + sc + ';color:' + st + ';">' + sec.pc + '/' + sec.tc + ' - ' + sec.pct + '%</span>';
+        // Per-variant summary chips
+        h += '<div style="display:grid;grid-template-columns:repeat(' + variantResults.length + ',1fr);gap:8px;margin-bottom:14px;">';
+        variantResults.forEach(function(vr, i) {
+            var r = vr.result;
+            var c = r.vc === 'pass' ? '#38A169' : r.vc === 'conditional' ? '#D69E2E' : '#C53030';
+            var b = r.vc === 'pass' ? '#F0FFF4' : r.vc === 'conditional' ? '#FFFFF0' : '#FFF5F5';
+            h += '<a href="#auditVariant' + i + '" style="text-decoration:none;padding:10px;border-radius:8px;text-align:center;background:' + b + ';border:1.5px solid ' + c + ';color:' + c + ';">';
+            h += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;">Ages ' + vr.ag + '</div>';
+            h += '<div style="font-size:18px;font-weight:800;font-family:monospace;">' + r.pct + '%</div>';
+            h += '<div style="font-size:9px;font-weight:700;text-transform:uppercase;">' + r.verdict + '</div>';
+            h += '</a>';
+        });
         h += '</div>';
-        h += '<div style="display:' + (open ? 'block' : 'none') + ';padding:0 14px 12px;">';
-        sec.checks.forEach(function(ch) {
-            h += '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #E2E8F0;">';
-            h += '<span style="font-size:14px;flex-shrink:0;">' + (ch.p ? '✅' : '❌') + '</span>';
-            h += '<div style="flex:1;"><div style="font-size:12px;font-weight:600;">' + ch.n + '</div>';
-            h += '<div style="font-size:11px;color:#718096;margin-top:1px;">' + ch.d + '</div>';
-            if (ch.e) h += '<div style="font-size:10px;color:#2A8F8F;margin-top:2px;background:#F7FAFC;padding:3px 6px;border-radius:3px;font-style:italic;">' + ch.e + '</div>';
-            if (ch.r) h += '<div style="font-size:10px;color:#C53030;margin-top:2px;background:#FFF5F5;padding:3px 6px;border-radius:3px;font-weight:500;">' + ch.r + '</div>';
+    }
+
+    // Render each variant block
+    variantResults.forEach(function(vr, idx) {
+        var r = vr.result;
+        var col = r.vc === 'pass' ? '#38A169' : r.vc === 'conditional' ? '#D69E2E' : '#C53030';
+        var bg = r.vc === 'pass' ? '#F0FFF4' : r.vc === 'conditional' ? '#FFFFF0' : '#FFF5F5';
+        var tcol = r.vc === 'pass' ? '#22543D' : r.vc === 'conditional' ? '#744210' : '#C53030';
+        var vmid = p.sk + '-' + vr.ag + '-C' + p.cy + '-W' + p.wk;
+
+        h += '<div id="auditVariant' + idx + '" style="margin-bottom:24px;padding-top:6px;">';
+        if (variantResults.length > 1) {
+            h += '<div style="font-size:14px;font-weight:800;color:#1B3A5C;margin-bottom:8px;padding:6px 10px;background:#EEF2FF;border-left:4px solid #6366F1;border-radius:4px;">Age Variant: ' + vr.ag + '</div>';
+        }
+
+        h += '<div style="padding:16px;border-radius:10px;background:' + bg + ';border:2px solid ' + col + ';margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">';
+        h += '<div><div style="font-size:20px;font-weight:800;text-transform:uppercase;color:' + col + ';letter-spacing:1px;">' + r.verdict + '</div>';
+        h += '<div style="font-size:11px;color:#718096;margin-top:2px;">' + vmid + ' - ' + new Date().toLocaleDateString('en-AU') + '</div></div>';
+        h += '<div style="text-align:right;"><div style="font-size:36px;font-weight:800;font-family:monospace;color:' + col + ';">' + r.pct + '%</div>';
+        h += '<div style="font-size:10px;color:#718096;">' + r.pass + '/' + r.tot + ' passed (weighted)</div></div></div>';
+
+        h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">';
+        h += '<div style="padding:10px;border-radius:8px;text-align:center;background:#F7FAFC;color:#1B3A5C;"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + r.tot + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Total</div></div>';
+        h += '<div style="padding:10px;border-radius:8px;text-align:center;background:#F0FFF4;color:#38A169;"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + r.pass + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Passed</div></div>';
+        h += '<div style="padding:10px;border-radius:8px;text-align:center;background:#FFF5F5;color:#C53030;"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + (r.cF + r.iF + r.aF) + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Failed</div></div>';
+        h += '<div style="padding:10px;border-radius:8px;text-align:center;background:' + (r.cF > 0 ? '#FFF5F5' : '#F0FFF4') + ';color:' + (r.cF > 0 ? '#C53030' : '#38A169') + ';"><div style="font-size:22px;font-weight:800;font-family:monospace;">' + r.cF + '</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;">Critical</div></div>';
+        h += '</div>';
+
+        var gi = r.verdict === 'PASS' ? '✅' : r.verdict === 'CONDITIONAL PASS' ? '⚠️' : '🛑';
+        var gm = r.verdict === 'PASS' ? '<strong>Ready for human audit.</strong> All automated checks passed.' : r.verdict === 'CONDITIONAL PASS' ? '<strong>Proceed with flags.</strong> ' + r.iF + ' important issue(s).' : '<strong>Return to generator.</strong> ' + r.cF + ' critical failure(s). Fix before saving.';
+        h += '<div style="padding:12px 16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;background:' + bg + ';border:2px solid ' + col + ';color:' + tcol + ';">';
+        h += '<span style="font-size:20px;">' + gi + '</span><div>' + gm + '</div></div>';
+
+        r.sections.forEach(function(sec) {
+            var sc = sec.pct === 100 ? '#C6F6D5' : sec.sev === 'CRITICAL' && sec.pct < 100 ? '#FED7D7' : '#FEFCBF';
+            var st = sec.pct === 100 ? '#22543D' : sec.sev === 'CRITICAL' && sec.pct < 100 ? '#C53030' : '#744210';
+            var sv = sec.sev === 'CRITICAL' ? '#FED7D7' : sec.sev === 'IMPORTANT' ? '#FEFCBF' : '#E2E8F0';
+            var svt = sec.sev === 'CRITICAL' ? '#C53030' : sec.sev === 'IMPORTANT' ? '#744210' : '#718096';
+            var open = sec.pct < 100;
+
+            h += '<div style="background:#fff;border-radius:8px;border:1px solid #E2E8F0;margin-bottom:8px;overflow:hidden;">';
+            h += '<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="var b=this.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';">';
+            h += '<div style="font-size:12px;font-weight:700;color:#1B3A5C;display:flex;align-items:center;gap:8px;">';
+            h += '<span style="padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800;text-transform:uppercase;background:' + sv + ';color:' + svt + ';">' + sec.sev + '</span>';
+            h += '<span style="padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;background:#E2E8F0;color:#4A5568;">' + (sec.weight || 10) + '%</span>';
+            h += sec.n + '</div>';
+            h += '<span style="padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;font-family:monospace;background:' + sc + ';color:' + st + ';">' + sec.pc + '/' + sec.tc + ' - ' + sec.pct + '%</span>';
+            h += '</div>';
+            h += '<div style="display:' + (open ? 'block' : 'none') + ';padding:0 14px 12px;">';
+            sec.checks.forEach(function(ch) {
+                h += '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #E2E8F0;">';
+                h += '<span style="font-size:14px;flex-shrink:0;">' + (ch.p ? '✅' : '❌') + '</span>';
+                h += '<div style="flex:1;"><div style="font-size:12px;font-weight:600;">' + ch.n + '</div>';
+                h += '<div style="font-size:11px;color:#718096;margin-top:1px;">' + ch.d + '</div>';
+                if (ch.e) h += '<div style="font-size:10px;color:#2A8F8F;margin-top:2px;background:#F7FAFC;padding:3px 6px;border-radius:3px;font-style:italic;">' + ch.e + '</div>';
+                if (ch.r) h += '<div style="font-size:10px;color:#C53030;margin-top:2px;background:#FFF5F5;padding:3px 6px;border-radius:3px;font-weight:500;">' + ch.r + '</div>';
+                h += '</div></div>';
+            });
             h += '</div></div>';
         });
-        h += '</div></div>';
+
+        h += '</div>';
     });
 
     var container = document.getElementById('auditResultsContainer');
     if (container) container.innerHTML = h;
 
-    // Store failed checks for the Fix Errors feature
-    window._lastAuditFailures = [];
-    sections.forEach(function(sec) {
-        sec.checks.forEach(function(ch) {
-            if (!ch.p) {
-                window._lastAuditFailures.push({
-                    section: sec.n,
-                    severity: sec.sev,
-                    rule: ch.n,
-                    description: ch.d,
-                    evidence: ch.e,
-                    remediation: ch.r
-                });
-            }
-        });
-    });
+    // Store failed checks for the Fix Errors feature (tagged with age band)
+    window._lastAuditFailures = allFailures;
 
     // Show/hide the Fix Errors button based on failures
     var fixBtn = document.getElementById('auditFixErrorsBtn');

@@ -1,5 +1,66 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createHash } from 'node:crypto'
+
+// ── Mailchimp ──────────────────────────────────────────────
+// Non-blocking: logs errors but never throws so signup still succeeds.
+async function addToMailchimp(email: string, firstName: string, lastName: string) {
+  try {
+    const apiKey = Deno.env.get('MAILCHIMP_API_KEY')
+    const listId = Deno.env.get('MAILCHIMP_LIST_ID')
+    const tagName = Deno.env.get('MAILCHIMP_TAG') || "Daniel's Diaries New Member"
+    if (!apiKey || !listId) {
+      console.log('[mailchimp] Skipped — MAILCHIMP_API_KEY or MAILCHIMP_LIST_ID not set')
+      return
+    }
+    // Datacenter is the suffix after the dash in the API key, e.g. "abc-us8" → "us8"
+    const dc = apiKey.split('-')[1]
+    if (!dc) {
+      console.error('[mailchimp] Invalid API key format (no datacenter suffix)')
+      return
+    }
+    const base = `https://${dc}.api.mailchimp.com/3.0`
+    const authHeader = `Basic ${btoa(`anystring:${apiKey}`)}`
+    const subscriberHash = createHash('md5').update(email.toLowerCase()).digest('hex')
+    const displayName = `${firstName} ${lastName}`.trim()
+
+    // PUT upserts the member (status_if_new=subscribed = single opt-in on new records)
+    const memberRes = await fetch(`${base}/lists/${listId}/members/${subscriberHash}`, {
+      method: 'PUT',
+      headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email_address: email,
+        status_if_new: 'subscribed',
+        merge_fields: {
+          FNAME: firstName || '',
+          LNAME: lastName || '',
+          NAME: displayName,
+        },
+      }),
+    })
+    if (!memberRes.ok) {
+      const errBody = await memberRes.text().catch(() => '')
+      console.error(`[mailchimp] member upsert failed ${memberRes.status}:`, errBody.slice(0, 500))
+      return
+    }
+    console.log('[mailchimp] Member upserted:', email)
+
+    // Add the tag
+    const tagRes = await fetch(`${base}/lists/${listId}/members/${subscriberHash}/tags`, {
+      method: 'POST',
+      headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags: [{ name: tagName, status: 'active' }] }),
+    })
+    if (!tagRes.ok) {
+      const errBody = await tagRes.text().catch(() => '')
+      console.error(`[mailchimp] tag add failed ${tagRes.status}:`, errBody.slice(0, 500))
+      return
+    }
+    console.log(`[mailchimp] Tagged "${tagName}" on:`, email)
+  } catch (err) {
+    console.error('[mailchimp] unexpected error:', err)
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -293,6 +354,10 @@ serve(async (req) => {
 
     // 5. Confirmation email already sent by auth.signUp in Step 1
     console.log('[complete-signup] Step 5: Skipped (confirmation email sent in Step 1)')
+
+    // 6. Add to Mailchimp audience (non-blocking)
+    console.log('[complete-signup] Step 6: Adding to Mailchimp...')
+    await addToMailchimp(email, firstName, lastName || '')
 
     const result = {
       success: true,

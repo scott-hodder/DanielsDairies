@@ -1503,7 +1503,26 @@ async function selectPlan(tier) {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation()
   setupModals()
-  init()
+  init().then(() => {
+    // If we were redirected here from the dashboard because the user has no children,
+    // show a friendly message and auto-open the Add Child modal.
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('addChild') === '1') {
+      const reason = params.get('reason')
+      if (reason === 'no-child') {
+        const banner = document.createElement('div')
+        banner.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#fff7ed;border:2px solid #f59e0b;color:#92400e;padding:14px 22px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:10000;max-width:480px;text-align:center;font-size:14px;font-weight:500;'
+        banner.innerHTML = '👋 <strong>Oops — you haven\'t added a child yet!</strong><br><span style="font-weight:400;">Add your first child below to start using the dashboard.</span>'
+        document.body.appendChild(banner)
+        setTimeout(() => { banner.style.transition = 'opacity 0.5s'; banner.style.opacity = '0'; setTimeout(() => banner.remove(), 500) }, 8000)
+      }
+      // Open the Add Child modal after a short delay so the page has settled
+      setTimeout(() => { try { showAddChildModal() } catch (e) { console.error(e) } }, 400)
+      // Clean the query params from the URL
+      const cleanUrl = window.location.pathname
+      window.history.replaceState({}, '', cleanUrl)
+    }
+  })
 })
 
 // Export for use by ModuleGallery

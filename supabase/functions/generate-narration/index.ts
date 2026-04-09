@@ -37,6 +37,15 @@ const TTS_INSTRUCTIONS = "Young Australian male energy, happy, upbeat, warm, pla
 // Voicebox config (preferred when available)
 const VOICEBOX_INSTRUCT = "Warm, friendly, encouraging Australian voice for children. Clear pronunciation, natural pacing, upbeat and engaging.";
 
+// Replicate Chatterbox — using STANDARD chatterbox (not turbo). Turbo silently ignores
+// audio_prompt for voice cloning; standard supports it.
+const REPLICATE_CHATTERBOX_URL = "https://api.replicate.com/v1/models/resemble-ai/chatterbox/predictions";
+
+// Cartesia Sonic — commercial voice cloning, stored voice IDs, consistent output
+const CARTESIA_TTS_URL = "https://api.cartesia.ai/tts/bytes";
+const CARTESIA_VERSION = "2024-11-13";
+const CARTESIA_MODEL = "sonic-2";
+
 interface NarrationEntry {
   pageIndex: number;
   text: string;
@@ -65,13 +74,179 @@ async function hashText(text: string): Promise<string> {
 /**
  * Determine which TTS provider to use.
  */
-function getTtsProvider(): { provider: "voicebox" | "openai"; voiceboxUrl?: string; profileId?: string } {
+function getTtsProvider(): {
+  provider: "cartesia" | "replicate" | "voicebox" | "openai";
+  voiceboxUrl?: string;
+  profileId?: string;
+  replicateToken?: string;
+  replicateVoiceUrl?: string;
+  cartesiaKey?: string;
+  cartesiaVoiceId?: string;
+} {
+  // Cartesia first — commercial cloning with stored voice IDs, consistent + cheap
+  const cartesiaKey = Deno.env.get("CARTESIA_API_KEY");
+  const cartesiaVoiceId = Deno.env.get("CARTESIA_VOICE_ID");
+  if (cartesiaKey && cartesiaVoiceId) {
+    return { provider: "cartesia", cartesiaKey, cartesiaVoiceId };
+  }
+  const override = Deno.env.get("TTS_PROVIDER");
+  const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
+  if (override === "replicate" && replicateToken) {
+    return {
+      provider: "replicate",
+      replicateToken,
+      replicateVoiceUrl: Deno.env.get("REPLICATE_VOICE_URL") || undefined,
+    };
+  }
   const voiceboxUrl = Deno.env.get("VOICEBOX_URL");
   const profileId = Deno.env.get("VOICEBOX_PROFILE_ID");
   if (voiceboxUrl && profileId) {
     return { provider: "voicebox", voiceboxUrl, profileId };
   }
   return { provider: "openai" };
+}
+
+/**
+ * Call Replicate Chatterbox to generate audio.
+ * Uses Prefer: wait for synchronous response; falls back to polling if not done.
+ */
+async function generateAudioReplicate(
+  text: string,
+  apiToken: string,
+  voiceUrl?: string,
+): Promise<ArrayBuffer> {
+  // Chatterbox Turbo: uses `text` (not `prompt`) and `audio_prompt_path` (not `audio_prompt`).
+  // Standard Chatterbox uses the other names. Send both keys so the same code works on either model.
+  // Prepend "... " to absorb Chatterbox's initial-rush quirk (first ~1s plays too fast)
+  const paddedText = "... " + text;
+  const input: Record<string, unknown> = {
+    text: paddedText,
+    prompt: paddedText,
+    cfg_weight: 0.5,
+    exaggeration: 0.5,
+  };
+  if (voiceUrl) {
+    input.audio_prompt_path = voiceUrl;
+    input.audio_prompt = voiceUrl;
+  }
+
+  console.log(`[Replicate] === generateAudioReplicate called ===`);
+  console.log(`[Replicate] text len=${text.length}, voiceUrl=${voiceUrl || "(none — DEFAULT VOICE)"}`);
+  console.log(`[Replicate] input keys=${Object.keys(input).join(",")}`);
+  console.log(`[Replicate] input.audio_prompt=${(input as any).audio_prompt || "(unset)"}`);
+  console.log(`[Replicate] input.audio_prompt_path=${(input as any).audio_prompt_path || "(unset)"}`);
+  const _t0 = Date.now();
+
+  // Retry on 429 throttling (new accounts: 6/min, burst of 1, until $5 credit)
+  let createRes: Response;
+  let attempt = 0;
+  const maxAttempts = 6;
+  while (true) {
+    createRes = await fetch(REPLICATE_CHATTERBOX_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiToken}`,
+        "Content-Type": "application/json",
+        "Prefer": "wait=60",
+      },
+      body: JSON.stringify({ input }),
+      signal: AbortSignal.timeout(90 * 1000),
+    });
+
+    if (createRes.status !== 429) break;
+    attempt++;
+    if (attempt >= maxAttempts) break;
+    // Honour Retry-After header if present, else exponential backoff
+    const retryAfter = parseInt(createRes.headers.get("retry-after") || "0", 10);
+    const waitMs = (retryAfter > 0 ? retryAfter : Math.min(2 ** attempt, 30)) * 1000 + 500;
+    console.log(`[Replicate] 429 throttled, waiting ${waitMs}ms (attempt ${attempt}/${maxAttempts})`);
+    await new Promise((r) => setTimeout(r, waitMs));
+  }
+
+  if (!createRes.ok) {
+    const errBody = await createRes.text().catch(() => "");
+    throw new Error(`Replicate create error ${createRes.status}: ${errBody.slice(0, 500)}`);
+  }
+
+  let prediction = await createRes.json();
+  console.log(`[Replicate] Prediction ${prediction.id} status=${prediction.status}`);
+
+  // If still running, poll until done (up to 5 minutes)
+  const pollUrl: string | undefined = prediction.urls?.get;
+  const maxPollMs = 5 * 60 * 1000;
+  const pollStart = Date.now();
+  while (
+    pollUrl &&
+    (prediction.status === "starting" || prediction.status === "processing")
+  ) {
+    if (Date.now() - pollStart > maxPollMs) {
+      throw new Error("Replicate prediction timed out after 5 minutes");
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+    const pollRes = await fetch(pollUrl, {
+      headers: { "Authorization": `Bearer ${apiToken}` },
+      signal: AbortSignal.timeout(30 * 1000),
+    });
+    if (!pollRes.ok) {
+      throw new Error(`Replicate poll error ${pollRes.status}`);
+    }
+    prediction = await pollRes.json();
+  }
+
+  if (prediction.status !== "succeeded") {
+    throw new Error(`Replicate prediction ${prediction.status}: ${prediction.error || "unknown error"}`);
+  }
+
+  // Output is a URL string (or array of URL strings)
+  const out = prediction.output;
+  const audioUrl = Array.isArray(out) ? out[0] : out;
+  if (!audioUrl || typeof audioUrl !== "string") {
+    throw new Error("Replicate returned no audio URL: " + JSON.stringify(out).slice(0, 200));
+  }
+
+  const audioRes = await fetch(audioUrl, { signal: AbortSignal.timeout(2 * 60 * 1000) });
+  if (!audioRes.ok) {
+    throw new Error(`Replicate audio download error ${audioRes.status}`);
+  }
+  const buf = await audioRes.arrayBuffer();
+  console.log(`[Replicate] DONE in ${Date.now() - _t0}ms — ${buf.byteLength} bytes`);
+  return buf;
+}
+
+/**
+ * Call Cartesia Sonic to generate audio.
+ * Returns MP3 audio bytes directly (no polling — synchronous).
+ */
+async function generateAudioCartesia(
+  text: string,
+  apiKey: string,
+  voiceId: string,
+): Promise<ArrayBuffer> {
+  console.log(`[Cartesia] text len=${text.length}, voice=${voiceId}`);
+  const t0 = Date.now();
+  const res = await fetch(CARTESIA_TTS_URL, {
+    method: "POST",
+    headers: {
+      "X-API-Key": apiKey,
+      "Cartesia-Version": CARTESIA_VERSION,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model_id: CARTESIA_MODEL,
+      transcript: text,
+      voice: { mode: "id", id: voiceId },
+      output_format: { container: "mp3", sample_rate: 44100, bit_rate: 128000 },
+      language: "en",
+    }),
+    signal: AbortSignal.timeout(120 * 1000),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`Cartesia error ${res.status}: ${err.slice(0, 500)}`);
+  }
+  const buf = await res.arrayBuffer();
+  console.log(`[Cartesia] DONE in ${Date.now() - t0}ms — ${buf.byteLength} bytes`);
+  return buf;
 }
 
 /**
@@ -83,7 +258,14 @@ async function generateAudioVoicebox(
   voiceboxUrl: string,
   profileId: string,
 ): Promise<ArrayBuffer> {
-  // Generate speech via Voicebox REST API
+  // Voicebox /generate is SYNCHRONOUS — it blocks until generation completes
+  // and returns { id, profile_id, text, audio_path, duration, ... }.
+  // There is no /history polling endpoint. CPU inference can take minutes,
+  // so we use a generous AbortSignal timeout (8 min) to keep the connection alive.
+  // See: https://docs.voicebox.sh/developer/tts-generation
+  const GEN_TIMEOUT_MS = 8 * 60 * 1000;
+
+  console.log(`[Voicebox] POST ${voiceboxUrl}/generate (text len=${text.length})`);
   const response = await fetch(`${voiceboxUrl}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
@@ -93,64 +275,31 @@ async function generateAudioVoicebox(
       language: "en",
       instruct: VOICEBOX_INSTRUCT,
     }),
+    signal: AbortSignal.timeout(GEN_TIMEOUT_MS),
   });
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "Unknown error");
-    throw new Error(`Voicebox TTS error ${response.status}: ${errorBody}`);
+    throw new Error(`Voicebox /generate error ${response.status}: ${errorBody.slice(0, 500)}`);
   }
 
   const result = await response.json();
-  const generationId = result.id;
+  const generationId = result?.id;
+  console.log(`[Voicebox] /generate ok: id=${generationId} duration=${result?.duration} audio_path=${result?.audio_path ? "yes" : "no"}`);
 
   if (!generationId) {
-    throw new Error("Voicebox returned no generation id");
+    throw new Error("Voicebox returned no generation id: " + JSON.stringify(result).slice(0, 300));
   }
 
-  // Poll until generation is complete (status changes from "generating")
-  // CPU inference can be slow — allow up to 5 minutes per page
-  const maxAttempts = 150;
-  const pollInterval = 2000; // 2 seconds
-  let completed = false;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    await new Promise((r) => setTimeout(r, pollInterval));
-
-    const statusRes = await fetch(`${voiceboxUrl}/history/${generationId}`, {
-      headers: { "ngrok-skip-browser-warning": "true" },
-    });
-    if (!statusRes.ok) {
-      throw new Error(`Voicebox status check error ${statusRes.status}`);
-    }
-
-    const statusData = await statusRes.json();
-    if (attempt % 5 === 0) {
-      console.log(`[Voicebox] Poll ${attempt + 1}: status=${statusData.status}, audio_path=${statusData.audio_path || "(empty)"}, duration=${statusData.duration}`);
-    }
-
-    if (statusData.status === "error" || statusData.status === "failed" || statusData.error) {
-      throw new Error(`Voicebox generation failed: ${statusData.error || "unknown error"}`);
-    }
-
-    // Wait until audio_path is populated — status can show "completed" before the file is ready
-    if (statusData.audio_path && statusData.duration > 0) {
-      completed = true;
-      break;
-    }
-  }
-
-  if (!completed) {
-    throw new Error("Voicebox generation timed out");
-  }
-
-  // Fetch the generated audio file by generation ID
-  const audioUrl = `${voiceboxUrl}/audio/${generationId}`;
-  const audioResponse = await fetch(audioUrl, {
+  // Generation is already complete — fetch the audio file by id
+  const audioResponse = await fetch(`${voiceboxUrl}/audio/${generationId}`, {
     headers: { "ngrok-skip-browser-warning": "true" },
+    signal: AbortSignal.timeout(2 * 60 * 1000),
   });
 
   if (!audioResponse.ok) {
-    throw new Error(`Voicebox audio fetch error ${audioResponse.status}`);
+    const errBody = await audioResponse.text().catch(() => "");
+    throw new Error(`Voicebox /audio fetch error ${audioResponse.status}: ${errBody.slice(0, 300)}`);
   }
 
   return audioResponse.arrayBuffer();
@@ -196,6 +345,14 @@ async function generateAudio(
   apiKey: string,
   ttsProvider: ReturnType<typeof getTtsProvider>,
 ): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+  if (ttsProvider.provider === "cartesia") {
+    const buffer = await generateAudioCartesia(text, ttsProvider.cartesiaKey!, ttsProvider.cartesiaVoiceId!);
+    return { buffer, contentType: "audio/mpeg" };
+  }
+  if (ttsProvider.provider === "replicate") {
+    const buffer = await generateAudioReplicate(text, ttsProvider.replicateToken!, ttsProvider.replicateVoiceUrl);
+    return { buffer, contentType: "audio/wav" };
+  }
   if (ttsProvider.provider === "voicebox") {
     const buffer = await generateAudioVoicebox(text, ttsProvider.voiceboxUrl!, ttsProvider.profileId!);
     return { buffer, contentType: "audio/wav" };
@@ -215,11 +372,14 @@ serve(async (req) => {
 
   const ttsProvider = getTtsProvider();
   console.log(`[TTS] ====== generate-narration (${ttsProvider.provider}) called ======`);
+  console.log(`[TTS] env REPLICATE_API_TOKEN=${Deno.env.get("REPLICATE_API_TOKEN") ? "SET" : "MISSING"}`);
+  console.log(`[TTS] env REPLICATE_VOICE_URL=${Deno.env.get("REPLICATE_VOICE_URL") || "(MISSING)"}`);
+  console.log(`[TTS] resolved replicateVoiceUrl=${ttsProvider.replicateVoiceUrl || "(none)"}`);
 
   const apiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
   if (ttsProvider.provider === "openai" && !apiKey) {
-    console.error("[TTS] OPENAI_API_KEY is not set and Voicebox is not configured!");
-    return jsonResponse({ error: "No TTS provider configured. Set VOICEBOX_URL + VOICEBOX_PROFILE_ID or OPENAI_API_KEY." }, 500);
+    console.error("[TTS] No TTS provider configured!");
+    return jsonResponse({ error: "No TTS provider configured. Set REPLICATE_API_TOKEN, VOICEBOX_URL+VOICEBOX_PROFILE_ID, or OPENAI_API_KEY." }, 500);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -230,8 +390,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { moduleId, variantId, pages: requestedPages, force = false } = body;
-    console.log("[TTS] Request:", JSON.stringify({ moduleId, variantId, force, pages: requestedPages }));
+    const { moduleId, variantId, pages: requestedPages, force = false, background = false } = body;
+    console.log("[TTS] Request:", JSON.stringify({ moduleId, variantId, force, background, pages: requestedPages }));
 
     if (!moduleId) {
       return jsonResponse({ error: "moduleId is required" }, 400);
@@ -308,6 +468,13 @@ serve(async (req) => {
         text = text.replace(/<svg[\s\S]*?<\/svg>/gi, '');
         text = text.replace(/<canvas[\s\S]*?<\/canvas>/gi, '');
         text = text.replace(/<button[\s\S]*?<\/button>/gi, '');
+        // Strip headings entirely — we only want body text narrated
+        text = text.replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, '');
+        // Strip grown-up note blocks — they're for parents, not for narration.
+        // Match the whole collapsible <div> by its id="grownup-note-N" wrapper.
+        text = text.replace(/<div[^>]*id="grownup-note-[^"]*"[\s\S]*?<\/div>/gi, '');
+        // Also strip any element containing the literal text "Grown-Up Note"
+        text = text.replace(/<div[^>]*>[\s\S]{0,200}?Grown-Up Note[\s\S]*?<\/div>/gi, '');
         text = text.replace(/<(?:input|textarea)[^>]*\/?>/gi, '');
         text = text.replace(/<label[\s\S]*?<\/label>/gi, '');
         // Remove feedback/hidden elements — match opening tag through to its balanced </div>
@@ -330,6 +497,8 @@ serve(async (req) => {
         text = text.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&nbsp;/g, ' ');
         text = text.replace(/\$\{[^}]+\}/g, '');
         text = text.replace(/\\`/g, '`').replace(/\\\\/g, '\\');
+        // Strip emojis and pictographs — TTS tries to read them as "face with tears of joy" etc.
+        text = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}]/gu, '');
         text = text.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
         const skipPatterns = /^(I finished|I completed|I practiced|I thought about|Breaths completed|\/\s*\d+)$/i;
         const cleaned = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 2 && !skipPatterns.test(l)).join(' ').replace(/\s+/g, ' ').trim();
@@ -379,18 +548,20 @@ serve(async (req) => {
       });
     }
 
-    // 5. Process pages — sequential for Voicebox (CPU), parallel batches for OpenAI
-    const PARALLEL_BATCH = ttsProvider.provider === "voicebox" ? 1 : 5;
+    // 5. Build work list (pages that actually need generation)
+    const PARALLEL_BATCH = ttsProvider.provider === "voicebox" ? 1 : ttsProvider.provider === "replicate" ? 3 : ttsProvider.provider === "cartesia" ? 6 : 5;
     const narrationData: NarrationEntry[] = [...existingNarration];
-    let hasErrors = false;
-    let pagesGenerated = 0;
     const pagesToProcess = requestedPages || existingNarration.map((_: NarrationEntry, i: number) => i);
 
-    // Build list of pages that actually need generation
     const workItems: { i: number; text: string; hash: string }[] = [];
     for (let i = 0; i < existingNarration.length; i++) {
       if (!pagesToProcess.includes(i)) continue;
       const entry = existingNarration[i];
+      // Skip narration on the first page (cover/intro)
+      if (i === 0) {
+        narrationData[i] = { ...entry, audioUrl: null, status: "skipped" };
+        continue;
+      }
       const narrationText = entry.fullText || entry.text || "";
       if (narrationText.length < 20) {
         narrationData[i] = { ...entry, audioUrl: null, status: "skipped" };
@@ -406,87 +577,105 @@ serve(async (req) => {
       workItems.push({ i, text: textToSpeak, hash: contentHash });
     }
 
-    console.log(`[TTS] ${workItems.length} pages to generate (${ttsProvider.provider}, batch size: ${PARALLEL_BATCH})`);
+    console.log(`[TTS] ${workItems.length} pages to generate (${ttsProvider.provider}, batch=${PARALLEL_BATCH}, background=${background})`);
+    console.log(`[TTS] requested pages=${requestedPages ? JSON.stringify(requestedPages) : "ALL"}`);
+    console.log(`[TTS] work item indices=${workItems.map(w => w.i).join(",")}`);
 
-    // Process in parallel batches
-    for (let b = 0; b < workItems.length; b += PARALLEL_BATCH) {
-      const batch = workItems.slice(b, b + PARALLEL_BATCH);
-      console.log(`[TTS] Batch ${Math.floor(b / PARALLEL_BATCH) + 1}: pages ${batch.map(w => w.i).join(', ')}`);
+    // The actual processing loop — extracted so it can run inline OR in waitUntil
+    const processWork = async () => {
+      let hasErrors = false;
+      for (let b = 0; b < workItems.length; b += PARALLEL_BATCH) {
+        const batch = workItems.slice(b, b + PARALLEL_BATCH);
+        const _bt = Date.now();
+        console.log(`[TTS] Batch ${Math.floor(b / PARALLEL_BATCH) + 1}/${Math.ceil(workItems.length / PARALLEL_BATCH)}: pages ${batch.map(w => w.i).join(', ')} START`);
 
-      const results = await Promise.allSettled(batch.map(async (work) => {
-        const { i, text, hash } = work;
-        const entry = existingNarration[i];
-        const narrationText = entry.fullText || entry.text || "";
+        const results = await Promise.allSettled(batch.map(async (work) => {
+          const { i, text, hash } = work;
+          const { buffer: audioBuffer, contentType } = await generateAudio(text, apiKey, ttsProvider);
+          const ext = contentType === "audio/wav" ? "wav" : "mp3";
+          const fileName = `${storagePath}/page-${i}.${ext}`;
+          const { error: uploadError } = await supabaseClient.storage
+            .from("tts-audio")
+            .upload(fileName, audioBuffer, { contentType, upsert: true });
+          if (uploadError) throw new Error(`Storage upload: ${uploadError.message}`);
+          const { data: urlData } = supabaseClient.storage.from("tts-audio").getPublicUrl(fileName);
+          return { i, hash, audioUrl: urlData.publicUrl };
+        }));
 
-        const { buffer: audioBuffer, contentType } = await generateAudio(text, apiKey, ttsProvider);
-        const ext = contentType === "audio/wav" ? "wav" : "mp3";
-        const fileName = `${storagePath}/page-${i}.${ext}`;
-        const { error: uploadError } = await supabaseClient.storage
-          .from("tts-audio")
-          .upload(fileName, audioBuffer, { contentType, upsert: true });
-        if (uploadError) throw new Error(`Storage upload: ${uploadError.message}`);
-
-        const { data: urlData } = supabaseClient.storage
-          .from("tts-audio")
-          .getPublicUrl(fileName);
-
-        return { i, narrationText, hash, audioUrl: urlData.publicUrl };
-      }));
-
-      // Process results
-      for (let r = 0; r < results.length; r++) {
-        const result = results[r];
-        const work = batch[r];
-        const entry = existingNarration[work.i];
-        const narrationText = entry.fullText || entry.text || "";
-
-        if (result.status === "fulfilled") {
-          const { i, hash, audioUrl } = result.value;
-          narrationData[i] = {
-            pageIndex: i,
-            text: narrationText.slice(0, 200) + (narrationText.length > 200 ? "..." : ""),
-            fullText: narrationText,
-            audioUrl,
-            contentHash: hash,
-            status: "ready",
-          };
-          pagesGenerated++;
-        } else {
-          hasErrors = true;
-          narrationData[work.i] = {
-            pageIndex: work.i,
-            text: narrationText.slice(0, 200) + "...",
-            fullText: narrationText,
-            audioUrl: null,
-            contentHash: work.hash,
-            status: "error",
-            error: result.reason?.message || String(result.reason),
-          };
-          console.error(`[TTS] Page ${work.i} error:`, result.reason);
+        for (let r = 0; r < results.length; r++) {
+          const result = results[r];
+          const work = batch[r];
+          const entry = existingNarration[work.i];
+          const narrationText = entry.fullText || entry.text || "";
+          if (result.status === "fulfilled") {
+            const { i, hash, audioUrl } = result.value;
+            narrationData[i] = {
+              pageIndex: i,
+              text: narrationText.slice(0, 200) + (narrationText.length > 200 ? "..." : ""),
+              fullText: narrationText,
+              audioUrl,
+              contentHash: hash,
+              status: "ready",
+            };
+          } else {
+            hasErrors = true;
+            narrationData[work.i] = {
+              pageIndex: work.i,
+              text: narrationText.slice(0, 200) + "...",
+              fullText: narrationText,
+              audioUrl: null,
+              contentHash: work.hash,
+              status: "error",
+              error: result.reason?.message || String(result.reason),
+            };
+            console.error(`[TTS] Page ${work.i} error:`, result.reason);
+          }
         }
+
+        console.log(`[TTS] Batch ${Math.floor(b / PARALLEL_BATCH) + 1} END in ${Date.now() - _bt}ms`);
+        // Save progress after each batch (so the client can poll)
+        await supabaseClient
+          .from(targetTable)
+          .update({ narration_data: narrationData, narration_status: "generating" })
+          .eq("id", targetId);
       }
 
-      // Save progress after each batch
+      const allReady = narrationData.every(n => n.status === "ready" || n.status === "skipped");
+      const finalStatus = allReady ? "ready" : hasErrors ? "error" : "ready";
       await supabaseClient
         .from(targetTable)
-        .update({ narration_data: narrationData, narration_status: "generating" })
+        .update({ narration_data: narrationData, narration_status: finalStatus })
         .eq("id", targetId);
+
+      const readyCount = narrationData.filter(n => n.status === "ready").length;
+      const skippedCount = narrationData.filter(n => n.status === "skipped").length;
+      const errorCount = narrationData.filter(n => n.status === "error").length;
+      console.log(`[TTS] DONE — Ready: ${readyCount} | Skipped: ${skippedCount} | Errors: ${errorCount}`);
+      return { readyCount, skippedCount, errorCount, finalStatus };
+    };
+
+    // Background mode: kick off via waitUntil and return immediately
+    if (background) {
+      // @ts-ignore — EdgeRuntime is provided by Supabase Deno runtime
+      if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
+        // @ts-ignore
+        EdgeRuntime.waitUntil(processWork().catch((e) => console.error("[TTS] background error:", e)));
+      } else {
+        // Fallback: fire and forget
+        processWork().catch((e) => console.error("[TTS] background error:", e));
+      }
+      return jsonResponse({
+        success: true,
+        background: true,
+        moduleId,
+        variantId: variantId || null,
+        totalPages: existingNarration.length,
+        queued: workItems.length,
+      });
     }
 
-    // 6. Final save
-    const allReady = narrationData.every(n => n.status === "ready" || n.status === "skipped");
-    const finalStatus = allReady ? "ready" : hasErrors ? "error" : "ready";
-
-    await supabaseClient
-      .from(targetTable)
-      .update({ narration_data: narrationData, narration_status: finalStatus })
-      .eq("id", targetId);
-
-    const readyCount = narrationData.filter(n => n.status === "ready").length;
-    const skippedCount = narrationData.filter(n => n.status === "skipped").length;
-    const errorCount = narrationData.filter(n => n.status === "error").length;
-
-    console.log(`[TTS] DONE — Ready: ${readyCount} | Skipped: ${skippedCount} | Errors: ${errorCount}`);
+    // Foreground mode: run inline and return final state
+    const { readyCount, skippedCount, errorCount, finalStatus } = await processWork();
 
     return jsonResponse({
       success: true,

@@ -1492,9 +1492,9 @@ async function init() {
       return
     }
 
-    // No children - redirect to profile page to add children
+    // No children - redirect to profile page with a flag so it auto-opens the Add Child modal
     showLoadingScreen()
-    window.location.href = '/profile.html'
+    window.location.href = '/profile.html?addChild=1&reason=no-child'
     clearTimeout(loadingTimeout)
     
   } catch (error) {
