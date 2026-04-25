@@ -1919,6 +1919,9 @@ async function getSettings(supabaseClient: any) {
   return cachedSettings;
 }
 
+// PRIVACY: This function sends only educational content parameters to the Anthropic API.
+// No child-identifying data (names, IDs, dates of birth) is included in prompts.
+// See docs/AI_DATA_PROCESSING_AUDIT.md for the full audit.
 async function callClaude(
   apiKey: string,
   systemPrompt: string,

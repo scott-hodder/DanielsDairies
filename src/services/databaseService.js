@@ -50,6 +50,26 @@ async function withCachedQuery(key, ttlMs, queryFn) {
 }
 
 
+// ── Audit Logging (P1-8) ──
+export async function logParentAction(action, resourceType = null, resourceId = null, metadata = {}) {
+  try {
+    const supabase = getSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    await supabase.from('parent_audit_log').insert({
+      parent_user_id: user.id,
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      metadata
+    })
+  } catch (err) {
+    // Audit logging is non-blocking — don't break the app
+    console.error('[audit] Failed to log action:', err)
+  }
+}
+
 // Get level information from levels table
 export async function getLevelInfo(level) {
   const { data, error } = await getSupabaseClient()

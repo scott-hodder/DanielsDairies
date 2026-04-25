@@ -193,8 +193,8 @@ resetPasswordForm.addEventListener('submit', async (e) => {
     return
   }
 
-  if (newPassword.length < 6) {
-    showError('Password must be at least 6 characters long.')
+  if (newPassword.length < 8) {
+    showError('Password must be at least 8 characters long.')
     return
   }
 
@@ -287,8 +287,8 @@ signupForm.addEventListener('submit', async (e) => {
   }
   
   // Validate password length
-  if (password.length < 6) {
-    showError('Password must be at least 6 characters')
+  if (password.length < 8) {
+    showError('Password must be at least 8 characters')
     return
   }
   

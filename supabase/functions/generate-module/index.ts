@@ -157,7 +157,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   // Helper function to render the sidekick character (super skill mascot)
   const renderSidekick = (_size: string = 'text-4xl') => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto m-character-img" style="max-height: 80px;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto m-character-img">`;
     }
     if (metadata.sidekickEmoji) {
       return `<span class="text-4xl">${escapeForTemplate(metadata.sidekickEmoji)}</span>`;
@@ -2940,7 +2940,7 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
   // Sidekick image for cover
   const sidekickCoverHtml = (() => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto drop-shadow-xl" style="height: 140px; max-width: 140px;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto drop-shadow-xl" style="height: 180px; max-width: 180px;">`;
     }
     if (metadata.sidekickEmoji) {
       return `<span style="font-size: 5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>`;
@@ -2952,9 +2952,9 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
     <div class="page min-h-screen flex items-center justify-center p-8 m-page-cover" data-page="cover">
       <div class="text-center max-w-4xl m-cover-center">
         <!-- Daniel (left) + Title area (center) + Sidekick (right) -->
-        <div style="display: flex; align-items: center; justify-content: center; gap: 2rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: flex-end; justify-content: center; gap: 2rem; margin-bottom: 1.5rem;">
           <div style="flex-shrink: 0;" class="animate-bounce-slow">
-            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain drop-shadow-2xl" style="height: 160px; max-width: 160px;">
+            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain drop-shadow-2xl" style="height: 200px; max-width: 200px;">
           </div>
           <div style="flex: 1; min-width: 0;">
             <div class="inline-block px-6 py-2 rounded-full mb-3 m-bg-primary">
@@ -2988,16 +2988,16 @@ function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | 
   // Sidekick image (right side) if available
   const sidekickImg = metadata.sidekickName
     ? (seriesInfo?.character_image_url
-      ? `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName)}" class="object-contain" style="height: 100px; max-width: 100px;">`
+      ? `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName)}" class="object-contain" style="height: 140px; max-width: 140px;">`
       : (metadata.sidekickEmoji ? `<span style="font-size: 3.5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>` : ''))
     : '';
 
   return `
     <div class="page min-h-screen p-6 md:p-8 m-bg-cream" data-page="welcome">
       <div class="max-w-4xl mx-auto">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: flex-end; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem;">
           <div style="flex-shrink: 0;">
-            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain" style="height: 120px; max-width: 120px;">
+            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain" style="height: 150px; max-width: 150px;">
           </div>
           <h1 class="text-3xl md:text-4xl font-title m-color-dark" style="text-align: center; flex: 1; min-width: 0;">${escapeForTemplate(welcome.heading)}</h1>
           ${sidekickImg ? `<div style="flex-shrink: 0;">${sidekickImg}</div>` : ''}

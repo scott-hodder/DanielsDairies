@@ -14,7 +14,8 @@ const formData = {
     email: '',
     phone: '',
     password: '',
-    plan: null       // will be set from DB tiers (e.g. 'low', 'mid', 'top')
+    plan: null,       // will be set from DB tiers (e.g. 'low', 'mid', 'top')
+    mailchimpOptIn: false
 }
 
 // ── DOM Elements ──
@@ -46,12 +47,15 @@ async function init() {
             formData.phone = data.phone
             formData.password = data.password
             formData.plan = data.plan
+            formData.mailchimpOptIn = data.mailchimpOptIn || false
 
             // Restore form field values
             document.getElementById('firstName').value = data.firstName
             document.getElementById('lastName').value = data.lastName
             document.getElementById('email').value = data.email
             document.getElementById('phone').value = data.phone || ''
+            const mailchimpCheckbox = document.getElementById('mailchimpOptIn')
+            if (mailchimpCheckbox) mailchimpCheckbox.checked = formData.mailchimpOptIn
         }
     }
 
@@ -234,7 +238,7 @@ function handleStep1(e) {
     if (phone && !isValidPhone(phone)) { showFieldError('phone', 'phoneError'); valid = false }
     else clearFieldError('phone', 'phoneError')
 
-    if (password.length < 6) { showFieldError('password', 'passwordError'); valid = false }
+    if (password.length < 8) { showFieldError('password', 'passwordError'); valid = false }
     else clearFieldError('password', 'passwordError')
 
     if (password !== confirmPassword) { showFieldError('confirmPassword', 'confirmPasswordError'); valid = false }
@@ -247,6 +251,7 @@ function handleStep1(e) {
     formData.email = email
     formData.phone = phone
     formData.password = password
+    formData.mailchimpOptIn = document.getElementById('mailchimpOptIn')?.checked || false
 
     // If free trial, skip plan selection - go straight to review
     if (isFreeTrial) {
@@ -331,7 +336,8 @@ async function handleSubmit() {
                     lastName: formData.lastName,
                     phone: formData.phone,
                     plan: 'free_trial',
-                    isFreeTrial: true
+                    isFreeTrial: true,
+                    mailchimpOptIn: formData.mailchimpOptIn
                 }
             })
 
@@ -363,7 +369,8 @@ async function handleSubmit() {
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 phone: formData.phone,
-                plan: formData.plan
+                plan: formData.plan,
+                mailchimpOptIn: formData.mailchimpOptIn
             }))
 
             const supabase = getSupabaseClient()
@@ -447,7 +454,8 @@ async function completeSignupAfterPayment() {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 phone: data.phone,
-                plan: data.plan
+                plan: data.plan,
+                mailchimpOptIn: data.mailchimpOptIn || false
             }
         })
 

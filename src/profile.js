@@ -232,6 +232,28 @@ function renderBasicProfileSections(container) {
       </div>
     </section>
 
+    <!-- Privacy & Data Section -->
+    <section class="profile-hub" style="margin-top:24px;">
+      <div class="profile-hub-header">
+        <h2 class="profile-hub-title">🔒 Privacy & Data</h2>
+        <p class="profile-hub-subtitle">Manage your personal data in accordance with Australian privacy law</p>
+      </div>
+      <div style="padding:0 24px 24px;">
+        <p style="font-size:14px; color:#5f6b85; line-height:1.6; margin-bottom:16px;">
+          Under the Australian Privacy Act 1988, you have the right to access and delete your personal information. Use the options below to manage your data.
+        </p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button id="downloadDataBtn" type="button" style="padding:10px 24px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; border:none; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+            Download My Data
+          </button>
+          <button id="deleteAccountBtn" type="button" style="padding:10px 24px; background:white; color:#ef4444; border:2px solid #ef4444; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+            Delete My Account
+          </button>
+        </div>
+        <p id="dataActionStatus" style="font-size:13px; color:#6b7c8f; margin-top:12px;"></p>
+      </div>
+    </section>
+
     <!-- Feedback Section -->
     <section class="profile-hub" style="margin-top:24px;">
       <div class="profile-hub-header">
@@ -363,6 +385,102 @@ function renderBasicProfileSections(container) {
         feedbackStatus.style.color = '#ef4444'
         feedbackBtn.textContent = 'Send Feedback'
         feedbackBtn.disabled = false
+      }
+    })
+  }
+
+  // ── Download My Data (APP 12 compliance) ──
+  const downloadBtn = document.getElementById('downloadDataBtn')
+  const dataStatus = document.getElementById('dataActionStatus')
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', async () => {
+      downloadBtn.disabled = true
+      downloadBtn.textContent = 'Preparing download...'
+      if (dataStatus) dataStatus.textContent = ''
+
+      try {
+        const { data, error } = await supabase.functions.invoke('export-user-data')
+        if (error) throw error
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `daniels-diaries-data-export-${new Date().toISOString().slice(0, 10)}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+        if (dataStatus) {
+          dataStatus.textContent = 'Download started!'
+          dataStatus.style.color = '#0d9488'
+        }
+      } catch (err) {
+        console.error('Data export error:', err)
+        if (dataStatus) {
+          dataStatus.textContent = 'Failed to export data. Please try again or contact support.'
+          dataStatus.style.color = '#ef4444'
+        }
+      } finally {
+        downloadBtn.disabled = false
+        downloadBtn.textContent = 'Download My Data'
+      }
+    })
+  }
+
+  // ── Delete My Account ──
+  const deleteBtn = document.getElementById('deleteAccountBtn')
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      const user = state.currentUser
+      if (!user) return
+
+      const confirmed = confirm(
+        'Are you sure you want to permanently delete your account?\n\n' +
+        'This will delete:\n' +
+        '- Your profile and all personal information\n' +
+        '- All children\'s profiles and their data\n' +
+        '- All module progress, mood check-ins, and responses\n' +
+        '- Your subscription (will be cancelled)\n\n' +
+        'This action CANNOT be undone.'
+      )
+      if (!confirmed) return
+
+      const confirmEmail = prompt(
+        'To confirm, please type your email address:\n' + (user.email || '')
+      )
+      if (!confirmEmail) return
+
+      deleteBtn.disabled = true
+      deleteBtn.textContent = 'Deleting...'
+      if (dataStatus) dataStatus.textContent = ''
+
+      try {
+        const { data, error } = await supabase.functions.invoke('delete-account', {
+          body: { confirmEmail }
+        })
+        if (error) {
+          let msg = error.message || 'Deletion failed'
+          if (error.context && typeof error.context.json === 'function') {
+            try {
+              const body = await error.context.json()
+              if (body?.error) msg = body.error
+            } catch (_) {}
+          }
+          throw new Error(msg)
+        }
+
+        alert('Your account has been permanently deleted. You will now be redirected to the home page.')
+        window.location.href = '/'
+      } catch (err) {
+        console.error('Account deletion error:', err)
+        if (dataStatus) {
+          dataStatus.textContent = err.message || 'Failed to delete account. Please contact support.'
+          dataStatus.style.color = '#ef4444'
+        }
+        deleteBtn.disabled = false
+        deleteBtn.textContent = 'Delete My Account'
       }
     })
   }
