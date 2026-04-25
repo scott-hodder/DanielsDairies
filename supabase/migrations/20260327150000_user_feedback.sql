@@ -29,8 +29,8 @@ CREATE POLICY "Admins can read all feedback"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM parent_profiles p
-      WHERE p.id = auth.uid()
-      AND p.is_admin = true
+      SELECT 1 FROM parent_profiles
+      WHERE parent_profiles.id = auth.uid()
+      AND parent_profiles.is_admin = true
     )
   );

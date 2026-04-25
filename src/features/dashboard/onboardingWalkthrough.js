@@ -5,40 +5,34 @@ const ONBOARDING_STEPS = [
   {
     images: ['/images/steps/step1.png'],
     title: 'Welcome to your dashboard',
-    description: "This is your home base! Here you'll find Daniel, your stars, your streak, and your Daily Quest — everything you need in one place."
+    description: 'This is your home base. Here can see Daniel, your stars, streak, rank, level, and your Daily Quest.'
   },
   {
     images: ['/images/steps/step2.png'],
     title: 'Explore your Adventure Map',
-    description: "Your Adventure Map shows how far you've come. Tap any glowing node to start a module and keep moving forward."
+    description: 'Your map shows your progress through each skill. Tap a node to start a module and move along the path.'
   },
   {
     images: ['/images/steps/step3.png'],
     title: 'Unlock new places as you grow',
-    description: 'As you complete more modules, your world grows! New places unlock as you progress — from Trailhead all the way to Town Center and beyond.'
+    description: 'As you complete more modules, your path grows from Trailhead to Village, Town Center, and beyond.'
   },
   {
     images: ['/images/steps/step4.png'],
     title: 'Choose a skill and cycle',
-    description: 'You can explore different skills and learning cycles using the dropdowns at the top of your map.'
+    description: 'Use the dropdowns to switch between different super skills and once you are finished a cycle, you can move onto the next.'
   },
   {
     images: ['/images/steps/step5.1.png', '/images/steps/step5.2.png'],
-    imageLabels: ['Dashboard', 'Check-in'],
+    imageLabels: ['Dashboard', 'Daily Quest'],
     title: 'Complete your Daily Quest',
-    description: "Your Daily Quest is a quick check-in that takes just a moment. Tap it on your dashboard to share how you're feeling today."
+    description: 'Tap the Daily Quest button on your dashboard to do a quick check-in. You might be asked to notice how your body feels or pick an emotion.'
   },
   {
     images: ['/images/steps/step6.1.png', '/images/steps/step6.2.png'],
     imageLabels: ['Earn Stars', 'Star Shop'],
     title: 'Earn stars and spend them',
-    description: 'Earn stars by completing activities inside your modules. Then head to the Star Shop to trade them for rewards — you can even create your own custom ones!'
-  },
-  {
-    isFinal: true,
-    characterImage: '/images/characters/DanielTheDogHoldingHeart.webp',
-    title: "You're all set!",
-    description: "Daniel is excited to go on this adventure with you. Complete modules, earn stars, and watch yourself grow. Let's get started!"
+    description: 'Complete quizzes in your modules to earn stars. Then visit the Star Shop to trade your stars for rewards. You can even add your own custom rewards!'
   }
 ]
 
@@ -70,12 +64,12 @@ function createModal() {
       <button class="owt-close" aria-label="Close walkthrough">&times;</button>
 
       <div class="owt-body">
-        <div class="owt-image-area" id="owtImageArea">
+        <div class="owt-image-area">
           <div class="owt-images" id="owtImages"></div>
         </div>
 
         <div class="owt-text-area">
-          <div class="owt-step-counter" id="owtCounter">1 of 7</div>
+          <div class="owt-step-counter" id="owtCounter">1 of 6</div>
           <h2 class="owt-title" id="owtTitle"></h2>
           <p class="owt-desc" id="owtDesc"></p>
         </div>
@@ -179,23 +173,6 @@ function createModal() {
       align-items: center;
       flex: 1;
       min-height: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-    .owt-image-area.owt-sliding-out {
-      opacity: 0;
-      transform: translateX(-40px);
-    }
-    .owt-image-area.owt-sliding-in {
-      opacity: 0;
-      transform: translateX(40px);
-    }
-    .owt-image-area.owt-sliding-out-reverse {
-      opacity: 0;
-      transform: translateX(40px);
-    }
-    .owt-image-area.owt-sliding-in-reverse {
-      opacity: 0;
-      transform: translateX(-40px);
     }
 
     .owt-images {
@@ -223,23 +200,16 @@ function createModal() {
       max-width: 100%;
       max-height: 100%;
       display: none;
-      animation: owtImgFadeIn 0.3s ease;
     }
     .owt-images.owt-two-images img.owt-img-active {
       display: block;
-    }
-
-    @keyframes owtImgFadeIn {
-      from { opacity: 0; transform: scale(0.97); }
-      to { opacity: 1; transform: scale(1); }
     }
 
     .owt-img-tabs {
       display: flex;
       gap: 8px;
       justify-content: center;
-      padding: 10px 0 0;
-      background: #fffff5;
+      margin-top: 10px;
     }
     .owt-img-tab {
       padding: 5px 18px;
@@ -261,163 +231,6 @@ function createModal() {
       background: #14b8a6;
       border-color: #14b8a6;
       color: white;
-    }
-
-    /* Final encouragement slide */
-    .owt-final-slide {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      width: 100%;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Floating decorative elements */
-    .owt-final-slide::before {
-      content: '';
-      position: absolute;
-      top: -60px;
-      right: -60px;
-      width: 200px;
-      height: 200px;
-      background: rgba(20, 184, 166, 0.12);
-      border-radius: 50%;
-    }
-    .owt-final-slide::after {
-      content: '';
-      position: absolute;
-      bottom: -40px;
-      left: -40px;
-      width: 160px;
-      height: 160px;
-      background: rgba(99, 102, 241, 0.1);
-      border-radius: 50%;
-    }
-
-    .owt-final-card {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 40px;
-      background: linear-gradient(145deg, #2b3a55 0%, #405878 60%, #4c6c96 100%);
-      border-radius: 28px;
-      padding: 40px 50px;
-      max-width: 780px;
-      width: 90%;
-      box-shadow:
-        0 20px 50px rgba(43, 58, 85, 0.35),
-        0 0 0 1px rgba(255, 255, 255, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    }
-
-    .owt-final-character-wrap {
-      flex-shrink: 0;
-      position: relative;
-    }
-    .owt-final-character-wrap::before {
-      content: '';
-      position: absolute;
-      inset: -10px;
-      background: radial-gradient(circle, rgba(20, 184, 166, 0.25) 0%, transparent 70%);
-      border-radius: 50%;
-      animation: owtGlow 3s ease-in-out infinite;
-    }
-    .owt-final-character {
-      width: 180px;
-      height: 180px;
-      object-fit: contain;
-      border-radius: 24px;
-      position: relative;
-      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.3));
-      animation: owtFloat 3s ease-in-out infinite;
-    }
-
-    .owt-final-content {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      color: white;
-    }
-
-    .owt-final-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(20, 184, 166, 0.2);
-      border: 1px solid rgba(20, 184, 166, 0.35);
-      border-radius: 20px;
-      padding: 5px 14px;
-      width: fit-content;
-      font-family: 'Fredoka', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      color: #5eead4;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .owt-final-heading {
-      font-family: 'League Spartan', 'Fredoka', sans-serif;
-      font-size: 32px;
-      font-weight: 800;
-      color: white;
-      margin: 0;
-      line-height: 1.2;
-    }
-
-    .owt-final-text {
-      font-family: 'Fredoka', sans-serif;
-      font-size: 15px;
-      font-weight: 400;
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .owt-final-stats {
-      display: flex;
-      gap: 20px;
-      margin-top: 4px;
-    }
-    .owt-final-stat {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: 'Fredoka', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.7);
-    }
-    .owt-final-stat-icon {
-      font-size: 18px;
-    }
-
-    /* Floating sparkles */
-    .owt-sparkle {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15);
-      animation: owtSparkle 4s ease-in-out infinite;
-    }
-    .owt-sparkle:nth-child(1) { width: 6px; height: 6px; top: 15%; right: 12%; animation-delay: 0s; }
-    .owt-sparkle:nth-child(2) { width: 4px; height: 4px; top: 30%; right: 25%; animation-delay: 1.2s; }
-    .owt-sparkle:nth-child(3) { width: 5px; height: 5px; bottom: 20%; right: 18%; animation-delay: 2.4s; }
-    .owt-sparkle:nth-child(4) { width: 3px; height: 3px; top: 60%; left: 8%; animation-delay: 0.8s; }
-
-    @keyframes owtFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    @keyframes owtGlow {
-      0%, 100% { opacity: 0.5; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.08); }
-    }
-    @keyframes owtSparkle {
-      0%, 100% { opacity: 0.2; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.6); }
     }
 
     .owt-text-area {
@@ -522,21 +335,6 @@ function createModal() {
       box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
     }
 
-    .owt-btn-start {
-      background: linear-gradient(135deg, #2b3a55, #405878);
-      color: white;
-      box-shadow: 0 4px 14px rgba(43, 58, 85, 0.4);
-      font-size: 16px;
-      padding: 13px 38px;
-      border-radius: 16px;
-      letter-spacing: 0.3px;
-    }
-    .owt-btn-start:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(43, 58, 85, 0.45);
-      background: linear-gradient(135deg, #364f66, #4c6c96);
-    }
-
     .owt-dont-show {
       display: flex;
       align-items: center;
@@ -556,6 +354,7 @@ function createModal() {
       cursor: pointer;
     }
 
+
     @media (max-width: 768px) {
       .owt-modal {
         border-radius: 18px;
@@ -563,84 +362,29 @@ function createModal() {
         width: 98vw;
       }
       .owt-image-area {
-        padding: 10px;
-        flex: 3;
-        min-height: 0;
-      }
-      .owt-images {
-        height: 100%;
+        padding: 12px;
       }
       .owt-images img {
         max-height: 100%;
-        max-width: 100%;
-        object-fit: contain;
       }
       .owt-images.owt-two-images img {
         max-height: 100%;
-        max-width: 100%;
-      }
-      .owt-text-area {
-        padding: 12px 16px 4px;
-        flex-shrink: 0;
-      }
-      .owt-step-counter {
-        font-size: 12px;
-        margin-bottom: 4px;
       }
       .owt-title {
-        font-size: 18px;
-        margin-bottom: 4px;
+        font-size: 20px;
       }
       .owt-desc {
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .owt-footer {
-        padding: 8px 16px 6px;
-        gap: 8px;
-        flex-shrink: 0;
-      }
-      .owt-btn {
-        padding: 8px 18px;
-        min-width: 80px;
         font-size: 14px;
       }
-      .owt-dots {
-        gap: 6px;
+      .owt-text-area {
+        padding: 18px 20px 6px;
       }
-      .owt-dot {
-        width: 8px;
-        height: 8px;
+      .owt-footer {
+        padding: 12px 20px 8px;
       }
-      .owt-dot.owt-dot-active {
-        width: 20px;
-      }
-      .owt-dont-show {
-        padding: 0 16px 12px;
-        font-size: 12px;
-      }
-      .owt-final-card {
-        flex-direction: column;
-        gap: 16px;
-        padding: 24px 20px;
-        text-align: center;
-      }
-      .owt-final-character {
-        width: 100px;
-        height: 100px;
-      }
-      .owt-final-heading {
-        font-size: 22px;
-      }
-      .owt-final-text {
-        font-size: 13px;
-      }
-      .owt-final-stats {
-        justify-content: center;
-        gap: 12px;
-      }
-      .owt-final-stat {
-        font-size: 12px;
+      .owt-btn {
+        padding: 10px 20px;
+        min-width: 90px;
       }
     }
   `
@@ -667,37 +411,10 @@ function handleKeydown(e) {
   if (e.key === 'ArrowLeft') prevStep()
 }
 
-let isAnimating = false
-
-function animateTransition(direction, callback) {
-  if (isAnimating) return
-  isAnimating = true
-
-  const imageArea = document.getElementById('owtImageArea')
-  const slideOut = direction === 'forward' ? 'owt-sliding-out' : 'owt-sliding-out-reverse'
-  const slideIn = direction === 'forward' ? 'owt-sliding-in' : 'owt-sliding-in-reverse'
-
-  imageArea.classList.add(slideOut)
-
-  setTimeout(() => {
-    callback()
-    imageArea.classList.remove(slideOut)
-    imageArea.classList.add(slideIn)
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        imageArea.classList.remove(slideIn)
-        isAnimating = false
-      })
-    })
-  }, 200)
-}
-
 function renderStep() {
   const step = ONBOARDING_STEPS[currentStep]
   if (!step) return
 
-  const imageArea = document.getElementById('owtImageArea')
   const imagesEl = document.getElementById('owtImages')
   const titleEl = document.getElementById('owtTitle')
   const descEl = document.getElementById('owtDesc')
@@ -706,78 +423,39 @@ function renderStep() {
   const backBtn = document.getElementById('owtBack')
   const nextBtn = document.getElementById('owtNext')
 
-  // Remove image tabs if they exist
+  // Images
+  const isMulti = step.images.length > 1
+  imagesEl.className = 'owt-images' + (isMulti ? ' owt-two-images' : '')
+  imagesEl.innerHTML = step.images.map((src, i) =>
+    `<img src="${src}" alt="${step.title}" loading="eager" class="${i === 0 ? 'owt-img-active' : ''}">`
+  ).join('')
+
+  // Image tabs for multi-image steps
   const existingTabs = document.getElementById('owtImgTabs')
   if (existingTabs) existingTabs.remove()
 
-  const textArea = titleEl.closest('.owt-text-area')
-
-  // Final slide - special layout
-  if (step.isFinal) {
-    textArea.style.display = 'none'
-    imageArea.style.background = 'linear-gradient(160deg, #e8f0fe 0%, #dbeafe 40%, #ede9fe 100%)'
-    imagesEl.innerHTML = `
-      <div class="owt-final-slide">
-        <div class="owt-sparkle"></div>
-        <div class="owt-sparkle"></div>
-        <div class="owt-sparkle"></div>
-        <div class="owt-sparkle"></div>
-        <div class="owt-final-card">
-          <div class="owt-final-character-wrap">
-            <img class="owt-final-character" src="${step.characterImage}" alt="Daniel the Dog" />
-          </div>
-          <div class="owt-final-content">
-            <div class="owt-final-badge">🎉 Adventure awaits</div>
-            <h3 class="owt-final-heading">You're ready to begin your journey!</h3>
-            <p class="owt-final-text">Daniel can't wait to explore with you. Complete modules to learn new skills, earn stars along the way, and watch yourself grow stronger every day.</p>
-            <div class="owt-final-stats">
-              <div class="owt-final-stat"><span class="owt-final-stat-icon">⭐</span> Earn stars</div>
-              <div class="owt-final-stat"><span class="owt-final-stat-icon">🗺️</span> Explore the map</div>
-              <div class="owt-final-stat"><span class="owt-final-stat-icon">📈</span> Level up</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `
-    imagesEl.className = 'owt-images'
-
-    nextBtn.textContent = 'Start Exploring'
-    nextBtn.className = 'owt-btn owt-btn-start'
-  } else {
-    textArea.style.display = ''
-    imageArea.style.background = ''
-    nextBtn.className = 'owt-btn owt-btn-next'
-    nextBtn.textContent = 'Next'
-
-    // Images
-    const isMulti = step.images.length > 1
-    imagesEl.className = 'owt-images' + (isMulti ? ' owt-two-images' : '')
-    imagesEl.innerHTML = step.images.map((src, i) =>
-      `<img src="${src}" alt="${step.title}" loading="eager" class="${i === 0 ? 'owt-img-active' : ''}">`
+  if (isMulti && step.imageLabels) {
+    const tabsDiv = document.createElement('div')
+    tabsDiv.className = 'owt-img-tabs'
+    tabsDiv.id = 'owtImgTabs'
+    tabsDiv.innerHTML = step.imageLabels.map((label, i) =>
+      `<button class="owt-img-tab${i === 0 ? ' owt-img-tab-active' : ''}" data-idx="${i}">${label}</button>`
     ).join('')
 
-    // Image tabs for multi-image steps
-    if (isMulti && step.imageLabels) {
-      const tabsDiv = document.createElement('div')
-      tabsDiv.className = 'owt-img-tabs'
-      tabsDiv.id = 'owtImgTabs'
-      tabsDiv.innerHTML = step.imageLabels.map((label, i) =>
-        `<button class="owt-img-tab${i === 0 ? ' owt-img-tab-active' : ''}" data-idx="${i}">${label}</button>`
-      ).join('')
+    // Insert tabs between image area and text area
+    const imageArea = imagesEl.closest('.owt-image-area')
+    imageArea.parentNode.insertBefore(tabsDiv, imageArea.nextSibling)
 
-      imageArea.parentNode.insertBefore(tabsDiv, imageArea.nextSibling)
-
-      tabsDiv.querySelectorAll('.owt-img-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          const idx = parseInt(tab.dataset.idx)
-          const imgs = imagesEl.querySelectorAll('img')
-          imgs.forEach((img, i) => img.classList.toggle('owt-img-active', i === idx))
-          tabsDiv.querySelectorAll('.owt-img-tab').forEach((t, i) =>
-            t.classList.toggle('owt-img-tab-active', i === idx)
-          )
-        })
+    tabsDiv.querySelectorAll('.owt-img-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const idx = parseInt(tab.dataset.idx)
+        const imgs = imagesEl.querySelectorAll('img')
+        imgs.forEach((img, i) => img.classList.toggle('owt-img-active', i === idx))
+        tabsDiv.querySelectorAll('.owt-img-tab').forEach((t, i) =>
+          t.classList.toggle('owt-img-tab-active', i === idx)
+        )
       })
-    }
+    })
   }
 
   // Text
@@ -792,60 +470,40 @@ function renderStep() {
 
   dotsEl.querySelectorAll('.owt-dot').forEach(dot => {
     dot.addEventListener('click', () => {
-      const targetStep = parseInt(dot.dataset.step)
-      const dir = targetStep > currentStep ? 'forward' : 'backward'
-      animateTransition(dir, () => {
-        currentStep = targetStep
-        renderStep()
-      })
+      currentStep = parseInt(dot.dataset.step)
+      renderStep()
     })
   })
 
   // Back button
   backBtn.classList.toggle('owt-hidden', currentStep === 0)
+
+  // Next button
+  if (currentStep === ONBOARDING_STEPS.length - 1) {
+    nextBtn.textContent = 'Start Exploring'
+  } else {
+    nextBtn.textContent = 'Next'
+  }
 }
 
 function nextStep() {
-  if (isAnimating) return
   if (currentStep < ONBOARDING_STEPS.length - 1) {
-    animateTransition('forward', () => {
-      currentStep++
-      renderStep()
-    })
+    currentStep++
+    renderStep()
   } else {
     closeWalkthrough()
   }
 }
 
 function prevStep() {
-  if (isAnimating) return
   if (currentStep > 0) {
-    animateTransition('backward', () => {
-      currentStep--
-      renderStep()
-    })
+    currentStep--
+    renderStep()
   }
-}
-
-function preloadAllImages() {
-  ONBOARDING_STEPS.forEach(step => {
-    if (step.images) {
-      step.images.forEach(src => {
-        const img = new Image()
-        img.src = src
-      })
-    }
-    if (step.characterImage) {
-      const img = new Image()
-      img.src = step.characterImage
-    }
-  })
 }
 
 export function openWalkthrough() {
   currentStep = 0
-  isAnimating = false
-  preloadAllImages()
   const el = createModal()
   el.style.display = 'flex'
   document.body.style.overflow = 'hidden'
@@ -875,8 +533,6 @@ export function closeWalkthrough() {
 export function maybeShowOnboarding(childId) {
   if (!childId) return
   if (hasSeenOnboarding(childId)) return
-  // Start preloading images immediately so they're cached by the time modal opens
-  preloadAllImages()
   // Small delay so the dashboard finishes rendering first
   setTimeout(() => openWalkthrough(), 800)
 }

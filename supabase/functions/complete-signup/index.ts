@@ -111,7 +111,7 @@ serve(async (req) => {
 
     // 1. Create the auth user via regular signUp (triggers confirmation email via SMTP)
     console.log('[complete-signup] Step 1: Creating auth user via signUp...')
-    const appUrl = Deno.env.get('APP_URL') || 'https://danielsdiaries.com.au'
+    const appUrl = Deno.env.get('APP_URL') || 'https://app.danielsdiaries.com.au'
     const anonClient = createClient(supabaseUrl, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     })

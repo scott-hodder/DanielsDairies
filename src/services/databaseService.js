@@ -228,8 +228,10 @@ export async function getChild(childId) {
   return data
 }
 
-// Resolve a child's date of birth to an age band for multi-age variant selection
-export function resolveAgeBand(dateOfBirth) {
+// Resolve a child's age band for multi-age variant selection
+// Uses brain_age override if set, otherwise calculates from date of birth
+export function resolveAgeBand(dateOfBirth, brainAge) {
+  if (brainAge) return brainAge
   const dob = new Date(dateOfBirth)
   const now = new Date()
   let age = now.getFullYear() - dob.getFullYear()
@@ -941,6 +943,21 @@ export async function isUserAdmin(userId) {
 
     if (error) {
       console.error('Error checking admin status:', error)
+      return false
+    }
+
+    return data || false
+  })
+}
+
+// Check if user is practitioner
+export async function isUserPractitioner(userId) {
+  return withCachedQuery(`isUserPractitioner:${userId}`, 120_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .rpc('is_user_practitioner_check', { user_id: userId })
+
+    if (error) {
+      console.error('Error checking practitioner status:', error)
       return false
     }
 

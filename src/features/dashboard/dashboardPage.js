@@ -1,6 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
-import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, manageSubscription, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix, getChildCredits, spendChildCredit } from '../../database.js'
+import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, saveWeeklyCheckin, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, isUserPractitioner, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, switchStripeSubscriptionPlan, manageSubscription, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix, getChildCredits, spendChildCredit } from '../../database.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
 import { checkFocusPlan, showFocusPlanOnboarding, showFocusPlanSettings } from './focusPlan.js'
@@ -1412,8 +1412,9 @@ async function init() {
       supabase.from('category_colors').select('*'),
       isUserAdmin(state.currentUser.id),
       getParentSubscription(state.currentUser.id),
-      getSubscriptionTiers()
-    ]).then(([creditSummaryResult, categoryColorsResult, adminResult, subscriptionResult, tiersResult]) => {
+      getSubscriptionTiers(),
+      isUserPractitioner(state.currentUser.id)
+    ]).then(([creditSummaryResult, categoryColorsResult, adminResult, subscriptionResult, tiersResult, practitionerResult]) => {
       currentCreditSummary = creditSummaryResult.status === 'fulfilled' ? { credits_available: creditSummaryResult.value } : { credits_available: 0 }
       currentSubscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null
       subscriptionTiers = tiersResult.status === 'fulfilled' ? (tiersResult.value || []) : []
@@ -1442,6 +1443,15 @@ async function init() {
           if (adminButton) adminButton.style.display = 'block'
           if (adminButtonDesktop) showElement(adminButtonDesktop)
         }
+      }
+
+      // Show Schools Program button for admins and practitioners
+      const isPractitioner = practitionerResult.status === 'fulfilled' && practitionerResult.value
+      if (state.isCurrentUserAdmin || isPractitioner) {
+        const schoolsButton = document.getElementById('schoolsButton')
+        const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
+        if (schoolsButton) schoolsButton.style.display = 'block'
+        if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
       }
     })
 
@@ -4273,6 +4283,20 @@ if (adminButton) {
   })
 }
 
+const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
+if (schoolsButtonDesktop) {
+  schoolsButtonDesktop.addEventListener('click', () => {
+    window.location.href = '/schools-dashboard.html'
+  })
+}
+
+const schoolsButton = document.getElementById('schoolsButton')
+if (schoolsButton) {
+  schoolsButton.addEventListener('click', () => {
+    window.location.href = '/schools-dashboard.html'
+  })
+}
+
 if (closeMoreModulesButton) {
   closeMoreModulesButton.addEventListener('click', closeMoreModulesModal)
 }
@@ -4654,19 +4678,22 @@ async function renderLeaderboard() {
   }
 }
 
-// Check if user is admin
+// Check if user is admin or practitioner
 async function checkAdminStatus() {
   try {
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
       console.error('[Dashboard] No user found')
       return
     }
-    
+
     // Use the database function to check admin status
-    const isAdmin = await isUserAdmin(user.id)
-    
+    const [isAdmin, isPractitioner] = await Promise.all([
+      isUserAdmin(user.id),
+      isUserPractitioner(user.id)
+    ])
+
     if (isAdmin) {
       const adminButton = document.getElementById('adminButton')
       const adminButtonDesktop = document.getElementById('adminButtonDesktop')
@@ -4676,6 +4703,13 @@ async function checkAdminStatus() {
       if (adminButtonDesktop) {
         showElement(adminButtonDesktop)
       }
+    }
+
+    if (isAdmin || isPractitioner) {
+      const schoolsButton = document.getElementById('schoolsButton')
+      const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
+      if (schoolsButton) showElement(schoolsButton)
+      if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
     }
   } catch (error) {
     console.error('[Dashboard] Error checking admin status:', error)

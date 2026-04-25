@@ -64,6 +64,7 @@
             <button class="tab" onclick="switchTab(event, 'users')">Users</button>
             <button class="tab" onclick="switchTab(event, 'feedback')">Feedback</button>
             <button class="tab" onclick="switchTab(event, 'features')">Features</button>
+            <button class="tab" onclick="switchTab(event, 'schools')">Schools</button>
         </div>
 
         <!-- Tab Content: Check Ins -->
@@ -1188,6 +1189,29 @@
             </div>
         </div>
         <!-- End Features Tab -->
+
+        <!-- Tab Content: Schools Program -->
+        <div id="schoolsTab" class="tab-content">
+            <div class="rewards-panel" style="max-width: 1200px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 class="panel-title" style="margin-bottom: 4px;">Schools Program</h2>
+                        <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Manage schools, workbooks, and school program users</p>
+                    </div>
+                    <a href="/schools-login.html" target="_blank" class="btn" style="font-size:12px; padding:6px 14px;">Open Schools Login &#8599;</a>
+                </div>
+
+                <div id="schoolsSubTabs" style="display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid #e5e7eb; padding-bottom:0;">
+                </div>
+
+                <div id="schoolsSubContent">
+                    <div style="text-align:center; padding:40px; color:#6b7c8f;">
+                        <p style="margin:0;">Loading schools data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Schools Tab -->
 
         <!-- Add Tier Modal -->
         <div class="modal" id="addTierModal">
