@@ -19,6 +19,7 @@ window._adminLoadUsersData = async function loadUsersData() {
                 id,
                 name,
                 date_of_birth,
+                brain_age,
                 created_at,
                 credits,
                 parent_user_id
@@ -30,7 +31,7 @@ window._adminLoadUsersData = async function loadUsersData() {
         // Load parent profiles
         const { data: parents, error: parentsError } = await supabase
             .from('parent_profiles')
-            .select('id, username, credits, created_at');
+            .select('id, username, credits, created_at, is_practitioner');
 
         if (parentsError) throw parentsError;
 
@@ -61,11 +62,13 @@ window._adminLoadUsersData = async function loadUsersData() {
                 childId: child.id,
                 childName: child.name,
                 dateOfBirth: child.date_of_birth,
+                brainAge: child.brain_age || '',
                 childCredits: child.credits || 0,
                 childCreatedAt: child.created_at,
                 parentId: child.parent_user_id,
                 parentUsername: parent.username || 'Unknown',
                 parentCredits: parent.credits || 0,
+                isPractitioner: parent.is_practitioner || false,
                 subscriptionTier: subscription.tier || null,
                 subscriptionStatus: subscription.status || 'inactive',
                 subscriptionEnd: subscription.current_period_end,
@@ -132,6 +135,7 @@ function renderUsersTable() {
                     <th>Child Name</th>
                     <th>Date of Birth</th>
                     <th>Age</th>
+                    <th>Brain Age</th>
                     <th>Parent</th>
                     <th>Credits</th>
                     <th>Subscription</th>
@@ -175,8 +179,34 @@ function renderUserRow(user) {
             <td style="color: #6b7c8f; font-size: 13px;" class="age-cell" data-child-id="${user.childId}">
                 ${age !== null ? `${age} yrs` : '-'}
             </td>
+            <td style="color: #6b7c8f; font-size: 13px;">
+                <div class="brain-age-display" data-child-id="${user.childId}" style="display: flex; align-items: center; gap: 8px;">
+                    <span class="brain-age-text">${user.brainAge || '-'}</span>
+                    <button onclick="_adminEditBrainAge('${user.childId}', '${user.brainAge}')"
+                            style="background: none; border: none; cursor: pointer; padding: 2px 6px; font-size: 12px; color: #6366F1; opacity: 0.7;"
+                            title="Edit brain age">✏️</button>
+                </div>
+                <div class="brain-age-edit" data-child-id="${user.childId}" style="display: none; align-items: center; gap: 6px;">
+                    <select id="brain-age-input-${user.childId}"
+                            style="padding: 4px 8px; border: 1.5px solid #E2E8F0; border-radius: 6px; font-size: 12px;">
+                        <option value="">Auto (from DOB)</option>
+                        <option value="6-8" ${user.brainAge === '6-8' ? 'selected' : ''}>6-8</option>
+                        <option value="9-11" ${user.brainAge === '9-11' ? 'selected' : ''}>9-11</option>
+                        <option value="12-14" ${user.brainAge === '12-14' ? 'selected' : ''}>12-14</option>
+                        <option value="15-18" ${user.brainAge === '15-18' ? 'selected' : ''}>15-18</option>
+                    </select>
+                    <button onclick="_adminSaveBrainAge('${user.childId}')"
+                            style="background: #10B981; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; font-weight: 600;">Save</button>
+                    <button onclick="_adminCancelBrainAgeEdit('${user.childId}')"
+                            style="background: #6b7c8f; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer;">Cancel</button>
+                </div>
+            </td>
             <td>
                 <div style="font-size: 13px; color: #405878;">${escapeHtml(user.parentUsername)}</div>
+                <label style="display:flex; align-items:center; gap:4px; font-size:11px; color:#6b7c8f; margin-top:3px; cursor:pointer;" title="Allow this parent to access the Schools Program">
+                    <input type="checkbox" ${user.isPractitioner ? 'checked' : ''} onchange="_adminTogglePractitioner('${user.parentId}', this.checked)" style="cursor:pointer;">
+                    Practitioner
+                </label>
             </td>
             <td style="text-align: center;">
                 <span style="background: #f0f9ff; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">
@@ -258,6 +288,60 @@ window._adminSaveDob = async function(childId) {
     }
 };
 
+// ================================================================================
+// BRAIN AGE EDIT FUNCTIONS
+// ================================================================================
+window._adminEditBrainAge = function(childId, currentBrainAge) {
+    const displayEl = document.querySelector(`.brain-age-display[data-child-id="${childId}"]`);
+    const editEl = document.querySelector(`.brain-age-edit[data-child-id="${childId}"]`);
+    if (displayEl) displayEl.style.display = 'none';
+    if (editEl) editEl.style.display = 'flex';
+};
+
+window._adminCancelBrainAgeEdit = function(childId) {
+    const displayEl = document.querySelector(`.brain-age-display[data-child-id="${childId}"]`);
+    const editEl = document.querySelector(`.brain-age-edit[data-child-id="${childId}"]`);
+    if (displayEl) displayEl.style.display = 'flex';
+    if (editEl) editEl.style.display = 'none';
+};
+
+window._adminSaveBrainAge = async function(childId) {
+    const select = document.getElementById(`brain-age-input-${childId}`);
+    if (!select) return;
+
+    const newBrainAge = select.value || null; // empty string means auto (null in DB)
+
+    try {
+        const { error } = await supabase
+            .from('children')
+            .update({ brain_age: newBrainAge })
+            .eq('id', childId);
+
+        if (error) throw error;
+
+        // Update local data
+        const userIndex = usersData.findIndex(u => u.childId === childId);
+        if (userIndex !== -1) {
+            usersData[userIndex].brainAge = newBrainAge || '';
+        }
+
+        // Update the display
+        const displayEl = document.querySelector(`.brain-age-display[data-child-id="${childId}"]`);
+        const editEl = document.querySelector(`.brain-age-edit[data-child-id="${childId}"]`);
+
+        if (displayEl) {
+            const brainAgeText = displayEl.querySelector('.brain-age-text');
+            if (brainAgeText) brainAgeText.textContent = newBrainAge || '-';
+            displayEl.style.display = 'flex';
+        }
+        if (editEl) editEl.style.display = 'none';
+
+    } catch (err) {
+        console.error('Error updating brain age:', err);
+        alert('Failed to update brain age: ' + err.message);
+    }
+};
+
 function getStatusBadge(status, cancelAtPeriodEnd) {
     const statusConfig = {
         active: { bg: '#dcfce7', color: '#166534', label: 'Active' },
@@ -326,11 +410,12 @@ window._adminExportUsersCsv = function() {
         return;
     }
 
-    const headers = ['Child Name', 'Date of Birth', 'Age', 'Parent Email', 'Child Credits', 'Subscription Tier', 'Subscription Status'];
+    const headers = ['Child Name', 'Date of Birth', 'Age', 'Brain Age', 'Parent Email', 'Child Credits', 'Subscription Tier', 'Subscription Status'];
     const rows = usersData.map(u => [
         u.childName,
         u.dateOfBirth || '',
         calculateAge(u.dateOfBirth) || '',
+        u.brainAge || '',
         u.parentUsername,
         u.childCredits,
         u.subscriptionTier || '',
@@ -346,4 +431,24 @@ window._adminExportUsersCsv = function() {
     link.href = URL.createObjectURL(blob);
     link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+};
+
+// ================================================================================
+// TOGGLE PRACTITIONER STATUS
+// ================================================================================
+window._adminTogglePractitioner = async function(parentId, isPractitioner) {
+    try {
+        const { error } = await supabase
+            .from('parent_profiles')
+            .update({ is_practitioner: isPractitioner })
+            .eq('id', parentId);
+
+        if (error) throw error;
+        console.log(`[Admin] Set practitioner=${isPractitioner} for parent ${parentId}`);
+    } catch (error) {
+        console.error('Error toggling practitioner status:', error);
+        alert('Error updating practitioner status: ' + error.message);
+        // Reload to reset checkbox state
+        window._adminLoadUsersData();
+    }
 };

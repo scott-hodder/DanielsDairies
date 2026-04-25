@@ -79,13 +79,25 @@ import { buildSystemPrompt as buildLayeredSystemPrompt, validatePromptTemplate }
 const DEFAULT_SYSTEM_PROMPT = `You are an expert child psychologist creating Daniel's Diaries modules. These are trauma-informed, neurodiversity-affirming social-emotional learning content for children ages 6-18.
 
 === DANIEL'S DIARIES FRAMEWORK ===
-Daniel is a friendly narrator who guides children through Brain Town, a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town.
+Daniel the Dog 🐕 is the MAIN CHARACTER of every module. He is the protagonist who leads the adventure story and guides children through Brain Town, a metaphor where the child's brain is a town they are building. The CHILD is always the "town planner" with full agency over their Brain Town. If a super skill character exists (e.g., Billie, Coco, Kai), they are Daniel's SIDEKICK/FRIEND who helps on the adventure — NOT the main character.
+
+=== INTERACTIVE ADVENTURE STORY FORMAT ===
+Every module MUST feel like an interactive adventure story, NOT a disconnected quiz or worksheet collection.
+- The child is a co-hero helping the mascot character solve a meaningful story challenge
+- Every activity is a "mission step" that advances the story plot
+- Think: Dora the Explorer style guided adventure in module form
+- The story follows a clear arc: Beginning (introduce challenge) > Middle (build skills) > Climax (face the big challenge) > Resolution (celebrate and reflect)
+- The module has a mission catchphrase. Use it ONLY on the welcome page, one chapter divider, and the completion page (3 times TOTAL across the entire module). Do NOT include it on regular activity pages.
+- Address the child directly and make them feel like an active participant
+- Max 1 quiz per module, and it must be story-relevant (e.g., "crack the code to cross the bridge")
+- At least 70% of activities must be interactive beyond multiple choice
+- ANTI-REPETITION: NEVER repeat the same story premise, character introduction, or setup text across multiple pages. Each page should introduce a NEW story beat, event, or discovery. If the child has already been told "Brain Town friends have big feelings", do NOT say it again on the next page.
 
 === MANDATORY CONTENT REQUIREMENTS ===
 1. THEORY & CITATION: Every module MUST mention the primary theory name AND the researcher's surname (e.g., "Operant Learning Foundations" AND "Skinner").
 2. BRAIN TOWN VOCABULARY - MUST USE: town, road, roads, street, streets, main street, motorway, highway, traffic, traffic light, traffic signal, building, buildings, town planner, brain town
 3. CHILD AS TOWN PLANNER: Always frame the child as the "town planner" of their Brain Town. Use phrases like "As the town planner of your Brain Town..." or "You're the town planner here..."
-4. DANIEL NARRATES: Daniel must appear as narrator (use "Daniel" by name at least once).
+4. DANIEL IS THE MAIN CHARACTER: Daniel 🐕 is the protagonist of every module. The story is from Daniel's perspective. Use "Daniel" by name frequently. Any super skill character (Billie, Coco, etc.) is Daniel's friend/sidekick.
 5. LEARNING OUTCOME: Include at least one statement starting with "Child can..." to describe what the child will learn.
 
 === ABSOLUTELY FORBIDDEN - NEVER USE ===
@@ -110,7 +122,7 @@ CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor
 2. If a specific character/mascot is mentioned, you MUST use EXACTLY that character name and type throughout. Never substitute a different animal or character.
 3. The mascot emoji must match the character type exactly.
 4. When creating multiple items, sequence them as a learning journey: start with simple awareness, then practise skills, then apply in real-life scenarios.
-5. Treat the age range and language guidelines as hard requirements.
+5. Treat the age range and language guidelines as HARD requirements. For ages 6-8: sentences MUST be 6-10 words max, paragraphs MUST be 1-2 sentences only, use only words a 6 year old knows. TEXT LENGTH IS A HARD CONSTRAINT, NOT A SUGGESTION.
 6. Use Australian English spelling throughout (colour, behaviour, favourite, organise, centre, mum, learnt). NEVER use: behavior, color, organization, recognize, organize, center, analyze, generalize.
 7. ABSOLUTELY NEVER use em dashes (the long dash). Not a single one anywhere. Use commas, full stops, or rewrite instead. Also never use "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
 8. Write as a warm, experienced educator, not a marketing copywriter.
@@ -119,7 +131,17 @@ CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor
    SAFE emojis: 😊 😢 😡 😨 😌 🤩 😳 😤 🤔 😴 🥰 😎 🤗 😮 🙂 😞 😰 ⭐ 💛 ❤ 🌟 🎯 🎨 📝 💡 🏠 🌈 🐕 🐱 🦁 🐻 🌸 🌻 🎵 🎶 💪 🧠 ❓ ✅ ✓ ❌ 🐢 🐠 🐟 🐙 🐚 🌊 🐬 🐳 🐋 🦈 🐡 🦀 🌿 🍃 💎 ⚡ 🔥 💧 🌙 ☀ 🌤 ⛅ 🌧 ⛈ 🌪 🌞 🎈 🎉 🏆 🎪 🎭 🎬 🎹 🥁 🎸 🎺 🎻 📖 📚 ✏ 🖍 🖌 👀 👂 🤝 👍 👏 🙌 💭 💬 🔍 🧩
    BANNED emojis: 🫧 🪸 🪷 🪻 🫁 🧒 🪼 🫠 🫣 🫤 🩵 🩶 🩷 🪺 🪹 🪨 🫂 and ANY emoji you are unsure about.
 11. GENUINE CHOICE: Always offer the child choices. Use "you could", "you might", "choose", "option" language.
-12. STRENGTHS-BASED: Frame neurodiversity as difference, not deficit. Never use pathologising language.`;
+12. STRENGTHS-BASED: Frame neurodiversity as difference, not deficit. Never use pathologising language.
+
+=== NEURODIVERGENT-FRIENDLY DESIGN ===
+All content must be accessible and affirming for neurodivergent children (ADHD, autism, FASD, anxiety, sensory processing differences, etc.):
+1. SENSORY AWARENESS: Include body-based regulation options (e.g., "push your hands together hard", "wiggle your toes") alongside cognitive strategies. Never assume all children can "close their eyes" or "sit still".
+2. PROCESSING TIME: Never rush. Use phrases like "take as long as you need" and "there is no hurry". Avoid countdowns or time pressure.
+3. FLEXIBLE RESPONSES: Always accept multiple valid ways to respond. Avoid "one right answer" framing for emotional content. Include "I'm not sure yet" or "I'll think about it" as valid options.
+4. CLEAR STRUCTURE: Use short, predictable steps. Number instructions when there are more than 2 steps. Avoid ambiguous or open-ended prompts without scaffolding.
+5. SENSORY OPTIONS: When suggesting calming strategies, include movement-based (jumping, squeezing), sensory (touching something soft, listening to sounds), AND thinking-based options so every child finds something that works for them.
+6. LITERAL LANGUAGE: Avoid idioms, sarcasm, and figurative language that may confuse literal thinkers. If using a metaphor (like Brain Town), explain it clearly first.
+7. EMOTIONAL VALIDATION: Always validate that ALL feelings are OK, including "no feeling" or "mixed up feelings". Never imply a child should feel a certain way.`;
 
 let ACTIVE_SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT;
 
@@ -212,11 +234,18 @@ async function regenerateInteractiveLesson(
     `Lesson ${idx + 1}: "${lesson.heading}" - Question: "${lesson.interactionPrompt}"`
   ).join('\n');
   
-  const prompt = `Create a REPLACEMENT interactive lesson for a child's workbook. This lesson must be COMPLETELY DIFFERENT from existing lessons.
+  const storyContext = metadata.storyPremise
+    ? `\nADVENTURE CONTEXT: This is a mission step in an adventure story.
+Frame this lesson as a story moment where the child discovers something or makes a choice to advance the adventure.
+Do NOT restate the story premise. Write a unique 1-sentence story bridge. Do NOT include the catchphrase.`
+    : '';
+
+  const prompt = `Create a REPLACEMENT interactive lesson for a child's adventure workbook. This lesson must be COMPLETELY DIFFERENT from existing lessons.
 
 ${context}
 
 ${characterContext}
+${storyContext}
 
 EXISTING LESSONS TO AVOID (DO NOT CREATE ANYTHING SIMILAR):
 ${avoidanceList}
@@ -226,17 +255,18 @@ CRITICAL REQUIREMENTS:
 2. Use a DIFFERENT question type and subject matter
 3. Do NOT ask about maps, comparisons, growth journeys, or progress if those are in existing lessons
 4. Focus on a FRESH aspect of the module theme that hasn't been covered
+5. Frame as a mission step in the adventure story
 
 Respond with ONLY this JSON:
 {
-  "heading": "Unique engaging title (must be different from existing)",
-  "introText": "Brief intro (2-3 sentences max)",
+  "heading": "Story-themed unique title (must be different from existing)",
+  "introText": "Brief story-framed intro (2-3 sentences max)",
   "interactionType": "poll" | "circle-one" | "fill-blank" | "rate-scale" | "true-false",
-  "interactionPrompt": "A completely unique interactive question",
+  "interactionPrompt": "A completely unique story-framed interactive question",
   "interactionOptions": ["option1", "option2", "option3", "option4"],
   "correctAnswerIndex": 1,
-  "followUpText": "Brief explanation (1-2 sentences)",
-  "mascotComment": "Encouraging comment from ${metadata.characterName}"
+  "followUpText": "Brief story-advancing explanation (1-2 sentences)",
+  "mascotComment": "Encouraging story-relevant comment from ${metadata.characterName}"
 }`;
 
   const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
@@ -261,13 +291,13 @@ Respond with ONLY this JSON:
   // Fallback with unique content (Brain Town compliant)
   return {
     heading: "Exploring Your Brain Town",
-    introText: `Daniel and ${metadata.characterName} are here to help you explore your Brain Town today!`,
+    introText: `Daniel is here to help you explore your Brain Town today!${metadata.sidekickName ? ` His friend ${metadata.sidekickName} is coming along too!` : ''}`,
     interactionType: "poll",
     interactionPrompt: "As the town planner of your Brain Town, what might you notice about your roads?",
     interactionOptions: ["Some roads are busier than others", "All roads look the same", "Roads never change", "There are no roads"],
     correctAnswerIndex: 0,
     followUpText: "That's right! In your Brain Town, some roads get used more often and become stronger. You're the town planner who decides which roads to build!",
-    mascotComment: `${metadata.characterName} loves watching you explore your Brain Town!`
+    mascotComment: `Daniel loves watching you explore your Brain Town!`
   };
 }
 
@@ -580,11 +610,25 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+)$/m);
   const subSkill = subSkillMatch ? subSkillMatch[1].trim() : '';
   
+  // Build age-specific hard constraints for younger children
+  const ageHardConstraints = ageRange === '6-8' ? `
+🚨 HARD TEXT LIMITS FOR 6-8 YEAR OLDS (NON-NEGOTIABLE) 🚨
+- MAX 1-2 sentences per paragraph. Every paragraph MUST be 1-2 sentences only.
+- MAX 8-12 words per sentence. Keep sentences short but complete.
+- Use ONLY simple everyday words a 6 year old would know. No abstract vocabulary.
+- Total text per page/activity: aim for 40-80 words maximum (excluding options/choices).
+- Instructions must be ONE simple step. Not "First do X, then do Y" but just "Do X".
+- Headings: 3-6 words maximum.
+- Replace long explanations with emojis, visuals, and action prompts.
+- If in doubt, use FEWER words. A 6 year old should be able to read this independently.` : '';
+
   const parts = [
     `Module: "${title}"`,
     `Theme: ${metadata.theme}`,
-    `Mascot: ${metadata.characterName} ${metadata.characterEmoji}`,
+    `Main Character: Daniel 🐕 (the protagonist and narrator)`,
+    metadata.sidekickName ? `Sidekick: ${metadata.sidekickName} ${metadata.sidekickEmoji || ''} (Daniel's friend/helper)` : '',
     `Age: ${metadata.targetAge}`,
+    `IMPORTANT: Do NOT include character emojis next to character names in any generated text. Use the character name only (e.g. "Daniel" not "Daniel 🐕").`,
     superSkill ? `Super Skill: ${superSkill}` : '',
     subSkill ? `Sub-Skill: ${subSkill}` : '',
     '',
@@ -594,6 +638,7 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
     `- Vocabulary: ${formatting.vocabularyLevel}`,
     `- Tone: ${formatting.toneDescription}`,
     `- Complexity: ${formatting.contentComplexity}`,
+    ageHardConstraints,
   ];
   
   if (theory) {
@@ -621,7 +666,52 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   }
   
   parts.push('', 'LANGUAGE: Australian English mandatory (colour, behaviour, favourite, organise, centre, mum, learnt).');
-  
+
+  // Add adventure story context so every generator frames content as part of the story
+  if (metadata.storyPremise) {
+    parts.push('', '=== ADVENTURE STORY CONTEXT (frame all content within this story) ===');
+    parts.push(`Story: ${metadata.storyPremise}`);
+    if (metadata.characterGoal) parts.push(`Goal: ${metadata.characterGoal}`);
+    if (metadata.characterObstacle) parts.push(`Obstacle: ${metadata.characterObstacle}`);
+    if (metadata.missionCatchphrase) parts.push(`Module catchphrase (FOR REFERENCE ONLY — do NOT include in this activity's text): "${metadata.missionCatchphrase}"`);
+    if (metadata.progressionMap) {
+      parts.push(`Story Arc: ${metadata.progressionMap.beginning} > ${metadata.progressionMap.middle} > ${metadata.progressionMap.climax} > ${metadata.progressionMap.resolution}`);
+    }
+    parts.push('STORY FRAMING RULES (CRITICAL):');
+    parts.push('- Do NOT restate the full story premise, character goal, or obstacle. The child already read the welcome page.');
+    parts.push('- Write a SHORT story bridge (1-2 sentences) that introduces a NEW mini-event, discovery, or twist that naturally leads into THIS specific activity.');
+    parts.push('- Each activity should feel like a different moment in the adventure, not the same setup repeated.');
+    parts.push('- Do NOT include the mission catchphrase in activity content.');
+  }
+
+  // Add differentiation tier guidance
+  parts.push('', '=== DIFFERENTIATION (SUPPORT ALL LEARNERS) ===');
+  if (ageRange === '6-8') {
+    parts.push('- SUPPORT TIER: For children who need extra help, keep text minimal, use visual cues (emojis, pictures), and offer "I need help" or "I am not sure yet" as valid choices.');
+    parts.push('- STANDARD TIER: Write to this level by default. Clear, simple, age-appropriate.');
+    parts.push('- STRETCH TIER: For children who want more challenge, include optional "bonus" questions or "Brain Town Challenge" extensions (e.g., "Can you think of another time this might happen?").');
+  } else if (ageRange === '9-11') {
+    parts.push('- SUPPORT TIER: Provide scaffolded options with sentence starters or examples. Include "I would like to think about this more" as valid.');
+    parts.push('- STANDARD TIER: Write to this level by default. Encourages reasoning and explanation.');
+    parts.push('- STRETCH TIER: Include optional reflection prompts that connect the activity to real life scenarios.');
+  } else if (ageRange === '12-14') {
+    parts.push('- SUPPORT TIER: Offer structured frameworks (e.g., "Think about: Who? What? Why?"). Keep emotional content low-pressure.');
+    parts.push('- STANDARD TIER: Write to this level by default. Encourages critical thinking and self-awareness.');
+    parts.push('- STRETCH TIER: Add perspective-taking challenges (e.g., "How might someone with a different experience see this?").');
+  } else {
+    parts.push('- SUPPORT TIER: Provide clear structure with guided prompts. Validate complexity of emotions.');
+    parts.push('- STANDARD TIER: Write to this level by default. Encourages deep reflection and personal application.');
+    parts.push('- STRETCH TIER: Include optional analytical prompts connecting to broader social contexts or values.');
+  }
+
+  // Add facilitator guidance
+  parts.push('', '=== FACILITATOR/PARENT LANGUAGE ===');
+  parts.push('When generating grown-up notes or facilitator tips, use these conversation starters:');
+  parts.push('- "You could ask..." (not "Ask the child...")');
+  parts.push('- "If the child seems stuck, you might say..." ');
+  parts.push('- "Some children may need..." (validates that different children need different support)');
+  parts.push('- NEVER tell facilitators to push past a child\'s resistance or force sharing.');
+
   return parts.filter(p => p !== undefined).join('\n');
 }
 
@@ -660,26 +750,28 @@ function dehyphenateObject<T>(obj: T): T {
   return obj;
 }
 
-// Determine if Daniel should appear as the learner character.
-// Daniel is the learner only when the series mascot is NOT Daniel.
-function shouldIncludeDaniel(metadata: ModuleMetadata, seriesInfo?: SeriesInfo | null): boolean {
-  const name = (metadata.characterName || '').toLowerCase();
-  const label = (seriesInfo?.label || '').toLowerCase();
-  // If the mascot IS Daniel (e.g. "Daniel the Dog", "Daniel's Diaries"), don't add Daniel as a separate learner
-  return !name.startsWith('daniel') && !label.startsWith('daniel');
+// Daniel is ALWAYS the main character now — no need to check
+function shouldIncludeDaniel(_metadata: ModuleMetadata, _seriesInfo?: SeriesInfo | null): boolean {
+  return true; // Daniel is always the protagonist
 }
 
 // Build a character context string for prompts that include character interactions
-function buildCharacterContext(metadata: ModuleMetadata, seriesInfo?: SeriesInfo | null): string {
-  if (!shouldIncludeDaniel(metadata, seriesInfo)) {
-    return `Primary character: ${metadata.characterName} ${metadata.characterEmoji} (guides the child directly)`;
+function buildCharacterContext(metadata: ModuleMetadata, _seriesInfo?: SeriesInfo | null): string {
+  const sidekick = metadata.sidekickName;
+  if (sidekick) {
+    return `MAIN CHARACTER: Daniel 🐕 (the protagonist, narrator, and guide throughout the entire module)
+- Daniel is a friendly dog who leads the adventure and talks directly to the child
+- Daniel's emoji MUST be 🐕 (dog)
+- The story is always from Daniel's point of view
+
+SIDEKICK/FRIEND: ${sidekick} ${metadata.sidekickEmoji || ''} (Daniel's helpful companion)
+- ${sidekick} joins Daniel on the adventure and helps out
+- ${sidekick} appears regularly but Daniel is always the lead
+- Example: "Daniel spotted something tricky up ahead. 'Come on ${sidekick}, let's figure this out together!'"`;
   }
-  return `Primary Mascot: ${metadata.characterName} ${metadata.characterEmoji}
-Learner: Daniel 🐕 (appears 2-3 times per module, briefly)
-- Daniel is a dog character who models relatable experiences the reader might share
-- Keep Daniel appearances to 1-2 sentences each
-- Daniel's emoji MUST be 🐕 (dog) - never use a person emoji for Daniel
-- Example: "Daniel noticed his hands felt shaky when he was nervous."`;
+  return `Primary character: Daniel 🐕 (guides the child through the adventure directly)
+- Daniel is the main character and narrator
+- Daniel's emoji MUST be 🐕 (dog)`;
 }
 
 // Helper to extract age range from metadata for formatting decisions
@@ -713,15 +805,17 @@ async function generateMetadata(
         : `${cleanLabel} the ${cleanCharacterType!.charAt(0).toUpperCase() + cleanCharacterType!.slice(1)}`)
     : null;
 
-  // If we have series info, include it in the prompt to guide the AI
-  const seriesContext = seriesInfo 
-    ? `\n\nIMPORTANT - SERIES CHARACTER INFO:
-This module belongs to the "${cleanLabel}" series.
-The mascot is "${fullCharacterName}" - a friendly ${cleanCharacterType}.
-The mascot emoji MUST be: ${seriesInfo.emoji}
-The character name MUST be "${fullCharacterName}".
-Always refer to the mascot as "${fullCharacterName}" throughout the module.
-DO NOT use any other animal or emoji - only use ${seriesInfo.emoji} for the mascot.`
+  // Daniel is ALWAYS the main character. The series mascot is the sidekick/friend.
+  const seriesContext = seriesInfo
+    ? `\n\nIMPORTANT - CHARACTER ROLES:
+Daniel the Dog 🐕 is the MAIN CHARACTER and narrator of every module. The story is told from Daniel's perspective.
+The SIDEKICK/FRIEND is "${fullCharacterName}" (${seriesInfo.emoji}) - a friendly ${cleanCharacterType} who helps Daniel on the adventure.
+- Daniel leads the story, talks to the child, and guides the adventure
+- ${fullCharacterName} is Daniel's friend who joins the journey and helps out
+- Example: "Daniel and his friend ${fullCharacterName} are exploring Brain Town together!"
+- The child helps DANIEL (with ${fullCharacterName}'s support) to solve the challenge
+- Use Daniel's name and 🐕 as the primary character references
+- ${fullCharacterName} ${seriesInfo.emoji} appears as the helpful sidekick throughout`
     : "";
 
   // Extract the admin-specified title and age range from the content brief
@@ -741,7 +835,7 @@ DO NOT use any other animal or emoji - only use ${seriesInfo.emoji} for the masc
   const theoryMatch = contentBrief.match(/^PRIMARY THEORY:\s*(.+)$/m);
   const briefTheory = theoryMatch ? theoryMatch[1].trim() : '';
 
-  const prompt = `Based on this content brief, create module metadata.
+  const prompt = `Based on this content brief, create module metadata INCLUDING an adventure story premise.
 
 CONTENT BRIEF:
 ${contentBrief}${seriesContext}
@@ -753,6 +847,17 @@ CRITICAL RULES (DO NOT IGNORE):
 ${briefSuperSkill ? `- Content relates to the Super Skill: "${briefSuperSkill}".` : ''}
 ${briefSubSkill ? `- Content focuses on the Sub-Skill: "${briefSubSkill}".` : ''}
 
+ADVENTURE STORY RULES:
+- The module must be structured as a continuous interactive adventure story
+- DANIEL is the main character. The story is from Daniel's perspective.${fullCharacterName ? ` ${fullCharacterName} is Daniel's friend/sidekick who helps on the adventure.` : ''}
+- Daniel has a CLEAR, SIMPLE GOAL that a 6 year old can understand in one sentence (e.g., "Daniel needs to find the missing feelings" or "Daniel wants to build a new road in Brain Town but needs help")
+- There is a CLEAR OBSTACLE stopping the goal (e.g., "the roads are all jumbled up" or "a big storm has blocked the path")
+- The story premise should connect directly to the module theme and theory
+- The storyPremise field must state the goal and obstacle clearly in 1-2 simple sentences, with DANIEL as the lead character
+- The characterGoal must be a single clear sentence a young child can understand, starring Daniel
+- Include a fun, short catchphrase (3-6 words max) the child can say during the adventure
+- The progression map should follow: Beginning (discover the challenge) > Middle (build skills to help) > Climax (face the big moment) > Resolution (celebrate success)
+
 Respond with ONLY this JSON structure:
 {
   "title": "${adminTitle || 'My Feelings Adventure'}",
@@ -761,9 +866,19 @@ Respond with ONLY this JSON structure:
   "description": "Full description (2-4 sentences, parent-facing, 300 characters max)",
   "series": "${cleanLabel || 'custom'}",
   "targetAge": "${adminAge || '6-8'}",
-  "theme": "Core psychological theme derived from ${briefTheory || 'the primary theory'}",
-  "characterName": "${fullCharacterName || 'Friendly mascot name (animal preferred)'}",
-  "characterEmoji": "${seriesInfo?.emoji || 'Single emoji representing the mascot'}"
+  "theme": "Child-friendly theme name (e.g., 'Understanding my feelings', 'Being a good friend') — NO academic jargon, NO citations, NO theory names. Must be simple enough for a ${adminAge || '6-8'} year old to understand",
+  "characterName": "Daniel",
+  "characterEmoji": "🐕",
+  "storyPremise": "1-2 simple sentences with DANIEL as the main character: (e.g., 'Brain Town's feeling roads are all mixed up! Daniel needs your help to sort them out.${fullCharacterName ? ` ${fullCharacterName} is here to help too!` : ''}')",
+  "characterGoal": "One clear simple sentence starring Daniel (e.g., 'Daniel wants to fix the mixed up roads in Brain Town')",
+  "characterObstacle": "One clear simple sentence (e.g., 'The roads are all jumbled and nobody knows which way to go')",
+  "progressionMap": {
+    "beginning": "How the adventure starts (discovering the challenge)",
+    "middle": "Building skills and gathering what is needed",
+    "climax": "The big moment where skills are tested",
+    "resolution": "Celebrating success and reflecting on what was learnt"
+  },
+  "missionCatchphrase": "A fun, short repeatable phrase for the adventure (e.g., 'Brain Town explorers, let's go!')"
 }`;
 
   const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_METADATA);
@@ -775,15 +890,23 @@ Respond with ONLY this JSON structure:
     if (adminAge) parsed.targetAge = adminAge;
   }
   
-  // If we have series info, ALWAYS enforce the character type and emoji (override AI response)
+  // Daniel is ALWAYS the main character
+  if (parsed) {
+    parsed.characterName = "Daniel";
+    parsed.characterEmoji = "🐕";
+    parsed.characterType = "dog";
+  }
+
+  // The series mascot becomes the sidekick
   if (seriesInfo && parsed) {
-    parsed.characterEmoji = seriesInfo.emoji;
-    parsed.characterName = fullCharacterName || cleanLabel || seriesInfo.label;
-    parsed.characterType = cleanCharacterType || seriesInfo.character_type;
+    parsed.sidekickName = fullCharacterName || cleanLabel || seriesInfo.label;
+    parsed.sidekickEmoji = seriesInfo.emoji;
+    parsed.sidekickType = cleanCharacterType || seriesInfo.character_type;
     parsed.series = cleanLabel || seriesInfo.label;
   }
   
   if (!parsed || !parsed.title) {
+    const sidekickName = fullCharacterName || undefined;
     return {
       title: adminTitle || "My Feelings Adventure",
       subtitle: "Learning about emotions together",
@@ -792,9 +915,22 @@ Respond with ONLY this JSON structure:
       series: cleanLabel || seriesInfo?.label || "custom",
       targetAge: adminAge || "6-8",
       theme: briefTheory || "emotional awareness",
-      characterName: fullCharacterName || "Buddy",
-      characterEmoji: seriesInfo?.emoji || "🐕",
-      characterType: cleanCharacterType || seriesInfo?.character_type
+      characterName: "Daniel",
+      characterEmoji: "🐕",
+      characterType: "dog",
+      sidekickName,
+      sidekickEmoji: seriesInfo?.emoji,
+      sidekickType: cleanCharacterType || seriesInfo?.character_type,
+      storyPremise: `Daniel needs your help exploring Brain Town!${sidekickName ? ` His friend ${sidekickName} is here to help too!` : ''} Something has jumbled up the roads and only a clever town planner can sort them out.`,
+      characterGoal: `Daniel wants to help the roads in Brain Town work smoothly again`,
+      characterObstacle: "The roads have got all mixed up and need a town planner to sort them out",
+      progressionMap: {
+        beginning: "Discovering that Brain Town's roads need help",
+        middle: "Learning skills to understand and sort the roads",
+        climax: "Using all our skills to fix the trickiest road",
+        resolution: "Celebrating our success as Brain Town's top town planner"
+      },
+      missionCatchphrase: "Brain Town explorers, let's go!"
     };
   }
   
@@ -947,21 +1083,48 @@ async function generateWelcome(
   const context = buildCondensedContext(contentBrief, metadata);
   const formatting = getAgeSpecificFormatting(extractAgeRange(metadata));
   
-  const prompt = `Create a warm welcome page for a child's workbook.
+  const ageRange = extractAgeRange(metadata);
+  const isYoungChild = ageRange === '6-8';
+
+  const storySetup = metadata.storyPremise
+    ? `\n\nADVENTURE STORY SETUP:
+- Set up the adventure story clearly: what is the GOAL and what is the PROBLEM?
+- Story premise: ${metadata.storyPremise}
+- Mascot's goal: ${metadata.characterGoal || 'helping in Brain Town'}
+- Obstacle: ${metadata.characterObstacle || 'a challenge to overcome'}
+- Make the child feel needed as a helper
+- You MAY end with the mission catchphrase: "${metadata.missionCatchphrase || ''}"
+- This is the ONLY page where the catchphrase should appear besides the completion page.`
+    : '';
+
+  const youngChildRules = isYoungChild ? `
+🚨 6-8 AGE LIMIT (ABSOLUTE RULE) 🚨
+- EXACTLY 2 short paragraphs. NOT 3, NOT 4, NOT 5. Only 2.
+- Each paragraph: 1-2 SHORT sentences only (8-12 words per sentence MAX).
+- Total word count for ALL paragraphs combined: MAX 60 words.
+- Paragraph 1: Quick hello + the problem (e.g., "Hi! I'm Billie. Brain Town's roads are all mixed up!")
+- Paragraph 2: What we need to do (e.g., "Can you help me sort them out? Let's go!")
+- Do NOT explain the theory, list streets, or give backstory. Just: problem + call to action.
+- A 6 year old must be able to read this in under 15 seconds.` : '';
+
+  const prompt = `Create a welcome page for a child's interactive adventure workbook.
 
 ${context}
 
 Welcome page specifics:
 - Paragraph style: ${formatting.welcomeParagraphs}
-- The mascot greets the child and introduces the module theme
-${shouldIncludeDaniel(metadata, seriesInfo) ? '- Briefly mention Daniel as someone who will be learning alongside them. Do NOT say "You\'ll meet Daniel" - Daniel is already known to the child. Say something like "Daniel will be joining us on this adventure too" or "Daniel is learning right along with you".' : ''}
+- The mascot greets the child and draws them into the adventure
+- Make the GOAL of the adventure crystal clear in the first paragraph
+- The child is invited to help
+${shouldIncludeDaniel(metadata, seriesInfo) ? '- Briefly mention Daniel (1 short sentence only).' : ''}${storySetup}
+${youngChildRules}
 
 Respond with ONLY this JSON:
 {
-  "heading": "Welcoming heading with mascot name and emoji",
+  "heading": "Short heading (3-5 words max)",
   "paragraphs": [
-    "Greeting from mascot",
-    "What we'll learn together"
+    "${isYoungChild ? 'Quick greeting + the problem (1-2 sentences, MAX 20 words)' : 'Greeting that draws the child into the story'}",
+    "${isYoungChild ? 'What we will do + excitement (1-2 sentences, MAX 20 words)' : 'The adventure premise and why the child is needed'}"
   ]
 }`;
 
@@ -969,7 +1132,7 @@ Respond with ONLY this JSON:
   const parsed = safeJsonParse<{ heading: string; paragraphs: string[] }>(response);
   
   return parsed || {
-    heading: `Welcome, Friend! ${metadata.characterEmoji}`,
+    heading: `Welcome, Friend!`,
     paragraphs: [
       `Hi there! I'm ${metadata.characterName}, and I'm so happy you're here!`,
       "In this adventure, we're going to learn amazing things about our feelings together.",
@@ -984,22 +1147,33 @@ async function generateChapterDividers(
   contentBrief: string,
   count: number
 ): Promise<ChapterDivider[]> {
-  const prompt = `Create ${count} chapter dividers for a child's workbook about "${metadata.theme}".
+  const storyArc = metadata.progressionMap
+    ? `\nADVENTURE STORY ARC (chapters must follow this story progression):
+- Chapter 1 (Beginning): ${metadata.progressionMap.beginning}
+- Chapter 2 (Middle/Climax): ${metadata.progressionMap.middle} leading to ${metadata.progressionMap.climax}
+- Chapter 3 (Resolution): ${metadata.progressionMap.resolution}
+You may include the catchphrase "${metadata.missionCatchphrase || ''}" in ONE chapter subtitle only.`
+    : '';
+
+  const prompt = `Create ${count} chapter dividers for a child's interactive adventure workbook about "${metadata.theme}".
 
 ${buildCondensedContext(contentBrief, metadata)}
 
-The chapters should follow this progression:
-- Chapter 1: Introduction and foundation (exploring the topic)
-- Chapter 2: Deeper exploration (building skills and understanding)
-- Chapter 3: Putting it all together (applying everything learned, connecting the dots)
+The chapters should follow this ADVENTURE STORY progression (not just topic headings):
+- Chapter 1: The adventure begins. Discovering the challenge, exploring, and building awareness
+- Chapter 2: Building skills and facing bigger challenges. The action intensifies
+- Chapter 3: The big moment and celebration. Applying everything learnt, overcoming the final challenge, and celebrating success
+${storyArc}
+
+IMPORTANT: Chapter titles should feel like story chapters (e.g., "The Mystery of the Wobbly Bridge" not "Understanding Emotions"). Make the child excited to turn the page.
 
 Respond with ONLY this JSON:
 {
   "chapters": [
     {
       "chapterNumber": 1,
-      "chapterTitle": "Short engaging title",
-      "chapterSubtitle": "What we'll explore"
+      "chapterTitle": "Short story-style chapter title",
+      "chapterSubtitle": "What adventure awaits in this chapter"
     }
   ]
 }
@@ -1032,7 +1206,31 @@ async function generateLessons(
   const formatting = getAgeSpecificFormatting(extractAgeRange(metadata));
   const characterContext = buildCharacterContext(metadata, seriesInfo);
 
-  const prompt = `Create ${count} lessons for a child's workbook.
+  const storyContext = metadata.storyPremise
+    ? `\nADVENTURE CONTEXT: Each lesson is a "mission briefing" — a new story beat that teaches something the child needs.
+Do NOT restate the story premise or re-introduce the character. The child already knows the setup.
+Instead, start each lesson with a 1-sentence STORY BRIDGE: describe what happens NEXT in the adventure that makes this knowledge important.
+Example: "As ${metadata.characterName} reaches the Wobbly Bridge, they spot something new..." then teach the skill.
+WITHIN-BATCH PROGRESSION: Lesson 1 = a new discovery. Lesson 2 = a twist or deeper challenge. Lesson 3 = approaching the big moment.
+Do NOT repeat the same story setup across lessons. Each lesson needs a DIFFERENT mini-event.
+Do NOT include the mission catchphrase.`
+    : '';
+
+  const lessonAgeRange = extractAgeRange(metadata);
+  const isYoungLearner = lessonAgeRange === '6-8';
+
+  const youngLessonRules = isYoungLearner ? `
+🚨 6-8 AGE LIMIT (ABSOLUTE RULE) 🚨
+- EXACTLY 1-2 short paragraphs per lesson. NOT 3+.
+- Each sentence: 8-12 words MAX. Count your words.
+- Each paragraph: 1-2 sentences ONLY.
+- Total words per lesson (all paragraphs + callout + tip combined): MAX 70 words.
+- calloutText: MAX 15 words.
+- tipText: MAX 15 words.
+- Use only words a 6 year old knows.
+- A 6 year old must read this in under 30 seconds.` : '';
+
+  const prompt = `Create ${count} lessons for a child's interactive adventure workbook.
 
 ${context}
 
@@ -1040,22 +1238,26 @@ ${characterContext}
 
 Lesson specifics:
 - Paragraph length: ${formatting.lessonParagraphs}
-- IMPORTANT: Do NOT start any lesson with "Hi! I'm [character name]" or any character introduction. The character has already been introduced on the welcome page. Jump straight into the teaching content for each lesson.
+- Do NOT start any lesson with "Hi! I'm [character name]" - character already introduced.
+- Each lesson is a "mission step" in the adventure story.
+- Frame teaching as something the child NEEDS for the adventure.
+${storyContext}
+${youngLessonRules}
 
 Respond with ONLY this JSON:
 {
   "lessons": [
     {
-      "heading": "Engaging lesson title with emoji",
-      "paragraphs": ["Paragraph 1", "Paragraph 2"],
-      "calloutTitle": "Key Point",
-      "calloutText": "Important takeaway (age-appropriate length)",
-      "tipText": "Tip from the mascot"
+      "heading": "${isYoungLearner ? 'Short story title (3-5 words) with emoji' : "Story-themed lesson title with emoji"}",
+      "paragraphs": [${isYoungLearner ? '"One short paragraph (1-2 sentences, MAX 25 words total)"' : '"Paragraph 1 - connects to the story", "Paragraph 2 - teaching content"'}],
+      "calloutTitle": "${isYoungLearner ? 'Clue' : 'Mission Clue'}",
+      "calloutText": "${isYoungLearner ? 'Key point (MAX 10 words)' : 'Important takeaway for the adventure'}",
+      "tipText": "${isYoungLearner ? 'Short mascot tip (MAX 10 words)' : 'Tip from the mascot that connects to the story'}"
     }
   ]
 }
 
-Create exactly ${count} unique lessons. Each should focus on a different aspect of ${metadata.theme}, ordered from simple awareness to practise and real-life application.`;
+Create exactly ${count} unique lessons. Each should focus on a different aspect of ${metadata.theme}. Frame each as a story moment.`;
 
   const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
   const parsed = safeJsonParse<{ lessons: LessonContent[] }>(response);
@@ -1088,14 +1290,16 @@ async function generateChecklists(
 
 ${buildCondensedContext(contentBrief, metadata)}
 
+ADVENTURE FRAMING: Frame each checklist as a "mission checklist" or "adventure supplies list" that helps the child prepare for or complete a step in the story. E.g., "Before we can cross the Wobbly Bridge, check off each skill you've practised..."
+
 Respond with ONLY this JSON:
 {
   "checklists": [
     {
-      "heading": "Activity title with emoji",
-      "instructions": "Clear instructions for the child (1-2 sentences)",
+      "heading": "Story-themed activity title with emoji (e.g., '✅ Mission Supply Check')",
+      "instructions": "Story-framed instructions (e.g., 'Check off each mission skill as you master it!')",
       "items": [
-        "First actionable item (start with verb)",
+        "First actionable item framed as a mission skill (start with verb)",
         "Second item",
         "Third item",
         "Fourth item",
@@ -1138,13 +1342,15 @@ async function generateReflections(
 
 ${buildCondensedContext(contentBrief, metadata)}
 
+ADVENTURE FRAMING: Frame each reflection as a "journal entry" or "explorer's log" where the child records their thoughts as part of the adventure. E.g., "Write in your explorer's log about a time when..." or "As a Brain Town planner, describe what you would..."
+
 Respond with ONLY this JSON:
 {
   "reflections": [
     {
-      "heading": "Reflection title with emoji",
-      "prompt": "Open-ended question that encourages personal reflection (1-2 sentences)",
-      "placeholder": "Encouraging placeholder text for the writing area"
+      "heading": "Story-themed reflection title with emoji (e.g., '📝 Explorer's Log Entry')",
+      "prompt": "Story-framed open-ended question that encourages personal reflection (1-2 sentences)",
+      "placeholder": "Story-themed placeholder (e.g., 'Dear Explorer's Log...')"
     }
   ]
 }
@@ -1172,27 +1378,38 @@ async function generateQuizzes(
   contentBrief: string,
   count: number
 ): Promise<QuizContent[]> {
-  const prompt = `Create ${count} quiz questions for children about "${metadata.theme}".
+  const storyQuizContext = metadata.storyPremise
+    ? `\nSTORY-RELEVANT QUIZ RULES:
+- This quiz MUST be framed as a story moment (e.g., "To unlock the next part of the map..." or "The passcode for the treasure chest is...")
+- Frame the question as something the child needs to figure out to advance the adventure
+- Make feedback story-relevant (e.g., "The bridge opens!" not just "Correct!")
+- Story: ${metadata.storyPremise}`
+    : '';
+
+  const prompt = `Create ${count} story-relevant quiz question(s) for children about "${metadata.theme}".
 
 ${buildCondensedContext(contentBrief, metadata)}
+${storyQuizContext}
+
+IMPORTANT: The quiz must feel like a puzzle or challenge within the adventure story, NOT a test. Frame it as unlocking something, cracking a code, or discovering a clue.
 
 Respond with ONLY this JSON:
 {
   "quizzes": [
     {
-      "heading": "Quiz title with emoji",
-      "question": "Simple multiple-choice question",
+      "heading": "Story-themed quiz title with emoji (e.g., '🔑 Crack the Code!')",
+      "question": "Story-framed question (e.g., 'To open the gate to the next part of Brain Town, which key fits?')",
       "answers": [
-        { "text": "Correct answer", "isCorrect": true, "feedback": "Great job! explanation" },
-        { "text": "Wrong answer 1", "isCorrect": false, "feedback": "Not quite, but good try!" },
-        { "text": "Wrong answer 2", "isCorrect": false, "feedback": "Let's think about this..." },
-        { "text": "Wrong answer 3", "isCorrect": false, "feedback": "Almost!" }
+        { "text": "Correct answer", "isCorrect": true, "feedback": "Story-relevant celebration (e.g., 'The gate swings open! You figured it out!')" },
+        { "text": "Wrong answer 1", "isCorrect": false, "feedback": "Encouraging story redirect (e.g., 'That key doesn't quite fit. Have another look...')" },
+        { "text": "Wrong answer 2", "isCorrect": false, "feedback": "Gentle story hint" },
+        { "text": "Wrong answer 3", "isCorrect": false, "feedback": "Encouraging nudge" }
       ]
     }
   ]
 }
 
-Create exactly ${count} different quiz questions.`;
+Create exactly ${count} different quiz question(s).`;
 
   const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
   const parsed = safeJsonParse<{ quizzes: QuizContent[] }>(response);
@@ -1235,13 +1452,15 @@ async function generateDrawings(
 
 ${buildCondensedContext(contentBrief, metadata)}
 
+ADVENTURE FRAMING: Frame each drawing as a creative mission step (e.g., "Draw a map of your Brain Town roads" or "Design a shield with your super skills" or "Draw what ${metadata.characterName} finds at the next stop on the adventure").
+
 Respond with ONLY this JSON:
 {
   "drawings": [
     {
-      "heading": "Drawing activity title with emoji",
-      "instructions": "Clear drawing instructions (1-2 sentences)",
-      "promptQuestion": "Question to answer after drawing"
+      "heading": "Story-themed drawing title with emoji (e.g., '🎨 Design Your Mission Map')",
+      "instructions": "Story-framed drawing instructions (1-2 sentences)",
+      "promptQuestion": "Story-connected question to answer after drawing"
     }
   ]
 }
@@ -1268,20 +1487,26 @@ async function generateBreathing(
   metadata: ModuleMetadata,
   contentBrief: string
 ): Promise<BreathingContent> {
-  const prompt = `Create a breathing exercise for children.
+  const storyContext = metadata.storyPremise
+    ? `\nADVENTURE CONTEXT: Frame this breathing exercise as a story moment. For example, "${metadata.characterName} needs to power up before the next challenge" or "The path ahead is tricky — let's get ready."
+Do NOT restate the story premise. Write a 1-sentence story bridge that makes breathing feel like part of the adventure.
+Do NOT include the mission catchphrase.`
+    : '';
 
-Module: "${metadata.title}"
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
-Age: ${metadata.targetAge}
-LANGUAGE: Australian English mandatory.
+  const prompt = `Create a breathing exercise for a child's interactive adventure workbook.
+
+${buildCondensedContext(contentBrief, metadata)}
+${storyContext}
+
+IMPORTANT: Frame this breathing exercise as a story moment within the adventure, not a standalone activity. E.g., "Before we can cross the Wobbly Bridge, ${metadata.characterName} says we need to power up with calm breaths..." or "Mission checkpoint! Time to recharge..."
 
 Respond with ONLY this JSON:
 {
-  "heading": "Breathing exercise title with emoji",
-  "instructions": "Simple explanation of how breathing helps us (1-2 sentences)",
-  "inhaleText": "What to think/say while breathing in (short)",
-  "holdText": "What to think/say while holding (short)",
-  "exhaleText": "What to think/say while breathing out (short)"
+  "heading": "Story-themed breathing exercise title with emoji",
+  "instructions": "Story-framed explanation connecting breathing to the adventure (1-2 sentences)",
+  "inhaleText": "What to think/say while breathing in (short, story-connected)",
+  "holdText": "What to think/say while holding (short, story-connected)",
+  "exhaleText": "What to think/say while breathing out (short, story-connected)"
 }`;
 
   const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
@@ -1306,19 +1531,21 @@ async function generateScenarios(
 
 ${buildCondensedContext(contentBrief, metadata)}
 
-These should present a situation and ask the child to choose the best response.
+These should present a situation WITHIN THE ADVENTURE STORY and ask the child to make a decision that helps the mascot character. Frame each scenario as a "choice moment" in the adventure where the child's decision shapes what happens next.
+
+E.g., "${metadata.characterName} comes to a fork in the road. One path looks easy but lonely, the other looks tricky but has friends waiting. As the town planner, which road would you choose for ${metadata.characterName}?"
 
 Respond with ONLY this JSON:
 {
   "scenarios": [
     {
-      "heading": "Scenario title with emoji",
-      "scenario": "Description of a relatable situation (2-3 sentences)",
-      "question": "What would you do?",
+      "heading": "Story-themed scenario title with emoji (e.g., '🛤 The Fork in the Road')",
+      "scenario": "Story situation where the mascot faces a choice (2-3 sentences)",
+      "question": "What would you advise?",
       "options": [
-        { "text": "Good choice", "feedback": "Great thinking! This helps because...", "isGood": true },
-        { "text": "Okay choice", "feedback": "This could work, but there might be a better way...", "isGood": false },
-        { "text": "Not ideal choice", "feedback": "Let's think about why this might not help...", "isGood": false }
+        { "text": "Good choice that advances the story", "feedback": "Story-relevant positive feedback", "isGood": true },
+        { "text": "Okay choice", "feedback": "Story-framed gentle redirect", "isGood": false },
+        { "text": "Not ideal choice", "feedback": "Story-framed encouraging nudge", "isGood": false }
       ]
     }
   ]
@@ -1646,6 +1873,8 @@ async function generateMatchingActivities(
 
 ${buildCondensedContext(contentBrief, metadata)}
 
+IMPORTANT: The "feeling" field MUST always contain descriptive feeling words (e.g. "Happy & Grateful", "Frustrated & Annoyed"). Never leave feeling empty or use only emojis. The feeling text is displayed alongside the emoji on the right side of the matching activity.
+
 Respond with ONLY this JSON:
 {
   "matchingActivities": [
@@ -1653,10 +1882,11 @@ Respond with ONLY this JSON:
       "heading": "Activity title with matching emoji",
       "instructions": "Instructions for the matching game (1-2 sentences)",
       "pairs": [
-        { "situation": "A friend shares their toy with you", "feeling": "Happy", "emoji": "😊" },
-        { "situation": "Someone takes your turn", "feeling": "Frustrated", "emoji": "😤" },
-        { "situation": "You're about to try something new", "feeling": "Nervous", "emoji": "😰" },
-        { "situation": "Your pet cuddles with you", "feeling": "Loved", "emoji": "🥰" }
+        { "situation": "A friend shares their toy with you", "feeling": "Happy & Grateful", "emoji": "😊" },
+        { "situation": "Someone takes your turn in a game", "feeling": "Frustrated & Annoyed", "emoji": "😤" },
+        { "situation": "You're about to try something new", "feeling": "Nervous & Worried", "emoji": "😰" },
+        { "situation": "Your pet cuddles with you", "feeling": "Loved & Safe", "emoji": "🥰" },
+        { "situation": "You can't find your favorite toy", "feeling": "Sad & Disappointed", "emoji": "😟" }
       ]
     }
   ]
@@ -1689,21 +1919,31 @@ async function generateSummary(
   contentBrief: string
 ): Promise<SummaryContent> {
   // ... (rest of the code remains the same)
-  const prompt = `Create a summary page for a child's workbook about "${metadata.theme}".
+  const storyResolution = metadata.progressionMap
+    ? `\nADVENTURE RESOLUTION: This is the story ending. The child has helped ${metadata.characterName} overcome the challenge.
+- Story resolution: ${metadata.progressionMap.resolution}
+- Frame takeaways as "Super Skills" the child has EARNED through the adventure
+- Celebrate the child's role as co-hero
+- Do NOT include the mission catchphrase here — it will appear on the completion page instead.`
+    : '';
 
+  const prompt = `Create an adventure story summary page for a child's workbook about "${metadata.theme}".
 
 ${buildCondensedContext(contentBrief, metadata)}
+${storyResolution}
+
+IMPORTANT: Frame this as the story's happy ending, not just a list of what was learnt. The child helped solve the challenge, and these are the "super skills" they earned along the way.
 
 Respond with ONLY this JSON:
 {
-  "heading": "Summary title with emoji",
+  "heading": "Story ending celebration title with emoji (e.g., '🌟 Super Skills Earned!')",
   "takeaways": [
-    "Key learning point 1",
-    "Key learning point 2",
-    "Key learning point 3",
-    "Key learning point 4"
+    "Super Skill 1 framed as something earned in the adventure",
+    "Super Skill 2",
+    "Super Skill 3",
+    "Super Skill 4"
   ],
-  "encouragement": "Final encouraging message from the mascot"
+  "encouragement": "Story-closing message celebrating the child as hero of the adventure"
 }`;
 
   const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
@@ -1725,18 +1965,30 @@ async function generateCompletion(
   apiKey: string,
   metadata: ModuleMetadata
 ): Promise<CompletionContent> {
-  const prompt = `Create a completion/celebration page for a child's workbook.
+  const storyEnding = metadata.storyPremise
+    ? `\nADVENTURE COMPLETION:
+- Story: ${metadata.storyPremise}
+- The child has completed the adventure and helped ${metadata.characterName}
+- Celebrate their role as co-hero and Brain Town explorer
+- Mention the "super skills" they now carry with them
+${metadata.missionCatchphrase ? `- End with the catchphrase "${metadata.missionCatchphrase}" as a triumphant farewell` : ''}`
+    : '';
+
+  const prompt = `Create an adventure completion/celebration page for a child's workbook.
 
 Module: "${metadata.title}"
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 Age: ${metadata.targetAge}
 LANGUAGE: Australian English mandatory.
+${storyEnding}
+
+IMPORTANT: This is the grand finale of the adventure story. Make the child feel like a hero who has completed an epic mission.
 
 Respond with ONLY this JSON:
 {
-  "heading": "Celebration heading",
-  "celebrationText": "Congratulatory message (2-3 sentences)",
-  "nextStepsText": "What to do next (1-2 sentences)"
+  "heading": "Epic celebration heading (e.g., '🎉 Mission Complete!')",
+  "celebrationText": "Story-closing celebration (2-3 sentences about how the child saved the day)",
+  "nextStepsText": "What skills to practise and excitement about future adventures (1-2 sentences)"
 }`;
 
   const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_ACTIVITY);
@@ -1795,7 +2047,18 @@ ${alreadyGenerated.map((item, idx) => `${idx + 1}. ${item}`).join('\n')}
 CRITICAL: Your new lesson MUST cover a COMPLETELY DIFFERENT topic, question, and activity from the above. Do NOT ask about the same concepts, comparisons, or reflections. Each lesson must be unique.`
       : '';
     
-    const prompt = `Create interactive lesson ${i + 1} of ${count} for a child's workbook.
+    const storyMissionContext = metadata.storyPremise
+      ? `\nADVENTURE MISSION STEP ${i + 1} of ${count}:
+${i === 0 ? '- This is an EARLY adventure moment: discovery, exploration, noticing something new.' : ''}
+${i === 1 ? '- This is a MIDDLE adventure moment: a challenge arises, a twist, things get trickier.' : ''}
+${i >= 2 ? '- This is a LATER adventure moment: applying skills, approaching the big moment.' : ''}
+- Start with a 1-sentence STORY BRIDGE describing what happens next in the adventure.
+- Do NOT restate the story premise or re-introduce the character.
+- Do NOT include the mission catchphrase.
+- Frame the question/choice as something the child encounters IN the story.`
+      : '';
+
+    const prompt = `Create interactive lesson ${i + 1} of ${count} for a child's interactive adventure workbook.
 
 ${context}
 
@@ -1803,33 +2066,48 @@ ${characterContext}
 
 ${pedagogicalGuidance}
 ${duplicatePreventionContext}
+${storyMissionContext}
 
 CRITICAL REQUIREMENTS:
 1. Do NOT start introText with "Hi! I'm [character name]" - the character was already introduced
-2. This is a ${learningStage.toUpperCase()} stage lesson - follow the pedagogical guidance above
-3. Use interaction type "${suggestedType}" (or similar) which suits this learning stage
-4. Each lesson must explore a DIFFERENT ANGLE of the theme - not repeat the same question
+2. This is a ${learningStage.toUpperCase()} stage lesson
+3. Use interaction type "${suggestedType}"
+4. Each lesson must explore a DIFFERENT ANGLE of the theme
+5. Frame this as a MISSION STEP in the adventure
+${extractAgeRange(metadata) === '6-8' ? `
+🚨 6-8 AGE LIMIT:
+- introText: MAX 1-2 sentences, MAX 30 words total (include a 1-sentence story bridge)
+- interactionPrompt: MAX 12 words
+- Each option: MAX 8 words
+- followUpText: MAX 20 words (1 sentence)
+- mascotComment: MAX 15 words
+- heading: 3-6 words max
+- Use ONLY simple words a 6 year old knows` : ''}
 
 Respond with ONLY this JSON:
 {
-  "heading": "Engaging title appropriate for ${learningStage} stage",
-  "introText": "Brief intro that ${learningStage === 'introduce' ? 'explores and sparks curiosity' : learningStage === 'deepen' ? 'builds on prior learning' : 'connects to personal experience'} (2-3 sentences max)",
+  "heading": "${extractAgeRange(metadata) === '6-8' ? 'Short title (3-5 words) with emoji' : "Story-themed title with emoji"}",
+  "introText": "${extractAgeRange(metadata) === '6-8' ? '1-2 short sentences MAX 30 words — include a story bridge' : `Brief story-framed intro (2-3 sentences max)`}",
   "interactionType": "${suggestedType}",
-  "interactionPrompt": "Question appropriate for ${learningStage} stage",
-  "interactionOptions": ["option1", "option2", "option3", "option4"],
+  "interactionPrompt": "${extractAgeRange(metadata) === '6-8' ? 'Simple question (MAX 10 words)' : 'Story-framed question'}",
+  "interactionOptions": ["${extractAgeRange(metadata) === '6-8' ? 'short option (MAX 8 words)' : 'option1'}", "option2", "option3", "option4"],
+  "optionFeedback": ["Specific feedback for option 1", "Specific feedback for option 2", "Specific feedback for option 3", "Specific feedback for option 4"],
   "correctAnswerIndex": 1,
-  "followUpText": "Brief ${learningStage === 'introduce' ? 'explanation that builds understanding' : learningStage === 'deepen' ? 'feedback that reinforces learning' : 'encouragement for personal application'} (1-2 sentences)",
-  "mascotComment": "Encouraging comment from ${metadata.characterName}"
+  "followUpText": "${extractAgeRange(metadata) === '6-8' ? '1 short sentence (MAX 15 words) — generic summary shown after feedback' : 'Brief story-advancing summary (1-2 sentences) — shown after option-specific feedback'}",
+  "mascotComment": "${extractAgeRange(metadata) === '6-8' ? 'Short comment (MAX 15 words)' : `Encouraging comment from ${metadata.characterName}`}"
 }
 
 Rules:
 - interactionType should be: "${suggestedType}" (appropriate for ${learningStage} stage)
-- For factual questions: provide 3-4 options AND set "correctAnswerIndex" (0-based)
+- ALWAYS provide exactly 4 options for multiple-choice and opinion questions
+- For factual questions: provide 4 options AND set "correctAnswerIndex" (0-based)
 - For opinion/exploration questions (especially in introduce stage): omit correctAnswerIndex
 - For "fill-blank": prompt should have ___ where the child fills in
 - For "rate-scale": prompt asks to rate something 1-5
 - For "true-false": set "correctAnswerIndex" to 0 (Agree) or 1 (Disagree)
-- CRITICAL: Create content that progresses learning, not repeats it`;
+- CRITICAL: "optionFeedback" MUST have exactly 1 feedback string per option, in the same order. Each feedback must RESPOND TO THAT SPECIFIC CHOICE. Example: if options are ["Happy", "Sad", "Worried", "Excited"], optionFeedback must be ["You noticed the happy feeling!...", "That's a thoughtful answer!...", "Good spotting!...", "Excitement is a big feeling!..."]. NEVER give the same text for all options.
+- "followUpText" is a GENERIC summary shown AFTER the option-specific feedback. It should work regardless of which option was picked.
+- CRITICAL: Create content that progresses both learning AND the story`;
 
     const response = await callClaude(apiKey, ACTIVE_SYSTEM_PROMPT, prompt, TOKENS_LESSON_BATCH);
     const parsed = safeJsonParse<InteractiveLessonContent>(response);
@@ -1910,7 +2188,7 @@ async function generateFillInStories(
 ): Promise<FillInStoryContent[]> {
   const prompt = `Create ${count} fill-in-the-blank story activities for children about "${metadata.theme}".
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -2006,10 +2284,18 @@ async function generateGratitudeJars(
   contentBrief: string,
   count: number
 ): Promise<GratitudeJarContent[]> {
-  const prompt = `Create ${count} gratitude jar activities for children about "${metadata.theme}".
+  const storyContext = metadata.storyPremise
+    ? `\nADVENTURE CONTEXT: Frame this gratitude jar as a story moment. For example, "To fill ${metadata.characterName}'s power jar for the next challenge, think of things you're grateful for..."
+Do NOT restate the full story premise. Write a unique 1-2 sentence story bridge.
+Do NOT include the mission catchphrase.`
+    : '';
 
+  const prompt = `Create ${count} gratitude jar activities for a child's interactive adventure workbook about "${metadata.theme}".
 
 ${buildCondensedContext(contentBrief, metadata)}
+${storyContext}
+
+IMPORTANT: Frame the gratitude jar as part of the adventure story, not a standalone activity.
 
 Respond with ONLY this JSON:
 {
@@ -2219,8 +2505,17 @@ async function generateWordScrambles(
 ): Promise<WordScrambleContent[]> {
   const prompt = `Create ${count} word scramble activities for children about "${metadata.theme}".
 
-
 ${buildCondensedContext(contentBrief, metadata)}
+
+WORD SELECTION RULES (CRITICAL — FOLLOW EXACTLY):
+- Every answer word MUST be a single, common, real English word that a child aged 6-8 would recognise.
+- GOOD words: CALM, BRAVE, HAPPY, SAFE, KIND, TRUST, SMILE, PEACE, LOVE, HOPE, FRIEND, SHARE, HELP, CARE, FEEL, GLAD
+- BAD words (NEVER use): DAMS, DEANS, PORES, RESIN, FINE, ZONE, GRIT or any word a 6 year old wouldn't know
+- Words must be 3-6 letters long. No words longer than 6 letters.
+- Words MUST directly relate to feelings, emotions, social skills, or the module theme.
+- The scrambled version MUST be a valid rearrangement of the EXACT same letters as the answer (same count of each letter).
+- The hint must clearly describe the word so a child could guess it.
+- Include 4-6 words per scramble activity.
 
 Respond with ONLY this JSON:
 {
@@ -3038,7 +3333,7 @@ async function generateBalloonPops(
 
 This is an interactive game where children pop worry balloons using calming tools. Each balloon contains a worry, and using calming techniques makes them disappear!
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3107,7 +3402,7 @@ async function generateTreasureHunts(
 
 This is an adventure game where children explore different locations and discover emotional treasures (coping skills, insights, strengths).
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3207,7 +3502,7 @@ async function generateMonsterTamers(
 
 This is a game where children tame emotion monsters using kindness and coping strategies. The monster starts big and scary but becomes a friendly helper!
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3289,7 +3584,7 @@ async function generateGardenGrowers(
 
 This is a nurturing game where children grow emotional plants by practicing positive actions. Each plant represents a positive feeling/skill.
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3394,7 +3689,7 @@ async function generateSuperheroCreators(
 
 This is a creative game where children build their own emotional superhero with powers, costume, and sidekick.
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3482,7 +3777,7 @@ async function generateFeelingsOrchestras(
 
 This is a creative game where each instrument represents a different emotion, and children compose their own emotional music.
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3543,7 +3838,7 @@ async function generateCalmAquariums(
 
 This is a relaxing, mindful activity where children build a peaceful underwater world and practice calm breathing with bubbles.
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3618,7 +3913,7 @@ async function generateRocketLaunchers(
 
 This is an adventure game where children fuel up a rocket with positive actions and visit different feeling planets.
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3686,7 +3981,7 @@ async function generateMagicPotions(
 
 This is a creative activity where children mix emotional ingredients to create magical feeling potions.
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3755,7 +4050,7 @@ async function generateFeelingsBingos(
 
 This is an interactive bingo game where each square has a feeling challenge to complete.
 
-Mascot: ${metadata.characterName} ${metadata.characterEmoji}
+Mascot: ${metadata.characterName}
 
 
 ${buildCondensedContext(contentBrief, metadata)}
@@ -3875,7 +4170,7 @@ ${diagnosisSection ? `Diagnosis Adaptations: ${diagnosisSection.substring(0, 300
 === WHAT WAS GENERATED ===
 Title used: "${metadata.title}"
 Age range used: ${metadata.targetAge}
-Character: ${metadata.characterName} ${metadata.characterEmoji}
+Character: ${metadata.characterName}
 Theme: ${metadata.theme}
 
 Welcome text sample: "${welcomeSample}"
@@ -4937,8 +5232,9 @@ async function generateAllVariantsOptimized(
         const variantBrief = buildVariantContentBrief(neutralBrief, band, ageData);
         const variantMetadata = { ...shared.metadata, targetAge: band };
 
+        const bandStructure = pageStructure;
         const perVariant = await generatePerVariantContent(
-          apiKey, variantBrief, variantMetadata, pageStructure,
+          apiKey, variantBrief, variantMetadata, bandStructure,
           updateProgress, seriesInfo, systemPromptTemplate
         );
 
@@ -4969,8 +5265,9 @@ async function generateAllVariantsOptimized(
     try {
       const variantBrief = buildVariantContentBrief(neutralBrief, band, ageData);
       const variantMetadata = { ...shared.metadata, targetAge: band };
+      const bandStructure = pageStructure;
       const perVariant = await generatePerVariantContent(
-        apiKey, variantBrief, variantMetadata, pageStructure,
+        apiKey, variantBrief, variantMetadata, bandStructure,
         updateProgress, seriesInfo, systemPromptTemplate
       );
       variants.set(band, mergeSharedAndVariantContent(shared, perVariant, band));

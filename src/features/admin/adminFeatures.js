@@ -4,7 +4,14 @@ const FEATURE_DEFINITIONS = [
   {
     key: 'text_to_voice',
     label: 'Text to Voice (Read to Me)',
-    description: 'Enables the "Read to me" narration button on modules. When off, the TTS player is hidden for all users.'
+    description: 'Enables the "Read to me" narration button on modules. When off, the TTS player is hidden for all users.',
+    defaultOn: true
+  },
+  {
+    key: 'mini_games_enabled',
+    label: 'Mini-Game Roadblocks',
+    description: 'Enables the new mini-game roadblock system on the adventure map. When off, mini_game roadblocks fall back to a simple "I did it" tap.',
+    defaultOn: false
   }
 ];
 
@@ -28,7 +35,8 @@ window._adminLoadFeatures = async function () {
 
 function renderFeatures(container) {
   container.innerHTML = FEATURE_DEFINITIONS.map(f => {
-    const isOn = featureFlags[f.key] !== false;
+    const stored = featureFlags[f.key];
+    const isOn = stored === undefined ? f.defaultOn !== false : stored === true;
     return `
       <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:#f8f9fb; border-radius:12px; margin-bottom:12px; border:1px solid #e5e7eb;">
         <div style="flex:1; margin-right:24px;">

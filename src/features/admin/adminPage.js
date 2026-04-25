@@ -277,6 +277,9 @@ window.switchTab = function(evt, tabName) {
     } else if (tabName === 'features') {
         document.getElementById('featuresTab').classList.add('active');
         if (typeof window._adminLoadFeatures === 'function') window._adminLoadFeatures();
+    } else if (tabName === 'schools') {
+        document.getElementById('schoolsTab').classList.add('active');
+        if (typeof window._adminLoadSchools === 'function') window._adminLoadSchools();
     }
 };
 
@@ -294,6 +297,7 @@ import './adminBilling.js';
 import './adminUsers.js';
 import './adminFeedback.js';
 import './adminFeatures.js';
+import './adminSchools.js';
 
 // ================================================================================
 // INITIALIZE

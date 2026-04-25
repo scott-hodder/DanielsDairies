@@ -29,5 +29,4 @@ pnpm-debug.log*
 *.tsbuildinfo
 
 # debug files
-ExampleModule.html
 .claude/

@@ -97,7 +97,7 @@ serve(async (req) => {
     })
 
     const body = await req.json()
-    const { email, password, firstName, lastName, phone, plan, isFreeTrial } = body
+    const { email, password, firstName, lastName, phone, plan, isFreeTrial, mailchimpOptIn } = body
     console.log('[complete-signup] Request body:', JSON.stringify({ email, firstName, lastName, phone, plan, isFreeTrial, hasPassword: !!password }))
 
     if (!email || !password || !firstName) {
@@ -111,7 +111,7 @@ serve(async (req) => {
 
     // 1. Create the auth user via regular signUp (triggers confirmation email via SMTP)
     console.log('[complete-signup] Step 1: Creating auth user via signUp...')
-    const appUrl = Deno.env.get('APP_URL') || 'https://danielsdiaries.com.au'
+    const appUrl = Deno.env.get('APP_URL') || 'https://app.danielsdiaries.com.au'
     const anonClient = createClient(supabaseUrl, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     })
@@ -355,9 +355,13 @@ serve(async (req) => {
     // 5. Confirmation email already sent by auth.signUp in Step 1
     console.log('[complete-signup] Step 5: Skipped (confirmation email sent in Step 1)')
 
-    // 6. Add to Mailchimp audience (non-blocking)
-    console.log('[complete-signup] Step 6: Adding to Mailchimp...')
-    await addToMailchimp(email, firstName, lastName || '')
+    // 6. Add to Mailchimp audience (only if user opted in)
+    if (mailchimpOptIn) {
+      console.log('[complete-signup] Step 6: Adding to Mailchimp (user opted in)...')
+      await addToMailchimp(email, firstName, lastName || '')
+    } else {
+      console.log('[complete-signup] Step 6: Skipped Mailchimp (user did not opt in)')
+    }
 
     const result = {
       success: true,

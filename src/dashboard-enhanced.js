@@ -5,6 +5,14 @@
 
 import { getZoneState } from './adventure-map-zones.js';
 import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
+// Side-effect import: defines window.roadblockSystem on load.
+import './roadblock-system.js';
+import { isMiniGamesEnabled } from './minigames/index.js';
+
+// Cached once per page load so sync code paths (render) can check it.
+let _miniGamesFlag = null;
+isMiniGamesEnabled().then((v) => { _miniGamesFlag = v; }).catch(() => { _miniGamesFlag = false; });
+function miniGamesActive() { return _miniGamesFlag === true; }
 
 // Show the dashboard footer once the map is fully rendered
 function showDashboardFooter() {
@@ -696,7 +704,10 @@ class AdventureMapV4 {
     this.buildModuleList();
     this.filterModulesByCategory();
 
-    // Inject road builder stops at zone boundaries (after modules 3, 6, 9)
+    // Inject road builder stops at zone boundaries (after modules 3, 6, 9).
+    // When mini_games_enabled is ON, road builder delegates to the new
+    // mini-game framework internally; the stops, celebration, and rewards
+    // are shared either way.
     this.modules = injectRoadBuilderStops(this.modules);
 
     console.log('[AdventureMap] render() - allModules:', this.allModules.length, 'filtered:', this.modules.length, 'category:', this.currentCategory, 'window.modules:', (window.modules || []).length, 'window.childModules:', (window.childModules || []).length);
@@ -758,7 +769,11 @@ class AdventureMapV4 {
     var self = this;
     var nodesContainer = document.getElementById('adventureNodes');
     if (!nodesContainer || this.modules.length < 2) return;
-    
+
+    // When mini-games are enabled, the Road Builder stops handle everything.
+    // Skip the old random roadblock spawning entirely.
+    if (miniGamesActive()) return;
+
     // Initialize roadblock system if not already done
     if (window.roadblockSystem && !window.roadblockSystem.initialized) {
       var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;

@@ -1725,6 +1725,10 @@ window.onSuperSkillChange = async function() {
     if (typeof applyTheoryConnectionAutofill === 'function') applyTheoryConnectionAutofill();
 };
 
+window.onModuleCycleChange = function() {
+    if (typeof applyTheoryConnectionAutofill === 'function') applyTheoryConnectionAutofill();
+};
+
 window.onEditSuperSkillChange = async function() {
     const superSkillSelect = document.getElementById('editSuperSkill');
     const characterInput = document.getElementById('editCharacter');

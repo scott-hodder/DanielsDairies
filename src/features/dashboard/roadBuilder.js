@@ -7,6 +7,84 @@
 
 import { getSupabaseClient } from '../../supabaseClient.js';
 
+// Eagerly pull in the mini-game framework so games are registered and
+// the feature flag is resolved before a user clicks a road-builder stop.
+import { isMiniGamesEnabled, listGames } from '../../minigames/index.js';
+import { createI18n } from '../../minigames/shared/i18n.js';
+import { getA11yConfig } from '../../minigames/shared/A11yConfig.js';
+import AudioManager from '../../minigames/shared/AudioManager.js';
+import Scorer from '../../minigames/core/Scorer.js';
+import { difficultyForAge } from '../../minigames/content/difficulty.js';
+
+window.__miniGamesEnabledSync = false;
+isMiniGamesEnabled()
+  .then(function (v) { window.__miniGamesEnabledSync = v === true; })
+  .catch(function () { window.__miniGamesEnabledSync = false; });
+
+// Runs a random registered mini-game inside the given road-builder modal
+// and calls `done(stars)` with 0-3 stars when the game completes.
+// If anything goes wrong, falls back to awarding 1 star so the player
+// isn't left stuck.
+function runMiniGameInModal(modal, done, isAborted) {
+  try {
+    var games = listGames();
+    if (!games || games.length === 0) { done(1); return; }
+
+    var def = games[Math.floor(Math.random() * games.length)];
+
+    // Build a container inside the modal that the game can own.
+    var host = document.createElement('div');
+    host.className = 'rb-minigame-host';
+    host.style.padding = '16px';
+    host.style.minHeight = '360px';
+    modal.appendChild(host);
+
+    var child = window.selectedChild || (window.state && window.state.selectedChild) || {};
+    var difficulty = difficultyForAge(child.age);
+    var a11y = getA11yConfig();
+    var audio = new AudioManager({ a11y: a11y });
+    var i18n = createI18n('en');
+
+    var ctx = {
+      gameId: def.id,
+      container: host,
+      config: Object.assign({}, def.defaultConfig || {}),
+      difficulty: difficulty,
+      child: { id: child.id, name: child.name, age: child.age },
+      a11y: a11y,
+      emit: function () {},
+      i18n: i18n,
+      audio: audio,
+      signal: null,
+    };
+
+    var game = def.factory(ctx);
+    game.run().then(function (result) {
+      if (typeof isAborted === 'function' && isAborted()) {
+        try { game.dispose(); } catch (e) {}
+        audio.dispose();
+        return;
+      }
+      var stars = result.starsEarned;
+      if (stars == null) {
+        var scorer = new Scorer(difficulty);
+        stars = scorer.stars(result.score || 0);
+      }
+      if (!result.success) stars = Math.max(1, stars); // Always at least 1 for finishing.
+      try { game.dispose(); } catch (e) {}
+      audio.dispose();
+      done(Math.max(1, Math.min(3, stars)));
+    }).catch(function (err) {
+      console.error('[minigame-in-modal] run failed', err);
+      try { game.dispose(); } catch (e) {}
+      done(1);
+    });
+  } catch (err) {
+    console.error('[minigame-in-modal] setup failed', err);
+    done(1);
+  }
+}
+
 var STYLES_INJECTED = false;
 
 // ================================================
@@ -339,7 +417,7 @@ var GAME_BG = 'linear-gradient(135deg, #405878 0%, #344a64 50%, #2d4060 100%)';
 
 export function openRoadBuilderGame(zoneTransition, onComplete) {
   injectStyles();
-  var games = [
+  var legacyGames = [
     gameCalmTraffic,
     gameFixThoughtRoad,
     gameFeelingsFuelSort,
@@ -351,9 +429,22 @@ export function openRoadBuilderGame(zoneTransition, onComplete) {
     gameGratitudeGarden,
     gameTrafficLight
   ];
-  var gameIndex = Math.floor(Math.random() * games.length);
   var bg = GAME_BG;
-  var gameFn = games[gameIndex];
+  var gameFn = legacyGames[Math.floor(Math.random() * legacyGames.length)];
+
+  // When the mini-games flag is on, swap the legacy game for a random
+  // mini-game from the new framework. Fallback to legacy if the flag is
+  // off, the framework fails to load, or no games are registered.
+  var useMiniGame = false;
+  try {
+    useMiniGame = window.__miniGamesEnabledSync === true;
+  } catch (e) { useMiniGame = false; }
+  var aborted = false;
+  if (useMiniGame) {
+    gameFn = function (modal, done) {
+      runMiniGameInModal(modal, done, function() { return aborted; });
+    };
+  }
 
   // Build modal shell
   var overlay = document.createElement('div');
@@ -378,6 +469,7 @@ export function openRoadBuilderGame(zoneTransition, onComplete) {
   });
 
   function cleanup() {
+    aborted = true;
     overlay.remove();
     document.body.style.overflow = '';
   }

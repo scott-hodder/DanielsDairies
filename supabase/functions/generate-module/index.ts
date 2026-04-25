@@ -149,12 +149,20 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   const palette = generatePaletteFromColor(categoryColor);
   const ageRangeKey = getAgeRangeKey(metadata.targetAge);
   
-  // Helper function to render character (image or emoji)
-  const renderCharacter = (size: string = 'text-6xl') => {
+  // Helper function to render Daniel (always the main character)
+  const renderCharacter = (_size: string = 'text-6xl') => {
+    return `<img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain mx-auto m-character-img">`;
+  };
+
+  // Helper function to render the sidekick character (super skill mascot)
+  const renderSidekick = (_size: string = 'text-4xl') => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto m-character-img">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto m-character-img">`;
     }
-    return `<span class="${size}">${escapeForTemplate(metadata.characterEmoji)}</span>`;
+    if (metadata.sidekickEmoji) {
+      return `<span class="text-4xl">${escapeForTemplate(metadata.sidekickEmoji)}</span>`;
+    }
+    return '';
   };
   
   /**
@@ -662,144 +670,8 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     import { initModuleHeader } from './modules/shared/module-header.js';
     
     // Embedded module functions (no external dependencies)
-    
-    // Module database functions - stub implementation for local preview
-    async function initializeModule() {
-      return true;
-    }
-
-    async function loadStarsFromDB() {
-      const saved = localStorage.getItem('moduleStars');
-      return saved ? parseInt(saved, 10) : 0;
-    }
-
-    async function saveStarsToDB(stars) {
-      localStorage.setItem('moduleStars', String(stars));
-      return stars;
-    }
-
-    async function awardSingleStar(currentStars) {
-      const newStars = currentStars + 1;
-      await saveStarsToDB(newStars);
-      return newStars;
-    }
-
-    async function resolveChildDisplayName() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('childName') || 'Friend';
-    }
-
-    async function getChildId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('childId') || 'unknown';
-    }
-
-    async function completeModuleDB() {
-      // Stub implementation - just mark as completed
-      localStorage.setItem('moduleCompleted', 'true');
-      return true;
-    }
-    
-    // Module completion handling
-    let moduleCompletionHandled = false;
-
-    function handleModuleCompletion() {
-      // Prevent multiple completions
-      if (moduleCompletionHandled) {
-        return;
-      }
-      moduleCompletionHandled = true;
-
-
-      // Get module parameters from URL
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const childId = params.get('childId');
-        const moduleId = params.get('moduleId');
-        
-        
-        if (childId && moduleId) {
-          // Mark module as completed
-          completeModule(childId, moduleId);
-        } else {
-          console.error('[ModuleHeader] Missing childId or moduleId in URL');
-        }
-      } catch (error) {
-        console.error('[ModuleHeader] Error parsing URL for module completion:', error);
-      }
-    }
-
-    async function completeModule(childId, moduleId) {
-      try {
-        // Use the completeModuleDB function for generated modules
-        if (typeof window.completeModuleDB === 'function') {
-          await window.completeModuleDB();
-        }
-        
-        
-        // Navigate back to dashboard
-        goHome();
-      } catch (error) {
-        console.error('[ModuleHeader] Error completing module:', error);
-      }
-    }
-
-    function showCompletionCelebration() {
-      try {
-        // Create celebration modal
-        const celebrationModal = document.createElement('div');
-        celebrationModal.className = 'module-completion-modal';
-        celebrationModal.innerHTML = '<div class="module-completion-content"><div class="completion-emoji">🎉</div><h2 class="completion-title">Module Complete!</h2><p class="completion-message">Congratulations! You have finished this module and learned valuable emotional skills.</p><div class="completion-confetti" id="completionConfetti"></div><button class="completion-btn" onclick="closeCompletionModal()">Continue Journey</button></div>';
-        
-        document.body.appendChild(celebrationModal);
-        
-        // Generate confetti
-        if (typeof generateCompletionConfetti === 'function') {
-          generateCompletionConfetti();
-        }
-        
-        // Auto-close after 5 seconds
-        setTimeout(() => {
-          closeCompletionModal();
-        }, 5000);
-      } catch (e) {
-        console.error('Error showing completion celebration:', e);
-      }
-    }
-
-    function generateCompletionConfetti() {
-      const container = document.getElementById('completionConfetti');
-      if (!container) return;
-      
-      container.innerHTML = '';
-      const pieceCount = 40;
-      
-      for (let i = 0; i < pieceCount; i++) {
-        const piece = document.createElement('div');
-        piece.className = 'completion-confetti-piece';
-        
-        const randomX = Math.random() * 300 - 150;
-        const randomDelay = Math.random() * 0.3;
-        const colors = ['#f4a261', '#e76f51', '#2a9d8f', '#405878', '#4c6c96', '#ab47bc'];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        
-        piece.style.left = Math.random() * 100 + '%';
-        piece.style.top = Math.random() * 50 + '%';
-        piece.style.setProperty('--tx', randomX + 'px');
-        piece.style.animationDelay = randomDelay + 's';
-        piece.style.backgroundColor = randomColor;
-        
-        container.appendChild(piece);
-      }
-    }
-
-    // Make close function globally accessible
-    window.closeCompletionModal = function() {
-      const modal = document.querySelector('.module-completion-modal');
-      if (modal) {
-        modal.remove();
-      }
-    };
+    // NOTE: Stub functions (initializeModule, loadStarsFromDB, saveStarsToDB, etc.)
+    // are NOT included here — module.html injects its own implementations at runtime.
     
     const WORKBOOK_ID = "${escapeHtml(moduleCode)}";
     const MODULE_CODE = "${escapeHtml(moduleCode)}";
@@ -1318,19 +1190,44 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
 
       completedActivities[activityId] = true;
 
-      // Star celebration animation (show immediately, save in background)
-      var star = document.createElement('div');
-      star.innerHTML = '⭐';
-      star.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4rem;z-index:9999;pointer-events:none;';
-      document.body.appendChild(star);
-      star.animate([
-        { transform: 'translate(-50%,-50%) scale(0.5)', opacity: 1 },
-        { transform: 'translate(-50%,-150%) scale(2)', opacity: 0 }
-      ], { duration: 1200, easing: 'ease-out' }).onfinish = function() { star.remove(); };
+      // Auto-check the checkbox if it exists (for auto-awarded stars)
+      var autoCb = document.querySelector('[data-activity="' + activityId + '"]');
+      if (autoCb && !autoCb.checked) autoCb.checked = true;
+
+      // Star celebration animation - exciting "+1 Star!" overlay with sparkles
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+      var starBg = document.createElement('div');
+      starBg.style.cssText = 'position:absolute;inset:0;background:radial-gradient(circle,rgba(255,215,0,0.25) 0%,transparent 70%);';
+      starBg.animate([{opacity:0},{opacity:1},{opacity:0}],{duration:1800,easing:'ease-out'});
+      overlay.appendChild(starBg);
+      var starEmoji = document.createElement('div');
+      starEmoji.textContent = '\u2b50';
+      starEmoji.style.cssText = 'font-size:5rem;filter:drop-shadow(0 0 20px rgba(255,215,0,0.8));';
+      starEmoji.animate([{transform:'scale(0) rotate(-180deg)',opacity:0},{transform:'scale(1.3) rotate(0deg)',opacity:1},{transform:'scale(1) rotate(0deg)',opacity:1}],{duration:600,easing:'cubic-bezier(0.34,1.56,0.64,1)'});
+      overlay.appendChild(starEmoji);
+      var starLabel = document.createElement('div');
+      starLabel.textContent = '+1 Star!';
+      starLabel.style.cssText = 'font-family:League Spartan,system-ui,sans-serif;font-size:1.8rem;font-weight:800;color:#b8860b;text-shadow:0 2px 8px rgba(255,215,0,0.5);margin-top:8px;';
+      starLabel.animate([{transform:'translateY(20px)',opacity:0},{transform:'translateY(0)',opacity:1}],{duration:500,delay:300,fill:'backwards',easing:'ease-out'});
+      overlay.appendChild(starLabel);
+      var sparkleChars = ['\u2728','\ud83c\udf1f','\ud83d\udcab','\u2b50'];
+      for (var sp = 0; sp < 8; sp++) {
+        var sparkle = document.createElement('div');
+        sparkle.textContent = sparkleChars[sp % 4];
+        var angle = (sp / 8) * Math.PI * 2;
+        var dist = 80 + Math.random() * 40;
+        sparkle.style.cssText = 'position:absolute;font-size:1.5rem;pointer-events:none;';
+        sparkle.animate([{transform:'translate(-50%,-50%) scale(0)',opacity:1},{transform:'translate(' + (Math.cos(angle)*dist) + 'px,' + (Math.sin(angle)*dist) + 'px) scale(1)',opacity:0}],{duration:800,delay:200+sp*50,easing:'ease-out'});
+        overlay.appendChild(sparkle);
+      }
+      document.body.appendChild(overlay);
+      setTimeout(function(){ overlay.remove(); }, 2000);
 
       // Update star count in UI immediately
       totalStars++;
-      renderPage();
+      // Update header star count WITHOUT re-rendering the whole page (which clears user answers)
+      if (header && typeof header.updateStars === 'function') header.updateStars(totalStars);
 
       // Save to DB in background (don't await - keep UI snappy)
       awardSingleStar(totalStars - 1).then(function(dbStars) {
@@ -1358,6 +1255,10 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
           const completeBox = document.querySelector('[data-activity^="quiz"]');
           if (completeBox && isCorrect) {
             completeBox.disabled = false;
+            var quizActivityId = completeBox.dataset.activity;
+            if (quizActivityId && !completedActivities[quizActivityId]) {
+              setTimeout(function() { markActivityComplete(quizActivityId); }, 400);
+            }
           }
         });
       });
@@ -1508,6 +1409,12 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         const allMatched = connections.size === leftItems.length;
         const allCorrect = Array.from(connections.entries()).every(([leftId, rightId]) => leftId === rightId);
         completeBox.disabled = !(allMatched && allCorrect);
+        if (allMatched && allCorrect) {
+          var matchActivityId = completeBox.dataset.activity;
+          if (matchActivityId && !completedActivities[matchActivityId]) {
+            setTimeout(function() { markActivityComplete(matchActivityId); }, 600);
+          }
+        }
       };
 
       const drawLines = () => {
@@ -1716,7 +1623,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     window.getChildName = getChildName;
     window.toggleGrownUpNote = toggleGrownUpNote;
     window.pages = pages;  // Expose pages array for print functionality
-    window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words above!'; } };
+    window.updateAffirmation = function() { const s = document.querySelector('.starter[style*="border-color: var(--dark)"]'), m = document.querySelector('.middle[style*="border-color: var(--dark)"]'), e = document.querySelector('.ending[style*="border-color: var(--dark)"]'), d = document.querySelector('.affirmation-display'); if (d) { const p = [s,m,e].filter(Boolean).map(x => x.textContent.trim()); d.textContent = p.length ? p.join(' ') : 'Tap the words below!'; d.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } };
     
     // Interactive lesson choice handler
     window.handleInteractiveChoice = function(btn, starIndex, hasCorrectAnswer, correctIdx) {
@@ -1726,45 +1633,74 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       const ffEl = page.querySelector('.followup-feedback');
       const mfEl = page.querySelector('.mascot-feedback');
       const selectedIdx = parseInt(btn.dataset.index);
-      
+
+      // Get per-option feedback from data attribute
+      const optionFeedbackText = btn.dataset.optionFeedback || '';
+
       // Reset all buttons - remove selection classes
       buttons.forEach(b => {
         b.classList.remove('option-selected', 'option-incorrect');
         b.style.borderColor = 'var(--secondary)';
       });
-      
+
       if (hasCorrectAnswer) {
         // Has a correct answer - show feedback
         const isCorrect = selectedIdx === correctIdx;
         btn.classList.add(isCorrect ? 'option-selected' : 'option-incorrect');
         btn.style.borderColor = isCorrect ? 'var(--secondary)' : 'var(--accent)';
-        
+
         if (feedbackEl) {
           feedbackEl.style.display = 'block';
           feedbackEl.style.backgroundColor = isCorrect ? 'var(--success)' : '#fecaca';
-          feedbackEl.innerHTML = isCorrect 
-            ? '<span class="font-body m-color-dark">✓ Great choice! That is right!</span>'
-            : '<span class="font-body m-color-dark">✗ Not quite - try again or tap another option!</span>';
+          // Show per-option feedback if available, otherwise generic
+          if (optionFeedbackText) {
+            feedbackEl.innerHTML = '<span class="font-body m-color-dark">' + (isCorrect ? '✓ ' : '✗ ') + optionFeedbackText + '</span>';
+          } else {
+            feedbackEl.innerHTML = isCorrect
+              ? '<span class="font-body m-color-dark">✓ Great choice! That is right!</span>'
+              : '<span class="font-body m-color-dark">✗ Not quite - try again or tap another option!</span>';
+          }
         }
-        
+
         // Only show followup and mascot feedback on correct answer, and enable completion
         if (isCorrect) {
           if (ffEl) ffEl.style.display = 'block';
           if (mfEl) mfEl.style.display = 'flex';
           // Enable the completion checkbox
+          // Enable the completion checkbox and auto-award star
           const completeBox = page.querySelector('[data-activity]');
-          if (completeBox) completeBox.disabled = false;
+          if (completeBox) {
+            completeBox.disabled = false;
+            var ilActivityId = completeBox.dataset.activity;
+            if (ilActivityId && !completedActivities[ilActivityId]) {
+              setTimeout(function() { markActivityComplete(ilActivityId); }, 400);
+            }
+          }
         }
       } else {
         // Opinion-based - all answers valid
         btn.classList.add('option-selected');
+
+        // Show per-option feedback if available
+        if (feedbackEl && optionFeedbackText) {
+          feedbackEl.style.display = 'block';
+          feedbackEl.style.backgroundColor = 'var(--success)';
+          feedbackEl.innerHTML = '<span class="font-body m-color-dark">' + optionFeedbackText + '</span>';
+        }
+
         if (ffEl) ffEl.style.display = 'block';
         if (mfEl) mfEl.style.display = 'flex';
-        // Enable the completion checkbox for opinion-based questions
+        // Enable the completion checkbox and auto-award star for opinion-based
         const completeBox = page.querySelector('[data-activity]');
-        if (completeBox) completeBox.disabled = false;
+        if (completeBox) {
+          completeBox.disabled = false;
+          var ilActivityId2 = completeBox.dataset.activity;
+          if (ilActivityId2 && !completedActivities[ilActivityId2]) {
+            setTimeout(function() { markActivityComplete(ilActivityId2); }, 400);
+          }
+        }
       }
-      
+
       saveFormData('poll_' + starIndex, btn.textContent.trim());
     };
     
@@ -1787,8 +1723,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       
       if (!circle) return;
       
-      breathingStates[breathingId] = { running: true, count: 0, phase: 'ready' };
-      
+      breathingStates[breathingId] = { running: true, count: breathingStates[breathingId]?.count || 0, phase: 'ready' };      
       const textEl = circle.querySelector('.breathing-text');
       const emojiEl = circle.querySelector('.breathing-emoji');
       
@@ -2052,13 +1987,14 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
         const badge = document.createElement('span');
         badge.className = 'inline-block px-3 py-1 m-1 rounded-full font-body text-sm';
         badge.style.backgroundColor = 'var(--light-green)';
-        badge.textContent = btn.querySelector('.text-4xl').textContent + ' ' + btn.dataset.name;
+        badge.textContent = btn.querySelector('.text-3xl').textContent + ' ' + btn.dataset.name;
         if (displayEl) displayEl.appendChild(badge);
         if (countEl) countEl.textContent = collectedPowerUps.length;
         if (feedbackEl) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '✓ Great choice!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
         if (collectedPowerUps.length >= targetCount) { 
           document.getElementById('powerupWin').style.display = 'block'; 
-          // Don't automatically show completion checkbox - user must manually check it
+          // Auto-award star when all power-ups collected
+          setTimeout(function() { markActivityComplete(activityId); }, 600);
         }
       } else {
         btn.classList.add('wrong');
@@ -2100,6 +2036,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
             document.getElementById('mazeStep' + stepIdx).style.display = 'none';
             document.getElementById('mazeWin').style.display = 'block';
             document.getElementById('mazeComplete').style.display = 'flex';
+            setTimeout(function() { markActivityComplete(activityId); }, 600);
           }
         }, 1500);
       }
@@ -2112,7 +2049,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       inputs.forEach(input => { if (input.value.trim().length > 0) filled++; });
       const progressEl = document.getElementById('shieldProgress');
       if (progressEl) progressEl.textContent = filled;
-      if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; }
+      if (filled >= totalSections) { document.getElementById('shieldWin').style.display = 'block'; document.getElementById('shieldComplete').style.display = 'flex'; setTimeout(function() { markActivityComplete(activityId); }, 600); }
     };
     
     window.addShieldDecoration = function(emoji, activityId) {
@@ -2152,7 +2089,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       if (indicatorEl) indicatorEl.textContent = emojis[Math.min(level, 4)];
       for (let i = 1; i <= 5; i++) { const lvl = document.getElementById('volcanoLevel' + i); if (lvl) lvl.classList.toggle('active', i === level); }
       if (feedbackEl && feedbackText) { feedbackEl.style.display = 'block'; feedbackEl.style.backgroundColor = 'var(--light-green)'; feedbackText.textContent = '❄️ ' + btn.dataset.action + ' - Cooling down!'; setTimeout(() => { feedbackEl.style.display = 'none'; }, 1000); }
-      if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; }
+      if (volcanoTemp <= 0) { document.getElementById('volcanoSafe').style.display = 'block'; document.getElementById('volcanoComplete').style.display = 'flex'; setTimeout(function() { markActivityComplete(activityId); }, 600); }
       saveFormData('volcano_' + activityId, volcanoTemp);
     };
 
@@ -2999,30 +2936,36 @@ function extractNarrationFromHtml(html: string, pageType: string): string {
 
 function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | null): string {
   const { metadata } = content;
-  
-  // Helper function to render character (image or emoji) - made bigger for cover
-  const renderCharacter = () => {
+
+  // Sidekick image for cover
+  const sidekickCoverHtml = (() => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain mx-auto drop-shadow-2xl m-character-img--cover">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto drop-shadow-xl" style="height: 180px; max-width: 180px;">`;
     }
-    return `<span class="m-character-emoji--cover">${escapeForTemplate(metadata.characterEmoji)}</span>`;
-  };
-  
+    if (metadata.sidekickEmoji) {
+      return `<span style="font-size: 5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>`;
+    }
+    return '';
+  })();
+
   return `
     <div class="page min-h-screen flex items-center justify-center p-8 m-page-cover" data-page="cover">
       <div class="text-center max-w-4xl m-cover-center">
-        <!-- Big Character Front and Center -->
-        <div class="mb-4 animate-bounce-slow">
-          ${renderCharacter()}
+        <!-- Daniel (left) + Title area (center) + Sidekick (right) -->
+        <div style="display: flex; align-items: flex-end; justify-content: center; gap: 2rem; margin-bottom: 1.5rem;">
+          <div style="flex-shrink: 0;" class="animate-bounce-slow">
+            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain drop-shadow-2xl" style="height: 200px; max-width: 200px;">
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="inline-block px-6 py-2 rounded-full mb-3 m-bg-primary">
+              <span class="text-white font-title text-xl">Daniel's Adventure${metadata.sidekickName ? ` with ${escapeForTemplate(metadata.sidekickName)}` : ''}!</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl mb-2 font-title m-color-dark">${escapeForTemplate(metadata.title)}</h1>
+            <h2 class="text-xl md:text-2xl mb-2 font-title m-color-primary">${escapeForTemplate(metadata.subtitle)}</h2>
+          </div>
+          ${sidekickCoverHtml ? `<div style="flex-shrink: 0;" class="animate-bounce-slow">${sidekickCoverHtml}</div>` : ''}
         </div>
-        
-        <!-- Character Name Badge -->
-        <div class="inline-block px-6 py-2 rounded-full mb-4 m-bg-primary">
-          <span class="text-white font-title text-xl">Meet ${escapeForTemplate(metadata.characterName)}!</span>
-        </div>
-        
-        <h1 class="text-5xl md:text-6xl mb-3 font-title m-color-dark">${escapeForTemplate(metadata.title)}</h1>
-        <h2 class="text-2xl md:text-3xl mb-6 font-title m-color-primary">${escapeForTemplate(metadata.subtitle)}</h2>
+
         <div class="text-xl mb-6 font-body m-color-secondary">
           <p class="mb-2">An Interactive Adventure for Ages ${escapeForTemplate((metadata.targetAge || '').replace(/(\d+)\s*,\s*(\d+)/, '$1 - $2'))}</p>
         </div>
@@ -3041,27 +2984,29 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
 
 function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | null): string {
   const { metadata, welcome } = content;
-  
-  // Helper function to render character (image or emoji) - sized well for welcome
-  const renderCharacter = () => {
-    if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.characterName)}" class="object-contain flex-shrink-0 m-character-img--welcome">`;
-    }
-    return `<span class="text-8xl flex-shrink-0">${escapeForTemplate(metadata.characterEmoji)}</span>`;
-  };
-  
+
+  // Sidekick image (right side) if available
+  const sidekickImg = metadata.sidekickName
+    ? (seriesInfo?.character_image_url
+      ? `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName)}" class="object-contain" style="height: 140px; max-width: 140px;">`
+      : (metadata.sidekickEmoji ? `<span style="font-size: 3.5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>` : ''))
+    : '';
+
   return `
     <div class="page min-h-screen p-6 md:p-8 m-bg-cream" data-page="welcome">
       <div class="max-w-4xl mx-auto">
-        <div class="flex items-center gap-4 mb-4">
-          ${renderCharacter()}
-          <h1 class="text-3xl md:text-4xl font-title m-color-dark">${escapeForTemplate(welcome.heading)}</h1>
+        <div style="display: flex; align-items: flex-end; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="flex-shrink: 0;">
+            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain" style="height: 150px; max-width: 150px;">
+          </div>
+          <h1 class="text-3xl md:text-4xl font-title m-color-dark" style="text-align: center; flex: 1; min-width: 0;">${escapeForTemplate(welcome.heading)}</h1>
+          ${sidekickImg ? `<div style="flex-shrink: 0;">${sidekickImg}</div>` : ''}
         </div>
-        
+
         <div class="rounded-3xl shadow-xl p-6 mb-4" style="background-color: white; border-left: 6px solid var(--primary);">
           ${welcome.paragraphs.map(p => `<p class="text-lg mb-3 last:mb-0 leading-relaxed font-body m-color-dark">${escapeForTemplate(p)}</p>`).join("")}
         </div>
-        
+
         <div class="rounded-xl p-4 text-center m-bg-soft-yellow">
           <p class="text-lg font-semibold font-body m-color-dark">
             "All feelings are okay, even the big ones!" 💛
@@ -3346,7 +3291,7 @@ function renderLessonPage(lesson: LessonContent, metadata: ModuleMetadata): stri
     
   const tipHtml = lesson.tipText ? `
     <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
-      <span class="text-3xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+      <span class="text-3xl">💡</span>
       <p class="font-body font-semibold m-color-dark">${escapeForTemplate(lesson.tipText)}</p>
     </div>` : "";
 
@@ -3720,7 +3665,7 @@ function renderCalmDenBuilderPage(denBuilder: CalmDenBuilderContent, starIndex: 
         
         <div class="rounded-3xl shadow-xl p-8 m-bg-white">
           <div class="rounded-2xl p-6 mb-6 flex items-start gap-4 m-bg-soft-yellow">
-            <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+            <span class="text-4xl">🏠</span>
             <p class="text-lg font-body m-color-dark">${escapeForTemplate(denBuilder.storyText)}</p>
           </div>
           <p class="text-lg mb-6 font-body font-semibold m-color-dark">${escapeForTemplate(denBuilder.instructions)}</p>
@@ -4290,9 +4235,9 @@ function renderFeelingsBingoPage(bingo: FeelingsBingoContent, starIndex: number,
   const activityId = `bingo_${starIndex}`;
   
   // Create 3x3 grid (8 squares + 1 free space in middle)
-  const squaresHtml = bingo.squares.slice(0, 4).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center m-card-bordered" id="bingo_${starIndex}_${s.id}" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("") +
-    `<div class="bingo-square p-3 rounded-xl border-2 flex flex-col items-center justify-center" style="background-color: var(--soft-yellow); border-color: var(--primary);"><span class="text-3xl">${bingo.freeSpace.emoji}</span><p class="font-title text-sm">FREE!</p><p class="font-body text-xs text-center">${escapeForTemplate(bingo.freeSpace.message)}</p></div>` +
-    bingo.squares.slice(4, 8).map((s, i) => `<button class="bingo-square p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center m-card-bordered" id="bingo_${starIndex}_${s.id}" onclick="window.markBingoSquare('${starIndex}', '${s.id}')"><span class="text-3xl">${s.emoji}</span><p class="font-title text-sm">${escapeForTemplate(s.feeling)}</p><p class="font-body text-xs text-center">${escapeForTemplate(s.challenge)}</p></button>`).join("");
+  const squaresHtml = bingo.squares.slice(0, 4).map((s, i) => `<button class="bingo-square p-2 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center m-card-bordered" id="bingo_${starIndex}_${s.id}" onclick="window.markBingoSquare('${starIndex}', '${s.id}')" title="${escapeForTemplate(s.challenge)}"><span class="text-2xl">${s.emoji}</span><p class="font-title text-xs mt-1 text-center leading-tight">${escapeForTemplate(s.feeling)}</p></button>`).join("") +
+    `<div class="bingo-square p-2 rounded-xl border-2 flex flex-col items-center justify-center" style="background-color: var(--soft-yellow); border-color: var(--primary);" title="${escapeForTemplate(bingo.freeSpace.message)}"><span class="text-2xl">${bingo.freeSpace.emoji}</span><p class="font-title text-xs mt-1">FREE!</p></div>` +
+    bingo.squares.slice(4, 8).map((s, i) => `<button class="bingo-square p-2 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center m-card-bordered" id="bingo_${starIndex}_${s.id}" onclick="window.markBingoSquare('${starIndex}', '${s.id}')" title="${escapeForTemplate(s.challenge)}"><span class="text-2xl">${s.emoji}</span><p class="font-title text-xs mt-1 text-center leading-tight">${escapeForTemplate(s.feeling)}</p></button>`).join("");
 
   return `
     <div class="page min-h-screen p-8 m-bg-cream" data-page="feelings-bingo" data-activity="${activityId}">
@@ -4318,7 +4263,7 @@ function renderFeelingsBingoPage(bingo: FeelingsBingoContent, starIndex: number,
           </div>
         </div>
       </div>
-      <style>.bingo-square.marked { background-color: var(--light-green) !important; border-color: var(--secondary) !important; }</style>
+      <style>.bingo-square.marked { background-color: var(--light-green) !important; border-color: var(--secondary) !important; } .bingo-square { min-height: 80px; min-width: 80px; aspect-ratio: 1; }</style>
     </div>`;
 }
 
@@ -4665,13 +4610,13 @@ function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): s
             </div>
             <div class="text-right">
               <p class="font-body text-sm m-color-secondary">Guide</p>
-              <p class="font-title text-xl m-color-dark">${escapeForTemplate(metadata.characterName)} ${escapeForTemplate(metadata.characterEmoji)}</p>
+              <p class="font-title text-xl m-color-dark">${escapeForTemplate(metadata.characterName)}</p>
             </div>
           </div>
         </div>
 
         <div class="rounded-xl p-6 flex items-center gap-4 mt-6 m-bg-soft-yellow">
-          <span class="text-5xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+          <span class="text-5xl">🌟</span>
           <p class="font-body text-lg font-semibold m-color-dark">${escapeForTemplate(summary.encouragement)}</p>
         </div>
       </div>
@@ -4692,7 +4637,7 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
         
         <div class="flex flex-col gap-4">
           <button 
-            onclick="const params = new URLSearchParams(window.location.search); const childId = params.get('childId'); const moduleId = params.get('moduleId'); if (childId && moduleId) completeModule(childId, moduleId);"
+            onclick="handleModuleCompletion();"
             class="w-full py-4 px-8 rounded-xl text-white font-bold text-xl font-title shadow-lg hover:shadow-xl transition-all cursor-pointer"
             style="background: linear-gradient(135deg, var(--secondary), #1ABC9C);"
           >
@@ -4709,7 +4654,7 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
         </div>
         
         <div class="mt-8 flex items-center justify-center gap-2">
-          <span class="text-4xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+          <span class="text-4xl">🎉</span>
           <p class="font-body text-lg m-color-dark">
             ${escapeForTemplate(metadata.characterName)} is proud of you!
           </p>
@@ -4884,35 +4829,37 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
   
   let interactionHtml = "";
   const options = lesson.interactionOptions || ["Option 1", "Option 2", "Option 3"];
-  
+  const optionFeedback = lesson.optionFeedback || [];
+
   switch (lesson.interactionType) {
     case "poll":
     case "circle-one": {
       // Check if this has a correct answer (correctAnswerIndex) or is opinion-based
       const hasCorrectAnswer = typeof lesson.correctAnswerIndex === 'number';
       const originalCorrectIdx = lesson.correctAnswerIndex ?? -1;
-      
+
       // Shuffle options to randomize correct answer position
-      const indexedOptions = options.map((opt, i) => ({ text: opt, originalIndex: i }));
+      const indexedOptions = options.map((opt, i) => ({ text: opt, originalIndex: i, feedback: optionFeedback[i] || '' }));
       // Fisher-Yates shuffle
       for (let i = indexedOptions.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [indexedOptions[i], indexedOptions[j]] = [indexedOptions[j], indexedOptions[i]];
       }
       // Find the new position of the correct answer after shuffling
-      const shuffledCorrectIdx = hasCorrectAnswer 
+      const shuffledCorrectIdx = hasCorrectAnswer
         ? indexedOptions.findIndex(o => o.originalIndex === originalCorrectIdx)
         : -1;
-      
+
       interactionHtml = `
         <div class="interactive-group">
           <p class="text-lg mb-4 font-body font-semibold m-color-dark">${escapeForTemplate(lesson.interactionPrompt)}</p>
           <div class="grid grid-cols-2 gap-3 mb-4">
             ${indexedOptions.map((opt, i) => `
-              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all" 
+              <button class="interactive-option p-4 rounded-xl border-2 font-body text-lg text-left cursor-pointer transition-all"
                       style="border-color: var(--secondary); background-color: white !important; color: var(--dark);"
                       data-correct="${hasCorrectAnswer ? (i === shuffledCorrectIdx ? 'true' : 'false') : 'opinion'}"
                       data-index="${i}"
+                      data-option-feedback="${escapeForTemplate(opt.feedback)}"
                       onclick="handleInteractiveChoice(this, ${starIndex}, ${hasCorrectAnswer}, ${shuffledCorrectIdx})">
                 ${escapeForTemplate(opt.text)}
               </button>
@@ -5009,7 +4956,7 @@ function renderInteractiveLessonPage(lesson: InteractiveLessonContent, metadata:
         </div>
         
         <div class="mascot-feedback rounded-xl p-4 flex items-center gap-3 m-feedback-hidden-green">
-          <span class="text-3xl">${escapeForTemplate(metadata.characterEmoji)}</span>
+          <span class="text-3xl">💬</span>
           <p class="font-body font-semibold m-color-dark">${escapeForTemplate(lesson.mascotComment)}</p>
         </div>
         
@@ -5251,7 +5198,7 @@ function renderThoughtBubblesPage(thought: ThoughtBubblesContent, starIndex: num
           </div>
           
           <div class="flex items-start gap-4 mb-6">
-            <span class="text-5xl">${thought.characterEmoji}</span>
+            <span class="text-5xl">💭</span>
             <div class="flex-1 p-4 rounded-2xl relative" style="background-color: #fecaca; border: 2px solid var(--accent);">
               <p class="font-body text-lg m-color-dark"><strong>Unhelpful thought:</strong> "${escapeForTemplate(thought.unhelpfulThought)}"</p>
             </div>
@@ -5482,7 +5429,7 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
             ${panelsHtml}
           </div>
           
-          <div class="p-4 rounded-xl m-bg-light-green">
+          <div class="p-4 rounded-xl m-bg-light-green" id="comicSharePrompt_${starIndex}" style="display: none;">
             <p class="font-body font-semibold m-color-dark">${escapeForTemplate(comic.sharePrompt)}</p>
           </div>
         </div>
@@ -5492,8 +5439,8 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
             type="checkbox" 
             class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
-            onchange="markActivityComplete('${activityId}')"
-            
+            onchange="markActivityComplete('${activityId}'); document.getElementById('comicSharePrompt_${starIndex}').style.display='block';"
+
           >
           <label class="font-title text-xl m-color-dark">I created my comic!</label>
         </div>
@@ -5504,58 +5451,58 @@ function renderComicStripPage(comic: ComicStripContent, starIndex: number): stri
 function renderAffirmationBuilderPage(builder: AffirmationBuilderContent, starIndex: number): string {
   const activityId = `affirm_${starIndex}`;
   
-  const startersHtml = builder.starters.map(s => `<button class="affirmation-part starter px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1 m-bg-light-green-flat" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(s)}</button>`).join("");
-  const middlesHtml = builder.middles.map(m => `<button class="affirmation-part middle px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(m)}</button>`).join("");
-  const endingsHtml = builder.endings.map(e => `<button class="affirmation-part ending px-4 py-2 rounded-lg font-body cursor-pointer transition-all border-2 m-1" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(e)}</button>`).join("");
-  const emojisHtml = builder.decorationEmojis.map(e => `<button class="emoji-decoration text-2xl p-1 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '${e} ' + display.textContent + ' ${e}';">${e}</button>`).join("");
+  const startersHtml = builder.starters.map(s => `<button class="affirmation-part starter px-3 py-1.5 rounded-lg font-body text-sm cursor-pointer transition-all border-2 m-0.5 m-bg-light-green-flat" onclick="this.parentElement.querySelectorAll('.starter').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(s)}</button>`).join("");
+  const middlesHtml = builder.middles.map(m => `<button class="affirmation-part middle px-3 py-1.5 rounded-lg font-body text-sm cursor-pointer transition-all border-2 m-0.5" style="background-color: var(--soft-yellow); border-color: transparent; color: var(--dark);" onclick="this.parentElement.querySelectorAll('.middle').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(m)}</button>`).join("");
+  const endingsHtml = builder.endings.map(e => `<button class="affirmation-part ending px-3 py-1.5 rounded-lg font-body text-sm cursor-pointer transition-all border-2 m-0.5" style="background-color: var(--primary); border-color: transparent; color: white;" onclick="this.parentElement.querySelectorAll('.ending').forEach(b => b.style.borderColor = 'transparent'); this.style.borderColor = 'var(--dark)'; updateAffirmation();">${escapeForTemplate(e)}</button>`).join("");
+  const emojisHtml = builder.decorationEmojis.map(e => `<button class="emoji-decoration text-xl p-0.5 cursor-pointer hover:scale-125 transition-all" onclick="const display = document.querySelector('.affirmation-display'); display.textContent = '${e} ' + display.textContent + ' ${e}';">${e}</button>`).join("");
 
   return `
     <div class="page min-h-screen p-8 m-bg-cream" data-page="affirmation-builder">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl md:text-4xl mb-6 font-title m-color-dark">${escapeForTemplate(builder.heading)}</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-6 affirmation-container m-bg-white">
-          <p class="text-lg mb-6 font-body m-color-dark">${escapeForTemplate(builder.instructions)}</p>
-          
-          <div class="mb-4">
-            <p class="font-body font-semibold mb-2 m-color-dark">Step 1: Pick a starter</p>
+        <h1 class="text-3xl md:text-4xl mb-4 font-title m-color-dark">${escapeForTemplate(builder.heading)}</h1>
+
+        <div class="rounded-3xl shadow-xl p-5 mb-4 affirmation-container m-bg-white">
+          <div class="p-4 rounded-2xl text-center mb-4 m-bg-callout-gradient">
+            <p class="font-body text-sm mb-1 m-color-secondary">Your affirmation:</p>
+            <p class="affirmation-display font-title text-xl m-color-dark">Tap the words below!</p>
+          </div>
+
+          <p class="text-base mb-4 font-body m-color-dark">${escapeForTemplate(builder.instructions)}</p>
+
+          <div class="mb-3">
+            <p class="font-body font-semibold mb-1 text-sm m-color-dark">Step 1: Pick a starter</p>
             <div class="flex flex-wrap">${startersHtml}</div>
           </div>
-          
-          <div class="mb-4">
-            <p class="font-body font-semibold mb-2 m-color-dark">Step 2: Pick a middle</p>
+
+          <div class="mb-3">
+            <p class="font-body font-semibold mb-1 text-sm m-color-dark">Step 2: Pick a middle</p>
             <div class="flex flex-wrap">${middlesHtml}</div>
           </div>
-          
-          <div class="mb-4">
-            <p class="font-body font-semibold mb-2 m-color-dark">Step 3: Pick an ending</p>
+
+          <div class="mb-3">
+            <p class="font-body font-semibold mb-1 text-sm m-color-dark">Step 3: Pick an ending</p>
             <div class="flex flex-wrap">${endingsHtml}</div>
           </div>
-          
-          <div class="mb-6">
-            <p class="font-body font-semibold mb-2 m-color-dark">Decorate with emojis:</p>
+
+          <div class="mb-4">
+            <p class="font-body font-semibold mb-1 text-sm m-color-dark">Decorate with emojis:</p>
             <div class="flex flex-wrap gap-1">${emojisHtml}</div>
           </div>
-          
-          <div class="p-6 rounded-2xl text-center mb-4 m-bg-callout-gradient">
-            <p class="font-body text-sm mb-2 m-color-secondary">Your affirmation:</p>
-            <p class="affirmation-display font-title text-2xl m-color-dark">Tap the words above!</p>
-          </div>
-          
-          <div class="p-4 rounded-xl m-bg-soft-yellow">
-            <p class="font-body m-color-dark">${escapeForTemplate(builder.savePrompt)}</p>
+
+          <div class="p-3 rounded-xl m-bg-soft-yellow">
+            <p class="font-body text-sm m-color-dark">${escapeForTemplate(builder.savePrompt)}</p>
           </div>
         </div>
-        
-        <div class="rounded-xl p-4 flex items-center gap-3 m-bg-light-green">
-          <input 
-            type="checkbox" 
+
+        <div class="rounded-xl p-3 flex items-center gap-3 m-bg-light-green">
+          <input
+            type="checkbox"
             class="w-8 h-8 rounded cursor-pointer m-accent-primary"
             data-activity="${activityId}"
             onchange="markActivityComplete('${activityId}')"
-            
+
           >
-          <label class="font-title text-xl m-color-dark">I built my power phrase!</label>
+          <label class="font-title text-lg m-color-dark">I built my power phrase!</label>
         </div>
       </div>
     </div>`;
@@ -5669,14 +5616,16 @@ function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starInde
   const activityId = `powerup_${starIndex}`;
   
   const powerUpsHtml = collector.powerUps.map(pu => `
-    <button class="power-up-item p-4 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer"
+    <button class="power-up-item p-3 rounded-xl border-3 transition-all hover:scale-105 cursor-pointer flex items-center gap-3 text-left"
             style="background-color: white; border-color: var(--primary);"
             data-positive="${pu.isPositive}"
             data-name="${escapeForTemplate(pu.name)}"
             onclick="handlePowerUpClick(this, '${activityId}', ${collector.targetCount})">
-      <div class="text-4xl mb-2">${pu.emoji}</div>
-      <p class="font-title text-lg m-color-dark">${escapeForTemplate(pu.name)}</p>
-      <p class="font-body text-sm m-color-secondary">${escapeForTemplate(pu.description)}</p>
+      <span class="text-3xl flex-shrink-0">${pu.emoji}</span>
+      <div class="min-w-0">
+        <p class="font-title text-sm m-color-dark leading-tight">${escapeForTemplate(pu.name)}</p>
+        <p class="font-body text-xs m-color-secondary leading-tight">${escapeForTemplate(pu.description)}</p>
+      </div>
     </button>
   `).join("");
 
@@ -5702,7 +5651,7 @@ function renderPowerUpCollectorPage(collector: PowerUpCollectorContent, starInde
           </div>
           
           <!-- Power-Up Grid -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="powerUpGrid">
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6" id="powerUpGrid">
             ${powerUpsHtml}
           </div>
           
@@ -6054,8 +6003,12 @@ async function generateModule(
   await updateProgress("initializing", "Loading configuration...");
   const settings = await getSettings(supabaseClient);
   
-  // Generate variable page structure (18-24 pages)
-  const pageStructure = generatePageStructure();
+  // Extract age range from content brief for age-appropriate activity selection
+  const ageMatch = contentBrief.match(/Target Age:\s*(\d+-\d+)/i) || contentBrief.match(/Age Range:\s*(\d+-\d+)/i);
+  const briefAgeRange = ageMatch ? ageMatch[1] : undefined;
+
+  // Generate variable page structure (18-24 pages) with age-appropriate activities
+  const pageStructure = generatePageStructure(briefAgeRange);
 
   
   await updateProgress("generating", `Creating ${pageStructure.length}-page module...`);
@@ -6136,7 +6089,7 @@ async function generateModuleMultiAge(
   const apiKey = settings.claude_api_key;
   const ageBands = requestedBands || ALL_AGE_BANDS;
 
-  // Generate page structure ONCE (shared across all variants)
+  // Generate shared page structure (same activities for all age bands — AI adapts tone/difficulty per variant)
   const pageStructure = generatePageStructure();
   const moduleCode = `MOD_${Date.now().toString(36).toUpperCase()}`;
 

@@ -148,6 +148,21 @@ interface ModuleMetadata {
   characterName: string;
   characterEmoji: string;
   characterType?: string;
+  // Sidekick character (the super skill mascot, e.g. Billie, Coco)
+  sidekickName?: string;
+  sidekickEmoji?: string;
+  sidekickType?: string;
+  // Adventure story fields
+  storyPremise?: string;
+  characterGoal?: string;
+  characterObstacle?: string;
+  progressionMap?: {
+    beginning: string;
+    middle: string;
+    climax: string;
+    resolution: string;
+  };
+  missionCatchphrase?: string;
 }
 
 /**
@@ -391,6 +406,7 @@ interface InteractiveLessonContent {
   interactionPrompt: string;
   interactionOptions?: string[];
   correctAnswerIndex?: number; // For poll/circle-one questions with a correct answer
+  optionFeedback?: string[]; // Per-option feedback — shown when that specific option is clicked
   followUpText: string;
   mascotComment: string;
   danielInteraction?: string; // NEW: Specific Daniel dialogue or interaction note
@@ -1058,7 +1074,7 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 function escapeHtml(s: string): string {
-  return (s ?? "")
+  return String(s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -1075,7 +1091,7 @@ function escapeForTemplate(s: string): string {
 
 // For use in onclick handlers where single quotes wrap the string
 function escapeForOnclick(s: string): string {
-  return (s ?? "")
+  return String(s ?? "")
     .replace(/\\/g, "\\\\")  // Escape backslashes first
     .replace(/'/g, "\\'")    // Escape single quotes
     .replace(/"/g, "&quot;") // Escape double quotes for HTML attribute
@@ -1351,26 +1367,43 @@ NON-NEGOTIABLE:
 - Use the exact framing, metaphors, and wording requirements when specified.
 ` : ''}
 
-=== CRITICAL CONTENT STYLE RULES ===
+=== CRITICAL CONTENT STYLE RULES (AGE-ADAPTED) ===
 🚨 READ THESE FIRST - MOST IMPORTANT 🚨
 
-1. SHORTER TEXT BLOCKS
-   - Each paragraph: 2-4 sentences MAX
-   - Each page should have small, scannable chunks
-   - Break up long explanations into bite-sized pieces
+TARGET AGE: ${ageRange} (${displayName})
+${ageRange === '6-8' ? `
+🚨 6-8 YEAR OLD TEXT LIMITS (ABSOLUTE HARD RULES) 🚨
+- Each paragraph: 1-2 SHORT sentences ONLY. Never 3+ sentences in a paragraph.
+- Each sentence: 6-10 words MAX. Count your words. Rewrite any sentence over 10 words.
+- Total text per page/activity: 30-60 words max (not counting interactive options).
+- Vocabulary: ONLY words a 6 year old would know. No abstract or multi-syllable words unless essential.
+- Instructions: ONE simple step per instruction. Never compound instructions.
+- Headings: 3-5 words max.
+- Replace explanations with emojis, pictures, and actions wherever possible.
+- A 6 year old must be able to read this by themselves.
+- When in doubt, use FEWER words.
+` : ageRange === '9-11' ? `
+- Each paragraph: 1-3 sentences max.
+- Sentences: 8-14 words average. Keep it concise.
+- Use plain school-age vocabulary. Define new terms immediately.
+` : `
+- Each paragraph: 2-4 sentences MAX.
+- Each page should have small, scannable chunks.
+- Break up long explanations into bite-sized pieces.
+`}
 
-2. LESS DANIEL DIALOGUE
+1. LESS DANIEL DIALOGUE
    - Daniel appears OCCASIONALLY (2-3 times per module), not constantly
    - Most content is direct teaching, not Daniel talking
    - When Daniel does appear, keep it to 1-2 sentences
    - Example: ✅ "Daniel noticed his hands felt shaky." ❌ "Daniel said, 'Hey, I'm noticing my hands feel shaky, and I wonder what that means...'"
 
-3. MORE ACTIVITIES, LESS READING
+2. MORE ACTIVITIES, LESS READING
    - Prioritize interactive elements
    - Use visual cues, prompts, choices
    - Children should DO more than READ
-   
-4. CHUNK EVERYTHING
+
+3. CHUNK EVERYTHING
    - Use short paragraphs
    - Add visual breaks
    - One idea per section
@@ -1424,8 +1457,30 @@ ${facilitatorTip ? `=== FACILITATOR GUIDANCE ===
 ${facilitatorTip}
 ` : ''}
 
+=== INTERACTIVE ADVENTURE STORY FORMAT (CRITICAL) ===
+Every module MUST be structured as a continuous interactive adventure story, NOT a disconnected set of quizzes.
+
+ADVENTURE DESIGN PRINCIPLES:
+1. ONE CONTINUOUS STORY: The entire module follows a single narrative thread with a clear story arc (Beginning > Middle > Climax > Resolution).
+2. CHILD AS CO-HERO: The child is an active helper in the adventure. Use the child's name (if available) and address them directly as a partner. The child "advises" and "helps" the mascot character solve a meaningful story challenge.
+3. MISSION STEPS, NOT WORKSHEETS: Every activity must feel like a "mission step" that advances the story. Frame each activity with a story purpose (e.g., "To cross the Wobbly Bridge, we need to sort these feelings..." or "The passcode to open the treasure chest is hidden in this puzzle...").
+4. DORA-STYLE GUIDED ADVENTURE: Think of the module as a Dora the Explorer style journey. The mascot character has a goal, faces obstacles, and the child helps overcome them through interactive activities.
+5. VARIETY IS NON-NEGOTIABLE: At least 70% of steps must be interactive activities beyond multiple choice. Include a MIX of:
+   - Physical interaction (move, act out, point, clap, stand up)
+   - Creative interaction (draw, imagine, build, choose a strategy)
+   - Problem solving interaction (logic, sequencing, patterns, decision making)
+6. MAX 1 QUIZ: Only 1 quiz is allowed per module, and it MUST be story-relevant (e.g., "unlock the bridge passcode", "crack the code to open the map").
+7. STORY CATCHPHRASE: Include a recurring mission catchphrase that appears 2-3 times throughout (e.g., "Brain Town explorers, let's go!" or "Mission checkpoint reached!").
+8. COMPLETION PAYOFF: The story ending must celebrate the child's help and show skills learnt as "super skills" they have earned through the adventure.
+
+ACTIVITY DIVERSITY RULES:
+- Never repeat the same interaction pattern in consecutive steps
+- Each module should include at least 3 activity types that feel fresh/different
+- For every module, at least 2 activities should be custom-themed to the story (not generic templates)
+- Do NOT produce a module that is mostly "read text + answer quiz"
+
 === GENERATION RULES ===
-1. Keep ALL paragraphs SHORT (2-4 sentences MAX)
+1. Keep ALL paragraphs SHORT. For ages 6-8: MAX 1-2 sentences, MAX 6-10 words per sentence. For ages 9-11: MAX 1-3 sentences. For ages 12+: MAX 2-4 sentences.
 2. Use Daniel SPARINGLY - 2-3 brief appearances per module, but ALWAYS mention "Daniel" by name at least once
 3. Focus on ACTIVITIES over explanations
 4. Break content into SMALL chunks
@@ -1435,9 +1490,11 @@ ${facilitatorTip}
 8. CHILD AS TOWN PLANNER: Frame the child as the "town planner" of their Brain Town at least once
 9. THEORY CITATION: Mention the primary theory name AND include the researcher's surname in the content
 10. LEARNING OUTCOME: Include at least one "Child can..." statement describing what the child will learn
-${superSkillName ? `11. Align all content with the Super Skill: "${superSkillName}"` : ''}
-${subSkillName ? `12. Focus on building the Sub-Skill: "${subSkillName}"` : ''}
-${additionalContext ? `13. HIGH PRIORITY: Strictly follow the HIGH-PRIORITY CREATOR INSTRUCTIONS above.` : ''}
+11. ADVENTURE STORY: Every activity must answer "How does this help solve the story problem?" Frame activities as mission steps
+12. PERSONALIZATION: Use direct child address and "you" language to make the child feel like an active participant
+${superSkillName ? `13. Align all content with the Super Skill: "${superSkillName}"` : ''}
+${subSkillName ? `14. Focus on building the Sub-Skill: "${subSkillName}"` : ''}
+${additionalContext ? `15. HIGH PRIORITY: Strictly follow the HIGH-PRIORITY CREATOR INSTRUCTIONS above.` : ''}
 
 === ABSOLUTELY FORBIDDEN CONTENT ===
 NEVER use these words/phrases (they violate trauma-informed and ND-affirming principles):
@@ -1529,83 +1586,209 @@ interface PageTemplateWithContext extends PageTemplate {
  * 3. Pedagogical stages are assigned to guide content progression
  * 4. No two similar activities appear in the same chapter
  */
-function generatePageStructure(): PageTemplate[] {
+function generatePageStructure(ageRange?: string): PageTemplate[] {
   const targetPages = randomInt(MIN_PAGES, MAX_PAGES);
-  
-  // CORE activities (classic, well-tested)
+  const age = ageRange || '6-8';
+
+  // =====================
+  // AGE-SPECIFIC ACTIVITY POOLS
+  // =====================
+  // Each age band gets developmentally appropriate activities.
+  // Younger kids: more playful games, sensory activities
+  // Older kids: more analytical, reflective, discussion-based activities
+
+  // CORE activities (all ages, slightly adjusted)
   const coreActivities: PageTemplate[] = [
     { type: "checklist",   starReward: true },
     { type: "reflection",  starReward: true },
-    { type: "quiz",        starReward: true },
     { type: "drawing",     starReward: true },
     { type: "breathing",   starReward: true },
     { type: "scenario",    starReward: true },
   ];
-  
-  // FEELINGS-FOCUSED activities
+
+  // FEELINGS-FOCUSED activities (all ages)
   const feelingsActivities: PageTemplate[] = [
     { type: "feeling-thermometer", starReward: true },
     { type: "body-map",            starReward: true },
     { type: "feeling-selector",    starReward: true },
     { type: "emoji-check-in",      starReward: true },
   ];
-  
-  // CREATIVE activities
-  const creativeActivities: PageTemplate[] = [
-    { type: "calm-den-builder",    starReward: true },
-    { type: "fill-in-story",       starReward: true },
-    { type: "comic-strip",         starReward: true },
-    { type: "affirmation-builder", starReward: true },
-    { type: "gratitude-jar",       starReward: true },
-  ];
-  
-  // COGNITIVE activities
-  const cognitiveActivities: PageTemplate[] = [
-    { type: "action-plan",         starReward: true },
-    { type: "warning-signs",       starReward: true },
-    { type: "matching-activity",   starReward: true },
-    { type: "sorting-activity",    starReward: true },
-    { type: "thought-bubbles",     starReward: true },
-    { type: "agree-disagree",      starReward: true },
-    { type: "word-scramble",       starReward: true },
-    { type: "coping-cards",        starReward: true },
-  ];
-  
-  // v5 NEW CHALLENGE activities (interactive games)
-  const challengeActivities: PageTemplate[] = [
-    { type: "weather-controller",  starReward: true },
-    { type: "power-up-collector",  starReward: true },
-    { type: "emotion-maze",        starReward: true },
-    { type: "feeling-volcano",     starReward: true },
+
+  // CREATIVE activities — age-adjusted
+  let creativeActivities: PageTemplate[];
+  if (age === '6-8' || age === '9-11') {
+    creativeActivities = [
+      { type: "calm-den-builder",    starReward: true },
+      { type: "fill-in-story",       starReward: true },
+      { type: "comic-strip",         starReward: true },
+      { type: "affirmation-builder", starReward: true },
+      { type: "gratitude-jar",       starReward: true },
+    ];
+  } else {
+    // 12-14 and 15-18: swap calm-den-builder for more mature creative options
+    creativeActivities = [
+      { type: "fill-in-story",       starReward: true },
+      { type: "comic-strip",         starReward: true },
+      { type: "affirmation-builder", starReward: true },
+      { type: "gratitude-jar",       starReward: true },
+      { type: "coping-cards",        starReward: true },  // moved here: creative coping strategy design
+    ];
+  }
+
+  // COGNITIVE activities — more picks for older kids, age-appropriate mix
+  let cognitiveActivities: PageTemplate[];
+  if (age === '6-8') {
+    cognitiveActivities = [
+      { type: "matching-activity",   starReward: true },
+      { type: "sorting-activity",    starReward: true },
+      { type: "word-scramble",       starReward: true },
+    ];
+  } else if (age === '9-11') {
+    cognitiveActivities = [
+      { type: "matching-activity",   starReward: true },
+      { type: "sorting-activity",    starReward: true },
+      { type: "thought-bubbles",     starReward: true },
+      { type: "word-scramble",       starReward: true },
+      { type: "agree-disagree",      starReward: true },
+    ];
+  } else if (age === '12-14') {
+    cognitiveActivities = [
+      { type: "action-plan",         starReward: true },
+      { type: "warning-signs",       starReward: true },
+      { type: "sorting-activity",    starReward: true },
+      { type: "thought-bubbles",     starReward: true },
+      { type: "agree-disagree",      starReward: true },
+      { type: "matching-activity",   starReward: true },
+    ];
+  } else {
+    // 15-18: heavy analytical/reflective cognitive activities
+    cognitiveActivities = [
+      { type: "action-plan",         starReward: true },
+      { type: "warning-signs",       starReward: true },
+      { type: "thought-bubbles",     starReward: true },
+      { type: "agree-disagree",      starReward: true },
+      { type: "sorting-activity",    starReward: true },
+      { type: "scenario",            starReward: true },  // extra scenario for depth
+    ];
+  }
+
+  // CHALLENGE activities — age-adjusted
+  let challengeActivities: PageTemplate[];
+  if (age === '6-8' || age === '9-11') {
+    challengeActivities = [
+      { type: "weather-controller",  starReward: true },
+      { type: "power-up-collector",  starReward: true },
+      { type: "emotion-maze",        starReward: true },
+      { type: "feeling-volcano",     starReward: true },
+    ];
+  } else {
+    // 12-14 and 15-18: keep the more sophisticated challenge activities
+    challengeActivities = [
+      { type: "weather-controller",  starReward: true },
+      { type: "emotion-maze",        starReward: true },
+      { type: "feeling-volcano",     starReward: true },
+    ];
+  }
+
+  // GAME activities — biggest age divergence
+  let gameActivities: PageTemplate[];
+  if (age === '6-8') {
+    // Full playful game pool for young kids
+    gameActivities = [
+      { type: "balloon-pop",         starReward: true },
+      { type: "treasure-hunt",       starReward: true },
+      { type: "monster-tamer",       starReward: true },
+      { type: "garden-grower",       starReward: true },
+      { type: "superhero-creator",   starReward: true },
+      { type: "feelings-orchestra",  starReward: true },
+      { type: "calm-aquarium",       starReward: true },
+      { type: "rocket-launcher",     starReward: true },
+      { type: "magic-potion",        starReward: true },
+      { type: "feelings-bingo",      starReward: true },
+    ];
+  } else if (age === '9-11') {
+    // Still fun but drop the most babyish ones
+    gameActivities = [
+      { type: "balloon-pop",         starReward: true },
+      { type: "treasure-hunt",       starReward: true },
+      { type: "garden-grower",       starReward: true },
+      { type: "superhero-creator",   starReward: true },
+      { type: "feelings-orchestra",  starReward: true },
+      { type: "calm-aquarium",       starReward: true },
+      { type: "magic-potion",        starReward: true },
+      { type: "feelings-bingo",      starReward: true },
+    ];
+  } else if (age === '12-14') {
+    // Keep sophisticated/calming games, drop childish ones
+    gameActivities = [
+      { type: "treasure-hunt",       starReward: true },
+      { type: "feelings-orchestra",  starReward: true },
+      { type: "calm-aquarium",       starReward: true },
+      { type: "feelings-bingo",      starReward: true },
+      { type: "superhero-creator",   starReward: true },
+    ];
+  } else {
+    // 15-18: only the most mature/calming interactive experiences
+    gameActivities = [
+      { type: "calm-aquarium",       starReward: true },
+      { type: "feelings-orchestra",  starReward: true },
+      { type: "treasure-hunt",       starReward: true },
+      { type: "feelings-bingo",      starReward: true },
+    ];
+  }
+
+  // =====================
+  // ACTIVITY SELECTION — age-adjusted pick counts
+  // =====================
+
+  const quizPool: PageTemplate[] = [
+    { type: "quiz", starReward: true },
   ];
 
-  // v7 NEW HIGHLY INTERACTIVE GAME activities (the fun, engaging ones!)
-  const gameActivities: PageTemplate[] = [
-    { type: "balloon-pop",         starReward: true },
-    { type: "treasure-hunt",       starReward: true },
-    { type: "monster-tamer",       starReward: true },
-    { type: "garden-grower",       starReward: true },
-    { type: "superhero-creator",   starReward: true },
-    { type: "feelings-orchestra",  starReward: true },
-    { type: "calm-aquarium",       starReward: true },
-    { type: "rocket-launcher",     starReward: true },
-    { type: "magic-potion",        starReward: true },
-    { type: "feelings-bingo",      starReward: true },
-  ];
-  
-  // =====================
-  // ACTIVITY SELECTION
-  // =====================
-  // Select activities ensuring variety across categories
-  
-  const allCategories = [
-    { name: "core", items: shuffleArray(coreActivities), minPick: 2, maxPick: 3 },
-    { name: "feelings", items: shuffleArray(feelingsActivities), minPick: 1, maxPick: 2 },
-    { name: "creative", items: shuffleArray(creativeActivities), minPick: 1, maxPick: 2 },
-    { name: "cognitive", items: shuffleArray(cognitiveActivities), minPick: 1, maxPick: 2 },
-    { name: "challenge", items: shuffleArray(challengeActivities), minPick: 1, maxPick: 2 },
-    { name: "games", items: shuffleArray(gameActivities), minPick: 2, maxPick: 3 },
-  ];
+  let allCategories;
+  if (age === '6-8') {
+    allCategories = [
+      { name: "core",      items: shuffleArray(coreActivities),      minPick: 2, maxPick: 3 },
+      { name: "quiz",      items: quizPool,                          minPick: 1, maxPick: 3 },
+      { name: "feelings",  items: shuffleArray(feelingsActivities),  minPick: 1, maxPick: 2 },
+      { name: "creative",  items: shuffleArray(creativeActivities),  minPick: 1, maxPick: 2 },
+      { name: "cognitive", items: shuffleArray(cognitiveActivities), minPick: 1, maxPick: 2 },
+      { name: "challenge", items: shuffleArray(challengeActivities), minPick: 1, maxPick: 2 },
+      { name: "games",     items: shuffleArray(gameActivities),      minPick: 2, maxPick: 3 },
+    ];
+  } else if (age === '9-11') {
+    allCategories = [
+      { name: "core",      items: shuffleArray(coreActivities),      minPick: 2, maxPick: 3 },
+      { name: "quiz",      items: quizPool,                          minPick: 1, maxPick: 3 },
+      { name: "feelings",  items: shuffleArray(feelingsActivities),  minPick: 1, maxPick: 2 },
+      { name: "creative",  items: shuffleArray(creativeActivities),  minPick: 1, maxPick: 2 },
+      { name: "cognitive", items: shuffleArray(cognitiveActivities), minPick: 1, maxPick: 3 },
+      { name: "challenge", items: shuffleArray(challengeActivities), minPick: 1, maxPick: 2 },
+      { name: "games",     items: shuffleArray(gameActivities),      minPick: 2, maxPick: 3 },
+    ];
+  } else if (age === '12-14') {
+    // More cognitive, fewer games, more core reflective activities
+    allCategories = [
+      { name: "core",      items: shuffleArray(coreActivities),      minPick: 2, maxPick: 4 },
+      { name: "quiz",      items: quizPool,                          minPick: 1, maxPick: 2 },
+      { name: "feelings",  items: shuffleArray(feelingsActivities),  minPick: 1, maxPick: 2 },
+      { name: "creative",  items: shuffleArray(creativeActivities),  minPick: 1, maxPick: 2 },
+      { name: "cognitive", items: shuffleArray(cognitiveActivities), minPick: 2, maxPick: 3 },
+      { name: "challenge", items: shuffleArray(challengeActivities), minPick: 1, maxPick: 2 },
+      { name: "games",     items: shuffleArray(gameActivities),      minPick: 1, maxPick: 2 },
+    ];
+  } else {
+    // 15-18: heaviest on cognitive/core, lightest on games
+    allCategories = [
+      { name: "core",      items: shuffleArray(coreActivities),      minPick: 3, maxPick: 4 },
+      { name: "quiz",      items: quizPool,                          minPick: 1, maxPick: 2 },
+      { name: "feelings",  items: shuffleArray(feelingsActivities),  minPick: 1, maxPick: 2 },
+      { name: "creative",  items: shuffleArray(creativeActivities),  minPick: 1, maxPick: 2 },
+      { name: "cognitive", items: shuffleArray(cognitiveActivities), minPick: 2, maxPick: 4 },
+      { name: "challenge", items: shuffleArray(challengeActivities), minPick: 1, maxPick: 1 },
+      { name: "games",     items: shuffleArray(gameActivities),      minPick: 1, maxPick: 2 },
+    ];
+  }
   
   const selectedActivities: PageTemplate[] = [];
   for (const category of allCategories) {
@@ -1736,6 +1919,9 @@ async function getSettings(supabaseClient: any) {
   return cachedSettings;
 }
 
+// PRIVACY: This function sends only educational content parameters to the Anthropic API.
+// No child-identifying data (names, IDs, dates of birth) is included in prompts.
+// See docs/AI_DATA_PROCESSING_AUDIT.md for the full audit.
 async function callClaude(
   apiKey: string,
   systemPrompt: string,

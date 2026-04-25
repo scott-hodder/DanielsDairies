@@ -54,6 +54,16 @@ async function init() {
       return
     }
 
+    // Check if user just confirmed their email
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('confirmed') === 'true') {
+      showLoginForm()
+      showSuccess('Email confirmed! Please log in.')
+      // Clean up the URL
+      window.history.replaceState(null, '', window.location.pathname)
+      return
+    }
+
     // Default to login form
     showLoginForm()
   } catch (error) {
@@ -183,8 +193,8 @@ resetPasswordForm.addEventListener('submit', async (e) => {
     return
   }
 
-  if (newPassword.length < 6) {
-    showError('Password must be at least 6 characters long.')
+  if (newPassword.length < 8) {
+    showError('Password must be at least 8 characters long.')
     return
   }
 
@@ -277,8 +287,8 @@ signupForm.addEventListener('submit', async (e) => {
   }
   
   // Validate password length
-  if (password.length < 6) {
-    showError('Password must be at least 6 characters')
+  if (password.length < 8) {
+    showError('Password must be at least 8 characters')
     return
   }
   

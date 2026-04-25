@@ -58,7 +58,19 @@ serve(async (req) => {
         p_password: parsed.password ?? ''
       })
 
-      if (error) throw error
+      if (error) {
+        // Check for rate limit error from the database function
+        if (error.message?.includes('Too many failed attempts')) {
+          return new Response(
+            JSON.stringify({ ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' }),
+            {
+              status: 429,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+        throw error
+      }
       response = { ok: true, valid: Boolean(data) }
     }
 
