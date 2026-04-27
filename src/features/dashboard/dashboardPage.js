@@ -1448,15 +1448,14 @@ async function init() {
       // Show Schools Program button for admins and practitioners (only if feature flag is on)
       const isPractitioner = practitionerResult.status === 'fulfilled' && practitionerResult.value
       if (state.isCurrentUserAdmin || isPractitioner) {
-        try {
-          const settings = await getSettings()
+        getSettings().then(settings => {
           if (settings?.feature_flags?.schools_program_enabled) {
             const schoolsButton = document.getElementById('schoolsButton')
             const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
             if (schoolsButton) schoolsButton.style.display = 'block'
             if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
           }
-        } catch (e) { /* flag defaults to off */ }
+        }).catch(() => { /* flag defaults to off */ })
       }
     })
 
@@ -4711,15 +4710,14 @@ async function checkAdminStatus() {
     }
 
     if (isAdmin || isPractitioner) {
-      try {
-        const flagSettings = await getSettings()
+      getSettings().then(flagSettings => {
         if (flagSettings?.feature_flags?.schools_program_enabled) {
           const schoolsButton = document.getElementById('schoolsButton')
           const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
           if (schoolsButton) showElement(schoolsButton)
           if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
         }
-      } catch (e) { /* flag defaults to off */ }
+      }).catch(() => { /* flag defaults to off */ })
     }
   } catch (error) {
     console.error('[Dashboard] Error checking admin status:', error)
