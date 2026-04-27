@@ -1445,13 +1445,18 @@ async function init() {
         }
       }
 
-      // Show Schools Program button for admins and practitioners
+      // Show Schools Program button for admins and practitioners (only if feature flag is on)
       const isPractitioner = practitionerResult.status === 'fulfilled' && practitionerResult.value
       if (state.isCurrentUserAdmin || isPractitioner) {
-        const schoolsButton = document.getElementById('schoolsButton')
-        const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
-        if (schoolsButton) schoolsButton.style.display = 'block'
-        if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+        try {
+          const settings = await getSettings()
+          if (settings?.feature_flags?.schools_program_enabled) {
+            const schoolsButton = document.getElementById('schoolsButton')
+            const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
+            if (schoolsButton) schoolsButton.style.display = 'block'
+            if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+          }
+        } catch (e) { /* flag defaults to off */ }
       }
     })
 
@@ -4706,10 +4711,15 @@ async function checkAdminStatus() {
     }
 
     if (isAdmin || isPractitioner) {
-      const schoolsButton = document.getElementById('schoolsButton')
-      const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
-      if (schoolsButton) showElement(schoolsButton)
-      if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+      try {
+        const flagSettings = await getSettings()
+        if (flagSettings?.feature_flags?.schools_program_enabled) {
+          const schoolsButton = document.getElementById('schoolsButton')
+          const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
+          if (schoolsButton) showElement(schoolsButton)
+          if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+        }
+      } catch (e) { /* flag defaults to off */ }
     }
   } catch (error) {
     console.error('[Dashboard] Error checking admin status:', error)

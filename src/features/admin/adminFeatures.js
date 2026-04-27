@@ -8,6 +8,12 @@ const FEATURE_DEFINITIONS = [
     defaultOn: true
   },
   {
+    key: 'schools_program_enabled',
+    label: 'Schools Program',
+    description: 'Shows the Schools Program button on the landing page and dashboard. When off, the schools login and signup flow is hidden from all users.',
+    defaultOn: false
+  },
+  {
     key: 'mini_games_enabled',
     label: 'Mini-Game Roadblocks',
     description: 'Enables the new mini-game roadblock system on the adventure map. When off, mini_game roadblocks fall back to a simple "I did it" tap.',
