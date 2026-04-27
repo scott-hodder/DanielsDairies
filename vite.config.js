@@ -22,7 +22,10 @@ export default defineConfig({
         parentInsights: resolve(__dirname, 'parent-insights.html'),
         billing: resolve(__dirname, 'billing.html'),
         privacyPolicy: resolve(__dirname, 'privacy-policy.html'),
-        termsOfService: resolve(__dirname, 'terms-of-service.html')
+        termsOfService: resolve(__dirname, 'terms-of-service.html'),
+        auth: resolve(__dirname, 'auth.html'),
+        schoolsLogin: resolve(__dirname, 'schools-login.html'),
+        schoolsDashboard: resolve(__dirname, 'schools-dashboard.html')
       }
     }
   },
