@@ -18,23 +18,24 @@ CREATE TABLE IF NOT EXISTS parent_audit_log (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_parent_audit_log_user ON parent_audit_log(parent_user_id);
-CREATE INDEX idx_parent_audit_log_action ON parent_audit_log(action);
-CREATE INDEX idx_parent_audit_log_created ON parent_audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_parent_audit_log_user ON parent_audit_log(parent_user_id);
+CREATE INDEX IF NOT EXISTS idx_parent_audit_log_action ON parent_audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_parent_audit_log_created ON parent_audit_log(created_at);
 
 ALTER TABLE parent_audit_log ENABLE ROW LEVEL SECURITY;
 
--- Parents can read their own audit logs
+-- Drop policies first to make idempotent
+DROP POLICY IF EXISTS "Parents can view own audit logs" ON parent_audit_log;
 CREATE POLICY "Parents can view own audit logs"
   ON parent_audit_log FOR SELECT
   USING (auth.uid() = parent_user_id);
 
--- Service role inserts (edge functions), plus allow authenticated users to insert their own
+DROP POLICY IF EXISTS "Users can insert own audit logs" ON parent_audit_log;
 CREATE POLICY "Users can insert own audit logs"
   ON parent_audit_log FOR INSERT
   WITH CHECK (auth.uid() = parent_user_id);
 
--- Admins can view all audit logs
+DROP POLICY IF EXISTS "Admins can view all audit logs" ON parent_audit_log;
 CREATE POLICY "Admins can view all audit logs"
   ON parent_audit_log FOR SELECT
   USING (
@@ -55,13 +56,10 @@ CREATE TABLE IF NOT EXISTS child_pin_attempts (
   success boolean NOT NULL DEFAULT false
 );
 
-CREATE INDEX idx_pin_attempts_child ON child_pin_attempts(child_id);
-CREATE INDEX idx_pin_attempts_time ON child_pin_attempts(attempted_at);
+CREATE INDEX IF NOT EXISTS idx_pin_attempts_child ON child_pin_attempts(child_id);
+CREATE INDEX IF NOT EXISTS idx_pin_attempts_time ON child_pin_attempts(attempted_at);
 
 ALTER TABLE child_pin_attempts ENABLE ROW LEVEL SECURITY;
-
--- Only service role should access this table (edge functions)
--- No user-facing RLS policies needed
 
 -- Replace the verify_child_password_secure function with rate-limited version
 CREATE OR REPLACE FUNCTION verify_child_password_secure(p_child_id uuid, p_password text)
@@ -82,7 +80,6 @@ BEGIN
     AND attempted_at > now() - interval '15 minutes';
 
   IF v_failed_count >= 5 THEN
-    -- Log the blocked attempt
     INSERT INTO child_pin_attempts (child_id, success)
     VALUES (p_child_id, false);
     RAISE EXCEPTION 'Too many failed attempts. Please try again in 15 minutes.';
@@ -112,11 +109,7 @@ $$;
 
 -- ─── P1-10: Column-Level Encryption for Sensitive Fields ─
 
--- Ensure pgcrypto is available (should already exist)
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- Add encrypted columns alongside existing ones
--- We use pgp_sym_encrypt/pgp_sym_decrypt with a server-side key
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- Weekly checkins: encrypt notes, challenge, goal
 ALTER TABLE weekly_checkins
@@ -128,17 +121,13 @@ ALTER TABLE weekly_checkins
 ALTER TABLE child_mood_checkins
   ADD COLUMN IF NOT EXISTS mood_label_encrypted bytea;
 
--- Create helper functions for encryption/decryption
--- The encryption key should be set as a database secret in Supabase Vault
--- For now, we use a function that reads from a config table
-
+-- Secrets table for encryption key
 CREATE TABLE IF NOT EXISTS app_secrets (
   key text PRIMARY KEY,
   value text NOT NULL
 );
 
 ALTER TABLE app_secrets ENABLE ROW LEVEL SECURITY;
--- No user access - service role only
 
 -- Insert a default encryption key (MUST be changed in production via Supabase dashboard)
 INSERT INTO app_secrets (key, value)
@@ -156,7 +145,7 @@ DECLARE
 BEGIN
   IF plaintext IS NULL THEN RETURN NULL; END IF;
   SELECT value INTO v_key FROM app_secrets WHERE key = 'encryption_key';
-  RETURN pgp_sym_encrypt(plaintext, v_key);
+  RETURN extensions.pgp_sym_encrypt(plaintext, v_key);
 END;
 $$;
 
@@ -171,21 +160,22 @@ DECLARE
 BEGIN
   IF ciphertext IS NULL THEN RETURN NULL; END IF;
   SELECT value INTO v_key FROM app_secrets WHERE key = 'encryption_key';
-  RETURN pgp_sym_decrypt(ciphertext, v_key);
+  RETURN extensions.pgp_sym_decrypt(ciphertext, v_key);
 END;
 $$;
 
--- Migrate existing data to encrypted columns (one-time)
+-- Migrate existing data to encrypted columns (one-time, skip already encrypted rows)
 UPDATE weekly_checkins
 SET
   notes_encrypted = encrypt_sensitive(notes),
   challenge_encrypted = encrypt_sensitive(challenge),
   goal_encrypted = encrypt_sensitive(goal)
-WHERE notes IS NOT NULL OR challenge IS NOT NULL OR goal IS NOT NULL;
+WHERE (notes IS NOT NULL OR challenge IS NOT NULL OR goal IS NOT NULL)
+  AND notes_encrypted IS NULL;
 
 UPDATE child_mood_checkins
 SET mood_label_encrypted = encrypt_sensitive(mood_label)
-WHERE mood_label IS NOT NULL;
+WHERE mood_label IS NOT NULL AND mood_label_encrypted IS NULL;
 
 -- Create views that transparently decrypt for authorised access
 CREATE OR REPLACE VIEW weekly_checkins_decrypted AS
@@ -219,7 +209,7 @@ FROM child_mood_checkins;
 GRANT SELECT ON weekly_checkins_decrypted TO authenticated;
 GRANT SELECT ON child_mood_checkins_decrypted TO authenticated;
 
--- Add a trigger to auto-encrypt on INSERT/UPDATE for weekly_checkins
+-- Auto-encrypt trigger for weekly_checkins
 CREATE OR REPLACE FUNCTION encrypt_weekly_checkins_trigger()
 RETURNS trigger
 LANGUAGE plpgsql
