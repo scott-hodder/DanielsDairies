@@ -2988,7 +2988,7 @@ function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | 
   // Sidekick image (right side) if available
   const sidekickImg = metadata.sidekickName
     ? (seriesInfo?.character_image_url
-      ? `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName)}" class="object-contain" style="height: 140px; max-width: 140px;">`
+      ? `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName)}" class="object-contain" style="height: 120px; width: auto; min-height: 100px;">`
       : (metadata.sidekickEmoji ? `<span style="font-size: 3.5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>` : ''))
     : '';
 

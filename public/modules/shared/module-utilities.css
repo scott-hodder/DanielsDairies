@@ -408,6 +408,14 @@ body {
   filter: drop-shadow(0 4px 12px rgba(38, 70, 83, 0.10));
 }
 
+/* Welcome page sidekick — ensure it displays at a readable size even if source is small */
+.page[data-page="welcome"] .flex img:not([alt*="Daniel"]) {
+  height: 120px;
+  width: auto;
+  min-height: 100px;
+  object-fit: contain;
+}
+
 .m-character-emoji--cover {
   font-size: 160px;
   line-height: 1;
