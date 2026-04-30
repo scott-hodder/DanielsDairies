@@ -1630,6 +1630,10 @@ function updateCreditWalletBadge() {
   if (creditWalletBadge) {
     creditWalletBadge.classList.toggle('credit-wallet--empty', creditsAvailable <= 0)
   }
+  const buyBtn = document.getElementById('buyCreditsBtn')
+  if (buyBtn) {
+    buyBtn.style.display = creditsAvailable <= 0 ? 'inline-block' : 'none'
+  }
 }
 
 // Load children

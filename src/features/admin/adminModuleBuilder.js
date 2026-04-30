@@ -1333,18 +1333,38 @@ window.generateModuleWithAI = async function() {
 
             const result = await pollForJobResult(jobId);
             if (!result) throw new Error('AI generation returned no result - check Edge Function logs');
+
+            // If HTML was stripped from the result (too large for DB), fetch first variant from Storage
+            if (!result.html && result.variantStoragePaths) {
+                const firstBand = result.variantBands?.[0] || Object.keys(result.variantStoragePaths)[0];
+                if (firstBand && result.variantStoragePaths[firstBand]) {
+                    try {
+                        const { data: fileData } = await supabase.storage
+                            .from('modules')
+                            .download(result.variantStoragePaths[firstBand]);
+                        if (fileData) result.html = await fileData.text();
+                    } catch (err) { console.warn('[AI] Failed to fetch HTML from storage:', err); }
+                }
+            }
             if (!result.html) throw new Error(`AI generation completed but returned no HTML. ${result.error || ''} ${result.multiAge ? '(Multi-age mode - check if all variants failed)' : ''}`.trim());
 
             // Store multi-age variant data if present
             // Legacy adapter: result.multiAge indicates multi-age mode.
             // result.variantHtml contains { "6-8": "<html>", "9-11": "<html>", ... }
             // result.html contains the first variant as default preview.
-            if (result.multiAge && result.variantHtml) {
-                window.generatedVariantHtml = result.variantHtml;
-                window.generatedVariantBands = result.variantBands || Object.keys(result.variantHtml);
+            if (result.multiAge && (result.variantHtml || result.variantStoragePaths)) {
+                // variantHtml may be inline (legacy) or fetched from Storage on demand
+                window.generatedVariantHtml = result.variantHtml || {};
+                window.generatedVariantStoragePaths = result.variantStoragePaths || null;
+                window.generatedVariantBands = result.variantBands || Object.keys(result.variantHtml || result.variantStoragePaths || {});
                 window.isMultiAgeModule = true;
+                // Cache the first variant so switching back works
+                if (window.generatedVariantBands[0]) {
+                    window.generatedVariantHtml[window.generatedVariantBands[0]] = result.html;
+                }
             } else {
                 window.generatedVariantHtml = null;
+                window.generatedVariantStoragePaths = null;
                 window.generatedVariantBands = null;
                 window.isMultiAgeModule = false;
             }
@@ -1390,14 +1410,28 @@ window.generateModuleWithAI = async function() {
                 ${variantSelectorHtml}
             `;
 
-            // Attach variant preview switcher
+            // Attach variant preview switcher (fetches from Storage on demand)
             if (window.isMultiAgeModule) {
                 setTimeout(() => {
                     const variantSelect = document.getElementById('variantPreviewSelect');
                     if (variantSelect) {
-                        variantSelect.addEventListener('change', (e) => {
+                        variantSelect.addEventListener('change', async (e) => {
                             const band = e.target.value;
-                            const variantHtml = window.generatedVariantHtml?.[band];
+                            let variantHtml = window.generatedVariantHtml?.[band];
+                            // Fetch from Storage if not cached
+                            if (!variantHtml && window.generatedVariantStoragePaths?.[band]) {
+                                variantSelect.disabled = true;
+                                try {
+                                    const { data: fileData } = await supabase.storage
+                                        .from('modules')
+                                        .download(window.generatedVariantStoragePaths[band]);
+                                    if (fileData) {
+                                        variantHtml = await fileData.text();
+                                        window.generatedVariantHtml[band] = variantHtml;
+                                    }
+                                } catch (err) { console.warn(`Failed to fetch variant ${band}:`, err); }
+                                variantSelect.disabled = false;
+                            }
                             if (variantHtml) {
                                 window.generatedModuleHTML = variantHtml.replace(/&#039;/g, "'");
                                 generatedModuleHTML = window.generatedModuleHTML;
@@ -1513,11 +1547,20 @@ window.saveGeneratedModule = async function() {
             .single();
 
         // For multi-age modules, save each variant to the module_variants table
-        if (!insertError && newModule && isMultiAge && window.generatedVariantHtml) {
-            const variantEntries = Object.entries(window.generatedVariantHtml);
-            for (const [band, html] of variantEntries) {
+        // Fetch any missing variants from Storage before saving
+        if (!insertError && newModule && isMultiAge && (window.generatedVariantHtml || window.generatedVariantStoragePaths)) {
+            const bands = window.generatedVariantBands || Object.keys(window.generatedVariantHtml || {});
+            let savedCount = 0;
+            for (const band of bands) {
                 try {
-                    // Per-variant narration data (texts match variant's HTML)
+                    let html = window.generatedVariantHtml?.[band];
+                    if (!html && window.generatedVariantStoragePaths?.[band]) {
+                        const { data: fileData } = await supabase.storage
+                            .from('modules')
+                            .download(window.generatedVariantStoragePaths[band]);
+                        if (fileData) html = await fileData.text();
+                    }
+                    if (!html) { console.warn(`No HTML for variant ${band}, skipping`); continue; }
                     const variantNarration = window.generatedVariantNarrationData?.[band] || narrationData;
                     await supabase.from('module_variants').upsert({
                         module_id: newModule.id,
@@ -1527,11 +1570,12 @@ window.saveGeneratedModule = async function() {
                         narration_data: variantNarration,
                         narration_status: 'pending',
                     }, { onConflict: 'module_id,age_band' });
+                    savedCount++;
                 } catch (variantErr) {
                     console.error(`Failed to save variant ${band}:`, variantErr);
                 }
             }
-            console.log(`Saved ${variantEntries.length} age variants for module ${newModule.id}`);
+            console.log(`Saved ${savedCount}/${bands.length} age variants for module ${newModule.id}`);
         }
 
         if (insertError) throw insertError;

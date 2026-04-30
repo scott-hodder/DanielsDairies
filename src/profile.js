@@ -232,28 +232,6 @@ function renderBasicProfileSections(container) {
       </div>
     </section>
 
-    <!-- Privacy & Data Section -->
-    <section class="profile-hub" style="margin-top:24px;">
-      <div class="profile-hub-header">
-        <h2 class="profile-hub-title">🔒 Privacy & Data</h2>
-        <p class="profile-hub-subtitle">Manage your personal data in accordance with Australian privacy law</p>
-      </div>
-      <div style="padding:0 24px 24px;">
-        <p style="font-size:14px; color:#5f6b85; line-height:1.6; margin-bottom:16px;">
-          Under the Australian Privacy Act 1988, you have the right to access and delete your personal information. Use the options below to manage your data.
-        </p>
-        <div style="display:flex; gap:12px; flex-wrap:wrap;">
-          <button id="downloadDataBtn" type="button" style="padding:10px 24px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; border:none; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s;">
-            Download My Data
-          </button>
-          <button id="deleteAccountBtn" type="button" style="padding:10px 24px; background:white; color:#ef4444; border:2px solid #ef4444; border-radius:12px; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s;">
-            Delete My Account
-          </button>
-        </div>
-        <p id="dataActionStatus" style="font-size:13px; color:#6b7c8f; margin-top:12px;"></p>
-      </div>
-    </section>
-
     <!-- Feedback Section -->
     <section class="profile-hub" style="margin-top:24px;">
       <div class="profile-hub-header">
@@ -275,6 +253,16 @@ function renderBasicProfileSections(container) {
         </div>
       </div>
     </section>
+
+    <!-- Privacy & Data - subtle footer links -->
+    <div style="margin-top:32px; padding:0 24px 24px; text-align:center;">
+      <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+        <button id="downloadDataBtn" type="button" style="background:none; border:none; color:#9ca3af; font-size:11px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Download My Data</button>
+        <span style="color:#d1d5db; font-size:11px;">|</span>
+        <button id="deleteAccountBtn" type="button" style="background:none; border:none; color:#9ca3af; font-size:11px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Delete Account</button>
+      </div>
+      <p id="dataActionStatus" style="font-size:11px; color:#9ca3af; margin-top:8px;"></p>
+    </div>
 
     <style>
       .profile-section-content.collapsed {
