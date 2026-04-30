@@ -1445,13 +1445,17 @@ async function init() {
         }
       }
 
-      // Show Schools Program button for admins and practitioners
+      // Show Schools Program button for admins and practitioners (only if feature flag is on)
       const isPractitioner = practitionerResult.status === 'fulfilled' && practitionerResult.value
       if (state.isCurrentUserAdmin || isPractitioner) {
-        const schoolsButton = document.getElementById('schoolsButton')
-        const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
-        if (schoolsButton) schoolsButton.style.display = 'block'
-        if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+        getSettings().then(settings => {
+          if (settings?.feature_flags?.schools_program_enabled) {
+            const schoolsButton = document.getElementById('schoolsButton')
+            const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
+            if (schoolsButton) schoolsButton.style.display = 'block'
+            if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+          }
+        }).catch(() => { /* flag defaults to off */ })
       }
     })
 
@@ -1625,6 +1629,10 @@ function updateCreditWalletBadge() {
   creditWalletValue.textContent = String(creditsAvailable)
   if (creditWalletBadge) {
     creditWalletBadge.classList.toggle('credit-wallet--empty', creditsAvailable <= 0)
+  }
+  const buyBtn = document.getElementById('buyCreditsBtn')
+  if (buyBtn) {
+    buyBtn.style.display = creditsAvailable <= 0 ? 'inline-block' : 'none'
   }
 }
 
@@ -4706,10 +4714,14 @@ async function checkAdminStatus() {
     }
 
     if (isAdmin || isPractitioner) {
-      const schoolsButton = document.getElementById('schoolsButton')
-      const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
-      if (schoolsButton) showElement(schoolsButton)
-      if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+      getSettings().then(flagSettings => {
+        if (flagSettings?.feature_flags?.schools_program_enabled) {
+          const schoolsButton = document.getElementById('schoolsButton')
+          const schoolsButtonDesktop = document.getElementById('schoolsButtonDesktop')
+          if (schoolsButton) showElement(schoolsButton)
+          if (schoolsButtonDesktop) showElement(schoolsButtonDesktop)
+        }
+      }).catch(() => { /* flag defaults to off */ })
     }
   } catch (error) {
     console.error('[Dashboard] Error checking admin status:', error)

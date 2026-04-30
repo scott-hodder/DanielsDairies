@@ -484,6 +484,7 @@ class AdventureMapV4 {
     css.push('.town-progress-cue-step.done .town-progress-cue-step-dot { background: linear-gradient(135deg, #22C55E, #4ADE80); border-color: #22C55E; box-shadow: 0 2px 6px rgba(34,197,94,0.25); }');
     css.push('.town-progress-cue-step.done strong { color: #16A34A; font-weight: 700; }');
     css.push('.town-progress-cue-step.done small { color: #22C55E; }');
+    css.push('@media (max-width: 768px) { .town-progress-cue-title { display: none; } .town-progress-cue-copy { display: none; } .town-progress-cue-head { padding: 10px 16px 6px; } .town-progress-cue { margin: 0 12px 10px; } }');
     css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 0 0 22px 22px; overflow: hidden; cursor: grab; border: none; border-top: 1px solid rgba(64,88,120,0.06); box-shadow: inset 0 0 80px rgba(135,206,235,0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%); }');
     css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
     css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');

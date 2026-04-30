@@ -6,9 +6,9 @@
     <title>Daniel's Diaries - Dashboard</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -215,6 +215,7 @@
         <span class="credits-icon">🎟️</span>
         <span class="credits-value" id="creditWalletValue">0</span>
         <span class="credits-label">credits</span>
+        <button type="button" class="buy-credits-btn" id="buyCreditsBtn" style="display:none;" onclick="document.getElementById('buyCreditsModal').classList.add('active');document.body.style.overflow='hidden';">Get More</button>
     </div>
 
     <!-- The map will be rendered here by JavaScript -->
@@ -1036,6 +1037,95 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(loadProgressAssessments, 500);
     });
 });
+</script>
+
+<!-- Buy Credits Modal -->
+<div id="buyCreditsModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:20px;max-width:420px;width:90%;padding:28px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);font-family:'Fredoka',sans-serif;">
+    <button type="button" id="buyCreditsModalClose" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">✕</button>
+    <div style="font-size:15px;font-weight:700;color:#405878;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+      <span style="background:linear-gradient(135deg,#f6b700,#e6a800);color:white;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">🎟️</span>
+      Buy Module Credits
+    </div>
+    <div style="background:#f8fafc;border:2px solid #e8edf5;border-radius:12px;padding:16px;">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div style="display:flex;align-items:center;gap:0;border:1.5px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <button type="button" id="creditsDecrBtn" style="width:36px;height:40px;border:none;background:#f1f5f9;font-size:18px;cursor:pointer;color:#374151;font-weight:700;">−</button>
+          <input type="number" id="modalCreditsAmount" min="1" max="100" value="5" style="width:44px;height:40px;border:none;border-left:1.5px solid #E2E8F0;border-right:1.5px solid #E2E8F0;font-size:16px;text-align:center;font-family:'Fredoka',sans-serif;font-weight:700;color:#1f2937;">
+          <button type="button" id="creditsIncrBtn" style="width:36px;height:40px;border:none;background:#f1f5f9;font-size:18px;cursor:pointer;color:#374151;font-weight:700;">+</button>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px;color:#374151;font-weight:600;">credits × $6.99 each</div>
+          <div style="font-size:12px;color:#6B7280;">1 credit = 1 module unlock</div>
+        </div>
+      </div>
+      <div id="modalCreditsTotalPreview" style="margin-top:12px;font-size:14px;color:#64748B;">Total: <strong style="color:#F59E0B;">$34.95</strong></div>
+    </div>
+    <button type="button" id="modalBuyCreditsBtn" style="width:100%;margin-top:16px;padding:14px;background:linear-gradient(135deg,#f6b700,#e6a800);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Fredoka',sans-serif;transition:all 0.2s;">Buy Credits →</button>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:#94a3b8;display:flex;align-items:center;justify-content:center;gap:6px;">
+      🔒 Secure checkout via Stripe. Cancel anytime.
+    </div>
+  </div>
+</div>
+
+<style>
+#buyCreditsModal.active { display:flex; }
+</style>
+
+<script>
+(function() {
+  var modal = document.getElementById('buyCreditsModal');
+  var closeBtn = document.getElementById('buyCreditsModalClose');
+  var amountInput = document.getElementById('modalCreditsAmount');
+  var decrBtn = document.getElementById('creditsDecrBtn');
+  var incrBtn = document.getElementById('creditsIncrBtn');
+  var totalPreview = document.getElementById('modalCreditsTotalPreview');
+  var buyBtn = document.getElementById('modalBuyCreditsBtn');
+
+  function updateTotal() {
+    var val = parseInt(amountInput.value) || 1;
+    if (val < 1) val = 1;
+    if (val > 100) val = 100;
+    amountInput.value = val;
+    totalPreview.innerHTML = 'Total: <strong style="color:#F59E0B;">$' + (val * 6.99).toFixed(2) + '</strong>';
+  }
+
+  function closeModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+  if (decrBtn) decrBtn.addEventListener('click', function() { amountInput.value = Math.max(1, (parseInt(amountInput.value) || 1) - 1); updateTotal(); });
+  if (incrBtn) incrBtn.addEventListener('click', function() { amountInput.value = Math.min(100, (parseInt(amountInput.value) || 1) + 1); updateTotal(); });
+  if (amountInput) amountInput.addEventListener('input', updateTotal);
+
+  if (buyBtn) {
+    buyBtn.addEventListener('click', async function() {
+      var credits = parseInt(amountInput.value) || 5;
+      if (credits < 1) return;
+      buyBtn.disabled = true;
+      buyBtn.textContent = 'Processing...';
+      try {
+        if (window.moduleGallery && typeof window.moduleGallery.callPaymentEndpoint === 'function') {
+          var response = await window.moduleGallery.callPaymentEndpoint({
+            paymentType: 'prepaid',
+            credits: credits,
+            pricePerCredit: 6.99
+          });
+          if (response.url) { window.location.assign(response.url); return; }
+        }
+        throw new Error('Payment not available');
+      } catch (err) {
+        console.error('Credits purchase error:', err);
+        alert(err.message || 'Unable to process credits purchase.');
+        buyBtn.disabled = false;
+        buyBtn.textContent = 'Buy Credits →';
+      }
+    });
+  }
+})();
 </script>
 </body>
 </html>

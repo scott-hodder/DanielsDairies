@@ -460,6 +460,9 @@ body {
 }
 
 @media (max-width: 768px) {
+    .header-subtitle {
+        display: none;
+    }
     .header-help-btn {
         margin-left: 0;
         margin-right: 8px;
@@ -470,7 +473,7 @@ body {
         font-size: 15px;
     }
     .header-help-label {
-        font-size: 9px;
+        display: none;
     }
 }
 
@@ -5742,11 +5745,29 @@ body::after {
 .credits-icon { font-size: 14px; }
 .credits-value { font-size: 16px; font-weight: 800; color: #D97706; }
 .credits-label { font-size: 10px; font-weight: 600; opacity: 0.7; text-transform: lowercase; }
+.buy-credits-btn {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'Fredoka', sans-serif;
+    color: #fff;
+    background: #D97706;
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.buy-credits-btn:hover { background: #b45309; }
 
 @media (max-width: 640px) {
     .credits-display { top: 14px; right: 10px; padding: 5px 8px; font-size: 11px; }
     .credits-value { font-size: 13px; }
     .credits-label { display: none; }
+    .buy-credits-btn { font-size: 9px; padding: 2px 7px; }
     .adventure-skill-banner {
         flex-direction: column;
         gap: 3px;

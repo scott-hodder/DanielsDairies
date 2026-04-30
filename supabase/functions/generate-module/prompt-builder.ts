@@ -15,7 +15,12 @@ export interface BuildSystemPromptOptions {
 
 export const SAFETY_PROMPT_LAYER = `=== GLOBAL SAFETY & FORMAT LAYER (NON NEGOTIABLE) ===
 1. Always respond with ONLY valid JSON. No explanations, no markdown, just the JSON object.
-2. Treat age range and language guidelines as hard requirements.
+2. Treat age range and language guidelines as HARD requirements. TEXT LENGTH LIMITS ARE NON-NEGOTIABLE:
+   - 6-8: MAX 70 words per page. 1-2 sentences per paragraph. Simple words only.
+   - 9-11: MAX 100 words per page. 2-3 sentences per paragraph. Clear, short language.
+   - 12-14: MAX 140 words per page. 3-5 sentences per paragraph. Concise, no fluff.
+   - 15-18: MAX 170 words per page. 4-6 sentences per paragraph. Direct, young adult tone.
+   Count your words before returning. If over the limit, rewrite shorter.
 3. Use Australian English spelling throughout.
 4. Never use deficit or pathologising language.
 5. Never use directive language (must, should, have to) when invitation framing is required.`;

@@ -122,7 +122,12 @@ CITY PLANNER LEVEL (Weeks 10-12): ONLY use: design, teach, create, adapt, mentor
 2. If a specific character/mascot is mentioned, you MUST use EXACTLY that character name and type throughout. Never substitute a different animal or character.
 3. The mascot emoji must match the character type exactly.
 4. When creating multiple items, sequence them as a learning journey: start with simple awareness, then practise skills, then apply in real-life scenarios.
-5. Treat the age range and language guidelines as HARD requirements. For ages 6-8: sentences MUST be 6-10 words max, paragraphs MUST be 1-2 sentences only, use only words a 6 year old knows. TEXT LENGTH IS A HARD CONSTRAINT, NOT A SUGGESTION.
+5. Treat the age range and language guidelines as HARD requirements. TEXT LENGTH IS A HARD CONSTRAINT, NOT A SUGGESTION. Specific limits by age:
+   - Ages 6-8: MAX 1-2 sentences per paragraph, 8-12 words per sentence, 70 words total per page. Simple words only.
+   - Ages 9-11: MAX 2-3 sentences per paragraph, 12-16 words per sentence, 100 words total per page. Clear, step-by-step language.
+   - Ages 12-14: MAX 3-5 sentences per paragraph, 15-20 words per sentence, 140 words total per page. Respectful, not childish.
+   - Ages 15-18: MAX 4-6 sentences per paragraph, 18-22 words per sentence, 170 words total per page. Direct, concise, young adult tone.
+   BEFORE returning JSON, mentally count the words. If the content exceeds the limit for the target age, rewrite it shorter.
 6. Use Australian English spelling throughout (colour, behaviour, favourite, organise, centre, mum, learnt). NEVER use: behavior, color, organization, recognize, organize, center, analyze, generalize.
 7. ABSOLUTELY NEVER use em dashes (the long dash). Not a single one anywhere. Use commas, full stops, or rewrite instead. Also never use "dive in", "unlock", "unleash", "delve", or other AI-sounding phrases.
 8. Write as a warm, experienced educator, not a marketing copywriter.
@@ -610,8 +615,9 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   const subSkillMatch = contentBrief.match(/^Sub-Skill:\s*(.+)$/m);
   const subSkill = subSkillMatch ? subSkillMatch[1].trim() : '';
   
-  // Build age-specific hard constraints for younger children
-  const ageHardConstraints = ageRange === '6-8' ? `
+  // Build age-specific hard constraints — every age band gets explicit limits
+  const ageHardConstraintsMap: Record<string, string> = {
+    '6-8': `
 🚨 HARD TEXT LIMITS FOR 6-8 YEAR OLDS (NON-NEGOTIABLE) 🚨
 - MAX 1-2 sentences per paragraph. Every paragraph MUST be 1-2 sentences only.
 - MAX 8-12 words per sentence. Keep sentences short but complete.
@@ -620,7 +626,39 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
 - Instructions must be ONE simple step. Not "First do X, then do Y" but just "Do X".
 - Headings: 3-6 words maximum.
 - Replace long explanations with emojis, visuals, and action prompts.
-- If in doubt, use FEWER words. A 6 year old should be able to read this independently.` : '';
+- If in doubt, use FEWER words. A 6 year old should be able to read this independently.`,
+    '9-11': `
+🚨 HARD TEXT LIMITS FOR 9-11 YEAR OLDS (NON-NEGOTIABLE) 🚨
+- MAX 2-4 clear sentences per paragraph. Do NOT write long paragraphs.
+- MAX 12-18 words per sentence. Keep sentences clear and direct.
+- Use relatable examples from school, friends, games, sport, family.
+- Total text per page/activity: aim for 60-120 words maximum (excluding options/choices).
+- Instructions: max 2-3 simple steps. Encourage simple "why" thinking but avoid long explanations.
+- Headings: 4-8 words maximum.
+- Use light humour where appropriate. Keep it fun and engaging.
+- If in doubt, use FEWER words. These kids have short-to-moderate attention spans.`,
+    '12-14': `
+🚨 HARD TEXT LIMITS FOR 12-14 YEAR OLDS (NON-NEGOTIABLE) 🚨
+- MAX 3-5 sentences per paragraph. Paragraphs must be concise and purposeful.
+- MAX 15-22 words per sentence. Explain concepts clearly without talking down.
+- Use examples from friendships, school pressure, identity, goals, and independence.
+- Total text per page/activity: aim for 80-150 words maximum (excluding options/choices).
+- Can handle nuance, reflection, and cause-and-effect thinking.
+- Headings: 5-10 words maximum.
+- Avoid childish phrasing. Respect their growing maturity.
+- If in doubt, be concise. Teens disengage from walls of text.`,
+    '15-18': `
+🚨 HARD TEXT LIMITS FOR 15-18 YEAR OLDS (NON-NEGOTIABLE) 🚨
+- MAX 4-6 sentences per paragraph. Keep language concise, practical, and relevant.
+- MAX 18-25 words per sentence. Speak directly and respectfully, close to young adult tone.
+- Use examples from real-life choices, relationships, future planning, emotional complexity.
+- Total text per page/activity: aim for 100-180 words maximum (excluding options/choices).
+- Can handle abstract ideas, self-reflection, and metacognition.
+- Headings: 5-12 words maximum.
+- Avoid childish wording entirely. Treat them as near-adults.
+- If in doubt, be direct and purposeful. They value authenticity over fluff.`,
+  };
+  const ageHardConstraints = ageHardConstraintsMap[ageRange] || ageHardConstraintsMap['9-11'] || '';
 
   const parts = [
     `Module: "${title}"`,
@@ -657,7 +695,9 @@ function buildCondensedContext(contentBrief: string, metadata: ModuleMetadata): 
   }
 
   if (languageGuidelines) {
-    parts.push('', `LANGUAGE GUIDELINES (HARD REQUIREMENT): ${languageGuidelines.split('\n').slice(0, 3).join(' ').substring(0, 260)}`);
+    parts.push('', `LANGUAGE GUIDELINES (HARD REQUIREMENT — MUST FOLLOW EXACTLY):`);
+    parts.push(languageGuidelines.substring(0, 600));
+    parts.push('Apply these guidelines to EVERY page: lesson text, activity instructions, headings, options, and feedback messages.');
     parts.push('Keep reading load low: short paragraphs, high white-space, and concise instructions.');
   }
 
@@ -1217,18 +1257,24 @@ Do NOT include the mission catchphrase.`
     : '';
 
   const lessonAgeRange = extractAgeRange(metadata);
-  const isYoungLearner = lessonAgeRange === '6-8';
 
-  const youngLessonRules = isYoungLearner ? `
-🚨 6-8 AGE LIMIT (ABSOLUTE RULE) 🚨
-- EXACTLY 1-2 short paragraphs per lesson. NOT 3+.
-- Each sentence: 8-12 words MAX. Count your words.
-- Each paragraph: 1-2 sentences ONLY.
-- Total words per lesson (all paragraphs + callout + tip combined): MAX 70 words.
-- calloutText: MAX 15 words.
-- tipText: MAX 15 words.
-- Use only words a 6 year old knows.
-- A 6 year old must read this in under 30 seconds.` : '';
+  const lessonWordLimits: Record<string, { maxParagraphs: number; maxSentencesPerPara: number; maxWordsPerSentence: number; maxTotalWords: number; maxCallout: number; maxTip: number; headingWords: string; paraExample: string }> = {
+    '6-8':  { maxParagraphs: 2, maxSentencesPerPara: 2, maxWordsPerSentence: 12, maxTotalWords: 70, maxCallout: 15, maxTip: 15, headingWords: '3-5', paraExample: '"One short paragraph (1-2 sentences, MAX 25 words total)"' },
+    '9-11': { maxParagraphs: 2, maxSentencesPerPara: 3, maxWordsPerSentence: 16, maxTotalWords: 100, maxCallout: 20, maxTip: 20, headingWords: '4-7', paraExample: '"Paragraph 1 (2-3 short sentences)", "Paragraph 2 (2-3 short sentences)"' },
+    '12-14': { maxParagraphs: 3, maxSentencesPerPara: 4, maxWordsPerSentence: 20, maxTotalWords: 140, maxCallout: 25, maxTip: 25, headingWords: '4-8', paraExample: '"Paragraph 1 - story bridge (2-3 sentences)", "Paragraph 2 - teaching (3-4 sentences)"' },
+    '15-18': { maxParagraphs: 3, maxSentencesPerPara: 5, maxWordsPerSentence: 22, maxTotalWords: 170, maxCallout: 30, maxTip: 30, headingWords: '4-10', paraExample: '"Paragraph 1 - context (3-4 sentences)", "Paragraph 2 - key concept (3-5 sentences)"' },
+  };
+  const limits = lessonWordLimits[lessonAgeRange] || lessonWordLimits['9-11'];
+
+  const lessonRules = `
+🚨 TEXT LIMITS FOR ${lessonAgeRange} YEAR OLDS (ABSOLUTE RULE — COUNT YOUR WORDS) 🚨
+- MAXIMUM ${limits.maxParagraphs} paragraphs per lesson. NOT more.
+- Each paragraph: ${limits.maxSentencesPerPara} sentences MAXIMUM.
+- Each sentence: ${limits.maxWordsPerSentence} words MAX. Keep sentences short and clear.
+- Total words per lesson (all paragraphs + callout + tip combined): MAX ${limits.maxTotalWords} words.
+- calloutText: MAX ${limits.maxCallout} words.
+- tipText: MAX ${limits.maxTip} words.
+- BEFORE returning, mentally count the words in each lesson. If ANY lesson exceeds ${limits.maxTotalWords} words, CUT IT DOWN.`;
 
   const prompt = `Create ${count} lessons for a child's interactive adventure workbook.
 
@@ -1242,17 +1288,17 @@ Lesson specifics:
 - Each lesson is a "mission step" in the adventure story.
 - Frame teaching as something the child NEEDS for the adventure.
 ${storyContext}
-${youngLessonRules}
+${lessonRules}
 
 Respond with ONLY this JSON:
 {
   "lessons": [
     {
-      "heading": "${isYoungLearner ? 'Short story title (3-5 words) with emoji' : "Story-themed lesson title with emoji"}",
-      "paragraphs": [${isYoungLearner ? '"One short paragraph (1-2 sentences, MAX 25 words total)"' : '"Paragraph 1 - connects to the story", "Paragraph 2 - teaching content"'}],
-      "calloutTitle": "${isYoungLearner ? 'Clue' : 'Mission Clue'}",
-      "calloutText": "${isYoungLearner ? 'Key point (MAX 10 words)' : 'Important takeaway for the adventure'}",
-      "tipText": "${isYoungLearner ? 'Short mascot tip (MAX 10 words)' : 'Tip from the mascot that connects to the story'}"
+      "heading": "Story title (${limits.headingWords} words) with emoji",
+      "paragraphs": [${limits.paraExample}],
+      "calloutTitle": "Mission Clue",
+      "calloutText": "Key takeaway (MAX ${limits.maxCallout} words)",
+      "tipText": "Tip from mascot (MAX ${limits.maxTip} words)"
     }
   ]
 }
@@ -4575,11 +4621,23 @@ function extractDynamicPromptContext(contentBrief: string): string {
   const lines = (contentBrief || "")
     .split("\n")
     .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 10);
+    .filter(Boolean);
 
   if (!lines.length) return "";
-  return lines.map((line) => `- ${line}`).join("\n");
+
+  // Include first 10 lines (core brief) PLUS any language guidelines and variant rules
+  const corePart = lines.slice(0, 10);
+  const importantSections = lines.filter(l =>
+    l.includes('LANGUAGE GUIDELINES') ||
+    l.includes('HARD TEXT LIMITS') ||
+    l.includes('NON-NEGOTIABLE') ||
+    l.includes('MAX') && l.includes('words') ||
+    l.includes('sentences per paragraph') ||
+    l.includes('words per sentence')
+  );
+
+  const combined = [...corePart, ...importantSections.filter(l => !corePart.includes(l))];
+  return combined.map((line) => `- ${line}`).join("\n");
 }
 
 function resolveSystemPrompt(customTemplate?: string | null, contentBrief?: string): string {

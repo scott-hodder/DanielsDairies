@@ -174,7 +174,7 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
     if (!note) return '';
     
     const accordionId = `grownup-note-${pageIndex}`;
-    const promptsHtml = note.parentPrompts.map(prompt => 
+    const promptsHtml = (note.parentPrompts || []).map(prompt =>
       `<li class="mb-1">"${escapeForTemplate(prompt)}"</li>`
     ).join('');
     
@@ -263,11 +263,18 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
   // Build page functions - using function body strings, not template literals
   const pageFunctions: string[] = [];
   const narrationTexts: string[] = []; // Parallel array of narrable text per page
+
+  // Safe content accessor — returns item at index or first item, never crashes on undefined arrays
+  const safeGet = <T>(arr: T[] | undefined | null, index: number): T => {
+    if (!arr || arr.length === 0) throw new Error(`Content array is empty or missing`);
+    return arr[index] ?? arr[0];
+  };
   
   for (let pageIndex = 0; pageIndex < pageStructure.length; pageIndex++) {
     const template = pageStructure[pageIndex];
     let pageHtml = "";
-    
+
+    try {
     switch (template.type) {
       case "cover":
         pageHtml = renderCoverPage(content, seriesInfo);
@@ -509,9 +516,14 @@ function renderHtml(content: GeneratedContent, pageStructure: PageTemplate[], mo
       case "completion":
         pageHtml = renderCompletionPage(content.completion, metadata);
         break;
-       
+
     }
-    
+    } catch (renderErr) {
+      const errMsg = renderErr instanceof Error ? renderErr.message : String(renderErr);
+      console.error(`[RENDER] Page ${pageIndex} (${template.type}) crashed: ${errMsg}`);
+      pageHtml = `<div class="page m-page" data-page="${template.type}"><div class="max-w-4xl mx-auto p-6"><div class="rounded-xl p-6 text-center" style="background:#FEF3C7;border:2px solid #F59E0B;"><p class="font-title text-lg" style="color:#92400E;">Oops! This activity couldn't load.</p><p class="font-body text-sm mt-2" style="color:#78350F;">Don't worry — keep going to the next page!</p></div></div></div>`;
+    }
+
     // Extract narration text BEFORE escaping (clean HTML at this point)
     narrationTexts.push(extractNarrationFromHtml(pageHtml, template.type));
 
@@ -2940,7 +2952,7 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
   // Sidekick image for cover
   const sidekickCoverHtml = (() => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto drop-shadow-xl" style="height: 180px; max-width: 180px;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto drop-shadow-xl" style="height: 100%; width: auto;">`;
     }
     if (metadata.sidekickEmoji) {
       return `<span style="font-size: 5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>`;
@@ -2949,34 +2961,35 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
   })();
 
   return `
-    <div class="page min-h-screen flex items-center justify-center p-8 m-page-cover" data-page="cover">
+    <div class="page min-h-screen flex items-center justify-center p-4 md:p-8 m-page-cover" data-page="cover">
       <div class="text-center max-w-4xl m-cover-center">
-        <!-- Daniel (left) + Title area (center) + Sidekick (right) -->
-        <div style="display: flex; align-items: flex-end; justify-content: center; gap: 2rem; margin-bottom: 1.5rem;">
-          <div style="flex-shrink: 0;" class="animate-bounce-slow">
-            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain drop-shadow-2xl" style="height: 200px; max-width: 200px;">
-          </div>
-          <div style="flex: 1; min-width: 0;">
-            <div class="inline-block px-6 py-2 rounded-full mb-3 m-bg-primary">
-              <span class="text-white font-title text-xl">Daniel's Adventure${metadata.sidekickName ? ` with ${escapeForTemplate(metadata.sidekickName)}` : ''}!</span>
-            </div>
-            <h1 class="text-4xl md:text-5xl mb-2 font-title m-color-dark">${escapeForTemplate(metadata.title)}</h1>
-            <h2 class="text-xl md:text-2xl mb-2 font-title m-color-primary">${escapeForTemplate(metadata.subtitle)}</h2>
-          </div>
-          ${sidekickCoverHtml ? `<div style="flex-shrink: 0;" class="animate-bounce-slow">${sidekickCoverHtml}</div>` : ''}
+        <!-- Title badge -->
+        <div class="inline-block px-6 py-2 rounded-full mb-3 m-bg-primary">
+          <span class="text-white font-title text-lg md:text-xl">Daniel's Adventure${metadata.sidekickName ? ` with ${escapeForTemplate(metadata.sidekickName)}` : ''}!</span>
         </div>
 
-        <div class="text-xl mb-6 font-body m-color-secondary">
+        <h1 class="text-3xl md:text-5xl mb-2 font-title m-color-dark">${escapeForTemplate(metadata.title)}</h1>
+        <h2 class="text-lg md:text-2xl mb-4 font-title m-color-primary">${escapeForTemplate(metadata.subtitle)}</h2>
+
+        <!-- Daniel + Sidekick row -->
+        <div style="display: flex; align-items: flex-end; justify-content: center; gap: 1.5rem; margin-bottom: 1rem;">
+          <div style="flex-shrink: 0; height: clamp(100px, 25vw, 180px); display: flex; align-items: flex-end;" class="animate-bounce-slow">
+            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain drop-shadow-2xl" style="height: 100%; width: auto;">
+          </div>
+          ${sidekickCoverHtml ? `<div style="flex-shrink: 0; height: clamp(100px, 25vw, 180px); display: flex; align-items: flex-end;" class="animate-bounce-slow">${sidekickCoverHtml}</div>` : ''}
+        </div>
+
+        <div class="text-base md:text-xl mb-4 font-body m-color-secondary">
           <p class="mb-2">An Interactive Adventure for Ages ${escapeForTemplate((metadata.targetAge || '').replace(/(\d+)\s*,\s*(\d+)/, '$1 - $2'))}</p>
         </div>
-        <div class="border-4 rounded-3xl p-6 inline-block animate-glow m-border-primary m-bg-white">
-          <p class="font-semibold mb-2 font-body text-lg m-color-dark">This adventure belongs to:</p>
-          <div class="text-3xl font-title m-color-primary" id="childNameDisplay">
+        <div class="border-4 rounded-3xl p-4 md:p-6 inline-block animate-glow m-border-primary m-bg-white">
+          <p class="font-semibold mb-2 font-body text-base md:text-lg m-color-dark">This adventure belongs to:</p>
+          <div class="text-2xl md:text-3xl font-title m-color-primary" id="childNameDisplay">
             Friend
           </div>
         </div>
-        <div class="mt-6">
-          <p class="text-lg font-body m-color-secondary">⭐ Earn stars by completing activities! ⭐</p>
+        <div class="mt-4">
+          <p class="text-base md:text-lg font-body m-color-secondary">⭐ Earn stars by completing activities! ⭐</p>
         </div>
       </div>
     </div>`;
@@ -2988,19 +3001,19 @@ function renderWelcomePage(content: GeneratedContent, seriesInfo?: SeriesInfo | 
   // Sidekick image (right side) if available
   const sidekickImg = metadata.sidekickName
     ? (seriesInfo?.character_image_url
-      ? `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName)}" class="object-contain" style="height: 140px; max-width: 140px;">`
+      ? `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName)}" class="object-contain" style="height: 100%; width: auto;">`
       : (metadata.sidekickEmoji ? `<span style="font-size: 3.5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>` : ''))
     : '';
 
   return `
     <div class="page min-h-screen p-6 md:p-8 m-bg-cream" data-page="welcome">
       <div class="max-w-4xl mx-auto">
-        <div style="display: flex; align-items: flex-end; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem;">
-          <div style="flex-shrink: 0;">
-            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain" style="height: 150px; max-width: 150px;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="flex-shrink: 0; height: 120px; display: flex; align-items: flex-end;">
+            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="object-contain" style="height: 100%; width: auto;">
           </div>
           <h1 class="text-3xl md:text-4xl font-title m-color-dark" style="text-align: center; flex: 1; min-width: 0;">${escapeForTemplate(welcome.heading)}</h1>
-          ${sidekickImg ? `<div style="flex-shrink: 0;">${sidekickImg}</div>` : ''}
+          ${sidekickImg ? `<div style="flex-shrink: 0; height: 120px; display: flex; align-items: flex-end;">${sidekickImg}</div>` : ''}
         </div>
 
         <div class="rounded-3xl shadow-xl p-6 mb-4" style="background-color: white; border-left: 6px solid var(--primary);">
@@ -4526,14 +4539,29 @@ function renderEmotionDetectivePage(detective: EmotionDetectiveContent, starInde
 
 function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex: number): string {
   const activityId = `matching_${starIndex}`;
-  const leftHtml = matching.pairs.map((pair, i) => `
+
+  // Ensure pairs have visible text — fallback if AI returns empty fields
+  const safePairs = (matching.pairs || []).map((pair, i) => ({
+    situation: pair.situation || pair.feeling || `Situation ${i + 1}`,
+    feeling: pair.feeling || pair.situation || `Feeling ${i + 1}`,
+    emoji: pair.emoji || '😊',
+  }));
+  if (safePairs.length === 0) {
+    safePairs.push(
+      { situation: 'A friend shares with you', feeling: 'Happy', emoji: '😊' },
+      { situation: 'Someone takes your turn', feeling: 'Frustrated', emoji: '😤' },
+      { situation: 'Trying something new', feeling: 'Nervous', emoji: '😰' },
+    );
+  }
+
+  const leftHtml = safePairs.map((pair, i) => `
     <button class="match-item match-item-left w-full text-left px-4 py-3 rounded-xl font-body"
       data-match-id="${i}">
       ${escapeForTemplate(pair.situation)}
     </button>
   `).join("");
 
-  const rightHtml = matching.pairs.map((pair, i) => `
+  const rightHtml = safePairs.map((pair, i) => `
     <button class="match-item match-item-right w-full text-left px-4 py-3 rounded-xl font-body"
       data-match-id="${i}">
       ${escapeForTemplate(pair.emoji)} ${escapeForTemplate(pair.feeling)}
@@ -4568,99 +4596,234 @@ function renderMatchingActivityPage(matching: MatchingActivityContent, starIndex
               class="w-8 h-8 rounded cursor-pointer m-accent-primary"
               data-activity="${activityId}"
               onchange="markActivityComplete('${activityId}')"
-              
-            >
             <label class="font-title text-xl m-color-dark">I matched the feelings! ⭐</label>
           </div>
         </div>
       </div>
     </div>`;
+
 }
 
-
-
 function renderSummaryPage(summary: SummaryContent, metadata: ModuleMetadata): string {
-  const takeawaysHtml = summary.takeaways.map(t => `
-    <li class="font-body text-lg m-color-dark">${escapeForTemplate(t)}</li>`).join('');
+  const takeawaysHtml = summary.takeaways.map((t, i) => `
+    <li style="display:flex; align-items:flex-start; gap:10px; margin-bottom:10px;">
+      <span style="flex-shrink:0; width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; background:ACCENT_PLACEHOLDER;">${i + 1}</span>
+      <span style="font-family:'Nunito Sans',sans-serif; font-size:15px; color:#374151; line-height:1.5;">${escapeForTemplate(t)}</span>
+    </li>`).join('');
+
+  const certDesigns = [
+    { name: 'Golden Trophy',    bg: 'linear-gradient(160deg, #FFFBEB 0%, #FEF3C7 40%, #FDE68A 100%)', cardBg: 'linear-gradient(180deg, #FFFDF5 0%, #FFFFFF 100%)', border: '#D97706', accent: '#B45309', ribbon: '#F59E0B', badge: '\u{1F3C6}', sealEmojis: '\u{2B50}\u{1F31F}\u{2728}\u{1F4AB}\u{2B50}', topPattern: 'radial-gradient(circle at 20% 50%, #FDE68A33 0%, transparent 50%), radial-gradient(circle at 80% 50%, #FDE68A33 0%, transparent 50%)' },
+    { name: 'Ocean Explorer',   bg: 'linear-gradient(160deg, #EFF6FF 0%, #DBEAFE 40%, #93C5FD 100%)', cardBg: 'linear-gradient(180deg, #F0F7FF 0%, #FFFFFF 100%)', border: '#2563EB', accent: '#1D4ED8', ribbon: '#3B82F6', badge: '\u{1F9ED}', sealEmojis: '\u{1F42C}\u{1F30A}\u{1F419}\u{1F48E}\u{1F680}', topPattern: 'radial-gradient(circle at 15% 30%, #93C5FD22 0%, transparent 50%), radial-gradient(circle at 85% 70%, #93C5FD22 0%, transparent 50%)' },
+    { name: 'Enchanted Forest', bg: 'linear-gradient(160deg, #F0FDF4 0%, #DCFCE7 40%, #86EFAC 100%)', cardBg: 'linear-gradient(180deg, #F5FFF8 0%, #FFFFFF 100%)', border: '#16A34A', accent: '#15803D', ribbon: '#22C55E', badge: '\u{1F333}', sealEmojis: '\u{1F98B}\u{1F33F}\u{1F340}\u{1F33B}\u{1F308}', topPattern: 'radial-gradient(circle at 25% 40%, #86EFAC22 0%, transparent 50%), radial-gradient(circle at 75% 60%, #86EFAC22 0%, transparent 50%)' },
+    { name: 'Cosmic Magic',     bg: 'linear-gradient(160deg, #FDF4FF 0%, #FAE8FF 40%, #E879F9 100%)', cardBg: 'linear-gradient(180deg, #FDF5FF 0%, #FFFFFF 100%)', border: '#9333EA', accent: '#7E22CE', ribbon: '#A855F7', badge: '\u{1F52E}', sealEmojis: '\u{1F49C}\u{1F984}\u{2728}\u{1FA84}\u{1F386}', topPattern: 'radial-gradient(circle at 30% 20%, #E879F922 0%, transparent 50%), radial-gradient(circle at 70% 80%, #E879F922 0%, transparent 50%)' },
+    { name: 'Sunset Adventure', bg: 'linear-gradient(160deg, #FFF7ED 0%, #FFEDD5 40%, #FDBA74 100%)', cardBg: 'linear-gradient(180deg, #FFFAF5 0%, #FFFFFF 100%)', border: '#EA580C', accent: '#C2410C', ribbon: '#F97316', badge: '\u{1F305}', sealEmojis: '\u{1F981}\u{1F31E}\u{1F525}\u{1F3AA}\u{1F3AF}', topPattern: 'radial-gradient(circle at 20% 60%, #FDBA7422 0%, transparent 50%), radial-gradient(circle at 80% 40%, #FDBA7422 0%, transparent 50%)' },
+    { name: 'Candy Party',      bg: 'linear-gradient(160deg, #FFF1F2 0%, #FFE4E6 40%, #FDA4AF 100%)', cardBg: 'linear-gradient(180deg, #FFF5F6 0%, #FFFFFF 100%)', border: '#E11D48', accent: '#BE123C', ribbon: '#F43F5E', badge: '\u{1F380}', sealEmojis: '\u{1F388}\u{1F338}\u{1F49D}\u{1F973}\u{1F389}', topPattern: 'radial-gradient(circle at 10% 50%, #FDA4AF22 0%, transparent 50%), radial-gradient(circle at 90% 50%, #FDA4AF22 0%, transparent 50%)' },
+  ];
+  const d = certDesigns[Math.floor(Math.random() * certDesigns.length)];
+  const sealArr = [...d.sealEmojis];
+  const styledTakeaways = takeawaysHtml.replace(/ACCENT_PLACEHOLDER/g, d.ribbon);
 
   return `
-    <div class="page min-h-screen p-8" style="background: linear-gradient(135deg, #fef9e7, #edf7f2);" data-page="summary">
-      <div class="max-w-4xl mx-auto">
-        <div class="rounded-3xl shadow-2xl p-8 md:p-10 border-4" style="background-color: white; border-color: #e6c777;">
-          <div class="text-center mb-6">
-            <p class="font-title text-lg" style="color: #8b6f2f; letter-spacing: 0.08em;">CERTIFICATE OF ACHIEVEMENT</p>
-            <h1 class="text-3xl md:text-4xl mt-2 font-title m-color-dark">${escapeForTemplate(summary.heading)}</h1>
-            <p class="font-body text-lg mt-2 m-color-secondary">Awarded to <strong id="childNameDisplay">Friend</strong></p>
-          </div>
+    <div class="page min-h-screen flex items-center justify-center p-4 md:p-8" style="background:${d.bg};" data-page="summary">
+      <div class="w-full max-w-xl">
 
-          <div class="p-5 rounded-2xl mb-6" style="background-color: var(--cream); border: 2px dashed var(--primary);">
-            <p class="font-title text-xl mb-2 m-color-dark">Sub-skill focus</p>
-            <p class="font-body text-lg m-color-dark">In this module, you practiced <strong>${escapeForTemplate(metadata.theme)}</strong> by spotting feelings, choosing calming actions, and using kind self-talk in tricky moments.</p>
-          </div>
+        <div style="position:relative; height:50px; margin-bottom:-10px; overflow:visible; pointer-events:none;">
+          ${sealArr.filter(c => c.trim()).map((e, i) => '<span style="position:absolute; top:' + (Math.random()*25) + 'px; left:' + (5 + i*18) + '%; font-size:' + (22 + Math.random()*14) + 'px; animation:certSealFloat ' + (2.5 + Math.random()*2) + 's ease-in-out infinite alternate; animation-delay:' + (i*0.4) + 's; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.1));">' + e + '</span>').join('')}
+        </div>
 
-          <div class="mb-6">
-            <p class="font-title text-xl mb-2 m-color-dark">What you learned</p>
-            <ul class="list-disc pl-6 space-y-2">${takeawaysHtml}</ul>
-          </div>
+        <div style="background:${d.cardBg}; border-radius:28px; border:4px solid ${d.border}; box-shadow:0 12px 48px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(255,255,255,0.6); overflow:hidden; position:relative;">
 
-          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-4" style="border-top: 2px solid #f2e1a8;">
-            <div>
-              <p class="font-body text-sm m-color-secondary">Completed on</p>
-              <p class="font-title text-2xl m-color-dark" id="certificateDate"></p>
+          <div style="background:linear-gradient(135deg, ${d.ribbon}, ${d.accent}); padding:14px 20px; text-align:center; position:relative; overflow:hidden;">
+            <div style="position:absolute; inset:0; background:repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.06) 10px, rgba(255,255,255,0.06) 20px);"></div>
+            <div style="position:relative; display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
+              <span style="font-size:26px;">${d.badge}</span>
+              <span style="color:white; font-family:'Baloo 2','Fredoka',cursive; font-size:15px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; text-shadow:0 1px 3px rgba(0,0,0,0.15);">Certificate of Achievement</span>
+              <span style="font-size:26px;">${d.badge}</span>
             </div>
-            <div class="text-right">
-              <p class="font-body text-sm m-color-secondary">Guide</p>
-              <p class="font-title text-xl m-color-dark">${escapeForTemplate(metadata.characterName)}</p>
+          </div>
+
+          <div style="margin:16px; border:2px dashed ${d.border}40; border-radius:20px; padding:24px 20px 20px; position:relative;">
+            <div style="position:absolute;top:6px;left:10px;font-size:18px;opacity:0.12;">\u{2726}</div>
+            <div style="position:absolute;top:6px;right:10px;font-size:18px;opacity:0.12;">\u{2726}</div>
+            <div style="position:absolute;bottom:6px;left:10px;font-size:18px;opacity:0.12;">\u{2726}</div>
+            <div style="position:absolute;bottom:6px;right:10px;font-size:18px;opacity:0.12;">\u{2726}</div>
+
+            <div style="text-align:center; margin-bottom:16px;">
+              <h1 style="font-family:'Baloo 2','Fredoka',cursive; font-size:clamp(22px,5vw,32px); font-weight:800; color:${d.accent}; margin:0 0 6px; line-height:1.2;">${escapeForTemplate(summary.heading)}</h1>
+              <p style="font-family:'Nunito Sans',sans-serif; font-size:14px; color:#6B7280;">Awarded to <strong style="color:${d.accent};" id="childNameDisplay">Friend</strong></p>
             </div>
+
+            <div style="background:${d.ribbon}10; border:2px solid ${d.ribbon}30; border-radius:16px; padding:14px 16px; margin-bottom:16px; text-align:center;">
+              <p style="font-family:'Baloo 2','Fredoka',cursive; font-size:12px; color:${d.accent}; text-transform:uppercase; letter-spacing:1.5px; margin:0 0 4px; font-weight:700;">Super Skill Focus</p>
+              <p style="font-family:'Nunito Sans',sans-serif; font-size:15px; color:#374151; margin:0; line-height:1.5;">You practiced <strong style="color:${d.accent};">${escapeForTemplate(metadata.theme)}</strong></p>
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <p style="font-family:'Baloo 2','Fredoka',cursive; font-size:16px; color:${d.accent}; margin:0 0 10px; font-weight:700;">\u{1F3AF} What You Learned</p>
+              <ul style="list-style:none; padding:0; margin:0;">${styledTakeaways}</ul>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:center; gap:3px; margin-bottom:14px;">
+              <span style="font-size:24px;">\u{2B50}</span>
+              <span style="font-size:28px;">\u{2B50}</span>
+              <span style="font-size:34px; filter:drop-shadow(0 2px 6px ${d.ribbon}60);">\u{1F31F}</span>
+              <span style="font-size:28px;">\u{2B50}</span>
+              <span style="font-size:24px;">\u{2B50}</span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-top:12px; border-top:2px solid ${d.border}20;">
+              <div>
+                <p style="font-family:'Nunito Sans',sans-serif; font-size:11px; color:#9CA3AF; margin:0; text-transform:uppercase; letter-spacing:1px;">Completed on</p>
+                <p style="font-family:'Baloo 2','Fredoka',cursive; font-size:18px; color:#374151; margin:2px 0 0;" id="certificateDate"></p>
+              </div>
+              <div style="text-align:right;">
+                <p style="font-family:'Nunito Sans',sans-serif; font-size:11px; color:#9CA3AF; margin:0; text-transform:uppercase; letter-spacing:1px;">Your Guide</p>
+                <p style="font-family:'Baloo 2','Fredoka',cursive; font-size:18px; color:${d.accent}; margin:2px 0 0;">${escapeForTemplate(metadata.characterName)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:linear-gradient(135deg, ${d.ribbon}, ${d.accent}); padding:8px 20px; text-align:center;">
+            <span style="color:white; font-family:'Nunito Sans',sans-serif; font-size:11px; letter-spacing:1.5px; opacity:0.9;">Daniel's Diaries \u{2726} Brain Town Explorer</span>
           </div>
         </div>
 
-        <div class="rounded-xl p-6 flex items-center gap-4 mt-6 m-bg-soft-yellow">
-          <span class="text-5xl">🌟</span>
-          <p class="font-body text-lg font-semibold m-color-dark">${escapeForTemplate(summary.encouragement)}</p>
+        <div style="background:white; border-radius:16px; padding:14px 18px; margin-top:14px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 16px rgba(0,0,0,0.06); border:2px solid ${d.border}25;">
+          <span style="font-size:36px; flex-shrink:0;">${d.badge}</span>
+          <p style="font-family:'Nunito Sans',sans-serif; font-size:15px; color:#374151; font-weight:600; margin:0; line-height:1.5;">${escapeForTemplate(summary.encouragement)}</p>
         </div>
       </div>
-    </div>`;
+    </div>
+
+    <style>
+      @keyframes certSealFloat {
+        from { transform: translateY(0px) rotate(-6deg) scale(1); }
+        to { transform: translateY(-14px) rotate(6deg) scale(1.05); }
+      }
+    </style>`;
 }
 
 function renderCompletionPage(completion: CompletionContent, metadata: ModuleMetadata): string {
+  const childName = '${window.childFirstName || "Super Star"}';
+  const heading = escapeForTemplate(completion.heading);
+  const celebrationText = escapeForTemplate(completion.celebrationText);
+  const nextStepsText = escapeForTemplate(completion.nextStepsText);
+  const characterName = escapeForTemplate(metadata.characterName);
+  const title = escapeForTemplate(metadata.title);
+
+  // Randomly pick a certificate style (1-5)
+  const styleIndex = Math.floor(Math.random() * 5) + 1;
+
+  const certificateStyles: Record<number, { bg: string; border: string; accent: string; badge: string; emojis: string; ribbonColor: string }> = {
+    1: { bg: 'linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 30%, #FDE68A 70%, #FCD34D 100%)', border: '#D97706', accent: '#B45309', badge: '🏆', emojis: '🌟⭐✨🎯💫', ribbonColor: '#F59E0B' },
+    2: { bg: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #BFDBFE 70%, #93C5FD 100%)', border: '#2563EB', accent: '#1D4ED8', badge: '🎖️', emojis: '🚀💎⚡🌈🎆', ribbonColor: '#3B82F6' },
+    3: { bg: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 30%, #BBF7D0 70%, #86EFAC 100%)', border: '#16A34A', accent: '#15803D', badge: '🌟', emojis: '🌿🌻🦋🍀✅', ribbonColor: '#22C55E' },
+    4: { bg: 'linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 30%, #F0ABFC 70%, #E879F9 100%)', border: '#9333EA', accent: '#7E22CE', badge: '👑', emojis: '💜🦄🔮🎪🎭', ribbonColor: '#A855F7' },
+    5: { bg: 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 30%, #FECDD3 70%, #FDA4AF 100%)', border: '#E11D48', accent: '#BE123C', badge: '💖', emojis: '🎀🌸💝🎈🥳', ribbonColor: '#F43F5E' },
+  };
+  const style = certificateStyles[styleIndex];
+  const emojiArr = style.emojis.split('').filter(c => c.trim());
+
   return `
-    <div class="page min-h-screen flex items-center justify-center p-8" style="background: linear-gradient(to bottom right, var(--soft-yellow), var(--light-green));" data-page="completion">
-      <div class="text-center max-w-2xl">
-        <div class="text-8xl mb-6 animate-bounce-slow">🎉</div>
-        <h1 class="text-4xl md:text-5xl mb-6 font-title m-color-dark">${escapeForTemplate(completion.heading)}</h1>
-        
-        <div class="rounded-3xl shadow-xl p-8 mb-8 m-bg-white">
-          <p class="text-xl mb-4 font-body m-color-dark">${escapeForTemplate(completion.celebrationText)}</p>
-          <p class="text-lg font-body m-color-secondary">${escapeForTemplate(completion.nextStepsText)}</p>
+    <div class="page min-h-screen flex items-center justify-center p-4 md:p-8" style="background: ${style.bg};" data-page="completion">
+      <div class="text-center max-w-2xl w-full">
+
+        <!-- Floating celebration emojis -->
+        <div style="position:relative; height:60px; margin-bottom:-20px; overflow:visible;">
+          ${emojiArr.map((e, i) => `<span style="position:absolute; top:${Math.random()*30}px; left:${10 + i*20}%; font-size:${24 + Math.random()*16}px; animation: certFloat ${2 + Math.random()*2}s ease-in-out infinite alternate; animation-delay:${i*0.3}s;">${e}</span>`).join('')}
         </div>
-        
-        <div class="flex flex-col gap-4">
-          <button 
+
+        <!-- Certificate Card -->
+        <div style="background:white; border-radius:24px; border:4px solid ${style.border}; box-shadow: 0 8px 40px rgba(0,0,0,0.12), inset 0 0 0 2px rgba(255,255,255,0.8); padding:0; overflow:hidden; position:relative;">
+
+          <!-- Top ribbon -->
+          <div style="background:${style.ribbonColor}; padding:12px 24px; text-align:center;">
+            <span style="font-size:28px;">${style.badge}</span>
+            <span style="color:white; font-family:'Baloo 2',cursive; font-size:14px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-left:8px;">Certificate of Achievement</span>
+            <span style="font-size:28px;">${style.badge}</span>
+          </div>
+
+          <!-- Certificate body -->
+          <div style="padding:28px 32px 24px; position:relative;">
+
+            <!-- Decorative corner flourishes -->
+            <div style="position:absolute;top:8px;left:12px;font-size:24px;opacity:0.15;">❋</div>
+            <div style="position:absolute;top:8px;right:12px;font-size:24px;opacity:0.15;">❋</div>
+            <div style="position:absolute;bottom:8px;left:12px;font-size:24px;opacity:0.15;">❋</div>
+            <div style="position:absolute;bottom:8px;right:12px;font-size:24px;opacity:0.15;">❋</div>
+
+            <p style="font-family:'Nunito Sans',sans-serif; font-size:13px; color:#6B7280; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase;">This certifies that</p>
+
+            <!-- Child's name -->
+            <div style="font-family:'Baloo 2',cursive; font-size:clamp(28px,6vw,42px); font-weight:800; color:${style.accent}; margin:8px 0 4px; line-height:1.2;">
+              ${childName}
+            </div>
+
+            <p style="font-family:'Nunito Sans',sans-serif; font-size:14px; color:#6B7280; margin-bottom:16px;">has successfully completed</p>
+
+            <!-- Module title -->
+            <div style="background:${style.bg}; border-radius:16px; padding:14px 20px; margin-bottom:16px; border:2px dashed ${style.border}40;">
+              <p style="font-family:'Baloo 2',cursive; font-size:clamp(18px,4vw,24px); font-weight:700; color:${style.accent}; margin:0; line-height:1.3;">
+                ${title}
+              </p>
+            </div>
+
+            <!-- Celebration text -->
+            <p style="font-family:'Nunito Sans',sans-serif; font-size:15px; color:#374151; line-height:1.6; margin-bottom:12px;">
+              ${celebrationText}
+            </p>
+            <p style="font-family:'Nunito Sans',sans-serif; font-size:13px; color:#6B7280; line-height:1.5; margin-bottom:20px;">
+              ${nextStepsText}
+            </p>
+
+            <!-- Star rating display -->
+            <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:16px;">
+              <span style="font-size:32px;">⭐</span>
+              <span style="font-size:36px;">⭐</span>
+              <span style="font-size:40px;">🌟</span>
+              <span style="font-size:36px;">⭐</span>
+              <span style="font-size:32px;">⭐</span>
+            </div>
+
+            <!-- Character message -->
+            <div style="background:${style.ribbonColor}12; border-radius:12px; padding:12px 16px; display:inline-flex; align-items:center; gap:8px;">
+              <span style="font-size:24px;">🐕</span>
+              <p style="font-family:'Nunito Sans',sans-serif; font-size:14px; color:${style.accent}; font-weight:600; margin:0;">
+                ${characterName} is so proud of you!
+              </p>
+            </div>
+          </div>
+
+          <!-- Bottom ribbon -->
+          <div style="background:${style.ribbonColor}; padding:8px 24px; text-align:center;">
+            <span style="color:white; font-family:'Nunito Sans',sans-serif; font-size:11px; letter-spacing:1px; opacity:0.9;">Daniel's Diaries ★ Brain Town Explorer</span>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
+          <button
             onclick="handleModuleCompletion();"
-            class="w-full py-4 px-8 rounded-xl text-white font-bold text-xl font-title shadow-lg hover:shadow-xl transition-all cursor-pointer"
-            style="background: linear-gradient(135deg, var(--secondary), #1ABC9C);"
+            style="width:100%; padding:16px 24px; border-radius:16px; color:white; font-weight:700; font-size:17px; font-family:'Baloo 2',cursive; border:none; cursor:pointer; box-shadow:0 4px 16px ${style.ribbonColor}40; background:linear-gradient(135deg, ${style.ribbonColor}, ${style.accent}); transition:all 0.2s;"
           >
             ✅ Complete Module & Return Home
           </button>
-          
-          <button 
+          <button
             onclick="jumpToPage(0)"
-            class="w-full py-3 px-6 rounded-xl font-semibold font-body cursor-pointer"
-            style="background-color: white; color: var(--dark); border: 2px solid var(--secondary);"
+            style="width:100%; padding:12px 20px; border-radius:12px; font-weight:600; font-size:14px; font-family:'Nunito Sans',sans-serif; border:2px solid ${style.border}; background:white; color:${style.accent}; cursor:pointer; transition:all 0.2s;"
           >
             📖 Review This Module
           </button>
         </div>
-        
-        <div class="mt-8 flex items-center justify-center gap-2">
-          <span class="text-4xl">🎉</span>
-          <p class="font-body text-lg m-color-dark">
-            ${escapeForTemplate(metadata.characterName)} is proud of you!
-          </p>
-        </div>
       </div>
-    </div>`;
+    </div>
+
+    <style>
+      @keyframes certFloat {
+        from { transform: translateY(0px) rotate(-5deg); }
+        to { transform: translateY(-12px) rotate(5deg); }
+      }
+    </style>`;
 }
 
 // ========================================
@@ -6215,20 +6378,19 @@ async function runAsyncGeneration(
     const generationPromise = generateModule(supabaseClient, contentBrief, jobId, seriesInfo, categoryColor, forcedTitle);
     const result = await Promise.race([generationPromise, timeoutPromise]) as any;
 
-    // Attach pending narration data (texts only, no audio yet — TTS runs separately after save)
+    // Attach pending narration data (truncated texts only — fullText stored at save time)
     if (result.narrationTexts && result.narrationTexts.length > 0) {
       result.narrationData = result.narrationTexts.map((text: string, i: number) => ({
         pageIndex: i,
         text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
-        fullText: text,
-        audioUrl: null,
-        contentHash: null,
         status: 'pending',
       }));
       result.narrationStatus = 'pending';
+      // Remove full narration texts from the job result to reduce size
+      delete result.narrationTexts;
     }
 
-    await supabaseClient
+    const { error: singleUpdateError } = await supabaseClient
       .from("ai_generation_jobs")
       .update({
         status: "completed",
@@ -6236,6 +6398,16 @@ async function runAsyncGeneration(
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
+
+    if (singleUpdateError) {
+      console.error(`[AI] Failed to store result for job ${jobId}: ${singleUpdateError.message} (size: ${JSON.stringify(result).length} bytes)`);
+      // Retry without narration data
+      delete result.narrationData;
+      await supabaseClient
+        .from("ai_generation_jobs")
+        .update({ status: "completed", result, updated_at: new Date().toISOString() })
+        .eq("id", jobId);
+    }
 
     // Save module_summary to the modules table if available
     if (result?.spec?.moduleSummary?.summary) {
@@ -6307,46 +6479,96 @@ async function runAsyncMultiAgeGeneration(
         variantNarrationData[band] = variant.narrationTexts.map((text: string, i: number) => ({
           pageIndex: i,
           text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
-          fullText: text,
-          audioUrl: null,
-          contentHash: null,
           status: 'pending',
         }));
       }
     }
 
     const firstBand = Object.keys(result.variants)[0];
+    const variantBands = Object.keys(result.variants);
 
-    await supabaseClient
+    // ── Upload each variant's HTML to Supabase Storage ──
+    // PostgREST has a ~1MB body limit. All 4 HTML variants together exceed this,
+    // so we store them individually in Storage and reference them in the result.
+    const variantStoragePaths: Record<string, string> = {};
+    for (const [band, variant] of Object.entries(result.variants) as [string, any][]) {
+      const storagePath = `jobs/${jobId}/${band.replace(/\s+/g, '_')}.html`;
+      try {
+        const encoder = new TextEncoder();
+        const htmlBytes = encoder.encode(variant.html);
+        const { error: uploadError } = await supabaseClient.storage
+          .from('modules')
+          .upload(storagePath, htmlBytes, { contentType: 'text/html; charset=utf-8', upsert: true });
+
+        if (uploadError) {
+          console.warn(`[MULTI-AGE] Storage upload failed for ${band}: ${uploadError.message}`);
+        } else {
+          variantStoragePaths[band] = storagePath;
+          console.log(`[MULTI-AGE] Uploaded variant HTML for ${band} (${Math.round(variant.html.length / 1024)}KB)`);
+        }
+      } catch (uploadErr) {
+        console.warn(`[MULTI-AGE] Storage upload exception for ${band}:`, uploadErr);
+      }
+    }
+
+    // ── Store job result ──
+    // HTML is stored in Storage (variantStoragePaths). Only include HTML inline
+    // if Storage upload failed for the first variant (fallback for client).
+    const firstVariantInStorage = variantStoragePaths[firstBand];
+    const completedResult: Record<string, any> = {
+      multiAge: true,
+      moduleCode: result.moduleCode,
+      pageCount: result.pageCount,
+      core: result.core,
+      variantSpecs: Object.fromEntries(
+        Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.spec])
+      ),
+      spec: Object.values(result.variants)[0]?.spec || {},
+      totalTokens: result.totalTokens,
+      totalDurationMs: result.totalDurationMs,
+      variantBands,
+      narrationData: variantNarrationData[firstBand] || null,
+      narrationStatus: 'pending',
+      variantStoragePaths,
+    };
+    // Only embed HTML if it didn't make it to Storage
+    if (!firstVariantInStorage) {
+      completedResult.html = Object.values(result.variants)[0]?.html || '';
+    }
+
+    // Store result — small enough for regular PostgREST update now (~30KB without HTML)
+    const resultJson = JSON.stringify(completedResult);
+    console.log(`[MULTI-AGE] Storing result (${Math.round(resultJson.length / 1024)}KB, html ${firstVariantInStorage ? 'in Storage' : 'inline'})`);
+    const { error: updateError } = await supabaseClient
       .from("ai_generation_jobs")
-      .update({
-        status: "completed",
-        result: {
-          multiAge: true,
-          moduleCode: result.moduleCode,
-          pageCount: result.pageCount,
-          core: result.core,
-          variantSpecs: Object.fromEntries(
-            Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.spec])
-          ),
-          html: Object.values(result.variants)[0]?.html || '',
-          spec: Object.values(result.variants)[0]?.spec || {},
-          totalTokens: result.totalTokens,
-          totalDurationMs: result.totalDurationMs,
-          variantBands: Object.keys(result.variants),
-          variantHtml: Object.fromEntries(
-            Object.entries(result.variants).map(([band, v]: [string, any]) => [band, v.html])
-          ),
-          // Per-variant narration data (texts only, pending audio generation)
-          narrationData: variantNarrationData[firstBand] || null,
-          narrationStatus: 'pending',
-          variantNarrationData,
-        },
-        updated_at: new Date().toISOString(),
-      })
+      .update({ status: "completed", result: completedResult, updated_at: new Date().toISOString() })
       .eq("id", jobId);
 
-    console.log(`[MULTI-AGE] Job ${jobId} completed: ${Object.keys(result.variants).length} variants`);
+    if (updateError) {
+      console.error(`[MULTI-AGE] Update failed: ${updateError.message} (size: ${resultJson.length} bytes)`);
+      // Retry without narration data (keep only metadata + storage paths)
+      delete completedResult.variantNarrationData;
+      delete completedResult.narrationData;
+      delete completedResult.html;
+      const { error: retryError } = await supabaseClient
+        .from("ai_generation_jobs")
+        .update({ status: "completed", result: completedResult, updated_at: new Date().toISOString() })
+        .eq("id", jobId);
+
+      if (retryError) {
+        console.error(`[MULTI-AGE] Slim retry also failed: ${retryError.message}`);
+        await supabaseClient
+          .from("ai_generation_jobs")
+          .update({
+            status: "failed",
+            error: `Generated OK but result too large to store (${JSON.stringify(completedResult).length} bytes). Check Edge Function logs.`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", jobId);
+      }
+    }
+
+    console.log(`[MULTI-AGE] Job ${jobId} completed: ${variantBands.length} variants`);
 
   } catch (e) {
     const error = e instanceof Error ? e : new Error(String(e));

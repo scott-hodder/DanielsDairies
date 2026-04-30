@@ -7,9 +7,9 @@
     <meta name="description" content="Daniel's Diaries is an interactive workbook platform helping children build emotional intelligence, resilience, and coping skills through engaging stories and activities.">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/DanielsDiariesFavicon.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/DanielsDiariesFavicon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/DanielsDiariesFavicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -473,7 +473,7 @@
                 <a href="/signup.html" class="btn-landing btn-signup">Get Started</a>
                 <a href="/signup.html?trial=true" class="btn-landing btn-trial">Try Free - 2 Modules on Us</a>
                 <a href="/login.html" class="btn-landing btn-login">I Have an Account</a>
-                <a href="/schools-login.html" class="btn-landing btn-schools">Schools Program</a>
+                <a href="/schools-login.html" class="btn-landing btn-schools" id="schoolsProgramBtn" style="display:none;">Schools Program</a>
             </div>
         </div>
 
@@ -485,5 +485,18 @@
             <span style="display:block; margin-top:6px; font-size:11px; opacity:0.7;">Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.</span>
         </div>
     </div>
+    <script type="module">
+        import { getSupabaseClient } from '/src/supabaseClient.js'
+        try {
+            const { data } = await getSupabaseClient()
+                .from('settings')
+                .select('feature_flags')
+                .single()
+            if (data?.feature_flags?.schools_program_enabled) {
+                const btn = document.getElementById('schoolsProgramBtn')
+                if (btn) btn.style.display = ''
+            }
+        } catch (e) { /* flag defaults to off */ }
+    </script>
 </body>
 </html>
