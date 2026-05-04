@@ -487,16 +487,18 @@
     </div>
     <script type="module">
         import { getSupabaseClient } from '/src/supabaseClient.js'
-        try {
-            const { data } = await getSupabaseClient()
-                .from('settings')
-                .select('feature_flags')
-                .single()
-            if (data?.feature_flags?.schools_program_enabled) {
-                const btn = document.getElementById('schoolsProgramBtn')
-                if (btn) btn.style.display = ''
-            }
-        } catch (e) { /* flag defaults to off */ }
+        ;(async () => {
+            try {
+                const { data } = await getSupabaseClient()
+                    .from('settings')
+                    .select('feature_flags')
+                    .single()
+                if (data?.feature_flags?.schools_program_enabled) {
+                    const btn = document.getElementById('schoolsProgramBtn')
+                    if (btn) btn.style.display = ''
+                }
+            } catch (e) { /* flag defaults to off */ }
+        })()
     </script>
 </body>
 </html>
