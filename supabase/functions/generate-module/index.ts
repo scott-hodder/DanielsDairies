@@ -2952,7 +2952,7 @@ function renderCoverPage(content: GeneratedContent, seriesInfo?: SeriesInfo | nu
   // Sidekick image for cover
   const sidekickCoverHtml = (() => {
     if (seriesInfo?.character_image_url) {
-      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto drop-shadow-xl" style="height: 85%; width: auto;">`;
+      return `<img src="${escapeForTemplate(seriesInfo.character_image_url)}" alt="${escapeForTemplate(metadata.sidekickName || '')}" class="object-contain mx-auto drop-shadow-xl" style="height: 100%; width: auto;">`;
     }
     if (metadata.sidekickEmoji) {
       return `<span style="font-size: 5rem;">${escapeForTemplate(metadata.sidekickEmoji)}</span>`;
