@@ -104,10 +104,11 @@ function ensureCelebrationPopupStyles() {
       padding: 32px 28px 26px;
       color: #243b5a;
       text-align: center;
-      background: linear-gradient(145deg, #fffdf7 0%, #fff3fb 45%, #eef8ff 100%);
-      box-shadow: 0 28px 80px rgba(75, 85, 180, 0.28);
+      background: linear-gradient(145deg, #fffff5 0%, #fef9ef 50%, #f0f7ff 100%);
+      box-shadow: 0 20px 50px rgba(64, 88, 120, 0.22);
       overflow: hidden;
       animation: celebrationCardPop 0.35s ease;
+      font-family: 'Fredoka', sans-serif;
     }
 
     .celebration-popup-glow {
@@ -141,7 +142,7 @@ function ensureCelebrationPopupStyles() {
       padding: 8px 14px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.85);
-      color: #7c3aed;
+      color: #b45309;
       font-weight: 700;
       font-size: 13px;
       letter-spacing: 0.03em;
@@ -151,30 +152,33 @@ function ensureCelebrationPopupStyles() {
 
     .celebration-popup-card h2 {
       margin: 0 0 12px;
-      font-size: clamp(28px, 4vw, 36px);
-      line-height: 1.1;
-      color: #2f3e74;
+      font-size: clamp(24px, 4vw, 30px);
+      line-height: 1.15;
+      color: #405878;
+      font-family: 'Fredoka', sans-serif;
     }
 
     .celebration-popup-card p {
       margin: 0 auto 22px;
       max-width: 330px;
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.6;
-      color: #506487;
+      color: #5f6b85;
+      font-family: 'Fredoka', sans-serif;
     }
 
     .celebration-popup-button {
       border: none;
-      border-radius: 16px;
+      border-radius: 14px;
       padding: 14px 22px;
       min-width: 170px;
-      background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
       color: #fff;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 14px 30px rgba(124, 58, 237, 0.28);
+      box-shadow: 0 4px 16px rgba(20, 184, 166, 0.3);
+      font-family: 'Fredoka', sans-serif;
     }
 
     .celebration-popup-button:hover {
@@ -2159,8 +2163,18 @@ async function selectChild(child) {
   const levelKey = `lastKnownLevel_child_${child.id}`
   const lastKnownLevel = parseInt(localStorage.getItem(levelKey) || '0')
   if (lastKnownLevel > 0 && currentLevel > lastKnownLevel) {
-    // Delay slightly so dashboard renders first
-    setTimeout(() => showLevelUpPopup(child.name, currentLevel), 800)
+    // Wait until loading screen is hidden, then show after a brief pause
+    const showLevelUp = () => setTimeout(() => showLevelUpPopup(child.name, currentLevel), 400)
+    const loadingEl = document.getElementById('loadingState')
+    if (loadingEl && !loadingEl.classList.contains('hidden')) {
+      const obs = new MutationObserver(() => {
+        if (loadingEl.classList.contains('hidden')) { obs.disconnect(); showLevelUp() }
+      })
+      obs.observe(loadingEl, { attributes: true, attributeFilter: ['class'] })
+      setTimeout(() => { obs.disconnect() }, 12000)
+    } else {
+      showLevelUp()
+    }
   }
   localStorage.setItem(levelKey, String(currentLevel))
   
@@ -2223,20 +2237,39 @@ async function selectChild(child) {
           const dayStreakEl = document.getElementById('dayStreak')
           if (dayStreakEl) dayStreakEl.textContent = streakData.current_streak ?? 0
 
-          // Show streak popup for day 1+ (encourage from the very start)
-          if (streakData.current_streak >= 1 && !hasStreakPopupBeenShownToday(child.id)) {
-            markStreakPopupAsShown(child.id)
-            showStreakPopup(child.name, streakData.current_streak)
+          // Queue popups to show AFTER loading screen is fully hidden
+          const showAfterLoad = () => {
+            // Show streak popup for day 1+ (encourage from the very start)
+            if (streakData.current_streak >= 1 && !hasStreakPopupBeenShownToday(child.id)) {
+              markStreakPopupAsShown(child.id)
+              showStreakPopup(child.name, streakData.current_streak)
+            }
+
+            // Welcome back message if they've been away
+            if (streakData._previousLoginDate) {
+              const today = new Date()
+              const prevLogin = new Date(streakData._previousLoginDate)
+              const daysAway = Math.floor((today - prevLogin) / (1000 * 60 * 60 * 24))
+              if (daysAway >= 3) {
+                showWelcomeBackBanner(child.name, daysAway)
+              }
+            }
           }
 
-          // Welcome back message if they've been away
-          if (streakData._previousLoginDate) {
-            const today = new Date()
-            const prevLogin = new Date(streakData._previousLoginDate)
-            const daysAway = Math.floor((today - prevLogin) / (1000 * 60 * 60 * 24))
-            if (daysAway >= 3) {
-              showWelcomeBackBanner(child.name, daysAway)
-            }
+          // Wait until loading screen is gone before showing popups
+          const loadingEl = document.getElementById('loadingState')
+          if (loadingEl && !loadingEl.classList.contains('hidden')) {
+            const observer = new MutationObserver(() => {
+              if (loadingEl.classList.contains('hidden')) {
+                observer.disconnect()
+                setTimeout(showAfterLoad, 600)
+              }
+            })
+            observer.observe(loadingEl, { attributes: true, attributeFilter: ['class'] })
+            // Safety fallback
+            setTimeout(() => { observer.disconnect(); showAfterLoad() }, 12000)
+          } else {
+            setTimeout(showAfterLoad, 600)
           }
         }
       }
@@ -4800,8 +4833,12 @@ function showStreakPopup(childName, streak) {
 
   const message = getStreakMessage(streak)
   const streakEmoji = streak >= 30 ? '👑' : streak >= 14 ? '💪' : streak >= 7 ? '🎉' : '🔥'
-  const flameCount = Math.min(streak, 5)
-  const flames = Array.from({ length: flameCount }, () => '🔥').join('')
+
+  // Day 1: "Streak started!" / Day 2+: "X Day Streak!"
+  const badgeText = streak === 1 ? '🔥 Streak Started!' : `🔥 ${streak} Day Streak!`
+  const bodyText = streak === 1
+    ? `You've started your streak, ${childName}! Come back tomorrow to keep it going.`
+    : `Way to go, ${childName}! ${streak} days in a row. Keep showing up!`
 
   const overlay = document.createElement('div')
   overlay.id = 'streakCelebrationPopup'
@@ -4810,9 +4847,9 @@ function showStreakPopup(childName, streak) {
     <div class="celebration-popup-card" role="dialog" aria-modal="true" aria-labelledby="streakCelebrationTitle">
       <div class="celebration-popup-glow"></div>
       <div class="celebration-popup-stars"><span>${streakEmoji}</span><span>⭐</span><span>${streakEmoji}</span></div>
-      <div class="celebration-popup-badge">${flames} ${streak} Day Streak!</div>
+      <div class="celebration-popup-badge" style="color: #b45309;">${badgeText}</div>
       <h2 id="streakCelebrationTitle">${message}</h2>
-      <p>Way to go, ${childName}! You've logged in ${streak} day${streak === 1 ? '' : 's'} in a row. Keep showing up and great things will happen!</p>
+      <p>${bodyText}</p>
       <button type="button" class="celebration-popup-button" id="streakCelebrationClose">Let's go!</button>
     </div>
   `
@@ -4853,7 +4890,7 @@ function showLevelUpPopup(childName, newLevel) {
     <div class="celebration-popup-card" role="dialog" aria-modal="true" aria-labelledby="levelUpTitle">
       <div class="celebration-popup-glow"></div>
       <div class="celebration-popup-stars"><span>🎉</span><span>⬆️</span><span>🎉</span></div>
-      <div class="celebration-popup-badge">Level Up!</div>
+      <div class="celebration-popup-badge" style="color: #b45309;">Level Up!</div>
       <h2 id="levelUpTitle">Level ${newLevel}!</h2>
       <p>${message} Keep exploring and learning, ${childName}!</p>
       <button type="button" class="celebration-popup-button" id="levelUpCelebrationClose">Awesome!</button>

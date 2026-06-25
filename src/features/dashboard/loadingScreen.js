@@ -95,13 +95,20 @@ export function showLoadingScreen() {
   loadingState.classList.remove('hidden');
 }
 
-// Hide loading screen
+// Hide loading screen with smooth fade
 export function hideLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
-  if (loadingState) {
+  if (!loadingState) return;
+
+  // Smooth fade-out before hiding
+  loadingState.style.transition = 'opacity 0.35s ease';
+  loadingState.style.opacity = '0';
+  setTimeout(() => {
     loadingState.classList.add('hidden');
-  }
-  
+    loadingState.style.transition = '';
+    loadingState.style.opacity = '';
+  }, 350);
+
   // Footer is shown after the adventure map finishes rendering
   // (via window._dashboardRenderComplete in dashboard-enhanced.js)
 }
