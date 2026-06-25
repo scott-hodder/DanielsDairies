@@ -471,7 +471,7 @@
             </p>
             <div class="landing-buttons">
                 <a href="/signup.html" class="btn-landing btn-signup">Get Started</a>
-                <a href="/signup.html?trial=true" class="btn-landing btn-trial">Try Free - 2 Modules on Us</a>
+                <a href="/signup.html?trial=true" class="btn-landing btn-trial" id="freeTrialBtn" style="display:none;">Try Free - 2 Modules on Us</a>
                 <a href="/login.html" class="btn-landing btn-login">I Have an Account</a>
                 <a href="/schools-login.html" class="btn-landing btn-schools" id="schoolsProgramBtn" style="display:none;">Schools Program</a>
             </div>
@@ -496,6 +496,10 @@
                 if (data?.feature_flags?.schools_program_enabled) {
                     const btn = document.getElementById('schoolsProgramBtn')
                     if (btn) btn.style.display = ''
+                }
+                if (data?.feature_flags?.free_trial_enabled !== false) {
+                    const trialBtn = document.getElementById('freeTrialBtn')
+                    if (trialBtn) trialBtn.style.display = ''
                 }
             } catch (e) { /* flag defaults to off */ }
         })()

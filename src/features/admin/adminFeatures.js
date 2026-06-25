@@ -18,6 +18,12 @@ const FEATURE_DEFINITIONS = [
     label: 'Mini-Game Roadblocks',
     description: 'Enables the new mini-game roadblock system on the adventure map. When off, mini_game roadblocks fall back to a simple "I did it" tap.',
     defaultOn: false
+  },
+  {
+    key: 'free_trial_enabled',
+    label: 'Allow Free Trial',
+    description: 'Shows the "Try Free" button on the landing page. When off, the free trial option is hidden from new visitors.',
+    defaultOn: true
   }
 ];
 
