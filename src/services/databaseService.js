@@ -1145,9 +1145,12 @@ export async function updateLoginStreak(userId, childId = null) {
       return newRecord
     }
     
+    // Remember the previous login date before we update
+    const previousLoginDate = streakRecord.last_login_date
+
     // Check if already logged in today
     if (streakRecord.last_login_date === today) {
-      return streakRecord // No update needed
+      return { ...streakRecord, _previousLoginDate: previousLoginDate }
     }
     
     // Calculate yesterday's date
@@ -1190,7 +1193,7 @@ export async function updateLoginStreak(userId, childId = null) {
       .single()
     
     if (updateError) throw updateError
-    return updatedRecord
+    return { ...updatedRecord, _previousLoginDate: previousLoginDate }
     
   } catch (error) {
     console.error('Error updating login streak:', error)

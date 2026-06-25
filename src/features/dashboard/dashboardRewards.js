@@ -1,6 +1,46 @@
 // Rewards Tab Functionality for Dashboard
 import { getRewards, createCustomReward, purchaseReward, getChildPurchaseHistory, getChildSpendableStars } from '../../rewards.js'
 
+/**
+ * Show a celebration popup when a reward is redeemed
+ */
+function showRewardCelebration(rewardTitle, rewardIcon) {
+  // Ensure celebration keyframes exist
+  if (!document.getElementById('rewardCelebrationStyles')) {
+    const style = document.createElement('style')
+    style.id = 'rewardCelebrationStyles'
+    style.textContent = `
+      @keyframes celebrationFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes celebrationCardPop { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    `
+    document.head.appendChild(style)
+  }
+
+  const existing = document.getElementById('rewardCelebrationPopup')
+  if (existing) existing.remove()
+
+  const overlay = document.createElement('div')
+  overlay.id = 'rewardCelebrationPopup'
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(24,34,56,0.45);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10000;animation:celebrationFadeIn 0.25s ease;'
+  overlay.innerHTML = `
+    <div style="position:relative;width:min(420px,100%);border-radius:28px;padding:32px 28px 26px;color:#243b5a;text-align:center;background:linear-gradient(145deg,#fffdf7 0%,#fff3fb 45%,#eef8ff 100%);box-shadow:0 28px 80px rgba(75,85,180,0.28);animation:celebrationCardPop 0.35s ease;">
+      <div style="font-size:64px;margin-bottom:16px;">${rewardIcon}</div>
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,0.85);color:#14b8a6;font-weight:700;font-size:13px;letter-spacing:0.03em;text-transform:uppercase;margin-bottom:16px;">Reward Redeemed!</div>
+      <h2 style="margin:0 0 12px;font-size:clamp(24px,4vw,32px);line-height:1.1;color:#2f3e74;font-family:'Fredoka',sans-serif;">${rewardTitle}</h2>
+      <p style="margin:0 auto 22px;max-width:300px;font-size:16px;line-height:1.6;color:#506487;font-family:'Fredoka',sans-serif;">You earned this! Ask your parent when you can enjoy your reward.</p>
+      <button type="button" style="border:none;border-radius:16px;padding:14px 22px;min-width:170px;background:linear-gradient(135deg,#14b8a6 0%,#0d9488 100%);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 14px 30px rgba(20,184,166,0.28);font-family:'Fredoka',sans-serif;" id="rewardCelebrationClose">Awesome!</button>
+    </div>
+  `
+
+  const closePopup = () => overlay.remove()
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closePopup()
+  })
+
+  document.body.appendChild(overlay)
+  document.getElementById('rewardCelebrationClose')?.addEventListener('click', closePopup)
+}
+
 // State
 let rewards = []
 let currentPurchaseReward = null
@@ -93,7 +133,7 @@ function renderRewards(selectedChild) {
         <span>⭐</span>
         <span>${reward.star_cost}</span>
       </div>
-      ${!canAfford ? '<p style="color: #ff4444; font-size: 12px; margin-top: 8px; text-align: center;">Not enough stars</p>' : ''}
+      ${!canAfford ? `<p style="color: #e67e22; font-size: 12px; margin-top: 8px; text-align: center; font-weight: 600;">${reward.star_cost - childSpendableStars} more star${(reward.star_cost - childSpendableStars) === 1 ? '' : 's'} to go!</p>` : ''}
     `
     
     if (canAfford) {
@@ -292,7 +332,7 @@ export function setupRewardsEventListeners(selectedChild) {
         await renderPurchaseHistory(selectedChild)
         
         closePurchaseModal()
-        alert(`🎉 Success! You've redeemed: ${currentPurchaseReward.title}`)
+        showRewardCelebration(currentPurchaseReward.title, currentPurchaseReward.icon || '🎁')
       } catch (error) {
         console.error('Error purchasing reward:', error)
         if (purchaseRewardError) {

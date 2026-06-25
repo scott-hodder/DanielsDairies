@@ -10,6 +10,8 @@ import { setAppState, getAppState } from '../../services/appState.js'
 import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
 import { maybeShowOnboarding, addHelpButton } from './onboardingWalkthrough.js'
+import { initPushNotifications, removePushNotifications } from '../../services/pushNotifications.js'
+import { initNativeApp } from '../../services/nativeApp.js'
 
 
 let currentCreditSummary = null
@@ -1321,6 +1323,10 @@ async function init() {
     setCurrentUser(session.user)
     window.state.currentUser = state.currentUser
 
+    // Set up native app (status bar, splash screen) + push notifications (no-op on web)
+    initNativeApp()
+    initPushNotifications()
+
     if (state.currentUser && state.currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
     }
@@ -2147,6 +2153,16 @@ async function selectChild(child) {
   setAppState('selectedChild', child)
   rememberSelectedChildId(child.id)
   maybeCelebrateFirstStar(child)
+
+  // Level-up detection: compare current level to last known level
+  const currentLevel = child.level || 1
+  const levelKey = `lastKnownLevel_child_${child.id}`
+  const lastKnownLevel = parseInt(localStorage.getItem(levelKey) || '0')
+  if (lastKnownLevel > 0 && currentLevel > lastKnownLevel) {
+    // Delay slightly so dashboard renders first
+    setTimeout(() => showLevelUpPopup(child.name, currentLevel), 800)
+  }
+  localStorage.setItem(levelKey, String(currentLevel))
   
   try {
     // CRITICAL PATH - only child modules and focus plan block the UI
@@ -2206,9 +2222,21 @@ async function selectChild(child) {
         if (streakData) {
           const dayStreakEl = document.getElementById('dayStreak')
           if (dayStreakEl) dayStreakEl.textContent = streakData.current_streak ?? 0
-          if (streakData.current_streak >= 3 && !hasStreakPopupBeenShownToday(child.id)) {
+
+          // Show streak popup for day 1+ (encourage from the very start)
+          if (streakData.current_streak >= 1 && !hasStreakPopupBeenShownToday(child.id)) {
             markStreakPopupAsShown(child.id)
             showStreakPopup(child.name, streakData.current_streak)
+          }
+
+          // Welcome back message if they've been away
+          if (streakData._previousLoginDate) {
+            const today = new Date()
+            const prevLogin = new Date(streakData._previousLoginDate)
+            const daysAway = Math.floor((today - prevLogin) / (1000 * 60 * 60 * 24))
+            if (daysAway >= 3) {
+              showWelcomeBackBanner(child.name, daysAway)
+            }
           }
         }
       }
@@ -4269,6 +4297,7 @@ if (logoutButtonDesktop) {
   logoutButtonDesktop.addEventListener('click', async () => {
     try {
       clearRememberedChildId()
+      await removePushNotifications()
       await signOut()
       window.location.href = '/login.html'
     } catch (error) {
@@ -4396,6 +4425,7 @@ if (logoutButton) {
   logoutButton.addEventListener('click', async () => {
     try {
       clearRememberedChildId()
+      await removePushNotifications()
       await signOut()
       window.location.href = '/login.html'
     } catch (error) {
@@ -4759,6 +4789,129 @@ function getStreakMessage(streak) {
   if (streak % 7 === 0) return `${Math.floor(streak / 7)} weeks! Consistency is key!`
   if (streak % 10 === 0) return `${streak} days! Milestone reached! 🎯`
   return "Keep it going!"
+}
+
+// Streak popup UI — called when streak milestones are hit
+function showStreakPopup(childName, streak) {
+  ensureCelebrationPopupStyles()
+
+  const existingPopup = document.getElementById('streakCelebrationPopup')
+  if (existingPopup) existingPopup.remove()
+
+  const message = getStreakMessage(streak)
+  const streakEmoji = streak >= 30 ? '👑' : streak >= 14 ? '💪' : streak >= 7 ? '🎉' : '🔥'
+  const flameCount = Math.min(streak, 5)
+  const flames = Array.from({ length: flameCount }, () => '🔥').join('')
+
+  const overlay = document.createElement('div')
+  overlay.id = 'streakCelebrationPopup'
+  overlay.className = 'celebration-popup-overlay'
+  overlay.innerHTML = `
+    <div class="celebration-popup-card" role="dialog" aria-modal="true" aria-labelledby="streakCelebrationTitle">
+      <div class="celebration-popup-glow"></div>
+      <div class="celebration-popup-stars"><span>${streakEmoji}</span><span>⭐</span><span>${streakEmoji}</span></div>
+      <div class="celebration-popup-badge">${flames} ${streak} Day Streak!</div>
+      <h2 id="streakCelebrationTitle">${message}</h2>
+      <p>Way to go, ${childName}! You've logged in ${streak} day${streak === 1 ? '' : 's'} in a row. Keep showing up and great things will happen!</p>
+      <button type="button" class="celebration-popup-button" id="streakCelebrationClose">Let's go!</button>
+    </div>
+  `
+
+  const closePopup = () => overlay.remove()
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closePopup()
+  })
+
+  document.body.appendChild(overlay)
+  document.getElementById('streakCelebrationClose')?.addEventListener('click', closePopup)
+}
+
+// Level-up celebration popup
+function showLevelUpPopup(childName, newLevel) {
+  ensureCelebrationPopupStyles()
+
+  const existingPopup = document.getElementById('levelUpCelebrationPopup')
+  if (existingPopup) existingPopup.remove()
+
+  const levelMessages = {
+    2: "You're getting stronger!",
+    3: "Look how far you've come!",
+    4: "Village unlocked! New adventures await!",
+    5: "You're becoming an expert!",
+    6: "Incredible progress!",
+    7: "Town Center unlocked! The world is growing!",
+    8: "You're a real champion!",
+    9: "Almost at the top!",
+    10: "Metropolis unlocked! You're a legend!"
+  }
+  const message = levelMessages[newLevel] || `Level ${newLevel} reached! Amazing!`
+
+  const overlay = document.createElement('div')
+  overlay.id = 'levelUpCelebrationPopup'
+  overlay.className = 'celebration-popup-overlay'
+  overlay.innerHTML = `
+    <div class="celebration-popup-card" role="dialog" aria-modal="true" aria-labelledby="levelUpTitle">
+      <div class="celebration-popup-glow"></div>
+      <div class="celebration-popup-stars"><span>🎉</span><span>⬆️</span><span>🎉</span></div>
+      <div class="celebration-popup-badge">Level Up!</div>
+      <h2 id="levelUpTitle">Level ${newLevel}!</h2>
+      <p>${message} Keep exploring and learning, ${childName}!</p>
+      <button type="button" class="celebration-popup-button" id="levelUpCelebrationClose">Awesome!</button>
+    </div>
+  `
+
+  const closePopup = () => overlay.remove()
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closePopup()
+  })
+
+  document.body.appendChild(overlay)
+  createConfettiCelebration()
+  document.getElementById('levelUpCelebrationClose')?.addEventListener('click', closePopup)
+}
+
+// Welcome back message for returning users
+function showWelcomeBackBanner(childName, daysAway) {
+  const existing = document.getElementById('welcomeBackBanner')
+  if (existing) existing.remove()
+
+  let message, emoji
+  if (daysAway >= 14) {
+    emoji = '🎉'
+    message = `Welcome back, ${childName}! We really missed you. Daniel's been waiting for your next adventure!`
+  } else if (daysAway >= 7) {
+    emoji = '👋'
+    message = `Hey ${childName}, it's been a while! Daniel's excited to see you again. Ready to jump back in?`
+  } else if (daysAway >= 3) {
+    emoji = '😊'
+    message = `Welcome back, ${childName}! Let's pick up where you left off.`
+  } else {
+    return // Don't show for 1-2 days
+  }
+
+  const banner = document.createElement('div')
+  banner.id = 'welcomeBackBanner'
+  banner.style.cssText = 'background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%); border: 1.5px solid #bae6fd; border-radius: 16px; padding: 16px 20px; margin: 0 0 16px; display: flex; align-items: center; gap: 12px; animation: celebrationFadeIn 0.3s ease; cursor: pointer;'
+  banner.innerHTML = `
+    <span style="font-size: 28px;">${emoji}</span>
+    <div style="flex: 1;">
+      <div style="font-family: \'Fredoka\', sans-serif; font-weight: 600; color: #2b3a55; font-size: 15px; margin-bottom: 2px;">${message}</div>
+    </div>
+    <button style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px;" aria-label="Dismiss">&times;</button>
+  `
+
+  banner.querySelector('button').addEventListener('click', (e) => {
+    e.stopPropagation()
+    banner.remove()
+  })
+
+  // Insert at the top of the adventure map container or child detail view
+  const mapContainer = document.getElementById('adventureMapContainer')
+  const childDetail = document.getElementById('childDetailView')
+  const target = mapContainer || childDetail
+  if (target) {
+    target.insertBefore(banner, target.firstChild)
+  }
 }
 
 const MOOD_CHECKIN_COOLDOWN_MS = 2 * 60 * 60 * 1000
