@@ -192,6 +192,142 @@ const SUPER_SKILL_THEMES = {
   }
 };
 
+// Kid-friendly copy for skill picker cards & preview modal
+const KID_FRIENDLY_COPY = {
+  'brain-builder': {
+    description: 'Learn how your brain works and how to grow it.',
+    pickThisIf: 'You want to understand learning, focus, and big feelings.',
+    youllLearn: ['Focus better', 'Understand big feelings', 'Make smart choices', 'Grow your brain like a muscle'],
+    tag: 'Your Brain & Learning',
+    bgColor: '#eef0ff',
+    borderColor: '#c7cbf2',
+    btnColor: '#6366F1',
+    decos: ['💡', '🧩', '✨'],
+    speechNew: 'Ready to power up your brain?',
+    speechCurrent: "You're already making progress here!"
+  },
+  'thought-driver': {
+    description: 'Learn how to steer your thoughts in a helpful direction.',
+    pickThisIf: 'Your thoughts sometimes get stuck or feel unhelpful.',
+    youllLearn: ['Spot unhelpful thoughts', 'Think in a more helpful way', 'Stop worrying so much', 'Feel more in control of your mind'],
+    tag: 'Helpful Thinking',
+    bgColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
+    btnColor: '#059669',
+    decos: ['🪧', '➡️', '🗺️'],
+    speechNew: 'Want to explore new ways to think?',
+    speechCurrent: 'Keep steering those thoughts!'
+  },
+  'emotion-navigator': {
+    description: 'Understand your feelings and learn what to do with them.',
+    pickThisIf: 'You have big feelings and want to understand them better.',
+    youllLearn: ['Name how you feel', 'Handle anger and sadness', 'Talk about feelings', 'Feel more in control'],
+    tag: 'Feelings & Emotions',
+    bgColor: '#fff1f2',
+    borderColor: '#fecdd3',
+    btnColor: '#e11d48',
+    decos: ['💖', '🧭', '🌈'],
+    speechNew: 'This adventure helps with big feelings!',
+    speechCurrent: "You're navigating feelings like a pro!"
+  },
+  'body-boss': {
+    description: 'Learn to listen to your body and feel more in control.',
+    pickThisIf: 'Your body feels fidgety, tense, or hard to control.',
+    youllLearn: ['Calm your body down', 'Notice body signals', 'Use movement to feel better', 'Relax when things get tough'],
+    tag: 'Your Body & Energy',
+    bgColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
+    btnColor: '#10B981',
+    decos: ['⚡', '🧘', '🌊'],
+    speechNew: 'Want to become the boss of your body?',
+    speechCurrent: "You're learning to listen to your body!"
+  },
+  'connection-captain': {
+    description: 'Get better at making friends and talking to people.',
+    pickThisIf: 'You want to feel more confident around other people.',
+    youllLearn: ['Make new friends', 'Listen and talk better', 'Work things out with others', 'Feel part of a group'],
+    tag: 'Friends & People',
+    bgColor: '#fffbeb',
+    borderColor: '#fde68a',
+    btnColor: '#d97706',
+    decos: ['👫', '🏠', '💬'],
+    speechNew: 'Ready to build amazing friendships?',
+    speechCurrent: 'Your friendship skills are growing!'
+  },
+  'calm-controller': {
+    description: 'Find your calm when everything feels too much.',
+    pickThisIf: 'You sometimes feel worried, overwhelmed, or stressed.',
+    youllLearn: ['Calm down when upset', 'Breathe and relax', 'Handle stressful moments', 'Feel peaceful inside'],
+    tag: 'Staying Calm',
+    bgColor: '#ecfeff',
+    borderColor: '#a5f3fc',
+    btnColor: '#0891b2',
+    decos: ['🌸', '☀️', '🦋'],
+    speechNew: 'Want to find your inner calm?',
+    speechCurrent: "You're getting calmer every day!"
+  },
+  'resilience-ranger': {
+    description: 'Bounce back when things go wrong and keep going.',
+    pickThisIf: 'You want to feel braver and handle tough times better.',
+    youllLearn: ['Get back up after setbacks', 'Feel braver', 'Keep trying when it\'s hard', 'Grow stronger from challenges'],
+    tag: 'Bouncing Back',
+    bgColor: '#fef2f2',
+    borderColor: '#fecaca',
+    btnColor: '#dc2626',
+    decos: ['🏔️', '🛡️', '⭐'],
+    speechNew: 'Ready to become super brave?',
+    speechCurrent: "You're bouncing back stronger!"
+  },
+  'future-designer': {
+    description: 'Dream big, set goals, and design your future.',
+    pickThisIf: 'You want to plan ahead and work towards your dreams.',
+    youllLearn: ['Set goals you can reach', 'Plan your next steps', 'Believe in yourself', 'Picture your future'],
+    tag: 'Goals & Your Future',
+    bgColor: '#f5f3ff',
+    borderColor: '#ddd6fe',
+    btnColor: '#7c3aed',
+    decos: ['🔭', '⭐', '🏁'],
+    speechNew: 'Want to design your awesome future?',
+    speechCurrent: "You're building your dream future!"
+  },
+  'social-mapper': {
+    description: 'Understand people better and build stronger friendships.',
+    pickThisIf: 'You want to get along better with the people around you.',
+    youllLearn: ['Read how others feel', 'Be a better friend', 'Handle tricky situations', 'Feel more connected'],
+    tag: 'Friends & People',
+    bgColor: '#f0fdfa',
+    borderColor: '#99f6e4',
+    btnColor: '#0d9488',
+    decos: ['🗺️', '👋', '❤️'],
+    speechNew: 'Ready to explore the world of people?',
+    speechCurrent: "You're mapping out great friendships!"
+  },
+  'behaviour-engineer': {
+    description: 'Build good habits and make choices you feel proud of.',
+    pickThisIf: 'You want to break bad habits or build new good ones.',
+    youllLearn: ['Build good habits', 'Make better choices', 'Stick with new routines', 'Feel proud of yourself'],
+    tag: 'Habits & Choices',
+    bgColor: '#fffbeb',
+    borderColor: '#fde68a',
+    btnColor: '#d97706',
+    decos: ['⚡', '🔧', '✅'],
+    speechNew: 'Want to build awesome new habits?',
+    speechCurrent: "You're engineering great habits!"
+  },
+  'resilience-architect': {
+    description: 'Bounce back when things go wrong and keep going.',
+    pickThisIf: 'You want to feel braver and handle tough times better.',
+    youllLearn: ['Get back up after setbacks', 'Feel braver', 'Keep trying when it\'s hard', 'Grow stronger from challenges'],
+    tag: 'Bouncing Back',
+    bgColor: '#fff7ed',
+    borderColor: '#fed7aa',
+    btnColor: '#ea580c',
+    decos: ['🏔️', '🛡️', '🧱'],
+    speechNew: 'Ready to build your inner strength?',
+    speechCurrent: "You're getting stronger every day!"
+  }
+};
+
 // Mapping from old category names to super skill slugs (for backward compatibility)
 const CATEGORY_TO_SUPERSKILL = {
   'anger': 'emotion-navigator',
@@ -681,6 +817,120 @@ class AdventureMapV4 {
     css.push('@keyframes zoneConfettiFall { 0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(500px) rotate(720deg) scale(0.3); opacity: 0; } }');
     
     css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-complete-popup-title { font-size: 19px; } .cycle-complete-popup-actions, .cycle-complete-popup-selectors { flex-direction: column; } .cycle-popup-btn { width: 100%; } .cycle-complete-popup-daniel { width: 140px; height: 140px; top: -86px; } .zone-upgrade-card { padding: 16px 14px 14px; max-width: 340px; } .zone-upgrade-title { font-size: 17px; } .zone-upgrade-subtitle { font-size: 12px; } .zone-upgrade-daniel { width: 64px; height: 64px; margin-top: -44px; } .zone-upgrade-emoji { font-size: 28px; } }');
+
+    // =============================================
+    // SKILL PICKER CARDS & HELP ME CHOOSE QUIZ
+    // =============================================
+    css.push('.skill-picker-inline { padding: 8px 0; }');
+    css.push('.skill-picker-header { text-align: center; padding: 28px 24px 8px; }');
+    css.push('.skill-picker-title { font-family: "Fredoka", sans-serif; font-size: 28px; font-weight: 700; color: #1E293B; margin: 0; }');
+    css.push('.skill-picker-subtitle { font-family: "Fredoka", sans-serif; font-size: 15px; color: #64748B; margin: 6px 0 0; }');
+    css.push('.skill-picker-help-wrap { text-align: center; margin: 18px 0 4px; }');
+    css.push('.skill-picker-help-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: linear-gradient(135deg, #6366F1, #4f46e5); color: #fff; border: none; border-radius: 50px; font-family: "Fredoka", sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 18px rgba(99,102,241,0.35); transition: transform 0.15s, box-shadow 0.15s; animation: helpBtnGlow 2s ease-in-out infinite; }');
+    css.push('.skill-picker-help-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(99,102,241,0.5); }');
+    css.push('@keyframes helpBtnGlow { 0%, 100% { box-shadow: 0 4px 18px rgba(99,102,241,0.35); } 50% { box-shadow: 0 4px 24px rgba(99,102,241,0.55); } }');
+    css.push('.skill-picker-help-hint { font-family: "Fredoka", sans-serif; font-size: 13px; color: #94a3b8; margin-top: 8px; }');
+
+    // Card grid - center last item if odd
+    css.push('.skill-picker-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; padding: 18px 24px 28px; justify-items: center; }');
+    css.push('.skill-picker-cards > .skill-card:last-child:nth-child(odd) { grid-column: 1 / -1; max-width: 380px; }');
+
+    // Themed cards
+    css.push('.skill-card { border-radius: 20px; border: 2.5px solid var(--card-border); padding: 22px 20px 18px; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; background: var(--card-bg); width: 100%; }');
+    css.push('.skill-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,0.1); }');
+    css.push('.skill-card-decos { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; overflow: hidden; z-index: 0; }');
+    css.push('.skill-card-deco { position: absolute; font-size: 22px; opacity: 0.12; }');
+    css.push('.skill-card-deco:nth-child(1) { top: 8px; right: 56px; transform: rotate(-15deg); }');
+    css.push('.skill-card-deco:nth-child(2) { bottom: 12px; right: 14px; transform: rotate(20deg); font-size: 18px; }');
+    css.push('.skill-card-deco:nth-child(3) { bottom: 40px; left: 10px; transform: rotate(-10deg); font-size: 16px; }');
+
+    // Current adventure card
+    css.push('.skill-card.last-chosen { border-width: 3px; box-shadow: 0 0 0 4px rgba(99,102,241,0.12), 0 8px 24px rgba(0,0,0,0.08); }');
+    css.push('.skill-card-continue-badge { display: inline-flex; align-items: center; gap: 6px; position: absolute; top: 0; left: 20px; background: linear-gradient(135deg, #6366F1, #818CF8); color: #fff; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; padding: 5px 14px 6px; border-radius: 0 0 12px 12px; letter-spacing: 0.3px; z-index: 2; box-shadow: 0 3px 10px rgba(99,102,241,0.3); }');
+
+    // Speech bubble
+    css.push('.skill-card-speech { position: relative; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 6px 12px; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 500; color: #64748B; margin-bottom: 10px; display: inline-block; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }');
+    css.push('.skill-card-speech::after { content: ""; position: absolute; bottom: -6px; left: 20px; width: 10px; height: 10px; background: #fff; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; transform: rotate(45deg); }');
+
+    css.push('.skill-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; position: relative; z-index: 1; }');
+    css.push('.skill-card-emoji { font-size: 38px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: rgba(255,255,255,0.7); flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }');
+    css.push('.skill-card-name { font-family: "Fredoka", sans-serif; font-size: 20px; font-weight: 700; color: #1E293B; }');
+    css.push('.skill-card-desc { font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 8px; position: relative; z-index: 1; }');
+    css.push('.skill-card-pick-label { font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 700; color: #64748B; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; position: relative; z-index: 1; }');
+    css.push('.skill-card-pick-text { font-size: 13px; color: #475569; line-height: 1.4; margin-bottom: 12px; position: relative; z-index: 1; }');
+    css.push('.skill-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; position: relative; z-index: 1; }');
+    css.push('.skill-card-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.7); color: #405878; border: 1px solid rgba(0,0,0,0.06); }');
+
+    // Progress - game-like
+    css.push('.skill-card-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; position: relative; z-index: 1; }');
+    css.push('.skill-card-progress-icon { font-size: 16px; }');
+    css.push('.skill-card-progress-bar { flex: 1; height: 10px; background: rgba(255,255,255,0.6); border-radius: 5px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); }');
+    css.push('.skill-card-progress-fill { height: 100%; border-radius: 5px; transition: width 0.3s; }');
+    css.push('.skill-card-progress-text { font-size: 12px; font-weight: 700; color: #405878; white-space: nowrap; font-family: "Fredoka", sans-serif; }');
+
+    // Button
+    css.push('.skill-card-btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; transition: filter 0.15s, transform 0.1s; position: relative; z-index: 1; letter-spacing: 0.2px; }');
+    css.push('.skill-card-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }');
+    css.push('.skill-card-character { position: absolute; top: 14px; right: 14px; width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 3px 10px rgba(0,0,0,0.12); z-index: 1; }');
+
+    // Preview modal
+    css.push('.skill-preview-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; animation: fadeInOverlay 0.2s ease; padding: 20px; }');
+    css.push('.skill-preview-modal { background: #fff; border-radius: 24px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }');
+    css.push('.skill-preview-header { padding: 24px 24px 16px; text-align: center; }');
+    css.push('.skill-preview-top { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 8px; }');
+    css.push('.skill-preview-emoji { font-size: 48px; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: rgba(255,255,255,0.7); flex-shrink: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }');
+    css.push('.skill-preview-name { font-family: "Fredoka", sans-serif; font-size: 26px; font-weight: 700; color: #1E293B; }');
+    css.push('.skill-preview-character { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 3px 12px rgba(0,0,0,0.12); }');
+    css.push('.skill-preview-body { padding: 0 24px 24px; }');
+    css.push('.skill-preview-desc { font-size: 15px; color: #475569; line-height: 1.6; margin-bottom: 18px; text-align: center; }');
+    css.push('.skill-preview-learn-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #405878; margin-bottom: 10px; }');
+    css.push('.skill-preview-learn-list { list-style: none; padding: 0; margin: 0 0 22px; }');
+    css.push('.skill-preview-learn-list li { font-size: 14px; color: #475569; padding: 6px 0; display: flex; align-items: center; gap: 10px; }');
+    css.push('.skill-preview-learn-list li::before { content: "⭐"; font-size: 14px; }');
+    css.push('.skill-preview-actions { display: flex; gap: 10px; }');
+    css.push('.skill-preview-btn { flex: 1; padding: 14px; border: none; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: filter 0.15s, transform 0.1s; }');
+    css.push('.skill-preview-btn.primary { color: #fff; }');
+    css.push('.skill-preview-btn.secondary { background: #f1f5f9; color: #405878; border: 2px solid #e2e8f0; }');
+    css.push('.skill-preview-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }');
+    css.push('@media (max-width: 768px) { .skill-picker-cards { grid-template-columns: 1fr; padding: 12px 16px 24px; } .skill-picker-cards > .skill-card:last-child:nth-child(odd) { max-width: 100%; } .skill-preview-modal { max-width: 100%; } .skill-preview-actions { flex-direction: column; } .skill-picker-title { font-size: 22px; } }');
+
+    // Current skill badge (replaces the dropdown)
+    css.push('.current-skill-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; cursor: pointer; transition: all 0.15s; font-family: "Fredoka", sans-serif; }');
+    css.push('.current-skill-badge:hover { border-color: #405878; box-shadow: 0 2px 8px rgba(64,88,120,0.12); }');
+    css.push('.current-skill-badge-emoji { font-size: 20px; }');
+    css.push('.current-skill-badge-name { font-size: 14px; font-weight: 600; color: #1E293B; }');
+    css.push('.current-skill-badge-change { font-size: 12px; color: #405878; font-weight: 600; }');
+
+    // Help Me Choose Quiz
+    css.push('.quiz-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; animation: fadeInOverlay 0.2s ease; padding: 20px; }');
+    css.push('.quiz-container { background: #fff; border-radius: 24px; max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }');
+    css.push('.quiz-header { text-align: center; padding: 28px 24px 16px; background: linear-gradient(135deg, #eef2f7, #e0f2fe); }');
+    css.push('.quiz-title { font-family: "Fredoka", sans-serif; font-size: 24px; font-weight: 700; color: #1E293B; margin: 0; }');
+    css.push('.quiz-subtitle { font-family: "Fredoka", sans-serif; font-size: 14px; color: #64748B; margin: 6px 0 0; }');
+    css.push('.quiz-progress-dots { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }');
+    css.push('.quiz-dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; transition: background 0.2s; }');
+    css.push('.quiz-dot.active { background: #6366F1; }');
+    css.push('.quiz-dot.done { background: #818CF8; }');
+    css.push('.quiz-body { padding: 20px 24px 24px; }');
+    css.push('.quiz-question { font-family: "Fredoka", sans-serif; font-size: 18px; font-weight: 600; color: #1E293B; text-align: center; margin-bottom: 16px; }');
+    css.push('.quiz-options { display: flex; flex-direction: column; gap: 10px; }');
+    css.push('.quiz-option { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 2.5px solid #e2e8f0; border-radius: 14px; background: #fff; cursor: pointer; transition: all 0.15s; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 500; color: #334155; }');
+    css.push('.quiz-option:hover { border-color: #818CF8; background: #f0f2ff; }');
+    css.push('.quiz-option.selected { border-color: #6366F1; background: #eef0ff; color: #405878; font-weight: 600; }');
+    css.push('.quiz-option-emoji { font-size: 24px; flex-shrink: 0; }');
+    css.push('.quiz-next-btn { display: block; width: 100%; margin-top: 18px; padding: 14px; border: none; border-radius: 14px; background: linear-gradient(135deg, #6366F1, #4f46e5); color: #fff; font-family: "Fredoka", sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: filter 0.15s, opacity 0.15s; }');
+    css.push('.quiz-next-btn:hover:not(:disabled) { filter: brightness(1.08); }');
+    css.push('.quiz-next-btn:disabled { opacity: 0.5; cursor: not-allowed; }');
+    css.push('.quiz-result { text-align: center; padding: 24px; }');
+    css.push('.quiz-result-label { font-family: "Fredoka", sans-serif; font-size: 14px; color: #64748B; margin-bottom: 8px; }');
+    css.push('.quiz-result-skill { display: inline-flex; align-items: center; gap: 10px; font-family: "Fredoka", sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 10px; }');
+    css.push('.quiz-result-desc { font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 20px; }');
+    css.push('.quiz-result-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }');
+    css.push('.quiz-result-btn { padding: 12px 24px; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: filter 0.15s; }');
+    css.push('.quiz-result-btn.primary { background: linear-gradient(135deg, #6366F1, #4f46e5); color: #fff; }');
+    css.push('.quiz-result-btn.secondary { background: #f1f5f9; color: #475569; border: 2px solid #e2e8f0; }');
+    css.push('.quiz-result-btn:hover { filter: brightness(1.06); }');
+    css.push('@media (max-width: 768px) { .skill-picker-cards { grid-template-columns: 1fr; padding: 12px 16px 20px; } .skill-picker-title { font-size: 22px; } .quiz-container { max-width: 100%; } }');
     
     var styles = document.createElement('style');
     styles.id = 'adventure-map-v4-styles';
@@ -726,6 +976,18 @@ class AdventureMapV4 {
       }
     }
     this._userSelectedEmptyCycle = false;
+
+    // Always show the skill picker first so the user chooses each session.
+    // Once they click a card, _skillSelectedThisSession is set and the map renders.
+    if (!this._skillSelectedThisSession && this.getAvailableCategories().length > 1) {
+      this.renderSkillPickerInline();
+      showDashboardFooter();
+      if (typeof window._dashboardRenderComplete === 'function') {
+        window._dashboardRenderComplete();
+        window._dashboardRenderComplete = null;
+      }
+      return;
+    }
 
     // Run DOM updates directly - callers already handle framing
     this.createMapHTML();
@@ -1330,6 +1592,375 @@ class AdventureMapV4 {
     }
   }
 
+  // =============================================
+  // SKILL PICKER - Card-based Super Skill selection (inline, replaces map)
+  // =============================================
+  renderSkillPickerInline() {
+    var container = document.getElementById('adventureMapContainer');
+    if (!container) return;
+
+    this.ensureZoneStyles();
+    var self = this;
+
+    // Show ALL active super skills from DB, not just ones with modules
+    var allSlugs = [];
+    if (superSkillsFromDB && superSkillsFromDB.length > 0) {
+      allSlugs = superSkillsFromDB.map(function(s) { return s.slug; }).filter(Boolean);
+    }
+    // Fallback to module-based categories if DB isn't loaded yet
+    if (allSlugs.length === 0) {
+      allSlugs = this.getAvailableCategories();
+    }
+
+    // Build skill card data with progress
+    var skillCards = allSlugs.map(function(cat) {
+      var theme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
+      var dbSkill = superSkillsFromDB.find(function(s) { return s.slug === cat; });
+      var totalModules = self.allModules.filter(function(m) { return !m.isRoadBuilder && (m.superSkillSlug === cat || m.category === cat); }).length;
+      var completedModules = self.allModules.filter(function(m) { return !m.isRoadBuilder && (m.superSkillSlug === cat || m.category === cat) && self.isModuleComplete(m); }).length;
+      var description = (dbSkill && dbSkill.description) || theme.description || '';
+      var characterImg = dbSkill ? ((dbSkill.characters && dbSkill.characters.image_url) || dbSkill.character_image_url) : null;
+      var characterName = dbSkill ? ((dbSkill.characters && dbSkill.characters.name) || dbSkill.character_name) : null;
+
+      var kidCopy = KID_FRIENDLY_COPY[cat] || {};
+      var kidDescription = kidCopy.description || description;
+      var pickThisIf = kidCopy.pickThisIf || '';
+      var tag = kidCopy.tag || (dbSkill && dbSkill.domain) || '';
+      var youllLearn = kidCopy.youllLearn || [];
+
+      return {
+        slug: cat,
+        name: theme.name,
+        emoji: theme.emoji,
+        color: theme.color,
+        description: kidDescription,
+        pickThisIf: pickThisIf,
+        tag: tag,
+        youllLearn: youllLearn,
+        characterImg: characterImg,
+        characterName: characterName,
+        totalModules: totalModules,
+        completedModules: completedModules,
+        bgColor: kidCopy.bgColor || '#fff',
+        borderColor: kidCopy.borderColor || '#e2e8f0',
+        btnColor: kidCopy.btnColor || '#405878',
+        decos: kidCopy.decos || [],
+        speechNew: kidCopy.speechNew || '',
+        speechCurrent: kidCopy.speechCurrent || ''
+      };
+    });
+
+    var lastChosen = this.getStoredCategory() || this.currentCategory;
+
+    // Sort so the last-chosen skill appears first
+    if (lastChosen && lastChosen !== 'all') {
+      skillCards.sort(function(a, b) {
+        if (a.slug === lastChosen) return -1;
+        if (b.slug === lastChosen) return 1;
+        return 0;
+      });
+    }
+
+    var cardsHtml = skillCards.map(function(card) {
+      var progressPct = card.totalModules > 0 ? Math.round((card.completedModules / card.totalModules) * 100) : 0;
+      var isLastChosen = card.slug === lastChosen && lastChosen !== 'all';
+      var cardClasses = 'skill-card' + (isLastChosen ? ' last-chosen' : '');
+      var decosHtml = card.decos.map(function(d) { return '<span class="skill-card-deco">' + d + '</span>'; }).join('');
+      var speechText = isLastChosen ? card.speechCurrent : (card.completedModules === 0 ? card.speechNew : '');
+      var btnLabel = isLastChosen ? 'Continue quest' : (card.completedModules > 0 ? 'Keep exploring' : 'Start adventure');
+      var progressLabel = card.completedModules > 0
+        ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' steps completed'
+        : card.totalModules + ' steps to explore';
+
+      return '<div class="' + cardClasses + '" data-skill="' + card.slug + '" style="--card-bg: ' + card.bgColor + '; --card-border: ' + card.borderColor + '">' +
+        '<div class="skill-card-decos">' + decosHtml + '</div>' +
+        (isLastChosen ? '<span class="skill-card-continue-badge">⭐ Your current quest</span>' : '') +
+        (card.characterImg ? '<img class="skill-card-character" src="' + card.characterImg + '" alt="' + (card.characterName || '') + '" />' : '') +
+        (speechText ? '<div class="skill-card-speech">' + speechText + '</div>' : '') +
+        '<div class="skill-card-top">' +
+        '<div class="skill-card-emoji">' + card.emoji + '</div>' +
+        '<div class="skill-card-name">' + card.name + '</div>' +
+        '</div>' +
+        '<div class="skill-card-desc">' + card.description + '</div>' +
+        (card.pickThisIf ? '<div class="skill-card-pick-label">Pick this if:</div><div class="skill-card-pick-text">' + card.pickThisIf + '</div>' : '') +
+        (card.tag ? '<div class="skill-card-tags"><span class="skill-card-tag">' + card.tag + '</span></div>' : '') +
+        '<div class="skill-card-progress">' +
+        '<div class="skill-card-progress-bar"><div class="skill-card-progress-fill" style="width: ' + progressPct + '%; background: ' + card.btnColor + ';"></div></div>' +
+        '<span class="skill-card-progress-text">' + progressLabel + '</span>' +
+        '</div>' +
+        '<button class="skill-card-btn" style="background: linear-gradient(135deg, ' + card.btnColor + ', ' + card.btnColor + 'dd)">' + btnLabel + '</button>' +
+        '</div>';
+    }).join('');
+
+    container.innerHTML =
+      '<div class="skill-picker-inline">' +
+      '<div class="skill-picker-header">' +
+      '<h2 class="skill-picker-title">🗺️ Choose Your Adventure</h2>' +
+      '<p class="skill-picker-subtitle">Each Super Skill is a different adventure world. Pick the one that feels right for you!</p>' +
+      '<div class="skill-picker-help-wrap">' +
+      '<button class="skill-picker-help-btn" id="helpMeChooseBtn">✨ Help me choose</button>' +
+      '<p class="skill-picker-help-hint">Not sure where to start? Answer a few quick questions.</p>' +
+      '</div>' +
+      '</div>' +
+      '<div class="skill-picker-cards">' + cardsHtml + '</div>' +
+      '</div>';
+
+    // Event: clicking a card opens the preview modal
+    container.querySelectorAll('.skill-card').forEach(function(cardEl) {
+      var slug = cardEl.dataset.skill;
+      var cardData = skillCards.find(function(c) { return c.slug === slug; });
+      var openPreview = function() {
+        if (cardData) self.showSkillPreviewModal(cardData);
+      };
+      cardEl.addEventListener('click', function(e) {
+        if (e.target.classList.contains('skill-card-btn')) return;
+        openPreview();
+      });
+      var btn = cardEl.querySelector('.skill-card-btn');
+      if (btn) btn.addEventListener('click', openPreview);
+    });
+
+    // Event: Help me choose quiz
+    var helpBtn = container.querySelector('#helpMeChooseBtn');
+    if (helpBtn) {
+      helpBtn.addEventListener('click', function() {
+        self.showHelpMeChooseQuiz();
+      });
+    }
+  }
+
+  // =============================================
+  // SKILL PREVIEW MODAL - shown before entering a skill
+  // =============================================
+  showSkillPreviewModal(cardData) {
+    var self = this;
+    var overlay = document.createElement('div');
+    overlay.className = 'skill-preview-overlay';
+
+    var kidCopy = KID_FRIENDLY_COPY[cardData.slug] || {};
+    var btnColor = kidCopy.btnColor || '#405878';
+    var bgColor = kidCopy.bgColor || '#f8fafc';
+
+    var learnHtml = cardData.youllLearn.map(function(item) {
+      return '<li>' + item + '</li>';
+    }).join('');
+
+    var btnLabel = cardData.completedModules > 0 ? 'Continue quest' : 'Start adventure';
+
+    overlay.innerHTML =
+      '<div class="skill-preview-modal">' +
+      '<div class="skill-preview-header" style="background: ' + bgColor + '">' +
+      '<div class="skill-preview-top">' +
+      '<div class="skill-preview-emoji">' + cardData.emoji + '</div>' +
+      (cardData.characterImg ? '<img class="skill-preview-character" src="' + cardData.characterImg + '" alt="' + (cardData.characterName || '') + '" />' : '') +
+      '</div>' +
+      '<div class="skill-preview-name">' + cardData.name + '</div>' +
+      '</div>' +
+      '<div class="skill-preview-body">' +
+      '<div class="skill-preview-desc">' + cardData.description + '</div>' +
+      (learnHtml ? '<div class="skill-preview-learn-label">You\'ll learn how to:</div>' +
+      '<ul class="skill-preview-learn-list">' + learnHtml + '</ul>' : '') +
+      '<div class="skill-preview-actions">' +
+      '<button class="skill-preview-btn primary" id="previewStartBtn" style="background: linear-gradient(135deg, ' + btnColor + ', ' + btnColor + 'dd)">' + btnLabel + '</button>' +
+      '<button class="skill-preview-btn secondary" id="previewBackBtn">Choose another skill</button>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.querySelector('#previewStartBtn').addEventListener('click', function() {
+      self.currentCategory = cardData.slug;
+      self.setStoredCategory(cardData.slug);
+      self._skillSelectedThisSession = true;
+      self.currentCycleId = null;
+      self.translateX = 0;
+      self.translateY = 0;
+      self.hasUserInteracted = false;
+      overlay.remove();
+      self.render();
+    });
+
+    overlay.querySelector('#previewBackBtn').addEventListener('click', function() {
+      overlay.remove();
+    });
+  }
+
+  // =============================================
+  // HELP ME CHOOSE - Kid-friendly quiz
+  // =============================================
+  showHelpMeChooseQuiz() {
+    var self = this;
+    var currentQuestion = 0;
+    var answers = [];
+
+    var overlay = document.createElement('div');
+    overlay.className = 'quiz-overlay';
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    var container = overlay;
+
+    var questions = [
+      {
+        question: 'How are you feeling today?',
+        options: [
+          { emoji: '\uD83D\uDE21', label: 'Angry or frustrated', skills: ['emotion-navigator', 'calm-controller'] },
+          { emoji: '\uD83D\uDE1F', label: 'Worried or nervous', skills: ['calm-controller', 'thought-driver'] },
+          { emoji: '\uD83D\uDE22', label: 'Sad or down', skills: ['emotion-navigator', 'resilience-ranger'] },
+          { emoji: '\uD83D\uDE10', label: 'Not sure', skills: ['brain-builder', 'emotion-navigator'] },
+          { emoji: '\uD83D\uDE04', label: 'Good!', skills: ['connection-captain', 'brain-builder'] }
+        ]
+      },
+      {
+        question: 'What do you want help with?',
+        options: [
+          { emoji: '\uD83E\uDDE0', label: 'Understanding my feelings', skills: ['emotion-navigator', 'brain-builder'] },
+          { emoji: '\uD83D\uDC42', label: 'Staying calm', skills: ['calm-controller', 'body-boss'] },
+          { emoji: '\uD83D\uDDE3\uFE0F', label: 'Talking to people', skills: ['connection-captain'] },
+          { emoji: '\uD83D\uDCAA', label: 'Being brave', skills: ['resilience-ranger', 'thought-driver'] },
+          { emoji: '\uD83C\uDF08', label: 'Making friends', skills: ['connection-captain'] }
+        ]
+      },
+      {
+        question: 'When things get tough, what do you usually do?',
+        options: [
+          { emoji: '\uD83C\uDFC3', label: 'I want to run away', skills: ['calm-controller', 'resilience-ranger'] },
+          { emoji: '\uD83D\uDE24', label: 'I get really upset', skills: ['emotion-navigator', 'body-boss'] },
+          { emoji: '\uD83E\uDD14', label: 'I think too much about it', skills: ['thought-driver', 'brain-builder'] },
+          { emoji: '\uD83E\uDD10', label: 'I go quiet', skills: ['connection-captain', 'emotion-navigator'] },
+          { emoji: '\uD83E\uDD37', label: 'I\'m not sure', skills: ['brain-builder'] }
+        ]
+      }
+    ];
+
+    function renderQuestion(qIndex) {
+      var q = questions[qIndex];
+      var dotsHtml = questions.map(function(_, i) {
+        var cls = 'quiz-dot';
+        if (i < qIndex) cls += ' done';
+        if (i === qIndex) cls += ' active';
+        return '<span class="' + cls + '"></span>';
+      }).join('');
+
+      var optionsHtml = q.options.map(function(opt, i) {
+        return '<div class="quiz-option" data-index="' + i + '">' +
+          '<span class="quiz-option-emoji">' + opt.emoji + '</span>' +
+          '<span>' + opt.label + '</span>' +
+          '</div>';
+      }).join('');
+
+      container.innerHTML =
+        '<div class="quiz-container">' +
+        '<div class="quiz-header">' +
+        '<h2 class="quiz-title">&#10024; Help Me Choose</h2>' +
+        '<p class="quiz-subtitle">Answer a few quick questions and we\'ll find the best adventure for you!</p>' +
+        '<div class="quiz-progress-dots">' + dotsHtml + '</div>' +
+        '</div>' +
+        '<div class="quiz-body">' +
+        '<div class="quiz-question">' + q.question + '</div>' +
+        '<div class="quiz-options">' + optionsHtml + '</div>' +
+        '<button class="quiz-next-btn" id="quizNextBtn" disabled>Next</button>' +
+        '</div>' +
+        '</div>';
+
+      var selectedIndex = null;
+      container.querySelectorAll('.quiz-option').forEach(function(opt) {
+        opt.addEventListener('click', function() {
+          selectedIndex = parseInt(opt.dataset.index);
+          container.querySelectorAll('.quiz-option').forEach(function(o) { o.classList.remove('selected'); });
+          opt.classList.add('selected');
+          container.querySelector('#quizNextBtn').disabled = false;
+        });
+      });
+
+      container.querySelector('#quizNextBtn').addEventListener('click', function() {
+        if (selectedIndex === null) return;
+        answers.push(q.options[selectedIndex].skills);
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          renderQuestion(currentQuestion);
+        } else {
+          showResult();
+        }
+      });
+    }
+
+    function showResult() {
+      // Tally up skill scores
+      var scores = {};
+      answers.forEach(function(skillList) {
+        skillList.forEach(function(skill, i) {
+          // First skill in list gets more weight
+          scores[skill] = (scores[skill] || 0) + (skillList.length - i);
+        });
+      });
+
+      // Find the best match among available categories
+      var availableCategories = self.getAvailableCategories();
+      var bestSkill = null;
+      var bestScore = -1;
+      availableCategories.forEach(function(cat) {
+        var score = scores[cat] || 0;
+        if (score > bestScore) {
+          bestScore = score;
+          bestSkill = cat;
+        }
+      });
+
+      // Fallback if no match
+      if (!bestSkill && availableCategories.length > 0) {
+        bestSkill = availableCategories[0];
+      }
+
+      var theme = CATEGORY_THEMES[bestSkill] || CATEGORY_THEMES.all;
+      var dbSkill = superSkillsFromDB.find(function(s) { return s.slug === bestSkill; });
+      var description = (dbSkill && dbSkill.description) || theme.description || '';
+
+      container.innerHTML =
+        '<div class="quiz-container">' +
+        '<div class="quiz-header">' +
+        '<h2 class="quiz-title">&#10024; We found your adventure!</h2>' +
+        '<p class="quiz-subtitle">Based on your answers, we think you should start with...</p>' +
+        '</div>' +
+        '<div class="quiz-result">' +
+        '<div class="quiz-result-label">We recommend</div>' +
+        '<div class="quiz-result-skill" style="color: ' + theme.color + '">' + theme.emoji + ' ' + theme.name + '</div>' +
+        '<div class="quiz-result-desc">' + description + '</div>' +
+        '<div class="quiz-result-actions">' +
+        '<button class="quiz-result-btn primary" id="quizStartBtn">Start here</button>' +
+        '<button class="quiz-result-btn secondary" id="quizOtherBtn">Show me other options</button>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+
+      container.querySelector('#quizStartBtn').addEventListener('click', function() {
+        self.currentCategory = bestSkill;
+        self.setStoredCategory(bestSkill);
+        self._skillSelectedThisSession = true;
+        self.currentCycleId = null;
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        overlay.remove();
+        self.render();
+      });
+
+      container.querySelector('#quizOtherBtn').addEventListener('click', function() {
+        overlay.remove();
+      });
+    }
+
+    renderQuestion(0);
+  }
+
   getModuleEmoji(module, superSkillSlug) {
     if (!module) return '📘';
     var title = (module.title || '').toLowerCase();
@@ -1379,11 +2010,6 @@ class AdventureMapV4 {
     var canvasHeight = Math.max(this.config.minCanvasHeight, this.config.topPadding + (numModules * this.config.nodeSpacingY) + this.config.bottomPadding);
 
     var self = this;
-    var categoryOptions = availableCategories.map(function(cat) {
-      var catTheme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
-      var count = self.allModules.filter(function(m) { return !m.isRoadBuilder && m.category === cat; }).length;
-      return '<option value="' + cat + '"' + (cat === self.currentCategory ? ' selected' : '') + '>' + catTheme.emoji + ' ' + catTheme.name + ' (' + count + ')</option>';
-    }).join('');
 
     var cycleOptions = availableCycles.map(function(cycle) {
       var cycleNumber = cycle.cycle_number ? 'Cycle ' + cycle.cycle_number : 'Cycle';
@@ -1405,8 +2031,11 @@ class AdventureMapV4 {
       '<p class="adventure-subtitle">' + progressMsg + '</p>' +
       '</div>' +
       '<div class="category-filter-container">' +
-      '<label class="category-filter-label">Skill:</label>' +
-      '<select class="category-filter-select" id="categoryFilter">' + categoryOptions + '</select>' +
+      '<div class="current-skill-badge" id="openSkillPicker" title="Choose a different Super Skill">' +
+      '<span class="current-skill-badge-emoji">' + theme.emoji + '</span>' +
+      '<span class="current-skill-badge-name">' + theme.name + '</span>' +
+      '<span class="current-skill-badge-change">Change</span>' +
+      '</div>' +
       (availableCycles.length > 0 ? '<label class="category-filter-label" style="margin-left: 6px;">Cycle:</label>' +
       '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
       '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
@@ -2250,19 +2879,14 @@ class AdventureMapV4 {
     
     var self = this;
     
-    // Always attach dropdown listeners regardless of viewport
-    var categoryFilter = document.getElementById('categoryFilter');
-    if (categoryFilter) {
-      this._categoryChangeHandler = function(e) {
-        self.currentCategory = e.target.value;
-        self.setStoredCategory(self.currentCategory);
-        self.currentCycleId = null;
-        self.translateX = 0;
-        self.translateY = 0;
-        self.hasUserInteracted = false;
+    // Skill picker badge click - go back to skill picker
+    var openSkillPicker = document.getElementById('openSkillPicker');
+    if (openSkillPicker) {
+      this._openSkillPickerHandler = function() {
+        self._skillSelectedThisSession = false;
         self.render();
       };
-      categoryFilter.addEventListener('change', this._categoryChangeHandler);
+      openSkillPicker.addEventListener('click', this._openSkillPickerHandler);
     }
 
     var cycleFilter = document.getElementById('cycleFilter');
@@ -2364,10 +2988,10 @@ class AdventureMapV4 {
       window.removeEventListener('resize', this.boundHandlers.resize);
     }
 
-    // Remove dropdown event listeners
-    var categoryFilter = document.getElementById('categoryFilter');
-    if (categoryFilter && this._categoryChangeHandler) {
-      categoryFilter.removeEventListener('change', this._categoryChangeHandler);
+    // Remove skill picker badge listener
+    var openSkillPicker = document.getElementById('openSkillPicker');
+    if (openSkillPicker && this._openSkillPickerHandler) {
+      openSkillPicker.removeEventListener('click', this._openSkillPickerHandler);
     }
 
     var cycleFilter = document.getElementById('cycleFilter');
