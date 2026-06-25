@@ -66,6 +66,9 @@ export function showLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
   if (!loadingState) return;
 
+  // If already visible, don't re-render (prevents quote flash)
+  if (!loadingState.classList.contains('hidden') && loadingState.innerHTML.trim() !== '') return;
+
   const randomQuote = getRandomQuote();
   const randomCharacter = getRandomCharacter();
 
@@ -95,19 +98,24 @@ export function showLoadingScreen() {
   loadingState.classList.remove('hidden');
 }
 
-// Hide loading screen with smooth fade
+// Hide loading screen with smooth fade — waits one frame so content is painted first
 export function hideLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
-  if (!loadingState) return;
+  if (!loadingState || loadingState.classList.contains('hidden')) return;
 
-  // Smooth fade-out before hiding
-  loadingState.style.transition = 'opacity 0.35s ease';
-  loadingState.style.opacity = '0';
-  setTimeout(() => {
-    loadingState.classList.add('hidden');
-    loadingState.style.transition = '';
-    loadingState.style.opacity = '';
-  }, 350);
+  // Wait two animation frames so the browser has painted the dashboard content
+  // underneath before we start fading the loading screen away
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      loadingState.style.transition = 'opacity 0.3s ease';
+      loadingState.style.opacity = '0';
+      setTimeout(() => {
+        loadingState.classList.add('hidden');
+        loadingState.style.transition = '';
+        loadingState.style.opacity = '';
+      }, 300);
+    });
+  });
 
   // Footer is shown after the adventure map finishes rendering
   // (via window._dashboardRenderComplete in dashboard-enhanced.js)

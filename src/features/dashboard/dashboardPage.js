@@ -1661,10 +1661,9 @@ async function loadChildren() {
 
 // Render children
 function renderChildren() {
-  const loadingState = document.getElementById('loadingState')
-  
-  if (loadingState) hideElement(loadingState)
-  
+  // Don't hide the loading screen here — it gets hidden after selectChild() completes
+  // or in showChildrenView() when there are multiple children to choose from.
+
   if (!childrenGrid) return
   
   childrenGrid.innerHTML = ''
@@ -1714,8 +1713,9 @@ function createChildCard(child) {
   })
   
   card.addEventListener('click', async () => {
-    // Show loading state
-    showLoadingScreen()
+    // Ensure loading screen is visible (but don't re-render if already showing)
+    const ls = document.getElementById('loadingState')
+    if (ls && ls.classList.contains('hidden')) showLoadingScreen()
     
     try {
       await selectChild(child)
