@@ -61,13 +61,32 @@ function getRandomQuote() {
   return mentalHealthQuotes[Math.floor(Math.random() * mentalHealthQuotes.length)];
 }
 
+// Track pending hide so we can cancel it if show is called mid-fade
+let _hideTimer = null;
+let _hideRAF1 = null;
+let _hideRAF2 = null;
+
+function cancelPendingHide() {
+  if (_hideTimer) { clearTimeout(_hideTimer); _hideTimer = null; }
+  if (_hideRAF1) { cancelAnimationFrame(_hideRAF1); _hideRAF1 = null; }
+  if (_hideRAF2) { cancelAnimationFrame(_hideRAF2); _hideRAF2 = null; }
+}
+
 // Create and show loading screen
 export function showLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
   if (!loadingState) return;
 
-  // If already showing the full loading screen (with Daniel), don't re-render (prevents quote flash)
-  if (!loadingState.classList.contains('hidden') && loadingState.querySelector('.loading-container')) return;
+  // Cancel any in-progress fade-out
+  cancelPendingHide();
+
+  // If already showing the full loading screen (with Daniel), just ensure visible
+  if (loadingState.querySelector('.loading-container')) {
+    loadingState.classList.remove('hidden');
+    loadingState.style.transition = '';
+    loadingState.style.opacity = '';
+    return;
+  }
 
   const randomQuote = getRandomQuote();
   const randomCharacter = getRandomCharacter();
@@ -79,12 +98,12 @@ export function showLoadingScreen() {
           <img src="${randomCharacter}" alt="Daniel the Dog" class="character-img">
           <div class="loading-spinner"></div>
         </div>
-        
+
         <div class="loading-text">
           <div class="loading-quote">
             <p class="quote-text">"${randomQuote.quote}"</p>
           </div>
-          
+
           <div class="loading-dots">
             <span class="dot"></span>
             <span class="dot"></span>
@@ -95,25 +114,31 @@ export function showLoadingScreen() {
     </div>
   `;
 
+  loadingState.style.transition = '';
+  loadingState.style.opacity = '';
   loadingState.classList.remove('hidden');
 }
 
-// Hide loading screen with smooth fade — waits one frame so content is painted first
+// Hide loading screen with smooth fade — waits for content to paint first
 export function hideLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
   if (!loadingState || loadingState.classList.contains('hidden')) return;
 
+  cancelPendingHide();
+
   // Wait two animation frames so the browser has painted the dashboard content
-  // underneath before we start fading the loading screen away
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+  _hideRAF1 = requestAnimationFrame(() => {
+    _hideRAF2 = requestAnimationFrame(() => {
       loadingState.style.transition = 'opacity 0.3s ease';
       loadingState.style.opacity = '0';
-      setTimeout(() => {
+      _hideTimer = setTimeout(() => {
         loadingState.classList.add('hidden');
         loadingState.style.transition = '';
         loadingState.style.opacity = '';
+        _hideTimer = null;
       }, 300);
+      _hideRAF1 = null;
+      _hideRAF2 = null;
     });
   });
 

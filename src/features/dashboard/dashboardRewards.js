@@ -122,28 +122,28 @@ function renderRewards(selectedChild) {
   
   rewards.forEach(reward => {
     const canAfford = childSpendableStars >= reward.star_cost
+    const starsAway = reward.star_cost - childSpendableStars
     const card = document.createElement('div')
     card.className = `shop-item ${canAfford ? '' : 'insufficient-stars'}`
-    
+
     card.innerHTML = `
       <div class="item-icon">${reward.icon || '🎁'}</div>
       <div class="item-name">${reward.title}</div>
-      ${reward.description ? `<div style="font-size: 13px; color: #4c6c96; margin-bottom: 12px;">${reward.description}</div>` : ''}
+      ${reward.description ? `<div style="font-size: 12px; color: #6b7c8f; margin-bottom: 10px; line-height: 1.4;">${reward.description}</div>` : ''}
       <div class="item-price">
         <span>⭐</span>
         <span>${reward.star_cost}</span>
       </div>
-      ${!canAfford ? `<p style="color: #e67e22; font-size: 12px; margin-top: 8px; text-align: center; font-weight: 600;">${reward.star_cost - childSpendableStars} more star${(reward.star_cost - childSpendableStars) === 1 ? '' : 's'} to go!</p>` : ''}
+      ${canAfford
+        ? '<div style="font-size: 12px; color: #0d9488; font-weight: 600; margin-top: 4px;">Tap to redeem!</div>'
+        : `<div style="font-size: 12px; color: #b45309; font-weight: 600; margin-top: 4px;">${starsAway} more star${starsAway === 1 ? '' : 's'} to go!</div>`
+      }
     `
-    
+
     if (canAfford) {
-      card.style.cursor = 'pointer'
       card.addEventListener('click', () => showPurchaseModal(reward, selectedChild))
-    } else {
-      card.style.opacity = '0.6'
-      card.style.cursor = 'not-allowed'
     }
-    
+
     rewardsGrid.appendChild(card)
   })
 }
@@ -168,16 +168,17 @@ async function renderPurchaseHistory(selectedChild) {
     }
     
     purchaseHistory.innerHTML = history.map(purchase => {
-      const date = new Date(purchase.created_at).toLocaleDateString('en-AU')
+      const date = new Date(purchase.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
 
       return `
         <div class="purchase-history-item">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="font-size: 32px;">${getRewardIcon(purchase.reward_title)}</div>
-            <div>
-              <div style="font-weight: 600; color: #405878; margin-bottom: 4px;">${purchase.reward_title}</div>
-              <div style="font-size: 13px; color: #4c6c96;">${date} • ⭐ ${purchase.star_cost} stars</div>
+            <div style="font-size: 28px; width: 44px; height: 44px; background: #fef3c7; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${getRewardIcon(purchase.reward_title)}</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; color: #405878; font-size: 14px;">${purchase.reward_title}</div>
+              <div style="font-size: 12px; color: #6b7c8f; margin-top: 2px;">${date}</div>
             </div>
+            <div style="font-size: 13px; font-weight: 700; color: #b45309; white-space: nowrap;">⭐ ${purchase.star_cost}</div>
           </div>
         </div>
       `
