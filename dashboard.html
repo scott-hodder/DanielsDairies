@@ -284,47 +284,37 @@
 
             <!-- Star Shop Tab -->
             <div id="spendStarsTabContent" class="hidden">
-                <!-- Shop Header -->
-                <div class="shop-header">
-                    <div class="shop-title-section">
-                        <h2 class="shop-title">🌟 Daniel's Star Shop</h2>
-                        <p class="shop-subtitle">Spend your hard-earned stars on awesome rewards!</p>
+                <!-- Star Wallet Hero -->
+                <div class="star-wallet-hero">
+                    <div class="star-wallet-available">
+                        <div class="star-wallet-icon">⭐</div>
+                        <div class="star-wallet-number" id="availableStarsCount">0</div>
+                        <div class="star-wallet-label">Stars to Spend</div>
                     </div>
-                    <div class="shop-stars-display">
-                        <div class="stars-stats">
-                            <div class="star-stat">
-                                <span class="stat-label">⭐ Total Stars</span>
-                                <span class="stat-value" id="totalStarsCount">0</span>
-                            </div>
-                            <div class="star-stat">
-                                <span class="stat-label">✨ Spent</span>
-                                <span class="stat-value" id="spentStarsCount">0</span>
-                            </div>
-                            <div class="star-stat">
-                                <span class="stat-label">🌟 Available</span>
-                                <span class="stat-value" id="availableStarsCount">0</span>
-                            </div>
+                    <div class="star-wallet-meta">
+                        <div class="star-wallet-meta-item">
+                            <span class="star-wallet-meta-num" id="totalStarsCount">0</span>
+                            <span class="star-wallet-meta-label">Earned</span>
+                        </div>
+                        <div class="star-wallet-divider"></div>
+                        <div class="star-wallet-meta-item">
+                            <span class="star-wallet-meta-num" id="spentStarsCount">0</span>
+                            <span class="star-wallet-meta-label">Spent</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Real Rewards Grid -->
-                <div class="rewards-header">
-                    <h3 class="rewards-title">🎁 Available Rewards</h3>
-                    <button id="addCustomRewardBtn" class="btn-secondary add-reward-btn">
-                        ➕ Add Custom Reward
-                    </button>
+                <!-- Rewards Grid -->
+                <div class="rewards-section-header">
+                    <h3 class="rewards-section-title">Rewards</h3>
+                    <button id="addCustomRewardBtn" class="rewards-add-btn">+ Add</button>
                 </div>
-                <div class="shop-items-grid" id="rewardsGrid">
-                    <!-- Rewards will be populated by JavaScript -->
-                </div>
+                <div class="rewards-grid" id="rewardsGrid"></div>
 
-                <!-- Purchase History Section -->
-                <div class="my-inventory-section">
-                    <h3 class="inventory-title">📜 Purchase History</h3>
-                    <div class="purchase-history" id="purchaseHistory">
-                        <!-- Purchase history will be populated by JavaScript -->
-                    </div>
+                <!-- Purchase History -->
+                <div class="purchase-section">
+                    <h3 class="purchase-section-title">Recent Purchases</h3>
+                    <div id="purchaseHistory"></div>
                 </div>
             </div>
 

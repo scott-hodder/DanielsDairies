@@ -124,19 +124,19 @@ function renderRewards(selectedChild) {
     const canAfford = childSpendableStars >= reward.star_cost
     const starsAway = reward.star_cost - childSpendableStars
     const card = document.createElement('div')
-    card.className = `shop-item ${canAfford ? '' : 'insufficient-stars'}`
+    card.className = `reward-card ${canAfford ? '' : 'reward-locked'}`
 
     card.innerHTML = `
-      <div class="item-icon">${reward.icon || '🎁'}</div>
-      <div class="item-name">${reward.title}</div>
-      ${reward.description ? `<div style="font-size: 12px; color: #6b7c8f; margin-bottom: 10px; line-height: 1.4;">${reward.description}</div>` : ''}
-      <div class="item-price">
+      <div class="reward-card-icon">${reward.icon || '🎁'}</div>
+      <div class="reward-card-name">${reward.title}</div>
+      ${reward.description ? `<div class="reward-card-desc">${reward.description}</div>` : ''}
+      <div class="reward-card-cost">
         <span>⭐</span>
         <span>${reward.star_cost}</span>
       </div>
       ${canAfford
-        ? '<div style="font-size: 12px; color: #0d9488; font-weight: 600; margin-top: 4px;">Tap to redeem!</div>'
-        : `<div style="font-size: 12px; color: #b45309; font-weight: 600; margin-top: 4px;">${starsAway} more star${starsAway === 1 ? '' : 's'} to go!</div>`
+        ? '<div class="reward-card-status can-afford">Tap to redeem!</div>'
+        : `<div class="reward-card-status need-more">${starsAway} more star${starsAway === 1 ? '' : 's'} to go!</div>`
       }
     `
 
@@ -171,15 +171,13 @@ async function renderPurchaseHistory(selectedChild) {
       const date = new Date(purchase.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
 
       return `
-        <div class="purchase-history-item">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="font-size: 28px; width: 44px; height: 44px; background: #fef3c7; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${getRewardIcon(purchase.reward_title)}</div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-weight: 600; color: #405878; font-size: 14px;">${purchase.reward_title}</div>
-              <div style="font-size: 12px; color: #6b7c8f; margin-top: 2px;">${date}</div>
-            </div>
-            <div style="font-size: 13px; font-weight: 700; color: #b45309; white-space: nowrap;">⭐ ${purchase.star_cost}</div>
+        <div class="purchase-row">
+          <div class="purchase-row-icon">${getRewardIcon(purchase.reward_title)}</div>
+          <div class="purchase-row-info">
+            <div class="purchase-row-title">${purchase.reward_title}</div>
+            <div class="purchase-row-date">${date}</div>
           </div>
+          <div class="purchase-row-cost">⭐ ${purchase.star_cost}</div>
         </div>
       `
     }).join('')
@@ -290,7 +288,7 @@ export function setupRewardsEventListeners(selectedChild) {
         renderRewards(selectedChild)
         
         closeCustomRewardModal()
-        alert('✅ Custom reward created successfully!')
+        showRewardCelebration(rewardData.title, rewardData.icon)
       } catch (error) {
         console.error('Error creating reward:', error)
         if (customRewardError) {
