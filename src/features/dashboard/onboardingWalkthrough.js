@@ -3,38 +3,51 @@
 
 const ONBOARDING_STEPS = [
   {
-    images: ['/images/steps/step1.png'],
+    images: ['/images/steps/step1.webp'],
     title: 'Welcome to your dashboard',
     description: 'This is your home base. Here can see Daniel, your stars, streak, rank, level, and your Daily Quest.'
   },
   {
-    images: ['/images/steps/step2.png'],
+    images: ['/images/steps/step2.webp'],
     title: 'Explore your Adventure Map',
     description: 'Your map shows your progress through each skill. Tap a node to start a module and move along the path.'
   },
   {
-    images: ['/images/steps/step3.png'],
+    images: ['/images/steps/step3.webp'],
     title: 'Unlock new places as you grow',
     description: 'As you complete more modules, your path grows from Trailhead to Village, Town Center, and beyond.'
   },
   {
-    images: ['/images/steps/step4.png'],
+    images: ['/images/steps/step4.webp'],
     title: 'Choose a skill and cycle',
     description: 'Use the dropdowns to switch between different super skills and once you are finished a cycle, you can move onto the next.'
   },
   {
-    images: ['/images/steps/step5.1.png', '/images/steps/step5.2.png'],
+    images: ['/images/steps/step5.1.webp', '/images/steps/step5.2.webp'],
     imageLabels: ['Dashboard', 'Daily Quest'],
     title: 'Complete your Daily Quest',
     description: 'Tap the Daily Quest button on your dashboard to do a quick check-in. You might be asked to notice how your body feels or pick an emotion.'
   },
   {
-    images: ['/images/steps/step6.1.png', '/images/steps/step6.2.png'],
+    images: ['/images/steps/step6.1.webp', '/images/steps/step6.2.webp'],
     imageLabels: ['Earn Stars', 'Star Shop'],
     title: 'Earn stars and spend them',
     description: 'Complete quizzes in your modules to earn stars. Then visit the Star Shop to trade your stars for rewards. You can even add your own custom rewards!'
   }
 ]
+
+// Preload all walkthrough images so they display instantly
+let _imagesPreloaded = false
+function preloadAllImages() {
+  if (_imagesPreloaded) return
+  _imagesPreloaded = true
+  ONBOARDING_STEPS.forEach(function(step) {
+    step.images.forEach(function(src) {
+      var img = new Image()
+      img.src = src
+    })
+  })
+}
 
 const LS_KEY = 'dd_onboarding_seen'
 
@@ -355,6 +368,20 @@ function createModal() {
     }
 
 
+    .owt-img-skeleton {
+      width: 80%;
+      height: 70%;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #e8edf4 25%, #f0f4ff 50%, #e8edf4 75%);
+      background-size: 200% 100%;
+      animation: owtShimmer 1.2s ease-in-out infinite;
+    }
+
+    @keyframes owtShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
     @media (max-width: 768px) {
       .owt-modal {
         border-radius: 18px;
@@ -423,12 +450,38 @@ function renderStep() {
   const backBtn = document.getElementById('owtBack')
   const nextBtn = document.getElementById('owtNext')
 
-  // Images
+  // Images — show skeleton until loaded
   const isMulti = step.images.length > 1
   imagesEl.className = 'owt-images' + (isMulti ? ' owt-two-images' : '')
-  imagesEl.innerHTML = step.images.map((src, i) =>
-    `<img src="${src}" alt="${step.title}" loading="eager" class="${i === 0 ? 'owt-img-active' : ''}">`
-  ).join('')
+  imagesEl.innerHTML = '<div class="owt-img-skeleton"></div>'
+
+  var loadedCount = 0
+  var totalToLoad = isMulti ? 1 : 1 // only need first image visible before showing
+  var allImgs = step.images.map(function(src, i) {
+    var img = document.createElement('img')
+    img.src = src
+    img.alt = step.title
+    img.className = i === 0 ? 'owt-img-active' : ''
+    img.style.display = 'none'
+    img.onload = function() {
+      loadedCount++
+      if (loadedCount >= totalToLoad) {
+        var skel = imagesEl.querySelector('.owt-img-skeleton')
+        if (skel) skel.remove()
+        allImgs.forEach(function(im) { im.style.display = '' })
+      }
+    }
+    imagesEl.appendChild(img)
+    return img
+  })
+  // Fallback: remove skeleton after 3s even if load fails
+  setTimeout(function() {
+    var skel = imagesEl.querySelector('.owt-img-skeleton')
+    if (skel) {
+      skel.remove()
+      allImgs.forEach(function(im) { im.style.display = '' })
+    }
+  }, 3000)
 
   // Image tabs for multi-image steps
   const existingTabs = document.getElementById('owtImgTabs')
@@ -503,6 +556,7 @@ function prevStep() {
 }
 
 export function openWalkthrough() {
+  preloadAllImages()
   currentStep = 0
   const el = createModal()
   el.style.display = 'flex'
@@ -550,4 +604,7 @@ export function addHelpButton() {
     mobileBtn.addEventListener('click', openWalkthrough)
     mobileBtn._owtBound = true
   }
+
+  // Start preloading images as soon as buttons are wired up
+  preloadAllImages()
 }
