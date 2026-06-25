@@ -66,8 +66,8 @@ export function showLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
   if (!loadingState) return;
 
-  // If already visible, don't re-render (prevents quote flash)
-  if (!loadingState.classList.contains('hidden') && loadingState.innerHTML.trim() !== '') return;
+  // If already showing the full loading screen (with Daniel), don't re-render (prevents quote flash)
+  if (!loadingState.classList.contains('hidden') && loadingState.querySelector('.loading-container')) return;
 
   const randomQuote = getRandomQuote();
   const randomCharacter = getRandomCharacter();
