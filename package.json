@@ -11,11 +11,20 @@
     "lint": "node scripts/lint.mjs",
     "typecheck": "node scripts/typecheck.mjs",
     "test": "node --test tests/**/*.test.mjs",
-    "build:all": "npm run build && node scripts/build-sidecar.mjs"
+    "build:all": "npm run build && node scripts/build-sidecar.mjs",
+    "build:ios": "npm run build && npx cap sync ios",
+    "cap:open:ios": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
+    "@capacitor/push-notifications": "^8.1.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@stripe/stripe-js": "^8.6.0",
     "@supabase/supabase-js": "^2.39.0",
+    "dompurify": "^3.4.11",
     "sharp": "^0.34.5"
   },
   "devDependencies": {

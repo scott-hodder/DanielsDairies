@@ -1,0 +1,14 @@
+{
+  "appId": "com.danielsdiaries.app",
+  "appName": "Daniels Diaries",
+  "webDir": "dist",
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#ffffff",
+    "allowsLinkPreview": false
+  },
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https"
+  }
+}

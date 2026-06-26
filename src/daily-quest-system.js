@@ -1,6 +1,7 @@
 // ================================================
 // DAILY QUEST SYSTEM - Interactive Mini Activities
 // ================================================
+import { escapeHtml } from './lib/sanitize.js'
 
 // Get today's date in Brisbane time (AEST, UTC+10, no DST) as YYYY-MM-DD
 function getBrisbaneToday() {

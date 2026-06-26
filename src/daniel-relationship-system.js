@@ -2,6 +2,7 @@
 // DANIEL RELATIONSHIP SYSTEM
 // Making Daniel central - The child helps Daniel grow
 // ================================================
+import { escapeHtml } from './lib/sanitize.js'
 
 // Daniel's emotional states and expressions
 const DANIEL_EMOTIONS = {
@@ -873,7 +874,7 @@ class DanielDialogueSystem {
     }
 
     if (questionEl) {
-      const skillText = reaction.skillAcknowledgment.replace('{skill}', skill || 'this skill');
+      const skillText = reaction.skillAcknowledgment.replace('{skill}', escapeHtml(skill || 'this skill'));
       questionEl.innerHTML = `${skillText}<br><em style="font-size: 15px; color: #64748B; font-weight: 400;">${reaction.confidenceBoost}</em>`;
     }
 

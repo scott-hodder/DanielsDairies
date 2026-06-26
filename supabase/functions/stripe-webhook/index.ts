@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.25.0?target=denonext'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature'
 }
 
@@ -560,7 +560,8 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('Webhook error:', error)
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', stack: error instanceof Error ? error.stack : null }), {
+    console.error('[stripe-webhook] Unhandled error:', error instanceof Error ? error.stack : error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

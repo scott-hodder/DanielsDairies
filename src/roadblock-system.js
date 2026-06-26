@@ -2,6 +2,7 @@
 // ROADBLOCK SYSTEM - Interactive Mini-Exercises on Adventure Map
 // Spawns randomly between modules for XP and stars rewards
 // ================================================
+import { escapeHtml } from './lib/sanitize.js'
 
 class RoadblockSystem {
   constructor() {
@@ -257,8 +258,8 @@ class RoadblockSystem {
       const tooltip = document.createElement('div');
       tooltip.className = 'roadblock-tooltip';
       tooltip.innerHTML = `
-        <div class="tooltip-title">${theme.label}</div>
-        <div class="tooltip-desc">${roadblock.title}</div>
+        <div class="tooltip-title">${escapeHtml(theme.label)}</div>
+        <div class="tooltip-desc">${escapeHtml(roadblock.title)}</div>
         <div class="tooltip-rewards">
           <span>🎯 ${roadblock.xp_reward || 25} XP</span>
           <span>⭐ ${roadblock.stars_reward || 5} Stars</span>
@@ -305,8 +306,8 @@ class RoadblockSystem {
     header.innerHTML = `
       <div class="modal-icon">${theme.emoji}</div>
       <div class="modal-title-section">
-        <div class="modal-label">${theme.label}</div>
-        <h2 class="modal-title">${roadblock.title}</h2>
+        <div class="modal-label">${escapeHtml(theme.label)}</div>
+        <h2 class="modal-title">${escapeHtml(roadblock.title)}</h2>
       </div>
       <button class="modal-close" aria-label="Close">×</button>
     `;

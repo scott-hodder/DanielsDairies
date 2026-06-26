@@ -63,7 +63,7 @@ async function addToMailchimp(email: string, firstName: string, lastName: string
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 

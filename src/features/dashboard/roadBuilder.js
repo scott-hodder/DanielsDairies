@@ -6,6 +6,7 @@
 // ================================================
 
 import { getSupabaseClient } from '../../supabaseClient.js';
+import { escapeHtml } from '../../lib/sanitize.js';
 
 // Eagerly pull in the mini-game framework so games are registered and
 // the feature flag is resolved before a user clicks a road-builder stop.

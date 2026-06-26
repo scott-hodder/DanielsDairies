@@ -1,4 +1,5 @@
 // ── Daniel's Diaries - Sign Up Page ──
+import { escapeHtml } from './lib/sanitize.js'
 import { signUp } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
 import { getSubscriptionTiers } from './services/databaseService.js'
@@ -148,14 +149,14 @@ function renderPlanCards(container) {
         card.dataset.plan = tier.tier
 
         card.innerHTML = `
-            <input type="radio" name="plan" value="${tier.tier}" ${formData.plan === tier.tier ? 'checked' : ''}>
+            <input type="radio" name="plan" value="${escapeHtml(tier.tier)}" ${formData.plan === tier.tier ? 'checked' : ''}>
             ${isMiddle ? '<div class="plan-card-popular">Most Popular</div>' : ''}
-            <div class="plan-card-name">${tier.display_name || tier.tier}</div>
+            <div class="plan-card-name">${escapeHtml(tier.display_name || tier.tier)}</div>
             <div class="plan-card-price">$${priceDisplay}<span>/mo</span></div>
             <ul class="plan-card-features-list">
                 ${features.map(f => `<li><span class="plan-feature-check">&#10003;</span> ${f}</li>`).join('')}
             </ul>
-            ${tagline ? `<p class="plan-card-tagline">${tagline}</p>` : ''}
+            ${tagline ? `<p class="plan-card-tagline">${escapeHtml(tagline)}</p>` : ''}
         `
 
         card.addEventListener('click', () => {
@@ -559,7 +560,7 @@ function showPostSignupLoginForm(email) {
         <div class="form-header" style="margin-bottom: 8px;">
             <div style="font-size: 48px; margin-bottom: 12px;">📬</div>
             <h2>Check your inbox</h2>
-            <p style="margin-bottom: 16px;">We've sent a confirmation link to <strong>${email}</strong></p>
+            <p style="margin-bottom: 16px;">We've sent a confirmation link to <strong>${escapeHtml(email)}</strong></p>
         </div>
 
         <div class="email-confirm-steps">
@@ -634,7 +635,7 @@ function showPostSignupLoginForm(email) {
             } else if (msg.includes('Invalid login credentials')) {
                 msg = 'Invalid email or password. Please try again.'
             }
-            messagesDiv.innerHTML = `<div class="alert alert-error visible">${msg}</div>`
+            messagesDiv.innerHTML = `<div class="alert alert-error visible">${escapeHtml(msg)}</div>`
             loginBtn.disabled = false
             loginBtnText.textContent = 'Log In'
             loginSpinner.classList.add('hidden')

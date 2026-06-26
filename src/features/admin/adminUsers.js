@@ -2,6 +2,7 @@
 // USERS TAB - View all children, parents, and subscription status
 // ================================================================================
 import { supabase } from './adminPage.js';
+import { escapeHtml } from '../../lib/sanitize.js';
 
 let usersData = [];
 let usersSearchTerm = '';
@@ -81,7 +82,7 @@ window._adminLoadUsersData = async function loadUsersData() {
         console.error('Error loading users data:', error);
         const container = document.getElementById('usersTableContainer');
         if (container) {
-            container.innerHTML = `<div style="color: #dc2626; padding: 20px; text-align: center;">Error loading users: ${error.message}</div>`;
+            container.innerHTML = `<div style="color: #dc2626; padding: 20px; text-align: center;">Error loading users: ${escapeHtml(error.message)}</div>`;
         }
     }
 };
@@ -380,13 +381,6 @@ function formatDate(dateStr) {
     return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;');
-}
 
 // ================================================================================
 // SEARCH AND FILTER HANDLERS
