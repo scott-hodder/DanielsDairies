@@ -3,6 +3,7 @@
 // ================================================
 
 import { supabase } from '../../supabaseClient.js'
+import { escapeHtml } from '../../lib/sanitize.js'
 import { 
   getChildFocusPlan, 
   createChildFocusPlan, 
@@ -10,7 +11,7 @@ import {
   getCategories, 
   getPathways,
   determineDefaultPathwayWithModules 
-} from '../../database.js'
+} from '../../services/databaseService.js'
 
 // State for focus plan onboarding
 let focusPlanState = {
@@ -310,11 +311,11 @@ function renderStep1() {
         <button type="button"
                 class="focus-category-card ${focusPlanState.selectedCategories.includes(cat.id) ? 'selected' : ''}"
                 data-category-id="${cat.id}"
-                data-category-name="${cat.name}">
+                data-category-name="${escapeHtml(cat.name)}">
           <span class="category-check-circle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 8l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <span class="category-icon">${cat.icon || '📚'}</span>
-          <span class="category-name">${cat.name}</span>
-          <span class="category-desc">${cat.short_description || ''}</span>
+          <span class="category-name">${escapeHtml(cat.name)}</span>
+          <span class="category-desc">${escapeHtml(cat.short_description || '')}</span>
         </button>
       `).join('')}
     </div>
@@ -381,7 +382,7 @@ function renderStep2() {
                 class="focus-goal-chip ${focusPlanState.selectedGoalKeys.includes(goal.key) ? 'selected' : ''}"
                 data-goal-key="${goal.key}">
           <span class="goal-icon">${goal.icon}</span>
-          <span class="goal-label">${goal.label}</span>
+          <span class="goal-label">${escapeHtml(goal.label)}</span>
         </button>
       `).join('')}
     </div>
@@ -393,7 +394,7 @@ function renderStep2() {
              class="custom-goal-input"
              placeholder="Type your own goal here..."
              maxlength="200"
-             value="${focusPlanState.customGoalText}">
+             value="${escapeHtml(focusPlanState.customGoalText)}">
       <span class="char-count">${focusPlanState.customGoalText.length}/200</span>
     </div>
 
@@ -561,7 +562,7 @@ async function submitFocusPlan() {
     if (!defaultPathway) {
       console.warn('Focus Plan: No pathway with modules found, using default pathway selection')
       // Fall back to original pathway determination
-      const { determineDefaultPathway } = await import('../../database.js')
+      const { determineDefaultPathway } = await import('../../services/databaseService.js')
       defaultPathway = determineDefaultPathway(selectedCategoryNames, focusPlanState.pathways)
       if (defaultPathway) {
         console.warn(`Focus Plan: Using pathway "${defaultPathway.name}" which may not have modules`)
@@ -705,7 +706,7 @@ function createFocusPlanSettingsModal(currentPlan) {
                         class="focus-category-card ${focusPlanState.selectedCategories.includes(cat.id) ? 'selected' : ''}"
                         data-category-id="${cat.id}">
                   <span class="category-icon">${cat.icon || '📚'}</span>
-                  <span class="category-name">${cat.name}</span>
+                  <span class="category-name">${escapeHtml(cat.name)}</span>
                   <span class="category-check">✓</span>
                 </button>
               `).join('')}
@@ -720,7 +721,7 @@ function createFocusPlanSettingsModal(currentPlan) {
             <select id="pathwaySelect" class="pathway-select">
               ${focusPlanState.pathways.map(p => `
                 <option value="${p.id}" ${currentPlan?.default_pathway_id === p.id ? 'selected' : ''}>
-                  ${p.name}
+                  ${escapeHtml(p.name)}
                 </option>
               `).join('')}
             </select>

@@ -421,6 +421,47 @@ body {
     background-color: rgba(255, 255, 255, 0.25);
 }
 
+/* Admin Dropdown */
+.admin-dropdown-wrap {
+    display: inline-block;
+}
+
+.admin-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    min-width: 200px;
+    z-index: 100;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.admin-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 12px 18px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #405878;
+    cursor: pointer;
+    font-family: 'Fredoka', sans-serif;
+    transition: background 0.15s;
+}
+
+.admin-dropdown-item:hover {
+    background: #f3f6fa;
+}
+
+.admin-dropdown-item + .admin-dropdown-item {
+    border-top: 1px solid #f0f0f0;
+}
+
 /* Header Help Button */
 .header-help-btn {
     display: flex;
@@ -2491,7 +2532,7 @@ body {
 .form-input-fun {
     width: 100%;
     padding: 14px 18px;
-    font-family: 'Nunito', 'Fredoka', sans-serif;
+    font-family: 'Fredoka', sans-serif;
     font-size: 16px;
     font-weight: 600;
     border: 3px solid #e0e7ff;
@@ -2715,7 +2756,7 @@ body {
     background: none;
     border: none;
     color: #ef4444;
-    font-family: 'Nunito', 'Fredoka', sans-serif;
+    font-family: 'Fredoka', sans-serif;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;

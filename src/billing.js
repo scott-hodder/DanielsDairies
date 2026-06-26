@@ -1,4 +1,5 @@
 import { checkAuth, getCurrentUser, signOut } from './auth.js'
+import { escapeHtml } from './lib/sanitize.js'
 import {
   getCurrentBillingPeriod,
   getParentSubscription,
@@ -6,7 +7,7 @@ import {
   upsertParentSubscription,
   getParentCredits,
   grantCreditsToFamily
-} from './database.js'
+} from './services/databaseService.js'
 import { getSupabaseClient } from './supabaseClient.js'
 
 const tierSelect = document.getElementById('tierSelect')
@@ -42,7 +43,7 @@ function renderTiers(tiers) {
   tiers.forEach((tier) => {
     const card = document.createElement('article')
     card.className = 'tier'
-    card.innerHTML = `<h3>${tier.tier.toUpperCase()}</h3><p>${tier.modules_per_month} module credits/month</p>`
+    card.innerHTML = `<h3>${escapeHtml(tier.tier.toUpperCase())}</h3><p>${tier.modules_per_month} module credits/month</p>`
     tiersGrid.appendChild(card)
 
     const option = document.createElement('option')
@@ -69,10 +70,10 @@ function renderLedger(rows) {
     item.className = 'ledger-row'
     item.innerHTML = `
       <span>${new Date(row.created_at).toLocaleString()}</span>
-      <span>${row.entry_type}</span>
+      <span>${escapeHtml(row.entry_type)}</span>
       <span>${row.credits_delta}</span>
-      <span>${row.module_id || '-'}</span>
-      <span>${row.notes || '-'}</span>
+      <span>${escapeHtml(row.module_id || '-')}</span>
+      <span>${escapeHtml(row.notes || '-')}</span>
     `
     ledgerRows.appendChild(item)
   })

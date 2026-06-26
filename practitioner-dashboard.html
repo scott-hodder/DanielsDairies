@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daniel's Diaries - Practitioner Hub</title>
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/styles/practitioner.css">
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <a href="/dashboard.html" class="header-logo">
+        <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
+        <div>
+          <h1 class="header-title">Daniel's Diaries <span class="prac-role-pill">Practitioner Hub</span></h1>
+          <p class="header-subtitle">Client engagement data at a glance</p>
+        </div>
+      </a>
+    </div>
+    <div class="header-right">
+      <nav class="prac-nav">
+        <button class="prac-nav-btn" id="backToDashboardBtn">Dashboard</button>
+        <button class="prac-nav-btn active" data-view="caseload">Caseload</button>
+        <button class="prac-nav-btn" data-view="resources">Resources</button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- Loading -->
+<main class="prac-main" id="pracLoading">
+  <div class="prac-content">
+    <div style="text-align:center;padding:80px 20px;">
+      <div style="font-size:24px;font-family:'Fredoka';font-weight:600;color:#405878;margin-bottom:12px;">Loading...</div>
+      <p style="color:#6b7280;font-size:14px;">Setting up your Practitioner Hub</p>
+    </div>
+  </div>
+</main>
+
+<!-- Error -->
+<main class="prac-main hidden" id="pracError">
+  <div class="prac-content">
+    <div style="text-align:center;padding:80px 20px;">
+      <div style="font-size:24px;font-family:'Fredoka';font-weight:600;color:#405878;margin-bottom:12px;">Access Denied</div>
+      <p id="pracErrorText" style="color:#6b7280;margin-bottom:20px;font-size:14px;">You need practitioner access to view this page.</p>
+      <a href="/dashboard.html" class="prac-btn prac-btn-primary">Back to Dashboard</a>
+    </div>
+  </div>
+</main>
+
+<!-- Main content -->
+<main class="prac-main hidden" id="pracMain">
+  <div class="prac-content">
+
+    <!-- Guardrail banner -->
+    <div class="prac-guardrail" id="pracGuardrail">
+      <div class="prac-guardrail-bar"></div>
+      <div class="prac-guardrail-body">
+        <p><strong>Educational, not clinical.</strong> Daniel's Diaries gives children the language and practice to understand how they think, feel and act, and gives you the engagement data behind it. Clinical judgment, formulation and treatment stay with you.</p>
+      </div>
+      <button class="prac-guardrail-close" id="closeGuardrail">&times;</button>
+    </div>
+
+    <!-- ===== CASELOAD VIEW ===== -->
+    <div id="viewCaseload">
+      <div class="prac-page-head">
+        <div>
+          <h2>Your Caseload</h2>
+          <p>Children linked to your practice through Daniel's Diaries.</p>
+        </div>
+        <button class="prac-btn prac-btn-primary" id="addClientBtn">+ Add Client</button>
+      </div>
+
+      <div class="prac-stat-strip" id="statStrip">
+        <div class="prac-stat">
+          <div class="prac-stat-label">Active Clients</div>
+          <div class="prac-stat-value" id="statClients">0</div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Modules Completed</div>
+          <div class="prac-stat-value" id="statModules">0</div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Goals in Progress</div>
+          <div class="prac-stat-value" id="statGoals">0</div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Avg Level</div>
+          <div class="prac-stat-value" id="statAvgLevel">0</div>
+        </div>
+      </div>
+
+      <div class="prac-section-head">
+        <h3>Clients</h3>
+      </div>
+      <div class="prac-client-grid" id="clientGrid">
+        <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#6b7280;">
+          <p style="font-size:18px;margin-bottom:8px;">No clients linked yet</p>
+          <p style="font-size:14px;">Click "Add Client" to link a family.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CLIENT WORKSPACE VIEW ===== -->
+    <div id="viewClient" class="hidden">
+      <button class="prac-btn prac-btn-ghost prac-btn-sm" id="backToCaseload" style="margin-bottom:16px;">&larr; Back to Caseload</button>
+
+      <div class="prac-ws-head">
+        <div class="prac-ws-avatar" id="wsAvatar"></div>
+        <div>
+          <h2 class="prac-ws-name" id="wsName">Client</h2>
+          <p class="prac-ws-sub" id="wsSub"></p>
+        </div>
+        <div class="prac-ws-actions">
+          <button class="prac-btn prac-btn-danger prac-btn-sm" id="removeClientBtn">Remove Client</button>
+        </div>
+      </div>
+
+      <div class="prac-tabs">
+        <button class="prac-tab active" data-tab="data">Data & Insights</button>
+        <button class="prac-tab" data-tab="goals">Goals & Behaviours</button>
+        <button class="prac-tab" data-tab="notes">Notes</button>
+        <button class="prac-tab" data-tab="plan">Support Plan</button>
+      </div>
+
+      <!-- TAB: Data & Insights -->
+      <div class="prac-tab-panel" data-panel="data">
+        <div class="prac-panel">
+          <h3>Engagement Data</h3>
+          <p class="prac-panel-desc">Read-only engagement and self-report data from the app.</p>
+          <div class="prac-insight-grid" id="insightGrid"></div>
+
+          <div class="prac-label-divider">
+            <span class="prac-label-divider-text">Mood Check-ins</span>
+            <span class="prac-label-divider-line"></span>
+          </div>
+          <div id="moodHistory"></div>
+
+          <div class="prac-label-divider">
+            <span class="prac-label-divider-text">Weekly Check-ins (Parent-reported)</span>
+            <span class="prac-label-divider-line"></span>
+          </div>
+          <div id="weeklyCheckinsList"></div>
+
+          <div class="prac-label-divider">
+            <span class="prac-label-divider-text">Module Completions</span>
+            <span class="prac-label-divider-line"></span>
+          </div>
+          <div id="moduleList"></div>
+
+          <div class="prac-label-divider">
+            <span class="prac-label-divider-text">Module Responses</span>
+            <span class="prac-label-divider-line"></span>
+          </div>
+          <div id="moduleResponsesList"></div>
+        </div>
+      </div>
+
+      <!-- TAB: Goals & Behaviours -->
+      <div class="prac-tab-panel hidden" data-panel="goals">
+        <div class="prac-panel-split">
+          <div class="prac-panel">
+            <h3>Behaviours of Concern</h3>
+            <p class="prac-panel-desc">Recorded by you. Not interpreted by the app.</p>
+            <div id="behaviourList"></div>
+            <div class="prac-label-divider" style="cursor:pointer;" id="addBehaviourToggle">
+              <span class="prac-label-divider-text">+ Add Behaviour</span>
+              <span class="prac-label-divider-line"></span>
+            </div>
+            <div id="addBehaviourForm" class="hidden">
+              <div class="prac-field"><label>Description</label><input id="bDesc" placeholder="e.g. Leaves the room when work feels hard"></div>
+              <div class="prac-field-row">
+                <div class="prac-field"><label>Common setting</label><input id="bSetting" placeholder="e.g. Homework, transitions"></div>
+                <div class="prac-field"><label>Baseline (per week)</label><input id="bBaseline" placeholder="e.g. 5 times"></div>
+              </div>
+              <button class="prac-btn prac-btn-ghost prac-btn-sm" id="submitBehaviour">Add Behaviour</button>
+            </div>
+          </div>
+
+          <div class="prac-panel">
+            <h3>Goals</h3>
+            <p class="prac-panel-desc">Set goals for this child and track progress.</p>
+            <div id="goalList"></div>
+            <div class="prac-label-divider" style="cursor:pointer;" id="addGoalToggle">
+              <span class="prac-label-divider-text">+ Add Goal</span>
+              <span class="prac-label-divider-line"></span>
+            </div>
+            <div id="addGoalForm" class="hidden">
+              <div class="prac-field"><label>Goal statement</label><input id="gStmt" placeholder="e.g. Use one calm-down tool before leaving a hard task"></div>
+              <div class="prac-field-row">
+                <div class="prac-field"><label>Category</label>
+                  <select id="gCategory">
+                    <option value="emotional-regulation">Emotional Regulation</option>
+                    <option value="social-skills">Social Skills</option>
+                    <option value="resilience">Resilience</option>
+                    <option value="self-awareness">Self-Awareness</option>
+                    <option value="behaviour">Behaviour</option>
+                    <option value="anxiety">Anxiety</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="prac-field"><label>Review date</label><input id="gReview" type="date"></div>
+              </div>
+              <div class="prac-field"><label>How we'll measure it</label><input id="gMeasure" placeholder="e.g. Practitioner tally + weekly check-in"></div>
+              <button class="prac-btn prac-btn-ghost prac-btn-sm" id="submitGoal">Add Goal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Notes -->
+      <div class="prac-tab-panel hidden" data-panel="notes">
+        <div class="prac-panel">
+          <h3>Session Notes</h3>
+          <p class="prac-panel-desc">Private notes visible only to you. Not shared with the family.</p>
+          <div id="notesList"></div>
+          <div style="margin-top:16px;">
+            <div class="prac-field"><label>Add a note</label><textarea id="noteText" rows="3" placeholder="Session observations, follow-ups..."></textarea></div>
+            <button class="prac-btn prac-btn-ghost prac-btn-sm" id="submitNote">Add Note</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Support Plan -->
+      <div class="prac-tab-panel hidden" data-panel="plan">
+        <div class="prac-panel">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h3>Support Plan</h3>
+              <p class="prac-panel-desc">Auto-generated from app data and your clinical input. Print or export for your records.</p>
+            </div>
+            <button class="prac-btn prac-btn-primary prac-btn-sm" id="printPlanBtn">Print / Export</button>
+          </div>
+          <div class="prac-plan-doc" id="planDoc"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RESOURCES VIEW ===== -->
+    <div id="viewResources" class="hidden">
+      <div class="prac-page-head">
+        <div>
+          <h2>Resources</h2>
+          <p>Guides and information available to Practitioner Hub accounts.</p>
+        </div>
+      </div>
+      <div class="prac-guides-grid" id="resourceGrid"></div>
+    </div>
+
+    <div class="prac-footer">
+      Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.
+    </div>
+  </div>
+</main>
+
+<!-- Add Client Modal -->
+<div class="prac-overlay hidden" id="addClientModal">
+  <div class="prac-modal">
+    <h3>Add a Client</h3>
+    <p class="prac-modal-sub">Search by the parent's email address to link their child to your caseload.</p>
+    <div class="prac-field">
+      <label>Parent email address</label>
+      <input id="searchEmail" type="email" placeholder="parent@email.com">
+    </div>
+    <button class="prac-btn prac-btn-primary prac-btn-sm" id="searchFamilyBtn" style="width:100%;margin-bottom:16px;">Search</button>
+    <div id="searchResults"></div>
+    <div id="searchError" class="hidden" style="color:#c02626;font-size:13px;margin-bottom:12px;"></div>
+    <div class="prac-modal-foot">
+      <button class="prac-btn prac-btn-ghost prac-btn-sm" id="closeAddClientBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Remove Modal -->
+<div class="prac-overlay hidden" id="removeClientModal">
+  <div class="prac-modal">
+    <h3>Remove Client</h3>
+    <p class="prac-modal-sub">Are you sure you want to remove this child from your caseload? Your notes, goals, and behaviours will be kept but the link will be deactivated.</p>
+    <div class="prac-modal-foot">
+      <button class="prac-btn prac-btn-ghost prac-btn-sm" id="cancelRemoveBtn">Cancel</button>
+      <button class="prac-btn prac-btn-danger prac-btn-sm" id="confirmRemoveBtn">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/src/features/practitioner/practitionerDashboard.js"></script>
+</body>
+</html>

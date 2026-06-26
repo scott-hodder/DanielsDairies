@@ -1,4 +1,5 @@
 // Rewards Tab Functionality for Dashboard
+import { escapeHtml } from '../../lib/sanitize.js'
 import { getRewards, createCustomReward, purchaseReward, getChildPurchaseHistory, getChildSpendableStars } from '../../rewards.js'
 
 /**
@@ -128,8 +129,8 @@ function renderRewards(selectedChild) {
 
     card.innerHTML = `
       <div class="reward-card-icon">${reward.icon || '🎁'}</div>
-      <div class="reward-card-name">${reward.title}</div>
-      ${reward.description ? `<div class="reward-card-desc">${reward.description}</div>` : ''}
+      <div class="reward-card-name">${escapeHtml(reward.title)}</div>
+      ${reward.description ? `<div class="reward-card-desc">${escapeHtml(reward.description)}</div>` : ''}
       <div class="reward-card-cost">
         <span>⭐</span>
         <span>${reward.star_cost}</span>
@@ -174,7 +175,7 @@ async function renderPurchaseHistory(selectedChild) {
         <div class="purchase-row">
           <div class="purchase-row-icon">${getRewardIcon(purchase.reward_title)}</div>
           <div class="purchase-row-info">
-            <div class="purchase-row-title">${purchase.reward_title}</div>
+            <div class="purchase-row-title">${escapeHtml(purchase.reward_title)}</div>
             <div class="purchase-row-date">${date}</div>
           </div>
           <div class="purchase-row-cost">⭐ ${purchase.star_cost}</div>

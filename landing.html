@@ -12,7 +12,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/landing.css">
     <link href="/styles/dashboard.css" rel="stylesheet">
 </head>
@@ -151,9 +151,9 @@
 
     <script type="module">
         import { checkAuth, signOut } from './src/auth.js'
-        import { getChildren, getModules, getChildModules, getParentProfile, createChild, updateChildModuleStatus } from './src/database.js'
+        import { getChildren, getModules, getChildModules, getParentProfile, createChild, updateChildModuleStatus } from './src/services/databaseService.js'
         import { supabase } from './src/supabaseClient.js'
-        import { showLoadingScreen, hideLoadingScreen } from './src/loading-screen.js'
+        import { showLoadingScreen, hideLoadingScreen } from './src/features/dashboard/loadingScreen.js'
 
         let currentUser = null
         let children = []

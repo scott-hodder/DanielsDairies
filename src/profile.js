@@ -1,9 +1,11 @@
 // Profile Page - Separate from Dashboard
+import { escapeHtml } from './lib/sanitize.js'
 import { signOut, getCurrentUser } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
 import { showElement, hideElement } from './utils/dom.js'
 import { switchStripeSubscriptionPlan, manageSubscription } from './services/databaseService.js'
-import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
+import { showLoadingScreen, hideLoadingScreen } from './features/dashboard/loadingScreen.js'
+import { showToast } from './ui/toast.js'
 
 const supabase = getSupabaseClient()
 
@@ -638,7 +640,7 @@ function renderChildrenList() {
     <div class="child-card" data-child-id="${child.id}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 12px; margin-bottom: 8px; cursor: pointer;">
       <span style="font-size: 32px;">${child.avatar || '🦊'}</span>
       <div style="flex: 1;">
-        <div style="font-weight: 600; color: #405878;">${child.name}</div>
+        <div style="font-weight: 600; color: #405878;">${escapeHtml(child.name)}</div>
         <div style="font-size: 12px; color: #6c757d;">Click to view dashboard</div>
       </div>
       <button class="edit-child-btn" data-child-id="${child.id}" style="background: none; border: none; cursor: pointer; font-size: 18px;">✏️</button>
@@ -727,7 +729,7 @@ function setupNavigation() {
       window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
-      alert('Failed to logout. Please try again.')
+      showToast('Failed to logout. Please try again.', 'error')
     }
   }
   
@@ -952,7 +954,7 @@ function setupModals() {
       hideElement(removeChildModal)
     } catch (err) {
       console.error('Error removing child:', err)
-      alert('Could not remove child. Please try again.')
+      showToast('Could not remove child. Please try again.', 'error')
     }
   })
 }
@@ -1076,16 +1078,16 @@ async function handleSubscriptionAction(action, button, onComplete) {
     const sub = window.currentSubscription || state.subscription
     if (action === 'cancel') {
       if (sub) sub.cancel_at_period_end = true
-      alert('Your subscription will be cancelled at the end of the billing period.')
+      showToast('Your subscription will be cancelled at the end of the billing period.', 'info')
     } else if (action === 'pause') {
       if (sub) sub.status = 'paused'
-      alert('Your subscription has been paused.')
+      showToast('Your subscription has been paused.', 'info')
     } else if (action === 'resume') {
       if (sub) {
         sub.status = 'active'
         sub.cancel_at_period_end = false
       }
-      alert('Your subscription is active again!')
+      showToast('Your subscription is active again!', 'success')
     }
 
     if (onComplete) onComplete()
@@ -1104,7 +1106,7 @@ async function handleSubscriptionAction(action, button, onComplete) {
     }
   } catch (error) {
     console.error('Subscription action failed:', error)
-    alert(error?.message || 'Something went wrong. Please try again.')
+    showToast(error?.message || 'Something went wrong. Please try again.', 'error')
     if (button) {
       button.disabled = false
       button.textContent = originalLabel
