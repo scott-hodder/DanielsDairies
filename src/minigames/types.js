@@ -4,7 +4,7 @@
 
 /**
  * @typedef {Object} MiniGameContext
- * @property {string} gameId                 Stable id, e.g. "balloon-breathing"
+ * @property {string} gameId                 Stable id, e.g. "shield-sprint"
  * @property {HTMLElement} container         Where the game mounts its DOM
  * @property {Object} config                 Per-instance config from roadblock.content_json
  * @property {"easy"|"medium"|"hard"} difficulty

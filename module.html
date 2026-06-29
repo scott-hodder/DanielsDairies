@@ -1027,9 +1027,9 @@
         setTimeout(() => {
           modal.remove();
           if (_state.childId) {
-            window.location.href = '/dashboard.html?childId=' + _state.childId;
+            window.location.href = '/dashboard.html?childId=' + _state.childId + '&completed=1';
           } else {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard.html?completed=1';
           }
         }, 300);
       }

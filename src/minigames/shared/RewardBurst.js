@@ -3,6 +3,9 @@
 // can sequence: finish -> burst -> close modal -> award rewards.
 
 export default function rewardBurst(container, { stars = 3, message = 'Great job!' } = {}) {
+  // Skip celebration entirely on 0 stars (failure)
+  if (stars <= 0) return Promise.resolve();
+
   return new Promise((resolve) => {
     const burst = document.createElement('div');
     burst.className = 'mg-reward-burst';

@@ -2,14 +2,17 @@
 // Importing this file is enough to make the controller available and
 // register all known games (games self-register on import).
 
-import './games/balloon-breathing/index.js';
-import './games/thought-catcher/index.js';
-import './games/emotion-match-trail/index.js';
-import './games/calm-path/index.js';
-import './games/coping-kit/index.js';
-import './games/kindness-quest/index.js';
-import './games/focus-fireflies/index.js';
-import './games/self-talk-sprint/index.js';
+import './games/shield-sprint/index.js';
+import './games/calm-river-rapids/index.js';
+import './games/courage-canyon/index.js';
+import './games/thought-forest/index.js';
+import './games/emotion-ocean/index.js';
+import './games/kindness-kingdom/index.js';
+import './games/focus-firefly-forest/index.js';
+import './games/coping-cave/index.js';
+import './games/gratitude-garden/index.js';
+import './games/breathing-bridge/index.js';
+
 import './ui/styles/minigame.css';
 import './testAllGames.js';
 

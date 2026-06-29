@@ -2625,31 +2625,11 @@ if (confirmPurchaseButton) {
 
       renderParentModulesOverview()
       renderAllModulesGrid()
-      if (state.selectedChild) {
-        await selectChild(state.selectedChild)
 
-        // selectChild may have fetched stale child modules from DB -
-        // ensure the just-unlocked module is marked unlocked in local state
-        const currentChildMods = (state.childModules || []).slice()
-        const unlockIdx = currentChildMods.findIndex(cm => cm.module_id === state.currentPurchaseModule.id)
-        if (unlockIdx >= 0 && currentChildMods[unlockIdx].locked !== false) {
-          currentChildMods[unlockIdx] = { ...currentChildMods[unlockIdx], locked: false }
-          setChildModules(currentChildMods)
-          window.childModules = currentChildMods
-        } else if (unlockIdx < 0) {
-          currentChildMods.push({
-            child_id: state.selectedChild.id,
-            module_id: state.currentPurchaseModule.id,
-            locked: false
-          })
-          setChildModules(currentChildMods)
-          window.childModules = currentChildMods
-        }
-
-        // Re-render adventure map with corrected child modules
-        if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
-          window.enhancedDashboard.adventureMap.render()
-        }
+      // Re-render adventure map immediately with the local state we already updated
+      // (skipping selectChild which would make 3+ redundant DB calls)
+      if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
+        window.enhancedDashboard.adventureMap.render()
       }
 
       closePurchaseModal()

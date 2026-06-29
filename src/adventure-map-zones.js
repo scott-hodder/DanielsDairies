@@ -19,7 +19,7 @@ export function getZoneState(childLevel) {
       roadStyle: 'dirt',
       envStyle: 'nature',
       density: 0.1,
-      backgroundImage: '/images/zones/zone1.png',
+      backgroundImage: '/images/zones/zone1.webp',
       unlockedLayers: {
         trees: true,
         fences: false,
@@ -38,7 +38,7 @@ export function getZoneState(childLevel) {
       roadStyle: 'packed',
       envStyle: 'village',
       density: 0.35,
-      backgroundImage: '/images/zones/zone2.png',
+      backgroundImage: '/images/zones/zone2.webp',
       unlockedLayers: {
         trees: true,
         fences: true,
@@ -57,7 +57,7 @@ export function getZoneState(childLevel) {
       roadStyle: 'paved',
       envStyle: 'city',
       density: 0.65,
-      backgroundImage: '/images/zones/zone3.png',
+      backgroundImage: '/images/zones/zone3.webp',
       unlockedLayers: {
         trees: true,
         fences: true,
@@ -75,7 +75,7 @@ export function getZoneState(childLevel) {
     roadStyle: 'multi_lane',
     envStyle: 'metropolis',
     density: 1.0,
-    backgroundImage: '/images/zones/zone4.png',
+    backgroundImage: '/images/zones/zone4.webp',
     unlockedLayers: {
       trees: true,
       fences: true,

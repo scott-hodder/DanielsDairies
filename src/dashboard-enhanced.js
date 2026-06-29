@@ -8,6 +8,8 @@ import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboar
 // Side-effect import: defines window.roadblockSystem on load.
 import './roadblock-system.js';
 import { isMiniGamesEnabled } from './minigames/index.js';
+// Side-effect import: EnhancedDashboard class, init/bootstrap, window globals
+import './enhanced-dashboard.js';
 
 // Cached once per page load so sync code paths (render) can check it.
 let _miniGamesFlag = null;
@@ -47,389 +49,28 @@ function getDashboardData() {
 }
 
 // ================================================
-// SUPER SKILL THEME CONFIGURATIONS
+// THEME & CONFIG IMPORTS (extracted to adventure-map-themes.js)
 // ================================================
+import {
+  SUPER_SKILL_THEMES, CATEGORY_THEMES, KID_FRIENDLY_COPY,
+  CATEGORY_TO_SUPERSKILL, MAP_ZONE_PROGRESSION, DANIEL_EXPRESSIONS
+} from './adventure-map-themes.js';
+import { injectAdventureMapStyles } from './adventure-map-styles.js';
 
 // Super Skills data loaded from database (will be populated on init)
 let superSkillsFromDB = [];
 let cyclesFromDB = [];
 
-const SUPER_SKILL_THEMES = {
-  all: {
-    name: 'All Adventures',
-    emoji: '🗺️',
-    color: '#405878',
-    description: 'View all your skill adventures',
-    skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
-    skyGradientEnd: ['#87CEEB', '#98D8C8', '#7CCD7C', '#90EE90', '#98FB98'],
-    decorationsStart: ['🌲', '🌳', '🍂', '🍃'],
-    decorationsEnd: ['🌸', '🌻', '🌼', '🦋', '🐦', '🌈'],
-    pathColor: { main: '#A08868', light: '#C4A882', shadow: 'rgba(101, 78, 55, 0.3)' },
-    startMarker: '🏠',
-    endMarker: '🏁',
-    destination: { name: "Adventure's End", emoji: '🏆' },
-    nodeEmojis: { incomplete: '📘', complete: '✨' },
-    danielExpressions: { start: 'focused', middle: 'happy', end: 'proud' }
-  },
-  
-  'brain-builder': {
-    name: 'Brain Builder',
-    emoji: '🧠',
-    color: '#6366F1',
-    description: 'Master your mind through understanding how your brain works',
-    skyGradientStart: ['#778899', '#8899AA', '#99AABB', '#AABBCC', '#BBCCDD'],
-    skyGradientEnd: ['#00CED1', '#48D1CC', '#40E0D0', '#7FFFD4', '#AFEEEE'],
-    decorationsStart: ['💭', '🌫️', '❓', '🤔'],
-    decorationsEnd: ['💡', '⭐', '🌟', '✨', '🎯', '🏆'],
-    pathColor: { main: '#6366F1', light: '#818CF8', shadow: 'rgba(99, 102, 241, 0.3)' },
-    startMarker: '💭',
-    endMarker: '💡',
-    destination: { name: 'Clarity Peak', emoji: '💡' },
-    nodeEmojis: { incomplete: '🤔', complete: '🧠' },
-    danielExpressions: { start: 'curious', middle: 'thinking', end: 'enlightened' }
-  },
-  
-  'thought-driver': {
-    name: 'Thought Driver',
-    emoji: '💭',
-    color: '#8B5CF6',
-    description: 'Take control of your thoughts and steer them positively',
-    skyGradientStart: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2'],
-    skyGradientEnd: ['#E0FFFF', '#B0E0E6', '#ADD8E6', '#87CEEB', '#87CEFA'],
-    decorationsStart: ['💭', '🌀', '❓', '💫'],
-    decorationsEnd: ['💡', '🎯', '⭐', '✨', '🌈', '🦋'],
-    pathColor: { main: '#8B5CF6', light: '#A78BFA', shadow: 'rgba(139, 92, 246, 0.3)' },
-    startMarker: '💭',
-    endMarker: '🎯',
-    destination: { name: 'Focus Point', emoji: '🎯' },
-    nodeEmojis: { incomplete: '🤔', complete: '💡' },
-    danielExpressions: { start: 'confused', middle: 'focused', end: 'clear' }
-  },
-  
-  'emotion-navigator': {
-    name: 'Emotion Navigator',
-    emoji: '🧭',
-    color: '#EC4899',
-    description: 'Navigate through all emotions with confidence',
-    skyGradientStart: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2'],
-    skyGradientEnd: ['#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFF0F5', '#FFFAFA'],
-    decorationsStart: ['💭', '❓', '🌀', '💫'],
-    decorationsEnd: ['💖', '😊', '🌈', '✨', '🦋', '🌸'],
-    pathColor: { main: '#EC4899', light: '#F472B6', shadow: 'rgba(236, 72, 153, 0.3)' },
-    startMarker: '🧭',
-    endMarker: '💖',
-    destination: { name: 'Heart Haven', emoji: '💖' },
-    nodeEmojis: { incomplete: '🤔', complete: '😊' },
-    danielExpressions: { start: 'curious', middle: 'understanding', end: 'loving' }
-  },
-  
-  'body-boss': {
-    name: 'Body Boss',
-    emoji: '💪',
-    color: '#10B981',
-    description: 'Understand and control your body signals',
-    skyGradientStart: ['#FF8C00', '#FFA500', '#FFB347', '#FFCC00', '#FFD700'],
-    skyGradientEnd: ['#87CEEB', '#B0E0E6', '#ADD8E6', '#E0FFFF', '#F0FFFF'],
-    decorationsStart: ['⚡', '💨', '🔥', '💪'],
-    decorationsEnd: ['🧘', '🌊', '🍃', '🦋', '🌸', '☀️'],
-    pathColor: { main: '#10B981', light: '#34D399', shadow: 'rgba(16, 185, 129, 0.3)' },
-    startMarker: '⚡',
-    endMarker: '🧘',
-    destination: { name: 'Zen Garden', emoji: '🧘' },
-    nodeEmojis: { incomplete: '😤', complete: '😌' },
-    danielExpressions: { start: 'tense', middle: 'relaxing', end: 'zen' }
-  },
-  
-  'connection-captain': {
-    name: 'Connection Captain',
-    emoji: '🤝',
-    color: '#F59E0B',
-    description: 'Build strong relationships and communicate well',
-    skyGradientStart: ['#90A4AE', '#A5B5BF', '#B0BEC5', '#CFD8DC', '#ECEFF1'],
-    skyGradientEnd: ['#98FB98', '#90EE90', '#7CCD7C', '#66CDAA', '#3CB371'],
-    decorationsStart: ['🏠', '🚪', '🌲'],
-    decorationsEnd: ['👫', '🤝', '❤️', '🎉', '🎊', '🦋', '🌈'],
-    pathColor: { main: '#F59E0B', light: '#FBBF24', shadow: 'rgba(245, 158, 11, 0.3)' },
-    startMarker: '🏠',
-    endMarker: '🎉',
-    destination: { name: 'Friendship Circle', emoji: '🎉' },
-    nodeEmojis: { incomplete: '🙂', complete: '😄' },
-    danielExpressions: { start: 'shy', middle: 'friendly', end: 'celebrating' }
-  },
-  
-  'calm-controller': {
-    name: 'Calm Controller',
-    emoji: '🧘',
-    color: '#06B6D4',
-    description: 'Master techniques to find peace and stay centered',
-    skyGradientStart: ['#4A5568', '#5A6578', '#6B7B8C', '#7C8B9C', '#8D9BAC'],
-    skyGradientEnd: ['#87CEEB', '#FFE4B5', '#FFFACD', '#FFF8DC', '#FFFFF0'],
-    decorationsStart: ['🌧️', '💨', '☁️', '🌫️', '⛈️'],
-    decorationsEnd: ['☀️', '🌈', '🌻', '🦋', '🐦', '🌸'],
-    pathColor: { main: '#06B6D4', light: '#22D3EE', shadow: 'rgba(6, 182, 212, 0.3)' },
-    startMarker: '🌧️',
-    endMarker: '☀️',
-    destination: { name: 'Sunny Clearing', emoji: '🌅' },
-    nodeEmojis: { incomplete: '😰', complete: '😌' },
-    danielExpressions: { start: 'worried', middle: 'hopeful', end: 'peaceful' }
-  },
-  
-  'resilience-ranger': {
-    name: 'Resilience Ranger',
-    emoji: '🏔️',
-    color: '#EF4444',
-    description: 'Bounce back from challenges and grow stronger',
-    skyGradientStart: ['#1a1a2e', '#16213e', '#1f3460', '#2C3E50', '#34495E'],
-    skyGradientEnd: ['#87CEEB', '#FFB347', '#FFCC33', '#FFD700', '#FFF8DC'],
-    decorationsStart: ['🌙', '✨', '🌑', '💫'],
-    decorationsEnd: ['🌻', '🌷', '🌸', '🦋', '🐦', '☀️', '🌈'],
-    pathColor: { main: '#EF4444', light: '#F87171', shadow: 'rgba(239, 68, 68, 0.3)' },
-    startMarker: '🌙',
-    endMarker: '🌻',
-    destination: { name: 'Bright Garden', emoji: '🌻' },
-    nodeEmojis: { incomplete: '😔', complete: '😊' },
-    danielExpressions: { start: 'sad', middle: 'hopeful', end: 'joyful' }
-  }
-};
+// NOTE: SUPER_SKILL_THEMES, CATEGORY_THEMES, KID_FRIENDLY_COPY,
+// CATEGORY_TO_SUPERSKILL, MAP_ZONE_PROGRESSION, DANIEL_EXPRESSIONS
+// are now imported from ./adventure-map-themes.js
 
-// Kid-friendly copy for skill picker cards & preview modal
-const KID_FRIENDLY_COPY = {
-  'brain-builder': {
-    description: 'Learn how your brain works and how to grow it.',
-    pickThisIf: 'You want to understand learning, focus, and big feelings.',
-    youllLearn: ['Focus better', 'Understand big feelings', 'Make smart choices', 'Grow your brain like a muscle'],
-    tag: 'Your Brain & Learning',
-    bgColor: '#eef0ff',
-    borderColor: '#c7cbf2',
-    btnColor: '#6366F1',
-    decos: ['💡', '🧩', '✨'],
-    speechNew: 'Ready to power up your brain?',
-    speechCurrent: "You're already making progress here!"
-  },
-  'thought-driver': {
-    description: 'Learn how to steer your thoughts in a helpful direction.',
-    pickThisIf: 'Your thoughts sometimes get stuck or feel unhelpful.',
-    youllLearn: ['Spot unhelpful thoughts', 'Think in a more helpful way', 'Stop worrying so much', 'Feel more in control of your mind'],
-    tag: 'Helpful Thinking',
-    bgColor: '#ecfdf5',
-    borderColor: '#a7f3d0',
-    btnColor: '#059669',
-    decos: ['🪧', '➡️', '🗺️'],
-    speechNew: 'Want to explore new ways to think?',
-    speechCurrent: 'Keep steering those thoughts!'
-  },
-  'emotion-navigator': {
-    description: 'Understand your feelings and learn what to do with them.',
-    pickThisIf: 'You have big feelings and want to understand them better.',
-    youllLearn: ['Name how you feel', 'Handle anger and sadness', 'Talk about feelings', 'Feel more in control'],
-    tag: 'Feelings & Emotions',
-    bgColor: '#fff1f2',
-    borderColor: '#fecdd3',
-    btnColor: '#e11d48',
-    decos: ['💖', '🧭', '🌈'],
-    speechNew: 'This adventure helps with big feelings!',
-    speechCurrent: "You're navigating feelings like a pro!"
-  },
-  'body-boss': {
-    description: 'Learn to listen to your body and feel more in control.',
-    pickThisIf: 'Your body feels fidgety, tense, or hard to control.',
-    youllLearn: ['Calm your body down', 'Notice body signals', 'Use movement to feel better', 'Relax when things get tough'],
-    tag: 'Your Body & Energy',
-    bgColor: '#ecfdf5',
-    borderColor: '#a7f3d0',
-    btnColor: '#10B981',
-    decos: ['⚡', '🧘', '🌊'],
-    speechNew: 'Want to become the boss of your body?',
-    speechCurrent: "You're learning to listen to your body!"
-  },
-  'connection-captain': {
-    description: 'Get better at making friends and talking to people.',
-    pickThisIf: 'You want to feel more confident around other people.',
-    youllLearn: ['Make new friends', 'Listen and talk better', 'Work things out with others', 'Feel part of a group'],
-    tag: 'Friends & People',
-    bgColor: '#fffbeb',
-    borderColor: '#fde68a',
-    btnColor: '#d97706',
-    decos: ['👫', '🏠', '💬'],
-    speechNew: 'Ready to build amazing friendships?',
-    speechCurrent: 'Your friendship skills are growing!'
-  },
-  'calm-controller': {
-    description: 'Find your calm when everything feels too much.',
-    pickThisIf: 'You sometimes feel worried, overwhelmed, or stressed.',
-    youllLearn: ['Calm down when upset', 'Breathe and relax', 'Handle stressful moments', 'Feel peaceful inside'],
-    tag: 'Staying Calm',
-    bgColor: '#ecfeff',
-    borderColor: '#a5f3fc',
-    btnColor: '#0891b2',
-    decos: ['🌸', '☀️', '🦋'],
-    speechNew: 'Want to find your inner calm?',
-    speechCurrent: "You're getting calmer every day!"
-  },
-  'resilience-ranger': {
-    description: 'Bounce back when things go wrong and keep going.',
-    pickThisIf: 'You want to feel braver and handle tough times better.',
-    youllLearn: ['Get back up after setbacks', 'Feel braver', 'Keep trying when it\'s hard', 'Grow stronger from challenges'],
-    tag: 'Bouncing Back',
-    bgColor: '#fef2f2',
-    borderColor: '#fecaca',
-    btnColor: '#dc2626',
-    decos: ['🏔️', '🛡️', '⭐'],
-    speechNew: 'Ready to become super brave?',
-    speechCurrent: "You're bouncing back stronger!"
-  },
-  'future-designer': {
-    description: 'Dream big, set goals, and design your future.',
-    pickThisIf: 'You want to plan ahead and work towards your dreams.',
-    youllLearn: ['Set goals you can reach', 'Plan your next steps', 'Believe in yourself', 'Picture your future'],
-    tag: 'Goals & Your Future',
-    bgColor: '#f5f3ff',
-    borderColor: '#ddd6fe',
-    btnColor: '#7c3aed',
-    decos: ['🔭', '⭐', '🏁'],
-    speechNew: 'Want to design your awesome future?',
-    speechCurrent: "You're building your dream future!"
-  },
-  'social-mapper': {
-    description: 'Understand people better and build stronger friendships.',
-    pickThisIf: 'You want to get along better with the people around you.',
-    youllLearn: ['Read how others feel', 'Be a better friend', 'Handle tricky situations', 'Feel more connected'],
-    tag: 'Friends & People',
-    bgColor: '#f0fdfa',
-    borderColor: '#99f6e4',
-    btnColor: '#0d9488',
-    decos: ['🗺️', '👋', '❤️'],
-    speechNew: 'Ready to explore the world of people?',
-    speechCurrent: "You're mapping out great friendships!"
-  },
-  'behaviour-engineer': {
-    description: 'Build good habits and make choices you feel proud of.',
-    pickThisIf: 'You want to break bad habits or build new good ones.',
-    youllLearn: ['Build good habits', 'Make better choices', 'Stick with new routines', 'Feel proud of yourself'],
-    tag: 'Habits & Choices',
-    bgColor: '#fffbeb',
-    borderColor: '#fde68a',
-    btnColor: '#d97706',
-    decos: ['⚡', '🔧', '✅'],
-    speechNew: 'Want to build awesome new habits?',
-    speechCurrent: "You're engineering great habits!"
-  },
-  'resilience-architect': {
-    description: 'Bounce back when things go wrong and keep going.',
-    pickThisIf: 'You want to feel braver and handle tough times better.',
-    youllLearn: ['Get back up after setbacks', 'Feel braver', 'Keep trying when it\'s hard', 'Grow stronger from challenges'],
-    tag: 'Bouncing Back',
-    bgColor: '#fff7ed',
-    borderColor: '#fed7aa',
-    btnColor: '#ea580c',
-    decos: ['🏔️', '🛡️', '🧱'],
-    speechNew: 'Ready to build your inner strength?',
-    speechCurrent: "You're getting stronger every day!"
-  }
-};
-
-// Mapping from old category names to super skill slugs (for backward compatibility)
-const CATEGORY_TO_SUPERSKILL = {
-  'anger': 'emotion-navigator',
-  'anxiety': 'calm-controller', 
-  'depression': 'resilience-ranger',
-  'emotions': 'emotion-navigator',
-  'body': 'body-boss',
-  'cognitive': 'brain-builder',
-  'social': 'connection-captain',
-  'general': 'all'
-};
-
-// For backward compatibility, CATEGORY_THEMES points to SUPER_SKILL_THEMES
-const CATEGORY_THEMES = SUPER_SKILL_THEMES;
-
-// ================================================
-// MAP ZONE PROGRESSION SYSTEM (4-ZONE)
-// ================================================
-// Zones unlock after completing a set number of modules.
-const MAP_ZONE_PROGRESSION = [
-  {
-    range: '1–3',
-    label: 'Zone 1: Foundations',
-    unlocksAfterModules: 0,
-    conceptualPurpose: 'Introduce the journey, establish routines, and build comfort with the map flow.',
-    emotionalShift: 'From uncertainty to cautious curiosity.',
-    progressFeelsLike: 'Small wins, steady practice, and growing confidence with the basics.',
-    roadChanges: 'The road is narrow and slightly uneven, with a basic path line and minimal structure. Edges are soft and forgiving, with no intersections or traffic guidance yet.',
-    townChanges: 'A handful of small, low structures appear at a distance from the road, spaced apart with open gaps. Details are minimal, suggesting a quiet start rather than a fully formed neighborhood.',
-    zoneCompletionTransition: 'Freeze input for a beat as the scene holds. The path line brightens and steadies, smoothing out as it widens slightly. The ground around the road subtly aligns into more orderly edges, signaling that thoughts have formed a stronger route. Interaction resumes once the upgraded path settles.',
-    visualChangesAllowed: 'Subtle increases in clarity and contrast, gentle emphasis on completed modules, and minimal motion cues.'
-  },
-  {
-    range: '4–6',
-    label: 'Zone 2: Momentum',
-    unlocksAfterModules: 3,
-    conceptualPurpose: 'Reinforce skills through repetition and start connecting ideas across modules.',
-    emotionalShift: 'From curiosity to determination.',
-    progressFeelsLike: 'A rhythm of achievement, with progress feeling more consistent and predictable.',
-    roadChanges: 'The road widens and smooths, with clearer borders and a consistent lane-like structure. The first intersections appear, along with simple directional signs.',
-    townChanges: 'More buildings begin to line the road, still simple in form but closer together. A few paths and shared edges hint at connections forming between structures.',
-    zoneCompletionTransition: 'Pause interaction briefly as the road surface tightens and becomes more uniform. Lane structure resolves into crisp lines, and a new intersection fades in, underscoring that thoughts now move along a clearer route. Resume interaction as the new junction locks into place.',
-    visualChangesAllowed: 'Slightly richer color saturation, clearer path highlighting, and more noticeable progress markers.'
-  },
-  {
-    range: '7–9',
-    label: 'Zone 3: Mastery Building',
-    unlocksAfterModules: 6,
-    conceptualPurpose: 'Deepen understanding and encourage independent application of skills.',
-    emotionalShift: 'From determination to self-assurance.',
-    progressFeelsLike: 'Confident strides, with progress feeling earned and meaningful.',
-    roadChanges: 'The road becomes broader and more structured, with well-defined lanes and smoother transitions. Intersections are more frequent, with clearer signage and the first guidance lights.',
-    townChanges: 'Buildings grow taller and denser, with clearer clusters that feel like small blocks. Walkways and shared boundaries make the town feel cohesive rather than scattered.',
-    zoneCompletionTransition: 'Hold input as the road expands to a wider, steadier corridor. Guidance lights pulse on in sequence along the path, and intersections clarify into a clean grid, reinforcing that thoughts now travel with strength and direction. Interaction returns after the lights settle.',
-    visualChangesAllowed: 'Stronger emphasis on completed sections, increased depth through layering, and more prominent milestone cues.'
-  },
-  {
-    range: '10–12',
-    label: 'Zone 4: Celebration',
-    unlocksAfterModules: 9,
-    conceptualPurpose: 'Celebrate growth and reinforce the child’s sense of accomplishment.',
-    emotionalShift: 'From self-assurance to pride.',
-    progressFeelsLike: 'A satisfying finish, with a clear sense of achievement and closure.',
-    roadChanges: 'The road is at its widest and smoothest, fully structured with clear lanes. Intersections are well organized, with prominent signs and steady guidance lights marking the final stretch.',
-    townChanges: 'The town becomes an active center with taller structures, tighter spacing, and connected streets that wrap around the road. The environment feels established and complete, reinforcing a sense of arrival.',
-    zoneCompletionTransition: 'Briefly pause interaction as the path locks into its final, strongest form. The surface polishes to a consistent, confident flow, intersections align with clear guidance, and the full route glows subtly to show thoughts becoming their strongest path. Resume control once the glow fades to steady.',
-    visualChangesAllowed: 'Highest brightness within the palette, enhanced polish on key elements, and celebratory emphasis on completion.'
-  }
-];
-
-// Daniel expression images mapping
-const DANIEL_EXPRESSIONS = {
-  stressed: '/images/characters/DanielTheDog.webp',
-  worried: '/images/characters/DanielTheDog.webp',
-  sad: '/images/characters/DanielTheDog.webp',
-  tense: '/images/characters/DanielTheDog.webp',
-  confused: '/images/characters/DanielTheDog.webp',
-  shy: '/images/characters/DanielTheDog.webp',
-  curious: '/images/characters/DanielTheDog.webp',
-  focused: '/images/characters/DanielTheDog.webp',
-  hopeful: '/images/characters/DanielTheDog.webp',
-  relaxing: '/images/characters/DanielTheDog.webp',
-  thinking: '/images/characters/DanielTheDog.webp',
-  friendly: '/images/characters/DanielTheDog.webp',
-  learning: '/images/characters/DanielTheDog.webp',
-  understanding: '/images/characters/DanielTheDog.webp',
-  happy: '/images/characters/DanielTheDog.webp',
-  calm: '/images/characters/DanielTheDog.webp',
-  peaceful: '/images/characters/DanielTheDog.webp',
-  joyful: '/images/characters/DanielTheDog.webp',
-  loving: '/images/characters/DanielTheDog.webp',
-  zen: '/images/characters/DanielTheDog.webp',
-  enlightened: '/images/characters/DanielTheDog.webp',
-  celebrating: '/images/characters/DanielTheDog.webp',
-  proud: '/images/characters/DanielTheDog.webp'
-};
 
 // ================================================
 // ADVENTURE MAP V4 CLASS
 // ================================================
 
-class AdventureMapV4 {
+export class AdventureMapV4 {
   constructor() {
     this.modules = [];
     this.allModules = [];
@@ -462,11 +103,11 @@ class AdventureMapV4 {
     
     this.config = {
       nodeSize: this.isMobile ? 50 : 72,
-      nodeSpacingY: this.isMobile ? 85 : 140,
-      pathAmplitude: this.isMobile ? 55 : 140,
-      zigzagFrequency: this.isMobile ? 0.8 : 1.2,
-      topPadding: this.isMobile ? 250 : 120,
-      bottomPadding: this.isMobile ? 80 : 160,
+      nodeSpacingY: this.isMobile ? 85 : 130,
+      pathAmplitude: this.isMobile ? 50 : 110,
+      zigzagFrequency: this.isMobile ? 0.8 : 1.0,
+      topPadding: this.isMobile ? 200 : 80,
+      bottomPadding: this.isMobile ? 80 : 120,
       sidePadding: this.isMobile ? 36 : 100,
       minCanvasHeight: this.isMobile ? 400 : 500
     };
@@ -585,358 +226,7 @@ class AdventureMapV4 {
     }
   }
 
-  injectStyles() {
-    if (document.getElementById('adventure-map-v4-styles')) return;
-    
-    var css = [];
-    css.push('.adventure-map-section { background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(245,250,255,0.4) 30%, rgba(240,248,255,0.3) 100%); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 24px; padding: 0; box-shadow: 0 8px 32px rgba(64,88,120,0.08), 0 2px 8px rgba(64,88,120,0.04), inset 0 1px 0 rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5); margin-top: 0; overflow: hidden; position: relative; }');
-    css.push('.adventure-map-header-fixed { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; text-align: center; }');
-    css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 24px 14px; position: relative; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%); }');
-    css.push('.adventure-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
-    css.push('.adventure-subtitle { margin: 2px 0 0; color: #64748B; font-size: 14px; font-weight: 500; }');
-    css.push('.category-filter-container { display: flex; align-items: center; gap: 10px; margin: 0 20px 10px; padding: 10px 20px; flex-wrap: wrap; justify-content: center; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.6); }');
-    css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; color: #64748B; }');
-    css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 600; padding: 10px 36px 10px 16px; border-radius: 14px; border: 1.5px solid rgba(64,88,120,0.12); background: rgba(255,255,255,0.85); color: #1E293B; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748B\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 180px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }');
-    css.push('.category-filter-select:hover { border-color: rgba(99,102,241,0.35); box-shadow: 0 2px 8px rgba(99,102,241,0.08); }');
-    css.push('.category-filter-select:focus { outline: none; border-color: rgba(99,102,241,0.4); box-shadow: 0 0 0 3px rgba(99,102,241,0.08); }');
-    css.push('.category-badge { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); letter-spacing: 0.2px; }');
-    css.push('.cycle-badge { background: rgba(255,255,255,0.85); color: #405878; border: 1.5px solid rgba(64,88,120,0.1); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }');
-    css.push('.town-progress-cue { margin: 0 20px 12px; border-radius: 18px; border: none; background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(248,250,255,0.5) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 2px 12px rgba(64,88,120,0.06), inset 0 1px 0 rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.55); overflow: hidden; }');
-    css.push('.town-progress-cue-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px 8px; }');
-    css.push('.town-progress-cue-title { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px; }');
-    css.push('.town-progress-cue-stage { font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; color: #6366F1; background: rgba(99,102,241,0.1); border-radius: 999px; padding: 5px 12px; }');
-    css.push('.town-progress-cue-copy { padding: 0 20px 14px; font-size: 12px; line-height: 1.5; color: #64748B; }');
-    css.push('.town-progress-cue-strong { color: #1E293B; font-weight: 700; }');
-    css.push('.town-progress-cue-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 10px; position: relative; }');
-    css.push('.town-progress-cue-timeline::before { content: ""; position: absolute; top: 24px; left: 12%; right: 12%; height: 4px; background: #E2E8F0; border-radius: 2px; z-index: 0; }');
-    css.push('.town-progress-cue-step { text-align: center; padding: 10px 8px; position: relative; z-index: 1; transition: all 0.3s ease; border-radius: 14px; }');
-    css.push('.town-progress-cue-step-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #F1F5F9; border: 3px solid #E2E8F0; transition: all 0.3s ease; }');
-    css.push('.town-progress-cue-step strong { display: block; font-family: "Fredoka", sans-serif; color: #94A3B8; font-size: 11px; margin-top: 1px; font-weight: 600; }');
-    css.push('.town-progress-cue-step small { font-size: 10px; color: #CBD5E1; font-weight: 500; }');
-    css.push('.town-progress-cue-step.active { background: rgba(99,102,241,0.06); }');
-    css.push('.town-progress-cue-step.active .town-progress-cue-step-dot { background: linear-gradient(135deg, #6366F1, #818CF8); border-color: #6366F1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15), 0 3px 8px rgba(99,102,241,0.25); }');
-    css.push('.town-progress-cue-step.active strong { color: #4338CA; font-weight: 700; }');
-    css.push('.town-progress-cue-step.active small { color: #6366F1; font-weight: 600; }');
-    css.push('.town-progress-cue-step.done .town-progress-cue-step-dot { background: linear-gradient(135deg, #22C55E, #4ADE80); border-color: #22C55E; box-shadow: 0 2px 6px rgba(34,197,94,0.25); }');
-    css.push('.town-progress-cue-step.done strong { color: #16A34A; font-weight: 700; }');
-    css.push('.town-progress-cue-step.done small { color: #22C55E; }');
-    css.push('@media (max-width: 768px) { .town-progress-cue-title { display: none; } .town-progress-cue-copy { display: none; } .town-progress-cue-head { padding: 10px 16px 6px; } .town-progress-cue { margin: 0 12px 10px; } }');
-    css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 0 0 22px 22px; overflow: hidden; cursor: grab; border: none; border-top: 1px solid rgba(64,88,120,0.06); box-shadow: inset 0 0 80px rgba(135,206,235,0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%); }');
-    css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
-    css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');
-    css.push('.adventure-viewport[data-zone="2"] { background-image: url("/images/zones/zone2.png"); }');
-    css.push('.adventure-viewport[data-zone="3"] { background-image: url("/images/zones/zone3.png"); }');
-    css.push('.adventure-viewport[data-zone="4"] { background-image: url("/images/zones/zone4.png"); }');
-    css.push('.adventure-viewport[data-zone] .map-bg-stack { opacity: 0; }');
-    css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 0 0 22px 22px; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), inset 0 -30px 50px rgba(15, 23, 42, 0.06); }');
-    css.push('.adventure-viewport:active, .adventure-viewport.dragging { cursor: grabbing; }');
-    css.push('.map-bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }');
-    css.push('.map-bg-sky { transition: background 0.8s ease; }');
-    css.push('.map-bg-hills { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 1200 200\' preserveAspectRatio=\'none\'%3E%3Cpath d=\'M0,200 Q150,80 300,120 T600,80 T900,110 T1200,70 L1200,200 Z\' fill=\'%2368B868\'/%3E%3Cpath d=\'M0,200 Q200,100 400,130 T800,90 T1200,120 L1200,200 Z\' fill=\'%2358A858\'/%3E%3C/svg%3E"); background-size: 100% 140px; background-repeat: no-repeat; background-position: center 35%; }');
-    css.push('.map-bg-grass { background: linear-gradient(180deg, transparent 0%, transparent 50%, #4CAF50 50%, #43A047 100%); }');
-    css.push('.map-bg-clouds { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 500 120\'%3E%3Cellipse cx=\'70\' cy=\'50\' rx=\'40\' ry=\'24\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'100\' cy=\'42\' rx=\'30\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'50\' cy=\'48\' rx=\'25\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'85\' cy=\'55\' rx=\'28\' ry=\'15\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'350\' cy=\'60\' rx=\'45\' ry=\'26\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'385\' cy=\'52\' rx=\'32\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'330\' cy=\'58\' rx=\'28\' ry=\'18\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'365\' cy=\'65\' rx=\'30\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3C/svg%3E"); background-size: 600px 120px; background-repeat: repeat-x; background-position: 0 15px; animation: cloudsDrift 90s linear infinite; }');
-    css.push('@keyframes cloudsDrift { from { background-position-x: 0; } to { background-position-x: 600px; } }');
-    css.push('.map-bg-trees { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 70\'%3E%3Cpath d=\'M10,70 L20,35 L15,40 L25,18 L20,23 L30,0 L40,23 L35,18 L45,40 L40,35 L50,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M55,70 L63,42 L59,46 L67,28 L63,32 L71,14 L79,32 L75,28 L83,46 L79,42 L87,70 Z\' fill=\'%231B5E20\'/%3E%3Cpath d=\'M95,70 L107,32 L101,38 L113,10 L125,38 L119,32 L131,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M140,70 L148,45 L144,49 L152,32 L148,36 L156,20 L164,36 L160,32 L168,49 L164,45 L172,70 Z\' fill=\'%231B5E20\'/%3E%3C/svg%3E"); background-size: 250px 90px; background-repeat: repeat-x; background-position: 0 bottom; }');
-    css.push('.adventure-canvas { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; transition: transform 0.05s linear; z-index: 5; }');
-    css.push('.adventure-viewport.dragging .adventure-canvas { transition: none; }');
-    css.push('.map-bg-stack { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }');
-    css.push('.map-bg-layer { z-index: 0; }');
-    css.push('.map-decorations { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }');
-    css.push('.map-decoration { position: absolute; font-size: 26px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)); opacity: 0.85; }');
-    css.push('.map-decoration.animate { animation: decorSway 4s ease-in-out infinite; }');
-    css.push('.map-town { position: absolute; display: flex; align-items: flex-end; gap: 6px; z-index: 2; pointer-events: none; }');
-    css.push('.map-town-item { font-size: 26px; filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.25)); }');
-    css.push('.map-town-label { margin-left: 8px; padding: 4px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.9); color: #1e293b; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18); }');
-    css.push('@keyframes decorSway { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.05); } }');
-    css.push('.adventure-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; }');
-    css.push('.path-shadow { fill: none; stroke-width: 36; stroke-linecap: round; stroke-linejoin: round; }');
-    css.push('.path-main { fill: none; stroke-width: 30; stroke-linecap: round; stroke-linejoin: round; }');
-    css.push('.path-light { fill: none; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }');
-    css.push('.path-dashes { fill: none; stroke: rgba(255,255,255,0.5); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 18; animation: dashMove 1s linear infinite; }');
-    css.push('@keyframes dashMove { to { stroke-dashoffset: -36; } }');
-    css.push('@keyframes roadDashFlow0 { to { stroke-dashoffset: -40; } }');
-    css.push('@keyframes roadDashFlow1 { to { stroke-dashoffset: -56; } }');
-    css.push('@keyframes roadDashFlow2 { to { stroke-dashoffset: -60; } }');
-    css.push('@keyframes roadDashFlow3 { to { stroke-dashoffset: -68; } }');
-    css.push('.road-dash-s0 { animation: roadDashFlow0 3s linear infinite; }');
-    css.push('.road-dash-s1 { animation: roadDashFlow1 2s linear infinite; }');
-    css.push('.road-dash-s2 { animation: roadDashFlow2 1.4s linear infinite; }');
-    css.push('.road-dash-s3 { animation: roadDashFlow3 1s linear infinite; }');
-    css.push('.adventure-nodes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }');
-    css.push('.adventure-node { position: absolute; width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translate(-50%, -50%); transition: transform 0.2s ease, box-shadow 0.2s ease; z-index: 10; overflow: visible; }');
-    css.push('.adventure-node:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 20; }');
-    css.push('.adventure-node .node-emoji { font-size: 28px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2)); }');
-    css.push('.adventure-node.completed { background: linear-gradient(145deg, #4ADE80 0%, #22C55E 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), 0 0 0 4px rgba(34, 197, 94, 0.2); }');
-    css.push('.adventure-node.available { background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); animation: availablePulse 2s ease-in-out infinite; }');
-    css.push('@keyframes availablePulse { 0%, 100% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); } 50% { box-shadow: 0 8px 30px rgba(245, 158, 11, 0.7), 0 0 0 8px rgba(245, 158, 11, 0.15); } }');
-    css.push('.adventure-node.locked { background: linear-gradient(145deg, #9CA3AF 0%, #6B7280 100%); border: 4px solid rgba(255,255,255,0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; opacity: 0.8; }');
-    css.push('.adventure-node.locked .node-emoji { filter: grayscale(0.7) drop-shadow(0 2px 3px rgba(0,0,0,0.2)); opacity: 0.6; }');
-    css.push('.node-number { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2px solid rgba(64,88,120,0.15); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #405878; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-family: "Fredoka", sans-serif; }');
-    css.push('.node-badge { position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }');
-    css.push('.node-badge.check { background: linear-gradient(145deg, #10B981 0%, #059669 100%); color: #fff; }');
-    css.push('.node-badge.star { background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 100%); color: #fff; font-size: 14px; }');
-    css.push('.node-category-dot { position: absolute; top: -4px; left: -4px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }');
-    css.push('.node-tooltip { position: absolute; bottom: calc(100% + 14px); left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(30, 41, 59, 0.95); color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 13px; white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.2s ease; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }');
-    css.push('.node-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 8px solid transparent; border-top-color: rgba(30, 41, 59, 0.95); }');
-    css.push('.adventure-node:hover .node-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }');
-    css.push('.tooltip-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }');
-    css.push('.tooltip-category { font-size: 11px; opacity: 0.7; margin-bottom: 4px; }');
-    css.push('.tooltip-status { font-size: 12px; opacity: 0.85; }');
-    css.push('.tooltip-status.ready { color: #FBBF24; }');
-    css.push('.tooltip-status.done { color: #4ADE80; }');
-    css.push('.current-indicator { position: absolute; top: -90px; left: calc(50% + 110px); transform: translateX(-50%); width: 132px; height: 132px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 16px 18px rgba(15, 23, 42, 0.45)); animation: characterBounce 1.2s ease-in-out infinite; z-index: 15; }');
-    css.push('.current-indicator img { width: 100%; height: 100%; object-fit: contain; border-radius: 0; pointer-events: none; }');
-    css.push('.current-indicator-label { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.95); color: #1e3a8a; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; box-shadow: 0 6px 14px rgba(30, 64, 175, 0.2); white-space: nowrap; }');
-    css.push('.adventure-node.is-current::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.25), 0 12px 24px rgba(30, 64, 175, 0.25); animation: currentRing 2.2s ease-in-out infinite; }');
-    css.push('@keyframes currentRing { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.06); opacity: 0.6; } }');
-    css.push('@keyframes characterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }');
-    css.push('.map-progress { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); border: 1px solid rgba(64,88,120,0.1); font-family: "Fredoka", sans-serif; z-index: 50; }');
-    css.push('.cycle-complete-popup-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.45); display: flex; align-items: center; justify-content: center; z-index: 12000; padding: 16px; animation: fadeInOverlay 0.25s ease; }');
-    css.push('.cycle-complete-popup-wrap { position: relative; width: min(560px, 96vw); }');
-    css.push('.cycle-complete-popup-daniel { position: absolute; top: -112px; left: 50%; transform: translateX(-50%); width: 180px; height: 180px; object-fit: contain; filter: drop-shadow(0 12px 16px rgba(0,0,0,0.28)); pointer-events: none; }');
-    css.push('.cycle-complete-popup { margin-top: 56px; width: 100%; background: linear-gradient(180deg, #ffffff 0%, #fef3c7 100%); border-radius: 20px; border: 2px solid rgba(245, 158, 11, 0.35); box-shadow: 0 16px 38px rgba(15, 23, 42, 0.3); padding: 18px; font-family: "Fredoka", sans-serif; color: #7c5c00; }');
-    css.push('.cycle-complete-popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }');
-    css.push('.cycle-complete-popup-title { font-size: 22px; font-weight: 700; margin: 0; color: #9a6500; }');
-    css.push('.cycle-complete-popup-text { font-size: 14px; color: #8f6a00; margin: 0 0 14px 0; line-height: 1.5; }');
-    css.push('.cycle-complete-popup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }');
-    css.push('.cycle-popup-btn { border: 0; border-radius: 12px; padding: 10px 14px; font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }');
-    css.push('.cycle-popup-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(124, 92, 0, 0.2); }');
-    css.push('.cycle-popup-btn.primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }');
-    css.push('.cycle-popup-btn.secondary { background: #fff; color: #8f6a00; border: 2px solid rgba(245, 158, 11, 0.3); }');
-    css.push('.cycle-complete-popup-selectors { display: none; gap: 8px; flex-wrap: wrap; align-items: center; }');
-    css.push('.cycle-complete-popup-selectors.visible { display: flex; }');
-    css.push('@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }');
-    css.push('.progress-icon { font-size: 20px; }');
-    css.push('.progress-text { font-size: 14px; font-weight: 600; color: #405878; }');
-    css.push('.progress-bar { width: 80px; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }');
-    css.push('.progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }');
-    css.push('.scroll-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(30, 41, 59, 0.85); color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; z-index: 50; animation: hintFade 3s ease-in-out infinite; }');
-    css.push('@keyframes hintFade { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.6; } }');
-    css.push('.scroll-hint.hidden { opacity: 0; pointer-events: none; }');
-    css.push('.scroll-hint-icon { font-size: 16px; animation: hintBounce 1s ease-in-out infinite; }');
-    css.push('@keyframes hintBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }');
-    css.push('.map-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }');
-    css.push('.map-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid rgba(64,88,120,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }');
-    css.push('.map-btn:hover { background: #fff; transform: scale(1.08); }');
-    css.push('@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }');
-    css.push('.map-marker { position: absolute; width: 46px; height: 46px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; background-repeat: no-repeat; background-position: center; background-size: contain; }');
-    css.push('.map-marker.start { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%23ffffff\' d=\'M32 6c-9 0-16 7-16 16 0 12 16 32 16 32s16-20 16-32c0-9-7-16-16-16z\'/%3E%3Cpath fill=\'%234f6b8f\' d=\'M32 10c-6.6 0-12 5.4-12 12 0 8.8 12 26 12 26s12-17.2 12-26c0-6.6-5.4-12-12-12z\'/%3E%3Ccircle cx=\'32\' cy=\'22\' r=\'6\' fill=\'%23f8fafc\'/%3E%3C/svg%3E"); animation: markerPop 0.5s ease-out; }');
-    css.push('.map-marker.finish { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%2340597a\' d=\'M16 10h4v44h-4z\'/%3E%3Cpath fill=\'%23ffffff\' d=\'M20 14l28 6-12 6 12 6-28 6z\'/%3E%3Cpath fill=\'%23e2e8f0\' d=\'M20 14l20 4-10 5 10 5-20 4z\'/%3E%3C/svg%3E"); animation: flagWave 1.5s ease-in-out infinite; }');
-    css.push('@keyframes markerPop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }');
-    css.push('@keyframes flagWave { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }');
-    css.push('.floating-cloud { position: absolute; font-size: 40px; opacity: 0.6; z-index: 0; animation: cloudFloat 20s linear infinite; pointer-events: none; }');
-    css.push('@keyframes cloudFloat { 0% { transform: translateX(-100px); } 100% { transform: translateX(calc(100% + 100px)); } }');
-    css.push('.zone-label { position: absolute; font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; letter-spacing: 1.3px; pointer-events: none; z-index: 4; text-shadow: 0 2px 6px rgba(0,0,0,0.4); background: rgba(15, 23, 42, 0.35); padding: 6px 14px; border-radius: 16px; }');
-    css.push('.map-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; text-align: center; color: #6d86a8; }');
-    css.push('.map-empty-emoji { font-size: 64px; margin-bottom: 16px; opacity: 0.6; }');
-    css.push('.map-empty-title { font-family: "Fredoka", sans-serif; font-size: 20px; font-weight: 600; color: #405878; margin-bottom: 8px; }');
-    css.push('.map-empty-text { font-size: 14px; max-width: 300px; }');
-    
-    // Enhanced "next" node styles - bigger, pulsing, dramatic
-    css.push('.adventure-node.available { width: 82px; height: 82px; background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%); animation: nextNodePulse 2s ease-in-out infinite, nextNodeGlow 1.5s ease-in-out infinite alternate; }');
-    css.push('.adventure-node.available .node-emoji { font-size: 32px; animation: emojiShake 0.5s ease-in-out infinite; }');
-    css.push('@keyframes nextNodePulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }');
-    css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
-    css.push('@keyframes emojiShake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }');
-    
-    // Available-next: unlocked modules beyond the current one — subtler style
-    css.push('.adventure-node.available-next { width: 72px; height: 72px; background: linear-gradient(145deg, #FDE68A 0%, #FCD34D 50%, #FBBF24 100%); border: 4px solid rgba(255,255,255,0.85); box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3), 0 0 0 3px rgba(251, 191, 36, 0.15); animation: nextAvailSoft 3s ease-in-out infinite; }');
-    css.push('.adventure-node.available-next .node-emoji { font-size: 28px; animation: none; opacity: 0.8; }');
-    css.push('@keyframes nextAvailSoft { 0%, 100% { box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3), 0 0 0 3px rgba(251, 191, 36, 0.15); } 50% { box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4), 0 0 0 5px rgba(251, 191, 36, 0.1); } }');
-
-    // Node loading state - gentle pulse on click while async checks run
-    css.push('@keyframes nodeLoadingPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }');
-    css.push('.adventure-node.node-loading { animation: nodeLoadingPulse 0.8s ease-in-out infinite !important; pointer-events: none !important; }');
-
-    // Daniel companion on path styles
-    css.push('.daniel-companion { position: absolute; width: 64px; height: 64px; z-index: 12; pointer-events: none; transition: all 0.5s ease; }');
-    css.push('.daniel-companion-inner { width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,0.95); padding: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: danielWalk 1s ease-in-out infinite; }');
-    css.push('.daniel-companion img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }');
-    css.push('.daniel-expression-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; color: #405878; white-space: nowrap; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 10px; font-family: "Fredoka", sans-serif; }');
-    css.push('@keyframes danielWalk { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }');
-    
-    // Destination marker styles
-    css.push('.destination-marker { position: absolute; z-index: 6; text-align: center; pointer-events: none; animation: destinationFloat 3s ease-in-out infinite; }');
-    css.push('.destination-icon { font-size: 52px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }');
-    css.push('.destination-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #fff; background: linear-gradient(135deg, rgba(34,197,94,0.9), rgba(22,163,74,0.9)); padding: 6px 14px; border-radius: 20px; margin-top: 8px; display: inline-block; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }');
-    css.push('@keyframes destinationFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }');
-    
-    // Mini-moments on path (signposts, campfires)
-    css.push('.path-moment { position: absolute; z-index: 3; pointer-events: none; text-align: center; }');
-    css.push('.path-moment-icon { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }');
-    css.push('.path-moment-label { font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 600; color: #405878; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: 8px; margin-top: 4px; display: block; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }');
-    css.push('.path-moment.campfire .path-moment-icon { animation: campfireFlicker 0.5s ease-in-out infinite alternate; }');
-    css.push('@keyframes campfireFlicker { 0% { transform: scale(1); filter: drop-shadow(0 2px 4px rgba(255,100,0,0.4)); } 100% { transform: scale(1.1); filter: drop-shadow(0 2px 8px rgba(255,150,0,0.6)); } }');
-    
-    // Environmental feedback elements
-    css.push('.env-element { position: absolute; pointer-events: none; z-index: 1; transition: opacity 0.5s ease; }');
-    css.push('.env-element.bloom { animation: bloomIn 0.8s ease-out forwards; }');
-    css.push('@keyframes bloomIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }');
-    css.push('.env-butterfly { animation: butterflyFloat 4s ease-in-out infinite; }');
-    css.push('@keyframes butterflyFloat { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 25% { transform: translate(10px, -15px) rotate(5deg); } 50% { transform: translate(20px, 0) rotate(0deg); } 75% { transform: translate(10px, 10px) rotate(-5deg); } }');
-    css.push('.env-bird { animation: birdFly 6s ease-in-out infinite; }');
-    css.push('@keyframes birdFly { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -20px); } }');
-    css.push('.env-sparkle { animation: sparkleShine 1.5s ease-in-out infinite; }');
-    css.push('@keyframes sparkleShine { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }');
-    
-    // Progress-reactive grass layer
-    css.push('.map-bg-grass-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; pointer-events: none; transition: background 0.8s ease; }');
-    
-    // Cracked ground effect for start zone
-    css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
-    
-    // Zone upgrade celebration styles
-    css.push('.zone-upgrade-shimmer { position: absolute; inset: 0; z-index: 60; pointer-events: none; background: linear-gradient(135deg, rgba(255,215,0,0.0) 0%, rgba(255,215,0,0.45) 40%, rgba(255,255,255,0.7) 50%, rgba(255,215,0,0.45) 60%, rgba(255,215,0,0.0) 100%); background-size: 300% 300%; animation: zoneShimmerSweep 1.2s ease-out forwards; border-radius: 20px; }');
-    css.push('@keyframes zoneShimmerSweep { 0% { background-position: 150% 150%; opacity: 0; } 30% { opacity: 1; } 100% { background-position: -50% -50%; opacity: 0; } }');
-    
-    css.push('.zone-upgrade-banner { position: absolute; top: 0; left: 0; right: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; padding: 0; animation: zoneBannerSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform: translateY(-100%); pointer-events: auto; }');
-    css.push('.zone-upgrade-banner.dismissing { animation: zoneBannerSlideOut 0.5s ease-in forwards; }');
-    css.push('@keyframes zoneBannerSlideIn { 0% { transform: translateY(-100%); } 100% { transform: translateY(0); } }');
-    css.push('@keyframes zoneBannerSlideOut { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100%); opacity: 0; } }');
-    
-    css.push('.zone-upgrade-card { position: relative; width: 92%; max-width: 420px; margin-top: 16px; background: linear-gradient(135deg, #fffbe6 0%, #fff7cc 40%, #fff3b0 100%); border: 3px solid #f59e0b; border-radius: 20px; padding: 20px 20px 18px; box-shadow: 0 8px 32px rgba(245, 158, 11, 0.35), 0 0 0 6px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255,255,255,0.8); text-align: center; overflow: visible; cursor: pointer; }');
-    css.push('.zone-upgrade-card::before { content: ""; position: absolute; inset: -3px; border-radius: 22px; background: linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24, #fcd34d); z-index: -1; animation: zoneBorderGlow 2s ease-in-out infinite; }');
-    css.push('@keyframes zoneBorderGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }');
-    
-    css.push('.zone-upgrade-daniel { width: 80px; height: 80px; margin: -56px auto 8px; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25)); animation: zoneDanielBounce 0.8s ease-in-out 0.4s infinite alternate; }');
-    css.push('.zone-upgrade-daniel img { width: 100%; height: 100%; object-fit: contain; }');
-    css.push('@keyframes zoneDanielBounce { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-8px) scale(1.05); } }');
-    
-    css.push('.zone-upgrade-emoji { font-size: 36px; margin-bottom: 4px; animation: zoneEmojiPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both; }');
-    css.push('@keyframes zoneEmojiPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }');
-    
-    css.push('.zone-upgrade-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 4px; line-height: 1.2; }');
-    css.push('.zone-upgrade-subtitle { font-family: "Fredoka", sans-serif; font-size: 13px; color: #b45309; margin: 0 0 10px; line-height: 1.4; }');
-    
-    css.push('.zone-upgrade-new-label { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35); }');
-    
-    css.push('.zone-upgrade-tap-hint { font-family: "Fredoka", sans-serif; font-size: 11px; color: #d97706; margin-top: 8px; opacity: 0.7; }');
-    
-    css.push('.zone-upgrade-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 20px; z-index: 79; }');
-    css.push('.zone-confetti-piece { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: zoneConfettiFall 2.5s ease-in forwards; }');
-    css.push('@keyframes zoneConfettiFall { 0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(500px) rotate(720deg) scale(0.3); opacity: 0; } }');
-    
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-complete-popup-title { font-size: 19px; } .cycle-complete-popup-actions, .cycle-complete-popup-selectors { flex-direction: column; } .cycle-popup-btn { width: 100%; } .cycle-complete-popup-daniel { width: 140px; height: 140px; top: -86px; } .zone-upgrade-card { padding: 16px 14px 14px; max-width: 340px; } .zone-upgrade-title { font-size: 17px; } .zone-upgrade-subtitle { font-size: 12px; } .zone-upgrade-daniel { width: 64px; height: 64px; margin-top: -44px; } .zone-upgrade-emoji { font-size: 28px; } }');
-
-    // =============================================
-    // SKILL PICKER CARDS & HELP ME CHOOSE QUIZ
-    // =============================================
-    css.push('.skill-picker-inline { padding: 8px 0; }');
-    css.push('.skill-picker-header { text-align: center; padding: 28px 24px 8px; }');
-    css.push('.skill-picker-title { font-family: "Fredoka", sans-serif; font-size: 28px; font-weight: 700; color: #1E293B; margin: 0; }');
-    css.push('.skill-picker-subtitle { font-family: "Fredoka", sans-serif; font-size: 15px; color: #64748B; margin: 6px 0 0; }');
-    css.push('.skill-picker-help-wrap { text-align: center; margin: 18px 0 4px; }');
-    css.push('.skill-picker-help-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: linear-gradient(135deg, #6366F1, #4f46e5); color: #fff; border: none; border-radius: 50px; font-family: "Fredoka", sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 18px rgba(99,102,241,0.35); transition: transform 0.15s, box-shadow 0.15s; animation: helpBtnGlow 2s ease-in-out infinite; }');
-    css.push('.skill-picker-help-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(99,102,241,0.5); }');
-    css.push('@keyframes helpBtnGlow { 0%, 100% { box-shadow: 0 4px 18px rgba(99,102,241,0.35); } 50% { box-shadow: 0 4px 24px rgba(99,102,241,0.55); } }');
-    css.push('.skill-picker-help-hint { font-family: "Fredoka", sans-serif; font-size: 13px; color: #94a3b8; margin-top: 8px; }');
-
-    // Card grid - center last item if odd
-    css.push('.skill-picker-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; padding: 18px 24px 28px; justify-items: center; }');
-    css.push('.skill-picker-cards > .skill-card:last-child:nth-child(odd) { grid-column: 1 / -1; max-width: 380px; }');
-
-    // Themed cards
-    css.push('.skill-card { border-radius: 20px; border: 2.5px solid var(--card-border); padding: 22px 20px 18px; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; background: var(--card-bg); width: 100%; }');
-    css.push('.skill-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,0.1); }');
-    css.push('.skill-card-decos { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; overflow: hidden; z-index: 0; }');
-    css.push('.skill-card-deco { position: absolute; font-size: 22px; opacity: 0.12; }');
-    css.push('.skill-card-deco:nth-child(1) { top: 8px; right: 56px; transform: rotate(-15deg); }');
-    css.push('.skill-card-deco:nth-child(2) { bottom: 12px; right: 14px; transform: rotate(20deg); font-size: 18px; }');
-    css.push('.skill-card-deco:nth-child(3) { bottom: 40px; left: 10px; transform: rotate(-10deg); font-size: 16px; }');
-
-    // Current adventure card
-    css.push('.skill-card.last-chosen { border-width: 3px; box-shadow: 0 0 0 4px rgba(99,102,241,0.12), 0 8px 24px rgba(0,0,0,0.08); }');
-    css.push('.skill-card-continue-badge { display: inline-flex; align-items: center; gap: 6px; position: absolute; top: 0; left: 20px; background: linear-gradient(135deg, #6366F1, #818CF8); color: #fff; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; padding: 5px 14px 6px; border-radius: 0 0 12px 12px; letter-spacing: 0.3px; z-index: 2; box-shadow: 0 3px 10px rgba(99,102,241,0.3); }');
-
-    // Speech bubble
-    css.push('.skill-card-speech { position: relative; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 6px 12px; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 500; color: #64748B; margin-bottom: 10px; display: inline-block; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }');
-    css.push('.skill-card-speech::after { content: ""; position: absolute; bottom: -6px; left: 20px; width: 10px; height: 10px; background: #fff; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; transform: rotate(45deg); }');
-
-    css.push('.skill-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; position: relative; z-index: 1; }');
-    css.push('.skill-card-emoji { font-size: 38px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: rgba(255,255,255,0.7); flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }');
-    css.push('.skill-card-name { font-family: "Fredoka", sans-serif; font-size: 20px; font-weight: 700; color: #1E293B; }');
-    css.push('.skill-card-desc { font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 8px; position: relative; z-index: 1; }');
-    css.push('.skill-card-pick-label { font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 700; color: #64748B; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; position: relative; z-index: 1; }');
-    css.push('.skill-card-pick-text { font-size: 13px; color: #475569; line-height: 1.4; margin-bottom: 12px; position: relative; z-index: 1; }');
-    css.push('.skill-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; position: relative; z-index: 1; }');
-    css.push('.skill-card-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.7); color: #405878; border: 1px solid rgba(0,0,0,0.06); }');
-
-    // Progress - game-like
-    css.push('.skill-card-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; position: relative; z-index: 1; }');
-    css.push('.skill-card-progress-icon { font-size: 16px; }');
-    css.push('.skill-card-progress-bar { flex: 1; height: 10px; background: rgba(255,255,255,0.6); border-radius: 5px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); }');
-    css.push('.skill-card-progress-fill { height: 100%; border-radius: 5px; transition: width 0.3s; }');
-    css.push('.skill-card-progress-text { font-size: 12px; font-weight: 700; color: #405878; white-space: nowrap; font-family: "Fredoka", sans-serif; }');
-
-    // Button
-    css.push('.skill-card-btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; transition: filter 0.15s, transform 0.1s; position: relative; z-index: 1; letter-spacing: 0.2px; }');
-    css.push('.skill-card-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }');
-    css.push('.skill-card-character { position: absolute; top: 14px; right: 14px; width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 3px 10px rgba(0,0,0,0.12); z-index: 1; }');
-
-    // Preview modal
-    css.push('.skill-preview-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; animation: fadeInOverlay 0.2s ease; padding: 20px; }');
-    css.push('.skill-preview-modal { background: #fff; border-radius: 24px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }');
-    css.push('.skill-preview-header { padding: 24px 24px 16px; text-align: center; }');
-    css.push('.skill-preview-top { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 8px; }');
-    css.push('.skill-preview-emoji { font-size: 48px; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: rgba(255,255,255,0.7); flex-shrink: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }');
-    css.push('.skill-preview-name { font-family: "Fredoka", sans-serif; font-size: 26px; font-weight: 700; color: #1E293B; }');
-    css.push('.skill-preview-character { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 3px 12px rgba(0,0,0,0.12); }');
-    css.push('.skill-preview-body { padding: 0 24px 24px; }');
-    css.push('.skill-preview-desc { font-size: 15px; color: #475569; line-height: 1.6; margin-bottom: 18px; text-align: center; }');
-    css.push('.skill-preview-learn-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #405878; margin-bottom: 10px; }');
-    css.push('.skill-preview-learn-list { list-style: none; padding: 0; margin: 0 0 22px; }');
-    css.push('.skill-preview-learn-list li { font-size: 14px; color: #475569; padding: 6px 0; display: flex; align-items: center; gap: 10px; }');
-    css.push('.skill-preview-learn-list li::before { content: "⭐"; font-size: 14px; }');
-    css.push('.skill-preview-actions { display: flex; gap: 10px; }');
-    css.push('.skill-preview-btn { flex: 1; padding: 14px; border: none; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: filter 0.15s, transform 0.1s; }');
-    css.push('.skill-preview-btn.primary { color: #fff; }');
-    css.push('.skill-preview-btn.secondary { background: #f1f5f9; color: #405878; border: 2px solid #e2e8f0; }');
-    css.push('.skill-preview-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }');
-    css.push('@media (max-width: 768px) { .skill-picker-cards { grid-template-columns: 1fr; padding: 12px 16px 24px; } .skill-picker-cards > .skill-card:last-child:nth-child(odd) { max-width: 100%; } .skill-preview-modal { max-width: 100%; } .skill-preview-actions { flex-direction: column; } .skill-picker-title { font-size: 22px; } }');
-
-    // Current skill badge (replaces the dropdown)
-    css.push('.current-skill-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; cursor: pointer; transition: all 0.15s; font-family: "Fredoka", sans-serif; }');
-    css.push('.current-skill-badge:hover { border-color: #405878; box-shadow: 0 2px 8px rgba(64,88,120,0.12); }');
-    css.push('.current-skill-badge-emoji { font-size: 20px; }');
-    css.push('.current-skill-badge-name { font-size: 14px; font-weight: 600; color: #1E293B; }');
-    css.push('.current-skill-badge-change { font-size: 12px; color: #405878; font-weight: 600; }');
-
-    // Help Me Choose Quiz
-    css.push('.quiz-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; animation: fadeInOverlay 0.2s ease; padding: 20px; }');
-    css.push('.quiz-container { background: #fff; border-radius: 24px; max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }');
-    css.push('.quiz-header { text-align: center; padding: 28px 24px 16px; background: linear-gradient(135deg, #eef2f7, #e0f2fe); }');
-    css.push('.quiz-title { font-family: "Fredoka", sans-serif; font-size: 24px; font-weight: 700; color: #1E293B; margin: 0; }');
-    css.push('.quiz-subtitle { font-family: "Fredoka", sans-serif; font-size: 14px; color: #64748B; margin: 6px 0 0; }');
-    css.push('.quiz-progress-dots { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }');
-    css.push('.quiz-dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; transition: background 0.2s; }');
-    css.push('.quiz-dot.active { background: #6366F1; }');
-    css.push('.quiz-dot.done { background: #818CF8; }');
-    css.push('.quiz-body { padding: 20px 24px 24px; }');
-    css.push('.quiz-question { font-family: "Fredoka", sans-serif; font-size: 18px; font-weight: 600; color: #1E293B; text-align: center; margin-bottom: 16px; }');
-    css.push('.quiz-options { display: flex; flex-direction: column; gap: 10px; }');
-    css.push('.quiz-option { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 2.5px solid #e2e8f0; border-radius: 14px; background: #fff; cursor: pointer; transition: all 0.15s; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 500; color: #334155; }');
-    css.push('.quiz-option:hover { border-color: #818CF8; background: #f0f2ff; }');
-    css.push('.quiz-option.selected { border-color: #6366F1; background: #eef0ff; color: #405878; font-weight: 600; }');
-    css.push('.quiz-option-emoji { font-size: 24px; flex-shrink: 0; }');
-    css.push('.quiz-next-btn { display: block; width: 100%; margin-top: 18px; padding: 14px; border: none; border-radius: 14px; background: linear-gradient(135deg, #6366F1, #4f46e5); color: #fff; font-family: "Fredoka", sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: filter 0.15s, opacity 0.15s; }');
-    css.push('.quiz-next-btn:hover:not(:disabled) { filter: brightness(1.08); }');
-    css.push('.quiz-next-btn:disabled { opacity: 0.5; cursor: not-allowed; }');
-    css.push('.quiz-result { text-align: center; padding: 24px; }');
-    css.push('.quiz-result-label { font-family: "Fredoka", sans-serif; font-size: 14px; color: #64748B; margin-bottom: 8px; }');
-    css.push('.quiz-result-skill { display: inline-flex; align-items: center; gap: 10px; font-family: "Fredoka", sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 10px; }');
-    css.push('.quiz-result-desc { font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 20px; }');
-    css.push('.quiz-result-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }');
-    css.push('.quiz-result-btn { padding: 12px 24px; border-radius: 14px; font-family: "Fredoka", sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: filter 0.15s; }');
-    css.push('.quiz-result-btn.primary { background: linear-gradient(135deg, #6366F1, #4f46e5); color: #fff; }');
-    css.push('.quiz-result-btn.secondary { background: #f1f5f9; color: #475569; border: 2px solid #e2e8f0; }');
-    css.push('.quiz-result-btn:hover { filter: brightness(1.06); }');
-    css.push('@media (max-width: 768px) { .skill-picker-cards { grid-template-columns: 1fr; padding: 12px 16px 20px; } .skill-picker-title { font-size: 22px; } .quiz-container { max-width: 100%; } }');
-    
-    var styles = document.createElement('style');
-    styles.id = 'adventure-map-v4-styles';
-    styles.textContent = css.join('\n');
-    document.head.appendChild(styles);
-  }
+  injectStyles() { injectAdventureMapStyles(); }
 
   ensureZoneStyles() {
     if (document.getElementById('adventure-map-zones-css')) return;
@@ -1702,7 +992,7 @@ class AdventureMapV4 {
       '<p class="skill-picker-help-hint">Not sure where to start? Answer a few quick questions.</p>' +
       '</div>' +
       '</div>' +
-      '<div class="skill-picker-cards">' + cardsHtml + '</div>' +
+      '<div class="skill-picker-cards' + (lastChosen && lastChosen !== 'all' ? ' has-chosen' : '') + '">' + cardsHtml + '</div>' +
       '</div>';
 
     // Event: clicking a card opens the preview modal
@@ -2026,29 +1316,47 @@ class AdventureMapV4 {
       : remainingCount > 0
         ? completedCount + ' of ' + numModules + ' modules completed - ' + remainingCount + ' more to go!'
         : 'All ' + numModules + ' modules completed - amazing work! 🎉';
+    var stages = this.getTownStageMeta();
+    var stageIndex = this.getTownStage();
+    var stage = stages[stageIndex] || stages[0];
+
     var html = '<div class="adventure-header">' +
-      '<h2 class="adventure-title">🗺️ Your Adventure Map</h2>' +
-      '<p class="adventure-subtitle">' + progressMsg + '</p>' +
-      '</div>' +
-      '<div class="category-filter-container">' +
+      '<div class="adventure-header-top">' +
       '<div class="current-skill-badge" id="openSkillPicker" title="Choose a different Super Skill">' +
       '<span class="current-skill-badge-emoji">' + theme.emoji + '</span>' +
       '<span class="current-skill-badge-name">' + theme.name + '</span>' +
       '<span class="current-skill-badge-change">Change</span>' +
       '</div>' +
-      (availableCycles.length > 0 ? '<label class="category-filter-label" style="margin-left: 6px;">Cycle:</label>' +
-      '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
-      '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
-      '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + numModules + ' module' + (numModules !== 1 ? 's' : '') + '</span>' +
+      (availableCycles.length > 0 ? '<select class="category-filter-select cycle-select-compact" id="cycleFilter">' + cycleOptions + '</select>' : '') +
+      '<span class="category-badge" style="background: ' + theme.color + '">' + completedCount + '/' + numModules + '</span>' +
+      '</div>' +
+      '</div>';
+
+    // Compact progression tracker
+    var nextStage = stages[Math.min(stageIndex + 1, stages.length - 1)];
+    var nextMilestone = stage.milestone;
+    var modulesLeft = nextMilestone ? Math.max(0, nextMilestone - completedCount) : 0;
+    var progressNote = nextMilestone
+      ? modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + ' to unlock ' + nextStage.emoji + ' ' + nextStage.label
+      : 'All stages unlocked!';
+
+    var timelineHtml = stages.map(function(s, idx) {
+      var cls = 'progression-step';
+      if (idx < stageIndex) cls += ' done';
+      if (idx === stageIndex) cls += ' active';
+      return '<div class="' + cls + '">' +
+        '<div class="progression-step-icon">' + s.emoji + '</div>' +
+        '<div class="progression-step-label">' + s.label + '</div>' +
+        '<div class="progression-step-range">' + s.rangeLabel + ' modules</div>' +
+        '</div>';
+    }).join('');
+
+    html += '<div class="progression-tracker">' +
+      '<div class="progression-steps">' + timelineHtml + '</div>' +
+      '<div class="progression-note">' + progressNote + '</div>' +
       '</div>';
 
     if (this.modules.length > 0) {
-      html += this.getTownProgressCueHtml(completedCount);
-      html += '<div class="adventure-skill-banner" style="--skill-color: ' + theme.color + '">' +
-        '<span class="adventure-skill-emoji">' + theme.emoji + '</span>' +
-        '<span class="adventure-skill-name">' + theme.name + '</span>' +
-        '<span class="adventure-skill-desc">' + theme.description + '</span>' +
-        '</div>';
       html += '<div class="adventure-viewport" id="adventureViewport">' +
         '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
         '<div class="map-zone-layers" aria-hidden="true"></div>' +
@@ -2700,6 +2008,11 @@ class AdventureMapV4 {
         badge.textContent = '★';
         node.appendChild(badge);
         statusLabel = (index === currentIndex) ? 'Next' : '';
+      } else if (module.status === 'locked') {
+        var lockBadge = document.createElement('div');
+        lockBadge.className = 'node-lock';
+        lockBadge.textContent = '🔒';
+        node.appendChild(lockBadge);
       }
 
       if (statusLabel) {
@@ -2737,6 +2050,7 @@ class AdventureMapV4 {
       var tooltip = document.createElement('div');
       tooltip.className = 'node-tooltip';
 
+      var moduleTitle = (module.module && (module.module.title || module.module.name)) || module.title || module.name || 'Module ' + moduleNumber;
       var statusText = '';
       var statusClass = '';
       if (module.status === 'completed') {
@@ -2746,9 +2060,11 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = module.canUnlock ? 'Locked - spend 1 credit to unlock' : 'Locked - start with the first lock';
+        statusText = module.canUnlock ? '🔒 Spend 1 credit to unlock' : '🔒 Complete earlier modules first';
         statusClass = 'locked-status';
       }
+      tooltip.innerHTML = '<strong style="display:block;margin-bottom:4px;font-size:14px;">' + moduleTitle + '</strong><span class="' + statusClass + '">' + statusText + '</span>';
+      node.appendChild(tooltip);
 
       node.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -3131,499 +2447,3 @@ class AdventureMapV4 {
     }, 500);
   }
 }
-
-// ================================================
-// DAILY QUESTS & ENHANCED DASHBOARD
-// ================================================
-
-var DAILY_QUESTS = [
-  { id: 'q1', name: 'Complete any module', reward: 5 },
-  { id: 'q2', name: 'Practice deep breathing', reward: 3 },
-  { id: 'q3', name: 'Talk about your feelings', reward: 4 },
-  { id: 'q4', name: 'Help someone today', reward: 5 },
-  { id: 'q5', name: 'Try something new', reward: 4 }
-];
-
-var DANIEL_MOODS = [
-  "Ready for adventure! 🌟",
-  "Let's learn together! 📚",
-  "You're doing great! 💪",
-  "I believe in you! ⭐",
-  "Time to explore! 🗺️"
-];
-
-var DANIEL_IMAGES = [
-  "/images/characters/DanielTheDog.webp",
-  "/images/characters/DanielReading.webp",
-  "/images/characters/DanielTheDogHoldingHeart.webp",
-  "/images/characters/DanielTheDogReading.webp",
-  "/images/characters/DanielTheDogThumbsUp.webp",
-  "/images/characters/DanielWithFootball.webp"
-];
-
-class EnhancedDashboard {
-  constructor() {
-    this.adventureMap = null;
-    this.currentQuest = null;
-    this.questProgress = 0;
-    this.danielMoodIndex = 0;
-    this.initialized = false;
-    this.eventListenersAttached = false;
-  }
-
-  init() {
-    var self = this;
-    getDashboardData();
-
-    // Only attach event listeners once
-    if (!this.eventListenersAttached) {
-      this.setupDanielHub();
-      this.setupModulePreview();
-      this.eventListenersAttached = true;
-    }
-
-    // Load quest data (synchronous localStorage read)
-    this.loadDailyQuest();
-
-    // Update UI synchronously - these are fast DOM writes
-    this.updateDanielMood();
-    this.updateQuestDisplay();
-    this.updateRankDisplay();
-
-    // Setup adventure map - render() has its own rAF
-    this.setupAdventureMap();
-
-    this.initialized = true;
-  }
-
-  setupDanielHub() {
-    if (isDanielMoodCheckinEnabled()) return;
-    var self = this;
-    var danielHub = document.getElementById('danielHub');
-    if (danielHub) danielHub.addEventListener('click', function() { self.interactWithDaniel(); });
-  }
-
-  interactWithDaniel() {
-    if (isDanielMoodCheckinEnabled()) return;
-    var danielAvatar = document.querySelector('.hero-daniel-img') || document.querySelector('.daniel-avatar');
-    var moodText = document.getElementById('moodText');
-    
-    if (danielAvatar) {
-      danielAvatar.style.transform = 'scale(1.2)';
-      setTimeout(function() { danielAvatar.style.transform = 'scale(1)'; }, 200);
-    }
-
-    // Randomly select a mood quote
-    this.danielMoodIndex = (this.danielMoodIndex + 1) % DANIEL_MOODS.length;
-    if (moodText) moodText.textContent = DANIEL_MOODS[this.danielMoodIndex];
-
-    // Randomly select and set a new Daniel image
-    var randomImageIndex = Math.floor(Math.random() * DANIEL_IMAGES.length);
-    if (danielAvatar && DANIEL_IMAGES[randomImageIndex]) {
-      danielAvatar.src = DANIEL_IMAGES[randomImageIndex];
-    }
-
-    this.addSparkleEffect(danielAvatar);
-  }
-
-  updateDanielMood() {
-    if (isDanielMoodCheckinEnabled()) return;
-    var moodText = document.getElementById('moodText');
-    if (moodText) moodText.textContent = DANIEL_MOODS[this.danielMoodIndex];
-  }
-
-  addSparkleEffect(element) {
-    if (!element) return;
-    var sparkles = ['✨', '⭐', '💫', '🌟'];
-    var rect = element.getBoundingClientRect();
-    
-    for (var i = 0; i < 5; i++) {
-      var sparkle = document.createElement('div');
-      sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
-      sparkle.style.cssText = 'position: fixed; left: ' + (rect.left + Math.random() * rect.width) + 'px; top: ' + (rect.top + Math.random() * rect.height) + 'px; font-size: 20px; pointer-events: none; z-index: 9999; animation: sparkleFloat 1s ease-out forwards;';
-      document.body.appendChild(sparkle);
-      (function(s) {
-        setTimeout(function() { s.remove(); }, 1000);
-      })(sparkle);
-    }
-  }
-
-  setupDailyQuest() {
-    this.loadDailyQuest();
-    this.updateQuestDisplay();
-  }
-
-  loadDailyQuest() {
-    var today = new Date().toDateString();
-    var savedQuest = localStorage.getItem('dailyQuest_' + today);
-    
-    if (savedQuest) {
-      var questData = JSON.parse(savedQuest);
-      this.currentQuest = questData.quest;
-      this.questProgress = questData.progress;
-    } else {
-      var randomQuest = DAILY_QUESTS[Math.floor(Math.random() * DAILY_QUESTS.length)];
-      this.currentQuest = { id: randomQuest.id, name: randomQuest.name, reward: randomQuest.reward, target: 1, completed: false };
-      this.questProgress = 0;
-      this.saveDailyQuest();
-    }
-  }
-
-  saveDailyQuest() {
-    var today = new Date().toDateString();
-    localStorage.setItem('dailyQuest_' + today, JSON.stringify({
-      quest: this.currentQuest,
-      progress: this.questProgress
-    }));
-  }
-
-  updateQuestDisplay() {
-    var questDescription = document.getElementById('questDescription');
-    var questProgressFill = document.getElementById('questProgressFill');
-    var questProgressText = document.getElementById('questProgressText');
-    var questRewardText = document.getElementById('questRewardText');
-
-    if (this.currentQuest) {
-      if (questDescription) questDescription.textContent = this.currentQuest.name;
-      if (questRewardText) questRewardText.textContent = '+' + this.currentQuest.reward + ' Star' + (this.currentQuest.reward > 1 ? 's' : '');
-      
-      var progressPercent = Math.min((this.questProgress / this.currentQuest.target) * 100, 100);
-      if (questProgressFill) questProgressFill.style.width = progressPercent + '%';
-      if (questProgressText) questProgressText.textContent = this.questProgress + '/' + this.currentQuest.target;
-
-      if (this.questProgress >= this.currentQuest.target && !this.currentQuest.completed) {
-        this.completeQuest();
-      }
-    }
-  }
-
-  completeQuest() {
-    if (this.currentQuest && !this.currentQuest.completed) {
-      this.currentQuest.completed = true;
-      this.saveDailyQuest();
-    }
-  }
-
-  setupAdventureMap() {
-    if (!this.adventureMap) {
-      this.adventureMap = new AdventureMapV4();
-    }
-    this.adventureMap.init();
-  }
-
-  setupModulePreview() {
-    var self = this;
-    var closeBtn = document.getElementById('closePreviewBtn');
-    if (closeBtn) closeBtn.addEventListener('click', function() { self.hideModulePreview(); });
-
-    var previewCloseBtn = document.getElementById('previewCloseBtn');
-    if (previewCloseBtn) previewCloseBtn.addEventListener('click', function() { self.hideModulePreview(); });
-  }
-
-  showModulePreview(module) {
-    var panels = document.querySelectorAll('.module-preview-panel');
-    if (!panels || panels.length === 0) return;
-
-    var emoji = document.getElementById('previewEmoji');
-    var title = document.getElementById('previewTitle');
-    var description = document.getElementById('previewDescription');
-    var startBtnA = document.getElementById('startModuleBtn');
-
-    var titleB = document.getElementById('previewModuleTitle');
-    var imageB = document.getElementById('previewImage');
-    var startBtnB = document.getElementById('previewStartBtn');
-
-    var moduleTitle = (module.module && (module.module.title || module.module.name)) || module.title || module.name || 'Module';
-    var moduleDescription = '';
-    if (module.module) {
-      moduleDescription = module.module.short_description || module.module.description || module.module.long_description || '';
-    }
-    moduleDescription = moduleDescription || module.short_description || module.description || 'Explore emotions and learn coping strategies in this interactive module.';
-
-    if (emoji) emoji.textContent = module.emoji || '📘';
-    if (title) title.textContent = moduleTitle;
-    if (description) description.textContent = moduleDescription;
-
-    if (titleB) titleB.textContent = moduleTitle;
-    if (imageB) {
-      imageB.innerHTML = '<div class="preview-placeholder">' + (module.emoji || '📚') + '</div>';
-    }
-
-    var self = this;
-    var startHandler = function() {
-      self.hideModulePreview();
-      self.startModule(module);
-    };
-
-    if (startBtnA) startBtnA.onclick = startHandler;
-    if (startBtnB) startBtnB.onclick = startHandler;
-
-    panels.forEach(function(p) {
-      p.classList.remove('hidden');
-    });
-  }
-
-  hideModulePreview() {
-    var panels = document.querySelectorAll('.module-preview-panel');
-    if (!panels || panels.length === 0) return;
-    panels.forEach(function(p) {
-      p.classList.add('hidden');
-    });
-  }
-
-  async startModule(module) {
-    var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
-    if (!module.module || !child) {
-      return;
-    }
-
-    var mod = module.module;
-    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
-
-    try {
-      var superSkillId = mod.super_skill_id || null;
-
-      // Check 1: Periodic check-in (every 3 modules) - takes priority over intro
-      var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-      console.log('[AdventureMap.startModule] Check 1 (periodic) - needsCheckin:', needsCheckin);
-      if (needsCheckin) {
-        if (typeof window.showCheckinPopup === 'function') {
-          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-          console.log('[AdventureMap.startModule] Calling showCheckinPopup with skipIntro=true');
-          window.showCheckinPopup(popupModule, function() {
-            window.location.href = moduleUrl;
-          }, true);
-          return;
-        }
-      }
-
-      // Check 2: First module in a super skill → show character intro
-      console.log('[AdventureMap.startModule] Check 2 (intro) - superSkillId:', superSkillId, 'childId:', child.id);
-      if (superSkillId && typeof window.showCheckinPopup === 'function') {
-        var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
-        var alreadySeen = localStorage.getItem(introKey);
-        console.log('[AdventureMap.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen);
-        if (!alreadySeen) {
-          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-          window.showCheckinPopup(popupModule, function() {
-            localStorage.setItem(introKey, 'true');
-            window.location.href = moduleUrl;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      console.error('[StartModule] Error checking checkin:', e);
-    }
-
-    window.location.href = moduleUrl;
-  }
-  
-  // Check if a check-in is needed based on completed module count (every 3 modules)
-  async shouldTriggerCheckinForModuleCount(childId, superSkillId) {
-    if (!childId || !window.supabase) return false;
-    var CHECKIN_MODULE_INTERVAL = 3;
-
-    try {
-      // Count completed modules for this child IN this super skill
-      var completedCount = 0;
-      if (superSkillId) {
-        var completedResult = await window.supabase
-          .from('child_modules')
-          .select('id, modules!inner(super_skill_id)')
-          .eq('child_id', childId)
-          .eq('is_completed', true)
-          .eq('modules.super_skill_id', superSkillId);
-
-        if (completedResult.error) {
-          console.error('[Check-in] Error counting completed modules:', completedResult.error);
-          return false;
-        }
-        completedCount = (completedResult.data && completedResult.data.length) || 0;
-      } else {
-        var completedResult = await window.supabase
-          .from('child_modules')
-          .select('id')
-          .eq('child_id', childId)
-          .eq('is_completed', true);
-
-        if (completedResult.error) return false;
-        completedCount = (completedResult.data && completedResult.data.length) || 0;
-      }
-
-      // Count check-ins for this child for this super skill's pathway
-      var checkinCount = 0;
-      if (superSkillId) {
-        var skillResult = await window.supabase
-          .from('super_skills')
-          .select('slug')
-          .eq('id', superSkillId)
-          .single();
-
-        var slug = skillResult.data && skillResult.data.slug;
-        if (slug) {
-          var checkinResult = await window.supabase
-            .from('pathway_assessments')
-            .select('id')
-            .eq('child_id', childId)
-            .eq('pathway_category', slug)
-            .in('assessment_type', ['checkin', 'check_in']);
-
-          if (!checkinResult.error) {
-            checkinCount = (checkinResult.data && checkinResult.data.length) || 0;
-          }
-        }
-      }
-      // If no super skill or slug lookup failed, count all check-ins
-      if (!superSkillId || checkinCount === 0) {
-        var allCheckinsResult = await window.supabase
-          .from('pathway_assessments')
-          .select('id')
-          .eq('child_id', childId)
-          .in('assessment_type', ['checkin', 'check_in']);
-        checkinCount = (allCheckinsResult.data && allCheckinsResult.data.length) || 0;
-      }
-
-      // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
-      // Don't include the initial intro check-in (that's separate)
-      var expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL);
-
-      console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
-
-      if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
-        console.log('[Check-in] Triggering check-in - need to catch up');
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      console.error('Error checking checkin status:', e);
-      return false;
-    }
-  }
-
-  async getPathwayProgress(childId, pathwayCategory) {
-    if (!window.progressTrackingSystem || !window.supabase) return null;
-    await window.progressTrackingSystem.init(window.supabase);
-    var assessments = await window.progressTrackingSystem.getProgressData(childId, pathwayCategory);
-    return window.progressTrackingSystem.generateProgressReport(assessments);
-  }
-
-  updateRankDisplay() {
-    getDashboardData();
-    var rankElement = document.getElementById('childRank');
-    if (rankElement && dashboardSelectedChild) {
-      if (dashboardChildren && dashboardChildren.length > 0) {
-        var sortedChildren = dashboardChildren.filter(function(child) { return child.total_stars !== undefined; }).sort(function(a, b) { return (b.total_stars || 0) - (a.total_stars || 0); });
-        var rank = -1;
-        for (var i = 0; i < sortedChildren.length; i++) {
-          if (sortedChildren[i].id === dashboardSelectedChild.id) {
-            rank = i + 1;
-            break;
-          }
-        }
-        rankElement.textContent = rank > 0 ? '#' + rank : '#1';
-      } else {
-        rankElement.textContent = '#1';
-      }
-    }
-  }
-}
-
-// CSS Animation for sparkles
-var sparkleCSS = document.createElement('style');
-sparkleCSS.textContent = '@keyframes sparkleFloat { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(0); opacity: 0; } }';
-document.head.appendChild(sparkleCSS);
-
-// Initialize
-var enhancedDashboard;
-var enhancedDashboardInitialized = false;
-
-function initEnhancedDashboard() {
-  if (enhancedDashboardInitialized && enhancedDashboard) {
-    // Already initialized, just refresh
-    enhancedDashboard.init();
-    return;
-  }
-
-  console.log('Initializing enhanced dashboard with Adventure Map V4 (Super Skills Themed)...');
-  enhancedDashboard = new EnhancedDashboard();
-  enhancedDashboardInitialized = true;
-  window.enhancedDashboard = enhancedDashboard;
-  enhancedDashboard.init();
-  
-  // Footer is shown after the adventure map finishes rendering
-  // (via window._dashboardRenderComplete below)
-}
-
-// OPTIMIZED: Use event-driven initialization instead of polling
-document.addEventListener('DOMContentLoaded', function() {
-  // Check immediately if data is available
-  if (typeof window.modules !== 'undefined' && window.modules && window.modules.length > 0) {
-    requestAnimationFrame(initEnhancedDashboard);
-    return;
-  }
-  
-  // If not ready, use MutationObserver to watch for data instead of polling
-  var checkCount = 0;
-  var maxChecks = 25; // Max 5 seconds (25 * 200ms)
-  
-  function checkDataReady() {
-    checkCount++;
-    // Check for window.modules OR window.state.selectedChild (the actual variable used)
-    if (typeof window.modules !== 'undefined' || (window.state && window.state.selectedChild)) {
-      requestAnimationFrame(initEnhancedDashboard);
-    } else if (checkCount < maxChecks) {
-      setTimeout(checkDataReady, 200);
-    } else {
-      console.warn('Enhanced dashboard: Data not available after timeout');
-    }
-  }
-  
-  // Start checking after a short delay
-  setTimeout(checkDataReady, 100);
-});
-
-// Refresh function - immediate execution, debounces rapid successive calls
-var refreshDebounceTimer = null;
-window.refreshEnhancedDashboard = function() {
-  // If a call is already pending, skip (debounce)
-  if (refreshDebounceTimer) {
-    return;
-  }
-  // Execute immediately
-  if (enhancedDashboard) {
-    enhancedDashboard.init();
-  } else {
-    initEnhancedDashboard();
-  }
-  // Block subsequent calls for 50ms
-  refreshDebounceTimer = setTimeout(function() {
-    refreshDebounceTimer = null;
-  }, 50);
-};
-
-window.initEnhancedDashboard = initEnhancedDashboard;
-
-// Function to set super skill from focus plan (called by dashboard.js)
-window.setAdventureMapSuperSkill = function(superSkillSlug) {
-  if (!superSkillSlug) return;
-  
-  // Store globally
-  window.currentFocusSuperSkill = superSkillSlug;
-  
-  // Update the adventure map if it exists
-  if (enhancedDashboard && enhancedDashboard.adventureMap) {
-    enhancedDashboard.adventureMap.currentCategory = superSkillSlug;
-    enhancedDashboard.adventureMap.setStoredCategory(superSkillSlug);
-    enhancedDashboard.adventureMap.render();
-  }
-};
-
-// Export the category to super skill mapping for use by focus-plan.js
-window.CATEGORY_TO_SUPERSKILL = CATEGORY_TO_SUPERSKILL;
-function isDanielMoodCheckinEnabled() {
-  return Boolean(window.__danielMoodCheckinEnabled || document.getElementById('danielMoodModal'))
-}
-
-

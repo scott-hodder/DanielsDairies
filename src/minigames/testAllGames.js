@@ -1,4 +1,4 @@
-// Test harness: call window.__testMiniGame('balloon-breathing') etc.
+// Test harness: call window.__testMiniGame('shield-sprint') etc.
 // from the browser console to test any game in isolation.
 // Or call window.__testAllMiniGames() to get a picker.
 
@@ -19,21 +19,16 @@ function createTestModal(gameId) {
   overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
 
   const modal = document.createElement('div');
-  modal.style.cssText = 'background:linear-gradient(180deg,#fffff5 0%,#f2f5fb 100%);border-radius:20px;width:90%;max-width:440px;max-height:85vh;overflow-y:auto;padding:20px;position:relative;border:2px solid rgba(64,88,120,0.15);box-shadow:0 20px 60px rgba(43,58,85,0.3);';
+  modal.style.cssText = 'background:linear-gradient(180deg,#fffff5 0%,#f2f5fb 100%);border-radius:24px;width:96vw;max-width:560px;height:90vh;max-height:720px;overflow:hidden;padding:0;position:relative;border:2px solid rgba(64,88,120,0.15);box-shadow:0 20px 60px rgba(43,58,85,0.3);display:flex;flex-direction:column;';
 
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '✕';
-  closeBtn.style.cssText = 'position:absolute;top:10px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;z-index:5;';
+  closeBtn.style.cssText = 'position:absolute;top:8px;right:12px;background:rgba(0,0,0,0.15);border:none;font-size:18px;cursor:pointer;z-index:55;width:30px;height:30px;border-radius:50%;color:#fff;line-height:30px;text-align:center;';
   closeBtn.addEventListener('click', () => overlay.remove());
   modal.appendChild(closeBtn);
 
-  const title = document.createElement('h3');
-  title.textContent = 'Testing: ' + gameId;
-  title.style.cssText = 'margin:0 0 12px;font-size:16px;color:#405878;font-family:League Spartan,system-ui,sans-serif;font-weight:700;';
-  modal.appendChild(title);
-
   const host = document.createElement('div');
-  host.style.cssText = 'position:relative;min-height:380px;';
+  host.style.cssText = 'position:relative;flex:1;overflow:hidden;';
   modal.appendChild(host);
 
   overlay.appendChild(modal);
@@ -72,9 +67,7 @@ window.__testMiniGame = async function (gameId) {
   const game = def.factory(ctx);
   try {
     const result = await game.run();
-    if (result.starsEarned == null) {
-      result.starsEarned = new Scorer('easy').stars(result.score || 0);
-    }
+    // Stars are now auto-calculated in IMiniGame._finish, no manual override needed
     console.log('[test] Result:', result);
     await rewardBurst(host, { stars: result.starsEarned, message: result.success ? 'Well done!' : 'Nice try!' });
     setTimeout(() => overlay.remove(), 1800);
