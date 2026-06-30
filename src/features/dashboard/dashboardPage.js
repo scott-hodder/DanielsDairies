@@ -576,16 +576,27 @@ checkWeeklyCheckinSettings()
 
 // Tab elements
 const tabDashboard = document.getElementById('tabDashboard')
+const tabAdventures = document.getElementById('tabAdventures')
 const tabModules = document.getElementById('tabModules')
 const tabLeaderboard = document.getElementById('tabLeaderboard')
+const tabRoadBuilder = document.getElementById('tabRoadBuilder')
+const tabArcade = document.getElementById('tabArcade')
 const tabSpendStars = document.getElementById('tabSpendStars')
 const tabParentInsights = document.getElementById('tabParentInsights')
 const dashboardTabContent = document.getElementById('dashboardTabContent')
+const adventuresTabContent = document.getElementById('adventuresTabContent')
 const modulesTabContent = document.getElementById('modulesTabContent')
 const leaderboardTabContent = document.getElementById('leaderboardTabContent')
+const roadBuilderTabContent = document.getElementById('roadBuilderTabContent')
+const arcadeTabContent = document.getElementById('arcadeTabContent')
 const spendStarsTabContent = document.getElementById('spendStarsTabContent')
 const parentInsightsTabContent = document.getElementById('parentInsightsTabContent')
 const leaderboardList = document.getElementById('leaderboardList')
+
+// Feature flags
+const FEATURE_FLAGS = {
+  leaderboard: false // Set to true to show the Leaderboard tab
+}
 
 // Initialize - OPTIMIZED for performance
 async function init() {
@@ -1948,6 +1959,9 @@ function showChildDetailView(child) {
     if (typeof window.refreshEnhancedDashboard === 'function') {
       window.refreshEnhancedDashboard()
     }
+
+    // Notify Brain Town that child data is ready
+    window.dispatchEvent(new CustomEvent('childSelected', { detail: { childId: child.id } }))
   })
   
   // Defer leaderboard and weekly plan to idle callback or setTimeout
@@ -3235,53 +3249,77 @@ if (hamburgerMenu && dropdownMenu) {
 
 // Tab switching
 function showTab(tabName) {
-  if (!tabDashboard || !tabModules || !tabLeaderboard || !tabSpendStars || !tabParentInsights) return
-  
+  if (!tabDashboard) return
+
+  // All tab buttons and content panels
+  const allTabs = [tabDashboard, tabAdventures, tabModules, tabLeaderboard, tabRoadBuilder, tabArcade, tabSpendStars, tabParentInsights]
+  const allContent = [dashboardTabContent, adventuresTabContent, modulesTabContent, leaderboardTabContent, roadBuilderTabContent, arcadeTabContent, spendStarsTabContent, parentInsightsTabContent]
+
   // Remove active class from all tabs
-  tabDashboard.classList.remove('active')
-  tabModules.classList.remove('active')
-  tabLeaderboard.classList.remove('active')
-  tabSpendStars.classList.remove('active')
-  tabParentInsights.classList.remove('active')
-  
+  allTabs.forEach(t => { if (t) t.classList.remove('active') })
+
   // Hide all tab content
-  hideElement(dashboardTabContent)
-  hideElement(modulesTabContent)
-  hideElement(leaderboardTabContent)
-  hideElement(spendStarsTabContent)
-  hideElement(parentInsightsTabContent)
-  
+  allContent.forEach(c => hideElement(c))
+
   // Show selected tab
   if (tabName === 'dashboard') {
     tabDashboard.classList.add('active')
     showElement(dashboardTabContent)
+  } else if (tabName === 'adventures') {
+    if (tabAdventures) tabAdventures.classList.add('active')
+    showElement(adventuresTabContent)
+    // Re-render adventure map since it may have been hidden
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'))
+      const map = window.enhancedDashboard?.adventureMap
+      if (map && typeof map.centerOnCurrentModule === 'function') map.centerOnCurrentModule()
+    }, 100)
   } else if (tabName === 'modules') {
     tabModules.classList.add('active')
     showElement(modulesTabContent)
   } else if (tabName === 'leaderboard') {
-    tabLeaderboard.classList.add('active')
+    if (tabLeaderboard) tabLeaderboard.classList.add('active')
     showElement(leaderboardTabContent)
+  } else if (tabName === 'roadBuilder') {
+    if (tabRoadBuilder) tabRoadBuilder.classList.add('active')
+    showElement(roadBuilderTabContent)
+  } else if (tabName === 'arcade') {
+    if (tabArcade) tabArcade.classList.add('active')
+    showElement(arcadeTabContent)
   } else if (tabName === 'spendStars') {
-    tabSpendStars.classList.add('active')
+    if (tabSpendStars) tabSpendStars.classList.add('active')
     showElement(spendStarsTabContent)
     // Initialize rewards tab when shown
     initializeRewardsTab(state.selectedChild)
   } else if (tabName === 'parentInsights') {
-    tabParentInsights.classList.add('active')
+    if (tabParentInsights) tabParentInsights.classList.add('active')
     showElement(parentInsightsTabContent)
     setParentInsightsSubtab(state.currentInsightsSubtab)
   }
 }
 
+// Expose showTab globally for Brain Town integration
+window.showDashboardTab = showTab
+
 // Tab click handlers (only add if elements exist)
 if (tabDashboard) {
   tabDashboard.addEventListener('click', () => showTab('dashboard'))
 }
+if (tabAdventures) {
+  tabAdventures.addEventListener('click', () => showTab('adventures'))
+}
 if (tabModules) {
   tabModules.addEventListener('click', () => showTab('modules'))
 }
-if (tabLeaderboard) {
+if (tabLeaderboard && FEATURE_FLAGS.leaderboard) {
+  tabLeaderboard.style.display = ''
   tabLeaderboard.addEventListener('click', () => showTab('leaderboard'))
+}
+if (tabRoadBuilder) {
+  tabRoadBuilder.addEventListener('click', () => showTab('roadBuilder'))
+}
+if (tabArcade) {
+  tabArcade.addEventListener('click', () => showTab('arcade'))
 }
 if (tabSpendStars) {
   tabSpendStars.addEventListener('click', () => showTab('spendStars'))

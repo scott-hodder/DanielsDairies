@@ -45,6 +45,7 @@
         <div class="pi-subtabs">
             <button class="pi-subtab active" id="subtabOverview">Insights Overview</button>
             <button class="pi-subtab" id="subtabCheckin">Weekly Check-In & Plan</button>
+            <button class="pi-subtab" id="subtabLibrary">Library</button>
         </div>
 
         <!-- Loading State -->
@@ -155,6 +156,28 @@
                     <p>These insights reflect your child's activity in Daniel's Diaries and are based on modules completed, check-ins submitted, and mood ratings shared. They are generated using evidence-based principles and are designed to support — not replace — your own observations as a parent.</p>
                     <p>Daniel's Diaries is an educational wellbeing tool, not a therapeutic or clinical service. This is not a clinical assessment, diagnosis, or professional recommendation. If you have concerns about your child's emotional or mental health, please consult a qualified professional.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- ========== LIBRARY PANEL ========== -->
+        <div id="libraryPanel" class="hidden">
+            <div class="pi-card">
+                <h3 class="pi-card-title">Understanding your child's brain</h3>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px;">Your child's brain is like a town. Each part has a job, and the roads between them carry messages. Here's a plain-English guide to what's happening, and how you can help at home.</p>
+
+                <div id="parentBrainLibrary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:18px;"></div>
+
+                <div style="background:linear-gradient(135deg,#16324f,#405878);color:#fff;border-radius:16px;padding:16px 20px;margin-bottom:16px;">
+                    <p style="margin:0;font-size:13.5px;color:#dbe6f2"><b style="color:#f2c94c">The most important thing:</b> a child's brain is not choosing to be difficult. It is doing its best with a nervous system that is genuinely, neurologically developing. Our job is to understand the map and build the roads, together.</p>
+                </div>
+
+                <h3 class="pi-card-title" style="margin-top:18px;">What each Super Skill supports</h3>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px;">Each Super Skill in Daniel's Diaries targets a specific area of emotional development. Here's what your child is practising and how you can reinforce it at home.</p>
+                <div id="parentSkillLibrary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+            </div>
+
+            <div class="pi-guardrails" style="margin-top:20px;">
+                <p>This library explains the neuroscience behind Daniel's Diaries in parent-friendly language. It is designed to help you understand what your child is practising and why.</p>
             </div>
         </div>
 
@@ -387,6 +410,7 @@
                 const insights = computeInsights(rawData)
                 renderInsights(insights)
                 renderChart(rawData.moodCheckins, rawData.weeklyCheckins, rawData.childModules)
+                renderParentLibrary(rawData.superSkills, rawData.modules, rawData.childModules)
 
                 document.getElementById('loadingState').classList.add('hidden')
                 document.getElementById('overviewPanel').classList.remove('hidden')
@@ -791,23 +815,22 @@
 
         // ── Subtabs ──
         function setupSubtabs() {
-            var overviewBtn = document.getElementById('subtabOverview')
-            var checkinBtn = document.getElementById('subtabCheckin')
-            var overviewPanel = document.getElementById('overviewPanel')
-            var checkinPanel = document.getElementById('checkinPanel')
+            var tabs = [
+                { btn: document.getElementById('subtabOverview'), panel: document.getElementById('overviewPanel') },
+                { btn: document.getElementById('subtabCheckin'), panel: document.getElementById('checkinPanel') },
+                { btn: document.getElementById('subtabLibrary'), panel: document.getElementById('libraryPanel') }
+            ]
 
-            overviewBtn.addEventListener('click', function() {
-                overviewBtn.classList.add('active')
-                checkinBtn.classList.remove('active')
-                overviewPanel.classList.remove('hidden')
-                checkinPanel.classList.add('hidden')
-            })
-
-            checkinBtn.addEventListener('click', function() {
-                checkinBtn.classList.add('active')
-                overviewBtn.classList.remove('active')
-                checkinPanel.classList.remove('hidden')
-                overviewPanel.classList.add('hidden')
+            tabs.forEach(function(tab) {
+                if (!tab.btn || !tab.panel) return
+                tab.btn.addEventListener('click', function() {
+                    tabs.forEach(function(t) {
+                        if (t.btn) t.btn.classList.remove('active')
+                        if (t.panel) t.panel.classList.add('hidden')
+                    })
+                    tab.btn.classList.add('active')
+                    tab.panel.classList.remove('hidden')
+                })
             })
         }
 
@@ -1032,6 +1055,86 @@
             if (btn) btn.disabled = loading
             if (text) text.style.opacity = loading ? '0' : '1'
             if (spinner) spinner.classList.toggle('hidden', !loading)
+        }
+
+        // ── Parent Library (Brain Explainer for Parents) ──
+        const BRAIN_REGIONS = {
+            pfc: { name: 'Town Hall', real: 'Prefrontal cortex', color: '#3A6EA8',
+                how: 'The planning office. Where your child stops, thinks, plans, and decides, and puts the brakes on before acting.',
+                see: 'When the alarm is loud, the Town Hall empties out. That\'s when a child can know the rule, agree to it, and still not do it a moment later.',
+                support: 'Keep instructions short when they\'re upset. Wait for calm before talking through what happened.' },
+            amygdala: { name: 'Alarm Station', real: 'Amygdala', color: '#C0404A',
+                how: 'Your child\'s safety alarm. It watches for anything scary or unfair and sounds the siren fast, switching on fight, flight, or freeze.',
+                see: 'The alarm can ring many times a day, sometimes over things that look small. Every time it rings, the thinking part goes offline.',
+                support: 'You can\'t reason with a ringing alarm. Calm comes first, then connect, then correct.' },
+            hippocampus: { name: 'Memory Warehouse', real: 'Hippocampus', color: '#C96B28',
+                how: 'Where new things get filed away so they can be found again. The more a road is travelled, the easier the memory is to reach.',
+                see: 'Sometimes deliveries get lost, so a child forgets what they knew yesterday. When the alarm is ringing, nothing new gets filed at all.',
+                support: 'Repeat important things calmly and often. Use routines and visual cues to help memory stick.' },
+            social: { name: 'Social Hub', real: 'Social brain network', color: '#7048A8',
+                how: 'Where your child reads faces, shares, and connects. It runs the translation software for other people.',
+                see: 'It can be running slow. A child may want connection but find reading and answering people tiring.',
+                support: 'Narrate social situations. "I think they felt sad when..." helps build the translation software.' },
+            intero: { name: 'Body Signal Station', real: 'Interoception', color: '#2A7A5F',
+                how: 'Senses what\'s happening inside: hunger, tiredness, the first flicker of a feeling.',
+                see: 'Signals can arrive late or not at all. A child might not notice hunger until they\'re dysregulated.',
+                support: 'Build body check-in habits. "How does your tummy feel?" helps them learn to notice signals earlier.' },
+            roads: { name: 'The Roads', real: 'White matter, connectivity', color: '#B8860B',
+                how: 'The roads between the buildings. They carry messages so the thinking part and the feeling part can talk to each other.',
+                see: 'Some roads are still being built. Knowing and doing don\'t always travel together.',
+                support: 'Practice is what builds roads. Each time your child practises a skill, the road gets a little wider.' }
+        }
+
+        const SKILL_LIBRARY = {
+            'Brain Builder': { color: '#6366F1', purpose: 'Understanding how the brain works and grows', parentTip: 'Talk about "brain roads" at home. When your child handles something well, say "you just built that road a little wider!"' },
+            'Thought Driver': { color: '#8B5CF6', purpose: 'Steering thoughts in a helpful direction', parentTip: 'When your child has a stuck thought, try: "What would Daniel say?" Externalising the thought makes it easier to examine.' },
+            'Emotion Navigator': { color: '#EC4899', purpose: 'Understanding and managing big feelings', parentTip: 'Name feelings out loud: "It looks like you might be feeling frustrated." Naming it calms the alarm.' },
+            'Behaviour Engineer': { color: '#D97706', purpose: 'Building good habits and making choices you feel proud of', parentTip: 'When your child breaks an old habit or sticks with a new one, name it: "You chose differently that time. That takes real practice."' },
+            'Resilience Architect': { color: '#EF4444', purpose: 'Bouncing back from hard moments and growing stronger', parentTip: 'Celebrate the bounce-back, not just the success: "You had a tough start but you kept going. That\'s resilience."' },
+            'Social Mapper': { color: '#0D9488', purpose: 'Understanding people better and building stronger friendships', parentTip: 'After playdates, debrief gently: "What went well?" Focus on one small social win to build confidence.' },
+            'Future Designer': { color: '#7C3AED', purpose: 'Dreaming big, setting goals, and planning ahead', parentTip: 'Ask your child: "What would you love to be great at?" Help them break big dreams into small, doable steps.' }
+        }
+
+        function renderParentLibrary(superSkills, modules, childModules) {
+            const brainEl = document.getElementById('parentBrainLibrary')
+            if (brainEl) {
+                brainEl.innerHTML = Object.entries(BRAIN_REGIONS).map(function([key, r]) {
+                    return '<div style="background:#fff;border-radius:16px;padding:15px;border-top:5px solid ' + r.color + ';box-shadow:0 3px 12px rgba(40,60,90,.08)">' +
+                        '<h4 style="font-size:15px;color:#16324f;margin:0 0 2px">' + r.name + '</h4>' +
+                        '<div style="font-size:11px;color:#6b7e95;font-weight:600;text-transform:uppercase;letter-spacing:.3px">' + r.real + '</div>' +
+                        '<div style="margin-top:9px"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#405878">How it works</div><p style="font-size:12.5px;color:#405878;margin:2px 0 0">' + r.how + '</p></div>' +
+                        '<div style="margin-top:9px"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#e6a800">What you might see</div><p style="font-size:12.5px;color:#405878;margin:2px 0 0">' + r.see + '</p></div>' +
+                        '<div style="margin-top:9px"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#2e8b57">How to support at home</div><p style="font-size:12.5px;color:#405878;margin:2px 0 0">' + r.support + '</p></div>' +
+                        '</div>'
+                }).join('')
+            }
+
+            const skillEl = document.getElementById('parentSkillLibrary')
+            if (skillEl) {
+                // Use DB super skills if available, fallback to hardcoded
+                const skills = superSkills && superSkills.length > 0
+                    ? superSkills.map(function(s) {
+                        const lib = SKILL_LIBRARY[s.name] || SKILL_LIBRARY[s.title] || {}
+                        const skillModules = (modules || []).filter(function(m) { return m.super_skill_id === s.id })
+                        const done = skillModules.filter(function(m) {
+                            return (childModules || []).some(function(cm) { return cm.module_id === m.id && cm.is_completed === true })
+                        }).length
+                        return { name: s.name || s.title, color: lib.color || s.theme_color || '#405878', purpose: lib.purpose || s.description || '', parentTip: lib.parentTip || '', done: done, total: skillModules.length }
+                    })
+                    : Object.entries(SKILL_LIBRARY).map(function([name, lib]) {
+                        return { name: name, color: lib.color, purpose: lib.purpose, parentTip: lib.parentTip, done: 0, total: 0 }
+                    })
+
+                skillEl.innerHTML = skills.map(function(s) {
+                    var pct = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0
+                    return '<div style="background:#fff;border-radius:16px;padding:15px;border-left:5px solid ' + s.color + ';box-shadow:0 3px 12px rgba(40,60,90,.08)">' +
+                        '<h4 style="font-size:15px;color:#16324f;margin:0 0 4px">' + s.name + '</h4>' +
+                        '<p style="font-size:12.5px;color:#405878;margin:0 0 8px">' + s.purpose + '</p>' +
+                        (s.total > 0 ? '<div style="background:#f4f7fb;border-radius:8px;padding:8px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:#16324f;margin-bottom:4px"><span>Progress</span><span>' + s.done + ' of ' + s.total + '</span></div><div style="height:8px;background:#e3e8ef;border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + s.color + ';border-radius:999px"></div></div></div>' : '') +
+                        (s.parentTip ? '<div style="background:#f9fafb;border-radius:10px;padding:10px;font-size:12px;color:#405878"><b style="color:#16324f">At home:</b> ' + s.parentTip + '</div>' : '') +
+                        '</div>'
+                }).join('')
+            }
         }
 
         // ── Boot ──

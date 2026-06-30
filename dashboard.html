@@ -17,6 +17,7 @@
     <link href="/styles/dashboard.css" rel="stylesheet">
     <!-- Adventure UI Overhaul -->
     <link href="/styles/dashboard-adventure.css" rel="stylesheet">
+    <link href="/src/features/dashboard/brainTownStyles.css" rel="stylesheet">
 
     <style>
       body { display: flex; flex-direction: column; min-height: 100vh; }
@@ -118,17 +119,26 @@
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
                 <div class="nav-tabs-content">
-                    <button class="nav-tab active" id="tabDashboard" data-emoji="🎯">
-                        🎯 Dashboard
+                    <button class="nav-tab active" id="tabDashboard" data-emoji="🗺️">
+                        🗺️ Brain Town
+                    </button>
+                    <button class="nav-tab" id="tabAdventures" data-emoji="🧭">
+                        🧭 Adventures
                     </button>
                     <button class="nav-tab hidden" id="tabModules" data-emoji="📖">
                         📖 My Modules
                     </button>
-                    <button class="nav-tab" id="tabLeaderboard" data-emoji="🏆">
-                        🏆 Leaderboard
+                    <button class="nav-tab" id="tabRoadBuilder" data-emoji="🛣️">
+                        🛣️ Road Builder
+                    </button>
+                    <button class="nav-tab" id="tabArcade" data-emoji="🎮">
+                        🎮 Arcade
                     </button>
                     <button class="nav-tab" id="tabSpendStars" data-emoji="🎁">
                         🎁 Spend Stars
+                    </button>
+                    <button class="nav-tab" id="tabLeaderboard" data-emoji="🏆" style="display:none">
+                        🏆 Leaderboard
                     </button>
                     <button class="nav-tab nav-tab-highlight" id="tabParentInsights" data-emoji="📊" title="View detailed progress insights">
                         📊 Progress and Insights
@@ -210,11 +220,13 @@
                 </div>
 
 
-<!-- 
-  ADVENTURE MAP V3 - HTML SNIPPET
-  Replace your existing adventure-map-section div with this.
-  This works with dashboard-enhanced-v3.js
--->
+<!-- Brain Town Section -->
+<div id="brainTownSection"></div>
+
+            </div>
+
+            <!-- Adventures Tab -->
+            <div id="adventuresTabContent" class="hidden">
 
 <!-- Adventure Map Section -->
 <div class="adventure-map-section">
@@ -275,7 +287,17 @@
                 </div>
             </div>
 
-            <!-- Leaderboard Tab -->
+            <!-- Road Builder Tab -->
+            <div id="roadBuilderTabContent" class="hidden">
+                <div id="roadBuilderMount"></div>
+            </div>
+
+            <!-- Arcade Tab -->
+            <div id="arcadeTabContent" class="hidden">
+                <div id="arcadeMount"></div>
+            </div>
+
+            <!-- Leaderboard Tab (feature-flagged, hidden by default) -->
             <div id="leaderboardTabContent" class="hidden">
                 <div class="leaderboard-header">
                     <h2 class="leaderboard-title">Leaderboard</h2>
@@ -822,6 +844,7 @@
 
     <script type="module" src="./src/progress-tracking-system.js"></script>
     <script type="module" src="./src/features/dashboard/dashboardPage.js"></script>
+    <script type="module" src="./src/features/dashboard/brainTownBootstrap.js"></script>
    <script type="module" src="./src/dashboard-enhanced.js"></script>
     <script type ="module" src="./src/daily-quest-system.js"></script>
     <script type="module" src="./src/daniel-relationship-system.js"></script>

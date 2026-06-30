@@ -1336,9 +1336,17 @@ export class AdventureMapV4 {
     var nextStage = stages[Math.min(stageIndex + 1, stages.length - 1)];
     var nextMilestone = stage.milestone;
     var modulesLeft = nextMilestone ? Math.max(0, nextMilestone - completedCount) : 0;
-    var progressNote = nextMilestone
-      ? modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + ' to unlock ' + nextStage.emoji + ' ' + nextStage.label
-      : 'All stages unlocked!';
+    var rbForNote = this.modules.filter(function(m) { return m.isRoadBuilder; });
+    var rbNeededForNote = stageIndex + 1;
+    var rbDoneForNote = rbForNote.slice(0, rbNeededForNote).every(function(rb) { return rb && rb.status === 'completed'; });
+    var progressNote;
+    if (!nextMilestone) {
+      progressNote = 'All stages unlocked!';
+    } else if (modulesLeft <= 0 && !rbDoneForNote) {
+      progressNote = 'Complete the Road Builder to unlock ' + nextStage.emoji + ' ' + nextStage.label;
+    } else {
+      progressNote = modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + ' to unlock ' + nextStage.emoji + ' ' + nextStage.label;
+    }
 
     var timelineHtml = stages.map(function(s, idx) {
       var cls = 'progression-step';
@@ -1616,9 +1624,21 @@ export class AdventureMapV4 {
     var nextStage = stages[Math.min(stageIndex + 1, stages.length - 1)];
     var nextMilestone = stage.milestone;
     var modulesLeft = nextMilestone ? Math.max(0, nextMilestone - completedCount) : 0;
-    var transitionCopy = nextMilestone
-      ? 'Complete <span class="town-progress-cue-strong">' + modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + '</span> to unlock <span class="town-progress-cue-strong">' + nextStage.emoji + ' ' + nextStage.label + '</span>.'
-      : 'You unlocked the final town stage. Keep reviewing modules to strengthen those pathways.';
+
+    // Check if modules are sufficient but road builder is blocking progression
+    var roadBuilders = this.modules.filter(function(m) { return m.isRoadBuilder; });
+    var rbNeeded = stageIndex + 1; // road builder 1 needed for Village, 2 for Town Center, etc.
+    var rbDone = roadBuilders.slice(0, rbNeeded).every(function(rb) { return rb && rb.status === 'completed'; });
+    var transitionCopy;
+    if (!nextMilestone) {
+      transitionCopy = 'You unlocked the final town stage. Keep reviewing modules to strengthen those pathways.';
+    } else if (modulesLeft <= 0 && !rbDone) {
+      transitionCopy = 'Complete the <span class="town-progress-cue-strong">Road Builder challenge</span> to unlock <span class="town-progress-cue-strong">' + nextStage.emoji + ' ' + nextStage.label + '</span>.';
+    } else if (modulesLeft > 0) {
+      transitionCopy = modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + ' to unlock ' + nextStage.emoji + ' ' + nextStage.label;
+    } else {
+      transitionCopy = 'Complete <span class="town-progress-cue-strong">the Road Builder</span> to unlock <span class="town-progress-cue-strong">' + nextStage.emoji + ' ' + nextStage.label + '</span>.';
+    }
 
     var timeline = stages.map(function(item, idx) {
       var statusClass = 'town-progress-cue-step';
