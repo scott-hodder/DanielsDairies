@@ -11,21 +11,24 @@ import { getSuperSkills } from '../../services/databaseService.js'
 import { SUPER_SKILL_THEMES, KID_FRIENDLY_COPY } from '../../adventure-map-themes.js'
 import { escapeHtml } from '../../lib/sanitize.js'
 
-const WORLD_W = 1448
-const WORLD_H = 1086
+const WORLD_W = 1254
+const WORLD_H = 1254
 
-const TOWN_SQUARE = { x: 724, y: 488 }
+const TOWN_SQUARE = { x: 625, y: 665 }
+const TOWN_SQUARE_MARKER = { x: 625, y: 545 }
+const DANIEL_WALK_FRAMES = [1, 2, 3, 4, 5].map(frame => `/images/characters/daniel-walking${frame}.png`)
+const DANIEL_IDLE_IMAGE = '/images/characters/DanielTheDog.webp'
 
 // ── Building positions (center of each building in 1448x1086 image) ──
 // The image has 8 buildings around a central fountain; we use 7 + town square
-const BUILDING_POSITIONS = {
-  topLeft:      { x: 275, y: 205 },   // Red-roof school
-  topCenter:    { x: 660, y: 120 },   // Playground with swings
-  topRight:     { x: 1010, y: 205 },  // Yellow cottage / cafe
-  midLeft:      { x: 195, y: 470 },   // Blue-roof hall / library
-  midRight:     { x: 1100, y: 455 },  // Pond area with gazebo
-  botLeft:      { x: 305, y: 750 },   // Red barn with garden
-  botCenter:    { x: 660, y: 770 },   // Ornate gazebo / bandstand
+const DISTRICTS = {
+  topLeft: { marker: { x: 235, y: 285 }, endpoint: { x: 275, y: 340 }, hotspot: { x: 45, y: 205, width: 405, height: 315 }, roadPath: 'M 625 665 C 570 646 525 612 492 566 C 459 520 438 468 397 425 C 361 388 320 359 275 340' },
+  topCenter: { marker: { x: 625, y: 132 }, endpoint: { x: 625, y: 250 }, hotspot: { x: 470, y: 88, width: 365, height: 250 }, roadPath: 'M 625 665 C 588 616 579 558 597 503 C 615 447 650 397 650 337 C 650 299 642 272 625 250' },
+  topRight: { marker: { x: 1030, y: 285 }, endpoint: { x: 1000, y: 435 }, hotspot: { x: 825, y: 190, width: 410, height: 335 }, roadPath: 'M 625 665 C 700 670 762 642 817 597 C 871 553 908 501 951 466 C 970 450 985 440 1000 435' },
+  midLeft: { marker: { x: 240, y: 590 }, endpoint: { x: 275, y: 660 }, hotspot: { x: 65, y: 555, width: 365, height: 275 }, roadPath: 'M 625 665 C 566 680 516 707 460 720 C 407 732 365 716 329 692 C 310 679 292 668 275 660' },
+  midRight: { marker: { x: 1020, y: 590 }, endpoint: { x: 930, y: 780 }, hotspot: { x: 850, y: 550, width: 350, height: 285 }, roadPath: 'M 625 665 C 694 681 754 708 807 740 C 854 768 893 790 930 780' },
+  botLeft: { marker: { x: 330, y: 865 }, endpoint: { x: 280, y: 970 }, hotspot: { x: 145, y: 845, width: 360, height: 285 }, roadPath: 'M 625 665 C 574 715 540 777 505 840 C 471 901 424 947 370 966 C 336 978 306 977 280 970' },
+  botCenter: { marker: { x: 900, y: 850 }, endpoint: { x: 875, y: 980 }, hotspot: { x: 750, y: 835, width: 370, height: 295 }, roadPath: 'M 625 665 C 677 716 715 776 755 840 C 792 899 834 954 875 980' }
 }
 
 // Map each DB super skill slug → a building position
@@ -63,17 +66,6 @@ const SKILL_EMOJIS = {
   'future-designer':      '\u{1F52E}',
 }
 
-// Road paths from plaza edge → building (tracing the visible dirt roads)
-const ROAD_PATHS = {
-  topLeft:   'M 645,400 C 540,330 420,270 290,215',
-  topCenter: 'M 700,385 C 690,290 680,210 665,140',
-  topRight:  'M 800,400 C 880,330 940,270 1000,215',
-  midLeft:   'M 610,488 C 470,483 340,478 215,473',
-  midRight:  'M 840,490 C 940,483 1020,470 1090,458',
-  botLeft:   'M 645,575 C 530,640 420,700 320,745',
-  botCenter: 'M 715,580 C 700,650 685,715 665,765',
-}
-
 // ── State ──
 let _container = null
 let _superSkills = []
@@ -81,6 +73,7 @@ let _childModules = []
 let _modules = []
 let _onSelectSkill = null
 let _selectedSlug = null
+let _danielWalkFrame = 0
 
 // Pan/zoom
 let _tx = 0, _ty = 0, _scale = 1
@@ -147,7 +140,21 @@ function getBuildingKey(skill) {
 
 function getBuildingPos(skill) {
   const key = getBuildingKey(skill)
-  return key ? BUILDING_POSITIONS[key] : null
+  return key ? DISTRICTS[key]?.marker : null
+}
+
+function getRoadState(skill, progress) {
+  const slug = getSlug(skill)
+  if (progress.pct >= 100) return 'completed'
+  if (window.currentFocusSuperSkill === slug) return 'recommended'
+  if (progress.pct > 0) return 'current'
+  return 'not-started'
+}
+
+function getRoadTier(progress) {
+  if (progress.pct >= 75) return 'brick'
+  if (progress.pct >= 34) return 'cobblestone'
+  return 'dirt'
 }
 
 // ── Init ──
@@ -185,6 +192,7 @@ export function updateBrainTownData({ modules, childModules }) {
 
 function render() {
   if (!_container) return
+  stopDanielWalk()
   _container.innerHTML = ''
   _selectedSlug = null
 
@@ -199,9 +207,16 @@ function render() {
               <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
               <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
+            <linearGradient id="selectedRoadGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fff9cf"/>
+              <stop offset="0.5" stop-color="#ffe678"/>
+              <stop offset="1" stop-color="#fffdf0"/>
+            </linearGradient>
           </defs>
           ${renderRoadPaths()}
+          ${renderHotspots()}
         </svg>
+        <img class="bt-daniel" id="btDaniel" src="${DANIEL_IDLE_IMAGE}" alt="Daniel waiting in Town Square" draggable="false" />
       </div>
       <div class="bt-hint" id="btHint">Drag to explore \u2022 tap a building to learn more</div>
       <div class="bt-controls">
@@ -226,7 +241,7 @@ function render() {
 
   // Town Square pin
   addPin(world, {
-    x: TOWN_SQUARE.x, y: TOWN_SQUARE.y,
+    x: TOWN_SQUARE_MARKER.x, y: TOWN_SQUARE_MARKER.y,
     emoji: '\u26F2', label: 'Town Square',
     color: '#f2c94c', type: 'home'
   })
@@ -251,10 +266,12 @@ function render() {
     })
     placed++
   })
+  setupHotspots(stage)
   console.log(`[BrainTownMap] Placed ${placed}/${_superSkills.length} pins`)
 
   // Events
   viewport.addEventListener('touchmove', e => e.preventDefault(), { passive: false })
+  viewport.addEventListener('dragstart', e => e.preventDefault())
   viewport.addEventListener('wheel', e => {
     e.preventDefault()
     zoomBy(viewport, world, e.deltaY < 0 ? 1.1 : 1 / 1.1, e.clientX, e.clientY)
@@ -307,21 +324,41 @@ function getDefaultScale(viewport) {
 // ── Road paths SVG ──
 
 function renderRoadPaths() {
-  return Object.entries(ROAD_PATHS).map(([key, d]) => {
+  return Object.entries(DISTRICTS).map(([key, district]) => {
     // Find which skill is at this building
     const slug = Object.entries(SLUG_TO_BUILDING).find(([, bk]) => bk === key)?.[0]
     const skill = slug ? _superSkills.find(s => getSlug(s) === slug) : null
-    const color = skill ? getSkillColor(skill) : '#a08868'
     const progress = skill ? getSkillProgress(skill) : { pct: 0 }
-
-    // Road style based on progress
-    const opacity = progress.pct > 0 ? 0.7 : 0.3
-    const width = progress.pct >= 100 ? 10 : progress.pct > 0 ? 7 : 5
-
-    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}"
-      stroke-linecap="round" stroke-dasharray="${progress.pct >= 100 ? 'none' : '14 8'}"
-      opacity="${opacity}" class="bt-road" data-slug="${slug || ''}" id="btRoad-${key}"/>`
+    const state = skill ? getRoadState(skill, progress) : 'not-started'
+    const tier = getRoadTier(progress)
+    return `<g class="bt-road-group bt-road-group-${state} bt-road-tier-${tier}" data-progress="${progress.pct}">
+      <path d="${district.roadPath}" class="bt-road-bed"/>
+      <path d="${district.roadPath}" class="bt-road bt-road-${state}" data-slug="${slug || ''}" id="btRoad-${key}"/>
+      <path d="${district.roadPath}" class="bt-road-texture"/>
+    </g>`
   }).join('')
+}
+
+function renderHotspots() {
+  return Object.entries(DISTRICTS).map(([key, district]) => {
+    const slug = Object.entries(SLUG_TO_BUILDING).find(([, building]) => building === key)?.[0] || ''
+    const h = district.hotspot
+    return `<rect class="bt-hotspot" data-slug="${slug}" x="${h.x}" y="${h.y}" width="${h.width}" height="${h.height}" rx="42" tabindex="0" role="button" aria-label="Explore ${slug.replace(/-/g, ' ')}"/>`
+  }).join('')
+}
+
+function setupHotspots(stage) {
+  stage.querySelectorAll('.bt-hotspot').forEach(hotspot => {
+    const activate = () => {
+      if (_wasDragging) return
+      const skill = _superSkills.find(item => getSlug(item) === hotspot.dataset.slug)
+      if (skill) selectSkill(hotspot.dataset.slug, skill)
+    }
+    hotspot.addEventListener('click', activate)
+    hotspot.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate() }
+    })
+  })
 }
 
 // ── Pin markers (small, mockup-style) ──
@@ -342,6 +379,7 @@ function addPin(world, p) {
     `
     el.querySelector('.bt-pin-btn').addEventListener('click', (e) => {
       e.stopPropagation()
+      if (_wasDragging) return
       openDrawerHome()
     })
   } else {
@@ -349,7 +387,7 @@ function addPin(world, p) {
     const imgUrl = p.skill?.character_image_url
     el.innerHTML = `
       <button class="bt-pin-btn" style="border-color:${p.color}" data-slug="${p.slug}">
-        ${imgUrl ? `<img src="${escapeHtml(imgUrl)}" alt="" class="bt-pin-img"/>` : `<span>${p.emoji}</span>`}
+        ${imgUrl ? `<img src="${escapeHtml(imgUrl)}" alt="" class="bt-pin-img" draggable="false"/>` : `<span>${p.emoji}</span>`}
         ${stateClass ? `<span class="bt-pin-state ${stateClass}"></span>` : ''}
       </button>
       <span class="bt-pin-label">${escapeHtml(p.label)}</span>
@@ -357,6 +395,7 @@ function addPin(world, p) {
     `
     el.querySelector('.bt-pin-btn').addEventListener('click', (e) => {
       e.stopPropagation()
+      if (_wasDragging) return
       selectSkill(p.slug, p.skill)
     })
   }
@@ -390,6 +429,9 @@ function selectSkill(slug, skill) {
     btn.classList.toggle('bt-pin-selected', btn.dataset.slug === slug)
   })
 
+  const selectedRoad = _container.querySelector(`.bt-road[data-slug="${slug}"]`)
+  if (selectedRoad) walkDanielAlongPath(selectedRoad)
+
   openDrawerSkill(skill)
 }
 
@@ -412,6 +454,71 @@ function deselectSkill() {
   _container.querySelectorAll('.bt-pin-btn').forEach(btn => {
     btn.classList.remove('bt-pin-selected')
   })
+  resetDaniel()
+}
+
+function stopDanielWalk() {
+  if (_danielWalkFrame) cancelAnimationFrame(_danielWalkFrame)
+  _danielWalkFrame = 0
+}
+
+function positionDaniel(daniel, point, facingRight = true) {
+  daniel.style.left = `${point.x}px`
+  daniel.style.top = `${point.y}px`
+  daniel.style.setProperty('--daniel-facing', facingRight ? '1' : '-1')
+}
+
+function resetDaniel() {
+  stopDanielWalk()
+  const daniel = _container?.querySelector('#btDaniel')
+  if (!daniel) return
+  daniel.classList.remove('bt-daniel-walking', 'bt-daniel-arrived')
+  daniel.src = DANIEL_IDLE_IMAGE
+  daniel.alt = 'Daniel waiting in Town Square'
+  positionDaniel(daniel, TOWN_SQUARE)
+}
+
+function walkDanielAlongPath(path) {
+  const daniel = _container?.querySelector('#btDaniel')
+  if (!daniel) return
+  stopDanielWalk()
+
+  const length = path.getTotalLength()
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reducedMotion) {
+    positionDaniel(daniel, path.getPointAtLength(length))
+    daniel.src = DANIEL_IDLE_IMAGE
+    daniel.classList.add('bt-daniel-arrived')
+    return
+  }
+
+  const duration = Math.max(1900, Math.min(3600, length * 5.2))
+  const startedAt = performance.now()
+  let previousPoint = path.getPointAtLength(0)
+  daniel.classList.add('bt-daniel-walking')
+  daniel.classList.remove('bt-daniel-arrived')
+  daniel.alt = 'Daniel walking to the selected Super Skill'
+
+  const step = now => {
+    const progress = Math.min(1, (now - startedAt) / duration)
+    const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2
+    const point = path.getPointAtLength(length * eased)
+    const frameIndex = Math.floor((now - startedAt) / 105) % DANIEL_WALK_FRAMES.length
+    daniel.src = DANIEL_WALK_FRAMES[frameIndex]
+    positionDaniel(daniel, point, point.x >= previousPoint.x)
+    previousPoint = point
+
+    if (progress < 1) {
+      _danielWalkFrame = requestAnimationFrame(step)
+    } else {
+      _danielWalkFrame = 0
+      daniel.src = DANIEL_IDLE_IMAGE
+      daniel.alt = 'Daniel at the selected Super Skill'
+      daniel.classList.remove('bt-daniel-walking')
+      daniel.classList.add('bt-daniel-arrived')
+    }
+  }
+  _danielWalkFrame = requestAnimationFrame(step)
 }
 
 // ── Drawer ──
@@ -548,13 +655,10 @@ function renderMobileList(listEl) {
 function setupDrag(viewport, world) {
   viewport.addEventListener('pointerdown', e => {
     if (e.target.closest('.bt-drawer') || e.target.closest('.bt-controls') || e.target.closest('.bt-hint')) return
-    // Don't capture pointer on pin clicks - let the click event fire normally
-    if (e.target.closest('.bt-pin')) return
     if (e.pointerType === 'touch' && _pinchStartDist > 0) return
     _down = true; _moved = 0; _wasDragging = false
     _lastX = e.clientX; _lastY = e.clientY
     viewport.classList.add('grabbing')
-    try { viewport.setPointerCapture(e.pointerId) } catch (_) {}
   })
 
   viewport.addEventListener('pointermove', e => {
@@ -562,7 +666,10 @@ function setupDrag(viewport, world) {
     const dx = e.clientX - _lastX, dy = e.clientY - _lastY
     _lastX = e.clientX; _lastY = e.clientY
     _moved += Math.abs(dx) + Math.abs(dy)
-    if (_moved > 8) _wasDragging = true
+    if (_moved > 8 && !_wasDragging) {
+      _wasDragging = true
+      try { viewport.setPointerCapture(e.pointerId) } catch (_) {}
+    }
     _tx += dx; _ty += dy
     clampPan(viewport)
     applyTransform(world)
