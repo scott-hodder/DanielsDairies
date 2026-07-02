@@ -1,24 +1,27 @@
 // ================================================
-// BRAIN TOWN SVG MAP — Immersive World
+// BRAIN TOWN SVG MAP — Magical Kids' World
 //
 // Structure:
-//   1. Config (world, districts, roads, props)
-//   2. SVG Prop Renderers (themed district props)
-//   3. SVG Building Renderers (landmark per district)
-//   4. District Renderer (ground zone + building + props)
-//   5. Town Square Renderer
-//   6. World Decorations (trees, bushes, flowers, etc.)
-//   7. Sky Layer (clouds, birds)
-//   8. Road Renderer (with glow states)
-//   9. SVG Content Builder (assembles everything)
-//  10. Pan/Zoom (with bounds clamping)
-//  11. Daniel Character (idle + walk-toward)
-//  12. Detail Drawer (side drawer / bottom sheet)
-//  13. Injected Styles
-//  14. Public API (initSvgMap)
+//   1. Config (world, districts, roads, hub)
+//   2. Defs (gradients, filters, reusable symbols)
+//   3. Themed prop renderers (per-district props)
+//   4. Landmark renderers (one hero building per district)
+//   5. District renderer (organic ground zone + props + landmark)
+//   6. Town Square renderer (magical hub)
+//   7. World decorations (nature, lakes, bridges)
+//   8. Sky layer (clouds, balloon, birds)
+//   9. Road renderer (tiered, with selection glow)
+//  10. District markers (bobbing pins + name pills)
+//  11. SVG content builder
+//  12. Pan/Zoom (bounds-clamped)
+//  13. Daniel character (idle + walk-toward)
+//  14. Skill popup (fixed overlay — screen coordinates)
+//  15. Injected styles
+//  16. Public API (initSvgMap)
 // ================================================
 
 import { getSuperSkills } from '../../services/databaseService.js'
+import { KID_FRIENDLY_COPY } from '../../adventure-map-themes.js'
 
 /* ─────────────────────────────────────────────
    1. CONFIG
@@ -27,47 +30,48 @@ import { getSuperSkills } from '../../services/databaseService.js'
 const W = 2400, H = 1800
 const CX = 1200, CY = 900 // Town Square centre
 
+// Exactly 7 Super Skill districts. Do not add more.
 const DISTRICTS = {
   'brain-builder': {
     x: 380, y: 320, label: 'Brain Builder', color: '#6366F1', accent: '#4338CA',
-    district: 'Knowledge Quarter', emoji: '\u{1F9E0}',
-    zoneColor: '#DAD0F2', zoneRx: 310, zoneRy: 260,
+    district: "Billie's Blueprint Quarter", emoji: '\u{1F9E0}',
+    zoneColor: '#D6E4F7', zoneRx: 310, zoneRy: 260, seed: 11,
     desc: 'Master your mind through understanding how your brain works!',
   },
   'thought-driver': {
     x: 260, y: 920, label: 'Thought Driver', color: '#8B5CF6', accent: '#6D28D9',
-    district: 'Thinking Lane', emoji: '\u{1F9E9}',
-    zoneColor: '#E0D4F5', zoneRx: 300, zoneRy: 260,
+    district: 'The Wonder Annex', emoji: '\u{1F9E9}',
+    zoneColor: '#E4D9F7', zoneRx: 300, zoneRy: 260, seed: 23,
     desc: 'Take control of your thoughts and steer them in positive directions!',
   },
   'emotion-navigator': {
     x: 2000, y: 920, label: 'Emotion Navigator', color: '#EC4899', accent: '#BE185D',
-    district: 'Feelings Garden', emoji: '\u{1F49B}',
-    zoneColor: '#FCE4EC', zoneRx: 310, zoneRy: 270,
+    district: "Kip's Resting Groves", emoji: '\u{1F49B}',
+    zoneColor: '#DFF0DA', zoneRx: 310, zoneRy: 270, seed: 37,
     desc: 'Navigate through all emotions with confidence and skill!',
   },
   'behaviour-engineer': {
-    x: 1200, y: 240, label: 'Behaviour Engineer', color: '#F59E0B', accent: '#D97706',
-    district: 'Action Alley', emoji: '\u26A1',
-    zoneColor: '#FFF3D0', zoneRx: 310, zoneRy: 250,
+    x: 1200, y: 320, label: 'Behaviour Engineer', color: '#F59E0B', accent: '#D97706',
+    district: "Lenny's Works Depot", emoji: '⚡',
+    zoneColor: '#FBEECB', zoneRx: 310, zoneRy: 250, seed: 41,
     desc: 'Build powerful habits and take charge of your actions!',
   },
   'resilience-architect': {
     x: 440, y: 1440, label: 'Resilience Architect', color: '#40916c', accent: '#2D6A4F',
-    district: 'Strength Summit', emoji: '\u{1F6E1}\uFE0F',
-    zoneColor: '#D5ECD8', zoneRx: 310, zoneRy: 260,
+    district: "Eddie's Shelter & Dig Site", emoji: '\u{1F6E1}️',
+    zoneColor: '#EBDCC2', zoneRx: 310, zoneRy: 260, seed: 53,
     desc: 'Build inner strength and bounce back from challenges!',
   },
   'social-mapper': {
     x: 1960, y: 350, label: 'Social Mapper', color: '#E05297', accent: '#BE185D',
-    district: 'Friendship Park', emoji: '\u{1F91D}',
-    zoneColor: '#FCE4EC', zoneRx: 310, zoneRy: 260,
+    district: "Pepper's Night Pathways", emoji: '\u{1F91D}',
+    zoneColor: '#E7DBF5', zoneRx: 310, zoneRy: 260, seed: 67,
     desc: 'Map your social world and build stronger connections!',
   },
   'future-designer': {
     x: 1580, y: 1460, label: 'Future Designer', color: '#0EA5E9', accent: '#0284C7',
-    district: 'Dream Harbour', emoji: '\u{1F52E}',
-    zoneColor: '#D6EEFB', zoneRx: 310, zoneRy: 260,
+    district: "Coco's Lookout", emoji: '\u{1F52E}',
+    zoneColor: '#D8EDFA', zoneRx: 310, zoneRy: 260, seed: 79,
     desc: 'Design your future with imagination and planning!',
   },
 }
@@ -76,808 +80,1014 @@ const ROAD_PATHS = {
   'brain-builder':        `M${CX},${CY} C1050,820 720,560 520,420 Q450,360 380,320`,
   'thought-driver':       `M${CX},${CY} C1000,920 680,930 460,925 Q350,920 260,920`,
   'emotion-navigator':    `M${CX},${CY} C1450,905 1680,910 1840,915 Q1920,918 2000,920`,
-  'behaviour-engineer':   `M${CX},${CY} C1200,740 1205,530 1205,380 Q1202,300 1200,240`,
+  'behaviour-engineer':   `M${CX},${CY} C1200,760 1205,570 1205,440 Q1202,375 1200,320`,
   'resilience-architect': `M${CX},${CY} C1030,1030 780,1200 610,1320 Q520,1380 440,1440`,
   'social-mapper':        `M${CX},${CY} C1400,770 1600,560 1770,440 Q1870,390 1960,350`,
   'future-designer':      `M${CX},${CY} C1280,1060 1380,1220 1470,1350 Q1530,1410 1580,1460`,
 }
 
+// The central hub — clickable, opens its own welcome popup.
+const HUB = {
+  slug: 'brain-town',
+  label: 'Brain Town',
+  color: '#F2B33D', accent: '#D98E1B',
+  emoji: '\u{1F3F0}',
+  district: 'Town Square',
+  desc: "Welcome to Brain Town — your brain's home base! Every Super Skill you practise builds a stronger road back to town. Pick a place on the map and start an adventure.",
+}
+
 /* ─────────────────────────────────────────────
-   2. SVG PROP RENDERERS
-   Small themed items placed around each district.
+   2. DEFS — gradients, filters, reusable symbols
+   ───────────────────────────────────────────── */
+
+function renderDefs() {
+  return `<defs>
+    <!-- World gradients -->
+    <radialGradient id="btMeadowG" cx="50%" cy="46%" r="75%">
+      <stop offset="0%" stop-color="#BCE49E"/><stop offset="48%" stop-color="#98CF74"/>
+      <stop offset="82%" stop-color="#77B45C"/><stop offset="100%" stop-color="#5D9A49"/>
+    </radialGradient>
+    <radialGradient id="btVignetteG" cx="50%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#1E4526" stop-opacity="0"/><stop offset="78%" stop-color="#1E4526" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#1E4526" stop-opacity="0.16"/>
+    </radialGradient>
+    <linearGradient id="btSkyWashG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#AEE3F5" stop-opacity="0.4"/><stop offset="100%" stop-color="#AEE3F5" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="btHubGlowG" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFE9A8" stop-opacity="0.5"/><stop offset="60%" stop-color="#FFE9A8" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="btWaterG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A8DFF2"/><stop offset="100%" stop-color="#5FB6DF"/>
+    </linearGradient>
+    <!-- Material gradients -->
+    <linearGradient id="btWoodG" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#C99263"/><stop offset="1" stop-color="#8A5B36"/></linearGradient>
+    <linearGradient id="btStoneG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#C4CFC6"/><stop offset="1" stop-color="#8FA396"/></linearGradient>
+    <linearGradient id="btCreamWallG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFF8E7"/><stop offset="1" stop-color="#EBD9B4"/></linearGradient>
+    <linearGradient id="btLabWallG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F2F6FC"/><stop offset="1" stop-color="#C9D6EA"/></linearGradient>
+    <linearGradient id="btLeafG" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#A9DB80"/><stop offset=".55" stop-color="#6FB05E"/><stop offset="1" stop-color="#487F4B"/></linearGradient>
+    <linearGradient id="btLeafDarkG" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#7CB86A"/><stop offset="1" stop-color="#3C6E44"/></linearGradient>
+    <linearGradient id="btBlossomG" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#FBD3E0"/><stop offset="1" stop-color="#EE9BBB"/></linearGradient>
+    <linearGradient id="btWindowG" x1="0" y1="0" x2="0.6" y2="1"><stop stop-color="#EAF7FF"/><stop offset="1" stop-color="#A9CFE3"/></linearGradient>
+    <radialGradient id="btLitWinG" cx="50%" cy="45%" r="70%"><stop stop-color="#FFF3C2"/><stop offset="1" stop-color="#F5C64B"/></radialGradient>
+    <radialGradient id="btBulbG" cx="45%" cy="38%" r="72%"><stop stop-color="#FFFBE3"/><stop offset="1" stop-color="#FFD34D"/></radialGradient>
+    <linearGradient id="btDomeGlassG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#E7F6FF" stop-opacity=".95"/><stop offset="1" stop-color="#9CC8E0" stop-opacity=".9"/></linearGradient>
+    <!-- Per-district roof gradients -->
+    <linearGradient id="btRoofIndigoG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8B8DF5"/><stop offset="1" stop-color="#5457D6"/></linearGradient>
+    <linearGradient id="btRoofVioletG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#B79BF7"/><stop offset="1" stop-color="#7C4DDB"/></linearGradient>
+    <linearGradient id="btRoofPinkG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F8A8CB"/><stop offset="1" stop-color="#E0619B"/></linearGradient>
+    <linearGradient id="btRoofAmberG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FBC968"/><stop offset="1" stop-color="#DE8F1F"/></linearGradient>
+    <linearGradient id="btRoofGreenG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#77BD93"/><stop offset="1" stop-color="#3D8563"/></linearGradient>
+    <linearGradient id="btRoofBerryG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#EC8BBB"/><stop offset="1" stop-color="#C74C8B"/></linearGradient>
+    <linearGradient id="btRoofSkyG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#7FCBF0"/><stop offset="1" stop-color="#2E93C9"/></linearGradient>
+    <linearGradient id="btRocketG" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#FFF4F0"/><stop offset="1" stop-color="#F0B9AD"/></linearGradient>
+    <radialGradient id="btBalloonG" cx="42%" cy="35%" r="75%"><stop stop-color="#FFD9E4"/><stop offset="1" stop-color="#F27DA0"/></radialGradient>
+    <radialGradient id="btOrbG" cx="45%" cy="40%" r="70%"><stop stop-color="#FFF8DE"/><stop offset=".6" stop-color="#FFDD7A"/><stop offset="1" stop-color="#F0AE33"/></radialGradient>
+    <linearGradient id="btPlazaG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F8EDD2"/><stop offset="1" stop-color="#E8D4A8"/></linearGradient>
+    <!-- Grass texture -->
+    <pattern id="btGrassP" width="46" height="46" patternUnits="userSpaceOnUse">
+      <circle cx="8" cy="8" r="1.1" fill="#4E7F3E" opacity="0.2"/><circle cx="30" cy="16" r="0.9" fill="#CBE8A4" opacity="0.3"/>
+      <circle cx="16" cy="34" r="1" fill="#4E7F3E" opacity="0.18"/><circle cx="38" cy="38" r="0.8" fill="#E0F2BE" opacity="0.25"/>
+      <path d="M22 26 q1 -4 3 -5 M23 26 q0 -4 -1 -6" stroke="#5F9448" stroke-width="1" fill="none" opacity="0.25"/>
+    </pattern>
+    <!-- Filters -->
+    <filter id="btSoftShadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#1E3A28" flood-opacity="0.16"/>
+    </filter>
+    <filter id="btLandmarkShadow" x="-30%" y="-35%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#26432f" flood-opacity=".26"/>
+      <feDropShadow dx="0" dy="-2" stdDeviation="2" flood-color="#fff8dc" flood-opacity=".22"/>
+    </filter>
+    <filter id="btPinShadow" x="-20%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="3" stdDeviation="3.5" flood-color="#12263A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="btRoadGlow">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Reusable nature symbols -->
+    <g id="btTreeRound">
+      <ellipse cy="14" rx="19" ry="7" fill="#2F5B38" opacity=".18"/>
+      <path d="M-4 -6 Q-5 8 -6 14 H6 Q5 8 4 -6Z" fill="url(#btWoodG)"/>
+      <circle cy="-20" r="23" fill="url(#btLeafG)"/>
+      <circle cx="-9" cy="-27" r="9" fill="#C4E8A0" opacity=".6"/>
+      <circle cx="10" cy="-13" r="7" fill="#3C6E44" opacity=".35"/>
+    </g>
+    <g id="btTreePine">
+      <ellipse cy="12" rx="15" ry="6" fill="#2F5B38" opacity=".18"/>
+      <rect x="-3" y="-6" width="6" height="19" rx="2" fill="#7A5439"/>
+      <path d="M0 -46 L-17 -18 H-9 L-20 4 H20 L9 -18 H17Z" fill="url(#btLeafDarkG)"/>
+      <path d="M0 -46 L-9 -31 L-2 -32Z" fill="#B9E093" opacity=".55"/>
+    </g>
+    <g id="btTreeBlossom">
+      <ellipse cy="14" rx="18" ry="7" fill="#2F5B38" opacity=".16"/>
+      <path d="M-3 -4 Q-4 8 -5 14 H5 Q4 8 3 -4Z" fill="url(#btWoodG)"/>
+      <circle cy="-17" r="20" fill="url(#btBlossomG)"/>
+      <circle cx="-8" cy="-23" r="8" fill="#FDE7EF" opacity=".75"/>
+      <circle cx="6" cy="-12" r="2" fill="#fff" opacity=".7"/><circle cx="-2" cy="-25" r="1.8" fill="#fff" opacity=".7"/><circle cx="12" cy="-20" r="1.6" fill="#fff" opacity=".6"/>
+    </g>
+    <g id="btBush">
+      <ellipse cy="4" rx="17" ry="6" fill="#2F5B38" opacity=".14"/>
+      <ellipse rx="16" ry="11" fill="url(#btLeafG)"/><circle cx="-8" cy="-5" r="8" fill="#8CC470"/><circle cx="8" cy="-4" r="9" fill="#6FAE5C"/>
+      <circle cx="-3" cy="-9" r="3" fill="#C4E8A0" opacity=".7"/>
+    </g>
+    <g id="btFlowerPink"><path d="M0 2 V12" stroke="#4E8F45" stroke-width="2"/><circle cx="-4" cy="-1" r="3.6" fill="#F7A8C4"/><circle cx="4" cy="-1" r="3.6" fill="#F7A8C4"/><circle cy="-5" r="3.6" fill="#F7A8C4"/><circle cy="4" r="3.4" fill="#F7A8C4"/><circle r="3" fill="#FFE08B"/></g>
+    <g id="btFlowerYellow"><path d="M0 2 V12" stroke="#4E8F45" stroke-width="2"/><circle cx="-4" cy="-1" r="3.6" fill="#FFD66B"/><circle cx="4" cy="-1" r="3.6" fill="#FFD66B"/><circle cy="-5" r="3.6" fill="#FFD66B"/><circle cy="4" r="3.4" fill="#FFD66B"/><circle r="3" fill="#F78D5C"/></g>
+    <g id="btFlowerPurple"><path d="M0 2 V12" stroke="#4E8F45" stroke-width="2"/><circle cx="-4" cy="-1" r="3.6" fill="#C3A9EE"/><circle cx="4" cy="-1" r="3.6" fill="#C3A9EE"/><circle cy="-5" r="3.6" fill="#C3A9EE"/><circle cy="4" r="3.4" fill="#C3A9EE"/><circle r="3" fill="#FFF3C2"/></g>
+    <g id="btMushroom">
+      <ellipse cy="8" rx="9" ry="3.5" fill="#2F5B38" opacity=".16"/>
+      <path d="M-4 8 Q-5 0 -4 -2 H4 Q5 0 4 8Z" fill="#FFF3DD" stroke="#D9B98C" stroke-width="1.5"/>
+      <path d="M-11 -2 Q0 -18 11 -2Z" fill="#F26D6D" stroke="#D14B4B" stroke-width="1.5"/>
+      <circle cx="-4" cy="-7" r="2" fill="#FFE9E0"/><circle cx="4" cy="-5" r="1.6" fill="#FFE9E0"/>
+    </g>
+    <g id="btRock"><ellipse rx="14" ry="9" fill="url(#btStoneG)" stroke="#6E8478" stroke-width="2"/><path d="M-7 -3 Q0 -9 8 -3" fill="none" stroke="#E4EDE6" stroke-width="2" opacity=".7"/><ellipse cx="-5" cy="6" rx="5" ry="2" fill="#5F9448" opacity=".5"/></g>
+    <g id="btFence"><path d="M-28 0 H28 M-28 10 H28" stroke="#B07D4B" stroke-width="4"/><path d="M-24 -8 V16 M0 -8 V16 M24 -8 V16" stroke="#96683C" stroke-width="5" stroke-linecap="round"/></g>
+    <g id="btLantern"><path d="M0 12 V-20" stroke="#6B5847" stroke-width="4"/><rect x="-7" y="-31" width="14" height="14" rx="4" fill="#FFE58B" stroke="#8A6D38" stroke-width="2.5" class="bt-glow"/><circle cy="-24" r="9" fill="#FFE9A8" opacity=".3" class="bt-glow"/></g>
+    <g id="btSparkle"><path d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8Z" fill="#FFEFB0"/></g>
+    <g id="btGrassTuft"><path d="M0 4 Q-2 -8 -8 -12 M0 4 Q2 -10 8 -13 M0 4 V-13" fill="none" stroke="#55904A" stroke-width="2.5" stroke-linecap="round"/></g>
+    <g id="btPebbles"><circle cx="-13" r="3" fill="#C9B388"/><circle cx="0" cy="3" r="2.6" fill="#D5C398"/><circle cx="13" cy="-2" r="3" fill="#BCA87E"/></g>
+    <g id="btButterfly">
+      <ellipse cx="-4" cy="-2" rx="5" ry="7" fill="#F9AECB" transform="rotate(-24)"/>
+      <ellipse cx="4" cy="-2" rx="5" ry="7" fill="#C3A9EE" transform="rotate(24)"/>
+      <rect x="-1.2" y="-5" width="2.4" height="10" rx="1.2" fill="#5A4636"/>
+    </g>
+  </defs>`
+}
+
+/* ─────────────────────────────────────────────
+   3. THEMED PROP RENDERERS
+   Small items scattered inside each district zone.
    ───────────────────────────────────────────── */
 
 const prop = {
-  // ── Brain Builder props ──
+  // ── Brain Builder ──
   bookStack(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-14" y="-4" width="28" height="7" rx="1" fill="#4338CA"/>
-      <rect x="-16" y="-12" width="32" height="7" rx="1" fill="#F59E0B"/>
-      <rect x="-12" y="-18" width="24" height="6" rx="1" fill="#EC4899"/>
-      <rect x="-15" y="-25" width="30" height="6" rx="1" fill="#40916c"/>
+      <ellipse cy="7" rx="20" ry="5" fill="#2F5B38" opacity=".14"/>
+      <rect x="-15" y="-4" width="30" height="8" rx="2" fill="#5457D6"/><rect x="-13" y="-3" width="26" height="2.5" rx="1" fill="#8B8DF5"/>
+      <rect x="-17" y="-12" width="34" height="8" rx="2" fill="#F5A93F"/><rect x="-15" y="-11" width="30" height="2.5" rx="1" fill="#FBC968"/>
+      <rect x="-13" y="-19" width="26" height="7" rx="2" fill="#E0619B"/>
+      <rect x="-15" y="-26" width="30" height="7" rx="2" fill="#4E9E6F"/><rect x="-13" y="-25" width="26" height="2" rx="1" fill="#77BD93"/>
     </g>`
   },
-  globe(x, y) {
+  ideaBulb(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-3" y="0" width="6" height="14" rx="1" fill="#888"/>
-      <rect x="-8" y="12" width="16" height="4" rx="2" fill="#666"/>
-      <circle cx="0" cy="-8" r="14" fill="#5BB8E8" stroke="#3A9BD5" stroke-width="1.5"/>
-      <ellipse cx="0" cy="-8" rx="14" ry="6" fill="none" stroke="#3A9BD5" stroke-width="0.8" opacity="0.5"/>
-      <path d="M-4,-22 Q0,-18 4,-22 Q6,-14 4,6 Q0,2 -4,6 Q-6,-14 -4,-22" fill="#4CAF50" opacity="0.4"/>
+      <rect x="-4" y="-4" width="8" height="16" rx="2" fill="#8A94A8"/>
+      <circle cy="-16" r="11" fill="url(#btBulbG)" stroke="#D9A520" stroke-width="2.5" class="bt-glow"/>
+      <path d="M-3 -6 h6" stroke="#B8862B" stroke-width="2"/>
+      <use href="#btSparkle" x="14" y="-26" class="bt-twinkle" transform="scale(.8)" transform-origin="14 -26"/>
+      <use href="#btSparkle" x="-15" y="-22" class="bt-twinkle-d" transform="scale(.6)" transform-origin="-15 -22"/>
     </g>`
   },
-  chalkboard(x, y) {
+  blueprintBoard(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-20" y="-24" width="40" height="30" rx="2" fill="#2D5016" stroke="#1B3A0E" stroke-width="1.5"/>
-      <text x="0" y="-8" text-anchor="middle" font-size="8" fill="#C8E6C9" font-weight="700" font-family="sans-serif">ABC</text>
-      <text x="0" y="1" text-anchor="middle" font-size="7" fill="#A5D6A7" font-family="sans-serif">1+2=3</text>
-      <rect x="-3" y="6" width="6" height="18" rx="1" fill="#8B6914"/>
+      <path d="M-14 6 L-18 20 M14 6 L18 20" stroke="#96683C" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="-22" y="-24" width="44" height="32" rx="3" fill="#3F6FA8" stroke="#2C5079" stroke-width="2.5"/>
+      <path d="M-14 -14 h20 M-14 -7 h26 M-14 0 h14" stroke="#CFE6FA" stroke-width="2" opacity=".85"/>
+      <circle cx="10" cy="-2" r="4" fill="none" stroke="#CFE6FA" stroke-width="1.6" opacity=".85"/>
     </g>`
   },
-  magnifier(x, y) {
+  gearSolo(x, y) {
     return `<g transform="translate(${x},${y})">
-      <circle cx="0" cy="-6" r="10" fill="none" stroke="#6366F1" stroke-width="2.5"/>
-      <circle cx="0" cy="-6" r="7" fill="#E8F4FD" opacity="0.4"/>
-      <line x1="7" y1="1" x2="14" y2="10" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round"/>
+      <g class="bt-spin"><circle r="11" fill="none" stroke="#8A94A8" stroke-width="6" stroke-dasharray="5 4.6"/><circle r="7" fill="#C6CEDC" stroke="#8A94A8" stroke-width="2"/></g>
+      <circle r="3" fill="#6E7889"/>
     </g>`
   },
 
-  // ── Thought Driver props ──
+  // ── Thought Driver ──
   signpost(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-3" y="-40" width="6" height="52" rx="1" fill="#8B6914" stroke="#6B4D10" stroke-width="1"/>
-      <polygon points="-30,-38 30,-38 30,-26 36,-32 30,-26 -30,-26" fill="#F5E6C8" stroke="#C9A96E" stroke-width="1"/>
-      <text x="0" y="-29" text-anchor="middle" font-size="7" fill="#16324f" font-weight="700">THINK</text>
-      <polygon points="-28,-22 28,-22 28,-10 -34,-16 28,-10 -28,-10" fill="#D4E8FF" stroke="#7BA7C2" stroke-width="1"/>
-      <text x="0" y="-13" text-anchor="middle" font-size="7" fill="#16324f" font-weight="700">PLAN</text>
+      <ellipse cy="14" rx="14" ry="4.5" fill="#2F5B38" opacity=".14"/>
+      <rect x="-3" y="-42" width="6" height="56" rx="2" fill="url(#btWoodG)" stroke="#75512F" stroke-width="1.5"/>
+      <path d="M-30 -40 H26 L34 -33 L26 -26 H-30Z" fill="#C3A9EE" stroke="#8B6BC9" stroke-width="2"/>
+      <text y="-30" text-anchor="middle" font-size="8" fill="#4A2F84" font-weight="700" font-family="Fredoka,sans-serif">THINK</text>
+      <path d="M30 -22 H-26 L-34 -15 L-26 -8 H30Z" fill="#B9DCF5" stroke="#5F94BD" stroke-width="2"/>
+      <text y="-12" text-anchor="middle" font-size="8" fill="#1E4B6B" font-weight="700" font-family="Fredoka,sans-serif">PLAN</text>
     </g>`
   },
-  trafficLight(x, y) {
+  compassDial(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-3" y="-2" width="6" height="30" rx="1" fill="#555"/>
-      <rect x="-8" y="-36" width="16" height="36" rx="3" fill="#333" stroke="#222" stroke-width="1"/>
-      <circle cx="0" cy="-27" r="4.5" fill="#EF4444"/>
-      <circle cx="0" cy="-17" r="4.5" fill="#F59E0B"/>
-      <circle cx="0" cy="-7" r="4.5" fill="#22C55E"/>
+      <circle r="16" fill="#FFF7E0" stroke="#8B5CF6" stroke-width="3"/>
+      <circle r="12" fill="none" stroke="#C3A9EE" stroke-width="1.5" stroke-dasharray="2 4"/>
+      <g class="bt-spin-slow"><path d="M0 -9 L3 0 L0 9 L-3 0Z" fill="#8B5CF6"/><path d="M0 -9 L3 0 H-3Z" fill="#EF6A6A"/></g>
+      <circle r="2.2" fill="#4A2F84"/>
     </g>`
   },
   thoughtBubble(x, y) {
-    return `<g transform="translate(${x},${y})">
-      <ellipse cx="0" cy="-14" rx="22" ry="14" fill="#fff" stroke="#8B5CF6" stroke-width="1.5" opacity="0.85"/>
-      <circle cx="-8" cy="3" r="4" fill="#fff" stroke="#8B5CF6" stroke-width="1" opacity="0.7"/>
-      <circle cx="-12" cy="10" r="2.5" fill="#fff" stroke="#8B5CF6" stroke-width="1" opacity="0.5"/>
-      <text x="0" y="-10" text-anchor="middle" font-size="9" fill="#8B5CF6" font-weight="700">?!</text>
+    return `<g transform="translate(${x},${y})" class="bt-bob-slow">
+      <ellipse cy="-14" rx="22" ry="14" fill="#fff" stroke="#8B5CF6" stroke-width="2" opacity=".92"/>
+      <circle cx="-9" cy="3" r="4" fill="#fff" stroke="#8B5CF6" stroke-width="1.5" opacity=".75"/>
+      <circle cx="-13" cy="10" r="2.5" fill="#fff" stroke="#8B5CF6" stroke-width="1.2" opacity=".55"/>
+      <text y="-9" text-anchor="middle" font-size="11" fill="#8B5CF6" font-weight="700">?!</text>
     </g>`
   },
 
-  // ── Emotion Navigator props ──
+  // ── Emotion Navigator ──
   emotionStone(x, y, face, color) {
     return `<g transform="translate(${x},${y})">
-      <ellipse cx="0" cy="0" rx="14" ry="12" fill="${color}" stroke="${color}" stroke-width="1" opacity="0.8"/>
-      <text x="0" y="5" text-anchor="middle" font-size="14">${face}</text>
+      <ellipse cy="9" rx="15" ry="4.5" fill="#2F5B38" opacity=".14"/>
+      <ellipse rx="15" ry="12" fill="${color}" stroke="#00000022" stroke-width="1.5"/>
+      <ellipse cx="-4" cy="-5" rx="6" ry="3.5" fill="#fff" opacity=".35"/>
+      <text y="5" text-anchor="middle" font-size="14">${face}</text>
     </g>`
   },
-  feelingMeter(x, y) {
+  heartTopiary(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-6" y="-30" width="12" height="40" rx="4" fill="#fff" stroke="#EC4899" stroke-width="1.5"/>
-      <rect x="-4" y="-10" width="8" height="18" rx="2" fill="linear-gradient(#EF4444,#22C55E)"/>
-      <rect x="-4" y="-10" width="8" height="6" rx="2" fill="#EF4444" opacity="0.7"/>
-      <rect x="-4" y="-4" width="8" height="6" rx="0" fill="#F59E0B" opacity="0.7"/>
-      <rect x="-4" y="2" width="8" height="6" rx="2" fill="#22C55E" opacity="0.7"/>
-      <circle cx="0" cy="-24" r="4" fill="#EC4899"/>
+      <ellipse cy="16" rx="12" ry="4" fill="#2F5B38" opacity=".16"/>
+      <rect x="-3" y="-2" width="6" height="18" rx="2" fill="url(#btWoodG)"/>
+      <path d="M0 -6 C-12 -22 -30 -8 -14 6 L0 16 L14 6 C30 -8 12 -22 0 -6Z" fill="url(#btLeafG)" stroke="#487F4B" stroke-width="2"/>
+      <circle cx="-9" cy="-8" r="3" fill="#F7A8C4"/><circle cx="9" cy="-8" r="3" fill="#F7A8C4"/><circle cy="2" r="2.6" fill="#FFE08B"/>
     </g>`
   },
-  heartFlower(x, y) {
+  lilyPond(x, y) {
     return `<g transform="translate(${x},${y})">
-      <line x1="0" y1="0" x2="0" y2="12" stroke="#4CAF50" stroke-width="1.5"/>
-      <path d="M0,-5 C-6,-12 -14,-6 -8,0 Z" fill="#EC4899"/>
-      <path d="M0,-5 C6,-12 14,-6 8,0 Z" fill="#EC4899"/>
+      <ellipse rx="34" ry="15" fill="url(#btWaterG)" stroke="#7FBFDD" stroke-width="3"/>
+      <ellipse cx="-8" cy="2" rx="12" ry="4" fill="#fff" opacity=".2"><animate attributeName="opacity" values=".2;.35;.2" dur="3.4s" repeatCount="indefinite"/></ellipse>
+      <ellipse cx="12" cy="-4" rx="8" ry="4" fill="#6FAE5C"/><circle cx="12" cy="-6" r="3" fill="#F7A8C4"/>
     </g>`
   },
 
-  // ── Behaviour Engineer props ──
+  // ── Behaviour Engineer ──
   workbench(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-24" y="-4" width="48" height="6" rx="1" fill="#A0764E" stroke="#8B6914" stroke-width="1"/>
-      <rect x="-20" y="2" width="4" height="14" fill="#8B6914"/>
-      <rect x="16" y="2" width="4" height="14" fill="#8B6914"/>
-      <rect x="-14" y="-8" width="8" height="4" rx="1" fill="#78909C"/>
-      <rect x="2" y="-10" width="4" height="6" rx="0.5" fill="#F59E0B"/>
-      <circle cx="14" cy="-6" r="3" fill="none" stroke="#78909C" stroke-width="1.5"/>
+      <ellipse cy="17" rx="26" ry="5" fill="#2F5B38" opacity=".14"/>
+      <rect x="-25" y="-4" width="50" height="7" rx="2" fill="url(#btWoodG)" stroke="#75512F" stroke-width="1.5"/>
+      <rect x="-21" y="3" width="5" height="14" fill="#8A5B36"/><rect x="16" y="3" width="5" height="14" fill="#8A5B36"/>
+      <rect x="-14" y="-9" width="9" height="5" rx="1" fill="#8A94A8"/>
+      <rect x="3" y="-11" width="4" height="7" rx="1" fill="#F5A93F"/>
+      <circle cx="15" cy="-7" r="3.4" fill="none" stroke="#8A94A8" stroke-width="2"/>
     </g>`
   },
   gearPair(x, y) {
     return `<g transform="translate(${x},${y})">
-      <circle cx="-8" cy="0" r="12" fill="none" stroke="#F59E0B" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.7">
-        <animateTransform attributeName="transform" type="rotate" values="0 -8 0;360 -8 0" dur="15s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="10" cy="4" r="9" fill="none" stroke="#D97706" stroke-width="2" stroke-dasharray="5 3.5" opacity="0.6">
-        <animateTransform attributeName="transform" type="rotate" values="360 10 4;0 10 4" dur="12s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="-8" cy="0" r="3" fill="#F59E0B" opacity="0.5"/>
-      <circle cx="10" cy="4" r="2.5" fill="#D97706" opacity="0.5"/>
+      <g class="bt-spin"><circle cx="-8" r="12" fill="none" stroke="#E9A23B" stroke-width="6" stroke-dasharray="5.5 4.8"/><circle cx="-8" r="7" fill="#FBEECB" stroke="#E9A23B" stroke-width="2"/></g>
+      <g class="bt-spin-rev"><circle cx="11" cy="5" r="9" fill="none" stroke="#C97F16" stroke-width="5" stroke-dasharray="4.5 4"/><circle cx="11" cy="5" r="5" fill="#FBEECB" stroke="#C97F16" stroke-width="2"/></g>
     </g>`
   },
-  hardHat(x, y) {
+  toolCrate(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-5" y="2" width="10" height="14" rx="1" fill="#8B6914"/>
-      <ellipse cx="0" cy="0" rx="14" ry="8" fill="#F59E0B"/>
-      <ellipse cx="0" cy="-2" rx="12" ry="6" fill="#FBBF24"/>
-      <rect x="-16" y="-1" width="32" height="3" rx="1" fill="#D97706"/>
+      <ellipse cy="12" rx="18" ry="4.5" fill="#2F5B38" opacity=".14"/>
+      <rect x="-16" y="-10" width="32" height="21" rx="3" fill="url(#btWoodG)" stroke="#75512F" stroke-width="2"/>
+      <path d="M-16 -3 H16 M-5 -10 V11" stroke="#75512F" stroke-width="1.6" opacity=".7"/>
+      <path d="M-8 -14 q8 -7 16 0" fill="none" stroke="#8A94A8" stroke-width="3"/>
+      <rect x="4" y="-19" width="4" height="8" rx="1" fill="#F26D6D"/>
     </g>`
   },
 
-  // ── Resilience Architect props ──
+  // ── Resilience Architect ──
   brickPile(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-16" y="-2" width="14" height="8" rx="1" fill="#C0392B"/>
-      <rect x="2" y="-2" width="14" height="8" rx="1" fill="#E74C3C"/>
-      <rect x="-10" y="-10" width="14" height="8" rx="1" fill="#C0392B"/>
-      <rect x="6" y="-10" width="10" height="8" rx="1" fill="#E74C3C" opacity="0.8"/>
-      <rect x="-4" y="-16" width="12" height="6" rx="1" fill="#C0392B" opacity="0.9"/>
+      <ellipse cy="9" rx="20" ry="4.5" fill="#2F5B38" opacity=".14"/>
+      <rect x="-17" y="-2" width="15" height="8" rx="1.5" fill="#C86048" stroke="#A34632" stroke-width="1.2"/>
+      <rect x="2" y="-2" width="15" height="8" rx="1.5" fill="#DA7259" stroke="#A34632" stroke-width="1.2"/>
+      <rect x="-10" y="-10" width="15" height="8" rx="1.5" fill="#C86048" stroke="#A34632" stroke-width="1.2"/>
+      <rect x="7" y="-10" width="10" height="8" rx="1.5" fill="#DA7259" stroke="#A34632" stroke-width="1.2"/>
+      <rect x="-4" y="-17" width="12" height="7" rx="1.5" fill="#C86048" stroke="#A34632" stroke-width="1.2"/>
     </g>`
   },
   shieldStand(x, y) {
     return `<g transform="translate(${x},${y})">
-      <line x1="-8" y1="14" x2="8" y2="14" stroke="#8B6914" stroke-width="2"/>
-      <rect x="-2" y="-10" width="4" height="24" rx="1" fill="#8B6914"/>
-      <path d="M0,-26 L-12,-16 L-12,-4 Q0,8 0,8 Q0,8 12,-4 L12,-16 Z" fill="#40916c" stroke="#2D6A4F" stroke-width="1.5"/>
-      <text x="0" y="-6" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">R</text>
+      <ellipse cy="16" rx="14" ry="4" fill="#2F5B38" opacity=".16"/>
+      <rect x="-2.5" y="-8" width="5" height="24" rx="2" fill="url(#btWoodG)"/>
+      <path d="M0 -28 L-13 -19 V-6 Q0 9 0 9 Q0 9 13 -6 V-19Z" fill="url(#btRoofGreenG)" stroke="#2D6A4F" stroke-width="2.5"/>
+      <path d="M0 -24 L-9 -18 V-8 Q0 3 0 3Z" fill="#fff" opacity=".22"/>
+      <circle cy="-13" r="4.5" fill="#FFE08B" stroke="#C9971F" stroke-width="1.6"/>
     </g>`
   },
-  scaffolding(x, y) {
+  climbingRope(x, y) {
     return `<g transform="translate(${x},${y})">
-      <line x1="-14" y1="10" x2="-14" y2="-30" stroke="#F59E0B" stroke-width="2.5"/>
-      <line x1="14" y1="10" x2="14" y2="-30" stroke="#F59E0B" stroke-width="2.5"/>
-      <line x1="-14" y1="-8" x2="14" y2="-8" stroke="#D97706" stroke-width="2"/>
-      <line x1="-14" y1="-20" x2="14" y2="-20" stroke="#D97706" stroke-width="2"/>
-      <rect x="-12" y="-8" width="24" height="4" rx="0.5" fill="#A0764E" opacity="0.6"/>
+      <path d="M-14 -34 H14" stroke="#96683C" stroke-width="4" stroke-linecap="round"/>
+      <path d="M0 -34 q3 12 -1 22 q-2 8 1 16" fill="none" stroke="#D9B98C" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M-3 -22 h6 M-3 -10 h6 M-3 1 h6" stroke="#B08A54" stroke-width="2.5"/>
+      <path d="M-14 -34 V4 M14 -34 V4" stroke="#96683C" stroke-width="4" stroke-linecap="round"/>
     </g>`
   },
 
-  // ── Social Mapper props ──
-  picnicTable(x, y) {
+  // ── Social Mapper ──
+  picnicRug(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-22" y="-4" width="44" height="5" rx="1" fill="#A0764E" stroke="#8B6914" stroke-width="1"/>
-      <line x1="-18" y1="1" x2="-24" y2="14" stroke="#8B6914" stroke-width="2.5"/>
-      <line x1="18" y1="1" x2="24" y2="14" stroke="#8B6914" stroke-width="2.5"/>
-      <rect x="-28" y="5" width="14" height="4" rx="1" fill="#8B6914"/>
-      <rect x="14" y="5" width="14" height="4" rx="1" fill="#8B6914"/>
+      <path d="M-30 0 L0 -14 L30 0 L0 14Z" fill="#F9C8D9" stroke="#E27FA6" stroke-width="2"/>
+      <path d="M-15 -7 L15 7 M15 -7 L-15 7" stroke="#fff" stroke-width="2" opacity=".6"/>
+      <circle cx="-6" cy="-1" r="4" fill="#FFE08B" stroke="#C9971F" stroke-width="1.4"/>
+      <circle cx="7" cy="3" r="3" fill="#F26D6D"/>
     </g>`
   },
-  friendshipBanner(x, y) {
-    return `<g transform="translate(${x},${y})">
-      <line x1="-20" y1="-30" x2="-20" y2="4" stroke="#8B6914" stroke-width="2"/>
-      <line x1="20" y1="-30" x2="20" y2="4" stroke="#8B6914" stroke-width="2"/>
-      <rect x="-18" y="-28" width="36" height="16" rx="2" fill="#FCE4EC" stroke="#EC4899" stroke-width="1"/>
-      <text x="0" y="-17" text-anchor="middle" font-size="7" fill="#BE185D" font-weight="700">FRIENDS</text>
-      <path d="M-18,-12 L-14,-8 L-10,-12 L-6,-8 L-2,-12 L2,-8 L6,-12 L10,-8 L14,-12 L18,-8" fill="none" stroke="#EC4899" stroke-width="1.2" opacity="0.5"/>
+  chatSign(x, y) {
+    return `<g transform="translate(${x},${y})" class="bt-bob-slow">
+      <path d="M-20 -26 H20 Q26 -26 26 -20 V-6 Q26 0 20 0 H2 L-4 8 L-4 0 H-20 Q-26 0 -26 -6 V-20 Q-26 -26 -20 -26Z" fill="#fff" stroke="#E05297" stroke-width="2.5"/>
+      <circle cx="-10" cy="-13" r="2.6" fill="#E05297"/><circle cy="-13" r="2.6" fill="#E05297"/><circle cx="10" cy="-13" r="2.6" fill="#E05297"/>
     </g>`
   },
   swingSet(x, y) {
     return `<g transform="translate(${x},${y})">
-      <line x1="-20" y1="-36" x2="-26" y2="4" stroke="#78909C" stroke-width="2.5"/>
-      <line x1="20" y1="-36" x2="26" y2="4" stroke="#78909C" stroke-width="2.5"/>
-      <line x1="-20" y1="-36" x2="20" y2="-36" stroke="#78909C" stroke-width="3"/>
-      <line x1="-6" y1="-36" x2="-8" y2="-6" stroke="#999" stroke-width="1.5"/>
-      <line x1="6" y1="-36" x2="8" y2="-6" stroke="#999" stroke-width="1.5"/>
-      <rect x="-12" y="-6" width="8" height="3" rx="1" fill="#EC4899"/>
-      <rect x="4" y="-8" width="8" height="3" rx="1" fill="#8B5CF6"/>
+      <ellipse cy="8" rx="30" ry="5" fill="#2F5B38" opacity=".14"/>
+      <path d="M-20 -36 L-27 4 M20 -36 L27 4 M-20 -36 H20" stroke="#8FA3B8" stroke-width="3.5" stroke-linecap="round"/>
+      <g class="bt-sway-s" transform-origin="-7 -36"><path d="M-6 -36 L-8 -8" stroke="#B7C4D2" stroke-width="2"/><rect x="-13" y="-8" width="10" height="4" rx="2" fill="#E05297"/></g>
+      <g class="bt-sway" transform-origin="7 -36"><path d="M6 -36 L8 -10" stroke="#B7C4D2" stroke-width="2"/><rect x="3" y="-10" width="10" height="4" rx="2" fill="#8B5CF6"/></g>
     </g>`
   },
 
-  // ── Future Designer props ──
+  // ── Future Designer ──
   telescope(x, y) {
     return `<g transform="translate(${x},${y})">
-      <line x1="-10" y1="8" x2="0" y2="-12" stroke="#666" stroke-width="2"/>
-      <line x1="10" y1="8" x2="0" y2="-12" stroke="#666" stroke-width="2"/>
-      <line x1="0" y1="-12" x2="16" y2="-26" stroke="#444" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="18" cy="-28" r="5" fill="#0C4A6E" stroke="#0EA5E9" stroke-width="1.5"/>
+      <ellipse cy="12" rx="16" ry="4.5" fill="#2F5B38" opacity=".16"/>
+      <path d="M-10 10 L0 -10 M10 10 L0 -10" stroke="#6E7889" stroke-width="3" stroke-linecap="round"/>
+      <path d="M0 -10 L17 -27" stroke="#3D4A5C" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="20" cy="-30" r="5.5" fill="#0C4A6E" stroke="#7FCBF0" stroke-width="2"/>
+      <use href="#btSparkle" x="28" y="-40" class="bt-twinkle" transform="scale(.7)" transform-origin="28 -40"/>
     </g>`
   },
-  starMap(x, y) {
+  paintPots(x, y) {
     return `<g transform="translate(${x},${y})">
-      <rect x="-18" y="-14" width="36" height="28" rx="3" fill="#0C2340" stroke="#0EA5E9" stroke-width="1.5"/>
-      <circle cx="-6" cy="-5" r="1.5" fill="#FFD700" class="bt-twinkle"/>
-      <circle cx="8" cy="-8" r="1" fill="#FFD700" class="bt-twinkle-d"/>
-      <circle cx="3" cy="2" r="1.5" fill="#FFD700" class="bt-twinkle"/>
-      <circle cx="-10" cy="5" r="1" fill="#FFD700" class="bt-twinkle-d"/>
-      <circle cx="12" cy="4" r="1.5" fill="#FFD700" class="bt-twinkle"/>
-      <line x1="-6" y1="-5" x2="3" y2="2" stroke="#4FC3F7" stroke-width="0.5" opacity="0.4"/>
-      <line x1="3" y1="2" x2="8" y2="-8" stroke="#4FC3F7" stroke-width="0.5" opacity="0.4"/>
+      <ellipse cy="8" rx="20" ry="4.5" fill="#2F5B38" opacity=".14"/>
+      <rect x="-19" y="-6" width="11" height="13" rx="2.5" fill="#F26D6D" stroke="#C94B4B" stroke-width="1.6"/>
+      <rect x="-5" y="-9" width="11" height="16" rx="2.5" fill="#5FB6DF" stroke="#3487AC" stroke-width="1.6"/>
+      <rect x="9" y="-5" width="11" height="12" rx="2.5" fill="#FFD66B" stroke="#C9971F" stroke-width="1.6"/>
+      <rect x="-2" y="-19" width="4" height="12" rx="1.6" fill="#96683C" transform="rotate(24 0 -13)"/>
     </g>`
   },
-  crystalBall(x, y) {
-    return `<g transform="translate(${x},${y})">
-      <ellipse cx="0" cy="6" rx="12" ry="4" fill="#8B6914"/>
-      <circle cx="0" cy="-6" r="12" fill="#E3F2FD" stroke="#90CAF9" stroke-width="1.5" opacity="0.8"/>
-      <circle cx="0" cy="-6" r="8" fill="#BBDEFB" opacity="0.3"/>
-      <circle cx="-3" cy="-10" r="3" fill="#fff" opacity="0.3"/>
+  miniRocket(x, y) {
+    return `<g transform="translate(${x},${y})" class="bt-bob-slow">
+      <path d="M0 -26 Q9 -14 9 0 H-9 Q-9 -14 0 -26Z" fill="url(#btRocketG)" stroke="#C97C6C" stroke-width="2"/>
+      <circle cy="-8" r="4" fill="url(#btWindowG)" stroke="#3487AC" stroke-width="1.6"/>
+      <path d="M-9 -4 L-15 6 L-9 4 M9 -4 L15 6 L9 4" fill="#F26D6D" stroke="#C94B4B" stroke-width="1.4"/>
+      <path d="M-3 1 Q0 9 3 1" fill="#FFD66B" class="bt-twinkle"/>
     </g>`
   },
 }
 
-// Which props to place in each district (dx/dy relative to district centre)
+// Prop placement per district (dx/dy relative to district centre)
 const DISTRICT_PROPS = {
   'brain-builder': [
-    { fn: 'bookStack', dx: -130, dy: 50 },
-    { fn: 'globe', dx: 120, dy: -30 },
-    { fn: 'chalkboard', dx: -100, dy: -100 },
-    { fn: 'magnifier', dx: 140, dy: 80 },
-    { fn: 'bookStack', dx: 80, dy: 110 },
-    { fn: 'magnifier', dx: -150, dy: -30 },
+    { fn: 'bookStack', dx: -150, dy: 70 },
+    { fn: 'ideaBulb', dx: 150, dy: -20 },
+    { fn: 'blueprintBoard', dx: -120, dy: -100 },
+    { fn: 'gearSolo', dx: 170, dy: 80 },
+    { fn: 'bookStack', dx: 90, dy: 120 },
   ],
   'thought-driver': [
-    { fn: 'signpost', dx: -120, dy: -40 },
-    { fn: 'trafficLight', dx: 120, dy: 50 },
-    { fn: 'thoughtBubble', dx: 70, dy: -100 },
-    { fn: 'signpost', dx: 140, dy: -60 },
-    { fn: 'trafficLight', dx: -80, dy: 90 },
+    { fn: 'signpost', dx: -130, dy: -50 },
+    { fn: 'compassDial', dx: 140, dy: 60 },
+    { fn: 'thoughtBubble', dx: 90, dy: -110 },
+    { fn: 'signpost', dx: 160, dy: -50 },
   ],
   'emotion-navigator': [
-    { fn: 'emotionStone', dx: -130, dy: 70, args: ['\u{1F60A}', '#FFE082'] },
-    { fn: 'emotionStone', dx: -90, dy: 100, args: ['\u{1F622}', '#90CAF9'] },
-    { fn: 'emotionStone', dx: 120, dy: 90, args: ['\u{1F621}', '#EF9A9A'] },
-    { fn: 'emotionStone', dx: 80, dy: -90, args: ['\u{1F60D}', '#C8E6C9'] },
-    { fn: 'feelingMeter', dx: 150, dy: -40 },
-    { fn: 'heartFlower', dx: -70, dy: 110 },
-    { fn: 'heartFlower', dx: -45, dy: 118 },
-    { fn: 'heartFlower', dx: -20, dy: 112 },
-    { fn: 'heartFlower', dx: 40, dy: 115 },
+    { fn: 'emotionStone', dx: -140, dy: 80, args: ['\u{1F60A}', '#FFE082'] },
+    { fn: 'emotionStone', dx: -95, dy: 110, args: ['\u{1F622}', '#90CAF9'] },
+    { fn: 'emotionStone', dx: 130, dy: 100, args: ['\u{1F621}', '#EF9A9A'] },
+    { fn: 'heartTopiary', dx: 160, dy: -50 },
+    { fn: 'lilyPond', dx: -150, dy: -70 },
   ],
   'behaviour-engineer': [
-    { fn: 'workbench', dx: -120, dy: 60 },
-    { fn: 'gearPair', dx: 130, dy: -30 },
-    { fn: 'hardHat', dx: -70, dy: -90 },
-    { fn: 'gearPair', dx: -140, dy: -20 },
-    { fn: 'workbench', dx: 90, dy: 90 },
+    { fn: 'workbench', dx: -140, dy: 70 },
+    { fn: 'gearPair', dx: 150, dy: -30 },
+    { fn: 'toolCrate', dx: -100, dy: -100 },
+    { fn: 'workbench', dx: 100, dy: 100 },
   ],
   'resilience-architect': [
-    { fn: 'brickPile', dx: -130, dy: 70 },
-    { fn: 'shieldStand', dx: 140, dy: -40 },
-    { fn: 'scaffolding', dx: 100, dy: 80 },
-    { fn: 'brickPile', dx: 60, dy: -100 },
-    { fn: 'shieldStand', dx: -100, dy: -60 },
+    { fn: 'brickPile', dx: -140, dy: 80 },
+    { fn: 'shieldStand', dx: 150, dy: -40 },
+    { fn: 'climbingRope', dx: 110, dy: 90 },
+    { fn: 'brickPile', dx: 70, dy: -110 },
   ],
   'social-mapper': [
-    { fn: 'picnicTable', dx: -130, dy: 70 },
-    { fn: 'friendshipBanner', dx: 120, dy: -50 },
-    { fn: 'swingSet', dx: 60, dy: 100 },
-    { fn: 'picnicTable', dx: 80, dy: -90 },
-    { fn: 'swingSet', dx: -80, dy: 110 },
+    { fn: 'picnicRug', dx: -140, dy: 80 },
+    { fn: 'chatSign', dx: 130, dy: -60 },
+    { fn: 'swingSet', dx: 70, dy: 110 },
+    { fn: 'picnicRug', dx: 90, dy: -100 },
   ],
   'future-designer': [
-    { fn: 'telescope', dx: -120, dy: -40 },
-    { fn: 'starMap', dx: 130, dy: 60 },
-    { fn: 'crystalBall', dx: -60, dy: 90 },
-    { fn: 'telescope', dx: 100, dy: -80 },
-    { fn: 'crystalBall', dx: -130, dy: 30 },
+    { fn: 'telescope', dx: -130, dy: -50 },
+    { fn: 'paintPots', dx: 140, dy: 70 },
+    { fn: 'miniRocket', dx: -70, dy: 100 },
+    { fn: 'telescope', dx: 110, dy: -90 },
   ],
 }
 
 /* ─────────────────────────────────────────────
-   3. BUILDING RENDERERS
-   Each district's main landmark. Drawn larger.
+   4. LANDMARK RENDERERS
+   One hero building per district, drawn in local
+   coordinates (centre 0,0; ground line ~y=70).
    ───────────────────────────────────────────── */
 
-function bldSchool(x, y, c) {
-  return `<g transform="translate(${x-85},${y-80})">
-    <rect x="5" y="55" width="160" height="90" rx="5" fill="#F5E6C8" stroke="#C9A96E" stroke-width="2.5"/>
-    <polygon points="85,0 175,60 -5,60" fill="${c}" stroke="#4338CA" stroke-width="2"/>
-    <rect x="70" y="-20" width="30" height="25" rx="3" fill="#E8D5B0" stroke="#C9A96E" stroke-width="1.5"/>
-    <polygon points="85,-32 100,-18 70,-18" fill="${c}"/>
-    <circle cx="85" cy="-8" r="6" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
-    <rect x="18" y="75" width="26" height="32" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1.5"/>
-    <line x1="31" y1="75" x2="31" y2="107" stroke="#7BA7C2" stroke-width="1"/>
-    <line x1="18" y1="91" x2="44" y2="91" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="120" y="75" width="26" height="32" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1.5"/>
-    <line x1="133" y1="75" x2="133" y2="107" stroke="#7BA7C2" stroke-width="1"/>
-    <line x1="120" y1="91" x2="146" y2="91" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="62" y="92" width="42" height="53" rx="3" fill="#8B5E3C" stroke="#6B4226" stroke-width="1.5"/>
-    <rect x="64" y="94" width="18" height="22" rx="1" fill="#A0724E"/>
-    <rect x="84" y="94" width="18" height="22" rx="1" fill="#A0724E"/>
-    <circle cx="80" cy="118" r="3" fill="#DAA520"/>
-    <rect x="54" y="143" width="58" height="6" rx="2" fill="#D4C4A8"/>
-    <rect x="48" y="147" width="70" height="6" rx="2" fill="#C4B498"/>
-    <line x1="85" y1="-32" x2="85" y2="-50" stroke="#888" stroke-width="2"/>
-    <polygon points="85,-50 104,-43 85,-36" fill="#FF6B6B" opacity="0.8">
-      <animateTransform attributeName="transform" type="rotate" values="0 85 -43;4 85 -43;0 85 -43;-3 85 -43;0 85 -43" dur="3s" repeatCount="indefinite"/>
-    </polygon>
+// Soft grassy pad every landmark sits on
+function landmarkPad(fill, stroke) {
+  return `<ellipse cx="0" cy="86" rx="150" ry="46" fill="#2F5D3A" opacity=".14"/>
+    <ellipse cx="0" cy="76" rx="142" ry="42" fill="${fill}" stroke="${stroke}" stroke-width="4"/>
+    <path d="M-116 70 Q0 102 116 70" fill="none" stroke="#FFFFFF" stroke-width="5" opacity=".28"/>`
+}
+
+// Cool glass window with a shine swoosh
+function glassWin(x, y, w, h, rx = 5) {
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="url(#btWindowG)" stroke="#7FA9C2" stroke-width="3"/>
+    <path d="M${x + 3} ${y + h * 0.55} Q${x + w * 0.4} ${y + h * 0.2} ${x + w - 3} ${y + h * 0.45}" stroke="#fff" stroke-width="2.5" opacity=".6" fill="none"/>`
+}
+
+// Warm lit window (glows gently)
+function litWin(x, y, w, h, rx = 5) {
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="url(#btLitWinG)" stroke="#C9971F" stroke-width="3" class="bt-glow"/>`
+}
+
+// Rounded door with knob
+function door(x, y, w, h, fill = 'url(#btWoodG)') {
+  return `<path d="M${x} ${y + h} V${y + h * 0.35} Q${x + w / 2} ${y - h * 0.25} ${x + w} ${y + h * 0.35} V${y + h}Z" fill="${fill}" stroke="#5F4126" stroke-width="3"/>
+    <circle cx="${x + w * 0.76}" cy="${y + h * 0.55}" r="2.6" fill="#FFD66B"/>`
+}
+
+// Waving pennant flag on a pole
+function flag(x, y, color, len = 20) {
+  return `<g transform="translate(${x},${y})">
+    <path d="M0 0 V-26" stroke="#8A94A8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M0 -26 L${len} -19 L0 -12Z" fill="${color}">
+      <animateTransform attributeName="transform" type="rotate" values="0 0 -26;6 0 -26;0 0 -26;-4 0 -26;0 0 -26" dur="3.4s" repeatCount="indefinite"/>
+    </path>
   </g>`
 }
 
-function bldLibrary(x, y, c) {
-  return `<g transform="translate(${x-80},${y-70})">
-    <rect x="0" y="42" width="160" height="85" rx="4" fill="#D4C4A8" stroke="#A89070" stroke-width="2.5"/>
-    <rect x="14" y="42" width="10" height="85" rx="2" fill="#E8D5B0"/>
-    <rect x="42" y="42" width="10" height="85" rx="2" fill="#E8D5B0"/>
-    <rect x="108" y="42" width="10" height="85" rx="2" fill="#E8D5B0"/>
-    <rect x="136" y="42" width="10" height="85" rx="2" fill="#E8D5B0"/>
-    <rect x="-8" y="34" width="176" height="14" rx="2" fill="${c}" stroke="#5B21B6" stroke-width="1.5"/>
-    <polygon points="80,0 172,38 -12,38" fill="#C4A882" stroke="#A89070" stroke-width="2"/>
-    <circle cx="80" cy="18" r="10" fill="${c}" opacity="0.4"/>
-    <text x="80" y="22" text-anchor="middle" font-size="12" fill="#fff" font-weight="700" font-family="Fredoka,sans-serif">T</text>
-    <rect x="22" y="60" width="18" height="26" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="58" y="60" width="18" height="26" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="84" y="60" width="18" height="26" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="120" y="60" width="18" height="26" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="55" y="90" width="50" height="37" rx="4" fill="#6B4226" stroke="#4A2C17" stroke-width="1.5"/>
-    <rect x="55" y="90" width="50" height="12" rx="4" fill="#7B5236"/>
-  </g>`
+// String of bunting triangles between two points
+function bunting(x1, y1, x2, y2, colors) {
+  const n = colors.length
+  let s = `<path d="M${x1} ${y1} Q${(x1 + x2) / 2} ${Math.max(y1, y2) + 14} ${x2} ${y2}" fill="none" stroke="#8A6D38" stroke-width="2"/>`
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n
+    const bx = x1 + (x2 - x1) * t
+    const by = y1 + (y2 - y1) * t + Math.sin(t * Math.PI) * 13
+    s += `<path d="M${bx - 6} ${by} L${bx + 6} ${by} L${bx} ${by + 11}Z" fill="${colors[i]}"/>`
+  }
+  return s
 }
 
-function bldCottage(x, y, c) {
-  return `<g transform="translate(${x-70},${y-70})">
-    <rect x="10" y="50" width="120" height="72" rx="5" fill="#F0E0C8" stroke="#C4A882" stroke-width="2.5"/>
-    <polygon points="70,4 140,54 0,54" fill="${c}" stroke="#DC2626" stroke-width="2"/>
-    <rect x="105" y="14" width="16" height="42" rx="3" fill="#A0522D" stroke="#8B4513" stroke-width="1.5"/>
-    <rect x="101" y="11" width="24" height="6" rx="1.5" fill="#8B4513"/>
-    <g class="bt-smoke"><circle cx="113" cy="4" r="5" fill="#D0D0D0" opacity="0.35">
-      <animate attributeName="cy" values="4;-20;-44" dur="5s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.35;0.15;0" dur="5s" repeatCount="indefinite"/>
-      <animate attributeName="r" values="5;9;14" dur="5s" repeatCount="indefinite"/>
-    </circle></g>
-    <rect x="24" y="65" width="26" height="24" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1.5"/>
-    <line x1="37" y1="65" x2="37" y2="89" stroke="#7BA7C2" stroke-width="1"/>
-    <line x1="24" y1="77" x2="50" y2="77" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="90" y="65" width="26" height="24" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1.5"/>
-    <line x1="103" y1="65" x2="103" y2="89" stroke="#7BA7C2" stroke-width="1"/>
-    <line x1="90" y1="77" x2="116" y2="77" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="54" y="82" width="32" height="40" rx="4" fill="#8B5E3C" stroke="#6B4226" stroke-width="1.5"/>
-    <circle cx="78" cy="102" r="3" fill="#DAA520"/>
-    <circle cx="70" cy="72" r="7" fill="none" stroke="#4CAF50" stroke-width="1.5"/>
-    <text x="70" y="76" text-anchor="middle" font-size="9" fill="#FF6B6B">\u2665</text>
-    <rect x="18" y="120" width="36" height="7" rx="2" fill="#8B6914"/>
-    <circle cx="28" cy="118" r="4" fill="#FF6B6B"/><circle cx="38" cy="117" r="4" fill="#FFB74D"/><circle cx="48" cy="118" r="4" fill="#BA68C8"/>
-  </g>`
-}
+const LANDMARKS = {
+  // Brain Builder — Invention Lab with glass dome + glowing idea bulb
+  'brain-builder': () => `
+    ${landmarkPad('#DCE8F5', '#9FB6CC')}
+    <rect x="-92" y="-18" width="184" height="94" rx="10" fill="url(#btLabWallG)" stroke="#5B679E" stroke-width="4"/>
+    <path d="M-92 8 H92" stroke="#B4C3DD" stroke-width="2.5" opacity=".7"/>
+    <rect x="-102" y="-34" width="204" height="20" rx="9" fill="url(#btRoofIndigoG)" stroke="#4338CA" stroke-width="3.5"/>
+    <path d="M-88 -28 H30" stroke="#C7C9FA" stroke-width="4" opacity=".55" stroke-linecap="round"/>
+    <path d="M-56 -34 Q0 -106 56 -34Z" fill="url(#btDomeGlassG)" stroke="#5B8FB0" stroke-width="4"/>
+    <path d="M0 -34 V-88 M-30 -34 Q-18 -70 -6 -86 M30 -34 Q18 -70 6 -86" fill="none" stroke="#5B8FB0" stroke-width="2.5" opacity=".55"/>
+    <path d="M-38 -46 Q0 -92 38 -46" fill="none" stroke="#fff" stroke-width="4" opacity=".55"/>
+    <path d="M0 -88 V-102" stroke="#8A94A8" stroke-width="4"/>
+    <circle cy="-114" r="12" fill="url(#btBulbG)" stroke="#D9A520" stroke-width="3" class="bt-glow"/>
+    <path d="M-4 -102 h8" stroke="#B8862B" stroke-width="3"/>
+    <use href="#btSparkle" x="20" y="-124" class="bt-twinkle"/>
+    <use href="#btSparkle" x="-19" y="-118" class="bt-twinkle-d" transform="scale(.7)" transform-origin="-19 -118"/>
+    <circle cx="-58" cy="10" r="17" fill="url(#btWindowG)" stroke="#7FA9C2" stroke-width="3.5"/>
+    <path d="M-58 -7 V27 M-75 10 H-41" stroke="#7FA9C2" stroke-width="2"/>
+    ${glassWin(38, -4, 40, 30, 6)}
+    ${litWin(38, 40, 40, 26, 6)}
+    ${door(-20, 26, 40, 50)}
+    <g transform="translate(84,-52)"><g class="bt-spin"><circle r="15" fill="none" stroke="#8B8DF5" stroke-width="7" stroke-dasharray="6.5 5.6"/><circle r="9" fill="#EEF0FE" stroke="#5457D6" stroke-width="2.5"/></g><circle r="3.4" fill="#4338CA"/></g>
+    ${flag(-96, -36, '#8B8DF5')}
+    <g transform="translate(-118,52)"><rect x="-14" y="-22" width="28" height="20" rx="3" fill="#3F6FA8" stroke="#2C5079" stroke-width="2.5"/><path d="M-8 -16 h14 M-8 -10 h10" stroke="#CFE6FA" stroke-width="1.8"/><path d="M-9 -2 L-12 10 M9 -2 L12 10" stroke="#96683C" stroke-width="3" stroke-linecap="round"/></g>`,
 
-function bldWorkshop(x, y, c) {
-  return `<g transform="translate(${x-80},${y-65})">
-    <rect x="0" y="42" width="160" height="85" rx="5" fill="#FFF5E6" stroke="#E8C9A0" stroke-width="2.5"/>
-    <polygon points="0,42 55,6 55,42" fill="${c}" stroke="#D97706" stroke-width="1.5"/>
-    <polygon points="55,42 110,6 110,42" fill="${c}" stroke="#D97706" stroke-width="1.5" opacity="0.9"/>
-    <polygon points="110,42 160,18 160,42" fill="${c}" stroke="#D97706" stroke-width="1.5" opacity="0.8"/>
-    <rect x="24" y="18" width="14" height="16" rx="1.5" fill="#B8D4E3" opacity="0.6"/>
-    <rect x="76" y="18" width="14" height="16" rx="1.5" fill="#B8D4E3" opacity="0.6"/>
-    <rect x="12" y="60" width="60" height="67" rx="4" fill="#D4B888" stroke="#B89860" stroke-width="1.5"/>
-    <line x1="12" y1="76" x2="72" y2="76" stroke="#B89860" stroke-width="1"/>
-    <line x1="12" y1="92" x2="72" y2="92" stroke="#B89860" stroke-width="1"/>
-    <line x1="12" y1="108" x2="72" y2="108" stroke="#B89860" stroke-width="1"/>
-    <rect x="96" y="65" width="36" height="28" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1.5"/>
-    <line x1="114" y1="65" x2="114" y2="93" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="102" y="100" width="26" height="27" rx="2" fill="#8B5E3C" stroke="#6B4226" stroke-width="1"/>
-    <circle cx="42" cy="52" r="8" fill="none" stroke="#D97706" stroke-width="2.5" opacity="0.4">
-      <animateTransform attributeName="transform" type="rotate" values="0 42 52;360 42 52" dur="14s" repeatCount="indefinite"/>
-    </circle>
-  </g>`
-}
+  // Thought Driver — Wayfinder Rotunda with compass court + signal tower
+  'thought-driver': () => `
+    ${landmarkPad('#E6DFF4', '#AF9CCB')}
+    <ellipse cx="8" cy="62" rx="88" ry="24" fill="#F3ECFA" stroke="#B49BD6" stroke-width="3"/>
+    <g transform="translate(8,62)"><path d="M0 -16 L4 0 L0 16 L-4 0Z" fill="#B49BD6" opacity=".8"/><path d="M-24 0 L0 -4 L24 0 L0 4Z" fill="#CDBBE8" opacity=".8"/><circle r="3" fill="#8B5CF6"/></g>
+    <rect x="-64" y="-14" width="144" height="76" rx="12" fill="url(#btCreamWallG)" stroke="#8878B0" stroke-width="4"/>
+    <path d="M-74 -14 Q8 -84 90 -14Z" fill="url(#btRoofVioletG)" stroke="#6D28D9" stroke-width="4"/>
+    <path d="M-52 -26 Q8 -70 68 -26" fill="none" stroke="#E0D2FB" stroke-width="5" opacity=".65"/>
+    <circle cx="8" cy="6" r="21" fill="#FFF7E0" stroke="#8B5CF6" stroke-width="3.5"/>
+    <circle cx="8" cy="6" r="15" fill="none" stroke="#C3A9EE" stroke-width="1.6" stroke-dasharray="2.5 4.5"/>
+    <g class="bt-spin-slow" transform-origin="8 6"><path d="M8 -6 L11.5 6 L8 18 L4.5 6Z" fill="#8B5CF6"/><path d="M8 -6 L11.5 6 H4.5Z" fill="#EF6A6A"/></g>
+    <circle cx="8" cy="6" r="2.6" fill="#4A2F84"/>
+    ${glassWin(-52, -2, 26, 32, 12)}
+    ${glassWin(52, -2, 24, 32, 12)}
+    ${door(-10, 32, 36, 44)}
+    <g transform="translate(8,-72)"><path d="M0 12 V-8" stroke="#6E7889" stroke-width="4"/><g class="bt-sway-s" transform-origin="0 -8"><path d="M0 -8 L20 -14 L20 -4 L0 -2Z" fill="#FFD66B" stroke="#C9971F" stroke-width="2"/></g><circle cy="14" r="4" fill="#6D28D9"/></g>
+    <g transform="translate(-104,6)">
+      <rect x="-3.5" y="-52" width="7" height="72" rx="3" fill="url(#btWoodG)" stroke="#75512F" stroke-width="1.6"/>
+      <path d="M-3 -50 H-30 L-37 -43 L-30 -36 H-3Z" fill="#C3A9EE" stroke="#8B6BC9" stroke-width="2"/>
+      <path d="M3 -32 H30 L37 -25 L30 -18 H3Z" fill="#B9DCF5" stroke="#5F94BD" stroke-width="2"/>
+      <path d="M-3 -14 H-26 L-33 -7 L-26 0 H-3Z" fill="#F9C8D9" stroke="#E27FA6" stroke-width="2"/>
+    </g>
+    <path d="M8 76 Q42 92 86 84" fill="none" stroke="#8B5CF6" stroke-width="4" stroke-dasharray="8 10" opacity=".5" stroke-linecap="round"/>
+    ${flag(88, -10, '#C3A9EE')}`,
 
-function bldFortress(x, y, c) {
-  return `<g transform="translate(${x-80},${y-80})">
-    <rect x="18" y="48" width="124" height="80" rx="3" fill="${c}" stroke="#2D6A4F" stroke-width="2.5"/>
-    <rect x="0" y="24" width="36" height="104" rx="3" fill="#358560" stroke="#2D6A4F" stroke-width="2"/>
-    <rect x="-3" y="18" width="42" height="10" rx="2" fill="#2D6A4F"/>
-    <rect x="0" y="12" width="7" height="10" fill="#2D6A4F"/><rect x="14" y="12" width="7" height="10" fill="#2D6A4F"/><rect x="28" y="12" width="7" height="10" fill="#2D6A4F"/>
-    <rect x="124" y="24" width="36" height="104" rx="3" fill="#358560" stroke="#2D6A4F" stroke-width="2"/>
-    <rect x="121" y="18" width="42" height="10" rx="2" fill="#2D6A4F"/>
-    <rect x="124" y="12" width="7" height="10" fill="#2D6A4F"/><rect x="138" y="12" width="7" height="10" fill="#2D6A4F"/><rect x="152" y="12" width="7" height="10" fill="#2D6A4F"/>
-    <rect x="30" y="42" width="7" height="10" fill="#2D6A4F"/><rect x="50" y="42" width="7" height="10" fill="#2D6A4F"/><rect x="70" y="42" width="7" height="10" fill="#2D6A4F"/><rect x="90" y="42" width="7" height="10" fill="#2D6A4F"/><rect x="110" y="42" width="7" height="10" fill="#2D6A4F"/>
-    <path d="M55,128 L55,85 Q80,68 105,85 L105,128 Z" fill="#4A2C17" stroke="#3A1F10" stroke-width="1.5"/>
-    <line x1="80" y1="85" x2="80" y2="128" stroke="#3A1F10" stroke-width="1.5"/>
-    <rect x="10" y="48" width="16" height="18" rx="1.5" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="134" y="48" width="16" height="18" rx="1.5" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <circle cx="80" cy="70" r="10" fill="#F5E6C8" stroke="#DAA520" stroke-width="1.5"/>
-    <text x="80" y="74" text-anchor="middle" font-size="12" fill="#2D6A4F" font-weight="700">R</text>
-    <line x1="18" y1="24" x2="18" y2="6" stroke="#888" stroke-width="1.5"/>
-    <polygon points="18,6 34,12 18,18" fill="${c}" opacity="0.8">
-      <animateTransform attributeName="transform" type="rotate" values="0 18 12;5 18 12;0 18 12;-3 18 12;0 18 12" dur="4s" repeatCount="indefinite"/>
-    </polygon>
-  </g>`
-}
+  // Emotion Navigator — Garden Sanctuary: gazebo, willow, koi pond, sun-moon gate
+  'emotion-navigator': () => `
+    ${landmarkPad('#DFF0D8', '#9CC49A')}
+    <g transform="translate(-96,-14)">
+      <path d="M-5 42 Q-7 58 -9 70 H11 Q8 58 6 42Z" fill="url(#btWoodG)"/>
+      <circle cy="4" r="36" fill="url(#btLeafG)"/>
+      <circle cx="-13" cy="-6" r="14" fill="#C4E8A0" opacity=".6"/>
+      <path d="M-32 22 q-4 22 1 36 M-13 32 q-2 18 2 32 M11 32 q2 18 -2 32 M30 22 q4 22 0 36" fill="none" stroke="#6FAE5C" stroke-width="4" stroke-linecap="round" opacity=".85" class="bt-sway-s"/>
+    </g>
+    <ellipse cx="88" cy="52" rx="54" ry="21" fill="url(#btWaterG)" stroke="#7FBFDD" stroke-width="4"/>
+    <ellipse cx="74" cy="47" rx="16" ry="5.5" fill="#fff" opacity=".25"><animate attributeName="opacity" values=".25;.42;.25" dur="3.6s" repeatCount="indefinite"/></ellipse>
+    <ellipse cx="106" cy="58" rx="10" ry="4.5" fill="#6FAE5C"/><circle cx="106" cy="55" r="3.4" fill="#F7A8C4"/>
+    <path d="M-6 0 q6 -5 12 0 q-6 4 -12 0" fill="#F59E0B" opacity=".9"><animateMotion dur="8s" repeatCount="indefinite" path="M66,52 q18,-6 34,2 q-16,8 -34,-2"/></path>
+    <g transform="translate(-14,2)">
+      <rect x="-48" y="-6" width="96" height="70" rx="11" fill="url(#btCreamWallG)" stroke="#B58098" stroke-width="4"/>
+      <path d="M-58 -6 Q0 -66 58 -6Z" fill="url(#btRoofPinkG)" stroke="#C74C8B" stroke-width="4"/>
+      <path d="M-38 -18 Q0 -52 38 -18" fill="none" stroke="#FDDCE9" stroke-width="5" opacity=".7"/>
+      <path d="M0 -52 C-8 -64 -22 -54 -11 -44 L0 -36 L11 -44 C22 -54 8 -64 0 -52Z" fill="#F7A8C4" stroke="#C74C8B" stroke-width="2.5" class="bt-bob-slow"/>
+      <circle cx="-28" cy="16" r="11" fill="url(#btWindowG)" stroke="#7FA9C2" stroke-width="3"/>
+      <circle cx="28" cy="16" r="11" fill="url(#btWindowG)" stroke="#7FA9C2" stroke-width="3"/>
+      <path d="M-13 64 V36 Q0 22 13 36 V64Z" fill="url(#btLitWinG)" stroke="#B58098" stroke-width="3.5" class="bt-glow"/>
+      <use href="#btLantern" x="-58" y="36" transform="scale(.9)" transform-origin="-58 36"/>
+      <use href="#btLantern" x="58" y="36" transform="scale(.9)" transform-origin="58 36"/>
+    </g>
+    <g transform="translate(44,90)">
+      <path d="M-20 12 V2 Q-20 -20 0 -20 Q20 -20 20 2 V12" fill="none" stroke="#F7C873" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="-20" cy="-6" r="7" fill="#FFD66B" stroke="#C9971F" stroke-width="2"/>
+      <path d="M20 -14 A8 8 0 1 0 20 2 A6 6 0 1 1 20 -14Z" fill="#EFE6C8" stroke="#C9B26A" stroke-width="1.6"/>
+    </g>
+    <use href="#btSparkle" x="-58" y="-56" class="bt-twinkle" transform="scale(.8)" transform-origin="-58 -56"/>
+    <use href="#btSparkle" x="102" y="6" class="bt-twinkle-d" transform="scale(.7)" transform-origin="102 6"/>`,
 
-function bldTreehouse(x, y, c) {
-  return `<g transform="translate(${x-75},${y-90})">
-    <rect x="60" y="60" width="30" height="100" rx="5" fill="#8B6914" stroke="#6B4D10" stroke-width="2"/>
-    <rect x="52" y="84" width="46" height="12" rx="4" fill="#7A5C12"/>
-    <circle cx="75" cy="20" r="50" fill="#2E7D32" opacity="0.35"/>
-    <circle cx="38" cy="35" r="38" fill="#388E3C" opacity="0.35"/>
-    <circle cx="112" cy="35" r="38" fill="#388E3C" opacity="0.35"/>
-    <rect x="8" y="58" width="134" height="10" rx="3" fill="#A0764E" stroke="#8B6914" stroke-width="1.5"/>
-    <rect x="16" y="16" width="118" height="44" rx="4" fill="#FFE4C4" stroke="#D4A87C" stroke-width="2"/>
-    <polygon points="75,-10 142,18 8,18" fill="${c}" stroke="#BE185D" stroke-width="1.5"/>
-    <rect x="28" y="28" width="20" height="20" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="102" y="28" width="20" height="20" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1"/>
-    <rect x="62" y="34" width="26" height="26" rx="3" fill="#8B5E3C" stroke="#6B4226" stroke-width="1"/>
-    <line x1="38" y1="68" x2="26" y2="148" stroke="#A0764E" stroke-width="3"/>
-    <line x1="50" y1="68" x2="38" y2="148" stroke="#A0764E" stroke-width="3"/>
-    <line x1="39" y1="80" x2="49" y2="80" stroke="#A0764E" stroke-width="2"/>
-    <line x1="37" y1="96" x2="47" y2="96" stroke="#A0764E" stroke-width="2"/>
-    <line x1="34" y1="112" x2="44" y2="112" stroke="#A0764E" stroke-width="2"/>
-    <line x1="32" y1="128" x2="42" y2="128" stroke="#A0764E" stroke-width="2"/>
-    <path d="M18,16 Q48,4 75,10 Q102,4 132,16" fill="none" stroke="#FFD700" stroke-width="1.2" opacity="0.5"/>
-    <circle cx="38" cy="8" r="3" fill="#FFD700" opacity="0.7" class="bt-twinkle"/><circle cx="70" cy="6" r="3" fill="#FF6B6B" opacity="0.7" class="bt-twinkle-d"/><circle cx="100" cy="8" r="3" fill="#4FC3F7" opacity="0.7" class="bt-twinkle"/>
-    <circle cx="75" cy="-8" r="42" fill="#1B5E20"><animate attributeName="r" values="42;43.5;42" dur="6s" repeatCount="indefinite"/></circle>
-    <circle cx="38" cy="8" r="32" fill="#2E7D32"><animate attributeName="r" values="32;33;32" dur="7s" repeatCount="indefinite"/></circle>
-    <circle cx="112" cy="8" r="32" fill="#2E7D32"><animate attributeName="r" values="32;33.5;32" dur="5s" repeatCount="indefinite"/></circle>
-  </g>`
-}
+  // Behaviour Engineer — Tinker Works: sawtooth roof, big gear, crane
+  'behaviour-engineer': () => `
+    ${landmarkPad('#F2E3C4', '#C9A96E')}
+    <rect x="-98" y="-16" width="196" height="88" rx="9" fill="url(#btCreamWallG)" stroke="#B07B33" stroke-width="4"/>
+    <path d="M-102 -16 L-68 -58 L-34 -16 L0 -58 L34 -16 L68 -58 L102 -16Z" fill="url(#btRoofAmberG)" stroke="#B45309" stroke-width="4"/>
+    <path d="M-68 -50 L-46 -24 M0 -50 L22 -24 M68 -50 L90 -24" stroke="#FCE1AC" stroke-width="4" opacity=".7"/>
+    <rect x="-74" y="-44" width="13" height="11" rx="2" fill="url(#btWindowG)" opacity=".9"/>
+    <rect x="-6" y="-44" width="13" height="11" rx="2" fill="url(#btWindowG)" opacity=".9"/>
+    <g transform="translate(-52,16)"><g class="bt-spin" transform-origin="0 0"><circle r="24" fill="none" stroke="#E9A23B" stroke-width="10" stroke-dasharray="9.5 8"/><circle r="14" fill="#FBEECB" stroke="#C97F16" stroke-width="3"/></g><circle r="5" fill="#B45309"/></g>
+    <rect x="6" y="6" width="52" height="66" rx="5" fill="url(#btWoodG)" stroke="#75512F" stroke-width="3"/>
+    <path d="M6 22 H58 M6 38 H58 M6 54 H58" stroke="#75512F" stroke-width="2" opacity=".6"/>
+    ${litWin(68, 2, 26, 24, 5)}
+    ${glassWin(68, 38, 26, 24, 5)}
+    <g transform="translate(118,-38)">
+      <path d="M0 108 V-24" stroke="#8FA3B8" stroke-width="7"/>
+      <path d="M0 -24 L-46 -12" stroke="#8FA3B8" stroke-width="6" stroke-linecap="round"/>
+      <path d="M-40 -13 V12" stroke="#6E7889" stroke-width="2.5"/>
+      <g class="bt-sway-s" transform-origin="-40 12"><rect x="-48" y="12" width="16" height="14" rx="3" fill="#F26D6D" stroke="#C94B4B" stroke-width="2"/></g>
+      <circle cy="-24" r="4" fill="#F5A93F"/>
+    </g>
+    ${flag(-100, -18, '#FBC968')}
+    <use href="#btSparkle" x="-30" y="-72" class="bt-twinkle-d" transform="scale(.7)" transform-origin="-30 -72"/>`,
 
-function bldObservatory(x, y, c) {
-  return `<g transform="translate(${x-70},${y-80})">
-    <rect x="12" y="60" width="116" height="68" rx="5" fill="#E8E0F0" stroke="#B8A0D0" stroke-width="2.5"/>
-    <ellipse cx="70" cy="60" rx="62" ry="36" fill="${c}" stroke="#0284C7" stroke-width="2"/>
-    <ellipse cx="70" cy="60" rx="52" ry="28" fill="#0EA5E9" opacity="0.25"/>
-    <rect x="66" y="26" width="8" height="32" rx="1.5" fill="#0C4A6E"/>
-    <line x1="70" y1="42" x2="95" y2="18" stroke="#555" stroke-width="3.5" stroke-linecap="round">
-      <animateTransform attributeName="transform" type="rotate" values="-6 70 42;6 70 42;-6 70 42" dur="12s" repeatCount="indefinite"/>
-    </line>
-    <circle cx="95" cy="18" r="6" fill="#0C4A6E" stroke="#555" stroke-width="1.5">
-      <animateTransform attributeName="transform" type="rotate" values="-6 70 42;6 70 42;-6 70 42" dur="12s" repeatCount="indefinite"/>
-    </circle>
-    <rect x="28" y="76" width="22" height="26" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1.5"/>
-    <rect x="90" y="76" width="22" height="26" rx="2" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="1.5"/>
-    <rect x="54" y="96" width="32" height="32" rx="4" fill="#6B4226" stroke="#4A2C17" stroke-width="1.5"/>
-    <circle cx="80" cy="112" r="2.5" fill="#DAA520"/>
-    <circle cx="24" cy="34" r="2.5" fill="#FFD700" class="bt-twinkle" opacity="0.6"/>
-    <circle cx="116" cy="30" r="2" fill="#FFD700" class="bt-twinkle-d" opacity="0.5"/>
-    <circle cx="50" cy="22" r="2" fill="#FFD700" class="bt-twinkle" opacity="0.4"/>
-    <circle cx="96" cy="38" r="2.5" fill="#FFD700" class="bt-twinkle-d" opacity="0.6"/>
-  </g>`
-}
+  // Resilience Architect — Boulder Fort: stone keep, towers, shield, scaffold
+  'resilience-architect': () => `
+    ${landmarkPad('#E3D2B4', '#B29472')}
+    <rect x="-56" y="-28" width="112" height="98" rx="6" fill="url(#btStoneG)" stroke="#57746B" stroke-width="4"/>
+    <path d="M-56 -4 H56 M-56 22 H56 M-56 46 H56 M-20 -28 V-4 M22 -4 V22 M-14 22 V46 M28 46 V70" stroke="#7B9184" stroke-width="2" opacity=".55"/>
+    <rect x="-92" y="-46" width="38" height="116" rx="5" fill="#A6BAAD" stroke="#57746B" stroke-width="4"/>
+    <path d="M-94 -46 H-52 M-92 -46 V-58 H-84 V-46 M-77 -46 V-58 H-69 V-46 M-62 -46 V-58 H-54 V-46" fill="#7B9184" stroke="#57746B" stroke-width="3"/>
+    <rect x="54" y="-46" width="38" height="116" rx="5" fill="#A6BAAD" stroke="#57746B" stroke-width="4"/>
+    <path d="M56 -46 V-58 H64 V-46 M71 -46 V-58 H79 V-46 M86 -46 V-58 H94 V-46" fill="#7B9184" stroke="#57746B" stroke-width="3"/>
+    <path d="M-30 -28 V-40 H-18 V-28 M-6 -28 V-40 H6 V-28 M18 -28 V-40 H30 V-28" fill="#7B9184" stroke="#57746B" stroke-width="3"/>
+    ${door(-22, 18, 44, 52, 'url(#btWoodG)')}
+    <path d="M0 -22 L-14 -13 V0 Q0 15 0 15 Q0 15 14 0 V-13Z" fill="url(#btRoofGreenG)" stroke="#2D6A4F" stroke-width="3"/>
+    <circle cy="-8" r="4.6" fill="#FFE08B" stroke="#C9971F" stroke-width="1.8"/>
+    ${glassWin(-84, -20, 22, 22, 10)}
+    ${litWin(62, -20, 22, 22, 10)}
+    ${flag(-73, -60, '#77BD93')}
+    ${flag(75, -60, '#40916c')}
+    <g transform="translate(112,20)"><path d="M-12 50 V-30 M12 50 V-30 M-12 -8 H12 M-12 22 H12" stroke="#E9A23B" stroke-width="4.5" stroke-linecap="round"/><rect x="-11" y="-10" width="22" height="5" rx="1.5" fill="url(#btWoodG)"/></g>
+    <use href="#btRock" x="-120" y="58" transform="scale(1.4)" transform-origin="-120 58"/>
+    <use href="#btRock" x="-98" y="66" transform="scale(.9)" transform-origin="-98 66"/>`,
 
-const BLDG = {
-  'brain-builder': bldSchool,
-  'thought-driver': bldLibrary,
-  'emotion-navigator': bldCottage,
-  'behaviour-engineer': bldWorkshop,
-  'resilience-architect': bldFortress,
-  'social-mapper': bldTreehouse,
-  'future-designer': bldObservatory,
+  // Social Mapper — Friendship Treetops: two treehouses + rope bridge + campfire
+  'social-mapper': () => `
+    ${landmarkPad('#E7DFF4', '#AC9ED0')}
+    <g transform="translate(-70,10)">
+      <path d="M-6 24 Q-8 44 -10 60 H12 Q9 44 7 24Z" fill="url(#btWoodG)"/>
+      <circle cy="-32" r="34" fill="url(#btLeafDarkG)"/><circle cx="-12" cy="-42" r="12" fill="#A9DB80" opacity=".6"/>
+      <rect x="-32" y="-12" width="64" height="40" rx="6" fill="url(#btCreamWallG)" stroke="#8878B0" stroke-width="3.5"/>
+      <path d="M-38 -12 Q0 -40 38 -12Z" fill="url(#btRoofBerryG)" stroke="#A93D75" stroke-width="3.5"/>
+      ${glassWin(-20, -4, 18, 18, 8)}
+      ${door(4, 8, 20, 20)}
+      <rect x="-36" y="28" width="72" height="7" rx="3.5" fill="url(#btWoodG)"/>
+    </g>
+    <g transform="translate(72,-14)">
+      <path d="M-5 34 Q-7 56 -9 74 H11 Q8 56 6 34Z" fill="url(#btWoodG)"/>
+      <circle cy="-34" r="30" fill="url(#btLeafG)"/><circle cx="10" cy="-44" r="10" fill="#C4E8A0" opacity=".6"/>
+      <rect x="-28" y="-14" width="56" height="38" rx="6" fill="url(#btCreamWallG)" stroke="#8878B0" stroke-width="3.5"/>
+      <path d="M-34 -14 Q0 -40 34 -14Z" fill="url(#btRoofVioletG)" stroke="#6D28D9" stroke-width="3.5"/>
+      ${litWin(-16, -6, 16, 16, 7)}
+      ${door(2, 6, 18, 18)}
+      <rect x="-32" y="24" width="64" height="7" rx="3.5" fill="url(#btWoodG)"/>
+      <g class="bt-bob-slow"><path d="M-4 -66 H24 Q30 -66 30 -60 V-50 Q30 -44 24 -44 H10 L4 -37 V-44 H-4 Q-10 -44 -10 -50 V-60 Q-10 -66 -4 -66Z" fill="#fff" stroke="#E05297" stroke-width="2.5"/><text x="10" y="-50" text-anchor="middle" font-size="11" font-weight="700" fill="#E05297" font-family="Fredoka,sans-serif">HI!</text></g>
+    </g>
+    <path d="M-34 40 Q4 58 40 12" fill="none" stroke="#96683C" stroke-width="4"/>
+    <path d="M-34 30 Q4 48 40 2" fill="none" stroke="#96683C" stroke-width="3"/>
+    <path d="M-28 32 V42 M-14 37 V47 M0 40 V50 M14 34 V44 M28 24 V34" stroke="#B07D4B" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="-21" cy="33" r="2.6" fill="#FFE08B" class="bt-twinkle"/><circle cx="-7" cy="38" r="2.6" fill="#F7A8C4" class="bt-twinkle-d"/><circle cx="7" cy="38" r="2.6" fill="#A9DB80" class="bt-twinkle"/><circle cx="21" cy="30" r="2.6" fill="#7FCBF0" class="bt-twinkle-d"/>
+    ${bunting(-46, -38, 48, -46, ['#F7A8C4', '#FFD66B', '#A9DB80', '#7FCBF0', '#C3A9EE'])}
+    <g transform="translate(6,72)">
+      <ellipse cy="6" rx="16" ry="5" fill="#2F5B38" opacity=".18"/>
+      <path d="M-12 4 L12 -2 M-12 -2 L12 4" stroke="#96683C" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M0 -4 Q-7 -12 -2 -20 Q0 -14 3 -18 Q7 -10 0 -4Z" fill="#F59E0B" class="bt-flicker"/>
+      <path d="M0 -6 Q-3 -11 0 -15 Q3 -11 0 -6Z" fill="#FFD66B" class="bt-flicker"/>
+    </g>`,
+
+  // Future Designer — Star Observatory: dome + telescope, rocket pad, easel
+  'future-designer': () => `
+    ${landmarkPad('#D8E6F0', '#93AFC7')}
+    <rect x="-66" y="-6" width="132" height="78" rx="10" fill="url(#btCreamWallG)" stroke="#4E7A96" stroke-width="4"/>
+    <path d="M-66 18 H66" stroke="#D9C9A2" stroke-width="2.5" opacity=".8"/>
+    <path d="M-62 -6 A62 60 0 0 1 62 -6Z" fill="url(#btRoofSkyG)" stroke="#0369A1" stroke-width="4"/>
+    <path d="M-44 -22 A48 44 0 0 1 8 -60" fill="none" stroke="#BDE6F8" stroke-width="5" opacity=".7"/>
+    <rect x="-9" y="-64" width="18" height="34" rx="4" fill="#0C4A6E"/>
+    <g class="bt-scan" transform-origin="0 -34">
+      <path d="M0 -34 L26 -74" stroke="#3D4A5C" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="29" cy="-78" r="7" fill="#0C4A6E" stroke="#7FCBF0" stroke-width="2.5"/>
+    </g>
+    ${glassWin(-52, 10, 26, 26, 13)}
+    ${litWin(28, 10, 26, 26, 13)}
+    ${door(-14, 30, 32, 42)}
+    <g transform="translate(108,28)">
+      <ellipse cy="44" rx="30" ry="9" fill="#B7C4D2" stroke="#8FA3B8" stroke-width="2.5"/>
+      <path d="M0 -34 Q13 -16 13 6 H-13 Q-13 -16 0 -34Z" fill="url(#btRocketG)" stroke="#C97C6C" stroke-width="3"/>
+      <circle cy="-10" r="6" fill="url(#btWindowG)" stroke="#3487AC" stroke-width="2"/>
+      <path d="M-13 -2 L-23 14 L-13 10 M13 -2 L23 14 L13 10" fill="#F26D6D" stroke="#C94B4B" stroke-width="2"/>
+      <path d="M-5 8 Q0 22 5 8" fill="#FFD66B" class="bt-flicker"/>
+      <path d="M0 6 V38" stroke="#8FA3B8" stroke-width="3" opacity=".6"/>
+    </g>
+    <g transform="translate(-108,30)">
+      <path d="M-12 42 L0 8 L12 42 M0 8 V42" stroke="#96683C" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="-17" y="-16" width="34" height="28" rx="3" fill="#FFFDF4" stroke="#B8A888" stroke-width="2.5"/>
+      <circle cx="-7" cy="-7" r="3.4" fill="#F26D6D"/><circle cx="3" cy="-4" r="3.4" fill="#5FB6DF"/><circle cx="8" cy="-10" r="3" fill="#FFD66B"/>
+      <path d="M-10 4 q8 4 20 -2" fill="none" stroke="#A9DB80" stroke-width="2.5"/>
+    </g>
+    <use href="#btSparkle" x="-40" y="-76" class="bt-twinkle"/>
+    <use href="#btSparkle" x="52" y="-64" class="bt-twinkle-d" transform="scale(.75)" transform-origin="52 -64"/>
+    <use href="#btSparkle" x="86" y="-30" class="bt-twinkle" transform="scale(.6)" transform-origin="86 -30"/>
+    ${flag(66, -8, '#7FCBF0')}`,
 }
 
 /* ─────────────────────────────────────────────
-   4. DISTRICT RENDERER
-   Ground zone + building + props
+   5. DISTRICT RENDERER
+   Organic ground zone + props + landmark
    ───────────────────────────────────────────── */
 
-function renderDistrict(slug, d, skill) {
-  let s = ''
-  // Ground zone — visible filled area with border
-  s += `<defs><radialGradient id="zone-${slug}">
-    <stop offset="0%" stop-color="${d.zoneColor}" stop-opacity="0.6"/>
-    <stop offset="55%" stop-color="${d.zoneColor}" stop-opacity="0.4"/>
-    <stop offset="85%" stop-color="${d.zoneColor}" stop-opacity="0.15"/>
+// Seeded PRNG so the map is stable between renders
+function seededRand(seed) {
+  let v = seed * 2654435761 % 2147483647
+  if (v <= 0) v += 2147483646
+  return () => { v = (v * 16807) % 2147483647; return (v - 1) / 2147483646 }
+}
+
+// Smooth organic blob path (wobbly ellipse) for district grounds
+function blobPath(cx, cy, rx, ry, seed) {
+  const rand = seededRand(seed)
+  const n = 10, pts = []
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2
+    const wob = 0.86 + rand() * 0.22
+    pts.push([cx + Math.cos(a) * rx * wob, cy + Math.sin(a) * ry * wob])
+  }
+  let d = `M${((pts[0][0] + pts[n - 1][0]) / 2).toFixed(1)},${((pts[0][1] + pts[n - 1][1]) / 2).toFixed(1)}`
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], q = pts[(i + 1) % n]
+    d += ` Q${p[0].toFixed(1)},${p[1].toFixed(1)} ${((p[0] + q[0]) / 2).toFixed(1)},${((p[1] + q[1]) / 2).toFixed(1)}`
+  }
+  return d + ' Z'
+}
+
+// Trees/bushes framing the zone edge, plus flowers near the front
+function renderDistrictFraming(d, seed) {
+  const rand = seededRand(seed + 7)
+  let s = `<g class="district-framing" pointer-events="none">`
+  s += `<use href="#btTreeRound" x="${d.x - d.zoneRx + 105}" y="${d.y - d.zoneRy + 130}" transform="scale(1.35)" transform-origin="${d.x - d.zoneRx + 105} ${d.y - d.zoneRy + 130}"/>`
+  s += `<use href="#btTreePine" x="${d.x + d.zoneRx - 100}" y="${d.y - d.zoneRy + 145}" transform="scale(1.3)" transform-origin="${d.x + d.zoneRx - 100} ${d.y - d.zoneRy + 145}"/>`
+  s += `<use href="#btTreeBlossom" x="${d.x + d.zoneRx - 135}" y="${d.y + d.zoneRy - 105}" transform="scale(1.2)" transform-origin="${d.x + d.zoneRx - 135} ${d.y + d.zoneRy - 105}"/>`
+  s += `<use href="#btBush" x="${d.x - d.zoneRx + 120}" y="${d.y + d.zoneRy - 90}" transform="scale(1.35)" transform-origin="${d.x - d.zoneRx + 120} ${d.y + d.zoneRy - 90}"/>`
+  s += `<use href="#btMushroom" x="${d.x - d.zoneRx + 165}" y="${d.y + d.zoneRy - 70}"/>`
+  const flowers = ['#btFlowerPink', '#btFlowerYellow', '#btFlowerPurple']
+  for (let i = 0; i < 6; i++) {
+    const fx = d.x - 130 + i * 52 + rand() * 20
+    const fy = d.y + d.zoneRy - 62 + rand() * 24
+    s += `<use href="${flowers[i % 3]}" x="${fx.toFixed(0)}" y="${fy.toFixed(0)}"/>`
+  }
+  s += `<use href="#btFence" x="${d.x - 165}" y="${d.y + d.zoneRy - 118}" transform="rotate(-8 ${d.x - 165} ${d.y + d.zoneRy - 118})"/>`
+  s += `<use href="#btFence" x="${d.x + 165}" y="${d.y + d.zoneRy - 120}" transform="rotate(8 ${d.x + 165} ${d.y + d.zoneRy - 120})"/>`
+  s += `</g>`
+  return s
+}
+
+function renderDistrict(slug, d) {
+  let s = `<g id="district-${slug}" class="district" data-zone="${slug}">`
+
+  // Ground zone — organic pastel blob with soft gradient + scalloped border
+  s += `<defs><radialGradient id="zoneG-${slug}">
+    <stop offset="0%" stop-color="${d.zoneColor}" stop-opacity="0.75"/>
+    <stop offset="55%" stop-color="${d.zoneColor}" stop-opacity="0.5"/>
+    <stop offset="85%" stop-color="${d.zoneColor}" stop-opacity="0.18"/>
     <stop offset="100%" stop-color="${d.zoneColor}" stop-opacity="0"/>
   </radialGradient></defs>`
-  s += `<ellipse cx="${d.x}" cy="${d.y}" rx="${d.zoneRx}" ry="${d.zoneRy}" fill="url(#zone-${slug})"/>`
-  // Dashed border around zone
-  s += `<ellipse cx="${d.x}" cy="${d.y}" rx="${d.zoneRx - 8}" ry="${d.zoneRy - 8}" fill="none" stroke="${d.color}" stroke-width="1.5" stroke-dasharray="10 14" opacity="0.18"/>`
+  s += `<path d="${blobPath(d.x, d.y, d.zoneRx, d.zoneRy, d.seed)}" fill="url(#zoneG-${slug})"/>`
+  s += `<path d="${blobPath(d.x, d.y, d.zoneRx - 26, d.zoneRy - 24, d.seed + 3)}" fill="none" stroke="${d.color}" stroke-width="2.5" stroke-dasharray="3 16" stroke-linecap="round" opacity="0.3"/>`
 
-  // Hedge bush ring around the zone edge (12–16 bushes in an ellipse)
-  const hCount = 14
-  for (let i = 0; i < hCount; i++) {
-    const a = (i / hCount) * Math.PI * 2
-    const hx = d.x + Math.cos(a) * (d.zoneRx - 30)
-    const hy = d.y + Math.sin(a) * (d.zoneRy - 25)
-    s += `<ellipse cx="${hx}" cy="${hy}" rx="${9 + (i%3)*2}" ry="${6 + (i%2)*2}" fill="#4CAF50" opacity="${0.35 + (i%3)*0.08}"/>`
-  }
+  // Cobble path from the road mouth to the landmark door
+  s += `<ellipse cx="${d.x}" cy="${d.y + 96}" rx="54" ry="14" fill="#E8D9B2" opacity="0.6"/>`
+  s += `<ellipse cx="${d.x + 10}" cy="${d.y + 120}" rx="38" ry="11" fill="#DFCFA6" opacity="0.5"/>`
+  s += `<use href="#btPebbles" x="${d.x - 34}" y="${d.y + 112}"/><use href="#btPebbles" x="${d.x + 40}" y="${d.y + 132}" transform="scale(.8)" transform-origin="${d.x + 40} ${d.y + 132}"/>`
 
-  // Cobblestone path to building entrance
-  s += `<ellipse cx="${d.x}" cy="${d.y + 70}" rx="50" ry="12" fill="#D4C4A8" opacity="0.45"/>`
-  s += `<ellipse cx="${d.x + 12}" cy="${d.y + 58}" rx="32" ry="9" fill="#CDB89C" opacity="0.35"/>`
-  s += `<ellipse cx="${d.x - 8}" cy="${d.y + 80}" rx="28" ry="8" fill="#C4B498" opacity="0.3"/>`
-
-  // Props
+  // Framing greenery behind, then props, then hero landmark on top
+  s += renderDistrictFraming(d, d.seed)
   const dp = DISTRICT_PROPS[slug] || []
   dp.forEach(p => {
     const fn = prop[p.fn]
-    if (fn) {
-      if (p.args) s += fn(d.x + p.dx, d.y + p.dy, ...p.args)
-      else s += fn(d.x + p.dx, d.y + p.dy)
-    }
+    if (!fn) return
+    s += p.args ? fn(d.x + p.dx, d.y + p.dy, ...p.args) : fn(d.x + p.dx, d.y + p.dy)
   })
 
-  // Building — scaled 1.5x for visual presence
-  const renderer = BLDG[slug]
-  if (renderer) {
-    s += `<g class="svg-building" data-slug="${slug}" filter="url(#softShadow)" style="cursor:pointer" role="button" tabindex="0" aria-label="${esc(d.label)}">`
-    s += `<g transform="translate(${d.x},${d.y}) scale(1.4) translate(${-d.x},${-d.y})">`
-    s += renderer(d.x, d.y, d.color)
-    s += `</g></g>`
-  }
+  s += `<g class="svg-building" data-slug="${slug}" filter="url(#btLandmarkShadow)" role="button" tabindex="0" aria-label="${esc(d.label)}">`
+  s += `<g transform="translate(${d.x},${d.y}) scale(1.35)">${LANDMARKS[slug]()}</g>`
+  s += `</g>`
 
+  s += `</g>`
   return s
 }
 
 /* ─────────────────────────────────────────────
-   5. TOWN SQUARE
+   6. TOWN SQUARE — the magical hub
    ───────────────────────────────────────────── */
 
 function renderTownSquare() {
-  let s = ''
   const cx = CX, cy = CY
+  let s = `<g id="townSquare">`
 
-  // Outer plaza — big and prominent
-  s += `<circle cx="${cx}" cy="${cy}" r="210" fill="#D4C4A8" stroke="#B8A888" stroke-width="3"/>`
-  s += `<circle cx="${cx}" cy="${cy}" r="185" fill="#E0D4BC" stroke="#C8B898" stroke-width="2"/>`
-  s += `<circle cx="${cx}" cy="${cy}" r="155" fill="#D8CCB4" stroke="#C0B09C" stroke-width="1.5"/>`
-  s += `<circle cx="${cx}" cy="${cy}" r="125" fill="#DDD0B8" stroke="#C8B898" stroke-width="1" opacity="0.5"/>`
+  // Golden ambient glow beneath the whole hub
+  s += `<ellipse cx="${cx}" cy="${cy}" rx="330" ry="300" fill="url(#btHubGlowG)" class="bt-hub-glow"/>`
 
-  // Decorative paving pattern (radial lines like a compass)
+  // Concentric plaza rings
+  s += `<circle cx="${cx}" cy="${cy}" r="215" fill="url(#btPlazaG)" stroke="#CBAE79" stroke-width="5"/>`
+  s += `<circle cx="${cx}" cy="${cy}" r="178" fill="#F2E4C2" stroke="#D9C293" stroke-width="2.5"/>`
+  s += `<circle cx="${cx}" cy="${cy}" r="138" fill="#F7EDD4" stroke="#DFC99B" stroke-width="2"/>`
+  // Mosaic dot ring
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2
+    const mc = ['#F7A8C4', '#FFD66B', '#A9DB80', '#7FCBF0', '#C3A9EE', '#F5A93F', '#8B8DF5', '#77BD93'][i % 8]
+    s += `<circle cx="${(cx + Math.cos(a) * 158).toFixed(1)}" cy="${(cy + Math.sin(a) * 158).toFixed(1)}" r="7" fill="${mc}" opacity="0.75"/>`
+  }
+  // Paving spokes
   for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2
-    s += `<line x1="${cx + Math.cos(a)*50}" y1="${cy + Math.sin(a)*50}" x2="${cx + Math.cos(a)*185}" y2="${cy + Math.sin(a)*185}" stroke="#C0B09C" stroke-width="1" opacity="0.25"/>`
+    const a = (i / 12) * Math.PI * 2 + 0.13
+    s += `<line x1="${(cx + Math.cos(a) * 70).toFixed(1)}" y1="${(cy + Math.sin(a) * 70).toFixed(1)}" x2="${(cx + Math.cos(a) * 212).toFixed(1)}" y2="${(cy + Math.sin(a) * 212).toFixed(1)}" stroke="#D9C293" stroke-width="1.4" opacity="0.4"/>`
   }
+  // Compass points
+  s += `<polygon points="${cx},${cy - 128} ${cx - 8},${cy - 108} ${cx + 8},${cy - 108}" fill="#CBAE79" opacity="0.7"/>`
+  s += `<text x="${cx}" y="${cy - 136}" text-anchor="middle" font-size="13" fill="#A8895B" font-weight="700" font-family="Fredoka,sans-serif">N</text>`
 
-  // Compass rose on ground
-  const cr = 65
-  s += `<line x1="${cx}" y1="${cy-cr}" x2="${cx}" y2="${cy+cr}" stroke="#B8A888" stroke-width="2" opacity="0.4"/>`
-  s += `<line x1="${cx-cr}" y1="${cy}" x2="${cx+cr}" y2="${cy}" stroke="#B8A888" stroke-width="2" opacity="0.4"/>`
-  s += `<polygon points="${cx},${cy-cr+5} ${cx-6},${cy-cr+18} ${cx+6},${cy-cr+18}" fill="#B8A888" opacity="0.5"/>`
-  s += `<text x="${cx}" y="${cy-cr-4}" text-anchor="middle" font-size="10" fill="#A89070" font-weight="700" font-family="Fredoka,sans-serif">N</text>`
-
-  // Small garden beds around the plaza
+  // Grand fountain — tiered bowls + glowing orb + animated jets
+  s += `<ellipse cx="${cx}" cy="${cy + 14}" rx="72" ry="20" fill="#2F5D3A" opacity=".12"/>`
+  s += `<circle cx="${cx}" cy="${cy}" r="62" fill="url(#btWaterG)" stroke="#5FA8CC" stroke-width="4.5"/>`
+  s += `<ellipse cx="${cx - 18}" cy="${cy - 8}" rx="24" ry="8" fill="#fff" opacity=".25"><animate attributeName="opacity" values=".25;.45;.25" dur="3.2s" repeatCount="indefinite"/></ellipse>`
+  s += `<circle cx="${cx}" cy="${cy}" r="34" fill="#EDF6FB" stroke="#9CC8E0" stroke-width="3.5"/>`
+  s += `<circle cx="${cx}" cy="${cy}" r="26" fill="url(#btWaterG)" opacity=".8"/>`
+  s += `<path d="M${cx - 14} ${cy} q14 -10 28 0 l-4 -14 q-10 -7 -20 0Z" fill="#C7D5DE" stroke="#9BAEB9" stroke-width="2"/>`
+  s += `<path d="M${cx - 6} ${cy - 14} V${cy - 34}" stroke="#9BAEB9" stroke-width="5"/><path d="M${cx + 6} ${cy - 14} V${cy - 34}" stroke="#9BAEB9" stroke-width="5"/>`
+  s += `<circle cx="${cx}" cy="${cy - 46}" r="14" fill="url(#btOrbG)" stroke="#D9A520" stroke-width="3" class="bt-glow"/>`
+  s += `<use href="#btSparkle" x="${cx + 22}" y="${cy - 62}" class="bt-twinkle"/>`
+  s += `<use href="#btSparkle" x="${cx - 24}" y="${cy - 56}" class="bt-twinkle-d" transform="scale(.7)" transform-origin="${cx - 24} ${cy - 56}"/>`
+  s += `<use href="#btSparkle" x="${cx + 2}" y="${cy - 76}" class="bt-twinkle" transform="scale(.55)" transform-origin="${cx + 2} ${cy - 76}"/>`
   for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + 0.2
-    const gx = cx + Math.cos(a) * 165, gy = cy + Math.sin(a) * 165
-    s += `<ellipse cx="${gx}" cy="${gy}" rx="18" ry="10" fill="#4CAF50" opacity="0.4"/>`
-    s += `<circle cx="${gx-4}" cy="${gy-3}" r="4" fill="${['#FF6B6B','#FFB74D','#BA68C8','#4FC3F7','#FFD54F','#AED581','#FF8A80','#82B1FF'][i]}" opacity="0.7"/>`
-    s += `<circle cx="${gx+5}" cy="${gy-2}" r="3" fill="${['#FFB74D','#BA68C8','#4FC3F7','#FFD54F','#AED581','#FF8A80','#82B1FF','#FF6B6B'][i]}" opacity="0.6"/>`
-  }
-
-  // Fountain — bigger and more detailed
-  s += `<circle cx="${cx}" cy="${cy}" r="50" fill="#5BB8E8" stroke="#3A9BD5" stroke-width="3"/>`
-  s += `<circle cx="${cx}" cy="${cy}" r="38" fill="#6DC8F0"/>`
-  s += `<circle cx="${cx}" cy="${cy}" r="24" fill="#B8D4E3" stroke="#7BA7C2" stroke-width="2.5"/>`
-  s += `<circle cx="${cx}" cy="${cy}" r="12" fill="#8CBCD0" stroke="#6AACCC" stroke-width="1.5"/>`
-  s += `<line x1="${cx}" y1="${cy-12}" x2="${cx}" y2="${cy-36}" stroke="#999" stroke-width="3.5"/>`
-
-  // Animated water spray — more jets
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * Math.PI * 2
-    const sx = cx + Math.cos(angle) * 8
-    const sy1 = cy - 38
-    const sy2 = cy - 52 - (i % 3) * 4
-    const dur = 1.6 + (i * 0.25)
-    s += `<circle cx="${sx}" cy="${sy1}" r="2.5" fill="#B8D4E3" opacity="0.45">
-      <animate attributeName="cy" values="${sy1};${sy2};${sy1}" dur="${dur}s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.4;0.15;0.4" dur="${dur}s" repeatCount="indefinite"/>
+    const a = (i / 8) * Math.PI * 2
+    const jx = cx + Math.cos(a) * 12
+    const dur = 1.7 + (i % 4) * 0.3
+    s += `<circle cx="${jx.toFixed(1)}" cy="${cy - 38}" r="2.6" fill="#D6EEFA" opacity="0.5">
+      <animate attributeName="cy" values="${cy - 38};${cy - 60 - (i % 3) * 5};${cy - 38}" dur="${dur}s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.5;0.12;0.5" dur="${dur}s" repeatCount="indefinite"/>
     </circle>`
   }
 
-  // Lamp posts (8 around plaza at wider radius)
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2
-    s += svgLampPost(cx + Math.cos(a) * 145, cy + Math.sin(a) * 145)
-  }
-
-  // Benches (8 around)
-  s += svgBench(cx - 90, cy + 80, 0)
-  s += svgBench(cx + 90, cy + 80, 0)
-  s += svgBench(cx, cy - 90, 0)
-  s += svgBench(cx - 85, cy - 65, -25)
-  s += svgBench(cx + 85, cy - 65, 25)
-  s += svgBench(cx - 100, cy, -90)
-  s += svgBench(cx + 100, cy, 90)
-  s += svgBench(cx, cy + 95, 0)
-
-  // Welcome arch / signboard — bigger
-  s += `<g transform="translate(${cx + 120},${cy + 100})">
-    <rect x="-5" y="0" width="10" height="30" rx="2" fill="#8B6914"/>
-    <rect x="-48" y="-40" width="96" height="42" rx="7" fill="#F5E6C8" stroke="#C9A96E" stroke-width="2"/>
-    <text x="0" y="-22" text-anchor="middle" font-size="10" fill="#6b7e95" font-weight="600" font-family="Fredoka,sans-serif">Welcome to</text>
-    <text x="0" y="-6" text-anchor="middle" font-size="14" fill="#16324f" font-weight="700" font-family="Fredoka,sans-serif">Brain Town</text>
+  // Welcome gateway arch (south side) with bunting + balloons
+  s += `<g transform="translate(${cx},${cy + 186})">
+    <path d="M-84 26 V-38 M84 26 V-38" stroke="url(#btWoodG)" stroke-width="12" stroke-linecap="round"/>
+    <path d="M-92 -34 Q0 -78 92 -34" fill="none" stroke="#B07D4B" stroke-width="11" stroke-linecap="round"/>
+    <rect x="-72" y="-70" width="144" height="34" rx="12" fill="#FFF8E7" stroke="#CBAE79" stroke-width="3.5"/>
+    <text y="-46" text-anchor="middle" font-size="21" fill="#8A5B36" font-weight="700" font-family="Fredoka,sans-serif">BRAIN TOWN</text>
+    ${bunting(-84, -26, 84, -26, ['#F7A8C4', '#FFD66B', '#A9DB80', '#7FCBF0', '#C3A9EE', '#F5A93F', '#F26D6D'])}
+    <g class="bt-bob-slow"><path d="M-96 -40 q-2 14 0 22" stroke="#8A6D38" stroke-width="1.6" fill="none"/><ellipse cx="-97" cy="-52" rx="10" ry="13" fill="url(#btBalloonG)"/><path d="M-100 -57 q3 -4 6 -1" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/></g>
+    <g class="bt-bob"><path d="M97 -42 q2 14 0 24" stroke="#8A6D38" stroke-width="1.6" fill="none"/><ellipse cx="98" cy="-54" rx="10" ry="13" fill="#8FD3F2"/><path d="M95 -59 q3 -4 6 -1" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/></g>
   </g>`
 
-  // Town Square label — on the ground
-  s += `<text x="${cx}" y="${cy + 90}" text-anchor="middle" font-size="18" font-weight="700" fill="#16324f" font-family="Fredoka,sans-serif" opacity="0.7">Town Square</text>`
+  // Market stalls (striped canopies) NE + NW
+  const stall = (sx, sy, c1) => `<g transform="translate(${sx},${sy})">
+    <ellipse cy="26" rx="34" ry="8" fill="#2F5D3A" opacity=".12"/>
+    <path d="M-26 24 V-2 M26 24 V-2" stroke="url(#btWoodG)" stroke-width="5"/>
+    <rect x="-22" y="4" width="44" height="12" rx="3" fill="url(#btWoodG)" stroke="#75512F" stroke-width="2"/>
+    <circle cx="-10" cy="2" r="4.5" fill="#F26D6D"/><circle cy="1" r="4.5" fill="#FFD66B"/><circle cx="10" cy="2" r="4.5" fill="#A9DB80"/>
+    <path d="M-32 -4 Q0 -26 32 -4 L26 6 Q0 -12 -26 6Z" fill="${c1}" stroke="#00000022" stroke-width="2"/>
+    <path d="M-20 -9 q4 8 0 13 M0 -14 q4 9 0 15 M20 -9 q4 8 0 13" stroke="#fff" stroke-width="4" opacity=".55" fill="none"/>
+  </g>`
+  s += stall(cx - 148, cy - 118, '#F7A8C4')
+  s += stall(cx + 150, cy - 112, '#8FD3F2')
 
+  // Lamp posts + benches + flower beds around the plaza
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.5
+    s += svgLampPost(cx + Math.cos(a) * 190, cy + Math.sin(a) * 186)
+  }
+  s += svgBench(cx - 96, cy + 86, 14); s += svgBench(cx + 98, cy + 84, -14)
+  s += svgBench(cx - 104, cy - 66, -22); s += svgBench(cx + 104, cy - 62, 22)
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + 0.18
+    const gx = cx + Math.cos(a) * 232, gy = cy + Math.sin(a) * 226
+    s += `<ellipse cx="${gx.toFixed(1)}" cy="${gy.toFixed(1)}" rx="20" ry="11" fill="#8CC470" opacity="0.75"/>`
+    s += `<use href="${['#btFlowerPink', '#btFlowerYellow', '#btFlowerPurple'][i % 3]}" x="${gx.toFixed(1)}" y="${(gy - 4).toFixed(1)}"/>`
+  }
+
+  // Fluttering butterflies
+  s += `<g><use href="#btButterfly"/><animateMotion dur="16s" repeatCount="indefinite" path="M${cx - 120},${cy - 150} q80,-40 170,10 q60,40 -30,80 q-110,30 -140,-90"/></g>`
+
+  // Hub hit area (clickable — opens the Brain Town welcome popup)
+  s += `<circle id="hubHitArea" class="hub-hit-area" cx="${cx}" cy="${cy}" r="235" fill="transparent" pointer-events="all" role="button" tabindex="0" aria-label="Visit Brain Town square"/>`
+
+  s += `</g>`
   return s
 }
 
 /* ─────────────────────────────────────────────
-   Decoration helpers
+   Shared decoration helpers
    ───────────────────────────────────────────── */
 
-function svgTree(x, y, sz = 1) {
-  return `<g transform="translate(${x},${y}) scale(${sz})">
-    <rect x="-5" y="0" width="10" height="20" rx="3" fill="#8B6914"/>
-    <g class="bt-sway"><circle cx="0" cy="-10" r="20" fill="#3A7D44"/><circle cx="-10" cy="-2" r="15" fill="#2D6A30"/><circle cx="10" cy="-5" r="16" fill="#4A8C54"/></g>
-  </g>`
-}
-function svgPine(x, y, sz = 1) {
-  return `<g transform="translate(${x},${y}) scale(${sz})">
-    <rect x="-4" y="0" width="8" height="18" rx="2" fill="#6B4226"/>
-    <g class="bt-sway-s"><polygon points="0,-35 -18,-2 18,-2" fill="#1B5E20"/><polygon points="0,-28 -14,-5 14,-5" fill="#2E7D32"/><polygon points="0,-20 -10,2 10,2" fill="#388E3C"/></g>
-  </g>`
-}
-function svgBush(x, y) {
-  return `<g transform="translate(${x},${y})"><ellipse cx="0" cy="0" rx="14" ry="10" fill="#4CAF50"/><ellipse cx="-7" cy="2" rx="10" ry="7" fill="#388E3C"/><ellipse cx="7" cy="1" rx="11" ry="8" fill="#43A047"/></g>`
-}
-function svgFlower(x, y, c = '#FF6B6B') {
-  return `<g transform="translate(${x},${y})"><line x1="0" y1="0" x2="0" y2="10" stroke="#4CAF50" stroke-width="1.5"/><circle cx="-3" cy="-1" r="3" fill="${c}"/><circle cx="3" cy="-1" r="3" fill="${c}"/><circle cx="0" cy="-4" r="3" fill="${c}"/><circle cx="0" cy="-1" r="2.5" fill="#FFD700"/></g>`
-}
-function svgRock(x, y, sz = 1) {
-  return `<g transform="translate(${x},${y}) scale(${sz})"><ellipse cx="0" cy="0" rx="14" ry="8" fill="#9E9E9E"/><ellipse cx="-4" cy="-2" rx="8" ry="5" fill="#BDBDBD" opacity="0.5"/></g>`
-}
 function svgLampPost(x, y) {
-  return `<g transform="translate(${x},${y})"><line x1="0" y1="0" x2="0" y2="-38" stroke="#555" stroke-width="3"/><rect x="-7" y="-44" width="14" height="10" rx="3" fill="#FFE082" stroke="#FFC107" stroke-width="1.5"/><circle cx="0" cy="-39" r="4" fill="#FFF9C4" opacity="0.5" class="bt-glow"/><rect x="-5" y="0" width="10" height="4" rx="2" fill="#666"/></g>`
-}
-function svgBench(x, y, a = 0) {
-  return `<g transform="translate(${x},${y}) rotate(${a})"><rect x="-16" y="-4" width="32" height="5" rx="1.5" fill="#8D6E63"/><rect x="-16" y="-10" width="32" height="4" rx="1.5" fill="#A1887F"/><rect x="-13" y="-4" width="4" height="10" fill="#6D4C41"/><rect x="9" y="-4" width="4" height="10" fill="#6D4C41"/></g>`
-}
-function svgFence(x1, y1, x2, y2) {
-  const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy), n = Math.floor(len / 24)
-  let r = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#C4956A" stroke-width="2.5"/><line x1="${x1}" y1="${y1-7}" x2="${x2}" y2="${y2-7}" stroke="#C4956A" stroke-width="2"/>`
-  for (let i = 0; i <= n; i++) { const t = i / Math.max(n, 1); r += `<line x1="${x1+dx*t}" y1="${y1+dy*t+5}" x2="${x1+dx*t}" y2="${y1+dy*t-12}" stroke="#A0764E" stroke-width="3.5"/>` }
-  return r
-}
-function svgPond(x, y) {
-  return `<g transform="translate(${x},${y})">
-    <ellipse cx="0" cy="0" rx="90" ry="55" fill="#5BB8E8" stroke="#3A9BD5" stroke-width="2.5"/>
-    <ellipse cx="0" cy="0" rx="72" ry="42" fill="#6DC8F0" opacity="0.5"/>
-    <ellipse cx="-20" cy="5" rx="25" ry="8" fill="#fff" opacity="0.1"><animate attributeName="opacity" values="0.1;0.2;0.1" dur="3s" repeatCount="indefinite"/></ellipse>
-    <ellipse cx="25" cy="-10" rx="18" ry="6" fill="#fff" opacity="0.08"><animate attributeName="opacity" values="0.08;0.18;0.08" dur="4s" repeatCount="indefinite"/></ellipse>
-    <ellipse cx="-35" cy="18" rx="12" ry="6" fill="#4CAF50" opacity="0.6"/><circle cx="-32" cy="16" r="3" fill="#FF69B4" opacity="0.5"/>
-    <ellipse cx="40" cy="20" rx="10" ry="5" fill="#66BB6A" opacity="0.5"/>
+  return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
+    <ellipse cy="4" rx="8" ry="3" fill="#2F5D3A" opacity=".16"/>
+    <path d="M0 0 V-40" stroke="#5C6470" stroke-width="3.5"/>
+    <rect x="-8" y="-48" width="16" height="12" rx="4" fill="#FFE58B" stroke="#B8912E" stroke-width="2" class="bt-glow"/>
+    <circle cy="-42" r="10" fill="#FFE9A8" opacity=".28" class="bt-glow"/>
+    <path d="M-6 0 H6" stroke="#5C6470" stroke-width="4" stroke-linecap="round"/>
   </g>`
 }
+
+function svgBench(x, y, a = 0) {
+  return `<g transform="translate(${x},${y}) rotate(${a})">
+    <ellipse cy="8" rx="18" ry="4" fill="#2F5D3A" opacity=".14"/>
+    <rect x="-17" y="-4" width="34" height="5" rx="2" fill="#A8785A"/>
+    <rect x="-17" y="-11" width="34" height="5" rx="2" fill="#BC8A68"/>
+    <path d="M-13 1 V8 M13 1 V8" stroke="#7A5439" stroke-width="3.5"/>
+  </g>`
+}
+
+function svgLake(x, y, rx, ry) {
+  return `<g transform="translate(${x},${y})">
+    <ellipse rx="${rx + 14}" ry="${ry + 10}" fill="#E8D9B2" opacity=".8"/>
+    <ellipse rx="${rx}" ry="${ry}" fill="url(#btWaterG)" stroke="#5FA8CC" stroke-width="4"/>
+    <ellipse cx="${-rx * 0.25}" cy="${-ry * 0.15}" rx="${rx * 0.35}" ry="${ry * 0.22}" fill="#fff" opacity=".18"><animate attributeName="opacity" values=".18;.32;.18" dur="4s" repeatCount="indefinite"/></ellipse>
+    <ellipse cx="${rx * 0.35}" cy="${ry * 0.3}" rx="14" ry="6" fill="#6FAE5C"/><circle cx="${rx * 0.35}" cy="${ry * 0.3 - 3}" r="4" fill="#F7A8C4"/>
+    <ellipse cx="${-rx * 0.45}" cy="${ry * 0.35}" rx="11" ry="5" fill="#8CC470"/>
+    <g><path d="M-6 0 q6 -6 12 0 q-6 4 -12 0" fill="#FFF8E7" stroke="#D9A520" stroke-width="1.4"/><circle cx="7" cy="-3" r="3" fill="#FFF8E7"/><path d="M9 -3 l4 -1" stroke="#F5A93F" stroke-width="2"/>
+      <animateMotion dur="18s" repeatCount="indefinite" path="M${-rx * 0.3},0 q${rx * 0.4},${-ry * 0.3} ${rx * 0.6},0 q${-rx * 0.2},${ry * 0.35} ${-rx * 0.6},0"/></g>
+  </g>`
+}
+
 function svgBridge(x, y, a = 0) {
-  return `<g transform="translate(${x},${y}) rotate(${a})"><rect x="-28" y="-8" width="56" height="16" rx="3" fill="#A0764E" stroke="#8B6914" stroke-width="2"/><line x1="-24" y1="-8" x2="-24" y2="-16" stroke="#8B6914" stroke-width="2.5"/><line x1="24" y1="-8" x2="24" y2="-16" stroke="#8B6914" stroke-width="2.5"/><line x1="-24" y1="-16" x2="24" y2="-16" stroke="#8B6914" stroke-width="2.5"/></g>`
+  return `<g transform="translate(${x},${y}) rotate(${a})">
+    <path d="M-32 6 Q0 -8 32 6 L32 14 Q0 0 -32 14Z" fill="url(#btWoodG)" stroke="#75512F" stroke-width="2.5"/>
+    <path d="M-26 4 V-10 M0 -1 V-15 M26 4 V-10" stroke="#8A5B36" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M-26 -10 Q0 -22 26 -10" fill="none" stroke="#8A5B36" stroke-width="3"/>
+  </g>`
 }
 
 /* ─────────────────────────────────────────────
-   6. WORLD DECORATIONS
+   7. WORLD DECORATIONS
    ───────────────────────────────────────────── */
 
 function renderDecorations() {
   let s = ''
-  const R = (seed) => { let v = seed; return () => { v = (v * 16807) % 2147483647; return (v - 1) / 2147483646 } }
-  const rnd = R(42)
-
-  // ── Trees (~85) ──
+  const rand = seededRand(42)
   const trees = [
-    // Top edge
-    [60,80],[160,55],[280,70],[420,55],[560,65],[700,40],[840,60],[1000,50],[1150,70],[1350,45],[1500,60],[1680,50],[1850,65],[2050,55],[2200,60],[2340,70],
-    // Left edge
-    [45,200],[50,380],[55,520],[48,680],[52,850],[58,1020],[50,1180],[55,1350],[48,1520],[55,1680],
-    // Right edge
-    [2350,220],[2340,400],[2355,560],[2342,730],[2348,900],[2352,1080],[2340,1240],[2345,1400],[2338,1560],[2350,1700],
-    // Bottom edge
-    [120,1740],[300,1750],[500,1730],[700,1745],[900,1755],[1100,1735],[1300,1745],[1500,1730],[1700,1750],[1900,1740],[2150,1720],
-    // Interior clusters — fill the gaps between districts
-    [620,490],[650,470],[680,510],  // between brain-builder & town square
-    [1530,590],[1560,570],[1590,610],  // between social-mapper & town square
-    [750,1120],[780,1140],[810,1100],  // mid-left
-    [1700,1100],[1730,1130],[1660,1080],  // mid-right
-    [850,320],[880,350],  // near top
-    [1580,230],[1610,260],  // near top-right
-    [1080,1200],[1110,1170],  // center-bottom
-    [580,1260],[610,1240],  // left-bottom
-    [340,620],[370,600],  // left gap
-    [1660,730],[1690,750],  // right gap
-    [950,550],[980,530],  // center-left
-    [1400,560],[1430,540],  // center-right
-    [200,1400],[230,1380],  // bottom-left
-    [2100,1400],[2130,1380],  // bottom-right
+    // Frame the world edges
+    [60, 90], [180, 60], [320, 80], [470, 55], [620, 70], [780, 45], [940, 65], [1420, 50], [1560, 70], [1720, 52], [2060, 60], [2210, 75], [2340, 58],
+    [45, 220], [52, 420], [48, 600], [55, 760], [50, 1080], [56, 1240], [48, 1600], [52, 1740],
+    [2350, 240], [2342, 460], [2352, 640], [2344, 1120], [2350, 1280], [2340, 1460], [2348, 1640],
+    [140, 1750], [340, 1735], [560, 1748], [780, 1730], [1000, 1750], [1220, 1738], [1900, 1745], [2120, 1730],
+    // Interior clusters between districts
+    [660, 500], [700, 470], [640, 540],
+    [1560, 590], [1600, 560],
+    [770, 1130], [810, 1100],
+    [1700, 1110], [1660, 1080],
+    [900, 340], [860, 370],
+    [1590, 240], [1630, 270],
+    [1080, 1220], [1120, 1190],
+    [590, 1260],
+    [350, 630],
+    [1680, 740],
+    [960, 560], [1420, 570],
+    [220, 1390], [2110, 1390],
   ]
-  trees.forEach(([tx, ty]) => { s += (rnd() > 0.35 ? svgTree : svgPine)(tx, ty, 0.8 + rnd() * 0.6) })
+  const kinds = ['#btTreeRound', '#btTreePine', '#btTreeBlossom']
+  trees.forEach(([tx, ty], i) => {
+    const kind = kinds[i % 7 === 3 ? 2 : (rand() > 0.4 ? 0 : 1)]
+    const sc = (0.9 + rand() * 0.7).toFixed(2)
+    s += `<use href="${kind}" x="${tx}" y="${ty}" transform="scale(${sc})" transform-origin="${tx} ${ty}"/>`
+  })
 
-  // ── Bushes (~30) ──
   ;[
-    [500,230],[640,370],[1400,410],[2020,680],[280,1050],[1520,1300],[900,640],
-    [1420,740],[480,740],[1970,540],[340,1200],[1820,1200],[700,1500],[1310,490],
-    [160,450],[2200,480],[800,200],[1600,180],[450,1580],[1900,1550],
-    [1100,360],[920,1400],[1750,1500],[300,750],[2100,750],[650,900],
-    [1350,1100],[170,920],[2240,920],[1050,1550],
-  ].forEach(([bx,by]) => s += svgBush(bx, by))
+    [520, 240], [660, 380], [1420, 420], [2030, 690], [290, 1060], [1530, 1300], [910, 650],
+    [1440, 750], [490, 750], [1980, 550], [350, 1210], [1830, 1210], [710, 1500], [1320, 500],
+    [170, 460], [2210, 490], [820, 210], [1620, 190], [460, 1590], [1910, 1560], [1110, 370],
+    [930, 1410], [1760, 1510], [310, 760], [2110, 760], [660, 910], [1360, 1110], [180, 930], [2240, 930],
+  ].forEach(([bx, by]) => { s += `<use href="#btBush" x="${bx}" y="${by}" transform="scale(${(0.85 + rand() * 0.5).toFixed(2)})" transform-origin="${bx} ${by}"/>` })
 
-  // ── Flowers (~35) ──
-  const fc = ['#FF6B6B','#FFB74D','#BA68C8','#4FC3F7','#FFD54F','#AED581','#FF8A80','#82B1FF']
+  const flowers = ['#btFlowerPink', '#btFlowerYellow', '#btFlowerPurple']
   ;[
-    [140,190],[2200,170],[100,1140],[2210,1070],[600,550],[1510,510],[290,390],
-    [2110,910],[850,120],[1310,1610],[740,1340],[1910,1290],[1060,440],[1690,640],
-    [250,600],[2100,600],[750,750],[1450,850],[400,1350],[1800,1350],
-    [950,200],[1550,130],[350,1600],[2000,1600],[1150,1450],[600,200],
-    [1850,200],[180,700],[2250,700],[1050,700],[500,1100],[1600,1050],
-    [850,1600],[1400,1600],[700,60],
-  ].forEach(([fx,fy],i) => s += svgFlower(fx, fy, fc[i%fc.length]))
+    [150, 200], [2200, 180], [110, 1150], [2210, 1080], [610, 560], [1520, 520], [300, 400],
+    [2110, 920], [860, 130], [1320, 1620], [750, 1350], [1920, 1300], [1070, 450], [1700, 650],
+    [260, 610], [2110, 610], [760, 760], [1460, 860], [410, 1360], [1810, 1360],
+    [960, 210], [1560, 140], [360, 1610], [2010, 1610], [1160, 1460], [610, 210],
+    [1860, 210], [190, 710], [2250, 710], [1060, 710], [510, 1110], [1610, 1060],
+  ].forEach(([fx, fy], i) => { s += `<use href="${flowers[i % 3]}" x="${fx}" y="${fy}"/>` })
 
-  // ── Rocks (~12) ──
   ;[
-    [650,140],[1450,160],[200,1340],[1800,1490],[900,1590],[2060,390],
-    [130,800],[2280,800],[850,500],[1550,480],[400,1650],[1950,1650],
-  ].forEach(([rx,ry]) => s += svgRock(rx, ry, 0.7 + rnd() * 0.6))
+    [670, 150], [1460, 170], [210, 1350], [1810, 1500], [910, 1600], [2070, 400],
+    [140, 810], [2280, 810], [860, 510], [1560, 490], [410, 1660], [1960, 1660],
+  ].forEach(([rx, ry]) => { s += `<use href="#btRock" x="${rx}" y="${ry}" transform="scale(${(0.8 + rand() * 0.6).toFixed(2)})" transform-origin="${rx} ${ry}"/>` })
 
-  // ── Fences near districts (~10 segments) ──
-  s += svgFence(530, 430, 680, 430)
-  s += svgFence(400, 820, 400, 980)
-  s += svgFence(1710, 490, 1860, 490)
-  s += svgFence(580, 1340, 580, 1490)
-  s += svgFence(1370, 1360, 1510, 1360)
-  s += svgFence(1060, 320, 1060, 180)
-  s += svgFence(2120, 530, 2120, 680)
-  s += svgFence(180, 600, 180, 750)
-  s += svgFence(900, 1650, 1050, 1650)
-  s += svgFence(1700, 1650, 1850, 1650)
+  ;[
+    [700, 250], [1500, 300], [880, 1480], [1650, 1550], [250, 520], [2150, 1180], [480, 1180], [1350, 380],
+  ].forEach(([mx, my]) => { s += `<use href="#btMushroom" x="${mx}" y="${my}" transform="scale(${(0.9 + rand() * 0.5).toFixed(2)})" transform-origin="${mx} ${my}"/>` })
 
-  // ── Ponds & bridges ──
-  s += svgPond(2100, 1060)
-  s += svgBridge(2030, 1010, -10)
-  s += svgPond(160, 1520)
-  s += svgBridge(220, 1470, 15)
+  ;[
+    [560, 640], [1780, 620], [640, 1330], [1400, 1250], [980, 260], [1900, 1080], [280, 1170],
+  ].forEach(([gx, gy]) => { s += `<use href="#btGrassTuft" x="${gx}" y="${gy}"/>` })
 
-  // ── Stepping stone paths between some areas ──
-  const stones = [[680,680],[710,700],[740,720],[770,740],  // path fragment
-    [1500,1150],[1530,1170],[1560,1190],  // another path
-    [850,1350],[880,1370],[910,1390],
-  ]
-  stones.forEach(([sx,sy]) => { s += `<ellipse cx="${sx}" cy="${sy}" rx="8" ry="5" fill="#C4B498" opacity="0.4"/>` })
+  // Lakes with ducks + bridges
+  s += svgLake(2110, 1210, 105, 62)
+  s += svgBridge(2020, 1160, -14)
+  s += svgLake(170, 1620, 90, 52)
+  s += svgBridge(245, 1575, 16)
+
+  // Stepping-stone trails between areas
+  ;[
+    [690, 690], [722, 710], [754, 730], [786, 748],
+    [1500, 1150], [1532, 1170], [1564, 1190],
+    [860, 1350], [892, 1370], [924, 1390],
+  ].forEach(([sx, sy]) => { s += `<ellipse cx="${sx}" cy="${sy}" rx="9" ry="5.5" fill="#D5C398" opacity="0.55"/>` })
+
+  // Wandering butterflies
+  s += `<g><use href="#btButterfly"/><animateMotion dur="22s" repeatCount="indefinite" path="M700,600 q120,-80 260,-10 q120,60 -20,140 q-160,70 -240,-130"/></g>`
+  s += `<g><use href="#btButterfly" transform="scale(.8)"/><animateMotion dur="26s" repeatCount="indefinite" path="M1700,1200 q-140,-60 -240,30 q-80,80 60,120 q160,30 180,-150"/></g>`
 
   return s
 }
 
 /* ─────────────────────────────────────────────
-   7. SKY LAYER
+   8. SKY LAYER
    ───────────────────────────────────────────── */
 
 function renderSky() {
   let s = ''
-  // Clouds
+  // Rainbow arc, top-right corner
+  s += `<g opacity="0.4" pointer-events="none">
+    <path d="M2080 180 A190 190 0 0 1 2400 100" fill="none" stroke="#F26D6D" stroke-width="13"/>
+    <path d="M2086 192 A178 178 0 0 1 2400 114" fill="none" stroke="#FFD66B" stroke-width="13"/>
+    <path d="M2092 204 A166 166 0 0 1 2400 128" fill="none" stroke="#A9DB80" stroke-width="13"/>
+    <path d="M2098 216 A154 154 0 0 1 2400 142" fill="none" stroke="#7FCBF0" stroke-width="13"/>
+  </g>`
+  // Soft drifting clouds
   ;[
-    { x: 100, y: 45, sc: 1.3, d: 130 },
-    { x: 550, y: 25, sc: 1.0, d: 160 },
-    { x: 1000, y: 55, sc: 1.5, d: 110 },
-    { x: 1500, y: 35, sc: 1.1, d: 140 },
-    { x: 1950, y: 50, sc: 0.9, d: 170 },
-    { x: 350, y: 80, sc: 0.7, d: 190 },
-    { x: 1250, y: 90, sc: 0.8, d: 150 },
-    { x: 2200, y: 60, sc: 1.2, d: 125 },
+    { x: 100, y: 55, sc: 1.3, d: 130 }, { x: 560, y: 30, sc: 1.0, d: 160 },
+    { x: 1010, y: 60, sc: 1.5, d: 110 }, { x: 1520, y: 40, sc: 1.1, d: 140 },
+    { x: 1960, y: 55, sc: 0.9, d: 170 }, { x: 360, y: 90, sc: 0.7, d: 190 },
+    { x: 1260, y: 95, sc: 0.8, d: 150 },
   ].forEach(c => {
-    s += `<g opacity="0.3"><g>
-      <ellipse cx="0" cy="0" rx="50" ry="18" fill="#fff"/><ellipse cx="-25" cy="5" rx="30" ry="14" fill="#fff"/>
-      <ellipse cx="25" cy="5" rx="35" ry="16" fill="#fff"/><ellipse cx="0" cy="8" rx="40" ry="12" fill="#fff"/>
-      <animateTransform attributeName="transform" type="translate" values="${c.x},${c.y};${c.x+250},${c.y};${c.x},${c.y}" dur="${c.d}s" repeatCount="indefinite"/>
-    </g></g>`
+    s += `<g opacity="0.4"><g transform="scale(${c.sc})">
+      <ellipse rx="50" ry="18" fill="#fff"/><ellipse cx="-27" cy="6" rx="30" ry="14" fill="#fff"/>
+      <ellipse cx="27" cy="5" rx="35" ry="16" fill="#fff"/><ellipse cy="9" rx="42" ry="12" fill="#fff"/>
+      <ellipse cy="14" rx="44" ry="9" fill="#D8ECF6" opacity=".7"/>
+      </g><animateTransform attributeName="transform" type="translate" values="${c.x},${c.y};${c.x + 260},${c.y};${c.x},${c.y}" dur="${c.d}s" repeatCount="indefinite"/>
+    </g>`
   })
+  // Hot air balloon drifting across the world
+  s += `<g>
+    <g class="bt-bob-slow">
+      <circle cy="-48" r="30" fill="url(#btBalloonG)" stroke="#C95E82" stroke-width="3"/>
+      <path d="M-11 -75 Q-17 -48 -9 -22 M11 -75 Q17 -48 9 -22 M0 -78 V-19" stroke="#fff" stroke-width="2.5" opacity=".6" fill="none"/>
+      <path d="M-12 -22 L-7 2 M12 -22 L7 2" stroke="#8A6D38" stroke-width="2"/>
+      <rect x="-8" y="2" width="16" height="13" rx="3" fill="url(#btWoodG)" stroke="#75512F" stroke-width="2"/>
+    </g>
+    <animateMotion dur="90s" repeatCount="indefinite" path="M300,260 Q800,150 1300,240 Q1900,330 2200,200 Q1600,120 900,220 Q500,280 300,260"/>
+  </g>`
   // Birds
-  ;[
-    { x: 300, y: 110, d: 22 },
-    { x: 1100, y: 70, d: 28 },
-  ].forEach(b => {
-    s += `<g opacity="0.35"><path d="M-5,0 Q0,-5 5,0" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
-      <animateMotion dur="${b.d}s" repeatCount="indefinite" path="M${b.x},${b.y} Q${b.x+400},${b.y-50} ${b.x+800},${b.y+30} Q${b.x+1200},${b.y-40} ${b.x+1600},${b.y}"/>
+  ;[{ x: 300, y: 120, d: 24 }, { x: 1100, y: 80, d: 30 }].forEach(b => {
+    s += `<g opacity="0.4"><path d="M-6 0 Q-3 -5 0 0 Q3 -5 6 0" fill="none" stroke="#4A5A6A" stroke-width="2" stroke-linecap="round"/>
+      <animateMotion dur="${b.d}s" repeatCount="indefinite" path="M${b.x},${b.y} Q${b.x + 400},${b.y - 50} ${b.x + 800},${b.y + 30} Q${b.x + 1200},${b.y - 40} ${b.x + 1600},${b.y} Q${b.x + 800},${b.y + 60} ${b.x},${b.y}"/>
     </g>`
   })
   return s
 }
 
 /* ─────────────────────────────────────────────
-   8. ROAD RENDERER
+   9. ROAD RENDERER
    ───────────────────────────────────────────── */
 
 function renderRoads() {
-  let s = ''
+  let shadows = '', edges = '', fills = '', dashes = '', glows = ''
   Object.entries(DISTRICTS).forEach(([slug, d]) => {
     const p = ROAD_PATHS[slug]
     if (!p) return
-    // Shadow
-    s += `<path d="${p}" fill="none" stroke="#8B7355" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" opacity="0.15"/>`
-    // Edge stones
-    s += `<path d="${p}" fill="none" stroke="#A89070" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>`
-    // Surface
-    s += `<path d="${p}" fill="none" stroke="#D4B88C" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" class="svg-road" data-slug="${slug}"/>`
-    // Center dashes
-    s += `<path d="${p}" fill="none" stroke="#E8D5B0" stroke-width="3" stroke-dasharray="14 20" stroke-linecap="round" opacity="0.5"/>`
-    // Glow layer (hidden, activated on selection)
-    s += `<path d="${p}" fill="none" stroke="${d.color}" stroke-width="42" stroke-linecap="round" stroke-linejoin="round" opacity="0" class="svg-road-glow" data-slug="${slug}" filter="url(#roadGlow)"/>`
+    shadows += `<path d="${p}" fill="none" stroke="#37583B" stroke-width="76" stroke-linecap="round" stroke-linejoin="round" opacity="0.15" transform="translate(0 9)"/>`
+    edges += `<path d="${p}" fill="none" stroke="#C9AA74" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>`
+    fills += `<path d="${p}" fill="none" stroke="#F0DFB4" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" class="svg-road" data-slug="${slug}"/>`
+    dashes += `<path d="${p}" fill="none" stroke="#FFF8E0" stroke-width="4.5" stroke-dasharray="20 30" stroke-linecap="round" opacity="0.7"/>`
+    glows += `<path d="${p}" fill="none" stroke="${d.color}" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" opacity="0" class="svg-road-glow" data-slug="${slug}" filter="url(#btRoadGlow)"/>`
   })
-  return s
+  return `<g id="roadShadows">${shadows}</g><g id="roadEdges">${edges}</g><g id="roadFills">${fills}</g><g id="roadDashes">${dashes}</g><g id="roadGlows">${glows}</g>`
 }
 
 /* ─────────────────────────────────────────────
-   9. DISTRICT MARKERS (compact icon + short name)
+   10. DISTRICT MARKERS — bobbing pins + name pills
    ───────────────────────────────────────────── */
 
 function renderMarkers(skills) {
@@ -885,109 +1095,89 @@ function renderMarkers(skills) {
   skills.forEach(sk => { skillMap[sk.slug || (sk.name || '').toLowerCase().replace(/\s+/g, '-')] = sk })
 
   let s = ''
-  Object.entries(DISTRICTS).forEach(([slug, d]) => {
+  Object.entries(DISTRICTS).forEach(([slug, d], idx) => {
     const sk = skillMap[slug]
     const name = sk?.name || d.label
     const img = sk?.character_image_url
+    const pinY = d.y - 225
 
-    const pinY = d.y - 120
-    s += `<g class="svg-pin" data-slug="${slug}" style="cursor:pointer" role="button" tabindex="0" aria-label="Select ${esc(name)}">`
+    s += `<g class="svg-pin" data-slug="${slug}" role="button" tabindex="0" aria-label="Select ${esc(name)}">`
+    s += `<g class="svg-pin-bob" style="animation-delay:${(idx * 0.45).toFixed(2)}s">`
 
-    // Pin circle — smaller, cleaner
-    s += `<circle cx="${d.x}" cy="${pinY}" r="22" fill="#fff" stroke="${d.color}" stroke-width="3" filter="url(#pinShadow)" class="svg-pin-circle"/>`
+    // Pulse ring (visible when selected)
+    s += `<circle cx="${d.x}" cy="${pinY}" r="50" fill="none" stroke="${d.color}" stroke-width="5" class="svg-pin-ring"/>`
+    // Drop pointer
+    s += `<polygon points="${d.x},${pinY + 60} ${d.x - 13},${pinY + 42} ${d.x + 13},${pinY + 42}" fill="#fff" stroke="${d.color}" stroke-width="3"/>`
+    // Pin disc
+    s += `<circle cx="${d.x}" cy="${pinY}" r="46" fill="#fff" stroke="${d.color}" stroke-width="5" filter="url(#btPinShadow)" class="svg-pin-circle"/>`
+    s += `<circle cx="${d.x}" cy="${pinY}" r="39" fill="${d.zoneColor}" opacity=".55"/>`
     if (img) {
-      s += `<image href="${img}" x="${d.x-16}" y="${pinY-16}" width="32" height="32" preserveAspectRatio="xMidYMid meet" clip-path="circle(16px at 16px 16px)"/>`
+      s += `<image href="${img}" x="${d.x - 36}" y="${pinY - 36}" width="72" height="72" preserveAspectRatio="xMidYMid meet"/>`
     } else {
-      s += `<text x="${d.x}" y="${pinY + 5}" text-anchor="middle" font-size="18">${d.emoji}</text>`
+      s += `<text x="${d.x}" y="${pinY + 12}" text-anchor="middle" font-size="38">${d.emoji}</text>`
     }
 
-    // Small drop pointer (subtle, not debug-like)
-    s += `<polygon points="${d.x},${pinY+28} ${d.x-6},${pinY+20} ${d.x+6},${pinY+20}" fill="#fff" stroke="${d.color}" stroke-width="1.5"/>`
+    // Name pill
+    const tw = name.length * 9.5 + 36
+    const ly = pinY - 66
+    s += `<rect x="${d.x - tw / 2}" y="${ly}" width="${tw}" height="36" rx="18" fill="rgba(255,255,255,0.97)" stroke="${d.color}" stroke-width="2" filter="url(#btPinShadow)"/>`
+    s += `<text x="${d.x}" y="${ly + 24}" text-anchor="middle" font-size="18" font-weight="700" fill="${d.color}" font-family="Fredoka,sans-serif">${esc(name)}</text>`
 
-    // Compact pill badge — smaller text
-    const tw = name.length * 5.5 + 18
-    const ly = pinY - 30
-    s += `<rect x="${d.x - tw/2}" y="${ly}" width="${tw}" height="20" rx="10" fill="rgba(255,255,255,0.92)" filter="url(#pinShadow)"/>`
-    s += `<text x="${d.x}" y="${ly + 14}" text-anchor="middle" font-size="10" font-weight="700" fill="${d.color}" font-family="Fredoka,sans-serif">${esc(name)}</text>`
-
-    s += `</g>`
+    s += `</g></g>`
   })
   return s
 }
 
 /* ─────────────────────────────────────────────
-   SVG CONTENT BUILDER
+   11. SVG CONTENT BUILDER
    ───────────────────────────────────────────── */
 
+function renderDistrictHitAreas() {
+  return Object.entries(DISTRICTS).map(([slug, d]) =>
+    `<ellipse class="district-hit-area" data-slug="${slug}" cx="${d.x}" cy="${d.y}" rx="${d.zoneRx - 20}" ry="${d.zoneRy - 10}" fill="transparent" pointer-events="all" role="button" tabindex="0" aria-label="Explore ${esc(d.label)}"/>`
+  ).join('')
+}
+
 function buildSvg(skills) {
-  let s = ''
+  let s = renderDefs()
 
-  // ── Defs ──
-  s += `<defs>
-    <radialGradient id="grassG" cx="50%" cy="50%" r="65%">
-      <stop offset="0%" stop-color="#7EC850"/><stop offset="50%" stop-color="#6AB840"/><stop offset="100%" stop-color="#5AA030"/>
-    </radialGradient>
-    <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#87CEEB" stop-opacity="0.35"/><stop offset="100%" stop-color="#87CEEB" stop-opacity="0"/>
-    </linearGradient>
-    <pattern id="grassP" width="40" height="40" patternUnits="userSpaceOnUse">
-      <rect width="40" height="40" fill="#6AB840"/>
-      <circle cx="6" cy="6" r="1" fill="#5AA030" opacity="0.3"/><circle cx="26" cy="14" r="0.8" fill="#7EC850" opacity="0.25"/>
-      <circle cx="14" cy="30" r="0.9" fill="#5AA030" opacity="0.3"/><circle cx="34" cy="34" r="0.7" fill="#7EC850" opacity="0.2"/>
-    </pattern>
-    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="140%">
-      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.15"/>
-    </filter>
-    <filter id="pinShadow" x="-20%" y="-10%" width="140%" height="140%">
-      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.18"/>
-    </filter>
-    <filter id="roadGlow">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>`
-
-  // ── Background layers ──
-  s += `<rect width="${W}" height="${H}" fill="url(#grassG)"/>`
-  s += `<rect width="${W}" height="${H}" fill="url(#grassP)" opacity="0.35"/>`
-  s += `<rect width="${W}" height="200" fill="url(#skyG)"/>`
-
-  // ── Sky (clouds, birds) ──
-  s += renderSky()
-
-  // ── World decorations ──
-  s += renderDecorations()
-
-  // ── Roads (below buildings) ──
-  s += renderRoads()
-
-  // ── Town Square ──
-  s += renderTownSquare()
-
-  // ── Districts (ground zones, props, buildings) ──
-  Object.entries(DISTRICTS).forEach(([slug, d]) => {
-    const sk = skills.find(ss => (ss.slug || (ss.name || '').toLowerCase().replace(/\s+/g, '-')) === slug)
-    s += renderDistrict(slug, d, sk)
-  })
-
-  // ── District markers / labels (on top) ──
-  s += renderMarkers(skills)
-
-  // ── Daniel's speech prompt at Town Square ──
-  s += `<g class="bt-prompt" transform="translate(${CX - 80},${CY - 130})">
-    <rect x="0" y="0" width="160" height="34" rx="10" fill="#fff" stroke="#f2c94c" stroke-width="2" filter="url(#pinShadow)"/>
-    <text x="80" y="22" text-anchor="middle" font-size="12" fill="#16324f" font-weight="700" font-family="Fredoka,sans-serif">Choose a Super Skill!</text>
-    <polygon points="70,34 80,44 90,34" fill="#fff" stroke="#f2c94c" stroke-width="2"/>
-    <line x1="71" y1="33" x2="89" y2="33" stroke="#fff" stroke-width="3"/>
+  // Terrain base
+  s += `<g id="worldBackground">
+    <rect width="${W}" height="${H}" fill="url(#btMeadowG)"/>
+    <rect width="${W}" height="${H}" fill="url(#btGrassP)"/>
+    <ellipse cx="640" cy="720" rx="540" ry="360" fill="#D7EBA8" opacity=".14"/>
+    <ellipse cx="1760" cy="1120" rx="580" ry="420" fill="#31693D" opacity=".08"/>
+    <ellipse cx="1300" cy="330" rx="620" ry="260" fill="#C9E698" opacity=".1"/>
+    <rect width="${W}" height="230" fill="url(#btSkyWashG)"/>
   </g>`
+
+  // Sky + world nature
+  s += `<g id="skyLayer" pointer-events="none">${renderSky()}</g>`
+  s += `<g id="worldDecorations" pointer-events="none">${renderDecorations()}</g>`
+
+  // Roads under districts
+  s += `<g id="roads">${renderRoads()}</g>`
+
+  // Hub + 7 districts
+  s += `<g id="districts">${renderTownSquare()}`
+  Object.keys(DISTRICTS).forEach(slug => { s += renderDistrict(slug, DISTRICTS[slug]) })
+  s += `</g>`
+
+  // Hit areas over the zones, then markers on the very top so pins
+  // receive their own hover/click events
+  s += `<g id="interactionOverlays">${renderDistrictHitAreas()}</g>`
+  s += `<g id="mapMarkers">${renderMarkers(skills)}</g>`
+
+  // Vignette for depth (never blocks clicks)
+  s += `<rect width="${W}" height="${H}" fill="url(#btVignetteG)" pointer-events="none"/>`
 
   return s
 }
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
 
 /* ─────────────────────────────────────────────
-   10. PAN / ZOOM
-   Starts zoomed in on Town Square.
+   12. PAN / ZOOM — bounds-clamped, starts on hub
    ───────────────────────────────────────────── */
 
 function createPanZoom(viewport, svgEl) {
@@ -1011,9 +1201,8 @@ function createPanZoom(viewport, svgEl) {
     svgEl.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`
   }
 
-  // Start zoomed in around Town Square
   function home() {
-    scale = Math.max(minS() * 3.0, 1.1)
+    scale = Math.min(1.05, Math.max(minS() * 1.55, 0.62))
     tx = vw() / 2 - CX * scale
     ty = vh() / 2 - CY * scale
     clamp(); apply(true)
@@ -1032,19 +1221,22 @@ function createPanZoom(viewport, svgEl) {
     scale = ns; clamp(); apply(true)
   }
 
-  // Pointer events
   viewport.addEventListener('pointerdown', e => {
-    if (e.target.closest('.svg-pin,.svg-building')) return
     down = true; lx = e.clientX; ly = e.clientY; moved = 0
-    viewport.setPointerCapture(e.pointerId); viewport.classList.add('grabbing')
+    viewport.dataset.wasDragging = '0'; viewport.classList.add('grabbing')
   })
   viewport.addEventListener('pointermove', e => {
     if (!down) return
     const dx = e.clientX - lx, dy = e.clientY - ly
     tx += dx; ty += dy; moved += Math.abs(dx) + Math.abs(dy)
+    if (moved > 8 && !viewport.hasPointerCapture(e.pointerId)) viewport.setPointerCapture(e.pointerId)
     lx = e.clientX; ly = e.clientY; clamp(); apply()
   })
-  const up = () => { down = false; viewport.classList.remove('grabbing') }
+  const up = () => {
+    down = false; viewport.classList.remove('grabbing')
+    viewport.dataset.wasDragging = moved > 8 ? '1' : '0'
+    setTimeout(() => { viewport.dataset.wasDragging = '0' }, 0)
+  }
   viewport.addEventListener('pointerup', up)
   viewport.addEventListener('pointercancel', up)
 
@@ -1057,10 +1249,16 @@ function createPanZoom(viewport, svgEl) {
     scale = ns; clamp(); apply()
   }, { passive: false })
 
-  // Touch pinch
   viewport.addEventListener('touchstart', e => { if (e.touches.length === 2) { pDist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY); pScale = scale } }, { passive: true })
-  viewport.addEventListener('touchmove', e => { if (e.touches.length === 2) { e.preventDefault(); const d = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY); scale = pScale * (d / pDist); clamp(); apply() } }, { passive: false })
-  viewport.addEventListener('touchmove', e => { if (e.touches.length === 1) e.preventDefault() }, { passive: false })
+  viewport.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && pDist) {
+      e.preventDefault()
+      const d = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY)
+      scale = pScale * (d / pDist); clamp(); apply()
+    } else if (e.touches.length === 1) {
+      e.preventDefault()
+    }
+  }, { passive: false })
 
   home()
   window.addEventListener('resize', home)
@@ -1069,8 +1267,8 @@ function createPanZoom(viewport, svgEl) {
 }
 
 /* ─────────────────────────────────────────────
-   11. DANIEL CHARACTER
-   Idle at Town Square. Short walk toward clicked district.
+   13. DANIEL CHARACTER
+   Idle at Town Square; short walk toward district.
    ───────────────────────────────────────────── */
 
 const DANIEL_FRAMES = [
@@ -1080,19 +1278,20 @@ const DANIEL_FRAMES = [
   '/images/characters/daniel-walking4.png',
   '/images/characters/daniel-walking5.png',
 ]
+const DANIEL_IDLE = '/images/characters/DanielTheDog.webp'
 
 function createDaniel(worldEl) {
   const el = document.createElement('div')
   el.className = 'svg-daniel'
   el.setAttribute('aria-hidden', 'true')
-  el.style.cssText = 'position:absolute;width:80px;height:80px;z-index:10;pointer-events:none;'
+  el.style.cssText = 'position:absolute;width:130px;height:130px;z-index:10;pointer-events:none;'
 
   const shadow = document.createElement('div')
-  shadow.style.cssText = 'position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:56px;height:12px;background:rgba(0,0,0,0.14);border-radius:50%;filter:blur(4px);'
+  shadow.style.cssText = 'position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:78px;height:16px;background:rgba(0,0,0,0.14);border-radius:50%;filter:blur(4px);'
   el.appendChild(shadow)
 
   const img = document.createElement('img')
-  img.src = DANIEL_FRAMES[0]; img.alt = ''
+  img.src = DANIEL_IDLE; img.alt = ''
   img.style.cssText = 'width:100%;height:100%;object-fit:contain;position:relative;'
   el.appendChild(img)
   worldEl.appendChild(el)
@@ -1105,7 +1304,7 @@ function createDaniel(worldEl) {
   let onDone = null
   const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  function place(x, y) { pos = { x, y }; el.style.left = (x - 40) + 'px'; el.style.top = (y - 75) + 'px' }
+  function place(x, y) { pos = { x, y }; el.style.left = (x - 65) + 'px'; el.style.top = (y - 122) + 'px' }
 
   function samplePath(d, steps, rev) {
     const ns = 'http://www.w3.org/2000/svg'
@@ -1119,44 +1318,45 @@ function createDaniel(worldEl) {
     return rev ? pts.reverse() : pts
   }
 
-  // Walk a SHORT distance toward a district (not the full road)
   function walkToward(slug, cb) {
     onDone = cb || null
     const path = ROAD_PATHS[slug]
     if (!path) { if (onDone) onDone(); return }
 
-    if (noMotion) { if (onDone) onDone(); return }
+    if (noMotion) {
+      const points = samplePath(path, 60, false)
+      const destination = points[Math.floor(points.length * .92)]
+      place(destination.x, destination.y); img.src = DANIEL_IDLE; state = 'arrived'
+      if (onDone) { onDone(); onDone = null }
+      return
+    }
 
-    // Only walk the first 30% of the road (short walk)
     const full = samplePath(path, 60, false)
-    const partial = full.slice(0, 18) // ~30%
-    route = partial; rIdx = 0; state = 'walking'
+    route = full.slice(0, Math.floor(full.length * .92)); rIdx = 0; state = 'walking'; img.src = DANIEL_FRAMES[0]
   }
 
   function walkHome(cb) {
     onDone = () => { state = 'idle'; if (cb) cb() }
     if (noMotion) { place(CX, CY); state = 'idle'; if (cb) cb(); return }
-    // Walk back to center from current position
     const dx = CX - pos.x, dy = CY - pos.y
-    const steps = Math.max(8, Math.floor(Math.sqrt(dx*dx+dy*dy) / 8))
+    const steps = Math.max(8, Math.floor(Math.sqrt(dx * dx + dy * dy) / 8))
     route = []
-    for (let i = 0; i <= steps; i++) { route.push({ x: pos.x + dx * (i/steps), y: pos.y + dy * (i/steps) }) }
-    rIdx = 0; state = 'walking'
+    for (let i = 0; i <= steps; i++) { route.push({ x: pos.x + dx * (i / steps), y: pos.y + dy * (i / steps) }) }
+    rIdx = 0; state = 'walking'; img.src = DANIEL_FRAMES[0]
   }
 
   function loop() {
     tick++
     if (state === 'idle') {
-      if (tick % 30 === 0) { fIdx = (fIdx + 1) % 2; img.src = DANIEL_FRAMES[fIdx === 0 ? 0 : 2] }
       const bob = Math.sin(tick * 0.03) * 2
-      el.style.top = (pos.y - 75 + bob) + 'px'
+      el.style.top = (pos.y - 122 + bob) + 'px'
     }
     if (state === 'walking' && route.length) {
-      if (tick % 8 === 0) { fIdx = (fIdx + 1) % DANIEL_FRAMES.length; img.src = DANIEL_FRAMES[fIdx] }
-      if (tick % 5 === 0) {
+      if (tick % 6 === 0) { fIdx = (fIdx + 1) % DANIEL_FRAMES.length; img.src = DANIEL_FRAMES[fIdx] }
+      if (tick % 2 === 0) {
         const prev = rIdx; rIdx++
         if (rIdx >= route.length) {
-          state = 'arrived'; img.src = DANIEL_FRAMES[0]
+          state = 'arrived'; img.src = DANIEL_IDLE
           if (onDone) { onDone(); onDone = null }
         } else {
           const pt = route[rIdx], pp = route[prev]
@@ -1166,7 +1366,7 @@ function createDaniel(worldEl) {
         }
       }
     }
-    if (state === 'arrived') { const bob = Math.sin(tick * 0.04) * 1.5; el.style.top = (pos.y - 75 + bob) + 'px' }
+    if (state === 'arrived') { const bob = Math.sin(tick * 0.04) * 1.5; el.style.top = (pos.y - 122 + bob) + 'px' }
     requestAnimationFrame(loop)
   }
 
@@ -1177,55 +1377,133 @@ function createDaniel(worldEl) {
 }
 
 /* ─────────────────────────────────────────────
-   12. DETAIL DRAWER
-   Desktop: side drawer. Mobile: bottom sheet.
+   14. SKILL POPUP — fixed overlay layer
+   Positioned in SCREEN coordinates (position:fixed),
+   never in transformed map/world coordinates, so it is
+   always inside the viewport no matter how the map has
+   been dragged or zoomed.
+   Desktop: docked middle-right. Mobile: bottom sheet.
+   (Layout switch is pure CSS media query.)
    ───────────────────────────────────────────── */
 
-function createDrawer(container, onNavigate, isMobile) {
-  const scrim = document.createElement('div')
-  scrim.className = 'bt-svg-scrim'
-  const panel = document.createElement('div')
-  panel.className = isMobile ? 'bt-svg-sheet' : 'bt-svg-drawer'
-  panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Super Skill details')
-  container.appendChild(scrim); container.appendChild(panel)
-  let slug = null
+function createSkillPopup({ onNavigate, modules = [], childModules = [] }) {
+  // Re-init safety: never leave a duplicate overlay behind
+  const stale = document.getElementById('btSvgPopupRoot')
+  if (stale) stale.remove()
 
-  function open(s, skill, d) {
-    slug = s
+  const root = document.createElement('div')
+  root.id = 'btSvgPopupRoot'
+  root.innerHTML = `
+    <div class="bt-svg-popup-scrim"></div>
+    <div class="bt-svg-popup" role="dialog" aria-label="Super Skill details"></div>
+  `
+  document.body.appendChild(root)
+  const scrim = root.querySelector('.bt-svg-popup-scrim')
+  const panel = root.querySelector('.bt-svg-popup')
+
+  let openSlug = null
+  let onClose = null
+
+  function skillProgress(skill, slug) {
+    const skillModules = modules.filter(m => m.super_skill_id === skill?.id || (m.category || '').toLowerCase().replace(/\s+/g, '-') === slug)
+    const done = skillModules.filter(m => childModules.some(cm => cm.module_id === m.id && cm.is_completed === true)).length
+    return { done, total: skillModules.length, pct: skillModules.length ? Math.round(done / skillModules.length * 100) : 0 }
+  }
+
+  function totalProgress() {
+    const done = modules.filter(m => childModules.some(cm => cm.module_id === m.id && cm.is_completed === true)).length
+    return { done, total: modules.length, pct: modules.length ? Math.round(done / modules.length * 100) : 0 }
+  }
+
+  function progressBlock(p, label, color) {
+    if (!p.total) return ''
+    return `<div class="bt-svg-progress">
+      <div><span>${esc(label)}</span><b>${p.done} of ${p.total}</b></div>
+      <span class="bt-svg-progress-track"><span style="width:${p.pct}%;background:${color}"></span></span>
+      <small>Every adventure makes this road stronger.</small>
+    </div>`
+  }
+
+  function open(slug, skill, d) {
+    openSlug = slug
     const name = skill?.name || d.label
     const img = skill?.character_image_url
     const desc = skill?.description || d.desc
     const charName = skill?.character_name
+    const copy = KID_FRIENDLY_COPY[slug] || { description: desc, pickThisIf: null, youllLearn: null, tag: null }
+    const progress = skillProgress(skill, slug)
 
     panel.innerHTML = `
-      <div class="bt-svg-dh" style="border-color:${d.color}40">
-        <button class="bt-svg-dx" id="svgDClose" aria-label="Close">&times;</button>
-        ${img ? `<img src="${img}" alt="${esc(name)}" class="bt-svg-di"/>` : `<div class="bt-svg-de">${d.emoji}</div>`}
-        <h3 class="bt-svg-dn">${esc(name)}</h3>
-        ${charName ? `<span class="bt-svg-dc">Guide: ${esc(charName)}</span>` : ''}
-        <span class="bt-svg-dd" style="color:${d.color}">${esc(d.district)}</span>
+      <div class="bt-svg-ph" style="background:linear-gradient(150deg,${d.color}1F,#ffffff 70%);border-color:${d.color}44">
+        <button class="bt-svg-px" aria-label="Close">&times;</button>
+        <span class="bt-svg-ps bt-svg-ps1">✦</span><span class="bt-svg-ps bt-svg-ps2">✦</span>
+        ${img ? `<img src="${img}" alt="" class="bt-svg-pi"/>` : `<div class="bt-svg-pe">${d.emoji}</div>`}
+        <h3 class="bt-svg-pn">${esc(name)}</h3>
+        ${charName ? `<span class="bt-svg-pc">Guide: ${esc(charName)}</span>` : ''}
+        <span class="bt-svg-pd" style="color:${d.color}">${esc(copy.tag || d.district)}</span>
       </div>
-      <div class="bt-svg-db"><p>${esc(desc)}</p></div>
-      <div class="bt-svg-df">
-        <button class="bt-svg-cta" id="svgDCta" style="background:linear-gradient(135deg,${d.color},${d.accent})">Start Adventure</button>
+      <div class="bt-svg-pb">
+        <p>${esc(copy.description || desc)}</p>
+        ${copy.pickThisIf ? `<div class="bt-svg-block"><div class="bt-svg-label">Pick this if</div><p>${esc(copy.pickThisIf)}</p></div>` : ''}
+        ${copy.youllLearn ? `<div class="bt-svg-block"><div class="bt-svg-label">You'll learn to</div><ul>${copy.youllLearn.map(item => `<li>${esc(item)}</li>`).join('')}</ul></div>` : ''}
+        ${progressBlock(progress, 'Adventures completed', d.color)}
+      </div>
+      <div class="bt-svg-pf">
+        <button class="bt-svg-cta" style="background:linear-gradient(135deg,${d.color},${d.accent})">${progress.done ? 'Continue Adventure' : 'Start Adventure'}</button>
       </div>`
 
-    scrim.classList.add('open'); panel.classList.add('open')
-    panel.querySelector('#svgDClose').addEventListener('click', close)
-    scrim.addEventListener('click', close, { once: true })
-    if (onNavigate) panel.querySelector('#svgDCta').addEventListener('click', () => { close(); onNavigate(skill) })
-    setTimeout(() => { const b = panel.querySelector('#svgDClose'); if (b) b.focus() }, 120)
+    panel.querySelector('.bt-svg-cta').addEventListener('click', () => {
+      close()
+      if (onNavigate && skill) onNavigate(skill)
+    })
+    show()
   }
 
-  function close() { scrim.classList.remove('open'); panel.classList.remove('open'); slug = null }
+  // Welcome popup for the Brain Town hub itself
+  function openHub() {
+    openSlug = HUB.slug
+    const p = totalProgress()
+    panel.innerHTML = `
+      <div class="bt-svg-ph" style="background:linear-gradient(150deg,${HUB.color}2E,#ffffff 70%);border-color:${HUB.color}55">
+        <button class="bt-svg-px" aria-label="Close">&times;</button>
+        <span class="bt-svg-ps bt-svg-ps1">✦</span><span class="bt-svg-ps bt-svg-ps2">✦</span>
+        <div class="bt-svg-pe">${HUB.emoji}</div>
+        <h3 class="bt-svg-pn">${esc(HUB.label)}</h3>
+        <span class="bt-svg-pd" style="color:${HUB.accent}">${esc(HUB.district)}</span>
+      </div>
+      <div class="bt-svg-pb">
+        <p>${esc(HUB.desc)}</p>
+        ${progressBlock(p, 'Adventures completed so far', HUB.color)}
+      </div>
+      <div class="bt-svg-pf">
+        <button class="bt-svg-cta" style="background:linear-gradient(135deg,${HUB.color},${HUB.accent})">Let's explore!</button>
+      </div>`
+    panel.querySelector('.bt-svg-cta').addEventListener('click', close)
+    show()
+  }
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && slug) close() })
+  function show() {
+    root.classList.add('open')
+    const closeBtn = panel.querySelector('.bt-svg-px')
+    if (closeBtn) closeBtn.addEventListener('click', close)
+    setTimeout(() => { const b = panel.querySelector('.bt-svg-px'); if (b) b.focus() }, 150)
+  }
 
-  return { open, close, getSlug: () => slug }
+  function close() {
+    if (!openSlug) return
+    openSlug = null
+    root.classList.remove('open')
+    if (onClose) onClose()
+  }
+
+  scrim.addEventListener('click', close)
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && openSlug) close() })
+
+  return { open, openHub, close, isOpen: () => !!openSlug, setOnClose: fn => { onClose = fn } }
 }
 
 /* ─────────────────────────────────────────────
-   13. INJECT STYLES
+   15. INJECTED STYLES
    ───────────────────────────────────────────── */
 
 function injectStyles() {
@@ -1233,81 +1511,116 @@ function injectStyles() {
   const st = document.createElement('style')
   st.id = 'bt-svg-styles'
   st.textContent = `
-/* Viewport */
-.bt-svg-vp{width:100%;height:78vh;min-height:500px;overflow:hidden;position:relative;border-radius:22px;background:#5AA030;touch-action:none;user-select:none;cursor:grab;border:2px solid #e7ecf3;box-shadow:0 8px 30px rgba(40,60,90,.12)}
+/* ── Viewport ── */
+.bt-svg-vp{width:100%;height:78vh;min-height:500px;overflow:hidden;position:relative;border-radius:22px;background:#5D9A49;touch-action:none;user-select:none;cursor:grab;border:2px solid #e7ecf3;box-shadow:0 8px 30px rgba(40,60,90,.12)}
 .bt-svg-vp.grabbing{cursor:grabbing}
-/* Controls */
+/* ── Controls ── */
 .bt-svg-ctrls{position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:5}
 .bt-svg-cb{width:42px;height:42px;border:none;border-radius:12px;background:#fff;color:#16324f;font-size:20px;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;transition:transform .15s;font-family:Fredoka,sans-serif}
 .bt-svg-cb:hover{transform:scale(1.08);background:#f8f9fc}.bt-svg-cb:active{transform:scale(.95)}
 .bt-svg-cbw{width:auto;padding:0 14px;font-size:12px}
-/* Hint */
+/* ── Hint ── */
 .bt-svg-hint{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);border-radius:12px;padding:8px 16px;font-size:12px;font-weight:600;color:#16324f;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:none;transition:opacity .5s;font-family:Fredoka,sans-serif}
-/* Sway */
-@keyframes btSway{0%,100%{transform:rotate(0)}25%{transform:rotate(1.5deg)}75%{transform:rotate(-1.5deg)}}
-@keyframes btSwayS{0%,100%{transform:rotate(0)}50%{transform:rotate(1deg)}}
-.bt-sway{animation:btSway 4s ease-in-out infinite;transform-origin:0 0}
-.bt-sway-s{animation:btSwayS 6s ease-in-out infinite;transform-origin:0 0}
-/* Twinkle */
-@keyframes btTw{0%,100%{opacity:.8}50%{opacity:.2}}
-@keyframes btTwD{0%,100%{opacity:.3}50%{opacity:.9}}
-.bt-twinkle{animation:btTw 2s ease-in-out infinite}.bt-twinkle-d{animation:btTwD 3s ease-in-out infinite}
-/* Glow */
-@keyframes btGl{0%,100%{opacity:.5}50%{opacity:.85}}
+/* ── Ambient animations ── */
+@keyframes btSway{0%,100%{transform:rotate(0)}25%{transform:rotate(2deg)}75%{transform:rotate(-2deg)}}
+@keyframes btSwayS{0%,100%{transform:rotate(0)}50%{transform:rotate(1.4deg)}}
+.bt-sway{animation:btSway 4s ease-in-out infinite}
+.bt-sway-s{animation:btSwayS 6s ease-in-out infinite}
+@keyframes btTw{0%,100%{opacity:.9}50%{opacity:.15}}
+@keyframes btTwD{0%,100%{opacity:.25}50%{opacity:.9}}
+.bt-twinkle{animation:btTw 2.2s ease-in-out infinite}.bt-twinkle-d{animation:btTwD 3.1s ease-in-out infinite}
+@keyframes btGl{0%,100%{opacity:.55}50%{opacity:1}}
 .bt-glow{animation:btGl 3s ease-in-out infinite}
-/* Pin interaction */
-.svg-pin{transition:transform .2s}.svg-pin:hover{transform:translateY(-4px)}
+@keyframes btHubGlow{0%,100%{opacity:.7}50%{opacity:1}}
+.bt-hub-glow{animation:btHubGlow 5s ease-in-out infinite}
+@keyframes btSpin{to{transform:rotate(360deg)}}
+@keyframes btSpinRev{to{transform:rotate(-360deg)}}
+.bt-spin{animation:btSpin 14s linear infinite;transform-box:fill-box;transform-origin:center}
+.bt-spin-rev{animation:btSpinRev 11s linear infinite;transform-box:fill-box;transform-origin:center}
+.bt-spin-slow{animation:btSpin 30s linear infinite;transform-box:fill-box;transform-origin:center}
+@keyframes btScan{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(10deg)}}
+.bt-scan{animation:btScan 12s ease-in-out infinite;transform-box:fill-box;transform-origin:bottom center}
+@keyframes btBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.bt-bob{animation:btBob 3.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.bt-bob-slow{animation:btBob 4.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes btFlick{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.25) scaleX(.9)}}
+.bt-flicker{animation:btFlick .7s ease-in-out infinite;transform-box:fill-box;transform-origin:bottom center}
+/* ── Pins ── */
+.svg-pin{cursor:pointer;transition:transform .2s ease;transform-box:fill-box;transform-origin:center}
+.svg-pin:hover,.svg-pin.hover,.svg-pin:focus-visible{transform:translateY(-5px) scale(1.05)}
+.svg-pin-bob{animation:btBob 3.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 .svg-pin:focus-visible{outline:3px solid #f2c94c;outline-offset:4px;border-radius:8px}
-.svg-pin.selected .svg-pin-circle{stroke-width:5}
-/* Building interaction */
-.svg-building{transition:transform .2s}.svg-building:hover{transform:translateY(-3px) scale(1.02)}
+.svg-pin-ring{opacity:0;transform-box:fill-box;transform-origin:center}
+.svg-pin.selected .svg-pin-ring{animation:btPinPulse 1.8s ease-out infinite}
+@keyframes btPinPulse{0%{opacity:.85;transform:scale(.92)}100%{opacity:0;transform:scale(1.45)}}
+/* ── Buildings & hit areas ── */
+.svg-building{cursor:pointer;transition:transform .22s ease;transform-box:fill-box;transform-origin:center bottom}
+.svg-building:hover,.svg-building.hover,.svg-building:focus-visible{transform:translateY(-5px) scale(1.025)}
 .svg-building:focus-visible{outline:3px solid #f2c94c;outline-offset:4px;border-radius:8px}
-/* Road glow */
-@keyframes btRP{0%,100%{opacity:.25}50%{opacity:.55}}
-.svg-road-glow.active{animation:btRP 2s ease-in-out infinite}
-/* Prompt hide */
-.bt-prompt.hidden{opacity:0;transition:opacity .4s}
-/* ── Drawer ── */
-.bt-svg-scrim{position:absolute;inset:0;background:rgba(30,40,70,.2);opacity:0;visibility:hidden;transition:.25s;z-index:20}
-.bt-svg-scrim.open{opacity:1;visibility:visible}
-.bt-svg-drawer{position:absolute;top:0;right:0;height:100%;width:370px;max-width:86%;background:#fff;box-shadow:-12px 0 40px rgba(40,55,95,.18);transform:translateX(108%);transition:transform .3s cubic-bezier(.3,.8,.3,1);z-index:21;display:flex;flex-direction:column;border-radius:22px 0 0 22px;overflow:hidden}
-.bt-svg-drawer.open{transform:translateX(0)}
-.bt-svg-sheet{position:absolute;bottom:0;left:0;right:0;background:#fff;box-shadow:0 -12px 40px rgba(40,55,95,.18);transform:translateY(105%);transition:transform .3s cubic-bezier(.3,.8,.3,1);z-index:21;display:flex;flex-direction:column;border-radius:22px 22px 0 0;overflow:hidden;max-height:70vh}
-.bt-svg-sheet.open{transform:translateY(0)}
-/* Drawer parts */
-.bt-svg-dh{padding:24px;background:linear-gradient(160deg,#f4f7fb,#fff);border-bottom:3px solid #e7ecf3;position:relative;text-align:center}
-.bt-svg-dx{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:0;background:#fff;color:#16324f;font-size:18px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.1);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.bt-svg-dx:hover{background:#f4f7fb}
-.bt-svg-di{width:72px;height:72px;object-fit:contain;margin:0 auto 10px;display:block}
-.bt-svg-de{width:72px;height:72px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:32px;background:#f4f7fb}
-.bt-svg-dn{font-size:22px;margin:0;color:#16324f;font-weight:700;font-family:Fredoka,sans-serif}
-.bt-svg-dc{font-size:13px;color:#6b7e95;display:block;margin-top:2px}
-.bt-svg-dd{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:4px;display:block}
-.bt-svg-db{padding:20px 24px;overflow:auto;flex:1}
-.bt-svg-db p{font-size:14.5px;color:#405878;line-height:1.6;margin:0}
-.bt-svg-df{padding:16px 24px;border-top:1px solid #e7ecf3}
-.bt-svg-cta{width:100%;color:#fff;border:none;border-radius:14px;padding:14px 20px;font-weight:600;font-size:15px;font-family:Fredoka,sans-serif;cursor:pointer;text-align:center;transition:transform .15s;box-shadow:0 4px 14px rgba(0,0,0,.15)}
-.bt-svg-cta:hover{transform:translateY(-2px)}
+.district-hit-area,.hub-hit-area{cursor:pointer;outline:none}
+.district-hit-area:focus-visible,.hub-hit-area:focus-visible{stroke:#f2c94c;stroke-width:6;stroke-dasharray:12 10}
+/* ── Road glow ── */
+@keyframes btRoadPulse{0%,100%{opacity:.28}50%{opacity:.55}}
+.svg-road-glow.active{animation:btRoadPulse 2s ease-in-out infinite}
+/* ── Popup overlay (screen coordinates — never map coordinates) ── */
+#btSvgPopupRoot{position:fixed;inset:0;z-index:120;pointer-events:none;visibility:hidden}
+#btSvgPopupRoot.open{visibility:visible}
+.bt-svg-popup-scrim{position:absolute;inset:0;background:rgba(22,50,79,.22);opacity:0;transition:opacity .28s ease}
+#btSvgPopupRoot.open .bt-svg-popup-scrim{opacity:1;pointer-events:auto}
+.bt-svg-popup{position:fixed;top:50%;right:24px;transform:translateY(-50%) translateX(46px) scale(.97);opacity:0;width:min(380px,calc(100vw - 48px));max-height:min(660px,calc(100vh - 48px));display:flex;flex-direction:column;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 24px 60px rgba(22,50,79,.3);transition:transform .32s cubic-bezier(.3,.9,.3,1),opacity .25s ease}
+#btSvgPopupRoot.open .bt-svg-popup{transform:translateY(-50%) translateX(0) scale(1);opacity:1;pointer-events:auto}
+/* Popup header */
+.bt-svg-ph{padding:26px 24px 18px;border-bottom:3px solid;position:relative;text-align:center}
+.bt-svg-px{position:absolute;top:14px;right:14px;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:#16324f;font-size:20px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.bt-svg-px:hover{transform:scale(1.1) rotate(90deg)}
+.bt-svg-ps{position:absolute;color:#f2c94c;font-size:16px;animation:btTw 2.4s ease-in-out infinite;pointer-events:none}
+.bt-svg-ps1{top:20px;left:22px}.bt-svg-ps2{bottom:16px;right:56px;font-size:12px;animation-delay:1.1s}
+.bt-svg-pi{width:76px;height:76px;object-fit:contain;margin:0 auto 10px;display:block;filter:drop-shadow(0 4px 8px rgba(22,50,79,.18))}
+.bt-svg-pe{width:76px;height:76px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:36px;background:#fff;box-shadow:0 4px 12px rgba(22,50,79,.12)}
+.bt-svg-pn{font-size:23px;margin:0;color:#16324f;font-weight:700;font-family:Fredoka,sans-serif}
+.bt-svg-pc{font-size:13px;color:#6b7e95;display:block;margin-top:2px}
+.bt-svg-pd{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:4px;display:block}
+/* Popup body */
+.bt-svg-pb{padding:20px 24px;overflow:auto;flex:1 1 auto;min-height:0}
+.bt-svg-pb p{font-size:14.5px;color:#405878;line-height:1.6;margin:0}
+.bt-svg-block{margin-top:16px}
+.bt-svg-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#6b7e95;margin-bottom:4px}
+.bt-svg-block ul{margin:5px 0 0 18px;padding:0;color:#405878;font-size:13px;line-height:1.5}
+.bt-svg-progress{background:#f4f7fb;border-radius:12px;padding:12px;margin-top:16px}
+.bt-svg-progress>div{display:flex;justify-content:space-between;gap:12px;color:#16324f;font-size:12px}
+.bt-svg-progress-track{display:block;height:9px;background:#e3e8ef;border-radius:999px;overflow:hidden;margin-top:7px}
+.bt-svg-progress-track>span{display:block;height:100%;border-radius:inherit;transition:width .6s ease}
+.bt-svg-progress small{display:block;color:#6b7e95;margin-top:6px;font-size:11px}
+/* Popup footer */
+.bt-svg-pf{padding:16px 24px;border-top:1px solid #e7ecf3;flex:0 0 auto}
+.bt-svg-cta{width:100%;color:#fff;border:none;border-radius:14px;padding:14px 20px;font-weight:600;font-size:15px;font-family:Fredoka,sans-serif;cursor:pointer;text-align:center;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.bt-svg-cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.22)}
+.bt-svg-cta:active{transform:translateY(0)}
+/* Mobile / tablet: bottom sheet, centred */
+@media(max-width:768px){
+  .bt-svg-vp{height:65vh;min-height:400px}
+  .bt-svg-hint{font-size:11px;padding:6px 12px}
+  .bt-svg-popup{top:auto;right:0;left:0;bottom:0;margin:0 auto;width:100%;max-width:520px;max-height:min(72vh,calc(100vh - 24px));border-radius:24px 24px 0 0;transform:translateY(105%)}
+  #btSvgPopupRoot.open .bt-svg-popup{transform:translateY(0)}
+}
 /* Reduced motion */
 @media(prefers-reduced-motion:reduce){
-  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.svg-road-glow.active{animation:none!important}
-  .bt-smoke circle,.bt-fountain-spray circle{animation:none!important}
+  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps{animation:none!important}
+  .bt-svg-popup{transition:opacity .2s ease}
 }
-@media(max-width:768px){.bt-svg-vp{height:65vh;min-height:400px}.bt-svg-hint{font-size:11px;padding:6px 12px}}
 `
   document.head.appendChild(st)
 }
 
 /* ─────────────────────────────────────────────
-   14. PUBLIC API
+   16. PUBLIC API
    ───────────────────────────────────────────── */
 
-export async function initSvgMap(container, { onSelectSkill } = {}) {
+export async function initSvgMap(container, { onSelectSkill, modules = [], childModules = [] } = {}) {
   let skills = []
   try { skills = await getSuperSkills() || [] } catch (_) {}
 
   injectStyles()
-  const isMobile = window.innerWidth <= 768
 
   const wrap = document.createElement('div')
   wrap.style.cssText = 'position:relative;width:100%;'
@@ -1317,7 +1630,7 @@ export async function initSvgMap(container, { onSelectSkill } = {}) {
 
   const world = document.createElement('div')
   world.style.cssText = `position:absolute;top:0;left:0;width:${W}px;height:${H}px;transform-origin:0 0;will-change:transform;`
-  world.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills)}</svg>`
+  world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills)}</svg>`
   vp.appendChild(world)
 
   // Controls
@@ -1329,15 +1642,16 @@ export async function initSvgMap(container, { onSelectSkill } = {}) {
   // Hint
   const hint = document.createElement('div')
   hint.className = 'bt-svg-hint'
-  hint.textContent = 'Drag to explore \u2022 Tap a building'
+  hint.textContent = 'Drag to explore • Tap a building'
   vp.appendChild(hint)
   setTimeout(() => { hint.style.opacity = '0' }, 5000)
 
   wrap.appendChild(vp)
   container.appendChild(wrap)
 
-  // Pan/Zoom
+  // Pan/Zoom — centre once the tab is visible/measurable
   const pz = createPanZoom(vp, world)
+  requestAnimationFrame(() => requestAnimationFrame(pz.home))
   ctrls.querySelector('#svgZI').addEventListener('click', () => pz.zoomBy(1.25))
   ctrls.querySelector('#svgZO').addEventListener('click', () => pz.zoomBy(0.8))
   ctrls.querySelector('#svgHm').addEventListener('click', pz.home)
@@ -1345,58 +1659,73 @@ export async function initSvgMap(container, { onSelectSkill } = {}) {
   // Daniel
   const daniel = createDaniel(world)
 
-  // Drawer
-  const drawer = createDrawer(vp, skill => { if (onSelectSkill && skill) onSelectSkill(skill) }, isMobile)
+  // Popup (fixed overlay, screen coordinates)
+  const popup = createSkillPopup({
+    onNavigate: skill => { if (onSelectSkill && skill) onSelectSkill(skill) },
+    modules, childModules,
+  })
 
-  // Selection logic
-  let selSlug = null
-  const prompt = world.querySelector('.bt-prompt')
-
-  function selectDistrict(sl) {
-    const d = DISTRICTS[sl]
-    if (!d) return
-    const sk = skills.find(s => (s.slug || (s.name || '').toLowerCase().replace(/\s+/g, '-')) === sl)
-
-    // Update pin states
-    world.querySelectorAll('.svg-pin').forEach(p => p.classList.remove('selected'))
-    const pin = world.querySelector(`.svg-pin[data-slug="${sl}"]`)
-    if (pin) pin.classList.add('selected')
-
-    // Road glow
+  // ── Selection logic ──
+  function clearSelection() {
+    world.querySelectorAll('.svg-pin.selected').forEach(p => p.classList.remove('selected'))
     world.querySelectorAll('.svg-road-glow').forEach(r => { r.classList.remove('active'); r.style.opacity = '0' })
-    const glow = world.querySelector(`.svg-road-glow[data-slug="${sl}"]`)
+  }
+  popup.setOnClose(clearSelection)
+
+  function selectDistrict(slug) {
+    const d = DISTRICTS[slug]
+    if (!d) return
+    const sk = skills.find(s => (s.slug || (s.name || '').toLowerCase().replace(/\s+/g, '-')) === slug)
+
+    clearSelection()
+    const pin = world.querySelector(`.svg-pin[data-slug="${slug}"]`)
+    if (pin) pin.classList.add('selected')
+    const glow = world.querySelector(`.svg-road-glow[data-slug="${slug}"]`)
     if (glow) { glow.classList.add('active'); glow.style.opacity = '' }
 
-    // Hide prompt
-    if (prompt) prompt.classList.add('hidden')
-
-    // Daniel walks toward district then drawer opens
-    if (selSlug && selSlug !== sl) {
-      daniel.walkHome(() => daniel.walkToward(sl, () => drawer.open(sl, sk, d)))
-    } else {
-      daniel.walkToward(sl, () => drawer.open(sl, sk, d))
-    }
-    selSlug = sl
-
-    // Pan camera toward building
-    pz.panTo(d.x, d.y)
+    popup.open(slug, sk, d)
+    daniel.walkToward(slug)
   }
 
-  // Click handlers
+  function selectHub() {
+    clearSelection()
+    popup.openHub()
+    daniel.walkHome()
+  }
+
+  // Hovering a district's hit area lights up its building + pin
+  function setHover(slug, on) {
+    const b = world.querySelector(`.svg-building[data-slug="${slug}"]`)
+    const p = world.querySelector(`.svg-pin[data-slug="${slug}"]`)
+    if (b) b.classList.toggle('hover', on)
+    if (p) p.classList.toggle('hover', on)
+  }
+  world.addEventListener('pointerover', e => {
+    const el = e.target.closest('.district-hit-area')
+    if (el && el.dataset.slug) setHover(el.dataset.slug, true)
+  })
+  world.addEventListener('pointerout', e => {
+    const el = e.target.closest('.district-hit-area')
+    if (el && el.dataset.slug) setHover(el.dataset.slug, false)
+  })
+
+  // Click (skip if the pointer was dragging the map)
   world.addEventListener('click', e => {
-    const el = e.target.closest('.svg-pin,.svg-building')
+    if (vp.dataset.wasDragging === '1') return
+    const el = e.target.closest('.svg-pin,.svg-building,.district-hit-area,.hub-hit-area')
     if (!el) return
-    const sl = el.dataset.slug
-    if (sl) selectDistrict(sl)
+    if (el.classList.contains('hub-hit-area')) { selectHub(); return }
+    const slug = el.dataset.slug
+    if (slug) selectDistrict(slug)
   })
 
   // Keyboard
   world.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      const el = e.target.closest('.svg-pin,.svg-building')
-      if (!el) return
-      e.preventDefault()
-      selectDistrict(el.dataset.slug)
-    }
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    const el = e.target.closest('.svg-pin,.svg-building,.district-hit-area,.hub-hit-area')
+    if (!el) return
+    e.preventDefault()
+    if (el.classList.contains('hub-hit-area')) { selectHub(); return }
+    if (el.dataset.slug) selectDistrict(el.dataset.slug)
   })
 }

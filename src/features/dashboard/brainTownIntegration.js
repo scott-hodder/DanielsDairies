@@ -93,6 +93,8 @@ export async function initBrainTown({
       if (!svgInitialized) {
         svgInitialized = true
         await initSvgMap(svgContainer, {
+          modules,
+          childModules,
           onSelectSkill: (skill) => {
             if (onNavigateToAdventure) onNavigateToAdventure(skill)
           }
