@@ -5,15 +5,18 @@
 // ================================================
 
 import { openExplainer, renderExplainerCard } from './danielExplainer.js'
-import { initBrainTownMap, updateBrainTownData } from './brainTownMap.js'
 import { initSvgMap } from './brainTownSvgMap.js'
 import { initRoadBuilderTab } from './roadBuilderTab.js'
 import { initArcadeTab } from './arcadeTab.js'
 import { listGames } from '../../minigames/index.js'
+import { getA11yConfig } from '../../minigames/shared/A11yConfig.js'
+import { difficultyForAge } from '../../minigames/content/difficulty.js'
 import './brainTownStyles.css'
 
 let _initialized = false
 let _brainTownContainer = null
+let _mapContainer = null
+let _mapOpts = null
 
 /**
  * Initialize all Brain Town features.
@@ -43,12 +46,7 @@ export async function initBrainTown({
   // Build the Brain Town section directly (no internal nav - tabs are in main dashboard nav)
   container.innerHTML = `
     ${renderExplainerCard()}
-    <div class="bt-map-toggle">
-      <button class="bt-toggle-btn active" id="btnMapPng">Image Map</button>
-      <button class="bt-toggle-btn" id="btnMapSvg">SVG Prototype</button>
-    </div>
     <div id="brainTownMapContainer"></div>
-    <div id="brainTownSvgContainer" style="display:none"></div>
   `
 
   // Explainer card click handler
@@ -64,9 +62,11 @@ export async function initBrainTown({
     })
   }
 
-  // Initialize Brain Town Map (PNG version)
+  // Initialize the Brain Town map
   const mapContainer = container.querySelector('#brainTownMapContainer')
-  await initBrainTownMap(mapContainer, {
+  _mapContainer = mapContainer
+  _mapOpts = { onNavigateToAdventure }
+  await initSvgMap(mapContainer, {
     modules,
     childModules,
     onSelectSkill: (skill) => {
@@ -75,37 +75,6 @@ export async function initBrainTown({
       }
     }
   })
-
-  // Initialize SVG Map prototype (lazy — only on first toggle)
-  const svgContainer = container.querySelector('#brainTownSvgContainer')
-  let svgInitialized = false
-
-  const btnPng = container.querySelector('#btnMapPng')
-  const btnSvg = container.querySelector('#btnMapSvg')
-  if (btnPng && btnSvg) {
-    btnPng.addEventListener('click', () => {
-      mapContainer.style.display = ''
-      svgContainer.style.display = 'none'
-      btnPng.classList.add('active')
-      btnSvg.classList.remove('active')
-    })
-    btnSvg.addEventListener('click', async () => {
-      if (!svgInitialized) {
-        svgInitialized = true
-        await initSvgMap(svgContainer, {
-          modules,
-          childModules,
-          onSelectSkill: (skill) => {
-            if (onNavigateToAdventure) onNavigateToAdventure(skill)
-          }
-        })
-      }
-      mapContainer.style.display = 'none'
-      svgContainer.style.display = ''
-      btnSvg.classList.add('active')
-      btnPng.classList.remove('active')
-    })
-  }
 
   // ── Road Builder (mounted in main dashboard tab) ──
   const roadBuilderMount = document.getElementById('roadBuilderMount')
@@ -146,9 +115,20 @@ export async function initBrainTown({
 
 /**
  * Update Brain Town with new data (e.g. after module completion).
+ * Re-renders the map so roads, progress pills, and the next-step
+ * flag reflect the child's latest progress.
  */
 export function updateBrainTown({ modules, childModules }) {
-  updateBrainTownData({ modules, childModules })
+  if (!_mapContainer) return
+  // initSvgMap clears the container itself (with a race guard), so no
+  // manual clearing here — avoids a blank flash and duplicate renders.
+  initSvgMap(_mapContainer, {
+    modules: modules || [],
+    childModules: childModules || [],
+    onSelectSkill: (skill) => {
+      if (_mapOpts?.onNavigateToAdventure) _mapOpts.onNavigateToAdventure(skill)
+    }
+  })
 }
 
 /**
@@ -227,7 +207,7 @@ function launchArcadeGame(gameId, container) {
 
   document.body.appendChild(modal)
 
-  // Try to run the game using the existing mini-game system
+  // Run the game through its full lifecycle so completion resolves properly
   try {
     const games = listGames()
     const gameDef = games.find(g => g.id === gameId)
@@ -236,13 +216,14 @@ function launchArcadeGame(gameId, container) {
       return
     }
 
+    const child = window.selectedChild || window.state?.selectedChild || { id: 'arcade', name: 'Player' }
     const ctx = {
       gameId,
       container: gameContainer,
       config: gameDef.defaultConfig || {},
-      difficulty: 'medium',
-      child: window.selectedChild || window.state?.selectedChild || { id: 'arcade', name: 'Player' },
-      a11y: { reducedMotion: false, highContrast: false },
+      difficulty: difficultyForAge(child.age),
+      child: { id: child.id, name: child.name, age: child.age },
+      a11y: getA11yConfig(),
       emit: () => {},
       i18n: { t: (k) => k },
       audio: { play: () => {}, stop: () => {} },
@@ -250,10 +231,6 @@ function launchArcadeGame(gameId, container) {
     }
 
     const game = gameDef.factory(ctx)
-    if (game && typeof game.mount === 'function') {
-      game.mount(gameContainer)
-      if (typeof game.start === 'function') game.start()
-    }
 
     // Clean up when modal closes
     abortController.signal.addEventListener('abort', () => {
@@ -261,8 +238,59 @@ function launchArcadeGame(gameId, container) {
         try { game.dispose() } catch (_) {}
       }
     })
+
+    game.run().then((result) => {
+      if (abortController.signal.aborted) return
+      try { game.dispose() } catch (_) {}
+      showArcadeEndScreen(gameContainer, gameDef, result, {
+        onPlayAgain: () => {
+          abortController.abort()
+          modal.remove()
+          launchArcadeGame(gameId, container)
+        },
+        onClose: () => {
+          abortController.abort()
+          modal.remove()
+        }
+      })
+    }).catch((e) => {
+      console.error('[Arcade] Game error:', e)
+      if (!abortController.signal.aborted) {
+        gameContainer.innerHTML = '<p style="padding:40px;text-align:center;color:#6b7e95">Something went wrong. Please try again.</p>'
+      }
+    })
   } catch (e) {
     console.error('[Arcade] Error launching game:', e)
     gameContainer.innerHTML = '<p style="padding:40px;text-align:center;color:#6b7e95">Something went wrong. Please try again.</p>'
   }
+}
+
+// End-of-game screen for arcade free play: celebrates the result and
+// offers a replay, so a finished game never dead-ends.
+function showArcadeEndScreen(host, gameDef, result, { onPlayAgain, onClose }) {
+  const success = !!result?.success
+  const stars = success ? Math.min(3, Math.max(0, result?.starsEarned ?? 0)) : 0
+  const starRow = [1, 2, 3].map(i =>
+    `<span style="font-size:44px;filter:${i <= stars ? 'none' : 'grayscale(1) opacity(.35)'}">⭐</span>`
+  ).join('')
+
+  const overlay = document.createElement('div')
+  overlay.style.cssText = 'position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(22,50,79,0.55);padding:20px'
+  overlay.innerHTML = `
+    <div style="background:#fffff5;border-radius:22px;max-width:380px;width:100%;padding:26px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,0.3)">
+      <img src="${success ? '/images/characters/Daniel_Celebrating.webp' : '/images/characters/Daniel_Thinking.webp'}" alt="Daniel" style="width:84px;height:84px;object-fit:contain" />
+      <h3 style="margin:10px 0 4px;font-size:21px;color:#16324f">${success ? 'You did it!' : 'Good effort!'}</h3>
+      <div style="margin:6px 0">${starRow}</div>
+      <p style="margin:6px 0 16px;font-size:14px;color:#6b7e95">${success
+        ? 'That practice makes your brain roads stronger.'
+        : 'Every try builds the road a little more. Have another go?'}</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="ae-again" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f2c94c,#e6a800);color:#16324f;font-weight:700;font-size:15px;cursor:pointer">Play again</button>
+        <button class="ae-close" style="flex:1;padding:12px;border:2px solid #d7deea;border-radius:12px;background:#fff;color:#405878;font-weight:700;font-size:15px;cursor:pointer">All done</button>
+      </div>
+    </div>
+  `
+  overlay.querySelector('.ae-again').addEventListener('click', onPlayAgain)
+  overlay.querySelector('.ae-close').addEventListener('click', onClose)
+  host.appendChild(overlay)
 }

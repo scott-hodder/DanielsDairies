@@ -49,6 +49,9 @@
                     <button class="btn-header" id="profileButtonDesktop">
                         Profile
                     </button>
+                    <button class="btn-header" id="tabParentInsights" title="For parents and carers: detailed progress insights">
+                        Parent Insights
+                    </button>
                     <button class="btn-header" id="logoutButtonDesktop">Logout</button>
                     <div class="admin-dropdown-wrap hidden" id="adminDropdownWrap" style="position:relative;margin-left:12px;">
                         <button class="btn-header" id="adminDropdownToggle" style="display:flex;align-items:center;gap:6px;">
@@ -84,6 +87,10 @@
                     <button class="dropdown-item" id="howThisWorksBtnMobile">
                         <span class="dropdown-icon">❓</span>
                         How this works
+                    </button>
+                    <button class="dropdown-item" id="parentInsightsButtonMobile">
+                        <span class="dropdown-icon">📊</span>
+                        Parent Insights
                     </button>
                     <button class="dropdown-item" id="adminButton" style="display: none;">
                         <span class="dropdown-icon">⚙️</span>
@@ -140,9 +147,6 @@
                     <button class="nav-tab" id="tabLeaderboard" data-emoji="🏆" style="display:none">
                         🏆 Leaderboard
                     </button>
-                    <button class="nav-tab nav-tab-highlight" id="tabParentInsights" data-emoji="📊" title="View detailed progress insights">
-                        📊 Progress and Insights
-                    </button>
                 </div>
             </div>
             
@@ -179,9 +183,9 @@
                             <div class="hero-stat-lbl">Streak</div>
                         </div>
                         <div class="hero-stat">
-                            <div class="hero-stat-icon">🏆</div>
-                            <div class="hero-stat-val" id="childRank">#-</div>
-                            <div class="hero-stat-lbl">Rank</div>
+                            <div class="hero-stat-icon">🛣️</div>
+                            <div class="hero-stat-val" id="roadsBuilt">0</div>
+                            <div class="hero-stat-lbl">Roads built</div>
                         </div>
                     </div>
 

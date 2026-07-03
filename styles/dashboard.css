@@ -3139,7 +3139,7 @@ body {
 .adventure-map-bg {
     position: absolute;
     inset: 0;
-    background-image: url('/images/Map.png');
+    background-image: url('/images/Map.webp');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;

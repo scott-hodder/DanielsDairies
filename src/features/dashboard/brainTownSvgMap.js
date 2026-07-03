@@ -31,59 +31,63 @@ const W = 2400, H = 1800
 const CX = 1200, CY = 900 // Town Square centre
 
 // Exactly 7 Super Skill districts. Do not add more.
+// Placement follows the DD Town Map Build Brief compass:
+// Coco north (lookout, high ground), Kip west (calm green quarter),
+// Eddie south (dug into low ground), Billie east (the "future" edge),
+// Kai and Lenny close to the Town Square, Pepper on the raised NE paths.
 const DISTRICTS = {
   'brain-builder': {
-    x: 380, y: 320, label: 'Brain Builder', color: '#6366F1', accent: '#4338CA',
-    district: "Billie's Blueprint Quarter", emoji: '\u{1F9E0}',
-    zoneColor: '#D6E4F7', zoneRx: 310, zoneRy: 260, seed: 11,
+    x: 700, y: 1160, label: 'Brain Builder', color: '#6366F1', accent: '#4338CA',
+    district: "Lenny's Works Depot", emoji: '\u{1F9E0}',
+    zoneColor: '#D6E4F7', zoneRx: 250, zoneRy: 215, seed: 11,
     desc: 'Master your mind through understanding how your brain works!',
   },
   'thought-driver': {
-    x: 260, y: 920, label: 'Thought Driver', color: '#8B5CF6', accent: '#6D28D9',
-    district: 'The Wonder Annex', emoji: '\u{1F9E9}',
-    zoneColor: '#E4D9F7', zoneRx: 300, zoneRy: 260, seed: 23,
+    x: 1200, y: 320, label: 'Thought Driver', color: '#8B5CF6', accent: '#6D28D9',
+    district: "Coco's Lookout", emoji: '\u{1F9E9}',
+    zoneColor: '#FBF3D0', zoneRx: 310, zoneRy: 250, seed: 23,
     desc: 'Take control of your thoughts and steer them in positive directions!',
   },
   'emotion-navigator': {
-    x: 2000, y: 920, label: 'Emotion Navigator', color: '#EC4899', accent: '#BE185D',
+    x: 260, y: 920, label: 'Emotion Navigator', color: '#EC4899', accent: '#BE185D',
     district: "Kip's Resting Groves", emoji: '\u{1F49B}',
-    zoneColor: '#DFF0DA', zoneRx: 310, zoneRy: 270, seed: 37,
+    zoneColor: '#DFF0DA', zoneRx: 300, zoneRy: 260, seed: 37,
     desc: 'Navigate through all emotions with confidence and skill!',
   },
   'behaviour-engineer': {
-    x: 1200, y: 320, label: 'Behaviour Engineer', color: '#F59E0B', accent: '#D97706',
-    district: "Lenny's Works Depot", emoji: '⚡',
-    zoneColor: '#FBEECB', zoneRx: 310, zoneRy: 250, seed: 41,
+    x: 1960, y: 350, label: 'Behaviour Engineer', color: '#F59E0B', accent: '#D97706',
+    district: "Pepper's Night Pathways", emoji: '⚡',
+    zoneColor: '#E4D9F7', zoneRx: 310, zoneRy: 260, seed: 41,
     desc: 'Build powerful habits and take charge of your actions!',
   },
   'resilience-architect': {
-    x: 440, y: 1440, label: 'Resilience Architect', color: '#40916c', accent: '#2D6A4F',
+    x: 1200, y: 1500, label: 'Resilience Architect', color: '#40916c', accent: '#2D6A4F',
     district: "Eddie's Shelter & Dig Site", emoji: '\u{1F6E1}️',
-    zoneColor: '#EBDCC2', zoneRx: 310, zoneRy: 260, seed: 53,
+    zoneColor: '#EBDCC2', zoneRx: 280, zoneRy: 240, seed: 53,
     desc: 'Build inner strength and bounce back from challenges!',
   },
   'social-mapper': {
-    x: 1960, y: 350, label: 'Social Mapper', color: '#E05297', accent: '#BE185D',
-    district: "Pepper's Night Pathways", emoji: '\u{1F91D}',
-    zoneColor: '#E7DBF5', zoneRx: 310, zoneRy: 260, seed: 67,
+    x: 1560, y: 1150, label: 'Social Mapper', color: '#E05297', accent: '#BE185D',
+    district: "Kai's Town Square", emoji: '\u{1F91D}',
+    zoneColor: '#FBEECB', zoneRx: 230, zoneRy: 200, seed: 67,
     desc: 'Map your social world and build stronger connections!',
   },
   'future-designer': {
-    x: 1580, y: 1460, label: 'Future Designer', color: '#0EA5E9', accent: '#0284C7',
-    district: "Coco's Lookout", emoji: '\u{1F52E}',
+    x: 2000, y: 920, label: 'Future Designer', color: '#0EA5E9', accent: '#0284C7',
+    district: "Billie's Blueprint Burrows", emoji: '\u{1F52E}',
     zoneColor: '#D8EDFA', zoneRx: 310, zoneRy: 260, seed: 79,
     desc: 'Design your future with imagination and planning!',
   },
 }
 
 const ROAD_PATHS = {
-  'brain-builder':        `M${CX},${CY} C1050,820 720,560 520,420 Q450,360 380,320`,
-  'thought-driver':       `M${CX},${CY} C1000,920 680,930 460,925 Q350,920 260,920`,
-  'emotion-navigator':    `M${CX},${CY} C1450,905 1680,910 1840,915 Q1920,918 2000,920`,
-  'behaviour-engineer':   `M${CX},${CY} C1200,760 1205,570 1205,440 Q1202,375 1200,320`,
-  'resilience-architect': `M${CX},${CY} C1030,1030 780,1200 610,1320 Q520,1380 440,1440`,
-  'social-mapper':        `M${CX},${CY} C1400,770 1600,560 1770,440 Q1870,390 1960,350`,
-  'future-designer':      `M${CX},${CY} C1280,1060 1380,1220 1470,1350 Q1530,1410 1580,1460`,
+  'brain-builder':        `M${CX},${CY} C1060,940 900,1030 810,1090 Q750,1130 700,1160`,
+  'thought-driver':       `M${CX},${CY} C1200,760 1205,570 1205,440 Q1202,375 1200,320`,
+  'emotion-navigator':    `M${CX},${CY} C1000,920 680,930 460,925 Q350,920 260,920`,
+  'behaviour-engineer':   `M${CX},${CY} C1400,770 1600,560 1770,440 Q1870,390 1960,350`,
+  'resilience-architect': `M${CX},${CY} C1195,1080 1198,1240 1199,1360 Q1200,1440 1200,1500`,
+  'social-mapper':        `M${CX},${CY} C1310,950 1420,1040 1480,1090 Q1525,1125 1560,1150`,
+  'future-designer':      `M${CX},${CY} C1450,905 1680,910 1840,915 Q1920,918 2000,920`,
 }
 
 // The central hub — clickable, opens its own welcome popup.
@@ -1072,16 +1076,26 @@ function renderSky() {
    9. ROAD RENDERER
    ───────────────────────────────────────────── */
 
-function renderRoads() {
+function renderRoads(progressBySlug = {}) {
   let shadows = '', edges = '', fills = '', dashes = '', glows = ''
   Object.entries(DISTRICTS).forEach(([slug, d]) => {
     const p = ROAD_PATHS[slug]
     if (!p) return
-    shadows += `<path d="${p}" fill="none" stroke="#37583B" stroke-width="76" stroke-linecap="round" stroke-linejoin="round" opacity="0.15" transform="translate(0 9)"/>`
-    edges += `<path d="${p}" fill="none" stroke="#C9AA74" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>`
-    fills += `<path d="${p}" fill="none" stroke="#F0DFB4" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" class="svg-road" data-slug="${slug}"/>`
-    dashes += `<path d="${p}" fill="none" stroke="#FFF8E0" stroke-width="4.5" stroke-dasharray="20 30" stroke-linecap="round" opacity="0.7"/>`
-    glows += `<path d="${p}" fill="none" stroke="${d.color}" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" opacity="0" class="svg-road-glow" data-slug="${slug}" filter="url(#btRoadGlow)"/>`
+    const pct = progressBySlug[slug]?.pct ?? 0
+    const unbuilt = pct === 0
+    const complete = pct >= 100
+    if (unbuilt) {
+      // Faint, unpaved track — the road is still waiting to be built
+      edges += `<path d="${p}" fill="none" stroke="#C9AA74" stroke-width="68" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>`
+      fills += `<path d="${p}" fill="none" stroke="#E4D5AE" stroke-width="52" stroke-dasharray="40 34" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" class="svg-road" data-slug="${slug}"/>`
+    } else {
+      shadows += `<path d="${p}" fill="none" stroke="#37583B" stroke-width="76" stroke-linecap="round" stroke-linejoin="round" opacity="0.15" transform="translate(0 9)"/>`
+      edges += `<path d="${p}" fill="none" stroke="#C9AA74" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>`
+      fills += `<path d="${p}" fill="none" stroke="#F0DFB4" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" class="svg-road" data-slug="${slug}"/>`
+      dashes += `<path d="${p}" fill="none" stroke="#FFF8E0" stroke-width="4.5" stroke-dasharray="20 30" stroke-linecap="round" opacity="0.7"/>`
+    }
+    // Completed roads keep a permanent warm glow; selection raises it further
+    glows += `<path d="${p}" fill="none" stroke="${complete ? '#FFD345' : d.color}" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" opacity="${complete ? '0.24' : '0'}" class="svg-road-glow" data-slug="${slug}" filter="url(#btRoadGlow)"/>`
   })
   return `<g id="roadShadows">${shadows}</g><g id="roadEdges">${edges}</g><g id="roadFills">${fills}</g><g id="roadDashes">${dashes}</g><g id="roadGlows">${glows}</g>`
 }
@@ -1090,7 +1104,7 @@ function renderRoads() {
    10. DISTRICT MARKERS — bobbing pins + name pills
    ───────────────────────────────────────────── */
 
-function renderMarkers(skills) {
+function renderMarkers(skills, progressBySlug = {}, nextSlug = null) {
   const skillMap = {}
   skills.forEach(sk => { skillMap[sk.slug || (sk.name || '').toLowerCase().replace(/\s+/g, '-')] = sk })
 
@@ -1100,6 +1114,7 @@ function renderMarkers(skills) {
     const name = sk?.name || d.label
     const img = sk?.character_image_url
     const pinY = d.y - 225
+    const progress = progressBySlug[slug]
 
     s += `<g class="svg-pin" data-slug="${slug}" role="button" tabindex="0" aria-label="Select ${esc(name)}">`
     s += `<g class="svg-pin-bob" style="animation-delay:${(idx * 0.45).toFixed(2)}s">`
@@ -1123,7 +1138,29 @@ function renderMarkers(skills) {
     s += `<rect x="${d.x - tw / 2}" y="${ly}" width="${tw}" height="36" rx="18" fill="rgba(255,255,255,0.97)" stroke="${d.color}" stroke-width="2" filter="url(#btPinShadow)"/>`
     s += `<text x="${d.x}" y="${ly + 24}" text-anchor="middle" font-size="18" font-weight="700" fill="${d.color}" font-family="Fredoka,sans-serif">${esc(name)}</text>`
 
-    s += `</g></g>`
+    // Progress pill — done/total adventures, plus a tick when complete
+    if (progress && progress.total > 0) {
+      const ptext = progress.pct >= 100 ? `✓ ${progress.done}/${progress.total}` : `${progress.done}/${progress.total}`
+      const pw = ptext.length * 11 + 26
+      const py = pinY + 66
+      s += `<rect x="${d.x - pw / 2}" y="${py}" width="${pw}" height="30" rx="15" fill="${progress.pct >= 100 ? '#2E8B57' : d.color}" filter="url(#btPinShadow)"/>`
+      s += `<text x="${d.x}" y="${py + 21}" text-anchor="middle" font-size="17" font-weight="700" fill="#fff" font-family="Fredoka,sans-serif">${esc(ptext)}</text>`
+    }
+
+    s += `</g>`
+
+    // "Next step here" flag — outside the bob group so it draws attention on its own
+    if (slug === nextSlug) {
+      const fy = ly - 26
+      s += `<g class="svg-next-flag" pointer-events="none">
+        <path d="M${d.x + tw / 2 - 6} ${fy + 22} V${fy - 22}" stroke="#8A5A2B" stroke-width="5" stroke-linecap="round"/>
+        <path d="M${d.x + tw / 2 - 6} ${fy - 22} L${d.x + tw / 2 + 46} ${fy - 12} L${d.x + tw / 2 - 6} ${fy - 2}Z" fill="#F2B33D" stroke="#D98E1B" stroke-width="2"/>
+        <rect x="${d.x - 74}" y="${fy - 26}" width="132" height="28" rx="14" fill="#16324F"/>
+        <text x="${d.x - 8}" y="${fy - 6}" text-anchor="middle" font-size="15" font-weight="700" fill="#FFE9A8" font-family="Fredoka,sans-serif">Start here!</text>
+      </g>`
+    }
+
+    s += `</g>`
   })
   return s
 }
@@ -1138,7 +1175,7 @@ function renderDistrictHitAreas() {
   ).join('')
 }
 
-function buildSvg(skills) {
+function buildSvg(skills, progressBySlug = {}, nextSlug = null) {
   let s = renderDefs()
 
   // Terrain base
@@ -1156,7 +1193,7 @@ function buildSvg(skills) {
   s += `<g id="worldDecorations" pointer-events="none">${renderDecorations()}</g>`
 
   // Roads under districts
-  s += `<g id="roads">${renderRoads()}</g>`
+  s += `<g id="roads">${renderRoads(progressBySlug)}</g>`
 
   // Hub + 7 districts
   s += `<g id="districts">${renderTownSquare()}`
@@ -1166,7 +1203,7 @@ function buildSvg(skills) {
   // Hit areas over the zones, then markers on the very top so pins
   // receive their own hover/click events
   s += `<g id="interactionOverlays">${renderDistrictHitAreas()}</g>`
-  s += `<g id="mapMarkers">${renderMarkers(skills)}</g>`
+  s += `<g id="mapMarkers">${renderMarkers(skills, progressBySlug, nextSlug)}</g>`
 
   // Vignette for depth (never blocks clicks)
   s += `<rect width="${W}" height="${H}" fill="url(#btVignetteG)" pointer-events="none"/>`
@@ -1549,6 +1586,8 @@ function injectStyles() {
 .svg-pin{cursor:pointer;transition:transform .2s ease;transform-box:fill-box;transform-origin:center}
 .svg-pin:hover,.svg-pin.hover,.svg-pin:focus-visible{transform:translateY(-5px) scale(1.05)}
 .svg-pin-bob{animation:btBob 3.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes btFlagBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.svg-next-flag{animation:btFlagBounce 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 .svg-pin:focus-visible{outline:3px solid #f2c94c;outline-offset:4px;border-radius:8px}
 .svg-pin-ring{opacity:0;transform-box:fill-box;transform-origin:center}
 .svg-pin.selected .svg-pin-ring{animation:btPinPulse 1.8s ease-out infinite}
@@ -1605,7 +1644,7 @@ function injectStyles() {
 }
 /* Reduced motion */
 @media(prefers-reduced-motion:reduce){
-  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps{animation:none!important}
+  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps,.svg-next-flag{animation:none!important}
   .bt-svg-popup{transition:opacity .2s ease}
 }
 `
@@ -1617,10 +1656,45 @@ function injectStyles() {
    ───────────────────────────────────────────── */
 
 export async function initSvgMap(container, { onSelectSkill, modules = [], childModules = [] } = {}) {
+  // Generation guard: init can be triggered from several places (child
+  // selected, data refresh, bootstrap poll). Only the newest call may
+  // render — older in-flight calls bail out after their await, so two
+  // maps can never stack in the same container.
+  const gen = `${Date.now()}-${Math.random()}`
+  container.dataset.svgMapGen = gen
+
   let skills = []
   try { skills = await getSuperSkills() || [] } catch (_) {}
+  if (container.dataset.svgMapGen !== gen) return
 
   injectStyles()
+  container.innerHTML = ''
+
+  // ── Per-skill progress (drives road build states + marker pills) ──
+  const slugOf = sk => sk.slug || (sk.name || '').toLowerCase().replace(/\s+/g, '-')
+  const progressBySlug = {}
+  skills.forEach(sk => {
+    const slug = slugOf(sk)
+    const skillModules = modules.filter(m =>
+      m.super_skill_id === sk.id ||
+      (m.category && m.category.toLowerCase().replace(/\s+/g, '-') === slug)
+    )
+    const total = skillModules.length
+    const done = skillModules.filter(m => childModules.some(cm => cm.module_id === m.id && cm.is_completed === true)).length
+    progressBySlug[slug] = { done, total, pct: total > 0 ? Math.round((done / total) * 100) : 0 }
+  })
+
+  // ── "Next step" flag: the focus skill if set, else a started-but-unfinished
+  // road, else the first road not yet built. One obvious place to go next. ──
+  let nextSlug = (window.currentFocusSuperSkill && DISTRICTS[window.currentFocusSuperSkill])
+    ? window.currentFocusSuperSkill : null
+  if (!nextSlug) {
+    const order = Object.keys(DISTRICTS)
+    nextSlug =
+      order.find(s => { const p = progressBySlug[s]; return p && p.total > 0 && p.done > 0 && p.pct < 100 }) ||
+      order.find(s => { const p = progressBySlug[s]; return p && p.total > 0 && p.pct < 100 }) ||
+      null
+  }
 
   const wrap = document.createElement('div')
   wrap.style.cssText = 'position:relative;width:100%;'
@@ -1630,7 +1704,7 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
 
   const world = document.createElement('div')
   world.style.cssText = `position:absolute;top:0;left:0;width:${W}px;height:${H}px;transform-origin:0 0;will-change:transform;`
-  world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills)}</svg>`
+  world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills, progressBySlug, nextSlug)}</svg>`
   vp.appendChild(world)
 
   // Controls
@@ -1668,7 +1742,8 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
   // ── Selection logic ──
   function clearSelection() {
     world.querySelectorAll('.svg-pin.selected').forEach(p => p.classList.remove('selected'))
-    world.querySelectorAll('.svg-road-glow').forEach(r => { r.classList.remove('active'); r.style.opacity = '0' })
+    // Clear inline opacity so completed roads fall back to their permanent glow
+    world.querySelectorAll('.svg-road-glow').forEach(r => { r.classList.remove('active'); r.style.opacity = '' })
   }
   popup.setOnClose(clearSelection)
 

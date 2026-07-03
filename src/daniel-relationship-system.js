@@ -297,9 +297,15 @@ class DanielDialogueSystem {
     this.loadProgress();
   }
 
+  // Key progress per child so siblings sharing a device don't share Daniel's memory
+  progressKey() {
+    const childId = window.selectedChild?.id || 'default';
+    return `danielProgress_${childId}`;
+  }
+
   loadProgress() {
     try {
-      const saved = localStorage.getItem('danielProgress');
+      const saved = localStorage.getItem(this.progressKey());
       if (saved) {
         const data = JSON.parse(saved);
         this.completedModules = data.completedModules || [];
@@ -313,7 +319,7 @@ class DanielDialogueSystem {
 
   saveProgress() {
     try {
-      localStorage.setItem('danielProgress', JSON.stringify({
+      localStorage.setItem(this.progressKey(), JSON.stringify({
         completedModules: this.completedModules,
         learnedSkills: this.learnedSkills,
         currentZone: this.currentZone

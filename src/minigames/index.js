@@ -14,7 +14,11 @@ import './games/gratitude-garden/index.js';
 import './games/breathing-bridge/index.js';
 
 import './ui/styles/minigame.css';
-import './testAllGames.js';
+
+// Dev-only test harness (window.__testMiniGame) — never shipped to production
+if (import.meta.env?.DEV) {
+  import('./testAllGames.js');
+}
 
 export { tryRunMiniGame } from './MiniGameController.js';
 export { isMiniGamesEnabled } from './core/FeatureFlag.js';

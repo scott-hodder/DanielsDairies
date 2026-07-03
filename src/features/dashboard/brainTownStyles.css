@@ -255,10 +255,6 @@
   height: 1254px;
   transform-origin: 0 0;
   will-change: transform;
-  background-image: url('/images/zones/Town.png');
-  background-size: 1254px 1254px;
-  background-repeat: no-repeat;
-  image-rendering: auto;
 }
 
 /* SVG road overlay */
@@ -829,7 +825,7 @@
 }
 
 .rb-daniel-name {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: #f2c94c;
   text-transform: uppercase;
@@ -992,7 +988,7 @@
 .rb-choice-body { flex: 1; }
 
 .rb-choice-tag {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -1200,7 +1196,7 @@
 .arcade-tag {
   background: #f4f7fb;
   color: #6b7e95;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 999px;

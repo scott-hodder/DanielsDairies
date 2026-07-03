@@ -144,10 +144,26 @@ let _phase = 'intro'
 let _choices = { thought: null, feeling: null, action: null }
 let _phaseIndex = 0
 
+// Road strength persists per child, so the road the child built is still
+// there next time they open the app (brief: persistence is non negotiable).
+function strengthKey() {
+  const childId = window.selectedChild?.id || 'default'
+  return `rb_strength_${childId}`
+}
+
+function loadStrength() {
+  const saved = parseInt(localStorage.getItem(strengthKey()), 10)
+  return Number.isFinite(saved) ? Math.min(7, Math.max(1, saved)) : 1
+}
+
+function saveStrength() {
+  try { localStorage.setItem(strengthKey(), String(_strength)) } catch (_) {}
+}
+
 export function initRoadBuilderTab(containerEl) {
   _container = containerEl
   _scenarioIndex = 0
-  _strength = 1
+  _strength = loadStrength()
   renderLayout()
 }
 
@@ -363,6 +379,7 @@ function renderResult() {
 
   if (isCalm && _strength < 7) {
     _strength++
+    saveStrength()
     updateStrengthBar()
   }
 

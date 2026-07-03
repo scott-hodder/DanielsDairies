@@ -732,6 +732,8 @@ async function init() {
       const userTierConfig = subscriptionTiers.find(t => t.tier === currentSubscription?.tier)
       if (userTierConfig && userTierConfig.includes_parent_insights === false) {
         if (tabParentInsights) tabParentInsights.style.display = 'none'
+        const piMobile = document.getElementById('parentInsightsButtonMobile')
+        if (piMobile) piMobile.style.display = 'none'
       }
 
       if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
@@ -3324,15 +3326,60 @@ if (tabArcade) {
 if (tabSpendStars) {
   tabSpendStars.addEventListener('click', () => showTab('spendStars'))
 }
-if (tabParentInsights) {
-  tabParentInsights.addEventListener('click', () => {
-    // Navigate to the dedicated Parent Insights page for better performance and richer data
+// Parent Insights lives in the parent nav and sits behind a grown-up gate,
+// so a child tapping around cannot read parent-facing analysis of themselves.
+function openParentInsightsGated() {
+  const goToInsights = () => {
     if (state.selectedChild) {
       window.location.href = `/parent-insights.html?childId=${state.selectedChild.id}`
     } else {
       window.location.href = '/parent-insights.html'
     }
-  })
+  }
+
+  const a = 3 + Math.floor(Math.random() * 6)
+  const b = 4 + Math.floor(Math.random() * 6)
+
+  const overlay = document.createElement('div')
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(22,50,79,0.6);display:flex;align-items:center;justify-content:center;padding:20px'
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:24px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,0.3)">
+      <h3 style="margin:0 0 6px;font-size:18px;color:#16324f">For parents and carers</h3>
+      <p style="margin:0 0 14px;font-size:14px;color:#6b7e95">To keep going, please answer: what is ${a} × ${b}?</p>
+      <input type="number" inputmode="numeric" id="pgAnswer" style="width:110px;padding:10px;font-size:18px;text-align:center;border:2px solid #d7deea;border-radius:10px" aria-label="Answer" />
+      <p id="pgError" style="display:none;color:#c0392b;font-size:13px;margin:8px 0 0">Not quite — have another try.</p>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button id="pgCancel" style="flex:1;padding:11px;border:2px solid #d7deea;border-radius:10px;background:#fff;color:#405878;font-weight:700;cursor:pointer">Cancel</button>
+        <button id="pgGo" style="flex:1;padding:11px;border:none;border-radius:10px;background:#405878;color:#fff;font-weight:700;cursor:pointer">Continue</button>
+      </div>
+    </div>
+  `
+  document.body.appendChild(overlay)
+  const input = overlay.querySelector('#pgAnswer')
+  input.focus()
+
+  const submit = () => {
+    if (parseInt(input.value, 10) === a * b) {
+      overlay.remove()
+      goToInsights()
+    } else {
+      overlay.querySelector('#pgError').style.display = 'block'
+      input.value = ''
+      input.focus()
+    }
+  }
+  overlay.querySelector('#pgGo').addEventListener('click', submit)
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit() })
+  overlay.querySelector('#pgCancel').addEventListener('click', () => overlay.remove())
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove() })
+}
+
+if (tabParentInsights) {
+  tabParentInsights.addEventListener('click', openParentInsightsGated)
+}
+const parentInsightsMobileBtn = document.getElementById('parentInsightsButtonMobile')
+if (parentInsightsMobileBtn) {
+  parentInsightsMobileBtn.addEventListener('click', openParentInsightsGated)
 }
 
 // Update dashboard stats
@@ -3408,17 +3455,9 @@ async function updateDashboardStats() {
     levelRingEl.style.strokeDashoffset = offset
   }
   
-  // Get rank from leaderboard
-  try {
-    const leaderboard = await getAllChildrenLeaderboard(100)
-    const rank = leaderboard.findIndex(child => child.id === state.selectedChild.id) + 1
-    const childRankEl = document.getElementById('childRank')
-    if (childRankEl) childRankEl.textContent = rank > 0 ? `#${rank}` : '#-'
-  } catch (error) {
-    console.error('Error getting rank:', error)
-    const childRankEl = document.getElementById('childRank')
-    if (childRankEl) childRankEl.textContent = '#-'
-  }
+  // Roads built — the child's own progress, no comparison to other children
+  const roadsBuiltEl = document.getElementById('roadsBuilt')
+  if (roadsBuiltEl) roadsBuiltEl.textContent = completedCount
   
   // Update progress bar
   const progressBar = document.getElementById('progressBar')
