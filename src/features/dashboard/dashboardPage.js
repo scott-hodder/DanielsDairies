@@ -15,6 +15,7 @@ import { initPushNotifications, removePushNotifications } from '../../services/p
 import { initNativeApp } from '../../services/nativeApp.js'
 import { hasStreakPopupBeenShownToday, markStreakPopupAsShown, maybeCelebrateFirstStar, createConfettiCelebration, showStreakPopup, showLevelUpPopup, showWelcomeBackBanner } from './dashboardCelebrations.js'
 import { loadCheckinOptions, setupWeeklyCheckinUI, setupParentInsightsSubtabs, setParentInsightsSubtab, checkWeeklyCheckinSettings, renderWeeklyPlan } from './dashboardCheckin.js'
+import { initFamilyGoldTab, isGoldTier } from './familyGoldDashboard.js'
 import { startModule } from './dashboardCheckinInterception.js'
 import { setupDanielMoodCheckin, refreshMoodCheckinState, updateMoodHeroText } from './dashboardMoodCheckin.js'
 import { getCurrencyFormatter } from './dashboardProfileHub.js'
@@ -583,6 +584,8 @@ const tabRoadBuilder = document.getElementById('tabRoadBuilder')
 const tabArcade = document.getElementById('tabArcade')
 const tabSpendStars = document.getElementById('tabSpendStars')
 const tabParentInsights = document.getElementById('tabParentInsights')
+const tabFamilyGold = document.getElementById('tabFamilyGold')
+const familyGoldTabContent = document.getElementById('familyGoldTabContent')
 const dashboardTabContent = document.getElementById('dashboardTabContent')
 const adventuresTabContent = document.getElementById('adventuresTabContent')
 const modulesTabContent = document.getElementById('modulesTabContent')
@@ -734,6 +737,16 @@ async function init() {
         if (tabParentInsights) tabParentInsights.style.display = 'none'
         const piMobile = document.getElementById('parentInsightsButtonMobile')
         if (piMobile) piMobile.style.display = 'none'
+      }
+
+      // Family Gold hub: visible only on a Gold membership, and the
+      // default view when the parent lands (unless they've already
+      // navigated somewhere themselves).
+      if (isGoldTier(currentSubscription)) {
+        if (tabFamilyGold) tabFamilyGold.style.display = ''
+        if (!window.__ddUserChoseTab || !window.__ddUserChoseTab()) {
+          showTab('familyGold')
+        }
       }
 
       if (categoryColorsResult.status === 'fulfilled' && categoryColorsResult.value.data) {
@@ -3254,8 +3267,8 @@ function showTab(tabName) {
   if (!tabDashboard) return
 
   // All tab buttons and content panels
-  const allTabs = [tabDashboard, tabAdventures, tabModules, tabLeaderboard, tabRoadBuilder, tabArcade, tabSpendStars, tabParentInsights]
-  const allContent = [dashboardTabContent, adventuresTabContent, modulesTabContent, leaderboardTabContent, roadBuilderTabContent, arcadeTabContent, spendStarsTabContent, parentInsightsTabContent]
+  const allTabs = [tabDashboard, tabAdventures, tabModules, tabLeaderboard, tabRoadBuilder, tabArcade, tabSpendStars, tabParentInsights, tabFamilyGold]
+  const allContent = [dashboardTabContent, adventuresTabContent, modulesTabContent, leaderboardTabContent, roadBuilderTabContent, arcadeTabContent, spendStarsTabContent, parentInsightsTabContent, familyGoldTabContent]
 
   // Remove active class from all tabs
   allTabs.forEach(t => { if (t) t.classList.remove('active') })
@@ -3297,6 +3310,15 @@ function showTab(tabName) {
     if (tabParentInsights) tabParentInsights.classList.add('active')
     showElement(parentInsightsTabContent)
     setParentInsightsSubtab(state.currentInsightsSubtab)
+  } else if (tabName === 'familyGold') {
+    if (tabFamilyGold) tabFamilyGold.classList.add('active')
+    showElement(familyGoldTabContent)
+    initFamilyGoldTab(familyGoldTabContent, {
+      child: state.selectedChild,
+      modules: state.modules,
+      childModules: state.childModules,
+      onOpenKidWorld: () => showTab('dashboard')
+    })
   }
 }
 
@@ -3377,6 +3399,17 @@ function openParentInsightsGated() {
 if (tabParentInsights) {
   tabParentInsights.addEventListener('click', openParentInsightsGated)
 }
+if (tabFamilyGold) {
+  tabFamilyGold.addEventListener('click', () => showTab('familyGold'))
+}
+// Track whether the user has picked a tab themselves, so the Family Gold
+// auto-default (which arrives after the async subscription lookup) never
+// yanks them away from a tab they already chose.
+let userChoseTab = false
+document.querySelectorAll('.nav-tab').forEach(t => {
+  t.addEventListener('click', () => { userChoseTab = true })
+})
+window.__ddUserChoseTab = () => userChoseTab
 const parentInsightsMobileBtn = document.getElementById('parentInsightsButtonMobile')
 if (parentInsightsMobileBtn) {
   parentInsightsMobileBtn.addEventListener('click', openParentInsightsGated)
