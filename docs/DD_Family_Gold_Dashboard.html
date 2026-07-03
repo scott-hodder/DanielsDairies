@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daniel's Diaries - Family Gold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#082540; --navy-2:#0b1e3d; --primary:#405878; --primary-2:#4c6c96;
+    --ink:#1f2937; --gold:#f2c94c; --gold-deep:#e6a800; --sage:#afc8a4; --sage-deep:#40916c;
+    --cream:#dfdbca; --bg:#eef1f6; --card:#ffffff; --muted:#6b7280; --line:#e5e7eb; --soft:#f3f6fa;
+    --radius:18px; --shadow:0 8px 28px rgba(8,37,64,.08); --shadow-sm:0 2px 10px rgba(8,37,64,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:linear-gradient(180deg,#eef3f9,#f6f4ec);color:var(--ink);font-family:'Montserrat',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  h1,h2,h3,h4,.f{font-family:'Fredoka',sans-serif;}
+  button{font-family:'Fredoka',sans-serif;cursor:pointer;}
+  .hidden{display:none !important;}
+
+  .header{background:var(--navy);color:#fff;position:sticky;top:0;z-index:40;box-shadow:0 4px 18px rgba(0,0,0,.18);}
+  .header-inner{max-width:1100px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .brand h1{font-size:20px;margin:0;font-weight:700;}
+  .brand p{font-size:12px;margin:0;color:#bcd0e6;font-family:'Montserrat';}
+  .role-pill{font-size:11px;font-weight:700;background:rgba(242,201,76,.18);color:var(--gold);border:1px solid rgba(242,201,76,.4);padding:3px 10px;border-radius:999px;margin-left:8px;font-family:'Montserrat';text-transform:uppercase;letter-spacing:.6px;}
+  .acct{font-size:13px;color:#dbe6f2;}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 22px 60px;}
+  .panel{background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-sm);border:1px solid var(--line);margin-bottom:18px;}
+  .panel h3{margin:0 0 4px;font-size:18px;color:var(--navy);}
+  .panel .desc{margin:0 0 16px;font-size:13.5px;color:var(--muted);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .grid2 .panel{margin-bottom:0;}
+  .btn{border:none;border-radius:12px;padding:11px 18px;font-size:14px;font-weight:600;transition:.2s;display:inline-flex;align-items:center;gap:8px;}
+  .btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--navy);box-shadow:0 6px 16px rgba(230,168,0,.28);}
+  .btn-primary:hover{transform:translateY(-1px);}
+  .btn-ghost{background:#fff;color:var(--primary);border:1.5px solid var(--line);}
+  .btn-sm{padding:8px 13px;font-size:13px;border-radius:10px;}
+
+  /* hero */
+  .hero{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,var(--navy),#0e3358);color:#fff;border-radius:22px;padding:22px 24px;margin-bottom:18px;box-shadow:var(--shadow);}
+  .hero .av{width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:34px;flex-shrink:0;}
+  .hero h2{margin:0;font-size:24px;}
+  .hero p{margin:3px 0 0;color:#bcd0e6;font-size:13.5px;}
+  .hero .childsel{margin-left:auto;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;border-radius:10px;padding:9px 12px;font-family:'Montserrat';font-size:13px;}
+
+  /* gold strip */
+  .gold-strip{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#fff6df,#fdeeca);border:1px solid #f0dca0;border-radius:14px;padding:13px 18px;margin-bottom:18px;}
+  .gold-strip .gi{font-size:22px;}
+  .gold-strip p{margin:0;font-size:13px;color:#7a5a00;}
+  .gold-strip strong{color:#5c4500;}
+
+  /* delivery model display */
+  .pv-model{display:flex;align-items:flex-start;gap:14px;}
+  .pv-model .ic{font-size:34px;}
+  .pv-model .t{font-family:'Fredoka';font-weight:700;color:var(--navy);font-size:16px;}
+  .pv-model .d{font-size:13px;color:var(--muted);margin-top:2px;}
+  .pill{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gold-deep);background:#fdf3dc;border-radius:999px;padding:2px 9px;margin-top:8px;}
+
+  /* time */
+  .time-line{display:flex;align-items:center;gap:10px;font-size:16px;font-family:'Fredoka';color:var(--navy);margin-bottom:6px;}
+  .time-note{font-size:12.5px;color:var(--muted);}
+
+  /* appointment */
+  .appt{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,var(--navy),#0e3358);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:12px;}
+  .appt .cal{width:50px;height:50px;border-radius:12px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:24px;flex-shrink:0;}
+  .appt .when{font-family:'Fredoka';font-weight:700;font-size:16px;}
+  .appt .type{font-size:12.5px;color:#bcd0e6;}
+
+  /* tasks */
+  .task{display:flex;align-items:flex-start;gap:11px;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;background:var(--soft);}
+  .task .box{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);background:#fff;flex-shrink:0;display:grid;place-items:center;color:#fff;font-size:14px;cursor:pointer;}
+  .task.done .box{background:var(--sage-deep);border-color:var(--sage-deep);}
+  .task.done .txt{text-decoration:line-through;color:var(--muted);}
+  .task .txt{font-size:13.5px;color:var(--ink);font-family:'Montserrat';flex:1;}
+
+  /* progress stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+  .stat{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .stat .v{font-family:'Fredoka';font-size:26px;font-weight:700;color:var(--navy);line-height:1;}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;}
+
+  /* super skill roads */
+  .roads{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px;}
+  .road{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;}
+  .road .top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .road .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:20px;color:#fff;}
+  .road .nm{font-family:'Fredoka';font-weight:700;font-size:14px;color:var(--navy);}
+  .road .bar{height:9px;border-radius:999px;background:#eef1f4;overflow:hidden;}
+  .road .bar span{display:block;height:100%;border-radius:999px;}
+  .road .mod{font-size:11.5px;color:var(--muted);margin-top:6px;}
+
+  /* guides */
+  .guide{border:1px solid var(--line);border-left:5px solid var(--navy);border-radius:14px;padding:16px 18px;margin-bottom:14px;background:#fff;}
+  .guide .gh{display:flex;align-items:center;gap:10px;}
+  .guide .gic{font-size:22px;}
+  .guide .gn{font-family:'Fredoka';font-weight:700;font-size:16px;color:var(--navy);}
+  .guide .blk{margin-top:10px;}
+  .guide .blk .h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--primary);margin-bottom:2px;}
+  .guide .blk.helps .h{color:var(--sage-deep);}
+  .guide .blk p{font-size:13px;color:var(--ink);margin:0;font-family:'Montserrat';line-height:1.55;}
+
+  /* world launch */
+  .launch{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:linear-gradient(135deg,#6366F1,#8b5cf6);color:#fff;border-radius:20px;padding:22px 24px;}
+  .launch .dog{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#fbe7a6,#f6cf6a);display:grid;place-items:center;font-size:34px;}
+  .launch h3{margin:0 0 2px;color:#fff;font-size:19px;}
+  .launch p{margin:0;color:#e7e3ff;font-size:13px;}
+  .launch .btn-primary{margin-left:auto;}
+
+  .footer-note{font-size:12px;color:var(--muted);text-align:center;margin-top:26px;padding-top:18px;border-top:1px solid var(--line);}
+
+  @media(max-width:820px){
+    .grid2{grid-template-columns:1fr;}
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .launch .btn-primary{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark">🐾</div>
+      <div>
+        <h1>Daniel's Diaries <span class="role-pill">Gold · Family</span></h1>
+        <p>Your child's wellbeing journey, with your practitioner alongside</p>
+      </div>
+    </div>
+    <div class="acct">The Nguyen family ▾</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="av" id="hAv">🦊</div>
+    <div>
+      <h2 id="hName">Mia's journey</h2>
+      <p id="hSub">Everything you and your practitioner set up, in one place.</p>
+    </div>
+    <select class="childsel" id="childSel"></select>
+  </div>
+
+  <div class="gold-strip">
+    <span class="gi">⭐</span>
+    <p><strong>You're on Gold.</strong> Your child gets the full Daniel's Diaries world, a linked practitioner, facilitated session plans, and the guides your practitioner shares with you.</p>
+  </div>
+
+  <div class="grid2" style="margin-bottom:18px;">
+    <div class="panel">
+      <h3>How we're using Daniel's Diaries</h3>
+      <p class="desc">Agreed with your practitioner.</p>
+      <div id="delivery"></div>
+    </div>
+    <div class="panel">
+      <h3>Your Daniel time</h3>
+      <p class="desc">Your regular rhythm. Reminders arrive before each one.</p>
+      <div id="time"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="addTimeICS()">＋ Add Daniel time to calendar</button>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:18px;">
+    <div class="panel">
+      <h3>Next appointment</h3>
+      <p class="desc">With your practitioner.</p>
+      <div id="appt"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addApptICS()">＋ Add appointment to calendar</button>
+    </div>
+    <div class="panel">
+      <h3>Tasks from your practitioner</h3>
+      <p class="desc">Little things to try between sessions. Tick them off as you go.</p>
+      <div id="tasks"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Mia's progress</h3>
+    <p class="desc">What your child has been doing in the app. This is engagement and how they're feeling, shared so you can celebrate and support, not a clinical measure.</p>
+    <div class="stats" id="stats"></div>
+    <div class="roads" id="roads"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Guides from your practitioner</h3>
+    <p class="desc">Plain-language guides on how your child's profile shows up day to day, and what helps. Shared with you by your practitioner.</p>
+    <div id="guides"></div>
+  </div>
+
+  <div class="launch">
+    <div class="dog">🐶</div>
+    <div>
+      <h3>Open <span id="kidName">Mia</span>'s world</h3>
+      <p>The fun part, where your child explores Brain Town, builds roads and earns stars with Daniel.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openWorld()">Open the kid world →</button>
+  </div>
+
+  <div class="footer-note">
+    Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.
+    <br>© 2026 Foundations First Group Pty Ltd.
+  </div>
+</div>
+
+<script>
+/* ---------- shared spine ---------- */
+const SKILLS = [
+  {key:'brain',   name:'Brain Builder',        icon:'🧠', color:'#35a4d4'},
+  {key:'thought', name:'Thought Driver',       icon:'🚦', color:'#e6a800'},
+  {key:'emotion', name:'Emotion Navigator',    icon:'💭', color:'#f46b6b'},
+  {key:'behave',  name:'Behaviour Engineer',   icon:'🛠️', color:'#40916c'},
+  {key:'resil',   name:'Resilience Architect', icon:'🏗️', color:'#f4a73b'},
+  {key:'social',  name:'Social Mapper',        icon:'🗺️', color:'#4caf50'},
+  {key:'future',  name:'Future Designer',      icon:'🔭', color:'#ab47bc'}
+];
+const DELIVERY = {
+  session:{title:'In session with your practitioner', tag:'Practitioner led', icon:'🧑‍⚕️',
+    desc:'Your practitioner runs the modules with your child in their sessions, in person or online.'},
+  home_facilitator:{title:'At home, with a DD facilitator', tag:'Gold · facilitated', icon:'🏠',
+    desc:'You run the modules at home with your child. A Daniel\'s Diaries facilitator checks in, supports you and feeds back on progress.'},
+  parent_meeting:{title:'Parent check-in meetings', tag:'Gold · licensed practitioner', icon:'🤝',
+    desc:'Your child uses Daniel\'s Diaries at home, and you meet your practitioner to review progress, talk it through and plan next steps.'}
+};
+const DX = {
+  adhd:{name:'ADHD (combined)', icon:'⚡', color:'#3A6EA8',
+    day:'Hard to start and stay with non-preferred tasks, acts before thinking, and feelings arrive fast and big. Steps get lost or forgotten, the body needs to move, and time is mostly now versus not now. High-interest things can pull deep hyperfocus.',
+    helps:'Short bursts with movement built in, immediate small wins, novelty to re-engage, and making time and steps visible outside your child rather than expected from memory.'},
+  anxiety:{name:'Anxiety', icon:'🌊', color:'#2A7A5F',
+    day:'Lots of what-ifs, hanging back from new things, and a strong need to know what is coming. Often shows up in the body as tummy aches, trouble sleeping or restlessness.',
+    helps:'Maximise predictability, name the worry out loud, take brave steps in small doses, and avoid over-accommodating so confidence can build.'},
+  asd:{name:'ASD (Level 2)', icon:'🧩', color:'#7048A8',
+    day:'Predictability feels safe and change is hard. Language is often taken literally, sensory input can overwhelm, and social cues take real effort to read. Deep interests are a genuine strength.',
+    helps:'Keep routines steady, warn before change, say things plainly, manage the sensory load, and use your child\'s interests as a way in.'}
+};
+const DAYNAMES=[{l:'Mon',i:1},{l:'Tue',i:2},{l:'Wed',i:3},{l:'Thu',i:4},{l:'Fri',i:5},{l:'Sat',i:6},{l:'Sun',i:0}];
+
+/* ---------- demo family data ---------- */
+let children = [
+  {
+    id:'c1', name:'Mia', avatar:'🦊',
+    delivery:{model:'home_facilitator', days:[2,4], time:'16:00', facilitator:'Kathy (DD facilitator)'},
+    nextAppt:{date:'2026-07-02', time:'15:30', type:'Parent review (online)'},
+    tasks:[
+      {id:'t1', text:"Run 'Naming the Feeling' module twice this week", done:false},
+      {id:'t2', text:'Note one calm-down win in the diary', done:true}
+    ],
+    guides:['adhd','anxiety'],
+    stats:{modules:9, streak:4, checkins:6, mood:'Okay'},
+    progress:{brain:3, thought:1, emotion:4, behave:2, resil:4, social:1, future:0}
+  },
+  {
+    id:'c2', name:'Leo', avatar:'🐢',
+    delivery:{model:'session', days:[3], time:'15:00', facilitator:''},
+    nextAppt:{date:'2026-07-04', time:'16:00', type:'Joint session with child'},
+    tasks:[{id:'t1', text:'Try one group game and note how it went', done:false}],
+    guides:['asd'],
+    stats:{modules:6, streak:2, checkins:3, mood:'Good'},
+    progress:{brain:2, thought:0, emotion:2, behave:1, resil:1, social:3, future:0}
+  }
+];
+let current = 'c1';
+const get = ()=> children.find(c=>c.id===current);
+const fmt = (date,time)=> new Date(date+'T'+(time||'09:00')).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+
+/* ---------- render ---------- */
+function renderChildSelect(){
+  const sel=document.getElementById('childSel');
+  sel.innerHTML = children.map(c=>`<option value="${c.id}">${c.avatar} ${c.name}</option>`).join('');
+  sel.value=current;
+}
+document.getElementById('childSel').addEventListener('change',e=>{ current=e.target.value; render(); });
+
+function render(){
+  const c=get();
+  document.getElementById('hAv').textContent=c.avatar;
+  document.getElementById('hName').textContent=`${c.name}'s journey`;
+  document.getElementById('kidName').textContent=c.name;
+
+  // delivery
+  const dm=DELIVERY[c.delivery.model];
+  document.getElementById('delivery').innerHTML = dm
+    ? `<div class="pv-model"><span class="ic">${dm.icon}</span><div><div class="t">${dm.title}</div><div class="d">${dm.desc}</div><span class="pill">${dm.tag}</span></div></div>`
+    : '<p class="time-note">Your practitioner will set this with you.</p>';
+
+  // time
+  document.getElementById('time').innerHTML = (c.delivery.days&&c.delivery.days.length)
+    ? `<div class="time-line">📅 ${c.delivery.days.map(i=>DAYNAMES.find(d=>d.i===i).l).join(', ')} at ${c.delivery.time||'—'}</div>${c.delivery.facilitator?`<div class="time-note">Facilitator: ${c.delivery.facilitator}</div>`:''}`
+    : '<p class="time-note">No regular time set yet.</p>';
+
+  // appointment
+  document.getElementById('appt').innerHTML = c.nextAppt
+    ? `<div class="appt"><div class="cal">📅</div><div><div class="when">${fmt(c.nextAppt.date,c.nextAppt.time)} · ${c.nextAppt.time||''}</div><div class="type">${c.nextAppt.type}</div></div></div>`
+    : '<p class="time-note">No appointment scheduled.</p>';
+
+  // tasks
+  document.getElementById('tasks').innerHTML = c.tasks.length
+    ? c.tasks.map(t=>`<div class="task ${t.done?'done':''}"><div class="box" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div><div class="txt">${t.text}</div></div>`).join('')
+    : '<p class="time-note">No tasks right now.</p>';
+
+  // stats
+  const s=c.stats;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="v">${s.modules}</div><div class="l">Modules</div></div>
+    <div class="stat"><div class="v">${s.streak}</div><div class="l">Day streak</div></div>
+    <div class="stat"><div class="v">${s.checkins}</div><div class="l">Check-ins</div></div>
+    <div class="stat"><div class="v" style="font-size:18px;">${s.mood}</div><div class="l">Recent mood</div></div>`;
+
+  // roads
+  document.getElementById('roads').innerHTML = SKILLS.map(sk=>{
+    const done=c.progress[sk.key]||0, total=6, pct=Math.round(done/total*100);
+    return `<div class="road"><div class="top"><div class="ic" style="background:${sk.color}">${sk.icon}</div><div class="nm">${sk.name}</div></div>
+      <div class="bar"><span style="width:${Math.max(6,pct)}%;background:${sk.color}"></span></div>
+      <div class="mod">${done} of ${total} modules</div></div>`;
+  }).join('');
+
+  // guides (only what the practitioner shared)
+  document.getElementById('guides').innerHTML = c.guides.length
+    ? c.guides.map(k=>{const d=DX[k];return `<div class="guide" style="border-left-color:${d.color}"><div class="gh"><span class="gic">${d.icon}</span><span class="gn">${d.name}</span></div><div class="blk"><div class="h">How it shows up day to day</div><p>${d.day}</p></div><div class="blk helps"><div class="h">What helps</div><p>${d.helps}</p></div></div>`;}).join('')
+    : '<p class="time-note">Your practitioner has not shared any guides yet.</p>';
+}
+function toggleTask(id){ const t=get().tasks.find(x=>x.id===id); if(t) t.done=!t.done; render(); }
+
+/* ---------- calendar + world ---------- */
+function dl(name, text){
+  const b=new Blob([text],{type:'text/calendar'}); const u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u);
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function addApptICS(){
+  const c=get(); if(!c.nextAppt) return;
+  const d=c.nextAppt.date.replace(/-/g,''); const t=(c.nextAppt.time||'09:00').replace(':','')+'00';
+  const ics=`BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Daniels Diaries//Family//EN\nBEGIN:VEVENT\nDTSTART:${d}T${t}\nDURATION:PT45M\nSUMMARY:${c.name} - ${c.nextAppt.type}\nDESCRIPTION:Daniel's Diaries appointment with your practitioner\nBEGIN:VALARM\nTRIGGER:-PT60M\nACTION:DISPLAY\nDESCRIPTION:Appointment reminder\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR`;
+  dl(`DanielsDiaries_Appointment_${c.name}.ics`, ics);
+}
+function addTimeICS(){
+  const c=get(); if(!c.delivery.days||!c.delivery.days.length) return;
+  const byday=c.delivery.days.map(i=>({0:'SU',1:'MO',2:'TU',3:'WE',4:'TH',5:'FR',6:'SA'}[i])).join(',');
+  const t=(c.delivery.time||'16:00').replace(':','')+'00';
+  // next occurrence date (simple: today)
+  const now=new Date(); const d=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+  const ics=`BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Daniels Diaries//Family//EN\nBEGIN:VEVENT\nDTSTART:${d}T${t}\nDURATION:PT30M\nRRULE:FREQ=WEEKLY;BYDAY=${byday}\nSUMMARY:${c.name} - Daniel time\nDESCRIPTION:Regular Daniel's Diaries session\nBEGIN:VALARM\nTRIGGER:-PT15M\nACTION:DISPLAY\nDESCRIPTION:Daniel time reminder\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR`;
+  dl(`DanielsDiaries_DanielTime_${c.name}.ics`, ics);
+}
+function openWorld(){
+  // same folder as this file when hosted together
+  const w=window.open('DD_Kid_World_Map.html','_blank');
+  if(!w) alert("Your child's world opens in the Daniel's Diaries app. When these files are hosted together, this button opens the world directly.");
+}
+
+/* ---------- init ---------- */
+renderChildSelect();
+render();
+</script>
+</body>
+</html>
