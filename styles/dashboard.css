@@ -7158,3 +7158,189 @@ button:active, .btn:active {
         font-size: 11px;
     }
 }
+
+/* ============================================================
+   MOBILE DASHBOARD OVERHAUL — authoritative, keep LAST in file.
+   The dashboard has several generations of styles above; these
+   rules intentionally come last so mobile always gets this
+   layout: an app-style icon tab bar and a compact hero strip
+   that gives the screen to the map.
+   ============================================================ */
+
+@media (max-width: 640px) {
+
+    /* ── Tab bar: full-width, sticky, icon-over-label chips ── */
+    .nav-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 35;
+        max-width: 100%;
+        width: 100%;
+        margin: 0 0 14px;
+        border-radius: 18px;
+        padding: 5px;
+    }
+
+    .nav-tabs-content {
+        display: flex;
+        gap: 3px;
+        padding: 0 2px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .nav-tabs-content::-webkit-scrollbar { display: none; }
+
+    .nav-tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        flex: 1 0 auto;
+        min-width: 62px;
+        min-height: 54px;
+        padding: 7px 10px 6px;
+        border-radius: 14px;
+        font-size: 0;         /* hides the inline "emoji + text" label */
+        line-height: 0;
+        overflow: visible;
+    }
+
+    /* Emoji on top (replaces the desktop hover-gradient overlay) */
+    .nav-tab::before {
+        content: attr(data-emoji);
+        position: static;
+        inset: auto;
+        background: none;
+        opacity: 1;
+        font-size: 20px;
+        line-height: 1;
+        border-radius: 0;
+        transition: none;
+    }
+
+    /* Short label underneath (replaces the desktop active underline) */
+    .nav-tab::after,
+    .nav-tab.active::after {
+        content: attr(data-label);
+        position: static;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        width: auto;
+        height: auto;
+        background: none;
+        border-radius: 0;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: .2px;
+        color: inherit;
+    }
+
+    .nav-tab:hover { transform: none; }
+    .nav-tab.active { transform: none; }
+
+    /* ── Hero strip: slim rows, the map is the star ── */
+    .dashboard-hero-strip {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        gap: 0;
+        padding: 0;
+        border-radius: 20px;
+        margin-bottom: 14px;
+    }
+
+    /* Row 1 — Daniel, small and friendly */
+    .hero-daniel {
+        grid-row: 1;
+        grid-column: 1;
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        padding: 10px 14px;
+        gap: 12px;
+        border-radius: 20px 20px 0 0;
+        border-bottom: 1px solid rgba(64, 88, 120, 0.08);
+    }
+    .hero-daniel-inner { width: 58px; height: 58px; border-radius: 50%; }
+    .hero-daniel-img { width: 100%; height: 100%; }
+    .hero-daniel-badge { display: none; }
+    .daniel-name { font-size: 14px; margin: 0; }
+    .hero-daniel-speech { align-items: flex-start; }
+    .hero-daniel-quote {
+        max-width: none;
+        font-size: 12px;
+        text-align: left;
+        -webkit-line-clamp: 2;
+    }
+
+    /* Row 2 — stat chips on one slim line */
+    .hero-stats {
+        grid-row: 2;
+        grid-column: 1;
+        justify-content: center;
+        padding: 8px 10px;
+        gap: 6px;
+        border-bottom: 1px solid rgba(64, 88, 120, 0.08);
+    }
+    .hero-stat {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: center;
+        gap: 5px;
+        flex: 1;
+        padding: 8px 4px;
+        border-radius: 12px;
+    }
+    .hero-stat-icon { font-size: 14px; }
+    .hero-stat-val { font-size: 16px; }
+    .hero-stat-lbl { font-size: 9.5px; white-space: nowrap; }
+
+    /* Row 3 — level ring + XP bar as one slim line */
+    .hero-level {
+        grid-row: 3;
+        grid-column: 1;
+        justify-content: center;
+        align-items: center;
+        padding: 8px 14px;
+        gap: 12px;
+        border-bottom: 1px solid rgba(64, 88, 120, 0.08);
+    }
+    .hero-level-ring { width: 42px; height: 42px; flex-shrink: 0; }
+    .hero-level-num { font-size: 15px; }
+    .hero-level-word { display: none; }
+    .hero-xp-info { flex: 1; min-width: 0; }
+    .hero-xp-earned { display: none; }
+    .hero-xp-bar-text { font-size: 9px; }
+
+    /* Row 4 — quest as a slim banner */
+    .hero-quest {
+        grid-row: 4;
+        grid-column: 1;
+        border-radius: 0 0 18px 18px !important;
+        padding: 10px 14px !important;
+        gap: 10px;
+    }
+    .hero-quest-icon { font-size: 18px; }
+    .hero-quest-label { font-size: 9px; }
+    .hero-quest .quest-description {
+        font-size: 12px;
+        -webkit-line-clamp: 2;
+        white-space: normal;
+    }
+    .hero-quest .daily-quest-btn { padding: 9px 16px; font-size: 13px; }
+}
+
+/* Touch devices: no hover-lift wiggle on tabs regardless of width.
+   (Above 640px the ::before is the desktop hover gradient — keep it off;
+   at 640px and below the mobile rules re-set it to the emoji at opacity 1.) */
+@media (hover: none) {
+    .nav-tab:hover { transform: none; }
+    .nav-tab:hover::before { opacity: 0; }
+}
+@media (hover: none) and (max-width: 640px) {
+    .nav-tab:hover::before { opacity: 1; }
+}
