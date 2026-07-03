@@ -31,6 +31,17 @@ const WORRY_PHRASES = [
   "You're not brave enough!",
 ];
 
+// Every worry has an answer. When the child takes a courage breath,
+// Daniel talks BACK to the monster — the game never lets a worry
+// phrase be the last word.
+const BRAVE_ANSWERS = [
+  'I CAN do it!',
+  'I can be scared AND brave!',
+  "If I fall, I'll get back up!",
+  'Not giving up!',
+  'Watch me!',
+];
+
 class CourageCanyon extends IMiniGame {
 
   /* ================================================================
@@ -248,6 +259,8 @@ class CourageCanyon extends IMiniGame {
     // Visual feedback
     const screenX = this._daniel.x - this._scrollX;
     if (isSuper) {
+      // Daniel answers the monster's current worry out loud
+      this._hud.flash(BRAVE_ANSWERS[this._worryPhraseIdx || 0], '#4CAF50');
       // Courage breath particles
       this._particles.emit({
         x: screenX + this._daniel.w / 2,
@@ -733,10 +746,10 @@ class CourageCanyon extends IMiniGame {
     // Speech bubble with worry phrase above head
     const phrase = WORRY_PHRASES[this._worryPhraseIdx || 0];
     const bubbleY = -52 * s;
-    ctx.font = 'bold 10px sans-serif';
+    ctx.font = 'bold 13px sans-serif';
     const tw = ctx.measureText(phrase).width;
-    const bw = tw + 16;
-    const bh = 22;
+    const bw = tw + 18;
+    const bh = 26;
     // Bubble background
     ctx.fillStyle = 'rgba(90,40,120,0.85)';
     ctx.beginPath();

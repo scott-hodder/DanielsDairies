@@ -9,10 +9,10 @@ import { escapeHtml } from '../../lib/sanitize.js'
 // Extra metadata for arcade display (skillTags already on each game def)
 const GAME_META = {
   'shield-sprint':        { icon: '&#x1F6E1;&#xFE0F;', purpose: 'Practise helpful self-talk', color: '#6366F1' },
-  'calm-river-rapids':    { icon: '&#x1F30A;', purpose: 'Patience and self-control', color: '#06B6D4' },
+  'calm-river-rapids':    { icon: '&#x1F98B;', purpose: 'Pause, notice, then move', color: '#06B6D4' },
   'courage-canyon':       { icon: '&#x1F3D4;&#xFE0F;', purpose: 'Breathing and courage', color: '#EF4444' },
-  'thought-forest':       { icon: '&#x1F332;', purpose: 'Cognitive reframing', color: '#8B5CF6' },
-  'emotion-ocean':        { icon: '&#x1F30A;', purpose: 'Recognising emotions', color: '#EC4899' },
+  'thought-forest':       { icon: '&#x1F33B;', purpose: 'Pull out unhelpful thoughts', color: '#8B5CF6' },
+  'emotion-ocean':        { icon: '&#x1F60A;', purpose: 'Reading faces and feelings', color: '#EC4899' },
   'kindness-kingdom':     { icon: '&#x1F451;', purpose: 'Empathy and kindness', color: '#F59E0B' },
   'focus-firefly-forest': { icon: '&#x1FA94;', purpose: 'Focus and attention', color: '#10B981' },
   'coping-cave':          { icon: '&#x1F3DA;&#xFE0F;', purpose: 'Coping strategies', color: '#14b8a6' },

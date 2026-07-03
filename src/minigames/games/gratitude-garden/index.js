@@ -18,15 +18,25 @@ import { DIFFICULTY } from '../../content/difficulty.js';
 import { GameCanvas, InputManager, ParticleEmitter, HUD, DialogueBox, TweenManager, showIntroScreen } from '../../engine/index.js';
 import DanielPlayer from '../../engine/DanielPlayer.js';
 
+// Each category has specific choices — naming the exact thing you're
+// grateful for is what makes gratitude practice stick, not the category.
 const GRATITUDE_CATEGORIES = [
-  { label: 'Family', emoji: '👨‍👩‍👧', color: '#EF5350', petalColor: '#FFCDD2' },
-  { label: 'Friends', emoji: '🤝', color: '#FFB300', petalColor: '#FFE082' },
-  { label: 'Health', emoji: '💪', color: '#66BB6A', petalColor: '#C8E6C9' },
-  { label: 'Nature', emoji: '🌿', color: '#26A69A', petalColor: '#B2DFDB' },
-  { label: 'Pets', emoji: '🐕', color: '#8D6E63', petalColor: '#D7CCC8' },
-  { label: 'Learning', emoji: '📚', color: '#5C6BC0', petalColor: '#C5CAE9' },
-  { label: 'Fun things', emoji: '🎮', color: '#AB47BC', petalColor: '#E1BEE7' },
-  { label: 'Food', emoji: '🍎', color: '#FF7043', petalColor: '#FFCCBC' },
+  { label: 'Family', emoji: '👨‍👩‍👧', color: '#EF5350', petalColor: '#FFCDD2',
+    specifics: ['My mum or dad', 'My grandparent', 'My brother or sister', 'Someone else I love'] },
+  { label: 'Friends', emoji: '🤝', color: '#FFB300', petalColor: '#FFE082',
+    specifics: ['My best friend', 'A friend at school', 'A new friend', 'A friend who makes me laugh'] },
+  { label: 'Health', emoji: '💪', color: '#66BB6A', petalColor: '#C8E6C9',
+    specifics: ['My strong legs', 'My clever hands', 'My healthy body', 'My big heart'] },
+  { label: 'Nature', emoji: '🌿', color: '#26A69A', petalColor: '#B2DFDB',
+    specifics: ['The sunshine', 'The beach', 'The trees', 'The rain on the roof'] },
+  { label: 'Pets', emoji: '🐕', color: '#8D6E63', petalColor: '#D7CCC8',
+    specifics: ['My pet', 'A pet I wish I had', 'An animal friend', 'Animals I love watching'] },
+  { label: 'Learning', emoji: '📚', color: '#5C6BC0', petalColor: '#C5CAE9',
+    specifics: ['Something I learned today', 'My favourite book', 'My teacher', 'Getting better at something'] },
+  { label: 'Fun things', emoji: '🎮', color: '#AB47BC', petalColor: '#E1BEE7',
+    specifics: ['My favourite game', 'Playing outside', 'Building things', 'Music and dancing'] },
+  { label: 'Food', emoji: '🍎', color: '#FF7043', petalColor: '#FFCCBC',
+    specifics: ['My favourite dinner', 'A yummy treat', 'Breakfast time', 'Something I helped cook'] },
 ];
 
 class GratitudeGarden extends IMiniGame {
@@ -131,6 +141,18 @@ class GratitudeGarden extends IMiniGame {
     if (this._disposed) return;
 
     const selected = options[choice >= 0 ? choice : 0];
+
+    // Step two: name the SPECIFIC thing — picture it, then plant it
+    let specific = selected.label;
+    if (selected.specifics && selected.specifics.length > 0) {
+      const specChoice = await this._dialogue.show({
+        speaker: 'Daniel',
+        text: `${selected.emoji} ${selected.label} — lovely! Close your eyes for a second and picture it... what exactly?`,
+        choices: selected.specifics,
+      });
+      if (this._disposed) return;
+      specific = selected.specifics[specChoice >= 0 ? specChoice : 0];
+    }
     this._dialogue.hide();
 
     // Plant the flower
@@ -142,6 +164,7 @@ class GratitudeGarden extends IMiniGame {
     this._flowers.push({
       x: fx, y: fy,
       category: selected,
+      specific,
       growth: 0,
       watered: false,
       petalCount: 5 + Math.floor(Math.random() * 3),
@@ -151,7 +174,7 @@ class GratitudeGarden extends IMiniGame {
 
     this._currentRound++;
     this._hud.setScore(`🌱 ${this._currentRound}/${this._roundCount}`);
-    this._hud.flash(`Planted: ${selected.emoji} ${selected.label}!`, selected.color);
+    this._hud.flash(`Planted: ${specific}! ${selected.emoji}`, selected.color);
     this.ctx.audio.play('collect');
 
     this._particles.emit({

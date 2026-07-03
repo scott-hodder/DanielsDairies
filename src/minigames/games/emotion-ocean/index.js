@@ -137,6 +137,7 @@ class EmotionOcean extends IMiniGame {
     this._phase = 'choosing';
     this._hud.setObjective(`Find: ${this._targetEmotion.name} \u{1F50D}`);
     this._hud.setScore(`${this._correct}/${this._roundCount}`);
+    this._hud.flash(`Who looks ${this._targetEmotion.name}? Watch their faces!`, this._targetEmotion.color);
   }
 
   _makeCreature(emotion, w, h, isTarget) {
@@ -440,9 +441,9 @@ class EmotionOcean extends IMiniGame {
       this._drawCreature(ctx, cr);
     }
 
-    // Group following Daniel
+    // Group following Daniel — labelled, to reinforce the word once learned
     for (const cr of this._school) {
-      this._drawCreature(ctx, cr, 0.7);
+      this._drawCreature(ctx, cr, 0.7, true);
     }
 
     // Daniel (walker) — rendered via DanielPlayer (screen-space, no camera)
@@ -486,16 +487,33 @@ class EmotionOcean extends IMiniGame {
     this._particles.render(ctx);
   }
 
-  _drawCreature(ctx, cr, alpha = 1) {
+  _drawCreature(ctx, cr, alpha = 1, showLabel = false) {
     const cx = cr.x + cr.w / 2;
     const cy = cr.y + cr.h / 2;
-    const bob = Math.sin(this._animTime * 2 + cr.phase) * 4;
     const e = cr.emotion;
     const radius = 22; // ~44px diameter circle
+    const t = this._animTime;
+
+    // Body language per emotion — the movement itself is a readable cue,
+    // so the child learns faces AND posture, not just labels.
+    let bob = Math.sin(t * 2 + cr.phase) * 4;
+    let jitterX = 0;
+    let squash = 1;
+    switch (e.name) {
+      case 'Happy':      bob = Math.abs(Math.sin(t * 3 + cr.phase)) * -7; break;           // light springy hops
+      case 'Excited':    bob = Math.abs(Math.sin(t * 5 + cr.phase)) * -11; break;          // big fast bounces
+      case 'Sad':        bob = 5 + Math.sin(t * 0.9 + cr.phase) * 1.5; squash = 0.93; break; // drooped and slow
+      case 'Angry':      jitterX = Math.sin(t * 18 + cr.phase) * 2.2; break;               // fuming shake
+      case 'Scared':     jitterX = Math.sin(t * 26 + cr.phase) * 1.2; squash = 0.9; break; // small tremble, shrunk
+      case 'Frustrated': bob = Math.sin(t * 2 + cr.phase) * 2; jitterX = Math.sin(t * 9 + cr.phase) * 1.4; break;
+      case 'Calm':       bob = Math.sin(t * 1.1 + cr.phase) * 2.5; break;                  // slow, easy sway
+      case 'Surprised':  bob = (Math.sin(t * 1.5 + cr.phase) > 0.85 ? -9 : 0); break;      // sudden little jumps
+    }
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.translate(cx, cy + bob);
+    ctx.translate(cx + jitterX, cy + bob);
+    ctx.scale(1, squash);
 
     // Colored glow / shadow
     ctx.shadowColor = e.color;
@@ -521,16 +539,18 @@ class EmotionOcean extends IMiniGame {
     ctx.textBaseline = 'middle';
     ctx.fillText(e.emoji, 0, 0);
 
-    // Emotion name label below
-    ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 11px sans-serif';
-    // Dark outline for readability
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.lineWidth = 3;
-    ctx.lineJoin = 'round';
-    ctx.strokeText(e.name, 0, radius + 13);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(e.name, 0, radius + 13);
+    // Name label only AFTER the emotion has been identified (followers) —
+    // roaming characters must be read from face and body language.
+    if (showLabel) {
+      ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(e.name, 0, radius + 15);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(e.name, 0, radius + 15);
+    }
 
     ctx.restore();
   }

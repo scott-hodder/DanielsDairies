@@ -16,48 +16,50 @@ import { DIFFICULTY } from '../../content/difficulty.js';
 import { GameCanvas, InputManager, ParticleEmitter, HUD, DialogueBox, TweenManager, showIntroScreen } from '../../engine/index.js';
 import DanielPlayer from '../../engine/DanielPlayer.js';
 
+// The villagers are Aussie animals — same bush world Daniel and the
+// Super Skill characters live in, so the village feels like home.
 const NPC_ENCOUNTERS = [
   {
-    emoji: '🐱', name: 'Kitty',
-    problem: 'Kitty lost her favorite toy and is crying.',
+    emoji: '🐨', name: 'Millie the Koala',
+    problem: 'Millie lost her favourite toy and is crying.',
     kind: 'Help her search for it together',
     unkind: 'Tell her it was just a silly toy',
     effect: 'You found the toy behind the bench!',
   },
   {
-    emoji: '🐸', name: 'Froggy',
-    problem: 'Froggy dropped his books in a puddle.',
+    emoji: '🦜', name: 'Banjo the Cockatoo',
+    problem: 'Banjo dropped his books in a puddle.',
     kind: 'Pick up the books and dry them off',
     unkind: 'Laugh and walk past',
     effect: 'The books are saved!',
   },
   {
-    emoji: '🐰', name: 'Bunny',
-    problem: 'Bunny is sitting alone at lunch, looking lonely.',
-    kind: 'Sit down and eat lunch with Bunny',
-    unkind: 'Ignore Bunny and walk away',
-    effect: 'Bunny smiled so big!',
+    emoji: '🦘', name: 'Joey the Kangaroo',
+    problem: 'Joey is sitting alone at lunch, looking lonely.',
+    kind: 'Sit down and eat lunch with Joey',
+    unkind: 'Ignore Joey and walk away',
+    effect: 'Joey smiled so big!',
   },
   {
-    emoji: '🦊', name: 'Fox',
-    problem: 'Fox is struggling to carry heavy groceries.',
+    emoji: '🦔', name: 'Ted the Echidna',
+    problem: 'Ted is struggling to carry heavy groceries.',
     kind: 'Offer to carry some bags',
     unkind: "It's not your problem",
-    effect: 'Fox made it home safe!',
+    effect: 'Ted made it home safe!',
   },
   {
-    emoji: '🐻', name: 'Bear',
-    problem: 'Bear is nervous about his first day at school.',
-    kind: 'Walk with Bear and show him around',
-    unkind: 'Tell Bear school is scary',
-    effect: 'Bear feels brave now!',
+    emoji: '🐧', name: 'Pip the Penguin',
+    problem: 'Pip is nervous about her first day at school.',
+    kind: 'Walk with Pip and show her around',
+    unkind: 'Tell Pip school is scary',
+    effect: 'Pip feels brave now!',
   },
   {
-    emoji: '🦉', name: 'Owl',
-    problem: 'Owl accidentally broke a neighbor\'s flower pot.',
-    kind: 'Help Owl apologize and fix the pot',
-    unkind: 'Tell Owl to pretend it wasn\'t them',
-    effect: 'The neighbor forgave Owl!',
+    emoji: '🦉', name: 'Olive the Owl',
+    problem: "Olive accidentally broke a neighbour's flower pot.",
+    kind: 'Help Olive apologise and fix the pot',
+    unkind: "Tell Olive to pretend it wasn't her",
+    effect: 'The neighbour forgave Olive!',
   },
 ];
 

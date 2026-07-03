@@ -44,6 +44,16 @@ const UNHELPFUL_THOUGHTS = [
   'I always fail',
 ];
 
+// Daniel talks back when the child ducks an unhelpful thought —
+// the duck is a refusal, and refusals deserve words.
+const DUCK_RESPONSES = [
+  'Not today, cloud!',
+  "I don't believe you!",
+  'Nice duck! That thought missed!',
+  'Nope, not listening!',
+  'That one flew right past!',
+];
+
 // ─── Helper: draw a 5-point star path ──────────────────────────────────────────
 function starPath(ctx, cx, cy, outerR, innerR) {
   ctx.beginPath();
@@ -132,7 +142,8 @@ class ShieldSprint extends IMiniGame {
     this._score = 0;
     this._phase = 'running'; // running | ending
     this._speedMult = diff.speedMultiplier;
-    this._currentSpeed = 110 * this._speedMult;
+    // Gentle warm-up start so young players learn the controls in play
+    this._currentSpeed = 88 * this._speedMult;
     this._distanceTraveled = 0;
 
     // Duck state
@@ -371,7 +382,7 @@ class ShieldSprint extends IMiniGame {
             this._cloudsDucked++;
             this._score++;
             this._hud.setScore(String(this._score));
-            this._hud.flash('Ducked!', '#14b8a6');
+            this._hud.flash(DUCK_RESPONSES[this._cloudsDucked % DUCK_RESPONSES.length], '#14b8a6');
             this._particles.emit({
               x: this._daniel.cx, y: this._daniel.y, count: 6,
               color: '#14b8a6', spread: 30, life: 0.4,
@@ -396,9 +407,9 @@ class ShieldSprint extends IMiniGame {
       // ── Speed sections ──
       const progress = 1 - (this._queue.length / this._totalThings);
       if (progress > 0.66) {
-        this._currentSpeed = 160 * this._speedMult;
+        this._currentSpeed = 155 * this._speedMult;
       } else if (progress > 0.33) {
-        this._currentSpeed = 130 * this._speedMult;
+        this._currentSpeed = 122 * this._speedMult;
       }
 
       // ── Check win ──
@@ -454,7 +465,7 @@ class ShieldSprint extends IMiniGame {
   _startDuck() {
     if (this._daniel.grounded && this._phase === 'running') {
       this._ducking = true;
-      this._duckTimer = 0.6; // auto-release after 0.6s for tap-based input
+      this._duckTimer = 0.95; // forgiving window for tap-based input
     }
   }
 
@@ -588,14 +599,14 @@ class ShieldSprint extends IMiniGame {
         ctx.fill();
 
         // Text label
-        ctx.font = 'bold 13px sans-serif';
+        ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'center';
-        ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+        ctx.lineWidth = 4;
         ctx.lineJoin = 'round';
-        ctx.strokeText(obs.text, cx, cy - 20);
+        ctx.strokeText(obs.text, cx, cy - 24);
         ctx.fillStyle = '#FFF8E1';
-        ctx.fillText(obs.text, cx, cy - 20);
+        ctx.fillText(obs.text, cx, cy - 24);
       } else if (obs.type === 'cloud') {
         // Dark purple unhelpful thought cloud (head height)
         const cx = obs.x + obs.w / 2;
@@ -630,23 +641,23 @@ class ShieldSprint extends IMiniGame {
         }
 
         // Text
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'center';
-        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.lineWidth = 4;
         ctx.lineJoin = 'round';
         const words = obs.text.split(' ');
         if (words.length > 3) {
           const mid = Math.ceil(words.length / 2);
-          ctx.strokeText(words.slice(0, mid).join(' '), cx, cy - 2);
-          ctx.strokeText(words.slice(mid).join(' '), cx, cy + 10);
+          ctx.strokeText(words.slice(0, mid).join(' '), cx, cy - 5);
+          ctx.strokeText(words.slice(mid).join(' '), cx, cy + 13);
           ctx.fillStyle = '#FFB0B0';
-          ctx.fillText(words.slice(0, mid).join(' '), cx, cy - 2);
-          ctx.fillText(words.slice(mid).join(' '), cx, cy + 10);
+          ctx.fillText(words.slice(0, mid).join(' '), cx, cy - 5);
+          ctx.fillText(words.slice(mid).join(' '), cx, cy + 13);
         } else {
-          ctx.strokeText(obs.text, cx, cy + 3);
+          ctx.strokeText(obs.text, cx, cy + 4);
           ctx.fillStyle = '#FFB0B0';
-          ctx.fillText(obs.text, cx, cy + 3);
+          ctx.fillText(obs.text, cx, cy + 4);
         }
       } else if (obs.type === 'cone') {
         // Orange road cone

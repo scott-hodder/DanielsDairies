@@ -21,8 +21,8 @@ const ROUNDS = [
     situation: 'Daniel feels worried — what helps?',
     correct: { name: 'Take slow breaths', icon: 'logs', color: '#8B6914' },
     decoys: [
-      { name: 'Hide forever', icon: 'rocks', color: '#888' },
-      { name: 'Get angry', icon: 'thorns', color: '#c0392b' },
+      { name: 'Hide forever', icon: 'rocks', color: '#888', why: 'Hiding makes the worry grow bigger.' },
+      { name: 'Get angry', icon: 'thorns', color: '#c0392b', why: 'Anger makes the worry louder, not smaller.' },
     ],
   },
   {
@@ -30,8 +30,8 @@ const ROUNDS = [
     situation: 'Daniel feels sad — what helps?',
     correct: { name: 'Talk to someone', icon: 'thatch', color: '#5C4033' },
     decoys: [
-      { name: 'Keep it inside', icon: 'rocks', color: '#888' },
-      { name: 'Blame others', icon: 'thorns', color: '#c0392b' },
+      { name: 'Keep it inside', icon: 'rocks', color: '#888', why: 'Feelings kept inside get heavier.' },
+      { name: 'Blame others', icon: 'thorns', color: '#c0392b', why: 'Blaming pushes helpers away.' },
     ],
   },
   {
@@ -39,8 +39,8 @@ const ROUNDS = [
     situation: 'Daniel feels frustrated — what helps?',
     correct: { name: 'Try one small step', icon: 'planks', color: '#A0724A' },
     decoys: [
-      { name: 'Give up and run', icon: 'rocks', color: '#888' },
-      { name: 'Yell at someone', icon: 'thorns', color: '#c0392b' },
+      { name: 'Give up and run', icon: 'rocks', color: '#888', why: 'Giving up means the tricky bit stays tricky.' },
+      { name: 'Yell at someone', icon: 'thorns', color: '#c0392b', why: 'Yelling makes two problems instead of one.' },
     ],
   },
   {
@@ -48,8 +48,8 @@ const ROUNDS = [
     situation: 'Daniel feels left out — what helps?',
     correct: { name: 'Ask to join in', icon: 'blanket', color: '#E57373' },
     decoys: [
-      { name: 'Sit alone and cry', icon: 'rocks', color: '#888' },
-      { name: 'Be mean to others', icon: 'thorns', color: '#c0392b' },
+      { name: 'Stay away from everyone', icon: 'rocks', color: '#888', why: 'Staying away keeps the left-out feeling around.' },
+      { name: 'Be mean to others', icon: 'thorns', color: '#c0392b', why: 'Meanness never makes friends.' },
     ],
   },
 ];
@@ -310,13 +310,18 @@ class CopingCave extends IMiniGame {
   _onWrongPlace(mat) {
     this._lives--;
     this._hud.setLives(this._lives, this._maxLives);
-    this._hud.flash("That won't help — try another!", '#EF4444');
+    this._hud.flash(mat.why || "That won't help — try another!", '#EF4444');
     this._gc.shake(4, 200);
     this.ctx.audio.play('hit');
 
+    // The bad material crumbles off the den wall
     this._particles.emit({
-      x: this._denX + this._denW / 2, y: this._denY + this._denH / 2, count: 6,
-      color: '#999', spread: 30, life: 0.4,
+      x: this._denX + this._denW / 2, y: this._denY + this._denH / 2, count: 16,
+      color: '#999', spread: 45, life: 0.6, gravity: 120,
+    });
+    this._particles.emit({
+      x: this._denX + this._denW / 2, y: this._denY + this._denH / 2, count: 8,
+      color: mat.color || '#c0392b', spread: 35, life: 0.5, gravity: 100,
     });
 
     this._feedbackText = mat.name + " doesn't help";

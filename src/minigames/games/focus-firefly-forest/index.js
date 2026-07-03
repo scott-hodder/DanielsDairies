@@ -56,6 +56,7 @@ class FocusFireflyForest extends IMiniGame {
     this._focusLights = [];
     this._focusTarget = 6;
     this._focusCaught = 0;
+    this._streak = 0; // consecutive focus lights without a distraction — grows the lantern
 
     // Distraction clouds
     this._distractions = [];
@@ -110,10 +111,10 @@ class FocusFireflyForest extends IMiniGame {
   async start() {
     await showIntroScreen(this.ctx.container, {
       title: 'Light the Road',
-      story: "Daniel's road is dark and full of distractions! Help him collect focus lights and avoid distractions so he can see the path clearly.",
+      story: "It's getting dark and Daniel is walking home through town. His lantern grows brighter each time he focuses on what helps — and distractions shrink it back down!",
       controls: 'Arrow keys to move',
       mobileControls: 'Drag to move',
-      goal: 'Collect 6 focus lights and avoid distractions to light up the road!',
+      goal: 'Collect 6 focus lights in a row to grow a giant lantern glow — dodge the distraction clouds!',
     });
     this._gc.run(
       (dt) => this._update(dt),
@@ -199,8 +200,9 @@ class FocusFireflyForest extends IMiniGame {
       if (Math.sqrt(dx * dx + dy * dy) < 28) {
         fl.collected = true;
         this._focusCaught++;
+        this._streak++;
         this._hud.setScore(`Focus: ${this._focusCaught}/${this._focusTarget}  |  Oops: ${this._distractionHits}/${this._maxDistractionHits}`);
-        this._hud.flash(fl.label + '!', '#FFD700');
+        this._hud.flash(this._streak >= 2 ? `${fl.label}! Focus streak ×${this._streak} — your light is growing!` : fl.label + '!', '#FFD700');
 
         // Light up a streetlight
         if (this._focusCaught <= this._streetlightPositions.length) {
@@ -263,6 +265,7 @@ class FocusFireflyForest extends IMiniGame {
       if (Math.sqrt(dx2 * dx2 + dy2 * dy2) < 26) {
         dc.dead = true;
         this._distractionHits++;
+        this._streak = 0; // distraction breaks the focus streak — the lantern shrinks back
         this._hud.setScore(`Focus: ${this._focusCaught}/${this._focusTarget}  |  Oops: ${this._distractionHits}/${this._maxDistractionHits}`);
 
         // Screen shake + "Distracted!" flash
@@ -270,7 +273,7 @@ class FocusFireflyForest extends IMiniGame {
         this._shakeIntensity = 6;
         this._distractedFlash = 0.8;
 
-        this._hud.flash('Distracted!', '#9E9E9E');
+        this._hud.flash(`"${dc.label}" pulled you away — take a breath and refocus!`, '#9E9E9E');
         this.ctx.audio.play('hit');
 
         this._particles.emit({
@@ -557,7 +560,8 @@ class FocusFireflyForest extends IMiniGame {
 
     if (!this._revealScene) {
       const darknessAlpha = Math.max(0.05, 0.75 - brightnessProgress * 0.7);
-      const lanternR = 80 + brightnessProgress * 60;
+      // Focus streak literally grows Daniel's lantern — focus = more light
+      const lanternR = 80 + brightnessProgress * 60 + Math.min(55, this._streak * 13);
 
       ctx.save();
       ctx.fillStyle = `rgba(0,0,0,${darknessAlpha})`;

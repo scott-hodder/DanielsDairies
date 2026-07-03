@@ -193,14 +193,19 @@ class BreathingBridge extends IMiniGame {
     if (this._feedbackTimer > 0) this._feedbackTimer -= dt;
 
     switch (this._phase) {
-      case 'inhaling':
+      case 'inhaling': {
         this._fillLevel = Math.min(1, this._fillLevel + dt / INHALE_DURATION);
+        // Count the breath out loud — this is the take-home skill:
+        // a slow "in... 1... 2... 3" the child can use anywhere
+        const count = Math.min(3, Math.floor(this._fillLevel * INHALE_DURATION) + 1);
+        this._statusText = `Breathe in... ${'· '.repeat(count)}${count}`;
         if (this._fillLevel > TOO_TENSE_LVL) {
           this._holding = false;
           this._phase   = 'exhaling';
           this._evaluateBreath();
         }
         break;
+      }
 
       case 'exhaling':
         this._fillLevel = Math.max(0, this._fillLevel - dt / EXHALE_DURATION);
@@ -222,7 +227,11 @@ class BreathingBridge extends IMiniGame {
           });
           const tc = setTimeout(() => {
             if (!this._disposed) {
-              this._complete({ score: 1, skillTags: ['breathing', 'calm', 'self-regulation'] });
+              this._complete({
+                score: 1,
+                message: 'That slow "in... 2... 3" breath is a real calm-down tool. Try it next time something feels wobbly!',
+                skillTags: ['breathing', 'calm', 'self-regulation'],
+              });
             }
           }, 1800);
           this._timeouts.push(tc);
@@ -632,9 +641,11 @@ class BreathingBridge extends IMiniGame {
     } else if (phase === 'inhaling') {
       const fill = this._fillLevel;
       if (fill < CALM_LO) {
-        mainText = 'Keep breathing in...';
+        // Count the breath — the "in... 1... 2... 3" is the take-home tool
+        const count = Math.min(3, Math.floor(fill * INHALE_DURATION) + 1);
+        mainText = `Breathe in... ${count}`;
       } else if (fill <= CALM_HI) {
-        mainText = "You're in the calm zone!";
+        mainText = "You're in the calm zone — let go!";
       } else {
         mainText = 'Slowly now - almost too much!';
       }

@@ -213,7 +213,7 @@ class CalmRiverRapids extends IMiniGame {
       story: "Help Daniel cross the busy forest trail! Wait for the animals to pass, then move forward. In real life, always cross roads with a grown-up!",
       controls: 'Arrow keys to move one step at a time',
       mobileControls: 'Swipe or tap to move',
-      goal: 'Cross safely by waiting for gaps. Use calm zones to breathe!',
+      goal: 'Cross safely by waiting for gaps. Stay in a calm zone for a whole breath to win back a heart!',
     });
     this._gc.run(
       (dt) => this._update(dt),
@@ -263,7 +263,25 @@ class CalmRiverRapids extends IMiniGame {
     if (this._glowTimer > 0) this._glowTimer -= dt;
     if (this._calmBreathTimer > 0) {
       this._calmBreathTimer -= dt;
-      if (this._calmBreathTimer <= 0) this._calmBreathActive = false;
+      if (this._calmBreathTimer <= 0) {
+        this._calmBreathActive = false;
+        // Staying for the whole breath is rewarded — pausing has real power
+        if (this._lanes[this._playerLane]?.type === CALM_ZONE) {
+          if (this._lives < this._maxLives) {
+            this._lives++;
+            this._hud.setLives(this._lives, this._maxLives);
+            this._hud.flash('That breath made you stronger! ❤ restored', '#14b8a6');
+          } else {
+            this._hud.flash('Lovely, steady breathing. Ready when you are!', '#14b8a6');
+          }
+          this.ctx.audio.play('collect');
+          const pos = this._danielPixelPos();
+          this._particles.emit({
+            x: pos.x, y: pos.y, count: 14,
+            color: '#80CBC4', spread: 55, life: 0.9, shape: 'star',
+          });
+        }
+      }
     }
     if (this._moveCooldown > 0) this._moveCooldown -= dt;
 

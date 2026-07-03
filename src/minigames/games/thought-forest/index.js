@@ -76,7 +76,10 @@ class ThoughtForest extends IMiniGame {
     this._maxLives = 3;
     this._phase = 'playing';
     this._clearedSections = [false, false, false, false];
+    this._pulledSections = [false, false, false, false];
     this._correctCount = 0;
+    this._streak = 0;
+    this._holdRaf = 0;
 
     // DOM overlay elements
     this._overlay = document.createElement('div');
@@ -91,10 +94,10 @@ class ThoughtForest extends IMiniGame {
   async start() {
     await showIntroScreen(this.ctx.container, {
       title: 'Thought Garden',
-      story: "Daniel's garden is overgrown with thorny unhelpful thoughts! Help him clear the weeds by choosing helpful thoughts. Each good thought plants a beautiful flower!",
-      controls: 'Click / tap to choose',
-      mobileControls: 'Tap to choose',
-      goal: 'Clear all 4 sections and make the garden bloom!',
+      story: "Daniel's garden is overgrown with thorny unhelpful thoughts! Grab each weed and PULL it right out, then plant a stronger thought in its place.",
+      controls: 'Press and hold to pull weeds, click to plant',
+      mobileControls: 'Press and hold to pull, tap to plant',
+      goal: 'Pull all 4 weeds and make the garden bloom!',
     });
     this._gc.run(
       (dt) => this._update(dt),
@@ -109,20 +112,139 @@ class ThoughtForest extends IMiniGame {
       this._onWin();
       return;
     }
+    this._showPullPhase();
+  }
 
-    const round = ROUNDS[this._currentRound];
-    this._overlay.innerHTML = '';
-    this._overlay.style.pointerEvents = 'auto';
-
-    // Situation banner at top
+  _makeBanner(text, sub) {
     const banner = document.createElement('div');
     banner.style.cssText = `
       margin:8px auto 0;padding:10px 18px;max-width:90%;border-radius:14px;
       background:rgba(64,88,120,0.92);color:#fff;font-size:15px;font-weight:700;
       text-align:center;font-family:'League Spartan',sans-serif;pointer-events:none;
     `;
-    banner.textContent = round.situation;
-    this._overlay.appendChild(banner);
+    banner.textContent = text;
+    if (sub) {
+      const s = document.createElement('div');
+      s.style.cssText = 'font-size:12.5px;font-weight:600;color:#ffe082;margin-top:3px;';
+      s.textContent = sub;
+      banner.appendChild(s);
+    }
+    return banner;
+  }
+
+  // ── Phase 1: grab the weed and PULL it out (hold to pull) ──
+  _showPullPhase() {
+    const round = ROUNDS[this._currentRound];
+    const sec = SECTIONS[this._currentRound];
+    this._overlay.innerHTML = '';
+    this._overlay.style.pointerEvents = 'auto';
+    this._hud.setObjective('Pull that weed out!');
+
+    this._overlay.appendChild(this._makeBanner(round.situation, 'Press and HOLD the weed to pull that thought out!'));
+
+    // Spacer keeps the banner pinned to the top (overlay is bottom-justified)
+    const spacer = document.createElement('div');
+    spacer.style.flex = '1';
+    this._overlay.appendChild(spacer);
+
+    const HOLD_TIME = 1.1; // seconds of pulling
+    const CIRC = 264; // ring circumference (r=42)
+
+    const target = document.createElement('div');
+    target.style.cssText = `
+      position:absolute;left:${sec.x * 100}%;top:${sec.y * 100}%;
+      transform:translate(-50%,-50%);width:104px;height:104px;
+      pointer-events:auto;cursor:grab;touch-action:none;user-select:none;
+      display:flex;align-items:center;justify-content:center;
+    `;
+    target.innerHTML = `
+      <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%">
+        <circle cx="50" cy="50" r="42" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="6 8"/>
+        <circle class="tg-ring" cx="50" cy="50" r="42" fill="none" stroke="#FFD54F" stroke-width="6" stroke-linecap="round"
+          stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}" transform="rotate(-90 50 50)"/>
+      </svg>
+      <span class="tg-hand" style="font-size:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4))">✊</span>
+    `;
+    this._overlay.appendChild(target);
+
+    const ring = target.querySelector('.tg-ring');
+    const hand = target.querySelector('.tg-hand');
+    let holdStart = 0;
+
+    const stopHold = () => {
+      if (this._holdRaf) cancelAnimationFrame(this._holdRaf);
+      this._holdRaf = 0;
+      holdStart = 0;
+      ring.style.strokeDashoffset = CIRC;
+      hand.style.transform = '';
+      target.style.cursor = 'grab';
+    };
+
+    const tick = (now) => {
+      if (this._disposed || !holdStart) return;
+      const p = Math.min(1, (now - holdStart) / (HOLD_TIME * 1000));
+      ring.style.strokeDashoffset = CIRC * (1 - p);
+      // Wobble harder as the weed resists
+      const wob = Math.sin(now * 0.04) * (3 + p * 7);
+      hand.style.transform = `rotate(${wob}deg) scale(${1 + p * 0.25})`;
+      if (p >= 1) {
+        this._onWeedPulled(target);
+        return;
+      }
+      this._holdRaf = requestAnimationFrame(tick);
+    };
+
+    target.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { target.setPointerCapture(e.pointerId); } catch (_) {}
+      target.style.cursor = 'grabbing';
+      holdStart = performance.now();
+      this.ctx.audio.play('jump');
+      this._holdRaf = requestAnimationFrame(tick);
+    });
+    target.addEventListener('pointerup', stopHold);
+    target.addEventListener('pointercancel', stopHold);
+  }
+
+  _onWeedPulled(target) {
+    if (this._holdRaf) cancelAnimationFrame(this._holdRaf);
+    this._holdRaf = 0;
+    const idx = this._currentRound;
+    this._pulledSections[idx] = true;
+    target.remove();
+
+    // POP! — dirt and thorn bits fly
+    const w = this._gc.width;
+    const h = this._gc.height;
+    const sec = SECTIONS[idx];
+    this._particles.emit({
+      x: sec.x * w, y: sec.y * h, count: 18,
+      color: '#6B4A2E', spread: 70, life: 0.7,
+    });
+    this._particles.emit({
+      x: sec.x * w, y: sec.y * h, count: 8,
+      color: '#4A2060', spread: 50, life: 0.5,
+    });
+    this._gc.shake(3, 160);
+    this.ctx.audio.play('collect');
+    this._hud.flash('POP! You pulled it out!', '#8BC34A');
+    this._danielPlayer.celebrate(0.8);
+
+    const tid = setTimeout(() => {
+      if (this._disposed) return;
+      this._showChoicePhase();
+    }, 650);
+    this._timeouts.push(tid);
+  }
+
+  // ── Phase 2: plant a stronger thought in the cleared soil ──
+  _showChoicePhase() {
+    const round = ROUNDS[this._currentRound];
+    this._overlay.innerHTML = '';
+    this._overlay.style.pointerEvents = 'auto';
+    this._hud.setObjective('Plant a stronger thought!');
+
+    this._overlay.appendChild(this._makeBanner(round.situation, 'The soil is clear — which thought should Daniel plant?'));
 
     // Spacer
     const spacer = document.createElement('div');
@@ -177,19 +299,20 @@ class ThoughtForest extends IMiniGame {
     const sectionIdx = this._currentRound;
     this._clearedSections[sectionIdx] = true;
     this._correctCount++;
+    this._streak++;
     this._hud.setScore(`${this._correctCount}/${ROUNDS.length} planted`);
 
     const round = ROUNDS[this._currentRound];
-    this._hud.flash(`Beautiful! ${round.helpful}`, '#4CAF50');
+    this._hud.flash(this._streak >= 2 ? `🌟 Garden streak ×${this._streak}! ${round.helpful}` : `Beautiful! ${round.helpful}`, '#4CAF50');
     this.ctx.audio.play('collect');
 
-    // Celebration particles at the cleared section
+    // Celebration particles at the cleared section — bigger with a streak
     const w = this._gc.width;
     const h = this._gc.height;
     const sec = SECTIONS[sectionIdx];
     this._particles.emit({
-      x: sec.x * w, y: sec.y * h, count: 16,
-      color: round.flower.color, spread: 50, life: 0.8, shape: 'star',
+      x: sec.x * w, y: sec.y * h, count: 16 + this._streak * 6,
+      color: round.flower.color, spread: 50 + this._streak * 12, life: 0.8, shape: 'star',
     });
     this._danielPlayer.celebrate(1.5);
 
@@ -203,8 +326,9 @@ class ThoughtForest extends IMiniGame {
 
   _onWrong() {
     this._lives--;
+    this._streak = 0;
     this._hud.setLives(this._lives, this._maxLives);
-    this._hud.flash('That thought is unhelpful — try again!', '#EF4444');
+    this._hud.flash('That thought would grow more weeds — try again!', '#EF4444');
     this._gc.shake(4, 200);
     this.ctx.audio.play('hit');
 
@@ -309,6 +433,9 @@ class ThoughtForest extends IMiniGame {
       if (this._clearedSections[i]) {
         // Blooming section — flower patch
         this._drawFlowerSection(ctx, sx, sy, ROUNDS[i].flower, t, i);
+      } else if (this._pulledSections[i]) {
+        // Weed pulled, waiting for planting — clear soil, ready and hopeful
+        this._drawSoilSection(ctx, sx, sy, t);
       } else {
         // Overgrown section — thorny weeds
         this._drawWeedSection(ctx, sx, sy, t, i);
@@ -377,6 +504,28 @@ class ThoughtForest extends IMiniGame {
     ctx.arc(cx, cy - 10, 25, 0, Math.PI * 2);
     ctx.arc(cx - 15, cy - 5, 18, 0, Math.PI * 2);
     ctx.arc(cx + 15, cy - 5, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  _drawSoilSection(ctx, cx, cy, t) {
+    const radius = 45;
+    // Freshly turned soil
+    ctx.fillStyle = '#5A4430';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, radius, radius * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#6B5238';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, radius * 0.7, radius * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Soft sparkle so the cleared patch feels inviting
+    ctx.save();
+    ctx.globalAlpha = 0.5 + Math.sin(t * 3) * 0.3;
+    ctx.fillStyle = '#FFF8E1';
+    ctx.beginPath();
+    ctx.arc(cx + 12, cy - 8, 2.4, 0, Math.PI * 2);
+    ctx.arc(cx - 14, cy + 4, 1.8, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -461,6 +610,7 @@ class ThoughtForest extends IMiniGame {
 
   dispose() {
     this._disposed = true;
+    if (this._holdRaf) cancelAnimationFrame(this._holdRaf);
     for (const tid of this._timeouts) clearTimeout(tid);
     this._timeouts = [];
     this._overlay?.remove();
@@ -472,9 +622,9 @@ class ThoughtForest extends IMiniGame {
 
 register({
   id: 'thought-forest',
-  name: 'Thought Forest',
+  name: 'Thought Garden',
   displayName: 'Thought Garden',
-  description: 'Clear the thorny thoughts and plant a beautiful garden!',
+  description: 'Pull out thorny thoughts and plant stronger ones!',
   skillTags: ['cognitive-reframing'],
   defaultConfig: {},
   factory: (ctx) => new ThoughtForest(ctx),
