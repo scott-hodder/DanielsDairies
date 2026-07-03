@@ -815,7 +815,7 @@ function renderDistrict(slug, d) {
    6. TOWN SQUARE — the magical hub
    ───────────────────────────────────────────── */
 
-function renderTownSquare() {
+function renderTownSquare(includeHitArea = true) {
   const cx = CX, cy = CY
   let s = `<g id="townSquare">`
 
@@ -903,8 +903,11 @@ function renderTownSquare() {
   // Fluttering butterflies
   s += `<g><use href="#btButterfly"/><animateMotion dur="16s" repeatCount="indefinite" path="M${cx - 120},${cy - 150} q80,-40 170,10 q60,40 -30,80 q-110,30 -140,-90"/></g>`
 
-  // Hub hit area (clickable — opens the Brain Town welcome popup)
-  s += `<circle id="hubHitArea" class="hub-hit-area" cx="${cx}" cy="${cy}" r="235" fill="transparent" pointer-events="all" role="button" tabindex="0" aria-label="Visit Brain Town square"/>`
+  // Hub hit area (clickable — opens the Brain Town welcome popup).
+  // Skipped in static mode: on mobile it lives in the interactive overlay.
+  if (includeHitArea) {
+    s += `<circle id="hubHitArea" class="hub-hit-area" cx="${cx}" cy="${cy}" r="235" fill="transparent" pointer-events="all" role="button" tabindex="0" aria-label="Visit Brain Town square"/>`
+  }
 
   s += `</g>`
   return s
@@ -1086,7 +1089,20 @@ function renderSky() {
    9. ROAD RENDERER
    ───────────────────────────────────────────── */
 
-function renderRoads(progressBySlug = {}) {
+// Just the selection/completion glow paths — used standalone on mobile,
+// where they live in the interactive overlay instead of the base image.
+function renderRoadGlows(progressBySlug = {}) {
+  let glows = ''
+  Object.entries(DISTRICTS).forEach(([slug, d]) => {
+    const p = ROAD_PATHS[slug]
+    if (!p) return
+    const complete = (progressBySlug[slug]?.pct ?? 0) >= 100
+    glows += `<path d="${p}" fill="none" stroke="${complete ? '#FFD345' : d.color}" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" opacity="${complete ? '0.24' : '0'}" class="svg-road-glow" data-slug="${slug}" filter="url(#btRoadGlow)"/>`
+  })
+  return glows
+}
+
+function renderRoads(progressBySlug = {}, includeGlows = true) {
   let shadows = '', edges = '', fills = '', dashes = '', glows = ''
   Object.entries(DISTRICTS).forEach(([slug, d]) => {
     const p = ROAD_PATHS[slug]
@@ -1105,9 +1121,11 @@ function renderRoads(progressBySlug = {}) {
       dashes += `<path d="${p}" fill="none" stroke="#FFF8E0" stroke-width="4.5" stroke-dasharray="20 30" stroke-linecap="round" opacity="0.7"/>`
     }
     // Completed roads keep a permanent warm glow; selection raises it further
-    glows += `<path d="${p}" fill="none" stroke="${complete ? '#FFD345' : d.color}" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" opacity="${complete ? '0.24' : '0'}" class="svg-road-glow" data-slug="${slug}" filter="url(#btRoadGlow)"/>`
+    if (includeGlows) {
+      glows += `<path d="${p}" fill="none" stroke="${complete ? '#FFD345' : d.color}" stroke-width="64" stroke-linecap="round" stroke-linejoin="round" opacity="${complete ? '0.24' : '0'}" class="svg-road-glow" data-slug="${slug}" filter="url(#btRoadGlow)"/>`
+    }
   })
-  return `<g id="roadShadows">${shadows}</g><g id="roadEdges">${edges}</g><g id="roadFills">${fills}</g><g id="roadDashes">${dashes}</g><g id="roadGlows">${glows}</g>`
+  return `<g id="roadShadows">${shadows}</g><g id="roadEdges">${edges}</g><g id="roadFills">${fills}</g><g id="roadDashes">${dashes}</g>${includeGlows ? `<g id="roadGlows">${glows}</g>` : ''}`
 }
 
 /* ─────────────────────────────────────────────
@@ -1185,38 +1203,53 @@ function renderDistrictHitAreas() {
   ).join('')
 }
 
-function buildSvg(skills, progressBySlug = {}, nextSlug = null) {
-  let s = renderDefs()
+// mode: 'full' (desktop, one live SVG) | 'static' (mobile base image —
+// scenery only) | 'interactive' (mobile overlay — glows, hit areas, pins)
+function buildSvg(skills, progressBySlug = {}, nextSlug = null, mode = 'full') {
+  let s = ''
 
-  // Terrain base
-  s += `<g id="worldBackground">
-    <rect width="${W}" height="${H}" fill="url(#btMeadowG)"/>
-    <rect width="${W}" height="${H}" fill="url(#btGrassP)"/>
-    <ellipse cx="640" cy="720" rx="540" ry="360" fill="#D7EBA8" opacity=".14"/>
-    <ellipse cx="1760" cy="1120" rx="580" ry="420" fill="#31693D" opacity=".08"/>
-    <ellipse cx="1300" cy="330" rx="620" ry="260" fill="#C9E698" opacity=".1"/>
-    <rect width="${W}" height="230" fill="url(#btSkyWashG)"/>
-  </g>`
+  if (mode !== 'interactive') {
+    s += renderDefs()
 
-  // Sky + world nature
-  s += `<g id="skyLayer" pointer-events="none">${renderSky()}</g>`
-  s += `<g id="worldDecorations" pointer-events="none">${renderDecorations()}</g>`
+    // Terrain base
+    s += `<g id="worldBackground">
+      <rect width="${W}" height="${H}" fill="url(#btMeadowG)"/>
+      <rect width="${W}" height="${H}" fill="url(#btGrassP)"/>
+      <ellipse cx="640" cy="720" rx="540" ry="360" fill="#D7EBA8" opacity=".14"/>
+      <ellipse cx="1760" cy="1120" rx="580" ry="420" fill="#31693D" opacity=".08"/>
+      <ellipse cx="1300" cy="330" rx="620" ry="260" fill="#C9E698" opacity=".1"/>
+      <rect width="${W}" height="230" fill="url(#btSkyWashG)"/>
+    </g>`
 
-  // Roads under districts
-  s += `<g id="roads">${renderRoads(progressBySlug)}</g>`
+    // Sky + world nature
+    s += `<g id="skyLayer" pointer-events="none">${renderSky()}</g>`
+    s += `<g id="worldDecorations" pointer-events="none">${renderDecorations()}</g>`
 
-  // Hub + 7 districts
-  s += `<g id="districts">${renderTownSquare()}`
-  Object.keys(DISTRICTS).forEach(slug => { s += renderDistrict(slug, DISTRICTS[slug]) })
-  s += `</g>`
+    // Roads under districts (glows ride the interactive overlay on mobile)
+    s += `<g id="roads">${renderRoads(progressBySlug, mode === 'full')}</g>`
 
-  // Hit areas over the zones, then markers on the very top so pins
-  // receive their own hover/click events
-  s += `<g id="interactionOverlays">${renderDistrictHitAreas()}</g>`
-  s += `<g id="mapMarkers">${renderMarkers(skills, progressBySlug, nextSlug)}</g>`
+    // Hub + 7 districts
+    s += `<g id="districts">${renderTownSquare(mode === 'full')}`
+    Object.keys(DISTRICTS).forEach(slug => { s += renderDistrict(slug, DISTRICTS[slug]) })
+    s += `</g>`
+  }
 
-  // Vignette for depth (never blocks clicks)
-  s += `<rect width="${W}" height="${H}" fill="url(#btVignetteG)" pointer-events="none"/>`
+  if (mode === 'interactive') {
+    s += `<g id="roadGlows">${renderRoadGlows(progressBySlug)}</g>`
+    s += `<circle id="hubHitArea" class="hub-hit-area" cx="${CX}" cy="${CY}" r="235" fill="transparent" pointer-events="all" role="button" tabindex="0" aria-label="Visit Brain Town square"/>`
+  }
+
+  if (mode !== 'static') {
+    // Hit areas over the zones, then markers on the very top so pins
+    // receive their own hover/click events
+    s += `<g id="interactionOverlays">${renderDistrictHitAreas()}</g>`
+    s += `<g id="mapMarkers">${renderMarkers(skills, progressBySlug, nextSlug)}</g>`
+  }
+
+  if (mode !== 'interactive') {
+    // Vignette for depth (never blocks clicks)
+    s += `<rect width="${W}" height="${H}" fill="url(#btVignetteG)" pointer-events="none"/>`
+  }
 
   return s
 }
@@ -1232,13 +1265,15 @@ function createPanZoom(viewport, svgEl) {
   let down = false, lx = 0, ly = 0, moved = 0
   let pDist = 0, pScale = 1
   const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  // Lower zoom ceiling on mobile keeps GPU tile rasterisation affordable
+  const MAX_S = LITE_MODE ? 2.4 : 4.0
 
   const vw = () => viewport.clientWidth
   const vh = () => viewport.clientHeight
   const minS = () => Math.max(vw() / W, vh() / H)
 
   function clamp() {
-    scale = Math.max(minS(), Math.min(4.0, scale))
+    scale = Math.max(minS(), Math.min(MAX_S, scale))
     tx = Math.max(vw() - W * scale, Math.min(0, tx))
     ty = Math.max(vh() - H * scale, Math.min(0, ty))
   }
@@ -1277,7 +1312,7 @@ function createPanZoom(viewport, svgEl) {
 
   function zoomBy(f) {
     const cx = vw() / 2, cy = vh() / 2
-    const ns = Math.max(minS(), Math.min(4.0, scale * f))
+    const ns = Math.max(minS(), Math.min(MAX_S, scale * f))
     tx = cx - (cx - tx) * (ns / scale); ty = cy - (cy - ty) * (ns / scale)
     scale = ns; clamp(); apply(true)
   }
@@ -1305,7 +1340,7 @@ function createPanZoom(viewport, svgEl) {
     e.preventDefault()
     const r = viewport.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top
     const f = e.deltaY < 0 ? 1.15 : 0.87
-    const ns = Math.max(minS(), Math.min(4.0, scale * f))
+    const ns = Math.max(minS(), Math.min(MAX_S, scale * f))
     tx = mx - (mx - tx) * (ns / scale); ty = my - (my - ty) * (ns / scale)
     scale = ns; clamp(); apply()
   }, { passive: false })
@@ -1732,19 +1767,34 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
   const vp = document.createElement('div')
   vp.className = 'bt-svg-vp' + (LITE_MODE ? ' bt-svg-lite' : '')
 
-  let svgContent = buildSvg(skills, progressBySlug, nextSlug)
-  if (LITE_MODE) {
-    // Drop every SVG filter reference (shadows/glows) and SMIL animation —
-    // these are the two things that make mobile panning re-rasterise the map
-    svgContent = svgContent
-      .replace(/ filter="url\(#[^"]+\)"/g, '')
-      .replace(/<animate(?:Transform|Motion)?\b[^>]*\/>/g, '')
-      .replace(/<animate(?:Transform|Motion)?\b[^>]*>[\s\S]*?<\/animate(?:Transform|Motion)?>/g, '')
-  }
+  // Drops SVG filter references and SMIL animation — the two things that
+  // make mobile panning re-rasterise the whole map.
+  const stripHeavy = str => str
+    .replace(/ filter="url\(#[^"]+\)"/g, '')
+    .replace(/<animate(?:Transform|Motion)?\b[^>]*\/>/g, '')
+    .replace(/<animate(?:Transform|Motion)?\b[^>]*>[\s\S]*?<\/animate(?:Transform|Motion)?>/g, '')
 
   const world = document.createElement('div')
   world.style.cssText = `position:absolute;top:0;left:0;width:${W}px;height:${H}px;transform-origin:0 0;will-change:transform;`
-  world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${svgContent}</svg>`
+
+  if (LITE_MODE) {
+    // Mobile: the scenery is rasterised ONCE into a bitmap (an <img> with
+    // an SVG blob source). Panning then blits a bitmap instead of walking
+    // thousands of live vector nodes per tile. Only the interactive bits —
+    // road glows, hit areas, pins, the next-step flag — stay as a small
+    // live SVG overlay on top.
+    const staticSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${stripHeavy(buildSvg(skills, progressBySlug, nextSlug, 'static'))}</svg>`
+    if (container._btSceneryUrl) { try { URL.revokeObjectURL(container._btSceneryUrl) } catch (_) {} }
+    const sceneryUrl = URL.createObjectURL(new Blob([staticSvg], { type: 'image/svg+xml' }))
+    container._btSceneryUrl = sceneryUrl
+
+    const ixSvg = stripHeavy(buildSvg(skills, progressBySlug, nextSlug, 'interactive'))
+    world.innerHTML =
+      `<img src="${sceneryUrl}" width="${W}" height="${H}" alt="" draggable="false" style="position:absolute;top:0;left:0;width:${W}px;height:${H}px;display:block;pointer-events:none;user-select:none;"/>` +
+      `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="position:absolute;top:0;left:0;display:block" role="img" aria-label="Brain Town interactive map">${ixSvg}</svg>`
+  } else {
+    world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills, progressBySlug, nextSlug, 'full')}</svg>`
+  }
   vp.appendChild(world)
 
   // Controls
