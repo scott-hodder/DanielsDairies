@@ -4,6 +4,7 @@
 // ================================================
 
 import { getZoneState } from './adventure-map-zones.js';
+import { getZoneSceneCss, getZoneFillerCss, getZoneGround, isSvgScenesEnabled } from './adventure-zone-scenes.js';
 import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
 // Side-effect import: defines window.roadblockSystem on load.
 import './roadblock-system.js';
@@ -15,6 +16,16 @@ import './enhanced-dashboard.js';
 let _miniGamesFlag = null;
 isMiniGamesEnabled().then((v) => { _miniGamesFlag = v; }).catch(() => { _miniGamesFlag = false; });
 function miniGamesActive() { return _miniGamesFlag === true; }
+
+// SVG district scenes flag (Admin Centre → Features). The first render can
+// happen before the flag resolves, so re-apply the background once it does.
+let _svgScenesFlag = null;
+isSvgScenesEnabled().then((v) => {
+  _svgScenesFlag = v;
+  var map = window.enhancedDashboard && window.enhancedDashboard.adventureMap;
+  if (v && map && typeof map.applyZoneBackground === 'function') map.applyZoneBackground();
+}).catch(() => { _svgScenesFlag = false; });
+function svgScenesActive() { return _svgScenesFlag === true; }
 
 // Show the dashboard footer once the map is fully rendered
 function showDashboardFooter() {
@@ -1438,6 +1449,26 @@ export class AdventureMapV4 {
     this.viewport.dataset.zone = newZone;
     this.currentZone = newZone;
 
+    // SVG district scenes (feature-flagged): the background is this Super
+    // Skill's own Brain Town district. It grows twice over — every completed
+    // module adds a prop to the scene, and each town stage transforms it.
+    // When the flag is off, clearing the inline styles falls back to the
+    // classic image map CSS.
+    if (svgScenesActive()) {
+      var completedForScene = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+      // The scene lives INSIDE the canvas so the landscape pans 1:1 with
+      // the road. The viewport's own background is disabled meanwhile.
+      this.viewport.style.backgroundImage = 'none';
+      this.viewport.style.backgroundSize = '';
+      this.viewport.style.backgroundPosition = '';
+      this.renderSceneLayer(townStage, completedForScene);
+    } else {
+      this.viewport.style.backgroundImage = '';
+      this.viewport.style.backgroundSize = '';
+      this.viewport.style.backgroundPosition = '';
+      this.removeSceneLayer();
+    }
+
     // Detect zone upgrade: only when moving to a higher zone (not zone 1)
     var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
     if (previousZone !== null && newZone > previousZone && newZone > 1) {
@@ -1456,6 +1487,51 @@ export class AdventureMapV4 {
         }, 800);
       }
     }
+  }
+
+  // Injects the district scene INSIDE the canvas (behind the road and
+  // nodes, via negative z-index) so the whole landscape moves 1:1 with
+  // the road when the child pans. The scene sits at the top of the road
+  // at its natural 3:2 aspect — horizon and hill pass first — and a
+  // seamless meadow filler continues beneath it for the rest of the road.
+  renderSceneLayer(stage, completed) {
+    if (!this.canvas) return;
+    this.removeSceneLayer();
+
+    // Bleed past the canvas edges so the ±50px sideways pan never
+    // reveals the container behind the map.
+    var BLEED = 60;
+    var cw = this.canvas.offsetWidth || (this.viewport ? this.viewport.offsetWidth : 0) || 1200;
+    var layerW = cw + BLEED * 2;
+    var sceneH = Math.round(layerW / 1.5); // scenes are drawn at 3:2
+    var ground = getZoneGround(this.currentCategory);
+
+    var layer = document.createElement('div');
+    layer.className = 'zone-scene-layer';
+    layer.style.cssText = 'position:absolute;top:0;left:' + (-BLEED) + 'px;right:' + (-BLEED) + 'px;bottom:' + (-BLEED) + 'px;z-index:-1;pointer-events:none;overflow:hidden;';
+
+    // Built via style properties (not innerHTML) because the data-URI
+    // background values contain quotes.
+    var top = document.createElement('div');
+    top.style.cssText = 'position:absolute;top:0;left:0;right:0;height:' + sceneH + 'px;background-size:100% 100%;background-repeat:no-repeat;';
+    top.style.backgroundImage = getZoneSceneCss(this.currentCategory, stage, completed);
+
+    // The district continues for the whole length of the road: a scenery
+    // tile (same stage of buildings) repeats seamlessly beneath the scene.
+    var fill = document.createElement('div');
+    fill.style.cssText = 'position:absolute;top:' + sceneH + 'px;left:0;right:0;bottom:0;background-size:100% auto;background-repeat:repeat-y;';
+    fill.style.backgroundColor = ground.color;
+    fill.style.backgroundImage = getZoneFillerCss(this.currentCategory, stage);
+
+    layer.appendChild(top);
+    layer.appendChild(fill);
+    this.canvas.insertBefore(layer, this.canvas.firstChild);
+  }
+
+  removeSceneLayer() {
+    if (!this.canvas) return;
+    var layer = this.canvas.querySelector('.zone-scene-layer');
+    if (layer) layer.remove();
   }
 
   showZoneUpgradeBanner(zone, completedCount) {
@@ -2448,7 +2524,7 @@ export class AdventureMapV4 {
       var self = this;
       this.canvas.style.transition = 'transform 0.5s ease';
       this.canvas.style.transform = 'translate(' + this.translateX + 'px, ' + this.translateY + 'px)';
-      
+
       setTimeout(function() {
         if (self.canvas) self.canvas.style.transition = 'transform 0.05s linear';
       }, 500);
