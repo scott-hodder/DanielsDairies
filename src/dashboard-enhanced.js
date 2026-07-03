@@ -1414,6 +1414,9 @@ export class AdventureMapV4 {
     container.innerHTML = html;
     this.viewport = document.getElementById('adventureViewport');
     this.canvas = document.getElementById('adventureCanvas');
+    // Keep the canvas on its own GPU layer so dragging is a composite,
+    // not a repaint — critical on mobile.
+    if (this.canvas) this.canvas.style.willChange = 'transform';
     this.applyZoneBackground();
   }
 
@@ -1508,7 +1511,9 @@ export class AdventureMapV4 {
 
     var layer = document.createElement('div');
     layer.className = 'zone-scene-layer';
-    layer.style.cssText = 'position:absolute;top:0;left:' + (-BLEED) + 'px;right:' + (-BLEED) + 'px;bottom:' + (-BLEED) + 'px;z-index:-1;pointer-events:none;overflow:hidden;';
+    // translateZ(0) gives the scenery its own GPU texture so animated
+    // road nodes never force these big backgrounds to re-rasterise.
+    layer.style.cssText = 'position:absolute;top:0;left:' + (-BLEED) + 'px;right:' + (-BLEED) + 'px;bottom:' + (-BLEED) + 'px;z-index:-1;pointer-events:none;overflow:hidden;transform:translateZ(0);';
 
     // Built via style properties (not innerHTML) because the data-URI
     // background values contain quotes.
@@ -2417,7 +2422,10 @@ export class AdventureMapV4 {
     if (!this.canvas) return;
     this.isDragging = true;
     this.viewport.classList.add('dragging');
-    
+    // No transition while the finger is down — a lingering transform
+    // transition makes every drag frame animate and feel laggy.
+    this.canvas.style.transition = 'none';
+
     var point = e.type.indexOf('touch') >= 0 ? e.touches[0] : e;
     this.startX = point.clientX;
     this.startY = point.clientY;
@@ -2450,7 +2458,7 @@ export class AdventureMapV4 {
 
     this.translateY = Math.min(maxY, Math.max(minY, this.translateY));
     this.translateX = Math.min(50, Math.max(-50, this.translateX));
-    this.canvas.style.transform = 'translate(' + this.translateX + 'px, ' + this.translateY + 'px)';
+    this.canvas.style.transform = 'translate3d(' + this.translateX + 'px, ' + this.translateY + 'px, 0)';
 
     if (e.type.indexOf('touch') >= 0) e.preventDefault();
   }
@@ -2523,10 +2531,10 @@ export class AdventureMapV4 {
       
       var self = this;
       this.canvas.style.transition = 'transform 0.5s ease';
-      this.canvas.style.transform = 'translate(' + this.translateX + 'px, ' + this.translateY + 'px)';
+      this.canvas.style.transform = 'translate3d(' + this.translateX + 'px, ' + this.translateY + 'px, 0)';
 
       setTimeout(function() {
-        if (self.canvas) self.canvas.style.transition = 'transform 0.05s linear';
+        if (self.canvas) self.canvas.style.transition = 'none';
       }, 500);
     }
   }
@@ -2537,9 +2545,9 @@ export class AdventureMapV4 {
     this.translateX = 0;
     var self = this;
     this.canvas.style.transition = 'transform 0.5s ease';
-    this.canvas.style.transform = 'translate(' + this.translateX + 'px, ' + this.translateY + 'px)';
+    this.canvas.style.transform = 'translate3d(' + this.translateX + 'px, ' + this.translateY + 'px, 0)';
     setTimeout(function() {
-      if (self.canvas) self.canvas.style.transition = 'transform 0.05s linear';
+      if (self.canvas) self.canvas.style.transition = 'none';
     }, 500);
   }
 }

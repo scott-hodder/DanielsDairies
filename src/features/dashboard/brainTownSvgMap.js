@@ -30,6 +30,16 @@ import { KID_FRIENDLY_COPY } from '../../adventure-map-themes.js'
 const W = 2400, H = 1800
 const CX = 1200, CY = 900 // Town Square centre
 
+// Lite mode for touch devices: SVG filters and always-on idle animations
+// force the browser to re-rasterise the whole 2400×1800 map every frame,
+// which makes panning crawl on phones. In lite mode we strip filters and
+// ambient animation and keep only what matters (the next-step flag).
+const LITE_MODE = (() => {
+  try {
+    return window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820
+  } catch (_) { return false }
+})()
+
 // Exactly 7 Super Skill districts. Do not add more.
 // Placement follows the DD Town Map Build Brief compass:
 // Coco north (lookout, high ground), Kip west (calm green quarter),
@@ -1233,9 +1243,23 @@ function createPanZoom(viewport, svgEl) {
     ty = Math.max(vh() - H * scale, Math.min(0, ty))
   }
 
+  let raf = 0
+
+  function applyNow() {
+    raf = 0
+    // translate3d keeps the map on its own GPU layer while panning
+    svgEl.style.transform = `translate3d(${tx}px,${ty}px,0) scale(${scale})`
+  }
+
   function apply(smooth) {
-    if (smooth && !noMotion) { svgEl.style.transition = 'transform 0.35s ease-out'; setTimeout(() => svgEl.style.transition = '', 380) }
-    svgEl.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`
+    if (smooth && !noMotion) {
+      svgEl.style.transition = 'transform 0.35s ease-out'
+      setTimeout(() => { svgEl.style.transition = '' }, 380)
+      applyNow()
+      return
+    }
+    // Batch rapid pointer/pinch updates to one transform per frame
+    if (!raf) raf = requestAnimationFrame(applyNow)
   }
 
   function home() {
@@ -1643,6 +1667,12 @@ function injectStyles() {
   #btSvgPopupRoot.open .bt-svg-popup{transform:translateY(0)}
 }
 /* Reduced motion */
+/* Lite mode (touch devices): ambient animation off, only the next-step
+   flag keeps moving. A still map pans at full speed. */
+.bt-svg-lite .bt-sway,.bt-svg-lite .bt-sway-s,.bt-svg-lite .bt-twinkle,.bt-svg-lite .bt-twinkle-d,.bt-svg-lite .bt-glow,.bt-svg-lite .bt-hub-glow,.bt-svg-lite .bt-spin,.bt-svg-lite .bt-spin-rev,.bt-svg-lite .bt-spin-slow,.bt-svg-lite .bt-scan,.bt-svg-lite .bt-bob,.bt-svg-lite .bt-bob-slow,.bt-svg-lite .bt-flicker,.bt-svg-lite .svg-pin-bob,.bt-svg-lite .svg-pin-ring,.bt-svg-lite .bt-svg-ps{animation:none!important}
+/* While the finger is down, pause ALL map animation so panning never
+   competes with repaints (applies on every device). */
+.bt-svg-vp.grabbing *{animation-play-state:paused!important}
 @media(prefers-reduced-motion:reduce){
   .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps,.svg-next-flag{animation:none!important}
   .bt-svg-popup{transition:opacity .2s ease}
@@ -1700,11 +1730,21 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
   wrap.style.cssText = 'position:relative;width:100%;'
 
   const vp = document.createElement('div')
-  vp.className = 'bt-svg-vp'
+  vp.className = 'bt-svg-vp' + (LITE_MODE ? ' bt-svg-lite' : '')
+
+  let svgContent = buildSvg(skills, progressBySlug, nextSlug)
+  if (LITE_MODE) {
+    // Drop every SVG filter reference (shadows/glows) and SMIL animation —
+    // these are the two things that make mobile panning re-rasterise the map
+    svgContent = svgContent
+      .replace(/ filter="url\(#[^"]+\)"/g, '')
+      .replace(/<animate(?:Transform|Motion)?\b[^>]*\/>/g, '')
+      .replace(/<animate(?:Transform|Motion)?\b[^>]*>[\s\S]*?<\/animate(?:Transform|Motion)?>/g, '')
+  }
 
   const world = document.createElement('div')
   world.style.cssText = `position:absolute;top:0;left:0;width:${W}px;height:${H}px;transform-origin:0 0;will-change:transform;`
-  world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills, progressBySlug, nextSlug)}</svg>`
+  world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${svgContent}</svg>`
   vp.appendChild(world)
 
   // Controls
