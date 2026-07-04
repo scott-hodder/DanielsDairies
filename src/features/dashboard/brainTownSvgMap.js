@@ -33,7 +33,7 @@ const CX = 1200, CY = 900 // Town Square centre
 // Lite mode for touch devices: SVG filters and always-on idle animations
 // force the browser to re-rasterise the whole 2400×1800 map every frame,
 // which makes panning crawl on phones. In lite mode we strip filters and
-// ambient animation and keep only what matters (the next-step flag).
+// ambient animation.
 const LITE_MODE = (() => {
   try {
     return window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820
@@ -1177,17 +1177,6 @@ function renderMarkers(skills, progressBySlug = {}, nextSlug = null) {
 
     s += `</g>`
 
-    // "Next step here" flag — outside the bob group so it draws attention on its own
-    if (slug === nextSlug) {
-      const fy = ly - 26
-      s += `<g class="svg-next-flag" pointer-events="none">
-        <path d="M${d.x + tw / 2 - 6} ${fy + 22} V${fy - 22}" stroke="#8A5A2B" stroke-width="5" stroke-linecap="round"/>
-        <path d="M${d.x + tw / 2 - 6} ${fy - 22} L${d.x + tw / 2 + 46} ${fy - 12} L${d.x + tw / 2 - 6} ${fy - 2}Z" fill="#F2B33D" stroke="#D98E1B" stroke-width="2"/>
-        <rect x="${d.x - 74}" y="${fy - 26}" width="132" height="28" rx="14" fill="#16324F"/>
-        <text x="${d.x - 8}" y="${fy - 6}" text-anchor="middle" font-size="15" font-weight="700" fill="#FFE9A8" font-family="Fredoka,sans-serif">Start here!</text>
-      </g>`
-    }
-
     s += `</g>`
   })
   return s
@@ -1645,8 +1634,6 @@ function injectStyles() {
 .svg-pin{cursor:pointer;transition:transform .2s ease;transform-box:fill-box;transform-origin:center}
 .svg-pin:hover,.svg-pin.hover,.svg-pin:focus-visible{transform:translateY(-5px) scale(1.05)}
 .svg-pin-bob{animation:btBob 3.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-@keyframes btFlagBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.svg-next-flag{animation:btFlagBounce 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 .svg-pin:focus-visible{outline:3px solid #f2c94c;outline-offset:4px;border-radius:8px}
 .svg-pin-ring{opacity:0;transform-box:fill-box;transform-origin:center}
 .svg-pin.selected .svg-pin-ring{animation:btPinPulse 1.8s ease-out infinite}
@@ -1702,14 +1689,14 @@ function injectStyles() {
   #btSvgPopupRoot.open .bt-svg-popup{transform:translateY(0)}
 }
 /* Reduced motion */
-/* Lite mode (touch devices): ambient animation off, only the next-step
-   flag keeps moving. A still map pans at full speed. */
+/* Lite mode (touch devices): ambient animation off — a still map pans
+   at full speed. */
 .bt-svg-lite .bt-sway,.bt-svg-lite .bt-sway-s,.bt-svg-lite .bt-twinkle,.bt-svg-lite .bt-twinkle-d,.bt-svg-lite .bt-glow,.bt-svg-lite .bt-hub-glow,.bt-svg-lite .bt-spin,.bt-svg-lite .bt-spin-rev,.bt-svg-lite .bt-spin-slow,.bt-svg-lite .bt-scan,.bt-svg-lite .bt-bob,.bt-svg-lite .bt-bob-slow,.bt-svg-lite .bt-flicker,.bt-svg-lite .svg-pin-bob,.bt-svg-lite .svg-pin-ring,.bt-svg-lite .bt-svg-ps{animation:none!important}
 /* While the finger is down, pause ALL map animation so panning never
    competes with repaints (applies on every device). */
 .bt-svg-vp.grabbing *{animation-play-state:paused!important}
 @media(prefers-reduced-motion:reduce){
-  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps,.svg-next-flag{animation:none!important}
+  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps{animation:none!important}
   .bt-svg-popup{transition:opacity .2s ease}
 }
 `
@@ -1850,6 +1837,9 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
 
     popup.open(slug, sk, d)
     daniel.walkToward(slug)
+
+    // Lets listeners (e.g. the first-time guide) react to a Super Skill tap
+    document.dispatchEvent(new CustomEvent('bt:district-selected', { detail: { slug } }))
   }
 
   function selectHub() {
@@ -1857,6 +1847,16 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
     popup.openHub()
     daniel.walkHome()
   }
+
+  // "Show me a good first stop" from the first-time guide: open the
+  // suggested next district. Re-init safe — the previous handler is
+  // removed so stale closures never fire.
+  if (container._btShowNextHandler) container.removeEventListener('bt:show-next', container._btShowNextHandler)
+  container._btShowNextHandler = () => {
+    if (nextSlug && DISTRICTS[nextSlug]) selectDistrict(nextSlug)
+    else selectHub()
+  }
+  container.addEventListener('bt:show-next', container._btShowNextHandler)
 
   // Hovering a district's hit area lights up its building + pin
   function setHover(slug, on) {

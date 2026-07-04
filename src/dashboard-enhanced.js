@@ -1445,7 +1445,7 @@ export class AdventureMapV4 {
     if (!this.viewport) return;
 
     // Use completed module count to determine zone (matches the progress cue)
-    var townStage = this.getTownStage(); // 0=Trailhead, 1=Village, 2=Town Center, 3=City
+    var townStage = this.getTownStage(); // 0=Trailhead, 1=Village, 2=Town Centre, 3=City
     var newZone = townStage + 1; // zones are 1-4
 
     var previousZone = this.currentZone;
@@ -1507,7 +1507,7 @@ export class AdventureMapV4 {
     var cw = this.canvas.offsetWidth || (this.viewport ? this.viewport.offsetWidth : 0) || 1200;
     var layerW = cw + BLEED * 2;
     var sceneH = Math.round(layerW / 1.5); // scenes are drawn at 3:2
-    var ground = getZoneGround(this.currentCategory);
+    var ground = getZoneGround(this.currentCategory, stage);
 
     var layer = document.createElement('div');
     layer.className = 'zone-scene-layer';
@@ -1563,17 +1563,17 @@ export class AdventureMapV4 {
     var stage = stages[stageIndex];
     var zoneTitles = [
       '',
-      'Your Brain Town is Starting!',
+      'Your Adventure Begins at the Trailhead!',
       'Your Brain Town Grew Into a Village!',
-      'Your Brain Town is Now a City!',
-      'Your Brain Town is a Metropolis!'
+      'Your Village Grew Into a Town Centre!',
+      'Your Town Centre Grew Into a City!'
     ];
     var zoneSubtitles = [
       '',
       'Every module builds new pathways in your brain!',
       'Look! Houses and fences appeared - your brain pathways are growing stronger!',
-      'Shops and street lights! Your brain connections are getting really powerful!',
-      'A whole skyline! Your brain is an incredible network of pathways!'
+      'Shops, lamps and a clock tower! Your brain connections are getting really powerful!',
+      'Tall buildings and a whole skyline! Your brain is an incredible network of pathways!'
     ];
 
     var title = zoneTitles[zone] || 'Your Brain Town Upgraded!';
@@ -1693,7 +1693,7 @@ export class AdventureMapV4 {
     return [
       { label: 'Trailhead', emoji: '🌱', minComplete: 0, maxComplete: 2, milestone: 3, rangeLabel: '1-3' },
       { label: 'Village', emoji: '🏡', minComplete: 3, maxComplete: 5, milestone: 6, rangeLabel: '4-6' },
-      { label: 'Town Center', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '7-9' },
+      { label: 'Town Centre', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '7-9' },
       { label: 'City', emoji: '🏙️', minComplete: 9, maxComplete: 99, milestone: null, rangeLabel: '10+' }
     ];
   }
@@ -1708,7 +1708,7 @@ export class AdventureMapV4 {
 
     // Check if modules are sufficient but road builder is blocking progression
     var roadBuilders = this.modules.filter(function(m) { return m.isRoadBuilder; });
-    var rbNeeded = stageIndex + 1; // road builder 1 needed for Village, 2 for Town Center, etc.
+    var rbNeeded = stageIndex + 1; // road builder 1 needed for Village, 2 for Town Centre, etc.
     var rbDone = roadBuilders.slice(0, rbNeeded).every(function(rb) { return rb && rb.status === 'completed'; });
     var transitionCopy;
     if (!nextMilestone) {
@@ -1790,7 +1790,7 @@ export class AdventureMapV4 {
       { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)',
         shadowW: 38, mainW: 32, lightW: 24, dashW: 3, dashArray: '12 16',
         dashColor: 'rgba(255,255,255,0.7)' },
-      // Town Center: highway - dark asphalt, wider, double lane markings
+      // Town Centre: highway - dark asphalt, wider, double lane markings
       { main: '#4B5563', light: '#6B7280', shadow: 'rgba(31, 41, 55, 0.4)',
         shadowW: 46, mainW: 40, lightW: 30, dashW: 3, dashArray: '18 12',
         dashColor: 'rgba(255,255,255,0.85)' },
@@ -1877,10 +1877,10 @@ export class AdventureMapV4 {
     if (!anchor) return;
 
     var townStages = [
-      { label: 'Wild Woods', buildings: ['🌲', '🌳', '⛺'] },
-      { label: 'Little Village', buildings: ['🏠', '🏡', '🏘️'] },
-      { label: 'Growing Town', buildings: ['🏫', '🏬', '🏪', '🏠'] },
-      { label: 'Big City', buildings: ['🏢', '🏦', '🏙️', '🏬'] }
+      { label: 'Trailhead', buildings: ['🌲', '🌳', '⛺'] },
+      { label: 'Village', buildings: ['🏠', '🏡', '🏘️'] },
+      { label: 'Town Centre', buildings: ['🏫', '🏬', '🏪', '🏠'] },
+      { label: 'City', buildings: ['🏢', '🏦', '🏙️', '🏬'] }
     ];
 
     var stageData = townStages[townStage];

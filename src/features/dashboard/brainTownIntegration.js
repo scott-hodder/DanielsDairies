@@ -4,7 +4,8 @@
 // Called after a child is selected and data is loaded.
 // ================================================
 
-import { openExplainer, renderExplainerCard } from './danielExplainer.js'
+import { openExplainer, renderExplainerChip } from './danielExplainer.js'
+import { maybeShowFirstTimeGuide } from './firstTimeGuide.js'
 import { initSvgMap } from './brainTownSvgMap.js'
 import { initRoadBuilderTab } from './roadBuilderTab.js'
 import { initArcadeTab } from './arcadeTab.js'
@@ -44,22 +45,20 @@ export async function initBrainTown({
   const hasSeenExplainer = localStorage.getItem(explainerKey)
 
   // Build the Brain Town section directly (no internal nav - tabs are in main dashboard nav)
+  // The explainer chip lives in the wrapper (not the map container) so it
+  // survives map re-renders from updateBrainTown.
   container.innerHTML = `
-    ${renderExplainerCard()}
-    <div id="brainTownMapContainer"></div>
+    <div id="danielFirstGuideMount"></div>
+    <div class="bt-map-wrap">
+      <div id="brainTownMapContainer"></div>
+      ${renderExplainerChip()}
+    </div>
   `
 
-  // Explainer card click handler
-  const explainerCard = container.querySelector('#danielExplainerCard')
-  const explainerPlayBtn = container.querySelector('#danielExplainerPlayBtn')
-  if (explainerCard) {
-    explainerCard.addEventListener('click', () => openExplainer())
-  }
-  if (explainerPlayBtn) {
-    explainerPlayBtn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      openExplainer()
-    })
+  // Explainer chip click handler
+  const explainerChip = container.querySelector('#danielExplainerChip')
+  if (explainerChip) {
+    explainerChip.addEventListener('click', () => openExplainer())
   }
 
   // Initialize the Brain Town map
@@ -74,6 +73,14 @@ export async function initBrainTown({
         onNavigateToAdventure(skill)
       }
     }
+  })
+
+  // First-visit welcome callout from Daniel, pointing at the map.
+  // Inline (never blocks the page) and self-dismisses once the child
+  // taps a Super Skill district.
+  maybeShowFirstTimeGuide(container.querySelector('#danielFirstGuideMount'), {
+    childId: selectedChild?.id,
+    mapContainer
   })
 
   // ── Road Builder (mounted in main dashboard tab) ──

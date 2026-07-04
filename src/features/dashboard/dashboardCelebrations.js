@@ -281,10 +281,10 @@ export function showLevelUpPopup(childName, newLevel) {
     4: "Village unlocked! New adventures await!",
     5: "You're becoming an expert!",
     6: "Incredible progress!",
-    7: "Town Center unlocked! The world is growing!",
+    7: "Town Centre unlocked! The world is growing!",
     8: "You're a real champion!",
     9: "Almost at the top!",
-    10: "Metropolis unlocked! You're a legend!"
+    10: "City unlocked! You're a legend!"
   }
   const message = levelMessages[newLevel] || `Level ${newLevel} reached! Amazing!`
 

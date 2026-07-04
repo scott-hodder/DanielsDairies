@@ -15,7 +15,7 @@ const ONBOARDING_STEPS = [
   {
     images: ['/images/steps/step3.webp'],
     title: 'Unlock new places as you grow',
-    description: 'As you complete more modules, your path grows from Trailhead to Village, Town Center, and beyond.'
+    description: 'As you complete more modules, your path grows from Trailhead to Village, Town Centre, and City.'
   },
   {
     images: ['/images/steps/step4.webp'],

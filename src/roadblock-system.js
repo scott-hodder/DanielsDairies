@@ -180,37 +180,37 @@ class RoadblockSystem {
     return spawns;
   }
 
-  // Select an appropriate roadblock based on context
+  // A roadblock counts as "done" for 7 days; after that it can be
+  // replayed as a fresh challenge.
+  isRecentlyCompleted(roadblockId) {
+    return this.completedRoadblocks.some(c => {
+      if (c.roadblock_id !== roadblockId) return false;
+      const daysSince = (Date.now() - new Date(c.completed_at).getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince < 7;
+    });
+  }
+
+  // Select an appropriate roadblock based on context.
+  // IMPORTANT: selection must NOT depend on completion state — the pick
+  // for a gap has to stay stable, so a completed roadblock keeps showing
+  // its checkmark instead of being swapped for a fresh uncompleted one
+  // (which made completions look like they were lost).
   selectRoadblock(random, contextModule) {
     if (this.roadblocks.length === 0) return null;
-    
-    // Filter roadblocks that haven't been completed recently
-    const recentlyCompleted = this.completedRoadblocks
-      .filter(c => {
-        const completedDate = new Date(c.completed_at);
-        const daysSince = (Date.now() - completedDate.getTime()) / (1000 * 60 * 60 * 24);
-        return daysSince < 7; // Completed in last 7 days
-      })
-      .map(c => c.roadblock_id);
-    
-    let available = this.roadblocks.filter(r => !recentlyCompleted.includes(r.id));
-    
-    // If all have been completed recently, allow repeats
-    if (available.length === 0) {
-      available = this.roadblocks;
-    }
-    
+
+    let available = this.roadblocks;
+
     // Prefer roadblocks matching module's super skill if tagged
     if (contextModule && contextModule.superSkillId) {
-      const matching = available.filter(r => 
-        r.tagged_super_skill_ids && 
+      const matching = available.filter(r =>
+        r.tagged_super_skill_ids &&
         r.tagged_super_skill_ids.includes(contextModule.superSkillId)
       );
       if (matching.length > 0) {
         available = matching;
       }
     }
-    
+
     // Random selection
     const index = Math.floor(random() * available.length);
     return available[index];
@@ -225,7 +225,7 @@ class RoadblockSystem {
     this.activeRoadblocks.forEach(spawn => {
       const { roadblock, position, id } = spawn;
       const theme = this.typeThemes[roadblock.roadblock_type] || this.typeThemes.mini_practice;
-      const isCompleted = this.completedRoadblocks.some(c => c.roadblock_id === roadblock.id);
+      const isCompleted = this.isRecentlyCompleted(roadblock.id);
       
       // Create roadblock element
       const element = document.createElement('div');
@@ -375,15 +375,20 @@ class RoadblockSystem {
   async completeRoadblock(spawn, success = true) {
     const { roadblock } = spawn;
     
-    // Record completion in database
+    // Record completion in database. supabase-js reports failures via the
+    // returned error (it does not throw), so check it explicitly —
+    // otherwise a rejected insert loses the completion silently.
     try {
-      await this.supabase
+      const { error } = await this.supabase
         .from('child_roadblock_completions')
         .insert({
           child_id: this.childId,
           roadblock_id: roadblock.id,
           completed_at: new Date().toISOString()
         });
+      if (error) {
+        console.error('Could not save roadblock completion:', error);
+      }
     } catch (error) {
       console.error('Could not save roadblock completion:', error);
     }

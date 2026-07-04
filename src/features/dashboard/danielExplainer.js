@@ -163,20 +163,15 @@ export function closeExplainer() {
 }
 
 /**
- * Renders the "Daniel explains the big idea" card for the dashboard.
- * Returns an HTML string.
+ * Renders the compact "big idea" replay chip that floats over the
+ * Brain Town map corner. Returns an HTML string.
  */
-export function renderExplainerCard() {
+export function renderExplainerChip() {
   return `
-    <div class="de-card" id="danielExplainerCard">
-      <div class="de-card-icon">
-        <img src="/images/characters/DanielTheDog.webp" alt="Daniel" style="width:48px;height:48px;object-fit:contain" />
-      </div>
-      <div class="de-card-text">
-        <h3 style="font-size:15px;font-weight:700;color:#16324f;margin:0">Daniel explains the big idea</h3>
-        <p style="font-size:12.5px;color:#6b7e95;margin:2px 0 0">Your brain is a town, and you are the planner. Tap to watch again any time.</p>
-      </div>
-      <button class="de-card-play" id="danielExplainerPlayBtn">&#x25B6; Watch</button>
-    </div>
+    <button type="button" class="de-chip" id="danielExplainerChip" title="Your brain is a town, and you are the planner. Tap to watch again any time." aria-label="Watch Daniel explain the big idea">
+      <img src="/images/characters/DanielTheDog.webp" alt="" />
+      <span>The big idea</span>
+      <span class="de-chip-play">&#x25B6;</span>
+    </button>
   `
 }

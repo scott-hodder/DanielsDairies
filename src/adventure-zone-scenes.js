@@ -179,6 +179,120 @@ function lamp(x, y, on = true) {
   </g>`;
 }
 
+// Cartoon pavement: a soft checkerboard of big panels with joint lines.
+// Used for the City stage ground in both the scene and the filler tile.
+function pavement(base, dusk, y0, y1) {
+  const joint = mixHex(base, dusk ? '#141227' : '#39414E', 0.3);
+  const panelL = mixHex(base, '#FFFFFF', 0.12);
+  const s = [];
+  const cw = 210, rh = 175;
+  let r = 0;
+  for (let py = y0; py < y1; py += rh, r++) {
+    for (let c = 0; c < Math.ceil(W / cw); c++) {
+      if ((c + r) % 2 === 0) continue;
+      s.push(`<rect x="${c * cw}" y="${py}" width="${cw}" height="${Math.min(rh, y1 - py)}" fill="${panelL}" opacity="0.5"/>`);
+    }
+  }
+  let joints = '';
+  for (let jy = y0 + rh; jy < y1; jy += rh) joints += `M0 ${jy} H${W} `;
+  for (let jx = cw; jx < W; jx += cw) joints += `M${jx} ${y0} V${y1} `;
+  s.push(`<path d="${joints}" stroke="${joint}" stroke-width="2.5" opacity="0.3" fill="none"/>`);
+  return s.join('');
+}
+
+// A street tree in a square planter — greenery that belongs in a city.
+function planterTree(x, y, leaf1, leaf2) {
+  return `<g>
+    <rect x="${x - 20}" y="${y - 18}" width="40" height="18" rx="4" fill="#9BA0A8" stroke="#5F6570" stroke-width="2.5"/>
+    <rect x="${x - 3.5}" y="${y - 46}" width="7" height="30" rx="3" fill="#7A5230"/>
+    <circle cx="${x}" cy="${y - 56}" r="18" fill="${leaf1}"/>
+    <circle cx="${x - 11}" cy="${y - 47}" r="11" fill="${leaf2}"/>
+    <circle cx="${x + 11}" cy="${y - 48}" r="11" fill="${leaf2}"/>
+  </g>`;
+}
+
+// ── City streetscape props ────────────────────────────────────────
+
+// Rooftop water tank on legs — instant "big city" silhouette.
+function waterTower(x, y, s = 1) {
+  return `<g>
+    <path d="M${x - 11 * s} ${y} V${y - 13 * s} M${x + 11 * s} ${y} V${y - 13 * s}" stroke="#6B7280" stroke-width="${4 * s}"/>
+    <rect x="${x - 15 * s}" y="${y - 38 * s}" width="${30 * s}" height="${26 * s}" rx="${6 * s}" fill="#B08650" stroke="#7A5230" stroke-width="${2.5 * s}"/>
+    <path d="M${x - 17 * s} ${y - 38 * s} L${x} ${y - 49 * s} L${x + 17 * s} ${y - 38 * s} Z" fill="#8A5A2B"/>
+  </g>`;
+}
+
+// Rooftop aerial with a blinking-red tip.
+function antenna(x, y, s = 1) {
+  return `<g>
+    <path d="M${x} ${y} V${y - 32 * s}" stroke="#6B7280" stroke-width="${3.5 * s}"/>
+    <path d="M${x - 9 * s} ${y - 20 * s} H${x + 9 * s}" stroke="#6B7280" stroke-width="${2.5 * s}"/>
+    <circle cx="${x}" cy="${y - 36 * s}" r="${4.5 * s}" fill="#E05252"/>
+  </g>`;
+}
+
+// A chunky cartoon car, parked kerbside. Baseline y = wheel contact.
+function car(x, y, c, flip = false) {
+  return `<g transform="translate(${x} ${y})${flip ? ' scale(-1,1)' : ''}">
+    <ellipse cx="0" cy="1" rx="38" ry="6" fill="#1E2530" opacity="0.18"/>
+    <path d="M-16 -24 Q-12 -38 2 -38 Q17 -38 21 -24 Z" fill="${c}" stroke="#3A4150" stroke-width="2.5"/>
+    <rect x="-34" y="-25" width="68" height="20" rx="10" fill="${c}" stroke="#3A4150" stroke-width="2.5"/>
+    <rect x="-11" y="-36" width="21" height="10" rx="4" fill="#CDE6F5"/>
+    <circle cx="-19" cy="-4" r="7.5" fill="#2A3340"/><circle cx="19" cy="-4" r="7.5" fill="#2A3340"/>
+    <circle cx="-19" cy="-4" r="3" fill="#9AA4B2"/><circle cx="19" cy="-4" r="3" fill="#9AA4B2"/>
+  </g>`;
+}
+
+// Zebra crossing stripes on a side street.
+function zebra(x, y, streetH) {
+  let z = '';
+  for (let i = 0; i < 5; i++) {
+    z += `<rect x="${x + i * 15}" y="${y + 9}" width="9" height="${streetH - 18}" rx="3.5" fill="#FFFFFF" opacity="0.75"/>`;
+  }
+  return z;
+}
+
+// A cross street running the full tile width. The child's winding road
+// is drawn over the top by the map, so these read as intersections.
+function sideStreet(y, dusk) {
+  const SH = 92;
+  const asphalt = dusk ? '#3E3A66' : '#55606E';
+  const edge = dusk ? '#2E2B4F' : '#39434F';
+  const kerb = dusk ? '#8B87AC' : '#E9E6DE';
+  return `<g>
+    <rect y="${y - 10}" width="${W}" height="10" fill="${kerb}" opacity="0.45"/>
+    <rect y="${y + SH}" width="${W}" height="10" fill="${kerb}" opacity="0.45"/>
+    <rect y="${y}" width="${W}" height="${SH}" fill="${asphalt}"/>
+    <rect y="${y}" width="${W}" height="6" fill="${edge}" opacity="0.7"/>
+    <rect y="${y + SH - 6}" width="${W}" height="6" fill="${edge}" opacity="0.7"/>
+    <path d="M0 ${y + SH / 2} H${W}" stroke="#FFF8E0" stroke-width="4" stroke-dasharray="26 22" opacity="0.85"/>
+    ${zebra(330, y, SH)}${zebra(795, y, SH)}
+  </g>`;
+}
+
+// A city tower with deterministic wall/roof variation (so blocks don't
+// look photocopied) and an optional rooftop water tower or antenna.
+function cityTower(cfg, x, y, s, floors, deco) {
+  const walls = [cfg.wall, '#F6EFE3', mixHex(cfg.wall, cfg.tint, 0.45)];
+  const roofs = [cfg.roof, cfg.accent, mixHex(cfg.roof, '#16324F', 0.35)];
+  const v = Math.abs(Math.round(x * 0.37 + floors * 7));
+  const h = (46 + floors * 26) * s;
+  const top = y - h - 11 * s;
+  let out = tallBuilding(x, y, s, walls[v % 3], roofs[(v + 1) % 3], floors);
+  if (deco === 'wt') out += waterTower(x, top, 0.8 * s + 0.2);
+  else if (deco === 'ant') out += antenna(x + 14 * s, top, 0.9);
+  return out;
+}
+
+// A kerbed pocket lawn — deliberate city greenery.
+function lawn(x, y, w, h, cfg, leaf1, leaf2) {
+  return `<g>
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="${cfg.dusk ? '#5F8A5A' : '#8FC66A'}" stroke="${cfg.dusk ? '#42663F' : '#5D9A49'}" stroke-width="3.5"/>
+    ${tree(x + 42, y + h - 10, 0.85, leaf1, leaf2)}
+    ${flowerPatch(x + w - 48, y + h - 14, 0.8, cfg.accent)}
+  </g>`;
+}
+
 function buntingLine(x1, y1, x2, y2, colors) {
   const midY = Math.max(y1, y2) + 16;
   let s = `<path d="M${x1} ${y1} Q${(x1 + x2) / 2} ${midY} ${x2} ${y2}" fill="none" stroke="#8A6D38" stroke-width="2.5"/>`;
@@ -465,13 +579,19 @@ const GROWTH_SPOTS = [
   { x: 884, y: 768, kind: 'flower' },
 ];
 
-function renderGrowth(cfg, count) {
+function renderGrowth(cfg, count, paved = false) {
   const leaf1 = cfg.dusk ? '#4A6B52' : '#66A85C';
   const leaf2 = cfg.dusk ? '#5C7D63' : '#7FB56F';
   const n = Math.max(0, Math.min(GROWTH_SPOTS.length, count));
   let s = '';
   for (let i = 0; i < n; i++) {
     const g = GROWTH_SPOTS[i];
+    if (paved) {
+      // A round garden bed so the prop sits in soil, not on pavement
+      const bedFill = cfg.dusk ? '#5F8A5A' : '#8FC66A';
+      const bedEdge = cfg.dusk ? '#42663F' : '#5D9A49';
+      s += `<ellipse cx="${g.x}" cy="${g.y + 2}" rx="36" ry="14" fill="${bedFill}" stroke="${bedEdge}" stroke-width="2.5"/>`;
+    }
     if (g.kind === 'flower') s += flowerPatch(g.x, g.y, 1.1, cfg.accent);
     else if (g.kind === 'bush') s += bush(g.x, g.y, 1.1, leaf1, leaf2);
     else if (g.kind === 'tree') s += tree(g.x, g.y, g.s || 1, leaf1, leaf2);
@@ -531,10 +651,19 @@ function buildScene(cfg, stage, growth) {
   // Near hill band (covers skyline bases)
   s.push(`<path d="M0 ${HORIZON + 8} Q240 ${HORIZON - 34} 520 ${HORIZON - 4} T1200 ${HORIZON - 10} V${HORIZON + 70} H0 Z" fill="${cfg.hillNear}"/>`);
 
-  // Meadow
-  s.push(`<rect y="${HORIZON + 30}" width="${W}" height="${H - HORIZON - 30}" fill="url(#meadowG)"/>`);
-  s.push(`<path d="M0 ${HORIZON + 44} Q300 ${HORIZON + 10} 640 ${HORIZON + 36} T1200 ${HORIZON + 28} V${HORIZON + 70} H0 Z" fill="url(#meadowG)"/>`);
-  s.push(`<rect y="${HORIZON}" width="${W}" height="${H - HORIZON}" fill="${cfg.tint}" opacity="${cfg.dusk ? 0.42 : 0.16}"/>`);
+  // Ground plane: meadow until the district becomes a City — then the
+  // whole ground is paved (no green-to-cement blending), with the sky,
+  // hills and skyline staying as the backdrop.
+  const cityMode = stage >= 3;
+  if (cityMode) {
+    const paveBase = groundColorFor(cfg, 3);
+    s.push(`<rect y="${HORIZON + 30}" width="${W}" height="${H - HORIZON - 30}" fill="${paveBase}"/>`);
+    s.push(pavement(paveBase, cfg.dusk, HORIZON + 30, H));
+  } else {
+    s.push(`<rect y="${HORIZON + 30}" width="${W}" height="${H - HORIZON - 30}" fill="url(#meadowG)"/>`);
+    s.push(`<path d="M0 ${HORIZON + 44} Q300 ${HORIZON + 10} 640 ${HORIZON + 36} T1200 ${HORIZON + 28} V${HORIZON + 70} H0 Z" fill="url(#meadowG)"/>`);
+    s.push(`<rect y="${HORIZON}" width="${W}" height="${H - HORIZON}" fill="${cfg.tint}" opacity="${cfg.dusk ? 0.42 : 0.16}"/>`);
+  }
 
   // ── The hill pass: the child's road arrives from over the hills ──
   // A small dark stub crests the pass; the real road (drawn by the map,
@@ -547,10 +676,18 @@ function buildScene(cfg, stage, growth) {
   // District landmark (grounded in the upper meadow)
   s.push(cfg.landmark(stage));
 
-  // Framing greenery — always present, denser than before at the edges
+  // Framing greenery — wild trees on meadow; planted street trees in a city
   const leaf1 = cfg.dusk ? '#4A6B52' : '#66A85C';
   const leaf2 = cfg.dusk ? '#5C7D63' : '#7FB56F';
-  s.push(tree(60, 440, 1.2, leaf1, leaf2), tree(1148, 430, 1.25, leaf1, leaf2), tree(40, 690, 1.45, leaf1, leaf2), tree(1160, 700, 1.35, leaf1, leaf2));
+  if (cityMode) {
+    s.push(planterTree(60, 440, leaf1, leaf2), planterTree(1148, 430, leaf1, leaf2), planterTree(40, 690, leaf1, leaf2), planterTree(1160, 700, leaf1, leaf2));
+  } else {
+    s.push(tree(60, 440, 1.2, leaf1, leaf2), tree(1148, 430, 1.25, leaf1, leaf2), tree(40, 690, 1.45, leaf1, leaf2), tree(1160, 700, 1.35, leaf1, leaf2));
+  }
+
+  // In a city, growth props render BEFORE the buildings so their garden
+  // beds sit behind the towers instead of floating on top of them.
+  if (cityMode) s.push(renderGrowth(cfg, growth, true));
 
   // ── Stage dressing — each stage must be readable at a glance ──
   const oppositeX = cfg.landmarkSide === 'left' ? 1 : -1; // put clusters opposite the landmark first
@@ -572,35 +709,49 @@ function buildScene(cfg, stage, growth) {
     s.push(house(160, 560, 1, cfg.wall, cfg.roof, stage >= 2));
     s.push(house(1046, 700, 1.1, cfg.wall, cfg.roof, stage >= 2));
     s.push(house(956, 480, 0.85, cfg.wall, cfg.roof, stage >= 2));
-    s.push(fence(66, 632, 200), fence(940, 760, 210));
-    s.push(dirtPatch(240, 640, 60, 18));
+    if (!cityMode) {
+      // Farm fences and dirt belong on grass, not on city pavement
+      s.push(fence(66, 632, 200), fence(940, 760, 210));
+      s.push(dirtPatch(240, 640, 60, 18));
+    }
   }
 
   if (stage >= 2) {
-    // TOWN CENTRE: shops with awnings, a clock tower, lamps, paved plaza.
+    // TOWN CENTRE: shops with awnings, a clock tower, lamps, a wide paved
+    // plaza, and the first mid-rise blocks — a town on its way to city.
     s.push(shop(190, 700, 1, cfg.wall, cfg.accent));
     s.push(shop(1080, 545, 0.95, cfg.wall, cfg.roof));
     s.push(clockTower(330, 585, 1, cfg.wall, cfg.roof));
-    s.push(`<ellipse cx="${ROAD_X + 10}" cy="756" rx="200" ry="36" fill="#E3D5B0" opacity="${cfg.dusk ? 0.3 : 0.55}"/>`);
+    s.push(tallBuilding(80, 470, 0.7, cfg.wall, cfg.roof, 3));
+    s.push(tallBuilding(1004, 668, 0.72, cfg.wall, cfg.roof, 3));
+    if (!cityMode) s.push(`<ellipse cx="${ROAD_X + 10}" cy="756" rx="280" ry="42" fill="#E3D5B0" opacity="${cfg.dusk ? 0.3 : 0.55}"/>`);
     s.push(lamp(430, 590), lamp(790, 620), lamp(360, 760), lamp(850, 770));
   }
 
   if (stage >= 3) {
-    // CITY: tall lit buildings join the sides, bunting, celebration.
-    s.push(tallBuilding(92, 590, 0.95, cfg.wall, cfg.roof, 4));
-    s.push(tallBuilding(1136, 620, 1, cfg.wall, cfg.roof, 5));
-    s.push(tallBuilding(268, 470, 0.8, cfg.wall, cfg.roof, 3));
-    s.push(tallBuilding(930, 630, 0.85, cfg.wall, cfg.roof, 4));
+    // CITY: the ground is already paved — varied lit towers with rooftop
+    // water tanks and antennas close in on both sides, parked cars,
+    // lamps line the road, bunting, celebration.
+    s.push(cityTower(cfg, 92, 590, 1.1, 5, 'wt'));
+    s.push(cityTower(cfg, 1136, 620, 1.15, 6, 'ant'));
+    s.push(cityTower(cfg, 268, 470, 0.9, 4, 'ant'));
+    s.push(cityTower(cfg, 930, 630, 1, 5, 'wt'));
+    s.push(cityTower(cfg, 210, 712, 0.95, 4));
+    s.push(cityTower(cfg, 996, 726, 0.9, 4));
+    s.push(car(352, 772, cfg.accent), car(856, 780, '#5B8FB0', true));
+    s.push(lamp(430, 440), lamp(790, 470));
     s.push(buntingLine(430, 528, 780, 516, [cfg.accent, cfg.roof, '#F2C230', cfg.accent, cfg.roof]));
     s.push(sparkles([[400, 420, 1.2], [790, 396, 1], [520, 462, 0.8], [720, 700, 0.9]], cfg.dusk ? '#FFF8D0' : '#FFDF7E'));
   }
 
   // Per-module growth props — every completed module leaves a mark
-  s.push(renderGrowth(cfg, growth));
+  // (already rendered earlier in city mode, behind the buildings)
+  if (!cityMode) s.push(renderGrowth(cfg, growth));
 
   // Fade the bottom edge to the flat ground colour so the scene blends
-  // seamlessly into the meadow filler that continues beneath it.
-  const ground = groundColorFor(cfg);
+  // seamlessly into the filler that continues beneath it (meadow for the
+  // early stages, concrete pavement once the district is a city).
+  const ground = groundColorFor(cfg, stage);
   s.push(`<defs><linearGradient id="groundFadeG" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0%" stop-color="${ground}" stop-opacity="0"/>
     <stop offset="100%" stop-color="${ground}" stop-opacity="1"/>
@@ -621,7 +772,12 @@ function mixHex(a, b, t) {
   return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, '0')).join('');
 }
 
-function groundColorFor(cfg) {
+function groundColorFor(cfg, stage = 0) {
+  // From the City stage the district is paved: the ground reads as
+  // warm concrete (with only a hint of the district palette).
+  if (stage >= 3) {
+    return cfg.dusk ? mixHex('#6E6B8A', cfg.tint, 0.18) : mixHex('#C9C6BE', cfg.tint, 0.1);
+  }
   return mixHex('#6FA854', cfg.tint, cfg.dusk ? 0.42 : 0.16);
 }
 
@@ -634,53 +790,115 @@ function groundColorFor(cfg) {
 
 function buildFillerTile(cfg, stage) {
   const s = [];
-  const base = groundColorFor(cfg);
+  const base = groundColorFor(cfg, stage);
   const dark = mixHex(base, '#1E3D28', 0.16);
   const light = mixHex(base, '#FFFFFF', 0.1);
   const leaf1 = cfg.dusk ? '#4A6B52' : '#66A85C';
   const leaf2 = cfg.dusk ? '#5C7D63' : '#7FB56F';
   const lit = stage >= 2;
+  // The city tile is double height: two street sections with different
+  // block layouts, so the repeat is half as frequent and far harder to
+  // spot than a single copied screen.
+  const TH = stage >= 3 ? 1600 : H;
 
-  s.push(`<rect width="${W}" height="${H}" fill="${base}"/>`);
-  // Soft meadow variation (kept away from the tile edges)
-  s.push(`<ellipse cx="300" cy="330" rx="230" ry="80" fill="${light}" opacity="0.28"/>`);
-  s.push(`<ellipse cx="920" cy="560" rx="260" ry="90" fill="${dark}" opacity="0.18"/>`);
+  s.push(`<rect width="${W}" height="${TH}" fill="${base}"/>`);
 
-  const tuft = (x, y) => `<path d="M${x} ${y} q4 -14 8 0 M${x + 8} ${y + 2} q4 -12 8 0 M${x - 7} ${y + 2} q4 -11 7 0" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
-  s.push(tuft(380, 200), tuft(830, 420), tuft(180, 640), tuft(1010, 160));
-
-  // Framing greenery on every tile
-  s.push(tree(90, 200, 1.2, leaf1, leaf2), tree(1116, 260, 1.25, leaf1, leaf2));
-  s.push(tree(64, 640, 1.3, leaf1, leaf2), tree(1140, 690, 1.2, leaf1, leaf2));
-  s.push(bush(255, 155, 1, leaf1, leaf2), bush(950, 700, 1.1, leaf1, leaf2));
-
-  if (stage === 0) {
-    // Wild trail country
-    s.push(dirtPatch(190, 420, 84, 26), dirtPatch(1020, 500, 92, 28));
-    s.push(rock(346, 300, 1), rock(852, 150, 0.9), rock(240, 560, 0.8));
-    s.push(surveyFlag(152, 520, cfg.accent), plotOutline(1048, 330, 84, 30, cfg.accent));
-  }
-  if (stage >= 1) {
-    // Village lanes
-    s.push(house(176, 360, 1, cfg.wall, cfg.roof, lit));
-    s.push(house(1046, 540, 1.05, cfg.wall, cfg.roof, lit));
-    s.push(fence(84, 440, 180), fence(944, 620, 190));
-  }
-  if (stage >= 2) {
-    // Town centre bustle
-    s.push(shop(190, 620, 0.95, cfg.wall, cfg.accent));
-    s.push(house(1064, 250, 0.85, cfg.wall, cfg.roof, true));
-    s.push(lamp(330, 360), lamp(884, 560), lamp(300, 700));
-  }
   if (stage >= 3) {
-    // City blocks — tall and lit, both sides, every tile
-    s.push(tallBuilding(100, 420, 0.9, cfg.wall, cfg.roof, 4));
-    s.push(tallBuilding(1128, 340, 0.85, cfg.wall, cfg.roof, 3));
-    s.push(tallBuilding(196, 710, 0.95, cfg.wall, cfg.roof, 5));
-    s.push(tallBuilding(1032, 700, 0.9, cfg.wall, cfg.roof, 4));
-    s.push(tallBuilding(320, 260, 0.8, cfg.wall, cfg.roof, 3));
-    s.push(buntingLine(880, 328, 1120, 316, [cfg.accent, cfg.roof, '#F2C230', cfg.accent]));
-    s.push(sparkles([[420, 140, 1], [790, 660, 0.9]], cfg.dusk ? '#FFF8D0' : '#FFDF7E'));
+    // CITY TILE: a real streetscape. Cross streets with zebra crossings
+    // and parked cars (the child's winding road passes over them like
+    // intersections), blocks of varied towers fronting the streets with
+    // rooftop water towers and antennas, kerbed pocket lawns, planter
+    // trees, and lamp posts hugging the road corridor.
+    const joint = mixHex(base, cfg.dusk ? '#141227' : '#39414E', 0.3);
+    const carCols = [cfg.accent, '#5B8FB0', '#E0743D', '#55A868'];
+
+    s.push(pavement(base, cfg.dusk, 0, TH));
+    s.push(`<circle cx="390" cy="170" r="14" fill="none" stroke="${joint}" stroke-width="4" opacity="0.45"/>`);
+    s.push(`<circle cx="815" cy="580" r="13" fill="none" stroke="${joint}" stroke-width="4" opacity="0.45"/>`);
+    s.push(`<circle cx="390" cy="960" r="13" fill="none" stroke="${joint}" stroke-width="4" opacity="0.45"/>`);
+    s.push(`<circle cx="815" cy="1390" r="14" fill="none" stroke="${joint}" stroke-width="4" opacity="0.45"/>`);
+
+    // ── Section A (0-800): street with blocks either side ──
+    s.push(sideStreet(330, cfg.dusk));
+    s.push(cityTower(cfg, 90, 320, 0.95, 5, 'wt'));
+    s.push(cityTower(cfg, 205, 320, 0.8, 3));
+    s.push(shop(320, 320, 0.85, cfg.wall, cfg.accent));
+    s.push(cityTower(cfg, 872, 320, 0.85, 4));
+    s.push(cityTower(cfg, 995, 320, 1, 6, 'ant'));
+    s.push(cityTower(cfg, 1118, 320, 0.8, 3));
+    s.push(car(180, 408, carCols[0]));
+    s.push(car(950, 384, carCols[1], true));
+    s.push(lawn(64, 470, 205, 96, cfg, leaf1, leaf2));
+    s.push(cityTower(cfg, 100, 770, 1, 6, 'ant'));
+    s.push(cityTower(cfg, 235, 760, 0.85, 4));
+    s.push(shop(345, 770, 0.9, cfg.wall, cfg.roof));
+    s.push(cityTower(cfg, 868, 745, 0.8, 3));
+    s.push(cityTower(cfg, 990, 775, 0.95, 5, 'wt'));
+    s.push(cityTower(cfg, 1112, 765, 0.85, 4));
+
+    // ── Section B (800-1600): same bones, different block mix ──
+    s.push(sideStreet(1130, cfg.dusk));
+    s.push(cityTower(cfg, 95, 1120, 0.85, 4, 'ant'));
+    s.push(cityTower(cfg, 215, 1120, 1, 6));
+    s.push(cityTower(cfg, 335, 1120, 0.75, 3));
+    s.push(shop(875, 1120, 0.9, cfg.wall, cfg.accent));
+    s.push(cityTower(cfg, 990, 1120, 0.85, 4, 'wt'));
+    s.push(cityTower(cfg, 1115, 1120, 0.95, 5));
+    s.push(car(280, 1208, carCols[2], true));
+    s.push(car(1055, 1184, carCols[3]));
+    s.push(lawn(936, 1270, 205, 96, cfg, leaf1, leaf2));
+    s.push(cityTower(cfg, 105, 1545, 0.9, 5));
+    s.push(cityTower(cfg, 240, 1535, 0.8, 3, 'wt'));
+    s.push(cityTower(cfg, 355, 1545, 0.85, 4));
+    s.push(cityTower(cfg, 875, 1545, 0.95, 5, 'ant'));
+    s.push(cityTower(cfg, 1000, 1535, 0.8, 3));
+    s.push(cityTower(cfg, 1120, 1545, 0.9, 4));
+
+    // ── Street furniture down the road corridor ──
+    s.push(planterTree(352, 486, leaf1, leaf2), planterTree(846, 486, leaf1, leaf2));
+    s.push(planterTree(352, 1288, leaf1, leaf2), planterTree(846, 1288, leaf1, leaf2));
+    s.push(planterTree(60, 1000, leaf1, leaf2), planterTree(1140, 640, leaf1, leaf2));
+    s.push(lamp(436, 240), lamp(776, 200), lamp(436, 600), lamp(776, 650));
+    s.push(lamp(436, 1040), lamp(776, 1000), lamp(436, 1400), lamp(776, 1450));
+
+    s.push(buntingLine(880, 1056, 1118, 1042, [cfg.accent, cfg.roof, '#F2C230', cfg.accent]));
+    s.push(sparkles([[420, 120, 1], [790, 700, 0.9], [420, 900, 0.9], [780, 1500, 1]], cfg.dusk ? '#FFF8D0' : '#FFDF7E'));
+  } else {
+    // Soft meadow variation (kept away from the tile edges)
+    s.push(`<ellipse cx="300" cy="330" rx="230" ry="80" fill="${light}" opacity="0.28"/>`);
+    s.push(`<ellipse cx="920" cy="560" rx="260" ry="90" fill="${dark}" opacity="0.18"/>`);
+
+    const tuft = (x, y) => `<path d="M${x} ${y} q4 -14 8 0 M${x + 8} ${y + 2} q4 -12 8 0 M${x - 7} ${y + 2} q4 -11 7 0" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    s.push(tuft(380, 200), tuft(830, 420), tuft(180, 640), tuft(1010, 160));
+
+    // Framing greenery on every tile
+    s.push(tree(90, 200, 1.2, leaf1, leaf2), tree(1116, 260, 1.25, leaf1, leaf2));
+    s.push(tree(64, 640, 1.3, leaf1, leaf2), tree(1140, 690, 1.2, leaf1, leaf2));
+    s.push(bush(255, 155, 1, leaf1, leaf2), bush(950, 700, 1.1, leaf1, leaf2));
+
+    if (stage === 0) {
+      // Wild trail country
+      s.push(dirtPatch(190, 420, 84, 26), dirtPatch(1020, 500, 92, 28));
+      s.push(rock(346, 300, 1), rock(852, 150, 0.9), rock(240, 560, 0.8));
+      s.push(surveyFlag(152, 520, cfg.accent), plotOutline(1048, 330, 84, 30, cfg.accent));
+    }
+    if (stage >= 1) {
+      // Village lanes
+      s.push(house(176, 360, 1, cfg.wall, cfg.roof, lit));
+      s.push(house(1046, 540, 1.05, cfg.wall, cfg.roof, lit));
+      s.push(fence(84, 440, 180), fence(944, 620, 190));
+    }
+    if (stage >= 2) {
+      // Town centre bustle: paved corners, shops, mid-rise blocks,
+      // and lamps hugging the road on both sides
+      s.push(`<ellipse cx="190" cy="590" rx="230" ry="60" fill="#E3D5B0" opacity="${cfg.dusk ? 0.3 : 0.6}"/>`);
+      s.push(`<ellipse cx="1000" cy="290" rx="220" ry="56" fill="#E3D5B0" opacity="${cfg.dusk ? 0.3 : 0.6}"/>`);
+      s.push(shop(190, 620, 0.95, cfg.wall, cfg.accent));
+      s.push(shop(1064, 250, 0.9, cfg.wall, cfg.roof));
+      s.push(tallBuilding(316, 500, 0.78, cfg.wall, cfg.roof, 3));
+      s.push(tallBuilding(900, 400, 0.7, cfg.wall, cfg.roof, 3));
+      s.push(lamp(430, 330), lamp(790, 300), lamp(430, 690), lamp(790, 640));
+    }
   }
 
   // Fade both edges to flat ground for a seamless vertical repeat
@@ -693,9 +911,9 @@ function buildFillerTile(cfg, stage) {
     </linearGradient>
   </defs>`);
   s.push(`<rect width="${W}" height="46" fill="url(#tileTopG)"/>`);
-  s.push(`<rect y="${H - 46}" width="${W}" height="46" fill="url(#tileBotG)"/>`);
+  s.push(`<rect y="${TH - 46}" width="${W}" height="46" fill="url(#tileBotG)"/>`);
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">${s.join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${TH}" preserveAspectRatio="xMidYMid slice">${s.join('')}</svg>`;
 }
 
 const _fillerCache = new Map();
@@ -712,29 +930,38 @@ export function getZoneFillerCss(slug, stage) {
 
 const _groundCache = new Map();
 
-export function getZoneGround(slug) {
-  if (!_groundCache.has(slug)) {
+export function getZoneGround(slug, stage = 0) {
+  const st = Math.max(0, Math.min(3, stage | 0));
+  const key = `${slug}:${st >= 3 ? 'city' : 'meadow'}`;
+  if (!_groundCache.has(key)) {
     const cfg = DISTRICTS[slug] || DEFAULT_DISTRICT;
-    const base = groundColorFor(cfg);
-    const dark = mixHex(base, '#1E3D28', 0.16);
+    const base = groundColorFor(cfg, st);
+    const dark = mixHex(base, st >= 3 ? '#3A4150' : '#1E3D28', 0.16);
     const light = mixHex(base, '#FFFFFF', 0.1);
     const T = 420;
-    const tuft = (x, y) => `<path d="M${x} ${y} q4 -14 8 0 M${x + 8} ${y + 2} q4 -12 8 0 M${x - 7} ${y + 2} q4 -11 7 0" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    // City ground is concrete (panel joints); earlier stages are meadow
+    const detail = st >= 3
+      ? `<path d="M0 140 H${T} M0 300 H${T} M210 0 V${T}" stroke="${dark}" stroke-width="3" opacity="0.4" fill="none"/>
+         <circle cx="110" cy="220" r="12" fill="none" stroke="${dark}" stroke-width="3.5" opacity="0.5"/>`
+      : (() => {
+          const tuft = (x, y) => `<path d="M${x} ${y} q4 -14 8 0 M${x + 8} ${y + 2} q4 -12 8 0 M${x - 7} ${y + 2} q4 -11 7 0" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+          return `${tuft(64, 252)}${tuft(302, 122)}${tuft(186, 382)}${tuft(360, 30)}`;
+        })();
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${T} ${T}">
       <rect width="${T}" height="${T}" fill="${base}"/>
       <ellipse cx="84" cy="92" rx="64" ry="24" fill="${light}" opacity="0.4"/>
       <ellipse cx="332" cy="304" rx="76" ry="28" fill="${dark}" opacity="0.25"/>
-      ${tuft(64, 252)}${tuft(302, 122)}${tuft(186, 382)}${tuft(360, 30)}
+      ${detail}
       <circle cx="242" cy="62" r="4" fill="${light}"/>
       <circle cx="122" cy="332" r="4" fill="${light}"/>
       <circle cx="398" cy="210" r="3.4" fill="${light}"/>
     </svg>`;
-    _groundCache.set(slug, {
+    _groundCache.set(key, {
       color: base,
       tile: `url("data:image/svg+xml,${encodeURIComponent(svg)}")`,
     });
   }
-  return _groundCache.get(slug);
+  return _groundCache.get(key);
 }
 
 // ── Public API ────────────────────────────────────────────────────
