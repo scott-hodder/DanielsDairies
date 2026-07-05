@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { withCors } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -13,7 +14,7 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -134,4 +135,4 @@ serve(async (req) => {
     console.error('[delete-account] Error:', error)
     return jsonResponse({ error: 'Failed to delete account. Please contact support.' }, 500)
   }
-})
+}))

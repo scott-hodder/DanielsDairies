@@ -27,6 +27,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.25.0?target=denonext'
 import { createHash } from 'node:crypto'
+import { withCors } from '../_shared/cors.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -72,7 +73,7 @@ async function addToMailchimp(email: string, firstName: string, lastName: string
   }
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405)
 
@@ -282,7 +283,7 @@ serve(async (req) => {
     console.error('[start-paid-signup] error:', error)
     return jsonResponse({ error: 'Something went wrong starting your signup. Please try again.' }, 500)
   }
-})
+}))
 
 async function createSignupCheckoutSession(
   stripe: Stripe,

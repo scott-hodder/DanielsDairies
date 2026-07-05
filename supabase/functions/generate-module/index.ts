@@ -13,6 +13,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withCors } from "../_shared/cors.ts";
 
 import {
   // Types
@@ -6589,7 +6590,7 @@ async function runAsyncMultiAgeGeneration(
 // HTTP HANDLER
 // ====================
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -7198,4 +7199,4 @@ REMINDER: All CRITICAL rules must pass or the module will be rejected.
     const error = e instanceof Error ? e : new Error(String(e));
     return jsonResponse({ error: error.message }, 500);
   }
-});
+}));

@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { withCors } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -7,7 +8,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req: Request) => {
+serve(withCors(async (req: Request) => {
   console.log("[schools-auth] Request received:", req.method, req.url);
 
   // Handle CORS preflight
@@ -51,7 +52,7 @@ serve(async (req: Request) => {
       }
     );
   }
-});
+}));
 
 async function handleSignup(
   supabaseAdmin: ReturnType<typeof createClient>,
