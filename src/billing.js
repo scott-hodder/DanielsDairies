@@ -9,6 +9,7 @@ import {
   grantCreditsToFamily
 } from './services/databaseService.js'
 import { getSupabaseClient } from './supabaseClient.js'
+import { requireParentGate } from './features/parentGate.js'
 
 const tierSelect = document.getElementById('tierSelect')
 const statusSelect = document.getElementById('statusSelect')
@@ -88,6 +89,12 @@ async function init() {
   const session = await checkAuth()
   if (!session) {
     window.location.href = '/login.html'
+    return
+  }
+
+  const gatePassed = await requireParentGate()
+  if (!gatePassed) {
+    window.location.href = '/dashboard.html'
     return
   }
 

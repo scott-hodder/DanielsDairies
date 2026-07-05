@@ -67,6 +67,7 @@ import {
   CATEGORY_TO_SUPERSKILL, MAP_ZONE_PROGRESSION, DANIEL_EXPRESSIONS
 } from './adventure-map-themes.js';
 import { injectAdventureMapStyles } from './adventure-map-styles.js';
+import { getSkillGate, getUnlockRequirement } from './features/dashboard/superSkillGate.js';
 
 // Super Skills data loaded from database (will be populated on init)
 let superSkillsFromDB = [];
@@ -470,6 +471,19 @@ export class AdventureMapV4 {
       this.currentCategory = availableCategories.length > 0 ? availableCategories[0] : 'all';
     }
 
+    // Sequential unlock clamp: whatever path set the category (picker, quiz,
+    // focus plan, stored value), a locked Super Skill is never shown — the
+    // child is redirected to the skill they're meant to be working on.
+    var gate = getSkillGate();
+    if (gate && this.currentCategory && this.currentCategory !== 'all') {
+      var gateState = gate.bySlug[this.currentCategory];
+      if (gateState && gateState.state === 'locked' && gate.activeSlug) {
+        this.currentCategory = gate.activeSlug;
+        this.setStoredCategory(gate.activeSlug);
+        this.currentCycleId = null;
+      }
+    }
+
     var availableCycles = this.getAvailableCyclesForCategory();
     if (availableCycles.length === 0) {
       // No cycles for this category - clear any stale cycle from a previous category
@@ -767,13 +781,19 @@ export class AdventureMapV4 {
   showCycleCompletionPopup() {
     if (!this.currentCycleId) return;
     var self = this;
+    var popupGate = getSkillGate();
     var allSkillCycleOptions = this.getAvailableCategories().map(function(category) {
       return {
         category: category,
         theme: CATEGORY_THEMES[category] || CATEGORY_THEMES.all,
         cycles: self.getAvailableCyclesForCategory(category)
       };
-    }).filter(function(option) { return option.cycles && option.cycles.length > 0; });
+    }).filter(function(option) {
+      if (!option.cycles || option.cycles.length === 0) return false;
+      // Locked Super Skills can't be jumped to from the cycle popup
+      if (popupGate && popupGate.bySlug[option.category] && popupGate.bySlug[option.category].state === 'locked') return false;
+      return true;
+    });
     var eligibleOptions = this.getEligibleSkillCycleOptions();
     var overlay = document.createElement('div');
     overlay.className = 'cycle-complete-popup-overlay';
@@ -913,10 +933,14 @@ export class AdventureMapV4 {
       allSlugs = this.getAvailableCategories();
     }
 
+    var pickerGate = getSkillGate();
+
     // Build skill card data with progress
     var skillCards = allSlugs.map(function(cat) {
       var theme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
       var dbSkill = superSkillsFromDB.find(function(s) { return s.slug === cat; });
+      var gateState = pickerGate && pickerGate.bySlug[cat] ? pickerGate.bySlug[cat].state : null;
+      var unlockReq = gateState === 'locked' ? getUnlockRequirement(cat, pickerGate) : null;
       var totalModules = self.allModules.filter(function(m) { return !m.isRoadBuilder && (m.superSkillSlug === cat || m.category === cat); }).length;
       var completedModules = self.allModules.filter(function(m) { return !m.isRoadBuilder && (m.superSkillSlug === cat || m.category === cat) && self.isModuleComplete(m); }).length;
       var description = (dbSkill && dbSkill.description) || theme.description || '';
@@ -947,35 +971,48 @@ export class AdventureMapV4 {
         btnColor: kidCopy.btnColor || '#405878',
         decos: kidCopy.decos || [],
         speechNew: kidCopy.speechNew || '',
-        speechCurrent: kidCopy.speechCurrent || ''
+        speechCurrent: kidCopy.speechCurrent || '',
+        locked: gateState === 'locked',
+        unlockName: unlockReq ? unlockReq.name : null
       };
     });
 
     var lastChosen = this.getStoredCategory() || this.currentCategory;
 
-    // Sort so the last-chosen skill appears first
-    if (lastChosen && lastChosen !== 'all') {
-      skillCards.sort(function(a, b) {
-        if (a.slug === lastChosen) return -1;
-        if (b.slug === lastChosen) return 1;
-        return 0;
-      });
-    }
+    // Sort: last-chosen skill first, locked skills last (journey order kept)
+    skillCards.sort(function(a, b) {
+      if (lastChosen && lastChosen !== 'all') {
+        if (a.slug === lastChosen && !a.locked) return -1;
+        if (b.slug === lastChosen && !b.locked) return 1;
+      }
+      if (a.locked !== b.locked) return a.locked ? 1 : -1;
+      return 0;
+    });
 
     var cardsHtml = skillCards.map(function(card) {
       var progressPct = card.totalModules > 0 ? Math.round((card.completedModules / card.totalModules) * 100) : 0;
-      var isLastChosen = card.slug === lastChosen && lastChosen !== 'all';
-      var cardClasses = 'skill-card' + (isLastChosen ? ' last-chosen' : '');
+      var isLastChosen = card.slug === lastChosen && lastChosen !== 'all' && !card.locked;
+      var cardClasses = 'skill-card' + (isLastChosen ? ' last-chosen' : '') + (card.locked ? ' skill-card-locked' : '');
       var decosHtml = card.decos.map(function(d) { return '<span class="skill-card-deco">' + d + '</span>'; }).join('');
-      var speechText = isLastChosen ? card.speechCurrent : (card.completedModules === 0 ? card.speechNew : '');
-      var btnLabel = isLastChosen ? 'Continue quest' : (card.completedModules > 0 ? 'Keep exploring' : 'Start adventure');
-      var progressLabel = card.completedModules > 0
-        ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' steps completed'
-        : card.totalModules + ' steps to explore';
+      var speechText = card.locked
+        ? (card.unlockName ? 'Complete ' + card.unlockName + ' to unlock me!' : 'You\'ll unlock me later on your journey!')
+        : (isLastChosen ? card.speechCurrent : (card.completedModules === 0 ? card.speechNew : ''));
+      var btnLabel = card.locked
+        ? (card.unlockName ? '🔒 Complete ' + card.unlockName + ' first' : '🔒 Unlocks later')
+        : (isLastChosen ? 'Continue quest' : (card.completedModules > 0 ? 'Keep exploring' : 'Start adventure'));
+      var progressLabel = card.locked
+        ? (card.unlockName ? 'Unlocks after ' + card.unlockName : 'Next on your journey')
+        : (card.completedModules > 0
+          ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' steps completed'
+          : card.totalModules + ' steps to explore');
+      var btnStyle = card.locked
+        ? 'background: linear-gradient(135deg, #9AA5B1, #5B6773)'
+        : 'background: linear-gradient(135deg, ' + card.btnColor + ', ' + card.btnColor + 'dd)';
 
       return '<div class="' + cardClasses + '" data-skill="' + card.slug + '" style="--card-bg: ' + card.bgColor + '; --card-border: ' + card.borderColor + '">' +
         '<div class="skill-card-decos">' + decosHtml + '</div>' +
         (isLastChosen ? '<span class="skill-card-continue-badge">⭐ Your current quest</span>' : '') +
+        (card.locked ? '<span class="skill-card-locked-badge">🔒 ' + (card.unlockName ? 'Complete ' + card.unlockName + ' first' : 'Unlocks later') + '</span>' : '') +
         (card.characterImg ? '<img class="skill-card-character" src="' + card.characterImg + '" alt="' + (card.characterName || '') + '" />' : '') +
         (speechText ? '<div class="skill-card-speech">' + speechText + '</div>' : '') +
         '<div class="skill-card-top">' +
@@ -983,13 +1020,13 @@ export class AdventureMapV4 {
         '<div class="skill-card-name">' + card.name + '</div>' +
         '</div>' +
         '<div class="skill-card-desc">' + card.description + '</div>' +
-        (card.pickThisIf ? '<div class="skill-card-pick-label">Pick this if:</div><div class="skill-card-pick-text">' + card.pickThisIf + '</div>' : '') +
+        (card.pickThisIf && !card.locked ? '<div class="skill-card-pick-label">Pick this if:</div><div class="skill-card-pick-text">' + card.pickThisIf + '</div>' : '') +
         (card.tag ? '<div class="skill-card-tags"><span class="skill-card-tag">' + card.tag + '</span></div>' : '') +
         '<div class="skill-card-progress">' +
         '<div class="skill-card-progress-bar"><div class="skill-card-progress-fill" style="width: ' + progressPct + '%; background: ' + card.btnColor + ';"></div></div>' +
         '<span class="skill-card-progress-text">' + progressLabel + '</span>' +
         '</div>' +
-        '<button class="skill-card-btn" style="background: linear-gradient(135deg, ' + card.btnColor + ', ' + card.btnColor + 'dd)">' + btnLabel + '</button>' +
+        '<button class="skill-card-btn" style="' + btnStyle + '">' + btnLabel + '</button>' +
         '</div>';
     }).join('');
 
@@ -1046,23 +1083,33 @@ export class AdventureMapV4 {
       return '<li>' + item + '</li>';
     }).join('');
 
-    var btnLabel = cardData.completedModules > 0 ? 'Continue quest' : 'Start adventure';
+    var isLocked = !!cardData.locked;
+    var btnLabel = isLocked
+      ? (cardData.unlockName ? '🔒 Complete ' + cardData.unlockName + ' first' : '🔒 Unlocks later')
+      : (cardData.completedModules > 0 ? 'Continue quest' : 'Start adventure');
+    var lockedNote = isLocked
+      ? '<div class="skill-preview-desc" style="font-weight:600;color:#5B6773">🔒 ' +
+        (cardData.unlockName
+          ? 'This adventure unlocks when you complete the <strong>' + cardData.unlockName + '</strong> Super Skill.'
+          : 'This adventure unlocks later on your journey.') + '</div>'
+      : '';
 
     overlay.innerHTML =
       '<div class="skill-preview-modal">' +
       '<div class="skill-preview-header" style="background: ' + bgColor + '">' +
       '<div class="skill-preview-top">' +
       '<div class="skill-preview-emoji">' + cardData.emoji + '</div>' +
-      (cardData.characterImg ? '<img class="skill-preview-character" src="' + cardData.characterImg + '" alt="' + (cardData.characterName || '') + '" />' : '') +
+      (cardData.characterImg ? '<img class="skill-preview-character" src="' + cardData.characterImg + '" alt="' + (cardData.characterName || '') + '" ' + (isLocked ? 'style="filter:grayscale(.7);opacity:.85"' : '') + '/>' : '') +
       '</div>' +
       '<div class="skill-preview-name">' + cardData.name + '</div>' +
       '</div>' +
       '<div class="skill-preview-body">' +
+      lockedNote +
       '<div class="skill-preview-desc">' + cardData.description + '</div>' +
       (learnHtml ? '<div class="skill-preview-learn-label">You\'ll learn how to:</div>' +
       '<ul class="skill-preview-learn-list">' + learnHtml + '</ul>' : '') +
       '<div class="skill-preview-actions">' +
-      '<button class="skill-preview-btn primary" id="previewStartBtn" style="background: linear-gradient(135deg, ' + btnColor + ', ' + btnColor + 'dd)">' + btnLabel + '</button>' +
+      '<button class="skill-preview-btn primary" id="previewStartBtn" ' + (isLocked ? 'disabled ' : '') + 'style="background: linear-gradient(135deg, ' + (isLocked ? '#9AA5B1, #5B6773' : btnColor + ', ' + btnColor + 'dd') + ')' + (isLocked ? ';opacity:.75;cursor:not-allowed' : '') + '">' + btnLabel + '</button>' +
       '<button class="skill-preview-btn secondary" id="previewBackBtn">Choose another skill</button>' +
       '</div>' +
       '</div>' +
@@ -1075,6 +1122,7 @@ export class AdventureMapV4 {
     });
 
     overlay.querySelector('#previewStartBtn').addEventListener('click', function() {
+      if (isLocked) return;
       self.currentCategory = cardData.slug;
       self.setStoredCategory(cardData.slug);
       self._skillSelectedThisSession = true;
@@ -1204,8 +1252,11 @@ export class AdventureMapV4 {
         });
       });
 
-      // Find the best match among available categories
-      var availableCategories = self.getAvailableCategories();
+      // Find the best match among available (unlocked) categories
+      var quizGate = getSkillGate();
+      var availableCategories = self.getAvailableCategories().filter(function(cat) {
+        return !(quizGate && quizGate.bySlug[cat] && quizGate.bySlug[cat].state === 'locked');
+      });
       var bestSkill = null;
       var bestScore = -1;
       availableCategories.forEach(function(cat) {

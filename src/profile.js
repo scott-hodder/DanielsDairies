@@ -6,6 +6,11 @@ import { showElement, hideElement } from './utils/dom.js'
 import { switchStripeSubscriptionPlan, manageSubscription } from './services/databaseService.js'
 import { showLoadingScreen, hideLoadingScreen } from './features/dashboard/loadingScreen.js'
 import { showToast } from './ui/toast.js'
+import { requireParentGate, openParentPinSettings } from './features/parentGate.js'
+import { initKidIcons } from './lib/kidIcons.js'
+
+// Consistent emoji artwork on every device
+initKidIcons()
 
 const supabase = getSupabaseClient()
 
@@ -83,6 +88,16 @@ async function init() {
     }
 
     state.currentUser = user
+
+    // Parent Zone gate: the whole profile page (children, billing, account)
+    // is parent-only, so verify before anything renders
+    hideLoadingScreen()
+    const gatePassed = await requireParentGate()
+    if (!gatePassed) {
+      window.location.href = '/dashboard.html'
+      return
+    }
+    showLoadingScreen()
 
     // Update header
     if (headerSubtitle) {
@@ -258,10 +273,13 @@ function renderBasicProfileSections(container) {
 
     <!-- Privacy & Data - subtle footer links -->
     <div style="margin-top:32px; padding:0 24px 24px; text-align:center;">
+      <p style="font-size:12px; font-weight:600; color:#6b7c8f; margin:0 0 10px; font-family:'Fredoka',sans-serif;">Account</p>
       <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
-        <button id="downloadDataBtn" type="button" style="background:none; border:none; color:#9ca3af; font-size:11px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Download My Data</button>
-        <span style="color:#d1d5db; font-size:11px;">|</span>
-        <button id="deleteAccountBtn" type="button" style="background:none; border:none; color:#9ca3af; font-size:11px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Delete Account</button>
+        <button id="parentPinBtn" type="button" style="background:none; border:none; color:#6b7c8f; font-size:13px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Parent Zone PIN</button>
+        <span style="color:#d1d5db; font-size:13px;">|</span>
+        <button id="downloadDataBtn" type="button" style="background:none; border:none; color:#6b7c8f; font-size:13px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Download My Data</button>
+        <span style="color:#d1d5db; font-size:13px;">|</span>
+        <button id="deleteAccountBtn" type="button" style="background:none; border:none; color:#dc2626; font-size:13px; font-weight:600; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Delete Account</button>
       </div>
       <p id="dataActionStatus" style="font-size:11px; color:#9ca3af; margin-top:8px;"></p>
     </div>
@@ -418,6 +436,11 @@ function renderBasicProfileSections(container) {
       }
     })
   }
+
+  // ── Parent Zone PIN ──
+  document.getElementById('parentPinBtn')?.addEventListener('click', () => {
+    openParentPinSettings()
+  })
 
   // ── Delete My Account ──
   const deleteBtn = document.getElementById('deleteAccountBtn')
@@ -581,11 +604,98 @@ function renderPlanSection() {
         <button class="profile-action-btn profile-action-btn-primary" id="makePaymentBtn">Make a Payment</button>
       </div>
       <div class="plan-manage-links">
+        ${sub && sub.status && sub.status !== 'inactive' ? '<button type="button" id="printStatementBtn" class="plan-manage-link">Print plan statement (for NDIS claims)</button>' : ''}
         ${manageLinks}
       </div>
     </div>
   `
 }
+
+// Printable subscription statement, worded so plan managers can process
+// self/plan-managed NDIS claims (business identity + service description).
+const STATEMENT_BUSINESS = {
+  name: "Daniel's Diaries — Foundational Minds",
+  abn: '', // set before public release; the ABN row is hidden while empty
+  email: 'info@danielsdiaries.com',
+  web: 'danielsdiaries.com'
+}
+
+async function openPlanStatement() {
+  const sub = window.currentSubscription || state.subscription
+  if (!sub || !sub.status || sub.status === 'inactive') {
+    showToast('You need an active subscription to generate a statement.', 'error')
+    return
+  }
+
+  const tierData = sub.subscription_tiers || sub.tierData || {}
+  const price = tierData.monthly_price_cents ? `A$${(tierData.monthly_price_cents / 100).toFixed(2)} per month` : '—'
+  const planName = tierData.display_name || (sub.tier || '').toUpperCase()
+
+  let parentName = ''
+  try {
+    const { data } = await supabase
+      .from('parent_profiles')
+      .select('full_name')
+      .eq('id', state.currentUser.id)
+      .maybeSingle()
+    parentName = data?.full_name || ''
+  } catch { /* fall back to email only */ }
+
+  const fmt = (d) => {
+    const date = new Date(d)
+    return isNaN(date.getTime()) ? null : date.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+  const periodStart = fmt(sub.stripe_current_period_start || sub.current_period_start)
+  const periodEnd = fmt(sub.stripe_current_period_end || sub.current_period_end)
+  const today = fmt(new Date())
+
+  const win = window.open('', '_blank')
+  if (!win) {
+    showToast('Please allow pop-ups to print your statement.', 'error')
+    return
+  }
+
+  const row = (label, value) => value
+    ? `<tr><td style="padding:6px 14px 6px 0;color:#6b7280;white-space:nowrap;">${label}</td><td style="padding:6px 0;font-weight:600;">${value}</td></tr>`
+    : ''
+
+  win.document.write(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Subscription statement — Daniel's Diaries</title>
+<style>
+  body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: #1f2937; max-width: 720px; margin: 40px auto; padding: 0 24px; line-height: 1.6; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .muted { color: #6b7280; font-size: 13px; }
+  table { border-collapse: collapse; font-size: 14px; margin: 18px 0; }
+  .box { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 20px; margin-top: 18px; font-size: 13px; }
+  @media print { .noprint { display: none; } }
+</style></head><body>
+  <h1>Subscription statement</h1>
+  <p class="muted">${escapeHtml(STATEMENT_BUSINESS.name)}${STATEMENT_BUSINESS.abn ? ' · ABN ' + escapeHtml(STATEMENT_BUSINESS.abn) : ''} · ${escapeHtml(STATEMENT_BUSINESS.web)} · ${escapeHtml(STATEMENT_BUSINESS.email)}</p>
+  <p class="muted">Statement generated ${today}</p>
+  <table>
+    ${row('Account holder', escapeHtml(parentName))}
+    ${row('Account email', escapeHtml(state.currentUser?.email || ''))}
+    ${row('Service', "Daniel's Diaries — structured psychoeducational skill-building program for children (family subscription)")}
+    ${row('Plan', escapeHtml(planName))}
+    ${row('Subscription price', escapeHtml(price))}
+    ${row('Status', escapeHtml((sub.status || '').replace('_', ' ')))}
+    ${row('Current billing period', periodStart && periodEnd ? `${periodStart} — ${periodEnd}` : null)}
+  </table>
+  <div class="box">
+    This statement is provided to assist families who self-manage or plan-manage NDIS funding. Daniel's Diaries is a
+    mainstream educational wellbeing product; whether a subscription can be claimed depends on the participant's plan
+    and is a matter for the participant, their plan manager and the NDIA. Payment receipts for individual charges are
+    issued by our payment processor (Stripe) at the time of each payment.
+  </div>
+  <p class="noprint" style="margin-top:24px;"><button onclick="window.print()" style="padding:10px 18px;font-size:14px;cursor:pointer;">Print / Save as PDF</button></p>
+</body></html>`)
+  win.document.close()
+}
+
+// Delegated so it survives plan-section re-renders
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#printStatementBtn')) openPlanStatement()
+})
 
 // Render modules section content
 function renderModulesSection() {

@@ -301,6 +301,12 @@ export function injectAdventureMapStyles() {
     css.push('.skill-card.last-chosen { border-width: 3px; box-shadow: 0 0 0 4px rgba(99,102,241,0.12), 0 8px 24px rgba(0,0,0,0.08); }');
     css.push('.skill-card-continue-badge { display: inline-flex; align-items: center; gap: 6px; position: absolute; top: 0; left: 20px; background: linear-gradient(135deg, #6366F1, #818CF8); color: #fff; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; padding: 5px 14px 6px; border-radius: 0 0 12px 12px; letter-spacing: 0.3px; z-index: 2; box-shadow: 0 3px 10px rgba(99,102,241,0.3); }');
 
+    // Locked card (sequential unlock): dulled with an under-construction badge
+    css.push('.skill-card.skill-card-locked { filter: grayscale(0.55) opacity(0.8); }');
+    css.push('.skill-card.skill-card-locked:hover { transform: none; filter: grayscale(0.4) opacity(0.9); }');
+    css.push('.skill-picker-cards.has-chosen .skill-card.skill-card-locked { filter: grayscale(0.7) opacity(0.6); }');
+    css.push('.skill-card-locked-badge { display: inline-flex; align-items: center; gap: 6px; position: absolute; top: 0; left: 20px; background: linear-gradient(135deg, #5B6773, #9AA5B1); color: #fff; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; padding: 5px 14px 6px; border-radius: 0 0 12px 12px; letter-spacing: 0.3px; z-index: 2; box-shadow: 0 3px 10px rgba(91,103,115,0.3); }');
+
     // Speech bubble
     css.push('.skill-card-speech { position: relative; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 6px 12px; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 500; color: #64748B; margin-bottom: 10px; display: inline-block; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }');
     css.push('.skill-card-speech::after { content: ""; position: absolute; bottom: -6px; left: 20px; width: 10px; height: 10px; background: #fff; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; transform: rotate(45deg); }');

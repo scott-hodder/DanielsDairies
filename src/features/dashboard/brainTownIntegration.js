@@ -7,7 +7,6 @@
 import { openExplainer, renderExplainerChip } from './danielExplainer.js'
 import { maybeShowFirstTimeGuide } from './firstTimeGuide.js'
 import { initSvgMap } from './brainTownSvgMap.js'
-import { initRoadBuilderTab } from './roadBuilderTab.js'
 import { initArcadeTab, refreshArcadeBests } from './arcadeTab.js'
 import { recordArcadePlay, saveArcadeReflection, getReflectionFor } from './arcadeLoop.js'
 import { listGames } from '../../minigames/index.js'
@@ -40,10 +39,6 @@ export async function initBrainTown({
 }) {
   if (!container) return
   _brainTownContainer = container
-
-  // Check if first time - show explainer
-  const explainerKey = `bt_explainer_seen_${selectedChild?.id || 'anon'}`
-  const hasSeenExplainer = localStorage.getItem(explainerKey)
 
   // Build the Brain Town section directly (no internal nav - tabs are in main dashboard nav)
   // The explainer chip lives in the wrapper (not the map container) so it
@@ -84,20 +79,6 @@ export async function initBrainTown({
     mapContainer
   })
 
-  // ── Road Builder (mounted in main dashboard tab) ──
-  const roadBuilderMount = document.getElementById('roadBuilderMount')
-  if (roadBuilderMount && !roadBuilderMount.dataset.initialized) {
-    roadBuilderMount.innerHTML = `
-      <div class="bt-section-card" style="max-width:1180px;margin:0 auto;padding:0 22px 40px">
-        <h2 class="bt-section-title">Road Builder</h2>
-        <p class="bt-section-sub">Your brain is a town, and every think, feel, and act builds a road. Choose which roads to build and watch them grow.</p>
-        <div id="roadBuilderContent"></div>
-      </div>
-    `
-    initRoadBuilderTab(roadBuilderMount.querySelector('#roadBuilderContent'))
-    roadBuilderMount.dataset.initialized = '1'
-  }
-
   // ── Arcade (mounted in main dashboard tab) ──
   const arcadeMount = document.getElementById('arcadeMount')
   if (arcadeMount && !arcadeMount.dataset.initialized) {
@@ -108,15 +89,6 @@ export async function initBrainTown({
       }
     })
     arcadeMount.dataset.initialized = '1'
-  }
-
-  // Show explainer on first visit
-  if (!hasSeenExplainer) {
-    setTimeout(() => {
-      openExplainer(() => {
-        localStorage.setItem(explainerKey, '1')
-      })
-    }, 600)
   }
 
   _initialized = true
@@ -154,7 +126,6 @@ export function switchBrainTownTab(tabId) {
   const tabMap = {
     'braintown': 'dashboard',
     'adventures': 'adventures',
-    'roadbuilder': 'roadBuilder',
     'arcade': 'arcade'
   }
   const dashboardTab = tabMap[tabId] || tabId
@@ -164,19 +135,33 @@ export function switchBrainTownTab(tabId) {
 }
 
 function launchArcadeGame(gameId, container) {
-  // Create a modal for the game
+  const games = listGames()
+  const gameDef = games.find(g => g.id === gameId)
+
+  // Create a modal for the game. Structure matters:
+  //  - topbar holds the title + close button, OUTSIDE the play area, so the
+  //    close button never collides with a game's own HUD
+  //  - gameHost keeps layout control (flex sizing); games are handed the
+  //    inner gameMount, which they may restyle freely without breaking the
+  //    modal (several games overwrite their container's cssText on mount)
+  //  - the stage is sized like the roadblock modal games are designed for,
+  //    not a huge 85vh sheet that leaves them sparse and mis-scaled
   const modal = document.createElement('div')
   modal.className = 'arcade-game-modal'
   modal.innerHTML = `
     <div class="arcade-game-overlay">
       <div class="arcade-game-content">
-        <button class="arcade-game-close" id="arcadeGameClose" aria-label="Close game">&times;</button>
-        <div class="arcade-game-container" id="arcadeGameContainer"></div>
+        <div class="arcade-game-topbar">
+          <span class="arcade-game-title" id="arcadeGameTitle"></span>
+          <button class="arcade-game-close" id="arcadeGameClose" aria-label="Close game">&times;</button>
+        </div>
+        <div class="arcade-game-host" id="arcadeGameHost">
+          <div class="arcade-game-container" id="arcadeGameContainer"></div>
+        </div>
       </div>
     </div>
   `
 
-  // Style the modal
   const overlay = modal.querySelector('.arcade-game-overlay')
   Object.assign(overlay.style, {
     position: 'fixed', inset: '0', background: 'rgba(16, 36, 60, 0.7)',
@@ -185,21 +170,37 @@ function launchArcadeGame(gameId, container) {
   })
   const content = modal.querySelector('.arcade-game-content')
   Object.assign(content.style, {
-    background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '800px',
-    height: '85vh', overflow: 'hidden', position: 'relative',
+    background: '#16324f', borderRadius: '20px', width: '100%', maxWidth: '560px',
+    height: 'min(84vh, 660px)', overflow: 'hidden', position: 'relative',
     boxShadow: '0 30px 70px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column'
+  })
+  const topbar = modal.querySelector('.arcade-game-topbar')
+  Object.assign(topbar.style, {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: '10px', padding: '10px 10px 10px 16px', flexShrink: '0',
+    background: '#16324f', color: '#fff'
+  })
+  const titleEl = modal.querySelector('#arcadeGameTitle')
+  titleEl.textContent = gameDef ? (gameDef.displayName || gameDef.name || gameDef.id) : 'Arcade'
+  Object.assign(titleEl.style, {
+    fontFamily: "'Fredoka', sans-serif", fontWeight: '700', fontSize: '15px',
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
   })
   const closeBtn = modal.querySelector('#arcadeGameClose')
   Object.assign(closeBtn.style, {
-    position: 'absolute', top: '12px', right: '12px', zIndex: '100',
-    width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #e5e7eb',
-    background: '#fff', color: '#16324f', fontSize: '24px', fontWeight: '700',
-    cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '1'
+    width: '34px', height: '34px', borderRadius: '50%', border: 'none', flexShrink: '0',
+    background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '22px', fontWeight: '700',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '1'
   })
 
+  // Host keeps the flex layout; the mount inside is the game's sandbox
+  const gameHost = modal.querySelector('#arcadeGameHost')
+  Object.assign(gameHost.style, {
+    flex: '1 1 auto', minHeight: '0', position: 'relative', overflow: 'hidden',
+    background: '#fffff5', borderRadius: '0 0 20px 20px'
+  })
   const gameContainer = modal.querySelector('#arcadeGameContainer')
-  Object.assign(gameContainer.style, { flex: '1', position: 'relative', overflow: 'hidden' })
+  Object.assign(gameContainer.style, { width: '100%', height: '100%', position: 'relative' })
 
   const abortController = new AbortController()
 
@@ -218,8 +219,6 @@ function launchArcadeGame(gameId, container) {
 
   // Run the game through its full lifecycle so completion resolves properly
   try {
-    const games = listGames()
-    const gameDef = games.find(g => g.id === gameId)
     if (!gameDef) {
       gameContainer.innerHTML = '<p style="padding:40px;text-align:center;color:#6b7e95">Game not found.</p>'
       return
@@ -263,8 +262,10 @@ function launchArcadeGame(gameId, container) {
         if (liveChild && liveChild.id === child.id) {
           liveChild.stars = (liveChild.stars || 0) + reward.awarded_stars
         }
-        refreshArcadeBests()
       }
+      // Always refresh: the arcade tab needs to flip into its
+      // "played today" state even after an unsuccessful run.
+      refreshArcadeBests()
 
       showArcadeEndScreen(gameContainer, gameDef, result, {
         reward,
@@ -322,14 +323,14 @@ function showArcadeEndScreen(host, gameDef, result, { reward, onPlayAgain, onClo
       ${rewardLine ? `<p style="margin:4px 0;font-size:13px;font-weight:600;color:#40916c">${rewardLine}</p>` : ''}
       <p style="margin:6px 0 12px;font-size:14px;color:#6b7e95">${success
         ? 'That practice makes your brain roads stronger.'
-        : 'Every try builds the road a little more. Have another go?'}</p>
+        : 'Every try builds the road a little more — good on you for having a go.'}</p>
+      <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#40916c">That was your arcade game for today — a new one unlocks tomorrow! 🌟</p>
       <div class="ae-reflection" style="display:none;background:#eef6ff;border:1px solid #cfe3f7;border-radius:14px;padding:12px 14px;margin:0 0 14px;text-align:left">
         <p class="ae-ref-q" style="margin:0 0 8px;font-size:13.5px;font-weight:600;color:#2b4a6f"></p>
         <div class="ae-ref-opts" style="display:flex;flex-direction:column;gap:7px"></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:center">
-        <button class="ae-again" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f2c94c,#e6a800);color:#16324f;font-weight:700;font-size:15px;cursor:pointer">Play again</button>
-        <button class="ae-close" style="flex:1;padding:12px;border:2px solid #d7deea;border-radius:12px;background:#fff;color:#405878;font-weight:700;font-size:15px;cursor:pointer">All done</button>
+        <button class="ae-close" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f2c94c,#e6a800);color:#16324f;font-weight:700;font-size:15px;cursor:pointer">All done</button>
       </div>
     </div>
   `
@@ -355,7 +356,7 @@ function showArcadeEndScreen(host, gameDef, result, { reward, onPlayAgain, onClo
     })
   }
 
-  overlay.querySelector('.ae-again').addEventListener('click', onPlayAgain)
+  void onPlayAgain // replays are gone: one arcade game per day
   overlay.querySelector('.ae-close').addEventListener('click', onClose)
   host.appendChild(overlay)
 }

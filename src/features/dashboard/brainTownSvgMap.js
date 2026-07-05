@@ -22,6 +22,7 @@
 
 import { getSuperSkills } from '../../services/databaseService.js'
 import { KID_FRIENDLY_COPY } from '../../adventure-map-themes.js'
+import { computeSkillStates, getUnlockRequirement } from './superSkillGate.js'
 
 /* ─────────────────────────────────────────────
    1. CONFIG
@@ -116,6 +117,10 @@ const HUB = {
 
 function renderDefs() {
   return `<defs>
+    <!-- Roadworks barrier stripes (locked Super Skill roads) -->
+    <pattern id="btWorksStripe" width="26" height="26" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="26" height="26" fill="#F6C445"/><rect width="13" height="26" fill="#3F4652"/>
+    </pattern>
     <!-- World gradients -->
     <radialGradient id="btMeadowG" cx="50%" cy="46%" r="75%">
       <stop offset="0%" stop-color="#BCE49E"/><stop offset="48%" stop-color="#98CF74"/>
@@ -776,8 +781,12 @@ function renderDistrictFraming(d, seed) {
   return s
 }
 
-function renderDistrict(slug, d) {
-  let s = `<g id="district-${slug}" class="district" data-zone="${slug}">`
+function renderDistrict(slug, d, locked = false) {
+  // Locked districts are simply muted — colours washed toward pastel so the
+  // active district clearly glows as the place to be. No overlays: the small
+  // road gate and the pin's lock badge do the storytelling.
+  const lockedStyle = locked ? ' style="filter:saturate(.4) opacity(.82)"' : ''
+  let s = `<g id="district-${slug}" class="district${locked ? ' district-locked' : ''}" data-zone="${slug}"${lockedStyle}>`
 
   // Ground zone — organic pastel blob with soft gradient + scalloped border
   s += `<defs><radialGradient id="zoneG-${slug}">
@@ -1128,11 +1137,46 @@ function renderRoads(progressBySlug = {}, includeGlows = true) {
   return `<g id="roadShadows">${shadows}</g><g id="roadEdges">${edges}</g><g id="roadFills">${fills}</g><g id="roadDashes">${dashes}</g>${includeGlows ? `<g id="roadGlows">${glows}</g>` : ''}`
 }
 
+// Point along a district's road (its cubic segment) at parameter t — used
+// to place the roadworks barrier without needing a live DOM path.
+function roadPointAt(slug, t) {
+  const nums = (ROAD_PATHS[slug] || '').match(/-?\d+(?:\.\d+)?/g)?.map(Number)
+  if (!nums || nums.length < 8) return null
+  const [x0, y0, c1x, c1y, c2x, c2y, x3, y3] = nums
+  const u = 1 - t
+  return {
+    x: u * u * u * x0 + 3 * u * u * t * c1x + 3 * u * t * t * c2x + t * t * t * x3,
+    y: u * u * u * y0 + 3 * u * u * t * c1y + 3 * u * t * t * c2y + t * t * t * y3
+  }
+}
+
+// A single small wooden gate across each locked district's road, placed
+// near the district entrance so the hub never gets crowded. Pure scenery —
+// never intercepts clicks, so tapping the district still opens the
+// explanation popup.
+function renderRoadworks(gate) {
+  if (!gate) return ''
+  let s = ''
+  Object.keys(DISTRICTS).forEach(slug => {
+    if (gate.bySlug[slug]?.state !== 'locked') return
+    const pt = roadPointAt(slug, 0.9)
+    if (!pt) return
+    s += `<g class="svg-roadworks" data-slug="${slug}" pointer-events="none" transform="translate(${Math.round(pt.x)},${Math.round(pt.y)})">
+      <ellipse cy="30" rx="62" ry="11" fill="#1E4526" opacity="0.14"/>
+      <rect x="-52" y="-8" width="9" height="40" rx="3" fill="#A98B52"/>
+      <rect x="43" y="-8" width="9" height="40" rx="3" fill="#A98B52"/>
+      <rect x="-58" y="-16" width="116" height="17" rx="8" fill="url(#btWorksStripe)" stroke="#7A6234" stroke-width="2.5" opacity="0.92"/>
+      <text x="0" y="-26" text-anchor="middle" font-size="24">🚧</text>
+    </g>`
+  })
+  return s
+}
+
 /* ─────────────────────────────────────────────
    10. DISTRICT MARKERS — bobbing pins + name pills
    ───────────────────────────────────────────── */
 
-function renderMarkers(skills, progressBySlug = {}, nextSlug = null) {
+function renderMarkers(skills, progressBySlug = {}, nextSlug = null, gate = null) {
   const skillMap = {}
   skills.forEach(sk => { skillMap[sk.slug || (sk.name || '').toLowerCase().replace(/\s+/g, '-')] = sk })
 
@@ -1143,31 +1187,46 @@ function renderMarkers(skills, progressBySlug = {}, nextSlug = null) {
     const img = sk?.character_image_url
     const pinY = d.y - 225
     const progress = progressBySlug[slug]
+    const locked = gate?.bySlug[slug]?.state === 'locked'
+    const pinColor = locked ? '#AEB9C4' : d.color
+    const ariaLabel = locked ? `${name} — opens later on your journey` : `Select ${name}`
 
-    s += `<g class="svg-pin" data-slug="${slug}" role="button" tabindex="0" aria-label="Select ${esc(name)}">`
+    s += `<g class="svg-pin${locked ? ' svg-pin-locked' : ''}" data-slug="${slug}" role="button" tabindex="0" aria-label="${esc(ariaLabel)}">`
     s += `<g class="svg-pin-bob" style="animation-delay:${(idx * 0.45).toFixed(2)}s">`
 
+    // Golden halo on the active skill — the one place to go next
+    if (gate?.activeSlug === slug) {
+      s += `<circle cx="${d.x}" cy="${pinY}" r="58" fill="none" stroke="#F2C94C" stroke-width="7" opacity="0.9"/>`
+      s += `<circle cx="${d.x}" cy="${pinY}" r="66" fill="none" stroke="#F2C94C" stroke-width="3" opacity="0.45"/>`
+    }
+
     // Pulse ring (visible when selected)
-    s += `<circle cx="${d.x}" cy="${pinY}" r="50" fill="none" stroke="${d.color}" stroke-width="5" class="svg-pin-ring"/>`
+    s += `<circle cx="${d.x}" cy="${pinY}" r="50" fill="none" stroke="${pinColor}" stroke-width="5" class="svg-pin-ring"/>`
     // Drop pointer
-    s += `<polygon points="${d.x},${pinY + 60} ${d.x - 13},${pinY + 42} ${d.x + 13},${pinY + 42}" fill="#fff" stroke="${d.color}" stroke-width="3"/>`
+    s += `<polygon points="${d.x},${pinY + 60} ${d.x - 13},${pinY + 42} ${d.x + 13},${pinY + 42}" fill="#fff" stroke="${pinColor}" stroke-width="3"/>`
     // Pin disc
-    s += `<circle cx="${d.x}" cy="${pinY}" r="46" fill="#fff" stroke="${d.color}" stroke-width="5" filter="url(#btPinShadow)" class="svg-pin-circle"/>`
-    s += `<circle cx="${d.x}" cy="${pinY}" r="39" fill="${d.zoneColor}" opacity=".55"/>`
+    s += `<circle cx="${d.x}" cy="${pinY}" r="46" fill="#fff" stroke="${pinColor}" stroke-width="5" filter="url(#btPinShadow)" class="svg-pin-circle"/>`
+    s += `<circle cx="${d.x}" cy="${pinY}" r="39" fill="${locked ? '#EDF1F6' : d.zoneColor}" opacity=".55"/>`
     if (img) {
-      s += `<image href="${img}" x="${d.x - 36}" y="${pinY - 36}" width="72" height="72" preserveAspectRatio="xMidYMid meet"/>`
+      s += `<image href="${img}" x="${d.x - 36}" y="${pinY - 36}" width="72" height="72" preserveAspectRatio="xMidYMid meet"${locked ? ' style="filter:saturate(.35);opacity:.9"' : ''}/>`
     } else {
       s += `<text x="${d.x}" y="${pinY + 12}" text-anchor="middle" font-size="38">${d.emoji}</text>`
+    }
+
+    // Compact lock badge on the pin disc — the popup tells the full story
+    if (locked) {
+      s += `<circle cx="${d.x + 34}" cy="${pinY + 32}" r="17" fill="#fff" stroke="#AEB9C4" stroke-width="3" filter="url(#btPinShadow)"/>`
+      s += `<text x="${d.x + 34}" y="${pinY + 38}" text-anchor="middle" font-size="17">🔒</text>`
     }
 
     // Name pill
     const tw = name.length * 9.5 + 36
     const ly = pinY - 66
-    s += `<rect x="${d.x - tw / 2}" y="${ly}" width="${tw}" height="36" rx="18" fill="rgba(255,255,255,0.97)" stroke="${d.color}" stroke-width="2" filter="url(#btPinShadow)"/>`
-    s += `<text x="${d.x}" y="${ly + 24}" text-anchor="middle" font-size="18" font-weight="700" fill="${d.color}" font-family="Fredoka,sans-serif">${esc(name)}</text>`
+    s += `<rect x="${d.x - tw / 2}" y="${ly}" width="${tw}" height="36" rx="18" fill="rgba(255,255,255,0.97)" stroke="${pinColor}" stroke-width="2" filter="url(#btPinShadow)"/>`
+    s += `<text x="${d.x}" y="${ly + 24}" text-anchor="middle" font-size="18" font-weight="700" fill="${locked ? '#64748B' : d.color}" font-family="Fredoka,sans-serif">${esc(name)}</text>`
 
-    // Progress pill — done/total adventures, plus a tick when complete
-    if (progress && progress.total > 0) {
+    // Progress pill — only for open districts
+    if (!locked && progress && progress.total > 0) {
       const ptext = progress.pct >= 100 ? `✓ ${progress.done}/${progress.total}` : `${progress.done}/${progress.total}`
       const pw = ptext.length * 11 + 26
       const py = pinY + 66
@@ -1194,7 +1253,7 @@ function renderDistrictHitAreas() {
 
 // mode: 'full' (desktop, one live SVG) | 'static' (mobile base image —
 // scenery only) | 'interactive' (mobile overlay — glows, hit areas, pins)
-function buildSvg(skills, progressBySlug = {}, nextSlug = null, mode = 'full') {
+function buildSvg(skills, progressBySlug = {}, nextSlug = null, mode = 'full', gate = null) {
   let s = ''
 
   if (mode !== 'interactive') {
@@ -1219,8 +1278,11 @@ function buildSvg(skills, progressBySlug = {}, nextSlug = null, mode = 'full') {
 
     // Hub + 7 districts
     s += `<g id="districts">${renderTownSquare(mode === 'full')}`
-    Object.keys(DISTRICTS).forEach(slug => { s += renderDistrict(slug, DISTRICTS[slug]) })
+    Object.keys(DISTRICTS).forEach(slug => { s += renderDistrict(slug, DISTRICTS[slug], gate?.bySlug[slug]?.state === 'locked') })
     s += `</g>`
+
+    // Roadworks barriers on locked roads (above roads + districts)
+    s += `<g id="roadworks" pointer-events="none">${renderRoadworks(gate)}</g>`
   }
 
   if (mode === 'interactive') {
@@ -1232,7 +1294,7 @@ function buildSvg(skills, progressBySlug = {}, nextSlug = null, mode = 'full') {
     // Hit areas over the zones, then markers on the very top so pins
     // receive their own hover/click events
     s += `<g id="interactionOverlays">${renderDistrictHitAreas()}</g>`
-    s += `<g id="mapMarkers">${renderMarkers(skills, progressBySlug, nextSlug)}</g>`
+    s += `<g id="mapMarkers">${renderMarkers(skills, progressBySlug, nextSlug, gate)}</g>`
   }
 
   if (mode !== 'interactive') {
@@ -1387,6 +1449,7 @@ function createDaniel(worldEl) {
   let state = 'idle'
   let route = [], rIdx = 0, fIdx = 0, tick = 0, flipped = false
   let onDone = null
+  let atSlug = null // the district road Daniel is on (null = home at the square)
   const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   function place(x, y) { pos = { x, y }; el.style.left = (x - 65) + 'px'; el.style.top = (y - 122) + 'px' }
@@ -1403,30 +1466,61 @@ function createDaniel(worldEl) {
     return rev ? pts.reverse() : pts
   }
 
+  // Route from wherever Daniel is now back to the Town Square: retrace his
+  // current road (joining it at the nearest point, in case he's mid-walk),
+  // or a short straight line if he's off-road for any reason.
+  function routeToHub() {
+    const nearHub = Math.hypot(CX - pos.x, CY - pos.y) < 24
+    if (nearHub) return []
+    if (atSlug && ROAD_PATHS[atSlug]) {
+      const back = samplePath(ROAD_PATHS[atSlug], 60, false).reverse() // district → hub
+      let nearest = 0, best = Infinity
+      back.forEach((pt, i) => {
+        const dist = Math.hypot(pt.x - pos.x, pt.y - pos.y)
+        if (dist < best) { best = dist; nearest = i }
+      })
+      return back.slice(nearest)
+    }
+    const steps = Math.max(8, Math.floor(Math.hypot(CX - pos.x, CY - pos.y) / 8))
+    const line = []
+    for (let i = 0; i <= steps; i++) line.push({ x: pos.x + (CX - pos.x) * (i / steps), y: pos.y + (CY - pos.y) * (i / steps) })
+    return line
+  }
+
   function walkToward(slug, cb) {
     onDone = cb || null
     const path = ROAD_PATHS[slug]
     if (!path) { if (onDone) onDone(); return }
 
-    if (noMotion) {
-      const points = samplePath(path, 60, false)
-      const destination = points[Math.floor(points.length * .92)]
-      place(destination.x, destination.y); img.src = DANIEL_IDLE; state = 'arrived'
+    // Already there — don't restart the walk
+    if (atSlug === slug && state === 'arrived') {
       if (onDone) { onDone(); onDone = null }
       return
     }
 
     const full = samplePath(path, 60, false)
-    route = full.slice(0, Math.floor(full.length * .92)); rIdx = 0; state = 'walking'; img.src = DANIEL_FRAMES[0]
+    const outbound = full.slice(0, Math.floor(full.length * .92))
+
+    if (noMotion) {
+      const destination = outbound[outbound.length - 1]
+      place(destination.x, destination.y); img.src = DANIEL_IDLE; state = 'arrived'; atSlug = slug
+      if (onDone) { onDone(); onDone = null }
+      return
+    }
+
+    // Walk back to the square first (from wherever he is), then out along
+    // the new road — never teleport back to the centre.
+    route = routeToHub().concat(outbound)
+    atSlug = slug
+    rIdx = 0; state = 'walking'; img.src = DANIEL_FRAMES[0]
   }
 
   function walkHome(cb) {
     onDone = () => { state = 'idle'; if (cb) cb() }
-    if (noMotion) { place(CX, CY); state = 'idle'; if (cb) cb(); return }
-    const dx = CX - pos.x, dy = CY - pos.y
-    const steps = Math.max(8, Math.floor(Math.sqrt(dx * dx + dy * dy) / 8))
-    route = []
-    for (let i = 0; i <= steps; i++) { route.push({ x: pos.x + dx * (i / steps), y: pos.y + dy * (i / steps) }) }
+    if (noMotion) { place(CX, CY); state = 'idle'; atSlug = null; if (cb) cb(); return }
+    route = routeToHub()
+    atSlug = null
+    if (route.length === 0) { state = 'idle'; if (cb) cb(); return }
     rIdx = 0; state = 'walking'; img.src = DANIEL_FRAMES[0]
   }
 
@@ -1495,11 +1589,6 @@ function createSkillPopup({ onNavigate, modules = [], childModules = [] }) {
     return { done, total: skillModules.length, pct: skillModules.length ? Math.round(done / skillModules.length * 100) : 0 }
   }
 
-  function totalProgress() {
-    const done = modules.filter(m => childModules.some(cm => cm.module_id === m.id && cm.is_completed === true)).length
-    return { done, total: modules.length, pct: modules.length ? Math.round(done / modules.length * 100) : 0 }
-  }
-
   function progressBlock(p, label, color) {
     if (!p.total) return ''
     return `<div class="bt-svg-progress">
@@ -1509,7 +1598,7 @@ function createSkillPopup({ onNavigate, modules = [], childModules = [] }) {
     </div>`
   }
 
-  function open(slug, skill, d) {
+  function open(slug, skill, d, lock = null) {
     openSlug = slug
     const name = skill?.name || d.label
     const img = skill?.character_image_url
@@ -1517,6 +1606,34 @@ function createSkillPopup({ onNavigate, modules = [], childModules = [] }) {
     const charName = skill?.character_name
     const copy = KID_FRIENDLY_COPY[slug] || { description: desc, pickThisIf: null, youllLearn: null, tag: null }
     const progress = skillProgress(skill, slug)
+
+    // Locked district: tell the child exactly what unlocks it and point
+    // them at the skill they should finish first.
+    if (lock?.locked) {
+      const reqName = lock.requirementName || 'your current Super Skill'
+      panel.innerHTML = `
+        <div class="bt-svg-ph" style="background:linear-gradient(150deg,${d.color}14,#ffffff 70%);border-color:#B9C4CF66">
+          <button class="bt-svg-px" aria-label="Close">&times;</button>
+          ${img ? `<img src="${img}" alt="" class="bt-svg-pi" style="filter:saturate(.4);opacity:.9"/>` : `<div class="bt-svg-pe">🔒</div>`}
+          <h3 class="bt-svg-pn">${esc(name)}</h3>
+          ${charName ? `<span class="bt-svg-pc">Guide: ${esc(charName)}</span>` : ''}
+          <span class="bt-svg-pd" style="color:#5B6773">🔒 Next on your journey</span>
+        </div>
+        <div class="bt-svg-pb">
+          <p><strong>${esc(name)}</strong> unlocks when you complete the <strong>${esc(reqName)}</strong> Super Skill.</p>
+          ${charName ? `<p>${esc(charName)} will be waiting for you when the road opens!</p>` : ''}
+        </div>
+        <div class="bt-svg-pf">
+          ${lock.activeSkill ? `<button class="bt-svg-cta" style="background:linear-gradient(135deg,${lock.activeColor || '#405878'},${lock.activeAccent || '#2f4562'})">Keep going in ${esc(lock.activeSkill.name || reqName)}</button>` : `<button class="bt-svg-cta" style="background:linear-gradient(135deg,#9AA5B1,#5B6773)">Okay!</button>`}
+        </div>`
+
+      panel.querySelector('.bt-svg-cta').addEventListener('click', () => {
+        close()
+        if (lock.activeSkill && onNavigate) onNavigate(lock.activeSkill)
+      })
+      show()
+      return
+    }
 
     panel.innerHTML = `
       <div class="bt-svg-ph" style="background:linear-gradient(150deg,${d.color}1F,#ffffff 70%);border-color:${d.color}44">
@@ -1544,29 +1661,6 @@ function createSkillPopup({ onNavigate, modules = [], childModules = [] }) {
     show()
   }
 
-  // Welcome popup for the Brain Town hub itself
-  function openHub() {
-    openSlug = HUB.slug
-    const p = totalProgress()
-    panel.innerHTML = `
-      <div class="bt-svg-ph" style="background:linear-gradient(150deg,${HUB.color}2E,#ffffff 70%);border-color:${HUB.color}55">
-        <button class="bt-svg-px" aria-label="Close">&times;</button>
-        <span class="bt-svg-ps bt-svg-ps1">✦</span><span class="bt-svg-ps bt-svg-ps2">✦</span>
-        <div class="bt-svg-pe">${HUB.emoji}</div>
-        <h3 class="bt-svg-pn">${esc(HUB.label)}</h3>
-        <span class="bt-svg-pd" style="color:${HUB.accent}">${esc(HUB.district)}</span>
-      </div>
-      <div class="bt-svg-pb">
-        <p>${esc(HUB.desc)}</p>
-        ${progressBlock(p, 'Adventures completed so far', HUB.color)}
-      </div>
-      <div class="bt-svg-pf">
-        <button class="bt-svg-cta" style="background:linear-gradient(135deg,${HUB.color},${HUB.accent})">Let's explore!</button>
-      </div>`
-    panel.querySelector('.bt-svg-cta').addEventListener('click', close)
-    show()
-  }
-
   function show() {
     root.classList.add('open')
     const closeBtn = panel.querySelector('.bt-svg-px')
@@ -1584,7 +1678,7 @@ function createSkillPopup({ onNavigate, modules = [], childModules = [] }) {
   scrim.addEventListener('click', close)
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && openSlug) close() })
 
-  return { open, openHub, close, isOpen: () => !!openSlug, setOnClose: fn => { onClose = fn } }
+  return { open, close, isOpen: () => !!openSlug, setOnClose: fn => { onClose = fn } }
 }
 
 /* ─────────────────────────────────────────────
@@ -1736,10 +1830,14 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
     progressBySlug[slug] = { done, total, pct: total > 0 ? Math.round((done / total) * 100) : 0 }
   })
 
-  // ── "Next step" flag: the focus skill if set, else a started-but-unfinished
-  // road, else the first road not yet built. One obvious place to go next. ──
-  let nextSlug = (window.currentFocusSuperSkill && DISTRICTS[window.currentFocusSuperSkill])
-    ? window.currentFocusSuperSkill : null
+  // ── Sequential unlock: skills open in sort_order, one at a time ──
+  const gate = computeSkillStates(skills, modules, childModules)
+
+  // ── "Next step" flag: the focus skill if set (and not locked), else the
+  // gate's active skill — one obvious place to go next. ──
+  const focus = window.currentFocusSuperSkill
+  let nextSlug = (focus && DISTRICTS[focus] && gate?.bySlug[focus]?.state !== 'locked') ? focus : null
+  if (!nextSlug && gate?.activeSlug && DISTRICTS[gate.activeSlug]) nextSlug = gate.activeSlug
   if (!nextSlug) {
     const order = Object.keys(DISTRICTS)
     nextSlug =
@@ -1770,17 +1868,17 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
     // thousands of live vector nodes per tile. Only the interactive bits —
     // road glows, hit areas, pins, the next-step flag — stay as a small
     // live SVG overlay on top.
-    const staticSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${stripHeavy(buildSvg(skills, progressBySlug, nextSlug, 'static'))}</svg>`
+    const staticSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${stripHeavy(buildSvg(skills, progressBySlug, nextSlug, 'static', gate))}</svg>`
     if (container._btSceneryUrl) { try { URL.revokeObjectURL(container._btSceneryUrl) } catch (_) {} }
     const sceneryUrl = URL.createObjectURL(new Blob([staticSvg], { type: 'image/svg+xml' }))
     container._btSceneryUrl = sceneryUrl
 
-    const ixSvg = stripHeavy(buildSvg(skills, progressBySlug, nextSlug, 'interactive'))
+    const ixSvg = stripHeavy(buildSvg(skills, progressBySlug, nextSlug, 'interactive', gate))
     world.innerHTML =
       `<img src="${sceneryUrl}" width="${W}" height="${H}" alt="" draggable="false" style="position:absolute;top:0;left:0;width:${W}px;height:${H}px;display:block;pointer-events:none;user-select:none;"/>` +
       `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="position:absolute;top:0;left:0;display:block" role="img" aria-label="Brain Town interactive map">${ixSvg}</svg>`
   } else {
-    world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills, progressBySlug, nextSlug, 'full')}</svg>`
+    world.innerHTML = `<svg id="brainTownMap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Brain Town interactive map">${buildSvg(skills, progressBySlug, nextSlug, 'full', gate)}</svg>`
   }
   vp.appendChild(world)
 
@@ -1827,24 +1925,44 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
   function selectDistrict(slug) {
     const d = DISTRICTS[slug]
     if (!d) return
-    const sk = skills.find(s => (s.slug || (s.name || '').toLowerCase().replace(/\s+/g, '-')) === slug)
+    const slugFor = s => s.slug || (s.name || '').toLowerCase().replace(/\s+/g, '-')
+    const sk = skills.find(s => slugFor(s) === slug)
+
+    // Locked skills open an "under construction" popup instead of the
+    // adventure CTA — with a shortcut back to the skill they should finish.
+    let lock = null
+    if (gate?.bySlug[slug]?.state === 'locked') {
+      const requirement = getUnlockRequirement(slug, gate)
+      const activeSkill = gate.activeSlug ? skills.find(s => slugFor(s) === gate.activeSlug) : null
+      const activeDistrict = gate.activeSlug ? DISTRICTS[gate.activeSlug] : null
+      lock = {
+        locked: true,
+        requirementName: requirement?.name || activeSkill?.name || null,
+        activeSkill,
+        activeColor: activeDistrict?.color,
+        activeAccent: activeDistrict?.accent
+      }
+    }
 
     clearSelection()
     const pin = world.querySelector(`.svg-pin[data-slug="${slug}"]`)
     if (pin) pin.classList.add('selected')
-    const glow = world.querySelector(`.svg-road-glow[data-slug="${slug}"]`)
-    if (glow) { glow.classList.add('active'); glow.style.opacity = '' }
+    if (!lock) {
+      const glow = world.querySelector(`.svg-road-glow[data-slug="${slug}"]`)
+      if (glow) { glow.classList.add('active'); glow.style.opacity = '' }
+    }
 
-    popup.open(slug, sk, d)
-    daniel.walkToward(slug)
+    popup.open(slug, sk, d, lock)
+    if (!lock) daniel.walkToward(slug)
 
     // Lets listeners (e.g. the first-time guide) react to a Super Skill tap
     document.dispatchEvent(new CustomEvent('bt:district-selected', { detail: { slug } }))
   }
 
+  // Tapping the Town Square isn't a menu — Daniel just strolls home.
   function selectHub() {
     clearSelection()
-    popup.openHub()
+    popup.close()
     daniel.walkHome()
   }
 

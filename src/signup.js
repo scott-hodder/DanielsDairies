@@ -31,6 +31,11 @@ async function init() {
     const params = new URLSearchParams(window.location.search)
     isFreeTrial = params.get('trial') === 'true'
 
+    // Practitioner invite: stash the code so the dashboard can link this
+    // family to their practitioner after signup/login completes.
+    const inviteCode = params.get('invite')
+    if (inviteCode) localStorage.setItem('dd_practitioner_invite', inviteCode)
+
     // Returning from successful Stripe payment: the account was already
     // created server-side before checkout, so nothing sensitive is needed
     // here — just confirm and hand over to login.

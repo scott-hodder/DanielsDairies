@@ -1,6 +1,11 @@
 import { supabase } from '../../supabaseClient.js'
 import { escapeHtml } from '../../lib/sanitize.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
+import { requireParentGate } from '../parentGate.js'
+import { initKidIcons } from '../../lib/kidIcons.js'
+
+// Consistent emoji artwork on every device (skips the SVG map)
+initKidIcons()
 import { getChildren, createChild, getModules, getChildModules, updateChildModuleStatus, awardStars, getChild, getAllChildrenLeaderboard, setChildPassword, verifyChildPassword, updateChildProfile, deleteChild, getLatestWeeklyPlan, getSettings, updateLoginStreak, getLoginStreak, isUserAdmin, isUserPractitioner, getChildFocusPlan, getSuperSkills, getModuleUnlocks, getCreditSummary, getCurrentBillingPeriod, unlockModuleWithCredit, getParentSubscription, getSubscriptionTiers, getLevelInfo, getXpForNextLevel, invalidateCacheByPrefix, getChildCredits, spendChildCredit } from '../../services/databaseService.js'
 import { initializeRewardsTab, setupRewardsEventListeners } from './dashboardRewards.js'
 import { showLoadingScreen, hideLoadingScreen } from './loadingScreen.js'
@@ -580,17 +585,14 @@ const tabDashboard = document.getElementById('tabDashboard')
 const tabAdventures = document.getElementById('tabAdventures')
 const tabModules = document.getElementById('tabModules')
 const tabLeaderboard = document.getElementById('tabLeaderboard')
-const tabRoadBuilder = document.getElementById('tabRoadBuilder')
 const tabArcade = document.getElementById('tabArcade')
 const tabSpendStars = document.getElementById('tabSpendStars')
 const tabParentInsights = document.getElementById('tabParentInsights')
-const tabFamilyGold = document.getElementById('tabFamilyGold')
 const familyGoldTabContent = document.getElementById('familyGoldTabContent')
 const dashboardTabContent = document.getElementById('dashboardTabContent')
 const adventuresTabContent = document.getElementById('adventuresTabContent')
 const modulesTabContent = document.getElementById('modulesTabContent')
 const leaderboardTabContent = document.getElementById('leaderboardTabContent')
-const roadBuilderTabContent = document.getElementById('roadBuilderTabContent')
 const arcadeTabContent = document.getElementById('arcadeTabContent')
 const spendStarsTabContent = document.getElementById('spendStarsTabContent')
 const parentInsightsTabContent = document.getElementById('parentInsightsTabContent')
@@ -599,6 +601,35 @@ const leaderboardList = document.getElementById('leaderboardList')
 // Feature flags
 const FEATURE_FLAGS = {
   leaderboard: false // Set to true to show the Leaderboard tab
+}
+
+// Practitioner invite redemption: families arrive from signup/login with an
+// invite code (?invite=CODE, stashed in localStorage). Redeeming links their
+// children to the inviting practitioner's caseload.
+async function redeemPendingPractitionerInvite() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const urlCode = params.get('invite')
+    if (urlCode) localStorage.setItem('dd_practitioner_invite', urlCode)
+    const code = localStorage.getItem('dd_practitioner_invite')
+    if (!code) return
+
+    const { data, error } = await supabase.rpc('redeem_practitioner_invite', { p_code: code })
+    if (error) {
+      // Invalid/expired codes are cleared so we don't retry forever;
+      // "add a child first" is retried on the next visit.
+      if (!/child profile/i.test(error.message || '')) {
+        localStorage.removeItem('dd_practitioner_invite')
+      }
+      console.warn('Practitioner invite not redeemed:', error.message)
+      return
+    }
+    localStorage.removeItem('dd_practitioner_invite')
+    const name = data?.practitioner_name || 'your practitioner'
+    showToast(`You're now connected with ${name}. They can see module progress to support your child.`, 'success', 8000)
+  } catch (err) {
+    console.warn('Practitioner invite redemption failed:', err)
+  }
 }
 
 // Initialize - OPTIMIZED for performance
@@ -631,6 +662,9 @@ async function init() {
     // Set up native app (status bar, splash screen) + push notifications (no-op on web)
     initNativeApp()
     initPushNotifications()
+
+    // Link this family to a practitioner if they arrived with an invite code
+    redeemPendingPractitionerInvite()
 
     if (state.currentUser && state.currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
@@ -739,11 +773,14 @@ async function init() {
         if (piMobile) piMobile.style.display = 'none'
       }
 
-      // Family Gold hub: visible only on a Gold membership, and the
-      // default view when the parent lands (unless they've already
-      // navigated somewhere themselves).
+      // Family Gold hub: visible only on a Gold membership. It lives in the
+      // grown-up header (not the kids' tab bar) and is the default view when
+      // the parent lands, unless they've already navigated themselves.
       if (isGoldTier(currentSubscription)) {
-        if (tabFamilyGold) tabFamilyGold.style.display = ''
+        const fgDesktop = document.getElementById('familyGoldButtonDesktop')
+        const fgMobile = document.getElementById('familyGoldButtonMobile')
+        if (fgDesktop) fgDesktop.style.display = ''
+        if (fgMobile) fgMobile.style.display = ''
         if (!window.__ddUserChoseTab || !window.__ddUserChoseTab()) {
           showTab('familyGold')
         }
@@ -3267,8 +3304,8 @@ function showTab(tabName) {
   if (!tabDashboard) return
 
   // All tab buttons and content panels
-  const allTabs = [tabDashboard, tabAdventures, tabModules, tabLeaderboard, tabRoadBuilder, tabArcade, tabSpendStars, tabParentInsights, tabFamilyGold]
-  const allContent = [dashboardTabContent, adventuresTabContent, modulesTabContent, leaderboardTabContent, roadBuilderTabContent, arcadeTabContent, spendStarsTabContent, parentInsightsTabContent, familyGoldTabContent]
+  const allTabs = [tabDashboard, tabAdventures, tabModules, tabLeaderboard, tabArcade, tabSpendStars, tabParentInsights]
+  const allContent = [dashboardTabContent, adventuresTabContent, modulesTabContent, leaderboardTabContent, arcadeTabContent, spendStarsTabContent, parentInsightsTabContent, familyGoldTabContent]
 
   // Remove active class from all tabs
   allTabs.forEach(t => { if (t) t.classList.remove('active') })
@@ -3295,9 +3332,6 @@ function showTab(tabName) {
   } else if (tabName === 'leaderboard') {
     if (tabLeaderboard) tabLeaderboard.classList.add('active')
     showElement(leaderboardTabContent)
-  } else if (tabName === 'roadBuilder') {
-    if (tabRoadBuilder) tabRoadBuilder.classList.add('active')
-    showElement(roadBuilderTabContent)
   } else if (tabName === 'arcade') {
     if (tabArcade) tabArcade.classList.add('active')
     showElement(arcadeTabContent)
@@ -3311,7 +3345,6 @@ function showTab(tabName) {
     showElement(parentInsightsTabContent)
     setParentInsightsSubtab(state.currentInsightsSubtab)
   } else if (tabName === 'familyGold') {
-    if (tabFamilyGold) tabFamilyGold.classList.add('active')
     showElement(familyGoldTabContent)
     initFamilyGoldTab(familyGoldTabContent, {
       child: state.selectedChild,
@@ -3339,69 +3372,34 @@ if (tabLeaderboard && FEATURE_FLAGS.leaderboard) {
   tabLeaderboard.style.display = ''
   tabLeaderboard.addEventListener('click', () => showTab('leaderboard'))
 }
-if (tabRoadBuilder) {
-  tabRoadBuilder.addEventListener('click', () => showTab('roadBuilder'))
-}
 if (tabArcade) {
   tabArcade.addEventListener('click', () => showTab('arcade'))
 }
 if (tabSpendStars) {
   tabSpendStars.addEventListener('click', () => showTab('spendStars'))
 }
-// Parent Insights lives in the parent nav and sits behind a grown-up gate,
-// so a child tapping around cannot read parent-facing analysis of themselves.
-function openParentInsightsGated() {
-  const goToInsights = () => {
-    if (state.selectedChild) {
-      window.location.href = `/parent-insights.html?childId=${state.selectedChild.id}`
-    } else {
-      window.location.href = '/parent-insights.html'
-    }
+// Parent Insights sits behind the Parent Zone PIN gate, so a child tapping
+// around cannot read parent-facing analysis of themselves. Passing the gate
+// here also covers the insights page itself (shared 15-minute window).
+async function openParentInsightsGated() {
+  const ok = await requireParentGate()
+  if (!ok) return
+  if (state.selectedChild) {
+    window.location.href = `/parent-insights.html?childId=${state.selectedChild.id}`
+  } else {
+    window.location.href = '/parent-insights.html'
   }
-
-  const a = 3 + Math.floor(Math.random() * 6)
-  const b = 4 + Math.floor(Math.random() * 6)
-
-  const overlay = document.createElement('div')
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(22,50,79,0.6);display:flex;align-items:center;justify-content:center;padding:20px'
-  overlay.innerHTML = `
-    <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:24px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,0.3)">
-      <h3 style="margin:0 0 6px;font-size:18px;color:#16324f">For parents and carers</h3>
-      <p style="margin:0 0 14px;font-size:14px;color:#6b7e95">To keep going, please answer: what is ${a} × ${b}?</p>
-      <input type="number" inputmode="numeric" id="pgAnswer" style="width:110px;padding:10px;font-size:18px;text-align:center;border:2px solid #d7deea;border-radius:10px" aria-label="Answer" />
-      <p id="pgError" style="display:none;color:#c0392b;font-size:13px;margin:8px 0 0">Not quite — have another try.</p>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button id="pgCancel" style="flex:1;padding:11px;border:2px solid #d7deea;border-radius:10px;background:#fff;color:#405878;font-weight:700;cursor:pointer">Cancel</button>
-        <button id="pgGo" style="flex:1;padding:11px;border:none;border-radius:10px;background:#405878;color:#fff;font-weight:700;cursor:pointer">Continue</button>
-      </div>
-    </div>
-  `
-  document.body.appendChild(overlay)
-  const input = overlay.querySelector('#pgAnswer')
-  input.focus()
-
-  const submit = () => {
-    if (parseInt(input.value, 10) === a * b) {
-      overlay.remove()
-      goToInsights()
-    } else {
-      overlay.querySelector('#pgError').style.display = 'block'
-      input.value = ''
-      input.focus()
-    }
-  }
-  overlay.querySelector('#pgGo').addEventListener('click', submit)
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit() })
-  overlay.querySelector('#pgCancel').addEventListener('click', () => overlay.remove())
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove() })
 }
 
 if (tabParentInsights) {
   tabParentInsights.addEventListener('click', openParentInsightsGated)
 }
-if (tabFamilyGold) {
-  tabFamilyGold.addEventListener('click', () => showTab('familyGold'))
-}
+document.getElementById('familyGoldButtonDesktop')?.addEventListener('click', () => showTab('familyGold'))
+document.getElementById('familyGoldButtonMobile')?.addEventListener('click', () => {
+  document.getElementById('hamburgerMenu')?.classList.remove('active')
+  document.getElementById('dropdownMenu')?.classList.remove('active')
+  showTab('familyGold')
+})
 // Track whether the user has picked a tab themselves, so the Family Gold
 // auto-default (which arrives after the async subscription lookup) never
 // yanks them away from a tab they already chose.

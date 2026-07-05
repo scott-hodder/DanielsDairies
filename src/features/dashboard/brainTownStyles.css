@@ -1447,3 +1447,73 @@
   .rb-situation-card { padding: 12px; }
   .rb-situation-icon { font-size: 24px; }
 }
+
+/* Daniel Explainer: Road Builder finale */
+.de-rb { text-align: left; }
+.de-rb-meter { margin: 10px 0 12px; }
+.de-rb-ml {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: #405878;
+  margin-bottom: 5px;
+}
+.de-rb-track {
+  height: 9px;
+  background: #e3e8ef;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.de-rb-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2e8b57, #57b87f);
+  transition: width .5s ease;
+}
+.de-rb-sit {
+  background: #f5f8fc;
+  border: 1.5px solid #d7e3f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #16324f;
+  margin-bottom: 10px;
+}
+.de-rb-choice {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #16324f;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.de-rb-choice:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+.de-rb-choice.calm { background: #e9f4ee; border: 2px solid #79c199; }
+.de-rb-choice.bumpy { background: #fbf1e4; border: 2px solid #d8b98a; }
+.de-rb-choice:disabled { cursor: default; }
+.de-rb-ct {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 2px;
+}
+.de-rb-choice.calm .de-rb-ct { color: #1f6f43; }
+.de-rb-choice.bumpy .de-rb-ct { color: #8a6420; }
+.de-rb-result {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.de-rb-result.calm { background: #e9f4ee; border: 1.5px solid #79c199; color: #1f5136; }
+.de-rb-result.storm { background: #fbf1e4; border: 1.5px solid #d8b98a; color: #6b552a; }

@@ -13,10 +13,9 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="/styles/dashboard.css" rel="stylesheet">
-    <!-- Adventure UI Overhaul -->
-    <link href="/styles/dashboard-adventure.css" rel="stylesheet">
     <link href="/src/features/dashboard/brainTownStyles.css" rel="stylesheet">
 
     <style>
@@ -51,6 +50,9 @@
                     </button>
                     <button class="btn-header" id="tabParentInsights" title="For parents and carers: detailed progress insights">
                         Parent Insights
+                    </button>
+                    <button class="btn-header" id="familyGoldButtonDesktop" style="display:none" title="Your Family Gold hub">
+                        ⭐ Family Gold
                     </button>
                     <button class="btn-header" id="logoutButtonDesktop">Logout</button>
                     <div class="admin-dropdown-wrap hidden" id="adminDropdownWrap" style="position:relative;margin-left:12px;">
@@ -92,6 +94,10 @@
                         <span class="dropdown-icon">📊</span>
                         Parent Insights
                     </button>
+                    <button class="dropdown-item" id="familyGoldButtonMobile" style="display:none">
+                        <span class="dropdown-icon">⭐</span>
+                        Family Gold
+                    </button>
                     <button class="dropdown-item" id="adminButton" style="display: none;">
                         <span class="dropdown-icon">⚙️</span>
                         Admin Centre
@@ -126,9 +132,6 @@
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
                 <div class="nav-tabs-content">
-                    <button class="nav-tab" id="tabFamilyGold" data-emoji="⭐" data-label="Family" style="display:none" title="Your Family Gold hub">
-                        ⭐ Family
-                    </button>
                     <button class="nav-tab active" id="tabDashboard" data-emoji="🗺️" data-label="Brain Town">
                         🗺️ Brain Town
                     </button>
@@ -137,9 +140,6 @@
                     </button>
                     <button class="nav-tab hidden" id="tabModules" data-emoji="📖" data-label="Modules">
                         📖 My Modules
-                    </button>
-                    <button class="nav-tab" id="tabRoadBuilder" data-emoji="🛣️" data-label="Roads">
-                        🛣️ Road Builder
                     </button>
                     <button class="nav-tab" id="tabArcade" data-emoji="🎮" data-label="Arcade">
                         🎮 Arcade
@@ -295,11 +295,6 @@
                     <h2 class="section-title">Modules</h2>
                     <p class="progress-label">Modules are shown on the main Dashboard tab for this child.</p>
                 </div>
-            </div>
-
-            <!-- Road Builder Tab -->
-            <div id="roadBuilderTabContent" class="hidden">
-                <div id="roadBuilderMount"></div>
             </div>
 
             <!-- Arcade Tab -->

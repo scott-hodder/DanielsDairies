@@ -49,6 +49,31 @@ export async function saveArcadeReflection(playId, reflection) {
   }
 }
 
+/**
+ * The child's arcade play for today (local midnight), or null if they
+ * haven't played yet. One arcade game per day — fails open on errors so a
+ * network blip never bricks the arcade.
+ */
+export async function getTodaysArcadePlay(childId) {
+  if (!childId || childId === 'arcade') return null
+  try {
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+    const { data, error } = await getSupabaseClient()
+      .from('arcade_plays')
+      .select('game_id, created_at')
+      .eq('child_id', childId)
+      .gte('created_at', startOfDay.toISOString())
+      .order('created_at', { ascending: true })
+      .limit(1)
+    if (error) throw error
+    return (data && data[0]) || null
+  } catch (err) {
+    console.warn('[arcade] Could not check today\'s play:', err)
+    return null
+  }
+}
+
 /** Personal bests per game: Map<gameId, { best_score, plays }> */
 export async function getArcadeBests(childId) {
   const bests = new Map()

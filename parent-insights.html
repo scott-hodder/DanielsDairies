@@ -317,6 +317,11 @@
     <script type="module">
         import { supabase } from './src/supabaseClient.js'
         import { computeInsights } from './src/features/dashboard/parentInsightsEngine.js'
+        import { requireParentGate } from './src/features/parentGate.js'
+        import { initKidIcons } from './src/lib/kidIcons.js'
+
+        // Consistent emoji artwork on every device
+        initKidIcons()
 
         // ── State ──
         let currentChildId = null
@@ -381,6 +386,14 @@
                 return
             }
             currentUserId = user.id
+
+            // Parent Zone gate: insights contain parent-reported information
+            // about the child, so children can't open this page unchecked
+            const gatePassed = await requireParentGate()
+            if (!gatePassed) {
+                window.location.href = '/dashboard.html'
+                return
+            }
 
             setupSubtabs()
             setupCheckinForm()

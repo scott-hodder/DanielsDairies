@@ -38,6 +38,68 @@ const ROAD_HTML = `<div style="display:flex;gap:7px;justify-content:center;align
   <span style="background:#f2c94c;color:#16324f;border-radius:11px;padding:9px 14px;font-weight:600;font-size:13.5px">Road grows</span>
 </div>`
 
+// ── Road Builder finale (ported from the dashboard mockup) ──
+// The child faces tricky moments, picks the calm or bumpy road, and watches
+// Daniel travel it. Calm choices visibly widen the road — the big idea made
+// touchable.
+const RB_SCENARIOS = [
+  { q: 'Your block tower just got knocked over. Your alarm starts ringing!',
+    a: 'Take 3 dragon breaths and ask for help rebuilding.',
+    b: 'Yell and knock the rest down too.',
+    ca: 'You cooled the alarm and your hands felt steady again. The tower can be rebuilt.',
+    cb: "It felt big for a second, but now the tower's gone and the yucky feeling stuck around." },
+  { q: 'Someone got the last blue cup, and you really wanted it.',
+    a: "Tell yourself: I'll use green today, blue tomorrow.",
+    b: 'Grab the cup off them.',
+    ca: 'Your thinking part stayed switched on. Small wobble, quick recovery.',
+    cb: "Now there's a cup problem and a friend problem to fix." },
+  { q: "Your worry says: don't go to the party, it's too much.",
+    a: 'Make a plan: stay 20 minutes and find one friend.',
+    b: 'Hide in your room and skip it.',
+    ca: 'Brave step, small dose. The worry got quieter once you had a plan.',
+    cb: 'The worry felt better for now, but it got a little bigger for next time.' },
+  { q: 'Your little brother knocked over the model you worked hard on.',
+    a: 'Walk away for a minute and tell a grown up how you feel.',
+    b: 'Knock over his toys to get him back.',
+    ca: 'You let the alarm cool before you acted. The model can be fixed, and you stayed the kind of kid you want to be.',
+    cb: 'Now there are two broken things and two upset kids to sort out.' },
+  { q: 'You made a mistake on your work and feel like giving up.',
+    a: 'Tell yourself: mistakes help my brain grow. Try one more time.',
+    b: 'Scrunch it up and throw it on the floor.',
+    ca: "That's a Brain Builder road. Every retry makes the road a little stronger.",
+    cb: 'The work is still there to do, and now the grumpy feeling is too.' },
+  { q: "It's bedtime, you're not tired, and everything feels annoying.",
+    a: 'Do some slow dragon breaths and listen to a story.',
+    b: 'Yell that bed is stupid and refuse to go.',
+    ca: 'Slow breaths told your body it was safe to wind down. Tricky moment, handled.',
+    cb: 'The cranky feeling got bigger, and bedtime got harder for everyone.' }
+]
+
+const RB_STRENGTH_LABELS = ['A new path', 'A little track', 'A worn path', 'A proper road', 'A wide road', 'A smooth street', 'A calm motorway!']
+
+const RB_HTML = `<div class="de-rb">
+  <svg id="deRbSvg" viewBox="0 0 360 220" width="100%" style="max-width:360px;display:block;margin:0 auto;background:linear-gradient(180deg,#eaf6ff,#f2fbef);border-radius:14px">
+    <text x="330" y="34" font-size="26" text-anchor="middle">🏖️</text>
+    <text x="330" y="50" font-size="9" text-anchor="middle" fill="#1f6f43" font-weight="700" font-family="Fredoka,sans-serif">Calm Cove</text>
+    <text x="330" y="196" font-size="26" text-anchor="middle">⛈️</text>
+    <text x="330" y="212" font-size="9" text-anchor="middle" fill="#6b552a" font-weight="700" font-family="Fredoka,sans-serif">Grumpy Gulch</text>
+    <path id="deRbRoadStorm" d="M30,120 C120,140 200,180 300,185" fill="none" stroke="#b59a6a" stroke-width="6" stroke-linecap="round" opacity=".5"/>
+    <path id="deRbRoadCalm" d="M30,120 C120,100 200,55 300,45" fill="none" stroke="#2e8b57" stroke-width="8" stroke-linecap="round"/>
+    <path d="M30,120 C120,100 200,55 300,45" fill="none" stroke="#bfe3c2" stroke-width="2" stroke-dasharray="2 10" stroke-linecap="round"/>
+    <circle cx="30" cy="120" r="9" fill="#16324f"/>
+    <image id="deRbTraveller" href="/images/characters/DanielTheDog.webp" x="16" y="92" width="28" height="28"/>
+  </svg>
+  <div class="de-rb-meter">
+    <div class="de-rb-ml"><span>Your calm road</span><span id="deRbStrength">A new path</span></div>
+    <div class="de-rb-track"><div class="de-rb-fill" id="deRbFill"></div></div>
+  </div>
+  <div class="de-rb-sit">🧩 <span id="deRbQ"></span></div>
+  <button type="button" class="de-rb-choice calm" id="deRbA"><span class="de-rb-ct">Calm road</span><span id="deRbAText"></span></button>
+  <button type="button" class="de-rb-choice bumpy" id="deRbB"><span class="de-rb-ct">Bumpy road</span><span id="deRbBText"></span></button>
+  <div class="de-rb-result" id="deRbResult" style="display:none"></div>
+  <button type="button" class="de-btn de-btn-ghost" id="deRbNext" style="display:none;margin:10px auto 0">Try another moment →</button>
+</div>`
+
 const STEPS = [
   {
     title: "Hi, I'm Daniel!",
@@ -60,9 +122,9 @@ const STEPS = [
     visual: 'road'
   },
   {
-    title: 'Have a go!',
-    text: "The best way to learn is to try. Pick a Super Skill road to explore, or head to the Road Builder to practise building your calm road. You can come back here any time.",
-    visual: 'road'
+    title: 'Build your first road!',
+    text: 'A tricky moment is coming up. Pick a road and watch what happens — every calm choice makes the calm road wider and easier to travel.',
+    visual: 'roadBuilder'
   }
 ]
 
@@ -70,11 +132,109 @@ let _overlay = null
 let _stepIndex = 0
 let _onFinish = null
 
+// Road builder state — resets each time the explainer opens
+let _rbScnIdx = 0
+let _rbStrength = 1
+let _rbAnswered = false
+
 function getVisualHTML(type) {
   if (type === 'planner') return PLANNER_HTML
   if (type === 'triangle') return TRIANGLE_SVG
   if (type === 'road') return ROAD_HTML
+  if (type === 'roadBuilder') return RB_HTML
   return ''
+}
+
+// ── Road builder interactions (mockup-faithful) ──
+function rbEl(id) { return _overlay ? _overlay.querySelector('#' + id) : null }
+
+function rbUpdateRoad() {
+  const road = rbEl('deRbRoadCalm')
+  if (road) road.setAttribute('stroke-width', 4 + _rbStrength * 3)
+  const fill = rbEl('deRbFill')
+  if (fill) fill.style.width = Math.min(100, (_rbStrength / 6) * 100) + '%'
+  const label = rbEl('deRbStrength')
+  if (label) label.textContent = RB_STRENGTH_LABELS[Math.min(_rbStrength, 6)]
+}
+
+function rbResetTraveller() {
+  const t = rbEl('deRbTraveller')
+  if (t) { t.setAttribute('x', 16); t.setAttribute('y', 92) }
+}
+
+// Daniel walks along the chosen road
+function rbTravel(pathId, then) {
+  const path = rbEl(pathId)
+  const t = rbEl('deRbTraveller')
+  if (!path || !t) { if (then) then(); return }
+  const total = path.getTotalLength()
+  let f = 0
+  const step = () => {
+    if (!_overlay || _overlay.style.display === 'none') return
+    f += 0.03
+    if (f > 1) f = 1
+    const pt = path.getPointAtLength(total * f)
+    t.setAttribute('x', pt.x - 14)
+    t.setAttribute('y', pt.y - 24)
+    if (f < 1) requestAnimationFrame(step)
+    else if (then) then()
+  }
+  requestAnimationFrame(step)
+}
+
+function rbRenderScenario() {
+  const s = RB_SCENARIOS[_rbScnIdx]
+  _rbAnswered = false
+  const q = rbEl('deRbQ'); if (q) q.textContent = s.q
+  const aText = rbEl('deRbAText'); if (aText) aText.textContent = s.a
+  const bText = rbEl('deRbBText'); if (bText) bText.textContent = s.b
+  ;['deRbA', 'deRbB'].forEach(id => {
+    const btn = rbEl(id)
+    if (btn) { btn.disabled = false; btn.style.opacity = '1' }
+  })
+  const res = rbEl('deRbResult'); if (res) res.style.display = 'none'
+  const next = rbEl('deRbNext'); if (next) next.style.display = 'none'
+  rbResetTraveller()
+  rbUpdateRoad()
+}
+
+function rbChoose(opt) {
+  if (_rbAnswered) return
+  _rbAnswered = true
+  const s = RB_SCENARIOS[_rbScnIdx]
+  const a = rbEl('deRbA'), b = rbEl('deRbB')
+  if (a) a.disabled = true
+  if (b) b.disabled = true
+  const other = opt === 'a' ? b : a
+  if (other) other.style.opacity = '.45'
+  const res = rbEl('deRbResult')
+
+  if (opt === 'a') {
+    rbTravel('deRbRoadCalm', () => { if (_rbStrength < 6) { _rbStrength++; rbUpdateRoad() } })
+    if (res) {
+      res.className = 'de-rb-result calm'
+      res.style.display = 'block'
+      res.innerHTML = '<b>🏖️ You arrived at Calm Cove!</b> ' + s.ca + ' Your calm road just got a little wider — easier to travel next time.'
+    }
+  } else {
+    rbTravel('deRbRoadStorm')
+    if (res) {
+      res.className = 'de-rb-result storm'
+      res.style.display = 'block'
+      res.innerHTML = "<b>⛈️ That road led to Grumpy Gulch.</b> " + s.cb + " No worries though — the calm road is always here when you're ready to build it."
+    }
+  }
+  const next = rbEl('deRbNext'); if (next) next.style.display = 'block'
+}
+
+function rbWire() {
+  rbEl('deRbA')?.addEventListener('click', () => rbChoose('a'))
+  rbEl('deRbB')?.addEventListener('click', () => rbChoose('b'))
+  rbEl('deRbNext')?.addEventListener('click', () => {
+    _rbScnIdx = (_rbScnIdx + 1) % RB_SCENARIOS.length
+    rbRenderScenario()
+  })
+  rbRenderScenario()
 }
 
 function renderStep() {
@@ -88,6 +248,7 @@ function renderStep() {
   if (step.visual) {
     vis.innerHTML = getVisualHTML(step.visual)
     vis.style.display = 'block'
+    if (step.visual === 'roadBuilder') rbWire()
   } else {
     vis.innerHTML = ''
     vis.style.display = 'none'
@@ -117,6 +278,9 @@ function navigate(dir) {
 export function openExplainer(onFinish) {
   _onFinish = onFinish || null
   _stepIndex = 0
+  _rbScnIdx = 0
+  _rbStrength = 1
+  _rbAnswered = false
 
   if (_overlay) {
     _overlay.style.display = 'flex'

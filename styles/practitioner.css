@@ -876,3 +876,327 @@ body {
   .prac-panel { box-shadow: none; border: none; padding: 0; }
   .prac-main { padding: 0; }
 }
+
+/* ========================================
+   COMMERCIAL MODEL ADDITIONS
+   Plan & billing, goal progress, tag picker,
+   invites, attention states
+   ======================================== */
+
+/* ---- Stat notes ---- */
+.prac-stat-note {
+  font-size: 11px;
+  color: var(--prac-text-muted);
+  margin-top: 4px;
+}
+
+/* ---- Plan notice banner ---- */
+.prac-plan-notice {
+  border-radius: var(--prac-radius);
+  padding: 12px 18px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  border: 1px solid var(--prac-border);
+  background: var(--prac-card);
+}
+.prac-plan-notice.info { border-color: #bfdbfe; background: #eff6ff; color: #1e40af; }
+.prac-plan-notice.warn { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+.prac-plan-notice a { color: inherit; font-weight: 600; }
+
+/* ---- Empty states ---- */
+.prac-empty {
+  text-align: center;
+  padding: 48px 20px;
+  background: var(--prac-card);
+  border: 1px dashed var(--prac-border-hover);
+  border-radius: var(--prac-radius);
+}
+.prac-empty.small { padding: 18px 14px; text-align: left; background: var(--prac-soft); border-style: solid; }
+.prac-empty-title { font-size: 17px; font-weight: 600; color: var(--prac-text); margin-bottom: 6px; }
+.prac-empty-sub { font-size: 13px; color: var(--prac-text-secondary); margin-bottom: 16px; }
+.prac-empty.small .prac-empty-sub { margin-bottom: 0; }
+
+/* ---- Progress bars ---- */
+.prac-progress { display: flex; align-items: center; gap: 10px; margin: 8px 0 2px; }
+.prac-progress.compact { margin: 4px 0 0; }
+.prac-progress-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: #e9edf2;
+  overflow: hidden;
+}
+.prac-progress.compact .prac-progress-track { height: 6px; }
+.prac-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--prac-accent);
+  transition: width 0.3s ease;
+}
+.prac-progress-fill.done { background: var(--prac-success); }
+.prac-progress-fill.full { background: var(--prac-warning); }
+.prac-progress-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--prac-text-secondary);
+  white-space: nowrap;
+}
+.prac-progress.compact .prac-progress-label { font-size: 11px; }
+
+/* ---- Client card goal summary ---- */
+.prac-cc-goals {
+  border-top: 1px solid var(--prac-border);
+  border-bottom: 1px solid var(--prac-border);
+  padding: 10px 0;
+  margin: 12px 0 10px;
+}
+.prac-cc-goal { margin-bottom: 8px; }
+.prac-cc-goal:last-child { margin-bottom: 0; }
+.prac-cc-goal-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--prac-text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prac-cc-goal-meta { font-size: 11px; color: var(--prac-text-muted); margin: 2px 0 0; }
+.prac-cc-nogoal { font-size: 12px; color: var(--prac-text-muted); margin: 0; font-style: italic; }
+
+/* ---- Tag picker ---- */
+.prac-tag-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.prac-tag-option {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--prac-border-hover);
+  background: var(--prac-card);
+  color: var(--prac-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.prac-tag-option:hover { border-color: var(--prac-accent); color: var(--prac-accent-dark); }
+.prac-tag-option.selected {
+  background: var(--prac-accent);
+  border-color: var(--prac-accent);
+  color: #fff;
+}
+.prac-field-hint { font-size: 11px; color: var(--prac-text-muted); margin: 6px 0 0; }
+
+/* ---- Goal progress cards (Data & Insights) ---- */
+.prac-goal-progress-card {
+  border: 1px solid var(--prac-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: var(--prac-soft);
+}
+.prac-goal-skills { font-size: 12px; color: var(--prac-text-secondary); margin: 8px 0 0; }
+.prac-goal-contrib { margin-top: 10px; border-top: 1px solid var(--prac-border); padding-top: 8px; }
+.prac-goal-contrib-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--prac-text-muted);
+  margin: 0 0 6px;
+}
+.prac-goal-contrib-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--prac-text-secondary);
+  padding: 3px 0;
+}
+.prac-goal-contrib-row span:last-child { color: var(--prac-text-muted); white-space: nowrap; }
+.prac-goal-remaining { font-size: 12px; font-weight: 600; color: var(--prac-accent-dark); margin: 8px 0 0; }
+.prac-goal-completed-group { margin-top: 8px; }
+.prac-goal-completed-group summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--prac-text-secondary);
+  cursor: pointer;
+  padding: 6px 0;
+}
+.prac-goal-completed-group .prac-goal-progress-card { opacity: 0.75; }
+
+/* ---- Goal cards (Goals tab) ---- */
+.prac-goal-detail { margin-top: 8px; }
+.prac-goal-detail summary { font-size: 12px; font-weight: 600; color: var(--prac-accent-dark); cursor: pointer; }
+.prac-goal-actions { margin-top: 10px; display: flex; gap: 8px; }
+.prac-item-complete { opacity: 0.7; }
+
+/* ---- Skill coverage ---- */
+.prac-skill-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
+.prac-skill-name { font-size: 13px; font-weight: 600; color: var(--prac-text); width: 190px; flex-shrink: 0; }
+.prac-skill-count { font-size: 12px; color: var(--prac-text-muted); width: 40px; text-align: right; }
+
+/* ---- Plan & Billing ---- */
+.prac-plan-summary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.prac-plan-summary-name { font-size: 19px; font-weight: 700; color: var(--prac-text); margin: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.prac-plan-summary-price { font-size: 14px; color: var(--prac-text-secondary); margin: 4px 0 0; }
+.prac-plan-usage { margin-top: 6px; }
+.prac-plan-usage-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--prac-text-secondary);
+  margin-bottom: 8px;
+}
+.prac-plan-usage-note { font-size: 12px; color: var(--prac-text-muted); margin: 12px 0 0; }
+
+.prac-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 18px;
+}
+.prac-plan-card {
+  position: relative;
+  background: var(--prac-card);
+  border: 1.5px solid var(--prac-border);
+  border-radius: var(--prac-radius);
+  padding: 22px;
+  box-shadow: var(--prac-shadow);
+}
+.prac-plan-card.current { border-color: var(--prac-accent); }
+.prac-plan-card-badge {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  background: var(--prac-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.prac-plan-card-name { font-size: 16px; font-weight: 700; color: var(--prac-text); margin: 0 0 4px; }
+.prac-plan-card-price { font-size: 26px; font-weight: 700; color: var(--prac-primary); margin: 0 0 12px; }
+.prac-plan-card-price span { font-size: 13px; font-weight: 500; color: var(--prac-text-muted); }
+.prac-plan-card-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.prac-plan-card-list li {
+  font-size: 13px;
+  color: var(--prac-text-secondary);
+  padding: 4px 0 4px 20px;
+  position: relative;
+}
+.prac-plan-card-list li::before {
+  content: '\2713';
+  position: absolute;
+  left: 0;
+  color: var(--prac-success);
+  font-weight: 700;
+}
+.prac-plan-card-desc { font-size: 12px; color: var(--prac-text-muted); margin: 0; }
+
+/* ---- Add client modal tabs ---- */
+.prac-modal-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--prac-soft);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+.prac-modal-tab {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--prac-text-secondary);
+  cursor: pointer;
+}
+.prac-modal-tab.active { background: var(--prac-card); color: var(--prac-primary); box-shadow: var(--prac-shadow); }
+
+/* ---- Invite result ---- */
+.prac-invite-result {
+  border: 1.5px dashed var(--prac-accent);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 12px;
+  background: #f0fdfa;
+}
+.prac-invite-code {
+  font-family: monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--prac-accent-dark);
+  margin: 0 0 8px;
+}
+.prac-invite-hint { font-size: 12px; color: var(--prac-text-secondary); margin: 0 0 12px; }
+
+/* ---- Support Plan tab: document switcher + NDIS letter ---- */
+.prac-doc-switch {
+  display: flex;
+  gap: 4px;
+  background: var(--prac-soft);
+  border-radius: 10px;
+  padding: 4px;
+  margin: 14px 0 16px;
+  max-width: 420px;
+}
+.prac-doc-tab {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--prac-text-secondary);
+  cursor: pointer;
+}
+.prac-doc-tab.active { background: var(--prac-card); color: var(--prac-primary); box-shadow: var(--prac-shadow); }
+
+.prac-letter-details {
+  border: 1px solid var(--prac-border);
+  border-radius: 12px;
+  background: var(--prac-soft);
+  padding: 14px 16px 6px;
+  margin-bottom: 16px;
+}
+.prac-letter-details-head {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--prac-text);
+  margin: 0 0 10px;
+}
+.prac-letter-details-head span { font-weight: 500; color: var(--prac-text-muted); }
+
+.prac-letter-body p { font-size: 13.5px; margin: 0 0 12px; }
+.prac-letter-body ul { margin: 0 0 12px 22px; font-size: 13.5px; }
+.prac-letter-body li { margin-bottom: 6px; }
+.prac-letter-note { font-size: 12px; color: var(--prac-warning); font-style: italic; }
+.prac-letter-signature { margin-top: 8px; }
+.prac-letter-sigline {
+  width: 220px;
+  border-bottom: 1px solid var(--prac-text-secondary);
+  height: 34px;
+  margin-bottom: 8px;
+}
+.prac-letter-signature p { font-size: 13px; line-height: 1.5; margin: 0; }
+
+@media print {
+  .prac-doc-switch, .prac-letter-details, .prac-plan-notice { display: none !important; }
+  .prac-letter-note { display: none !important; }
+}

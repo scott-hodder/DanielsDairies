@@ -36,6 +36,7 @@
         <button class="prac-nav-btn" id="backToDashboardBtn">Dashboard</button>
         <button class="prac-nav-btn active" data-view="caseload">Caseload</button>
         <button class="prac-nav-btn" data-view="resources">Resources</button>
+        <button class="prac-nav-btn" data-view="plan">Plan &amp; Billing</button>
       </nav>
     </div>
   </div>
@@ -75,6 +76,9 @@
       <button class="prac-guardrail-close" id="closeGuardrail">&times;</button>
     </div>
 
+    <!-- Trial / plan notice -->
+    <div class="prac-plan-notice hidden" id="planNotice"></div>
+
     <!-- ===== CASELOAD VIEW ===== -->
     <div id="viewCaseload">
       <div class="prac-page-head">
@@ -89,30 +93,29 @@
         <div class="prac-stat">
           <div class="prac-stat-label">Active Clients</div>
           <div class="prac-stat-value" id="statClients">0</div>
+          <div class="prac-stat-note" id="statClientsNote"></div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Active Goals</div>
+          <div class="prac-stat-value" id="statGoals">0</div>
+          <div class="prac-stat-note" id="statGoalsNote"></div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Needs Attention</div>
+          <div class="prac-stat-value" id="statAttention">0</div>
+          <div class="prac-stat-note" id="statAttentionNote"></div>
         </div>
         <div class="prac-stat">
           <div class="prac-stat-label">Modules Completed</div>
           <div class="prac-stat-value" id="statModules">0</div>
-        </div>
-        <div class="prac-stat">
-          <div class="prac-stat-label">Goals in Progress</div>
-          <div class="prac-stat-value" id="statGoals">0</div>
-        </div>
-        <div class="prac-stat">
-          <div class="prac-stat-label">Avg Level</div>
-          <div class="prac-stat-value" id="statAvgLevel">0</div>
+          <div class="prac-stat-note">Across all clients</div>
         </div>
       </div>
 
       <div class="prac-section-head">
         <h3>Clients</h3>
       </div>
-      <div class="prac-client-grid" id="clientGrid">
-        <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#6b7280;">
-          <p style="font-size:18px;margin-bottom:8px;">No clients linked yet</p>
-          <p style="font-size:14px;">Click "Add Client" to link a family.</p>
-        </div>
-      </div>
+      <div class="prac-client-grid" id="clientGrid"></div>
     </div>
 
     <!-- ===== CLIENT WORKSPACE VIEW ===== -->
@@ -131,8 +134,8 @@
       </div>
 
       <div class="prac-tabs">
-        <button class="prac-tab active" data-tab="data">Data & Insights</button>
-        <button class="prac-tab" data-tab="goals">Goals & Behaviours</button>
+        <button class="prac-tab active" data-tab="data">Data &amp; Insights</button>
+        <button class="prac-tab" data-tab="goals">Goals &amp; Behaviours</button>
         <button class="prac-tab" data-tab="notes">Notes</button>
         <button class="prac-tab" data-tab="plan">Support Plan</button>
       </div>
@@ -140,9 +143,21 @@
       <!-- TAB: Data & Insights -->
       <div class="prac-tab-panel" data-panel="data">
         <div class="prac-panel">
+          <h3>Goal Progress</h3>
+          <p class="prac-panel-desc">How completed modules are counting toward this client's goals.</p>
+          <div id="goalProgressPanel"></div>
+        </div>
+
+        <div class="prac-panel">
           <h3>Engagement Data</h3>
           <p class="prac-panel-desc">Read-only engagement and self-report data from the app.</p>
           <div class="prac-insight-grid" id="insightGrid"></div>
+
+          <div class="prac-label-divider">
+            <span class="prac-label-divider-text">Super Skill Coverage</span>
+            <span class="prac-label-divider-line"></span>
+          </div>
+          <div id="skillCoverage"></div>
 
           <div class="prac-label-divider">
             <span class="prac-label-divider-text">Mood Check-ins</span>
@@ -193,7 +208,7 @@
 
           <div class="prac-panel">
             <h3>Goals</h3>
-            <p class="prac-panel-desc">Set goals for this child and track progress.</p>
+            <p class="prac-panel-desc">Link goals to focus areas. Modules the child completes in matching Super Skills count toward the goal automatically.</p>
             <div id="goalList"></div>
             <div class="prac-label-divider" style="cursor:pointer;" id="addGoalToggle">
               <span class="prac-label-divider-text">+ Add Goal</span>
@@ -201,22 +216,29 @@
             </div>
             <div id="addGoalForm" class="hidden">
               <div class="prac-field"><label>Goal statement</label><input id="gStmt" placeholder="e.g. Use one calm-down tool before leaving a hard task"></div>
+              <div class="prac-field">
+                <label>Focus areas</label>
+                <div class="prac-tag-picker" id="gTagPicker"></div>
+                <p class="prac-field-hint">Pick the developmental areas this goal targets. Modules from matching Super Skills count toward it.</p>
+              </div>
               <div class="prac-field-row">
-                <div class="prac-field"><label>Category</label>
-                  <select id="gCategory">
-                    <option value="emotional-regulation">Emotional Regulation</option>
-                    <option value="social-skills">Social Skills</option>
-                    <option value="resilience">Resilience</option>
-                    <option value="self-awareness">Self-Awareness</option>
-                    <option value="behaviour">Behaviour</option>
-                    <option value="anxiety">Anxiety</option>
-                    <option value="other">Other</option>
+                <div class="prac-field"><label>Modules to complete</label>
+                  <select id="gTarget">
+                    <option value="">No module target</option>
+                    <option value="2">2 modules</option>
+                    <option value="3" selected>3 modules</option>
+                    <option value="4">4 modules</option>
+                    <option value="5">5 modules</option>
+                    <option value="6">6 modules</option>
+                    <option value="8">8 modules</option>
+                    <option value="10">10 modules</option>
                   </select>
                 </div>
                 <div class="prac-field"><label>Review date</label><input id="gReview" type="date"></div>
               </div>
               <div class="prac-field"><label>How we'll measure it</label><input id="gMeasure" placeholder="e.g. Practitioner tally + weekly check-in"></div>
-              <button class="prac-btn prac-btn-ghost prac-btn-sm" id="submitGoal">Add Goal</button>
+              <div id="gError" class="hidden" style="color:#c02626;font-size:13px;margin-bottom:10px;"></div>
+              <button class="prac-btn prac-btn-primary prac-btn-sm" id="submitGoal">Add Goal</button>
             </div>
           </div>
         </div>
@@ -235,17 +257,36 @@
         </div>
       </div>
 
-      <!-- TAB: Support Plan -->
+      <!-- TAB: Support Plan / NDIS letter -->
       <div class="prac-tab-panel hidden" data-panel="plan">
         <div class="prac-panel">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
             <div>
-              <h3>Support Plan</h3>
-              <p class="prac-panel-desc">Auto-generated from app data and your clinical input. Print or export for your records.</p>
+              <h3>Documents</h3>
+              <p class="prac-panel-desc">Auto-generated from app data and your clinical input. Print or save as PDF.</p>
             </div>
             <button class="prac-btn prac-btn-primary prac-btn-sm" id="printPlanBtn">Print / Export</button>
           </div>
+
+          <div class="prac-doc-switch">
+            <button class="prac-doc-tab active" data-doc="plan">Support plan</button>
+            <button class="prac-doc-tab" data-doc="letter">NDIS recommendation letter</button>
+          </div>
+
+          <div id="letterDetails" class="prac-letter-details hidden">
+            <p class="prac-letter-details-head">Your letterhead details <span>(saved on this device, optional)</span></p>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>Role / credentials</label><input id="lhRole" placeholder="e.g. Behaviour Support Practitioner, BPsySc"></div>
+              <div class="prac-field"><label>Practice / business name</label><input id="lhBusiness" placeholder="e.g. Bright Steps Allied Health"></div>
+            </div>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>ABN</label><input id="lhAbn" placeholder="e.g. 12 345 678 901"></div>
+              <div class="prac-field"><label>Contact phone / email</label><input id="lhContact" placeholder="Shown under your signature"></div>
+            </div>
+          </div>
+
           <div class="prac-plan-doc" id="planDoc"></div>
+          <div class="prac-plan-doc hidden" id="letterDoc"></div>
         </div>
       </div>
     </div>
@@ -261,6 +302,27 @@
       <div class="prac-guides-grid" id="resourceGrid"></div>
     </div>
 
+    <!-- ===== PLAN & BILLING VIEW ===== -->
+    <div id="viewPlan" class="hidden">
+      <div class="prac-page-head">
+        <div>
+          <h2>Plan &amp; Billing</h2>
+          <p>Your practitioner plan, caseload usage and invites.</p>
+        </div>
+      </div>
+      <div id="planSummary"></div>
+      <div class="prac-section-head" style="margin-top:28px;">
+        <h3>Plans</h3>
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin:-6px 0 14px;">Every plan includes the full client workspace, goals with automatic module tracking, behaviours, notes and printable support plans. Client families use Daniel's Diaries on their own family subscription.</p>
+      <div class="prac-plan-grid" id="planGrid"></div>
+      <div class="prac-panel" style="margin-top:20px;">
+        <h3>Pending Invites</h3>
+        <p class="prac-panel-desc">Families you've invited who haven't joined yet.</p>
+        <div id="inviteList"></div>
+      </div>
+    </div>
+
     <div class="prac-footer">
       Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.
     </div>
@@ -271,16 +333,37 @@
 <div class="prac-overlay hidden" id="addClientModal">
   <div class="prac-modal">
     <h3>Add a Client</h3>
-    <p class="prac-modal-sub">Search by the parent's email address to link their child to your caseload.</p>
-    <div class="prac-field">
-      <label>Parent email address</label>
-      <input id="searchEmail" type="email" placeholder="parent@email.com">
+    <div class="prac-modal-tabs">
+      <button class="prac-modal-tab active" data-mode="invite" id="modeInviteBtn">Invite a family</button>
+      <button class="prac-modal-tab" data-mode="search" id="modeSearchBtn">Find existing family</button>
     </div>
-    <button class="prac-btn prac-btn-primary prac-btn-sm" id="searchFamilyBtn" style="width:100%;margin-bottom:16px;">Search</button>
-    <div id="searchResults"></div>
-    <div id="searchError" class="hidden" style="color:#c02626;font-size:13px;margin-bottom:12px;"></div>
+
+    <!-- Invite mode -->
+    <div id="inviteMode">
+      <p class="prac-modal-sub">Send the family a private invite code. When they sign in (or sign up) with the code, their child is linked to your caseload.</p>
+      <div class="prac-field">
+        <label>Family email (optional, for your records)</label>
+        <input id="inviteEmail" type="email" placeholder="parent@email.com">
+      </div>
+      <button class="prac-btn prac-btn-primary prac-btn-sm" id="createInviteBtn" style="width:100%;margin-bottom:12px;">Create Invite</button>
+      <div id="inviteResult"></div>
+      <div id="inviteError" class="hidden" style="color:#c02626;font-size:13px;margin-bottom:12px;"></div>
+    </div>
+
+    <!-- Search mode -->
+    <div id="searchMode" class="hidden">
+      <p class="prac-modal-sub">Search by the parent's email address to link their child to your caseload.</p>
+      <div class="prac-field">
+        <label>Parent email address</label>
+        <input id="searchEmail" type="email" placeholder="parent@email.com">
+      </div>
+      <button class="prac-btn prac-btn-primary prac-btn-sm" id="searchFamilyBtn" style="width:100%;margin-bottom:16px;">Search</button>
+      <div id="searchResults"></div>
+      <div id="searchError" class="hidden" style="color:#c02626;font-size:13px;margin-bottom:12px;"></div>
+    </div>
+
     <div class="prac-modal-foot">
-      <button class="prac-btn prac-btn-ghost prac-btn-sm" id="closeAddClientBtn">Cancel</button>
+      <button class="prac-btn prac-btn-ghost prac-btn-sm" id="closeAddClientBtn">Close</button>
     </div>
   </div>
 </div>

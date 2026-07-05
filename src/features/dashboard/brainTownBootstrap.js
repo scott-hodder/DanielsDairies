@@ -4,11 +4,20 @@
 // ================================================
 
 import { initBrainTown, updateBrainTown, switchBrainTownTab } from './brainTownIntegration.js'
+import { getSkillGate } from './superSkillGate.js'
 
 let _initialized = false
 
 function navigateToAdventure(skill) {
-  const slug = skill.slug || (skill.name || skill.title || '').toLowerCase().replace(/\s+/g, '-')
+  let slug = skill.slug || (skill.name || skill.title || '').toLowerCase().replace(/\s+/g, '-')
+
+  // Sequential unlock: locked skills can't be travelled to — go to the
+  // active skill instead (the map popup explains why).
+  const gate = getSkillGate()
+  if (gate && gate.bySlug[slug]?.state === 'locked' && gate.activeSlug) {
+    slug = gate.activeSlug
+    skill = (window.superSkills || []).find(s => s.slug === slug) || skill
+  }
 
   // Set the category in localStorage so the adventure map picks it up
   try {
