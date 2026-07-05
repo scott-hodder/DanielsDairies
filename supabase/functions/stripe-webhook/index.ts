@@ -95,6 +95,51 @@ serve(async (req) => {
     }
   })
 
+  // ── Event-level idempotency ──
+  // Stripe retries deliver the same event id. Recording the id before doing
+  // any work means a retried (or concurrently re-delivered) event is acked
+  // without re-processing, so credits/subscription changes never run twice.
+  const { error: eventInsertError } = await supabase
+    .from('stripe_webhook_events')
+    .insert({ event_id: event.id, event_type: event.type })
+
+  if (eventInsertError) {
+    if (eventInsertError.code === '23505') {
+      console.log(`[Webhook] Duplicate event ${event.id} (${event.type}) — already processed, acking.`)
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    // If the idempotency table is unavailable, fail the delivery so Stripe
+    // retries later rather than risking unrecorded processing.
+    console.error('[Webhook] Failed to record event id:', eventInsertError)
+    return new Response(JSON.stringify({ error: 'Event log unavailable' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
+
+  // ── Grant-level idempotency ──
+  // Both checkout.session.completed and invoice.paid can attempt to grant
+  // credits for the same invoice. Each grant is keyed (invoice or session id)
+  // and only executes when its key is newly inserted.
+  async function grantCreditsOnce(grantKey: string, parentId: string, credits: number, source: string): Promise<boolean> {
+    if (credits <= 0) return false
+    const { error: grantError } = await supabase
+      .from('stripe_credit_grants')
+      .insert({ grant_key: grantKey, parent_id: parentId, credits, source })
+    if (grantError) {
+      if (grantError.code === '23505') {
+        console.log(`[Webhook] Credits already granted for ${grantKey} — skipping.`)
+        return false
+      }
+      throw grantError
+    }
+    await addCreditsToFamily(parentId, credits)
+    return true
+  }
+
   async function findParentId(customerId?: string | null, subscriptionId?: string | null) {
     if (subscriptionId) {
       const { data } = await supabase
@@ -264,15 +309,19 @@ serve(async (req) => {
       cancelAtPeriodEnd: subscription.cancel_at_period_end
     })
 
-    // Grant credits directly to parent_profiles and children
-    await addCreditsToFamily(parentId, tierRow.modules_per_month)
-    console.log(`[Webhook] Granted ${tierRow.modules_per_month} credits to family of ${parentId} (invoice ${invoice.id}, tier ${resolvedTier})`)
+    // Grant credits (idempotent per invoice — safe even if both
+    // checkout.session.completed and invoice.paid fire for this invoice)
+    const granted = await grantCreditsOnce(`invoice:${invoice.id}`, parentId, tierRow.modules_per_month, 'subscription_invoice')
+    if (granted) {
+      console.log(`[Webhook] Granted ${tierRow.modules_per_month} credits to family of ${parentId} (invoice ${invoice.id}, tier ${resolvedTier})`)
+    }
   }
 
   async function grantSubscriptionExtensionCredits(params: {
     parentId: string
     months: number
     tier?: string | null
+    grantKey: string
   }) {
     const { parentId, months } = params
     if (months <= 0) return
@@ -300,9 +349,10 @@ serve(async (req) => {
     const creditsToGrant = tierRow.modules_per_month * months
     if (creditsToGrant <= 0) return
 
-    // Grant credits directly to parent_profiles and children
-    await addCreditsToFamily(parentId, creditsToGrant)
-    console.log(`Granted ${creditsToGrant} extension credits to family of ${parentId} (${months} months)`)
+    const granted = await grantCreditsOnce(params.grantKey, parentId, creditsToGrant, 'subscription_extension')
+    if (granted) {
+      console.log(`Granted ${creditsToGrant} extension credits to family of ${parentId} (${months} months)`)
+    }
   }
 
   try {
@@ -376,7 +426,8 @@ serve(async (req) => {
           await grantSubscriptionExtensionCredits({
             parentId,
             months,
-            tier: currentSub?.tier || session.metadata?.tier || 'low'
+            tier: currentSub?.tier || session.metadata?.tier || 'low',
+            grantKey: `session:${session.id}`
           })
 
           console.log(`Subscription extended for ${parentId}: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`)
@@ -387,10 +438,9 @@ serve(async (req) => {
         if (session.mode === 'payment' && paymentType === 'prepaid_credits') {
           const credits = parseInt(session.metadata?.credits || '0')
           if (credits > 0) {
-            // Grant credits directly to parent_profiles and children
             try {
-              await addCreditsToFamily(parentId, credits)
-              console.log(`Granted ${credits} prepaid credits to family of ${parentId}`)
+              const granted = await grantCreditsOnce(`session:${session.id}`, parentId, credits, 'prepaid_credits')
+              if (granted) console.log(`Granted ${credits} prepaid credits to family of ${parentId}`)
             } catch (creditError) {
               console.error('Failed to grant prepaid credits:', creditError)
             }
@@ -436,6 +486,42 @@ serve(async (req) => {
           await grantCreditsFromInvoice(invoice)
         }
 
+        // New paid signup: the account was created server-side before
+        // checkout (start-paid-signup). Activate it now.
+        if (paymentType === 'signup') {
+          const signupTier = normalizeTierCode(session.metadata?.plan) ?? resolvedTier
+          if (signupTier) {
+            const { error: profileError } = await supabase
+              .from('parent_profiles')
+              .update({ subscription_tier: signupTier })
+              .eq('id', parentId)
+            if (profileError) console.error('[Webhook] Failed to set profile tier after signup:', profileError)
+          }
+          const { error: pendingError } = await supabase
+            .from('pending_signups')
+            .update({ status: 'completed', updated_at: new Date().toISOString() })
+            .eq('parent_id', parentId)
+          if (pendingError) console.error('[Webhook] Failed to mark pending signup complete:', pendingError)
+          console.log(`[Webhook] Activated signup for ${parentId} (tier ${signupTier})`)
+        }
+
+        break
+      }
+
+      case 'checkout.session.expired': {
+        const session = event.data.object as Stripe.Checkout.Session
+        const parentId = session.client_reference_id ?? session.metadata?.parent_id ?? null
+        if (parentId && session.metadata?.payment_type === 'signup') {
+          // The account stays usable (0 credits, inactive subscription) so the
+          // parent can log in and subscribe from their profile — we only stop
+          // the stale resume token from creating further sessions.
+          await supabase
+            .from('pending_signups')
+            .update({ status: 'expired', updated_at: new Date().toISOString() })
+            .eq('parent_id', parentId)
+            .eq('status', 'awaiting_payment')
+          console.log(`[Webhook] Signup checkout expired for ${parentId}`)
+        }
         break
       }
 
@@ -502,14 +588,16 @@ serve(async (req) => {
 
         // Send notification email to the parent about the failed payment
         try {
+          // parent_profiles is keyed by id and has no email column — the
+          // email comes from auth, with the Stripe customer as fallback.
           const { data: parentProfile } = await supabase
             .from('parent_profiles')
-            .select('email, first_name')
-            .eq('user_id', parentId)
+            .select('full_name')
+            .eq('id', parentId)
             .maybeSingle()
 
-          // Also try auth user email as fallback
-          let email = parentProfile?.email
+          const { data: authUser } = await supabase.auth.admin.getUserById(parentId)
+          let email = authUser?.user?.email
           if (!email && customerId) {
             const customer = await stripe.customers.retrieve(customerId as string)
             if (customer && !customer.deleted) {
@@ -518,7 +606,7 @@ serve(async (req) => {
           }
 
           if (email) {
-            const firstName = parentProfile?.first_name || 'there'
+            const firstName = (parentProfile?.full_name || '').trim().split(/\s+/)[0] || 'there'
             const isFirstAttempt = attemptCount <= 1
             const subject = isFirstAttempt
               ? "Payment failed — let's get this sorted"

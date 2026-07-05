@@ -7,9 +7,9 @@
     <meta name="description" content="Daniel's Diaries helps children build emotional intelligence through interactive, story-based modules — while giving parents and practitioners real-time insight into their progress.">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/dd-favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/dd-favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/dd-favicon.png">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -498,6 +498,225 @@
             margin-right: 8px;
         }
 
+        /* ── Super Skills world ── */
+        .skills-section {
+            background: linear-gradient(180deg, #eef6fd, #f8fafc);
+            border-bottom: 1px solid #e8ecf0;
+        }
+        .skills-intro {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            max-width: 780px;
+            margin: 0 auto 40px;
+        }
+        .skills-intro img {
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            flex-shrink: 0;
+            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.12));
+        }
+        .skills-intro p {
+            font-size: 16px;
+            color: #3d5a7a;
+            line-height: 1.7;
+        }
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .skill-card {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid #e8ecf0;
+            padding: 24px 18px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease;
+        }
+        .skill-card:hover { transform: translateY(-3px); }
+        .skill-card img {
+            width: 84px;
+            height: 84px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        .skill-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+        .skill-card .skill-character { font-size: 12px; font-weight: 500; color: #7a8fa8; margin-bottom: 8px; }
+        .skill-card p { font-size: 13px; color: #5a7a9a; line-height: 1.55; }
+
+        /* ── Screenshots ── */
+        .shots-section { background: #fff; border-bottom: 1px solid #e8ecf0; }
+        .shots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+        }
+        .shot-card { text-align: center; }
+        .shot-card img {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid #dde4ec;
+            box-shadow: 0 8px 28px rgba(30, 58, 95, 0.10);
+        }
+        .shot-card figcaption { margin-top: 10px; font-size: 14px; font-weight: 500; color: #3d5a7a; }
+
+        /* ── Pricing ── */
+        .pricing-section {
+            background: linear-gradient(180deg, #f0f4f8, #e8eef4);
+            border-bottom: 1px solid #dde4ec;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            align-items: stretch;
+        }
+        .price-card {
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid #e8ecf0;
+            padding: 32px 26px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            position: relative;
+        }
+        .price-card.popular { border: 2px solid #4caf50; box-shadow: 0 8px 30px rgba(76, 175, 80, 0.15); }
+        .price-card .popular-badge {
+            position: absolute;
+            top: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 100px;
+            padding: 4px 14px;
+            white-space: nowrap;
+        }
+        .price-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .price-card .price-line { margin: 10px 0 4px; }
+        .price-card .price-amount { font-size: 40px; font-weight: 700; color: #1e3a5f; }
+        .price-card .price-period { font-size: 14px; color: #7a8fa8; }
+        .price-card .price-desc { font-size: 13.5px; color: #5a7a9a; line-height: 1.6; margin-bottom: 18px; min-height: 66px; }
+        .price-card ul { list-style: none; text-align: left; font-size: 14px; color: #3d5a7a; line-height: 2.1; margin-bottom: 22px; flex: 1; }
+        .price-card ul li::before { content: '\2713'; color: #4caf50; font-weight: 700; margin-right: 8px; }
+        .price-card .btn { margin-top: auto; }
+        .pricing-note {
+            text-align: center;
+            font-size: 13px;
+            color: #6b8098;
+            max-width: 640px;
+            margin: 26px auto 0;
+            line-height: 1.7;
+        }
+        .pricing-note a { color: #3d6b99; }
+
+        /* ── Comparison table ── */
+        .compare-wrap { overflow-x: auto; margin-top: 40px; }
+        .compare-table {
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            font-size: 14px;
+        }
+        .compare-table th, .compare-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eef2f6;
+            text-align: center;
+            color: #3d5a7a;
+        }
+        .compare-table th { background: #f4f8fb; font-weight: 600; color: #1e3a5f; }
+        .compare-table td:first-child, .compare-table th:first-child { text-align: left; }
+        .compare-check { color: #4caf50; font-weight: 700; }
+        .compare-dash { color: #c3ccd6; }
+
+        /* ── FAQ ── */
+        .faq-section { background: #fff; border-bottom: 1px solid #e8ecf0; }
+        .faq-list { max-width: 760px; margin: 0 auto; }
+        .faq-item {
+            border: 1px solid #e8ecf0;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+        }
+        .faq-item summary {
+            cursor: pointer;
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #1e3a5f;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary::after { content: '+'; font-size: 20px; color: #7a8fa8; }
+        .faq-item[open] summary::after { content: '\2212'; }
+        .faq-item .faq-body { padding: 0 20px 16px; font-size: 14px; color: #5a7a9a; line-height: 1.7; }
+
+        /* ── Trust / about ── */
+        .trust-section {
+            background: linear-gradient(180deg, #f0f4f8, #e8eef4);
+            border-bottom: 1px solid #dde4ec;
+        }
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            margin-top: 12px;
+        }
+        .trust-card {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid #e8ecf0;
+            padding: 28px 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .trust-card .trust-icon { font-size: 30px; display: block; margin-bottom: 12px; }
+        .trust-card h3 { font-size: 17px; font-weight: 600; color: #1e3a5f; margin-bottom: 8px; }
+        .trust-card p { font-size: 14px; color: #5a7a9a; line-height: 1.7; }
+        .trust-card a { color: #3d6b99; }
+        .trust-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 28px 0 0;
+        }
+        .trust-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #fff;
+            border: 1px solid #dde4ec;
+            border-radius: 100px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #3d5a7a;
+        }
+
+        /* ── Final CTA ── */
+        .final-cta {
+            background: linear-gradient(180deg, #eef6fd, #d4eaf7);
+            text-align: center;
+        }
+        .final-cta h2 { font-size: 28px; font-weight: 700; color: #1e3a5f; margin-bottom: 10px; }
+        .final-cta p { font-size: 16px; color: #3d5a7a; margin-bottom: 26px; max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+        .final-cta .cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .final-cta .btn { width: auto; min-width: 220px; display: inline-block; }
+
         /* ── Footer ── */
         .site-footer {
             background: #152d4a;
@@ -531,6 +750,11 @@
             .section-title { font-size: 26px; }
             .value-grid, .steps, .audience-grid { grid-template-columns: 1fr; gap: 20px; }
             .features-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .skills-intro { flex-direction: column; text-align: center; }
+            .skills-grid { grid-template-columns: repeat(2, 1fr); }
+            .shots-grid { grid-template-columns: repeat(2, 1fr); }
+            .price-card .price-desc { min-height: 0; }
             .value-statement h2 { font-size: 24px; }
             .cta-section h2 { font-size: 26px; }
             .cta-buttons { flex-direction: column; align-items: center; }
@@ -762,13 +986,281 @@
     </div>
 
     <!-- ══════════════════════════════════════════
+         SUPER SKILLS / BRAIN TOWN WORLD
+         ══════════════════════════════════════════ -->
+    <div class="skills-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">The 7 Super Skills</p>
+                <h2 class="section-title">Meet Daniel and the Brain Town crew</h2>
+                <p class="section-subtitle">Every module, game, and activity builds one of seven practical life skills — each championed by a friendly character in Brain Town, the world your child explores as they grow.</p>
+            </div>
+
+            <div class="skills-intro">
+                <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog">
+                <p><strong>Daniel the Dog</strong> is your child's guide. He walks with them through Brain Town, cheers them on in games, and helps them practise real coping skills — like spotting unhelpful thoughts, calming big feelings, and bouncing back from tough days — in ways they can actually use at school and at home.</p>
+            </div>
+
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Lenny.png" alt="Lenny" loading="lazy">
+                    <h3>Brain Builder</h3>
+                    <div class="skill-character">with Lenny</div>
+                    <p>Understanding how your brain works — the foundation for every other skill.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Coco.png" alt="Coco" loading="lazy">
+                    <h3>Thought Driver</h3>
+                    <div class="skill-character">with Coco</div>
+                    <p>Noticing thoughts and steering them in helpful directions.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Kip.png" alt="Kip" loading="lazy">
+                    <h3>Emotion Navigator</h3>
+                    <div class="skill-character">with Kip</div>
+                    <p>Recognising and moving through big feelings with confidence.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Pepper.png" alt="Pepper" loading="lazy">
+                    <h3>Behaviour Engineer</h3>
+                    <div class="skill-character">with Pepper</div>
+                    <p>Building helpful habits and taking charge of actions.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Eddie.png" alt="Eddie" loading="lazy">
+                    <h3>Resilience Architect</h3>
+                    <div class="skill-character">with Eddie</div>
+                    <p>Growing inner strength and bouncing back from challenges.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Kai.png" alt="Kai" loading="lazy">
+                    <h3>Social Mapper</h3>
+                    <div class="skill-character">with Kai</div>
+                    <p>Reading social situations and building stronger friendships.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Billie.png" alt="Billie" loading="lazy">
+                    <h3>Future Designer</h3>
+                    <div class="skill-character">with Billie</div>
+                    <p>Setting goals and imagining the person they want to become.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREENSHOTS
+         ══════════════════════════════════════════ -->
+    <div class="shots-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">See it in action</p>
+                <h2 class="section-title">A world your child will want to come back to</h2>
+            </div>
+            <div class="shots-grid">
+                <figure class="shot-card">
+                    <img src="/images/steps/step1.webp" alt="Child dashboard with Daniel, stars, streak and daily quest" loading="lazy">
+                    <figcaption>A home base with Daniel, stars &amp; streaks</figcaption>
+                </figure>
+                <figure class="shot-card">
+                    <img src="/images/steps/step2.webp" alt="Adventure map showing module progress" loading="lazy">
+                    <figcaption>Adventure maps that grow with every module</figcaption>
+                </figure>
+                <figure class="shot-card">
+                    <img src="/images/steps/step5.2.webp" alt="Daily quest check-in" loading="lazy">
+                    <figcaption>Daily quests that build a check-in habit</figcaption>
+                </figure>
+                <figure class="shot-card">
+                    <img src="/images/steps/step6.2.webp" alt="Star shop rewards" loading="lazy">
+                    <figcaption>A star shop with rewards you can customise</figcaption>
+                </figure>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         PRICING
+         ══════════════════════════════════════════ -->
+    <div class="pricing-section" id="pricing">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Pricing</p>
+                <h2 class="section-title">Simple plans, no surprises</h2>
+                <p class="section-subtitle">Every plan includes the full Brain Town world, all games, daily quests, rewards, and progress tracking. Plans differ in how many guided modules your child receives each month and how much support you get.</p>
+            </div>
+
+            <div class="pricing-grid" id="pricingGrid">
+                <div class="price-card">
+                    <h3>Bronze</h3>
+                    <div class="price-line"><span class="price-amount" data-tier-price="low">$19</span><span class="price-period">/month AUD</span></div>
+                    <p class="price-desc">A simple, affordable starting point for steady emotional growth at home.</p>
+                    <ul>
+                        <li>4 guided modules per month</li>
+                        <li>Full Brain Town world &amp; all games</li>
+                        <li>Daily quests, stars &amp; rewards</li>
+                        <li>Progress tracking</li>
+                    </ul>
+                    <a href="/signup.html?plan=low" class="btn btn-outline">Choose Bronze</a>
+                </div>
+                <div class="price-card popular">
+                    <span class="popular-badge">Most popular</span>
+                    <h3>Silver</h3>
+                    <div class="price-line"><span class="price-amount" data-tier-price="mid">$39</span><span class="price-period">/month AUD</span></div>
+                    <p class="price-desc">Deeper progress and clearer visibility for families who want more support.</p>
+                    <ul>
+                        <li>6 guided modules per month</li>
+                        <li>Everything in Bronze</li>
+                        <li>Parent insights reports</li>
+                        <li>Weekly progress emails</li>
+                    </ul>
+                    <a href="/signup.html?plan=mid" class="btn btn-primary">Choose Silver</a>
+                </div>
+                <div class="price-card">
+                    <h3>Gold</h3>
+                    <div class="price-line"><span class="price-amount" data-tier-price="top">$69</span><span class="price-period">/month AUD</span></div>
+                    <p class="price-desc">Our most comprehensive package, with behavioural support from Foundational Minds.</p>
+                    <ul>
+                        <li>8 guided modules per month</li>
+                        <li>Everything in Silver</li>
+                        <li>Behavioural support from a registered Behaviour Support Practitioner</li>
+                        <li>Family Gold support hub</li>
+                    </ul>
+                    <a href="/signup.html?plan=top" class="btn btn-outline">Choose Gold</a>
+                </div>
+            </div>
+
+            <p class="pricing-note">
+                <strong>How module credits work:</strong> each month your plan adds guided-module credits to your family's account. Unused credits roll over while your subscription is active, and you can buy extra credits any time. Prefer to try first? <a href="/signup.html?trial=true">Start with 2 free modules</a> — no card required. Cancel any time from your account; see our <a href="/terms-of-service.html#billing">cancellation &amp; refund policy</a>.
+            </p>
+
+            <div class="compare-wrap">
+                <table class="compare-table">
+                    <thead>
+                        <tr><th>What's included</th><th>Bronze</th><th>Silver</th><th>Gold</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Guided modules per month</td><td>4</td><td>6</td><td>8</td></tr>
+                        <tr><td>Brain Town world, games &amp; daily quests</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Stars, streaks &amp; reward shop</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Unused credits roll over</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Parent insights reports</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Behavioural support (Foundational Minds)</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Family Gold support hub</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         FAQ
+         ══════════════════════════════════════════ -->
+    <div class="faq-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Questions</p>
+                <h2 class="section-title">Answers for parents</h2>
+            </div>
+            <div class="faq-list">
+                <details class="faq-item">
+                    <summary>What ages is Daniel's Diaries for?</summary>
+                    <div class="faq-body">The program is designed for primary-school-aged children (roughly 5–13). Module content is matched to your child's age and stage, so a 6-year-old and an 11-year-old get different language, activities, and depth.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>Who creates the content? Is it safe?</summary>
+                    <div class="faq-body">Content is drafted with the help of AI, then audited and reviewed by a qualified practitioner at Foundational Minds before it's approved for children. It's grounded in evidence-based psychology and behaviour support practice. Read exactly how it works on our <a href="/how-our-content-is-made.html">content &amp; review process page</a>.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>Is this therapy?</summary>
+                    <div class="faq-body">No. Daniel's Diaries is an educational wellbeing tool — it helps children learn and practise emotional skills, but it is not therapy, diagnosis, or clinical treatment, and it doesn't replace professional care. If your child needs clinical support, please speak with your GP or a qualified professional.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>What happens if we don't use all our module credits?</summary>
+                    <div class="faq-body">Nothing is lost — unused credits stay in your account and roll over while your subscription is active. Busy month? Your credits will be waiting.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>Can I cancel any time?</summary>
+                    <div class="faq-body">Yes. You can cancel future renewals any time from your account billing settings and keep access until the end of your paid period. See the <a href="/terms-of-service.html#billing">cancellation &amp; refund policy</a> for details.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>What does Gold's behavioural support include?</summary>
+                    <div class="faq-body">Gold families are supported by Foundational Minds, led by a registered Behaviour Support Practitioner with over five years of experience in the field. Support includes guidance tailored to your child, practitioner-set tasks and follow-ups in your Family Gold hub, and help applying the Super Skills at home.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>How is my child's data protected?</summary>
+                    <div class="faq-body">Data is encrypted in transit and at rest, stored with row-level security so only your family can access it, and never sold. Payment details are handled entirely by Stripe. You can export or delete your family's data at any time. Full details are in our <a href="/privacy-policy.html">privacy policy</a>.</div>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TRUST / WHO'S BEHIND IT
+         ══════════════════════════════════════════ -->
+    <div class="trust-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Who's behind it</p>
+                <h2 class="section-title">Built with practitioner oversight</h2>
+                <p class="section-subtitle">Daniel's Diaries is operated with Foundational Minds, a behaviour support practice — not a faceless app studio.</p>
+            </div>
+
+            <div class="trust-grid">
+                <div class="trust-card">
+                    <span class="trust-icon">&#129657;</span>
+                    <h3>Practitioner-led</h3>
+                    <p>Foundational Minds is led by a registered Behaviour Support Practitioner with 5+ years of experience working with children and families, currently completing Honours in Psychology. She oversees the program's content and provides the behavioural support in the Gold plan.</p>
+                </div>
+                <div class="trust-card">
+                    <span class="trust-icon">&#128221;</span>
+                    <h3>AI-assisted, human-reviewed</h3>
+                    <p>AI helps draft and audit module content — a practitioner reviews it before it reaches children, and everything is aligned with evidence-based psychology and behaviour support practice. <a href="/how-our-content-is-made.html">See our full content process</a>.</p>
+                </div>
+                <div class="trust-card">
+                    <span class="trust-icon">&#128274;</span>
+                    <h3>Privacy first</h3>
+                    <p>Your family's data is encrypted, protected by row-level security, and never sold. Children use nicknames and avatars. You can export or delete your data whenever you choose. <a href="/privacy-policy.html">Read the privacy policy</a>.</p>
+                </div>
+                <div class="trust-card">
+                    <span class="trust-icon">&#128106;</span>
+                    <h3>Built with families in mind</h3>
+                    <p>Designed alongside real families and behaviour support practice — for parents, children, schools, and practitioners who want emotional skills taught in a way kids genuinely enjoy.</p>
+                </div>
+            </div>
+
+            <div class="trust-badges">
+                <span class="trust-badge">&#9989; Practitioner reviewed</span>
+                <span class="trust-badge">&#128218; Evidence-informed</span>
+                <span class="trust-badge">&#129302; AI-assisted, human reviewed</span>
+                <span class="trust-badge">&#129309; Created with behaviour support oversight</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         FINAL CTA
+         ══════════════════════════════════════════ -->
+    <div class="final-cta">
+        <div class="section">
+            <h2>Start your child's adventure today</h2>
+            <p>Try 2 guided modules free — no card required. See how your child takes to Daniel and Brain Town before you choose a plan.</p>
+            <div class="cta-buttons">
+                <a href="/signup.html?trial=true" class="btn btn-primary">Try Free — 2 Modules on Us</a>
+                <a href="#pricing" class="btn btn-outline">See Plans</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
          FOOTER
          ══════════════════════════════════════════ -->
     <footer class="site-footer">
         <div class="footer-links">
             &copy; 2026 Daniel's Diaries by Foundational Minds &nbsp;|&nbsp;
             <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;|&nbsp;
-            <a href="/terms-of-service.html">Terms of Service</a>
+            <a href="/terms-of-service.html">Terms of Service</a> &nbsp;|&nbsp;
+            <a href="/terms-of-service.html#billing">Cancellation &amp; Refunds</a> &nbsp;|&nbsp;
+            <a href="/how-our-content-is-made.html">How Our Content Is Made</a>
         </div>
         <p class="footer-disclaimer">Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.</p>
     </footer>
@@ -790,6 +1282,22 @@
                     if (trialBtn) trialBtn.style.display = ''
                 }
             } catch (e) { /* flag defaults to off */ }
+
+            // Keep displayed prices in sync with the prices actually charged
+            // (subscription_tiers is the same source the checkout uses).
+            try {
+                const { data: tiers } = await getSupabaseClient()
+                    .from('subscription_tiers')
+                    .select('tier, monthly_price_cents')
+                    .eq('is_active', true)
+                ;(tiers || []).forEach((tier) => {
+                    const el = document.querySelector(`[data-tier-price="${tier.tier}"]`)
+                    if (el && typeof tier.monthly_price_cents === 'number') {
+                        const dollars = tier.monthly_price_cents / 100
+                        el.textContent = '$' + (dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2))
+                    }
+                })
+            } catch (e) { /* static fallback prices remain */ }
         })()
     </script>
 </body>

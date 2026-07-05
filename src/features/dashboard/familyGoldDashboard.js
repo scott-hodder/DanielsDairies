@@ -9,14 +9,21 @@
 //
 // Data honesty rules:
 //  - Progress stats and Super Skill roads are computed from REAL app data.
-//  - Practitioner-fed content (delivery model, tasks, guides) shows gentle
-//    empty states until the practitioner plumbing exists — nothing is faked.
-//  - Daniel time and the next appointment are parent-entered for now and
-//    persist per child on this device (localStorage), with working
-//    add-to-calendar (.ics) export.
+//  - Practitioner-fed content (delivery model, guides) shows gentle empty
+//    states until the practitioner plumbing exists — nothing is faked.
+//  - Daniel time, appointments, and tasks persist in the database (RLS
+//    scoped to the family) so they follow the family across devices.
+//    Data from the old localStorage prototype is migrated up automatically.
 // ================================================
 
 import { getSuperSkills } from '../../services/databaseService.js'
+import { getSupabaseClient } from '../../supabaseClient.js'
+import {
+  getGoldSettings, saveGoldDanielTime,
+  getNextGoldAppointment, saveGoldAppointment, cancelGoldAppointment,
+  getGoldTasks, addGoldTask, setGoldTaskDone,
+  migrateGoldLocalStorage
+} from '../../services/goldSupportService.js'
 import { escapeHtml } from '../../lib/sanitize.js'
 
 // ── Gold gate ─────────────────────────────────────────────────────
@@ -27,19 +34,6 @@ export function isGoldTier(subscription) {
   if (!tier) return false
   if (tier.includes('gold')) return true
   return tier === 'top'
-}
-
-// ── Local persistence (per child, per device — prototype scope) ──
-
-function timeKey(childId) { return `fg_time_${childId}` }
-function apptKey(childId) { return `fg_appt_${childId}` }
-function tasksKey(childId) { return `fg_tasks_${childId}` }
-
-function loadJson(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key)) || fallback } catch (_) { return fallback }
-}
-function saveJson(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)) } catch (_) {}
 }
 
 // ── Reference data ────────────────────────────────────────────────
@@ -62,6 +56,9 @@ const APPT_TYPES = ['Parent review (online)', 'Parent review (in person)', 'Join
 let _container = null
 let _ctx = null
 let _superSkills = null
+let _parentId = null
+// DB-backed hub state, loaded in init and mutated by event handlers.
+let _gold = { time: { days: [], time: '16:00' }, appt: null, tasks: [] }
 
 // ── Public API ────────────────────────────────────────────────────
 
@@ -77,7 +74,40 @@ export async function initFamilyGoldTab(container, ctx) {
   if (_superSkills === null) {
     try { _superSkills = await getSuperSkills() || [] } catch (_) { _superSkills = [] }
   }
+
+  const childId = ctx?.child?.id
+  try {
+    if (!_parentId) {
+      const { data } = await getSupabaseClient().auth.getUser()
+      _parentId = data?.user?.id || null
+    }
+    if (childId && _parentId) {
+      await migrateGoldLocalStorage(childId, _parentId)
+      await reloadGoldData(childId)
+    }
+  } catch (err) {
+    console.warn('[familyGold] Failed to load gold data:', err)
+  }
+
   render()
+}
+
+async function reloadGoldData(childId) {
+  const [settings, appt, tasks] = await Promise.all([
+    getGoldSettings(childId).catch(() => null),
+    getNextGoldAppointment(childId).catch(() => null),
+    getGoldTasks(childId).catch(() => [])
+  ])
+  _gold = {
+    time: {
+      days: settings?.daniel_days || [],
+      time: settings?.daniel_time || '16:00'
+    },
+    appt: appt
+      ? { id: appt.id, date: appt.appt_date, time: (appt.appt_time || '15:30').slice(0, 5), type: appt.appt_type }
+      : null,
+    tasks: tasks
+  }
 }
 
 // ── Progress helpers (same rules as the Brain Town map) ──────────
@@ -106,9 +136,9 @@ function render() {
   const childId = child.id || 'anon'
   const name = escapeHtml(child.name || 'Your child')
 
-  const time = loadJson(timeKey(childId), { days: [], time: '16:00' })
-  const appt = loadJson(apptKey(childId), null)
-  const tasks = loadJson(tasksKey(childId), [])
+  const time = _gold.time
+  const appt = _gold.appt
+  const tasks = _gold.tasks
 
   const completed = (_ctx.childModules || []).filter(cm => cm.is_completed === true).length
   const stars = child.stars || 0
@@ -120,7 +150,7 @@ function render() {
 
       <div class="fg-gold-strip">
         <span class="fg-gi">⭐</span>
-        <p><strong>You're on Gold.</strong> Your child gets the full Daniel's Diaries world, plus practitioner support, facilitated session plans, and the guides your practitioner shares with you.</p>
+        <p><strong>You're on Gold.</strong> Your child gets the full Daniel's Diaries world, plus behavioural support provided by <strong>Foundational Minds</strong> — a registered Behaviour Support Practitioner who helps your family apply the Super Skills at home, sets tasks between sessions, and shares guides tailored to your child. Support is educational and behavioural in nature; it is not therapy or clinical treatment.</p>
       </div>
 
       <div class="fg-grid2">
@@ -181,15 +211,19 @@ function render() {
         </div>
 
         <div class="fg-panel">
-          <h3>Tasks from your practitioner</h3>
-          <p class="fg-desc">Little things to try between sessions. Tick them off as you go.</p>
+          <h3>Tasks &amp; follow-ups</h3>
+          <p class="fg-desc">Tasks from your practitioner and your own follow-ups between sessions. Tick them off as you go — saved to your family account, on every device.</p>
           <div id="fgTasks">
-            ${tasks.length ? tasks.map((t, i) => `
-              <div class="fg-task ${t.done ? 'done' : ''}" data-task="${i}">
+            ${tasks.length ? tasks.map(t => `
+              <div class="fg-task ${t.done ? 'done' : ''}" data-task-id="${escapeHtml(t.id)}">
                 <div class="fg-task-box">${t.done ? '✓' : ''}</div>
-                <div class="fg-task-txt">${escapeHtml(t.text)}</div>
+                <div class="fg-task-txt">${escapeHtml(t.text)}${t.source === 'practitioner' ? ' <span class="fg-task-src">from your practitioner</span>' : ''}</div>
               </div>`).join('')
-            : '<p class="fg-note">No tasks right now. Tasks your practitioner sets between sessions will appear here.</p>'}
+            : '<p class="fg-note">No tasks right now. Tasks your practitioner sets between sessions will appear here, and you can add your own follow-ups below.</p>'}
+          </div>
+          <div class="fg-task-add">
+            <input type="text" id="fgTaskInput" maxlength="200" placeholder="Add a follow-up (e.g. practise belly breathing before school)" aria-label="Add a follow-up task" />
+            <button class="fg-btn fg-btn-ghost" id="fgTaskAdd">Add</button>
           </div>
         </div>
       </div>
@@ -250,21 +284,35 @@ function render() {
 function wireEvents(childId, time, appt, tasks) {
   const c = _container
 
+  // A DB write that fails must not silently pretend it saved.
+  async function persist(action) {
+    try {
+      await action()
+      return true
+    } catch (err) {
+      console.error('[familyGold] save failed:', err)
+      alert('Could not save — please check your connection and try again.')
+      await reloadGoldData(childId).catch(() => {})
+      render()
+      return false
+    }
+  }
+
   // Daniel time: day chips + time input
   c.querySelectorAll('.fg-day').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const i = Number(btn.dataset.day)
       const idx = time.days.indexOf(i)
       if (idx >= 0) time.days.splice(idx, 1); else time.days.push(i)
-      saveJson(timeKey(childId), time)
       render()
+      await persist(() => saveGoldDanielTime(childId, _parentId, time.days, time.time))
     })
   })
   const timeInput = c.querySelector('#fgTime')
   if (timeInput) {
-    timeInput.addEventListener('change', () => {
+    timeInput.addEventListener('change', async () => {
       time.time = timeInput.value || '16:00'
-      saveJson(timeKey(childId), time)
+      await persist(() => saveGoldDanielTime(childId, _parentId, time.days, time.time))
     })
   }
   const timeIcs = c.querySelector('#fgTimeIcs')
@@ -273,22 +321,29 @@ function wireEvents(childId, time, appt, tasks) {
   // Appointment
   const apptSave = c.querySelector('#fgApptSave')
   if (apptSave) {
-    apptSave.addEventListener('click', () => {
+    apptSave.addEventListener('click', async () => {
       const date = c.querySelector('#fgApptDate')?.value
       if (!date) return
-      saveJson(apptKey(childId), {
+      const ok = await persist(() => saveGoldAppointment(childId, _parentId, {
         date,
         time: c.querySelector('#fgApptTime')?.value || '15:30',
         type: c.querySelector('#fgApptType')?.value || APPT_TYPES[0],
-      })
-      render()
+      }))
+      if (ok) {
+        await reloadGoldData(childId).catch(() => {})
+        render()
+      }
     })
   }
   const apptClear = c.querySelector('#fgApptClear')
   if (apptClear) {
-    apptClear.addEventListener('click', () => {
-      try { localStorage.removeItem(apptKey(childId)) } catch (_) {}
-      render()
+    apptClear.addEventListener('click', async () => {
+      if (!appt?.id) return
+      const ok = await persist(() => cancelGoldAppointment(appt.id))
+      if (ok) {
+        _gold.appt = null
+        render()
+      }
     })
   }
   const apptIcs = c.querySelector('#fgApptIcs')
@@ -296,11 +351,30 @@ function wireEvents(childId, time, appt, tasks) {
 
   // Tasks: tick toggles persist
   c.querySelectorAll('.fg-task').forEach(el => {
-    el.addEventListener('click', () => {
-      const i = Number(el.dataset.task)
-      if (tasks[i]) { tasks[i].done = !tasks[i].done; saveJson(tasksKey(childId), tasks); render() }
+    el.addEventListener('click', async () => {
+      const id = el.dataset.taskId
+      const task = tasks.find(t => t.id === id)
+      if (!task) return
+      task.done = !task.done
+      render()
+      await persist(() => setGoldTaskDone(id, task.done))
     })
   })
+
+  // Parent-added follow-ups
+  const taskAdd = c.querySelector('#fgTaskAdd')
+  const taskInput = c.querySelector('#fgTaskInput')
+  async function submitTask() {
+    const text = (taskInput?.value || '').trim()
+    if (!text) return
+    const ok = await persist(() => addGoldTask(childId, _parentId, text, 'parent'))
+    if (ok) {
+      await reloadGoldData(childId).catch(() => {})
+      render()
+    }
+  }
+  if (taskAdd) taskAdd.addEventListener('click', submitTask)
+  if (taskInput) taskInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitTask() })
 
   // Kid world
   const openWorld = c.querySelector('#fgOpenWorld')
@@ -392,6 +466,9 @@ function injectStyles() {
 .fg-task.done .fg-task-box{background:#40916c;border-color:#40916c}
 .fg-task.done .fg-task-txt{text-decoration:line-through;color:#6b7e95}
 .fg-task-txt{font-size:13.5px;color:#1f2937;flex:1;padding-top:2px}
+.fg-task-src{display:inline-block;font-size:11px;color:#8a6d1a;background:#fdf3d7;border-radius:100px;padding:1px 8px;margin-left:6px;text-decoration:none}
+.fg-task-add{display:flex;gap:9px;margin-top:12px}
+.fg-task-add input{flex:1;padding:9px 12px;border:2px solid #d7deea;border-radius:10px;font-size:13.5px;font-family:inherit}
 .fg-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .fg-stat{background:#f4f7fb;border:1px solid #e5e7eb;border-radius:14px;padding:14px;text-align:center}
 .fg-stat-v{font-family:'Fredoka',sans-serif;font-size:26px;font-weight:700;color:#16324f;line-height:1}

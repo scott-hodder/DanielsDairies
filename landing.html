@@ -6,9 +6,9 @@
     <title>Welcome - Daniel's Diaries</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/dd-favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/dd-favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/dd-favicon.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -85,7 +85,7 @@
             <div style="max-width: 700px; text-align: center; padding: 40px 20px;">
                 <!-- Welcome Header -->
                 <div style="margin-bottom: 40px;">
-                    <img src="/public/images/characters/DanielTheDog.webp" alt="Daniel the Dog" loading="eager" class="welcome-daniel-img">
+                    <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" loading="eager" class="welcome-daniel-img">
                     <h1 style="font-size: clamp(32px, 6vw, 48px); color: #405878; font-weight: 700; margin-bottom: 16px;">Welcome to Daniel's Diaries</h1>
                     <p style="font-size: 18px; color: #4c6c96; line-height: 1.6; margin-bottom: 24px;">
                         Daniel's Diaries is an interactive workbook designed to help children build emotional intelligence, resilience, and coping skills through engaging stories and activities. Each workbook is expertly crafted to support your child's mental wellbeing journey.
@@ -136,7 +136,7 @@
 
         <!-- Welcome Section -->
         <div id="welcomeSection" class="welcome-section hidden" style="display: none;">
-            <img src="/public/images/characters/DanielTheDog.webp" alt="Daniel the Dog" loading="lazy" style="height: min(30vh, 240px); width: auto; display: block; margin-left: auto; margin-right: auto;">
+            <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" loading="lazy" style="height: min(30vh, 240px); width: auto; display: block; margin-left: auto; margin-right: auto;">
             <h1 class="welcome-greeting" id="welcomeGreeting">Welcome back</h1>
             <p class="welcome-message">Today is a good day to check in. Every small step forward matters.</p>
         </div>
@@ -242,13 +242,12 @@
                 }
 
                 currentUser = session.user
-                
-                // Get user's email for greeting (use first part of email as name)
-                if (currentUser && currentUser.email) {
-                    const emailName = currentUser.email.split('@')[0]
-                    const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1)
-                    welcomeGreeting.textContent = `Welcome back, ${displayName}`
-                }
+
+                // Greet by first name (signup metadata), never the email prefix.
+                const metaFirstName = (currentUser?.user_metadata?.first_name || '').trim()
+                welcomeGreeting.textContent = metaFirstName
+                    ? `Welcome back, ${metaFirstName}`
+                    : 'Welcome back'
 
                 // Load admin access, children, and modules in parallel
                 const [, childrenResult, modulesResult] = await Promise.all([

@@ -8,7 +8,9 @@ function securityHeadersPlugin() {
     '<meta name="referrer" content="strict-origin-when-cross-origin">',
     '<meta http-equiv="Content-Security-Policy" content="' +
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; " +
+      // blob: is required — the module player executes stored module scripts
+      // via Blob URLs (module.html loadModuleScript)
+      "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: blob: https:; " +
@@ -58,6 +60,7 @@ export default defineConfig({
         billing: resolve(__dirname, 'billing.html'),
         privacyPolicy: resolve(__dirname, 'privacy-policy.html'),
         termsOfService: resolve(__dirname, 'terms-of-service.html'),
+        howContentIsMade: resolve(__dirname, 'how-our-content-is-made.html'),
         auth: resolve(__dirname, 'auth.html'),
         schoolsLogin: resolve(__dirname, 'schools-login.html'),
         schoolsDashboard: resolve(__dirname, 'schools-dashboard.html'),

@@ -8,7 +8,8 @@ import { openExplainer, renderExplainerChip } from './danielExplainer.js'
 import { maybeShowFirstTimeGuide } from './firstTimeGuide.js'
 import { initSvgMap } from './brainTownSvgMap.js'
 import { initRoadBuilderTab } from './roadBuilderTab.js'
-import { initArcadeTab } from './arcadeTab.js'
+import { initArcadeTab, refreshArcadeBests } from './arcadeTab.js'
+import { recordArcadePlay, saveArcadeReflection, getReflectionFor } from './arcadeLoop.js'
 import { listGames } from '../../minigames/index.js'
 import { getA11yConfig } from '../../minigames/shared/A11yConfig.js'
 import { difficultyForAge } from '../../minigames/content/difficulty.js'
@@ -101,6 +102,7 @@ export async function initBrainTown({
   const arcadeMount = document.getElementById('arcadeMount')
   if (arcadeMount && !arcadeMount.dataset.initialized) {
     initArcadeTab(arcadeMount, {
+      childId: selectedChild?.id,
       onPlayGame: (gameId) => {
         launchArcadeGame(gameId, container)
       }
@@ -246,10 +248,26 @@ function launchArcadeGame(gameId, container) {
       }
     })
 
-    game.run().then((result) => {
+    game.run().then(async (result) => {
       if (abortController.signal.aborted) return
       try { game.dispose() } catch (_) {}
+
+      // Record the play server-side (star cap + personal best decided there).
+      const reward = await recordArcadePlay(child.id, gameId, {
+        score: result?.score ?? result?.starsEarned ?? 0,
+        success: !!result?.success
+      })
+      if (reward?.awarded_stars > 0) {
+        // Keep the in-memory child in sync so the header stars don't lag.
+        const liveChild = window.selectedChild || window.state?.selectedChild
+        if (liveChild && liveChild.id === child.id) {
+          liveChild.stars = (liveChild.stars || 0) + reward.awarded_stars
+        }
+        refreshArcadeBests()
+      }
+
       showArcadeEndScreen(gameContainer, gameDef, result, {
+        reward,
         onPlayAgain: () => {
           abortController.abort()
           modal.remove()
@@ -272,31 +290,71 @@ function launchArcadeGame(gameId, container) {
   }
 }
 
-// End-of-game screen for arcade free play: celebrates the result and
-// offers a replay, so a finished game never dead-ends.
-function showArcadeEndScreen(host, gameDef, result, { onPlayAgain, onClose }) {
+// End-of-game screen for arcade free play: celebrates the result, shows the
+// server-decided star reward (daily cap included), asks one Super Skill
+// reflection question, and offers a replay so a finished game never dead-ends.
+function showArcadeEndScreen(host, gameDef, result, { reward, onPlayAgain, onClose }) {
   const success = !!result?.success
   const stars = success ? Math.min(3, Math.max(0, result?.starsEarned ?? 0)) : 0
   const starRow = [1, 2, 3].map(i =>
     `<span style="font-size:44px;filter:${i <= stars ? 'none' : 'grayscale(1) opacity(.35)'}">⭐</span>`
   ).join('')
 
+  // Reward line reflects what the server actually granted.
+  let rewardLine = ''
+  if (reward) {
+    if (reward.awarded_stars > 0) {
+      rewardLine = `+${reward.awarded_stars} star${reward.awarded_stars > 1 ? 's' : ''} for your Star Shop${reward.is_daily_challenge && reward.awarded_stars > 1 ? ' (challenge bonus!)' : ''} · ${reward.daily_stars_used}/${reward.daily_cap} arcade stars today`
+    } else if (success && reward.daily_stars_used >= reward.daily_cap) {
+      rewardLine = `You've earned all ${reward.daily_cap} arcade stars for today — play for fun, or build a road in a module!`
+    }
+  }
+  const bestLine = reward?.is_new_best ? `🏆 New personal best: ${reward.personal_best}!` : ''
+
   const overlay = document.createElement('div')
-  overlay.style.cssText = 'position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(22,50,79,0.55);padding:20px'
+  overlay.style.cssText = 'position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(22,50,79,0.55);padding:20px;overflow:auto'
   overlay.innerHTML = `
     <div style="background:#fffff5;border-radius:22px;max-width:380px;width:100%;padding:26px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,0.3)">
       <img src="${success ? '/images/characters/Daniel_Celebrating.webp' : '/images/characters/Daniel_Thinking.webp'}" alt="Daniel" style="width:84px;height:84px;object-fit:contain" />
       <h3 style="margin:10px 0 4px;font-size:21px;color:#16324f">${success ? 'You did it!' : 'Good effort!'}</h3>
       <div style="margin:6px 0">${starRow}</div>
-      <p style="margin:6px 0 16px;font-size:14px;color:#6b7e95">${success
+      ${bestLine ? `<p style="margin:4px 0;font-size:14px;font-weight:700;color:#8a6d1a">${bestLine}</p>` : ''}
+      ${rewardLine ? `<p style="margin:4px 0;font-size:13px;font-weight:600;color:#40916c">${rewardLine}</p>` : ''}
+      <p style="margin:6px 0 12px;font-size:14px;color:#6b7e95">${success
         ? 'That practice makes your brain roads stronger.'
         : 'Every try builds the road a little more. Have another go?'}</p>
+      <div class="ae-reflection" style="display:none;background:#eef6ff;border:1px solid #cfe3f7;border-radius:14px;padding:12px 14px;margin:0 0 14px;text-align:left">
+        <p class="ae-ref-q" style="margin:0 0 8px;font-size:13.5px;font-weight:600;color:#2b4a6f"></p>
+        <div class="ae-ref-opts" style="display:flex;flex-direction:column;gap:7px"></div>
+      </div>
       <div style="display:flex;gap:10px;justify-content:center">
         <button class="ae-again" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f2c94c,#e6a800);color:#16324f;font-weight:700;font-size:15px;cursor:pointer">Play again</button>
         <button class="ae-close" style="flex:1;padding:12px;border:2px solid #d7deea;border-radius:12px;background:#fff;color:#405878;font-weight:700;font-size:15px;cursor:pointer">All done</button>
       </div>
     </div>
   `
+
+  // One-tap reflection tied to the game's Super Skill focus. Optional —
+  // playing again or closing skips it without friction.
+  if (reward?.play_id) {
+    const refWrap = overlay.querySelector('.ae-reflection')
+    const reflection = getReflectionFor(gameDef.id)
+    refWrap.style.display = 'block'
+    refWrap.querySelector('.ae-ref-q').textContent = reflection.question
+    const optsEl = refWrap.querySelector('.ae-ref-opts')
+    reflection.options.forEach(option => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.textContent = option
+      btn.style.cssText = 'padding:9px 12px;border:2px solid #cfe3f7;border-radius:10px;background:#fff;color:#2b4a6f;font-weight:600;font-size:13px;cursor:pointer;text-align:left;font-family:inherit'
+      btn.addEventListener('click', () => {
+        saveArcadeReflection(reward.play_id, option)
+        refWrap.innerHTML = '<p style="margin:0;font-size:13.5px;font-weight:600;color:#40916c">⭐ Great choice — Daniel wrote that in his diary!</p>'
+      })
+      optsEl.appendChild(btn)
+    })
+  }
+
   overlay.querySelector('.ae-again').addEventListener('click', onPlayAgain)
   overlay.querySelector('.ae-close').addEventListener('click', onClose)
   host.appendChild(overlay)

@@ -6,16 +6,18 @@
   <title>Loading Module...</title>
   
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/images/logos/FM-LOGO-Light.png">
-  <link rel="apple-touch-icon" href="/images/logos/FM-LOGO-Light.png">
+  <link rel="icon" type="image/png" href="/images/logos/dd-favicon.png">
+  <link rel="apple-touch-icon" href="/images/logos/dd-favicon.png">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind utilities (static build — see tailwind.module.config.js).
+       Replaces the runtime CDN script, which flashed unstyled content and
+       made the core child experience depend on a third-party CDN. -->
+  <link rel="stylesheet" href="/styles/module-tailwind.css">
   
   <!-- Module stylesheets -->
   <link rel="stylesheet" href="/modules/shared/module-header.css">

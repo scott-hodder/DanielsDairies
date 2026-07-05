@@ -74,9 +74,10 @@ async function handleSignup(
     return jsonResponse({ error: "Invalid role" }, 400);
   }
 
-  if (password.length < 6) {
+  // These accounts access children's data — hold them to a real standard.
+  if (password.length < 12) {
     return jsonResponse(
-      { error: "Password must be at least 6 characters" },
+      { error: "Password must be at least 12 characters" },
       400
     );
   }

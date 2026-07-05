@@ -2,6 +2,7 @@ import { escapeHtml } from '../../lib/sanitize.js'
 import { showElement, hideElement, setLoadingState } from '../../utils/dom.js'
 import { dashboardState, setCurrentInsightsSubtab, setCurrentWeeklyPlan } from '../../state/dashboardState.js'
 import { saveWeeklyCheckin, getLatestWeeklyPlan, getSettings } from '../../services/databaseService.js'
+import { computeCheckinRecommendation } from './parentInsightsEngine.js'
 import { supabase } from '../../supabaseClient.js'
 
 const state = dashboardState
@@ -265,10 +266,18 @@ export function renderWeeklyPlan(plan) {
 
   setTimeout(() => {
     const intensityText = intensityLabels[plan.intensity] || 'This week'
+    // Older stored plans predate recommendations — compute on the fly so the
+    // loop closes for them too.
+    const recommendation = plan.recommendation || computeCheckinRecommendation(plan)
     weeklyPlanSummary.innerHTML = `
       <p style="margin:4px 0;">${intensityText} • toughest moment: <strong>${escapeHtml(plan.challenge)}</strong></p>
       ${plan.goal ? `<p style="margin:4px 0;">Goal: ${escapeHtml(plan.goal)}</p>` : ''}
       ${plan.summary ? `<p style="margin:4px 0; color:#4b5563;">${escapeHtml(plan.summary)}</p>` : ''}
+      ${recommendation ? `
+        <div style="margin:10px 0 4px; padding:10px 14px; background:#eef6ff; border:1px solid #cfe3f7; border-radius:12px; display:flex; gap:10px; align-items:flex-start;">
+          <img src="/images/characters/Daniel_Thinking.webp" alt="" style="width:34px;height:34px;object-fit:contain;flex-shrink:0;" />
+          <p style="margin:0; font-size:13.5px; color:#2b4a6f; line-height:1.55;">${escapeHtml(recommendation.message)}</p>
+        </div>` : ''}
     `
 
     planSkillsEl.innerHTML = renderPlanChips(plan.skills, 'No skills yet')
@@ -413,7 +422,13 @@ async function handleWeeklyCheckinSubmit(e) {
     clearIntensityButtonClasses()
 
     renderWeeklyPlan(state.currentWeeklyPlan)
-    showCheckinMessage('Plan saved! You can view it on the right.', 'success')
+    const rec = planPayload.recommendation
+    showCheckinMessage(
+      rec
+        ? `Plan saved! Daniel suggests practising ${rec.skillName} this week — see your plan for details.`
+        : 'Plan saved! You can view it on the right.',
+      'success'
+    )
   } catch (error) {
     console.error('Weekly check-in save failed:', error)
     showCheckinMessage(error.message || 'Failed to save check-in. Please try again.', 'error')
@@ -441,7 +456,10 @@ function generateWeeklyPlan({ intensity, challenge, triggers, goal, notes }) {
 
   const summary = `This week felt ${intensityLabels[intensity] || 'mixed'} during ${challenge.toLowerCase()}. Focus on ${goal || 'one calm habit'} while supporting ${uniqueTriggers.join(', ')}.`
 
-  return { intensity, challenge, triggers: uniqueTriggers, goal: goal || null, notes: notes || null, skills: Array.from(skillSet), tools: planTools, script, summary }
+  // Close the loop: the check-in visibly influences what the app recommends.
+  const recommendation = computeCheckinRecommendation({ challenge, triggers: uniqueTriggers })
+
+  return { intensity, challenge, triggers: uniqueTriggers, goal: goal || null, notes: notes || null, skills: Array.from(skillSet), tools: planTools, script, summary, recommendation }
 }
 
 function renderPlanChips(items = [], emptyText = '') {
