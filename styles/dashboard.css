@@ -7397,3 +7397,196 @@ button:active, .btn:active {
 @media (hover: none) and (max-width: 640px) {
     .nav-tab:hover::before { opacity: 1; }
 }
+
+/* ========================================
+   ADVENTURES TAB — WIDE DESKTOP LAYOUT
+   The kid dashboard is a centered app-style column; on big screens the
+   adventure journey gets to break out of it (centred on the viewport)
+   and Brain Town friends fill the space either side.
+   ======================================== */
+@media (min-width: 1280px) {
+    #adventuresTabContent {
+        position: relative;
+        --adv-w: min(1040px, calc(100vw - 440px));
+    }
+    /* Break the journey panel out of the narrow column, centred on the
+       viewport (the column itself is centred, so 50% of it = 50vw). */
+    #adventuresTabContent .adventure-map-section {
+        width: var(--adv-w) !important;
+        max-width: none !important;
+        margin-left: calc(50% - var(--adv-w) / 2) !important;
+        margin-right: 0 !important;
+    }
+    #adventuresTabContent .adventure-viewport {
+        height: 600px !important;
+    }
+
+    /* Daniel building the road on the left… */
+    #adventuresTabContent::before {
+        content: '';
+        position: absolute;
+        top: 300px;
+        left: calc(50% - var(--adv-w) / 2 - 205px);
+        width: 185px;
+        height: 230px;
+        background: url('/images/characters/Daniel_Building.webp') no-repeat center / contain;
+        filter: drop-shadow(0 12px 24px rgba(30, 58, 95, 0.25));
+        animation: advSideBob 3.2s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 1;
+    }
+    /* …and two Brain Town friends cheering from the right */
+    #adventuresTabContent::after {
+        content: '';
+        position: absolute;
+        top: 180px;
+        right: calc(50% - var(--adv-w) / 2 - 215px);
+        width: 195px;
+        height: 460px;
+        background:
+            url('/images/characters/superskill-characters/Coco.png') no-repeat center top / 150px auto,
+            url('/images/characters/superskill-characters/Kip.png') no-repeat center bottom / 130px auto;
+        filter: drop-shadow(0 12px 24px rgba(30, 58, 95, 0.22));
+        animation: advSideBob 3.8s ease-in-out 0.6s infinite;
+        pointer-events: none;
+        z-index: 1;
+    }
+}
+
+@keyframes advSideBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+}
+
+/* ========================================
+   ADD/EDIT EXPLORER MODAL — BRAIN TOWN THEME
+   Sky header with Daniel, real character art avatars, gold selection.
+   ======================================== */
+.modal-header-fun.modal-header-sky {
+    background: linear-gradient(170deg, #7cc4ec 0%, #a9dbf5 55%, #cdeafc 100%);
+    overflow: hidden;
+}
+.modal-header-fun.modal-header-sky::before {
+    background: none; /* remove the old grey diagonal stripes */
+}
+.modal-header-sky .modal-title-fun,
+.modal-header-sky .modal-subtitle-fun {
+    color: #16324f;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    position: relative;
+    z-index: 2;
+}
+.modal-header-sky .modal-subtitle-fun { opacity: 0.85; }
+
+.header-cloud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 100px;
+    pointer-events: none;
+}
+.header-cloud::before, .header-cloud::after {
+    content: '';
+    position: absolute;
+    background: inherit;
+    border-radius: 50%;
+}
+.header-cloud-1 { width: 90px; height: 26px; top: 18px; left: -14px; animation: headerCloudDrift 14s linear infinite; }
+.header-cloud-1::before { width: 34px; height: 34px; top: -17px; left: 16px; }
+.header-cloud-1::after { width: 44px; height: 40px; top: -20px; right: 10px; }
+.header-cloud-2 { width: 70px; height: 20px; top: 56px; right: 18%; opacity: 0.7; animation: headerCloudDrift 20s linear infinite reverse; }
+.header-cloud-2::before { width: 26px; height: 26px; top: -13px; left: 12px; }
+.header-cloud-2::after { width: 32px; height: 28px; top: -14px; right: 8px; }
+@keyframes headerCloudDrift {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(26px); }
+    100% { transform: translateX(0); }
+}
+
+.header-daniel {
+    position: absolute;
+    right: 14px;
+    bottom: -6px;
+    width: 92px;
+    height: auto;
+    filter: drop-shadow(0 6px 14px rgba(22, 50, 79, 0.3));
+    animation: headerDanielBob 2.8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+@keyframes headerDanielBob {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+/* Avatar preview shows character images nicely */
+.avatar-preview-circle .dd-avatar-img {
+    width: 72px !important;
+    height: 72px !important;
+}
+.avatar-preview-circle {
+    background: linear-gradient(135deg, #fff8e1, #ffedbd);
+    box-shadow: 0 8px 30px rgba(22, 50, 79, 0.28), 0 0 0 4px rgba(246, 183, 0, 0.35);
+}
+
+/* Category label chips (no emojis) */
+.avatar-category-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 100px;
+    background: #e8eef7;
+    color: #405878;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.avatar-category-label.crew-label {
+    background: linear-gradient(135deg, #f6b700, #e6a800);
+    color: #16324f;
+    box-shadow: 0 2px 8px rgba(246, 183, 0, 0.35);
+}
+
+/* Crew tiles: real character art on a sky tint */
+.avatar-picker-crew .avatar-option-fun {
+    background: linear-gradient(160deg, #eaf6ff, #dcefe2);
+}
+.avatar-option-fun .dd-avatar-img {
+    width: 82% !important;
+    height: 82% !important;
+    vertical-align: middle !important;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.avatar-option-fun:hover .dd-avatar-img {
+    transform: scale(1.12);
+}
+
+/* Gold selection ring + star badge, on brand */
+.avatar-option-fun.selected {
+    border-color: #f6b700 !important;
+    background: linear-gradient(135deg, #fff8e1, #ffedbd) !important;
+    box-shadow: 0 0 0 3px rgba(246, 183, 0, 0.3), 0 6px 18px rgba(246, 183, 0, 0.25) !important;
+    position: relative;
+}
+.avatar-option-fun.selected::after {
+    content: '★';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #f6b700;
+    color: #16324f;
+    font-size: 13px;
+    line-height: 22px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Shuffle button: gold, playful */
+.avatar-shuffle-btn {
+    border-color: #f2d379 !important;
+    color: #8a6d1a !important;
+    background: linear-gradient(135deg, #fff8e1, #ffefc2) !important;
+}

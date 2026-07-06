@@ -2,6 +2,7 @@ import { supabase } from '../../supabaseClient.js'
 import { dashboardState } from '../../state/dashboardState.js'
 import { switchStripeSubscriptionPlan, manageSubscription } from '../../services/databaseService.js'
 import { showToast } from '../../ui/toast.js'
+import { childAvatarHTML } from '../../lib/childAvatar.js'
 
 // ================================================
 // Module-level variables — set via setter functions from dashboardPage.js
@@ -218,7 +219,7 @@ export class ModuleGallery {
                 return '<div class="child-profile-card">' +
                     '<div class="child-profile-avatar-wrap">' +
                         '<button type="button" class="child-profile-edit-btn" data-edit-child-id="' + self.escapeHtml(String(child.id)) + '" title="Edit child" aria-label="Edit ' + self.escapeHtml(child.name) + '">✏️</button>' +
-                        '<div class="child-profile-avatar">' + self.escapeHtml(child.avatar || '👶') + '</div>' +
+                        '<div class="child-profile-avatar">' + childAvatarHTML(child.avatar, '👶') + '</div>' +
                     '</div>' +
                     '<div class="child-profile-info">' +
                         '<h4 class="child-profile-name">' + self.escapeHtml(child.name) + '</h4>' +

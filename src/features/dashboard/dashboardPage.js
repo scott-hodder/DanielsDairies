@@ -4,6 +4,7 @@ import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
 import { requireParentGate } from '../parentGate.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
 import { initTelemetry } from '../../lib/telemetry.js'
+import { childAvatarHTML, DD_AVATARS } from '../../lib/childAvatar.js'
 
 // Error tracking + page view (fail-silent, self-hosted in Supabase)
 initTelemetry()
@@ -169,6 +170,7 @@ const weeklyCheckinPanel = document.getElementById('weeklyCheckinPanel')
 updateMoreModulesButtonState()
 
 const avatarCategories = {
+    crew: Object.keys(DD_AVATARS),
     animals: ['🦊', '🐼', '🦁', '🐨', '🦋', '🐸', '🐯', '🐺'],
     magical: ['🧚', '🧙', '🧜', '🐉', '🦄', '🌈', '🔮', '🦕'],
     heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎'],
@@ -1061,7 +1063,7 @@ function createChildCard(child) {
   card.innerHTML = `
     <div class="child-avatar-wrap">
       <button class="child-card-edit-btn" type="button" title="Edit child" aria-label="Edit ${escapeHtml(child.name)}">✏️</button>
-      <div class="child-avatar">${avatar}</div>
+      <div class="child-avatar">${childAvatarHTML(avatar)}</div>
     </div>
     <div class="child-name">${escapeHtml(child.name)}</div>
     <div class="child-stars">
@@ -1159,7 +1161,12 @@ function getEnhancedEditModalHTML() {
                 <p class="avatar-section-subtitle">Choose a cool character to represent you</p>
 
                 <div class="avatar-category">
-                    <div class="avatar-category-label"><span>🐾</span> Cool Animals</div>
+                    <div class="avatar-category-label crew-label">Brain Town Crew</div>
+                    <div class="avatar-picker-fun avatar-picker-crew" id="avatarPickerCrew"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label">Cool Animals</div>
                     <div class="avatar-picker-fun" id="avatarPickerAnimals"></div>
                 </div>
 
@@ -1203,16 +1210,13 @@ function getEnhancedEditModalHTML() {
 // HTML for ADD Child Modal
 function getEnhancedAddModalHTML() {
     return `
-    <div class="modal-header-fun">
+    <div class="modal-header-fun modal-header-sky">
         <button type="button" class="close-btn-fun" id="closeAddModalBtn" aria-label="Close">✕</button>
-        <div class="header-sparkles">
-            <span class="header-sparkle">✨</span>
-            <span class="header-sparkle">⭐</span>
-            <span class="header-sparkle">💫</span>
-            <span class="header-sparkle">🌟</span>
-        </div>
+        <div class="header-cloud header-cloud-1"></div>
+        <div class="header-cloud header-cloud-2"></div>
+        <img src="/images/characters/DanielTheDogThumbsUp.webp" alt="" class="header-daniel" draggable="false">
         <h2 class="modal-title-fun">Add your explorer</h2>
-        <p class="modal-subtitle-fun">Set up their profile — it takes less than a minute</p>
+        <p class="modal-subtitle-fun">Daniel can't wait to meet them!</p>
 
         <div class="avatar-preview-wrapper">
             <div class="avatar-preview-circle" id="addAvatarPreviewCircle">🦊</div>
@@ -1225,7 +1229,7 @@ function getEnhancedAddModalHTML() {
         <form id="addChildForm" novalidate>
             <div class="form-group-fun">
                 <label class="form-label-fun" for="childName">
-                    <span class="form-label-icon">📝</span>
+                    <span class="form-label-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
                     Their name (or nickname)
                 </label>
                 <input type="text" id="childName" class="form-input-fun" placeholder="e.g. Charlie" maxlength="40" autocomplete="off" required>
@@ -1234,7 +1238,7 @@ function getEnhancedAddModalHTML() {
 
             <div class="form-group-fun">
                 <label class="form-label-fun" for="childDob">
-                    <span class="form-label-icon">🎂</span>
+                    <span class="form-label-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 2-.8 2.5-.4"/><path d="M12 6v5"/><path d="M12 2c.5 1 .5 2 0 3"/></svg></span>
                     Date of birth
                 </label>
                 <input type="date" id="childDob" class="form-input-fun" required>
@@ -1244,29 +1248,34 @@ function getEnhancedAddModalHTML() {
             <div class="avatar-section-fun" id="addAvatarSectionFun">
                 <div class="avatar-section-head">
                     <div>
-                        <h3 class="avatar-section-title"><span>🎭</span> Pick their avatar</h3>
+                        <h3 class="avatar-section-title">Pick their avatar</h3>
                         <p class="avatar-section-subtitle">They can change it any time</p>
                     </div>
-                    <button type="button" class="avatar-shuffle-btn" id="addAvatarShuffle">🎲 Surprise me</button>
+                    <button type="button" class="avatar-shuffle-btn" id="addAvatarShuffle">Surprise me!</button>
                 </div>
 
                 <div class="avatar-category">
-                    <div class="avatar-category-label"><span>🐾</span> Cool Animals</div>
+                    <div class="avatar-category-label crew-label">Brain Town Crew</div>
+                    <div class="avatar-picker-fun avatar-picker-crew" id="addAvatarPickerCrew"></div>
+                </div>
+
+                <div class="avatar-category">
+                    <div class="avatar-category-label">Cool Animals</div>
                     <div class="avatar-picker-fun" id="addAvatarPickerAnimals"></div>
                 </div>
 
                 <div class="avatar-category">
-                    <div class="avatar-category-label"><span>✨</span> Magical Creatures</div>
+                    <div class="avatar-category-label">Magical Creatures</div>
                     <div class="avatar-picker-fun" id="addAvatarPickerMagical"></div>
                 </div>
 
                 <div class="avatar-category">
-                    <div class="avatar-category-label"><span>🦸</span> Super Heroes</div>
+                    <div class="avatar-category-label">Super Heroes</div>
                     <div class="avatar-picker-fun" id="addAvatarPickerHeroes"></div>
                 </div>
 
                 <div class="avatar-category">
-                    <div class="avatar-category-label"><span>🚀</span> Space & Adventure</div>
+                    <div class="avatar-category-label">Space & Adventure</div>
                     <div class="avatar-picker-fun" id="addAvatarPickerSpace"></div>
                 </div>
 
@@ -1427,13 +1436,13 @@ function setupAddModalListeners() {
             next = avatarOptions[Math.floor(Math.random() * avatarOptions.length)];
         }
         document.querySelectorAll('#addAvatarSectionFun .avatar-option-fun').forEach(btn => {
-            btn.classList.toggle('selected', btn.textContent === next);
+            btn.classList.toggle('selected', btn.dataset.avatar === next);
         });
         const hidden = document.getElementById('addChildAvatar');
         const preview = document.getElementById('addAvatarPreviewCircle');
         if (hidden) hidden.value = next;
         if (preview) {
-            preview.textContent = next;
+            preview.innerHTML = childAvatarHTML(next);
             preview.style.transform = 'scale(1.18) rotate(8deg)';
             setTimeout(() => { preview.style.transform = ''; }, 200);
         }
@@ -1469,14 +1478,14 @@ function promptEditChild(child) {
 // previously the add modal's picker was never rendered at all because
 // the renderer only knew the edit modal's element ids.
 function renderModalAvatarPicker({ pickerPrefix, previewId, hiddenInputId, selectedAvatar }) {
-  const categories = ['animals', 'magical', 'heroes', 'space']
+  const categories = ['crew', 'animals', 'magical', 'heroes', 'space']
 
   const setSelection = (emoji) => {
     const hidden = document.getElementById(hiddenInputId)
     const preview = document.getElementById(previewId)
     if (hidden) hidden.value = emoji
     if (preview) {
-      preview.textContent = emoji
+      preview.innerHTML = childAvatarHTML(emoji)
       // Little pop so the choice feels alive
       preview.style.transform = 'scale(1.18)'
       setTimeout(() => { preview.style.transform = '' }, 180)
@@ -1493,11 +1502,12 @@ function renderModalAvatarPicker({ pickerPrefix, previewId, hiddenInputId, selec
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'avatar-option-fun'
-      button.setAttribute('aria-label', `Choose ${emoji} avatar`)
+      button.setAttribute('aria-label', `Choose ${DD_AVATARS[emoji]?.name || emoji} avatar`)
+      button.dataset.avatar = emoji
       if (selectedAvatar === emoji) {
         button.classList.add('selected')
       }
-      button.textContent = emoji
+      button.innerHTML = childAvatarHTML(emoji)
       button.addEventListener('click', () => {
         // Only clear selections inside THIS modal's picker groups
         categories.forEach(cat => {
@@ -2647,7 +2657,7 @@ function showAddChildModal() {
     });
     // Mark the random pick as selected in the grid
     document.querySelectorAll('#addAvatarSectionFun .avatar-option-fun').forEach(btn => {
-        btn.classList.toggle('selected', btn.textContent === randomAvatar);
+        btn.classList.toggle('selected', btn.dataset.avatar === randomAvatar);
     });
 
     showElement(addChildModal);

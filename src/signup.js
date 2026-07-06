@@ -140,15 +140,20 @@ async function loadTiers() {
 }
 
 function renderPlanCards(container) {
+    // The container must NOT be the grid itself — the toggle sits above
+    // the grid, otherwise it becomes a squashed grid cell.
+    container.classList.remove('plan-cards')
     container.innerHTML = ''
 
-    // Monthly / annual toggle (annual = 2 months free)
+    // Monthly / annual segmented toggle (annual = 2 months free)
     const toggle = document.createElement('div')
-    toggle.className = 'billing-toggle'
-    toggle.style.cssText = 'display:flex;justify-content:center;gap:0;margin:0 0 16px;'
+    toggle.className = 'billing-toggle-wrap'
     toggle.innerHTML = `
-        <button type="button" data-billing="monthly" style="padding:9px 18px;border:2px solid #d4dbe6;border-right:none;border-radius:10px 0 0 10px;background:${formData.billing === 'monthly' ? '#405878' : '#fff'};color:${formData.billing === 'monthly' ? '#fff' : '#405878'};font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Monthly</button>
-        <button type="button" data-billing="annual" style="padding:9px 18px;border:2px solid #d4dbe6;border-radius:0 10px 10px 0;background:${formData.billing === 'annual' ? '#405878' : '#fff'};color:${formData.billing === 'annual' ? '#fff' : '#405878'};font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Annual <span style="font-weight:600;font-size:12px;opacity:.85;">(2 months free)</span></button>
+        <div class="billing-toggle">
+            <button type="button" data-billing="monthly" class="${formData.billing === 'monthly' ? 'active' : ''}">Monthly</button>
+            <button type="button" data-billing="annual" class="${formData.billing === 'annual' ? 'active' : ''}">Annual</button>
+        </div>
+        <span class="billing-toggle-note">${formData.billing === 'annual' ? 'Nice choice — 2 months free!' : 'Save with annual: 2 months free'}</span>
     `
     toggle.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -158,6 +163,10 @@ function renderPlanCards(container) {
     })
     container.appendChild(toggle)
 
+    const grid = document.createElement('div')
+    grid.className = 'plan-cards'
+    container.appendChild(grid)
+
     tiers.forEach((tier, index) => {
         const monthlyCents = tier.monthly_price_cents || 0
         const isAnnual = formData.billing === 'annual'
@@ -165,7 +174,7 @@ function renderPlanCards(container) {
             ? `${formatDollars(monthlyCents * ANNUAL_MONTHS_CHARGED)}<span>/yr</span>`
             : `${formatDollars(monthlyCents)}<span>/mo</span>`
         const annualNote = isAnnual
-            ? `<div style="font-size:12px;color:#0d9488;font-weight:700;margin-top:2px;">${formatDollars(monthlyCents)} x 10 — 2 months free</div>`
+            ? `<div class="plan-card-annual-note">${formatDollars(monthlyCents * ANNUAL_MONTHS_CHARGED / 12)}/mo equivalent — 2 months free</div>`
             : ''
         const isMiddle = index === 1 && tiers.length >= 2
 
@@ -206,7 +215,7 @@ function renderPlanCards(container) {
             updatePlanSelection()
         })
 
-        container.appendChild(card)
+        grid.appendChild(card)
     })
 
     updatePlanSelection()

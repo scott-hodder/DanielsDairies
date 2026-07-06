@@ -2,6 +2,7 @@ import { supabase } from '../../supabaseClient.js'
 import { escapeHtml } from '../../lib/sanitize.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
 import { initTelemetry, trackEvent } from '../../lib/telemetry.js'
+import { childAvatarHTML } from '../../lib/childAvatar.js'
 
 // Error tracking + page view (fail-silent, self-hosted in Supabase)
 initTelemetry()
@@ -610,7 +611,7 @@ function renderCaseload() {
     return `
       <div class="prac-client-card" data-child-id="${c.child_id}">
         <div class="prac-cc-top">
-          <div class="prac-cc-avatar">${avatar}</div>
+          <div class="prac-cc-avatar">${childAvatarHTML(avatar)}</div>
           <div>
             <p class="prac-cc-name">${escapeHtml(c.child_name || 'Unknown')}</p>
             <p class="prac-cc-meta">${age}${c.parent_name ? ' &middot; Parent: ' + escapeHtml(c.parent_name) : ''}</p>
@@ -638,7 +639,7 @@ async function openClient(childId) {
 
   // Set header
   const avatar = client.child_avatar || getDefaultAvatar(client.child_name)
-  document.getElementById('wsAvatar').textContent = avatar
+  document.getElementById('wsAvatar').innerHTML = childAvatarHTML(avatar)
   document.getElementById('wsName').textContent = client.child_name || 'Unknown'
   const age = client.child_age ? `Age ${client.child_age}` : ''
   const parent = client.parent_name ? `Parent: ${client.parent_name}` : ''

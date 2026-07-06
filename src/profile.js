@@ -9,6 +9,7 @@ import { showToast } from './ui/toast.js'
 import { requireParentGate, openParentPinSettings } from './features/parentGate.js'
 import { initKidIcons } from './lib/kidIcons.js'
 import { initTelemetry, trackEvent } from './lib/telemetry.js'
+import { childAvatarHTML, DD_AVATARS } from './lib/childAvatar.js'
 
 // Error tracking + page view (fail-silent, self-hosted in Supabase)
 initTelemetry()
@@ -39,6 +40,7 @@ async function checkIsAdmin() {
 
 // Avatar categories for the fun picker
 const avatarCategories = {
+    crew: Object.keys(DD_AVATARS),
   animals: ['🦊', '🐼', '🦁', '🐨', '🦋', '🐸', '🐯', '🐺'],
   magical: ['🧚', '🧙', '🧜', '🐉', '🦄', '🌈', '🔮', '🦕'],
   heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎'],
@@ -787,7 +789,7 @@ function renderChildrenList() {
   
   childrenList.innerHTML = state.children.map(child => `
     <div class="child-card" data-child-id="${child.id}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 12px; margin-bottom: 8px; cursor: pointer;">
-      <span style="font-size: 32px;">${child.avatar || '🦊'}</span>
+      <span style="font-size: 32px;">${childAvatarHTML(child.avatar)}</span>
       <div style="flex: 1;">
         <div style="font-weight: 600; color: #405878;">${escapeHtml(child.name)}</div>
         <div style="font-size: 12px; color: #6c757d;">Click to view dashboard</div>
@@ -825,7 +827,7 @@ function openEditChildModal(child) {
   const avatarInput = document.getElementById('editChildAvatar')
   if (avatarInput) avatarInput.value = currentAvatar
   const preview = document.getElementById('editAvatarPreviewCircle')
-  if (preview) preview.textContent = currentAvatar
+  if (preview) preview.innerHTML = childAvatarHTML(currentAvatar)
 
   const errorEl = document.getElementById('editModalError')
   if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden') }
@@ -918,7 +920,7 @@ function setupNavigation() {
 // Render emoji avatar picker into a modal (add or edit)
 function renderAvatarPicker(prefix, selectedAvatar) {
   const selected = selectedAvatar || '🦊'
-  const categoryNames = ['animals', 'magical', 'heroes', 'space']
+  const categoryNames = ['crew', 'animals', 'magical', 'heroes', 'space']
 
   categoryNames.forEach(cat => {
     const container = document.getElementById(prefix + 'AvatarPicker' + cat.charAt(0).toUpperCase() + cat.slice(1))
@@ -928,17 +930,18 @@ function renderAvatarPicker(prefix, selectedAvatar) {
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'avatar-option-fun' + (emoji === selected ? ' selected' : '')
-      btn.textContent = emoji
+      btn.dataset.avatar = emoji
+      btn.innerHTML = childAvatarHTML(emoji)
       btn.addEventListener('click', () => {
         // Deselect all in this modal
-        document.querySelectorAll('#' + prefix + 'AvatarPickerAnimals .avatar-option-fun, #' + prefix + 'AvatarPickerMagical .avatar-option-fun, #' + prefix + 'AvatarPickerHeroes .avatar-option-fun, #' + prefix + 'AvatarPickerSpace .avatar-option-fun')
+        document.querySelectorAll('#' + prefix + 'AvatarPickerCrew .avatar-option-fun, #' + prefix + 'AvatarPickerAnimals .avatar-option-fun, #' + prefix + 'AvatarPickerMagical .avatar-option-fun, #' + prefix + 'AvatarPickerHeroes .avatar-option-fun, #' + prefix + 'AvatarPickerSpace .avatar-option-fun')
           .forEach(b => b.classList.remove('selected'))
         btn.classList.add('selected')
         // Update hidden input and preview
         const hiddenInput = document.getElementById(prefix + 'ChildAvatar')
         const preview = document.getElementById(prefix + 'AvatarPreviewCircle')
         if (hiddenInput) hiddenInput.value = emoji
-        if (preview) preview.textContent = emoji
+        if (preview) preview.innerHTML = childAvatarHTML(emoji)
       })
       container.appendChild(btn)
     })
