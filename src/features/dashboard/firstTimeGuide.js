@@ -41,10 +41,10 @@ export function maybeShowFirstTimeGuide(mount, { childId, mapContainer } = {}) {
           <span class="ftg-spark ftg-spark1">✦</span>
           <span class="ftg-spark ftg-spark2">✦</span>
           <h3 class="ftg-title">Woof! Welcome to Brain Town!</h3>
-          <p class="ftg-text">See the buildings on the map below? Each one is a <b>Super Skill</b> adventure. Tap one and I'll trot down its road to meet you there!</p>
+          <p class="ftg-text">Your adventure starts at <b>Brain Builder</b>! Finish its modules to unlock the next <b>Super Skill</b> — keep going and you'll build every road in town.</p>
           <div class="ftg-actions">
-            <button type="button" class="ftg-btn ftg-btn-gold" id="ftgShowMeBtn">✨ Show me a good first stop</button>
-            <button type="button" class="ftg-btn ftg-btn-ghost" id="ftgDismissBtn">I'll explore on my own</button>
+            <button type="button" class="ftg-btn ftg-btn-gold" id="ftgShowMeBtn">✨ Take me to Brain Builder</button>
+            <button type="button" class="ftg-btn ftg-btn-ghost" id="ftgDismissBtn">I'll have a look around first</button>
           </div>
         </div>
       </div>

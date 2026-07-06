@@ -176,6 +176,16 @@ async function loadData() {
         if (subscription.subscription_tiers) {
           subscription.tierData = subscription.subscription_tiers
         }
+
+        // Self-healing: if Stripe has a customer for this family but the
+        // subscription doesn't look active (e.g. a webhook delivery was
+        // missed after checkout), ask the server to sync the truth from
+        // Stripe. Idempotent — it can activate and grant missed credits,
+        // never double-grant.
+        if (subscription.stripe_customer_id &&
+            !['active', 'trialing'].includes(subscription.status)) {
+          maybeSyncSubscription()
+        }
       }
     }
 
@@ -188,6 +198,31 @@ async function loadData() {
 
   } catch (error) {
     console.error('Error loading data:', error)
+  }
+}
+
+// Ask the server to reconcile the subscription with Stripe. Fire-and-
+// forget with a page refresh only when something actually changed.
+let _syncAttempted = false
+async function maybeSyncSubscription() {
+  if (_syncAttempted) return
+  _syncAttempted = true
+  try {
+    const { data, error } = await supabase.functions.invoke('sync-subscription', { body: {} })
+    if (error || !data?.synced) return
+    if (['active', 'trialing'].includes(data.status) || data.credits_granted > 0) {
+      showToast(
+        data.credits_granted > 0
+          ? `Subscription activated — ${data.credits_granted} module credits added!`
+          : 'Subscription status updated.',
+        'success'
+      )
+      // Reload so the plan section and credit counts reflect reality
+      setTimeout(() => window.location.reload(), 1500)
+    }
+  } catch (err) {
+    console.warn('Subscription sync failed (will retry next visit):', err)
+    _syncAttempted = false
   }
 }
 

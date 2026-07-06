@@ -108,7 +108,7 @@ const HUB = {
   color: '#F2B33D', accent: '#D98E1B',
   emoji: '\u{1F3F0}',
   district: 'Town Square',
-  desc: "Welcome to Brain Town — your brain's home base! Every Super Skill you practise builds a stronger road back to town. Pick a place on the map and start an adventure.",
+  desc: "Welcome to Brain Town — your brain's home base! Your journey starts at Brain Builder, and each Super Skill you finish unlocks the next one. Every module builds a stronger road back to town.",
 }
 
 /* ─────────────────────────────────────────────

@@ -118,7 +118,7 @@ const STEPS = [
   },
   {
     title: 'Super Skills build roads',
-    text: "Each Super Skill is like a road in your brain town. The more you practise, the wider and easier the road gets. That's how your brain grows stronger!",
+    text: "Each Super Skill is like a road in your brain town. You start at Brain Builder, and finishing a Super Skill unlocks the next one. The more you practise, the wider and easier each road gets!",
     visual: 'road'
   },
   {
