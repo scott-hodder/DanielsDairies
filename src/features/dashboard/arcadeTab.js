@@ -7,7 +7,7 @@
 
 import { listGames, isMiniGamesEnabled } from '../../minigames/index.js'
 import { escapeHtml } from '../../lib/sanitize.js'
-import { getDailyChallengeGameId, getArcadeBests, getTodaysArcadePlay } from './arcadeLoop.js'
+import { getDailyChallengeGameId, getArcadeBests, getTodaysArcadeState } from './arcadeLoop.js'
 
 // Extra metadata for arcade display (skillTags already on each game def)
 const GAME_META = {
@@ -27,7 +27,9 @@ let _container = null
 let _onPlayGame = null
 let _childId = null
 let _bests = new Map()
-let _todaysPlay = null // { game_id, created_at } once the daily game is used
+// Today's arcade state: plays so far, whether the daily challenge was won
+// (which unlocks a bonus game), and how many plays remain.
+let _today = { plays: [], challengeWon: false, playsAllowed: 1, playsLeft: 1 }
 
 export function initArcadeTab(containerEl, { onPlayGame, childId } = {}) {
   _container = containerEl
@@ -35,22 +37,22 @@ export function initArcadeTab(containerEl, { onPlayGame, childId } = {}) {
   _childId = childId || window.selectedChild?.id || window.state?.selectedChild?.id || null
   render()
 
-  // Personal bests + today's play load in the background, then enrich cards.
+  // Personal bests + today's plays load in the background, then enrich cards.
   if (_childId) {
-    Promise.all([getArcadeBests(_childId), getTodaysArcadePlay(_childId)]).then(([bests, todaysPlay]) => {
+    Promise.all([getArcadeBests(_childId), getTodaysArcadeState(_childId)]).then(([bests, today]) => {
       _bests = bests
-      _todaysPlay = todaysPlay
+      _today = today
       render()
     })
   }
 }
 
-/** Re-fetch bests + today's play after a game so the tab updates live. */
+/** Re-fetch bests + today's plays after a game so the tab updates live. */
 export function refreshArcadeBests() {
   if (!_childId) return
-  Promise.all([getArcadeBests(_childId), getTodaysArcadePlay(_childId)]).then(([bests, todaysPlay]) => {
+  Promise.all([getArcadeBests(_childId), getTodaysArcadeState(_childId)]).then(([bests, today]) => {
     _bests = bests
-    _todaysPlay = todaysPlay
+    _today = today
     render()
   })
 }
@@ -61,7 +63,9 @@ function render() {
   const games = listGames() || []
   const challengeId = getDailyChallengeGameId()
   const challengeGame = games.find(g => g.id === challengeId)
-  const played = !!_todaysPlay
+  const outOfPlays = _today.playsLeft <= 0
+  const bonusUnlocked = _today.challengeWon && _today.playsLeft > 0 && _today.plays.length >= 1
+  const challengePlayed = _today.plays.some(p => p.game_id === challengeId)
 
   _container.innerHTML = `
     <div class="arcade-header">
@@ -70,43 +74,51 @@ function render() {
       </div>
       <div>
         <h2 class="arcade-title">Daniel's Arcade</h2>
-        <p class="arcade-sub">Quick games that practise real wellbeing skills. You get <strong>one arcade game a day</strong> — pick a good one!</p>
+        <p class="arcade-sub">Quick games that practise real wellbeing skills. You get <strong>one arcade game a day</strong> — win Daniel's challenge to unlock a bonus game!</p>
       </div>
     </div>
-    ${played ? `
+    ${outOfPlays ? `
       <div class="arcade-done-banner">
         <span style="font-size:26px">&#x1F31F;</span>
         <div>
-          <strong>That's your arcade game for today!</strong>
+          <strong>That's your arcade for today${_today.challengeWon ? ' — challenge won AND bonus game played!' : '!'}</strong>
           <span>A fresh game unlocks tomorrow. Want more? Modules are always open.</span>
         </div>
       </div>` : ''}
-    ${challengeGame && !played ? `
+    ${bonusUnlocked ? `
+      <div class="arcade-bonus-banner">
+        <span style="font-size:26px">&#x1F386;</span>
+        <div>
+          <strong>Challenge won — bonus game unlocked!</strong>
+          <span>You beat Daniel's challenge, so you've earned one more game today. Pick any game!</span>
+        </div>
+      </div>` : ''}
+    ${challengeGame && !challengePlayed && !outOfPlays ? `
       <div class="arcade-challenge" id="arcadeChallenge">
         <span class="arcade-challenge-badge">&#x2B50; Daniel's challenge of the day</span>
         <div class="arcade-challenge-body">
           <strong>${escapeHtml(challengeGame.displayName || challengeGame.name || challengeGame.id)}</strong>
-          <span>Win it today for a bonus star!</span>
+          <span>Win it for a bonus star — and unlock a second game today!</span>
         </div>
         <button class="arcade-play-btn" data-game-id="${escapeHtml(challengeGame.id)}">&#x25B6; Play</button>
       </div>` : ''}
     <div class="arcade-grid" id="arcadeGrid">
       ${games.length === 0 ? '<p style="color:#6b7e95;text-align:center;padding:20px">No games available yet.</p>' : ''}
-      ${games.map(game => renderGameCard(game, game.id === challengeId, played)).join('')}
+      ${games.map(game => renderGameCard(game, game.id === challengeId, outOfPlays)).join('')}
     </div>
   `
 
   injectStyles()
 
-  // Attach play handlers (fresh played-today check on click so a tab left
-  // open can't sneak a second game in)
+  // Attach play handlers (fresh plays-left check on click so a tab left
+  // open can't sneak extra games in)
   _container.querySelectorAll('.arcade-play-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', async () => {
       const gameId = btn.dataset.gameId
       if (_childId) {
-        const fresh = await getTodaysArcadePlay(_childId)
-        if (fresh) {
-          _todaysPlay = fresh
+        const fresh = await getTodaysArcadeState(_childId)
+        _today = fresh
+        if (fresh.playsLeft <= 0) {
           render()
           return
         }
@@ -116,21 +128,22 @@ function render() {
   })
 }
 
-function renderGameCard(game, isChallenge, played) {
+function renderGameCard(game, isChallenge, outOfPlays) {
   const meta = GAME_META[game.id] || { icon: '&#x1F3AE;', purpose: 'Wellbeing practice', color: '#405878' }
   const tags = (game.skillTags || []).slice(0, 2).map(t => t.replace(/-/g, ' '))
   const best = _bests.get(game.id)
-  const isTodaysGame = played && _todaysPlay?.game_id === game.id
+  const playedToday = _today.plays.some(p => p.game_id === game.id)
+  const showChallengeFlag = isChallenge && !playedToday && !outOfPlays
 
-  const button = isTodaysGame
+  const button = playedToday && outOfPlays
     ? '<button class="arcade-play-btn arcade-play-btn-done" disabled>&#x2713; Played today</button>'
-    : played
+    : outOfPlays
       ? '<button class="arcade-play-btn arcade-play-btn-locked" disabled>Tomorrow</button>'
       : `<button class="arcade-play-btn" data-game-id="${escapeHtml(game.id)}">&#x25B6; Play</button>`
 
   return `
-    <div class="arcade-card${isChallenge && !played ? ' arcade-card-challenge' : ''}${played && !isTodaysGame ? ' arcade-card-waiting' : ''}">
-      ${isChallenge && !played ? '<span class="arcade-card-flag">&#x2B50; Today\'s challenge</span>' : ''}
+    <div class="arcade-card${showChallengeFlag ? ' arcade-card-challenge' : ''}${outOfPlays && !playedToday ? ' arcade-card-waiting' : ''}">
+      ${showChallengeFlag ? '<span class="arcade-card-flag">&#x2B50; Today\'s challenge</span>' : ''}
       <div class="arcade-card-icon" style="background:${meta.color}">${meta.icon}</div>
       <div class="arcade-card-body">
         <h3 class="arcade-card-title">${escapeHtml(game.displayName || game.name || game.id)}</h3>
@@ -162,6 +175,10 @@ function injectStyles() {
 .arcade-done-banner div{display:flex;flex-direction:column}
 .arcade-done-banner strong{color:#1e5b3c;font-size:15px}
 .arcade-done-banner span{color:#3f7a5b;font-size:12.5px}
+.arcade-bonus-banner{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#f3edff,#e6dcfb);border:2px solid #b79ce8;border-radius:16px;padding:14px 18px;margin:0 0 18px}
+.arcade-bonus-banner div{display:flex;flex-direction:column}
+.arcade-bonus-banner strong{color:#4c2d8f;font-size:15px}
+.arcade-bonus-banner span{color:#6b4fae;font-size:12.5px}
 .arcade-card-waiting{opacity:.62;filter:saturate(.6)}
 .arcade-play-btn-done{background:#2E8B57!important;cursor:default!important;opacity:.9}
 .arcade-play-btn-locked{background:#aeb9c4!important;cursor:default!important}

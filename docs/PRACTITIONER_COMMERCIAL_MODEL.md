@@ -93,11 +93,13 @@ Built to support that flow:
 
 ## What still needs deciding before public release
 
-1. **Stripe wiring for practitioner plans.** Tables carry `stripe_price_id`/customer/subscription
-   columns, but checkout isn't wired; the Plan & Billing view routes plan changes to
-   info@danielsdiaries.com (deliberate concierge billing for early access). Needs: Stripe
-   products, a practitioner variant of `create-checkout-session`, and webhook handling to flip
-   `practitioner_subscriptions.status`.
+1. ~~**Stripe wiring for practitioner plans.**~~ **Done (6 July 2026).** The
+   `practitioner-checkout` edge function creates subscription-mode Checkout sessions priced
+   live from `practitioner_plans` (plus a Billing Portal session for card/cancel management),
+   and `stripe-webhook` activates/syncs `practitioner_subscriptions`
+   (`payment_type: practitioner_plan`). The Plan & Billing view now has Choose/Upgrade buttons
+   and a Manage billing button. Requires the Stripe **Billing Portal** to be enabled in the
+   Stripe dashboard (Settings → Billing → Customer portal).
 2. **Multi-practitioner organisations.** Plans carry `practitioner_seats` and pricing assumes
    them, but there is no org/team table yet — each practitioner account is independent. Needed
    before selling Practice/Clinic tiers as true team accounts.

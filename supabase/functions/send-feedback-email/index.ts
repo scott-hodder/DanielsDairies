@@ -52,7 +52,7 @@ serve(async (req) => {
     // Call Supabase's own SMTP via the internal auth endpoint to send a raw email
     // This piggybacks on the already-configured SMTP in the Supabase dashboard
     const { error } = await admin.rpc('send_feedback_email', {
-      recipient: 'info@danielsdiaries.com.au',
+      recipient: 'info@danielsdiaries.com',
       subject: `Feedback${rating ? ` (${rating}/5)` : ''} from ${email || 'a user'}`,
       html_body: htmlBody
     })

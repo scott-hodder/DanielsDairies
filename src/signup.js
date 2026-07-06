@@ -3,6 +3,9 @@ import { escapeHtml } from './lib/sanitize.js'
 import { signUp } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
 import { getSubscriptionTiers } from './services/databaseService.js'
+import { initTelemetry, trackEvent } from './lib/telemetry.js'
+
+initTelemetry()
 
 // ── State ──
 let currentStep = 1
@@ -16,7 +19,17 @@ const formData = {
     phone: '',
     password: '',
     plan: null,       // will be set from DB tiers (e.g. 'low', 'mid', 'top')
+    billing: 'monthly', // 'monthly' | 'annual' (annual = 10x monthly, 2 months free)
     mailchimpOptIn: false
+}
+
+// Annual price is always 10 x the monthly price ("2 months free") — must
+// match ANNUAL_MONTHS_CHARGED in the start-paid-signup edge function.
+const ANNUAL_MONTHS_CHARGED = 10
+
+function formatDollars(cents) {
+    const dollars = cents / 100
+    return '$' + (dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2))
 }
 
 // ── DOM Elements ──
@@ -42,6 +55,7 @@ async function init() {
     if (params.get('payment') === 'success') {
         const resume = readSignupResumeState()
         clearSignupResumeState()
+        trackEvent('signup_payment_success', { plan: resume?.plan || null, billing: resume?.billing || null })
         showPaymentSuccessScreen(resume?.email || '')
         return
     }
@@ -51,6 +65,7 @@ async function init() {
     // re-collecting or re-storing credentials.
     if (params.get('payment') === 'cancelled') {
         const resume = readSignupResumeState()
+        trackEvent('signup_payment_cancelled', { plan: resume?.plan || null, has_resume: !!resume?.resumeToken })
         if (resume?.resumeToken) {
             showPaymentCancelledScreen(resume)
             return
@@ -79,10 +94,15 @@ async function init() {
     // Load subscription tiers from DB
     await loadTiers()
 
-    // Pre-select plan from URL if provided
+    // Pre-select plan and billing from URL if provided
     const planParam = params.get('plan')
     if (planParam && tiers.some(t => t.tier === planParam)) {
         formData.plan = planParam
+    }
+    if (params.get('billing') === 'annual') {
+        formData.billing = 'annual'
+        const container = document.getElementById('planCardsContainer')
+        if (container) renderPlanCards(container)
     }
     updatePlanSelection()
 
@@ -122,9 +142,31 @@ async function loadTiers() {
 function renderPlanCards(container) {
     container.innerHTML = ''
 
+    // Monthly / annual toggle (annual = 2 months free)
+    const toggle = document.createElement('div')
+    toggle.className = 'billing-toggle'
+    toggle.style.cssText = 'display:flex;justify-content:center;gap:0;margin:0 0 16px;'
+    toggle.innerHTML = `
+        <button type="button" data-billing="monthly" style="padding:9px 18px;border:2px solid #d4dbe6;border-right:none;border-radius:10px 0 0 10px;background:${formData.billing === 'monthly' ? '#405878' : '#fff'};color:${formData.billing === 'monthly' ? '#fff' : '#405878'};font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Monthly</button>
+        <button type="button" data-billing="annual" style="padding:9px 18px;border:2px solid #d4dbe6;border-radius:0 10px 10px 0;background:${formData.billing === 'annual' ? '#405878' : '#fff'};color:${formData.billing === 'annual' ? '#fff' : '#405878'};font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Annual <span style="font-weight:600;font-size:12px;opacity:.85;">(2 months free)</span></button>
+    `
+    toggle.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            formData.billing = btn.dataset.billing
+            renderPlanCards(container)
+        })
+    })
+    container.appendChild(toggle)
+
     tiers.forEach((tier, index) => {
-        const priceInDollars = tier.monthly_price_cents ? (tier.monthly_price_cents / 100) : 0
-        const priceDisplay = priceInDollars % 1 === 0 ? priceInDollars.toFixed(0) : priceInDollars.toFixed(2)
+        const monthlyCents = tier.monthly_price_cents || 0
+        const isAnnual = formData.billing === 'annual'
+        const priceHtml = isAnnual
+            ? `${formatDollars(monthlyCents * ANNUAL_MONTHS_CHARGED)}<span>/yr</span>`
+            : `${formatDollars(monthlyCents)}<span>/mo</span>`
+        const annualNote = isAnnual
+            ? `<div style="font-size:12px;color:#0d9488;font-weight:700;margin-top:2px;">${formatDollars(monthlyCents)} x 10 — 2 months free</div>`
+            : ''
         const isMiddle = index === 1 && tiers.length >= 2
 
         // Build features list
@@ -150,7 +192,8 @@ function renderPlanCards(container) {
             <input type="radio" name="plan" value="${escapeHtml(tier.tier)}" ${formData.plan === tier.tier ? 'checked' : ''}>
             ${isMiddle ? '<div class="plan-card-popular">Most Popular</div>' : ''}
             <div class="plan-card-name">${escapeHtml(tier.display_name || tier.tier)}</div>
-            <div class="plan-card-price">$${priceDisplay}<span>/mo</span></div>
+            <div class="plan-card-price">${priceHtml}</div>
+            ${annualNote}
             <ul class="plan-card-features-list">
                 ${features.map(f => `<li><span class="plan-feature-check">&#10003;</span> ${f}</li>`).join('')}
             </ul>
@@ -252,6 +295,8 @@ function handleStep1(e) {
     formData.password = password
     formData.mailchimpOptIn = document.getElementById('mailchimpOptIn')?.checked || false
 
+    trackEvent('signup_start', { trial: isFreeTrial })
+
     // If free trial, skip plan selection - go straight to review
     if (isFreeTrial) {
         formData.plan = null  // no plan for free trial
@@ -297,9 +342,13 @@ function populateReview() {
     } else {
         const selectedTier = tiers.find(t => t.tier === formData.plan)
         if (selectedTier) {
-            const price = selectedTier.monthly_price_cents ? (selectedTier.monthly_price_cents / 100) : 0
-            document.getElementById('reviewPlan').textContent = selectedTier.display_name || selectedTier.tier
-            document.getElementById('reviewTotal').textContent = `$${price % 1 === 0 ? price.toFixed(0) : price.toFixed(2)}/mo`
+            const monthlyCents = selectedTier.monthly_price_cents || 0
+            const isAnnual = formData.billing === 'annual'
+            document.getElementById('reviewPlan').textContent =
+                `${selectedTier.display_name || selectedTier.tier}${isAnnual ? ' (Annual)' : ''}`
+            document.getElementById('reviewTotal').textContent = isAnnual
+                ? `${formatDollars(monthlyCents * ANNUAL_MONTHS_CHARGED)}/yr (2 months free)`
+                : `${formatDollars(monthlyCents)}/mo`
         } else {
             document.getElementById('reviewPlan').textContent = formData.plan || '-'
             document.getElementById('reviewTotal').textContent = '-'
@@ -354,6 +403,8 @@ async function handleSubmit() {
             clearAlerts()
             submitSpinner.classList.add('hidden')
 
+            trackEvent('free_trial_created')
+
             // Show inline login form (same as paid flow)
             showPostSignupLoginForm(formData.email)
 
@@ -373,6 +424,7 @@ async function handleSubmit() {
                     lastName: formData.lastName,
                     phone: formData.phone,
                     plan: formData.plan,
+                    billing: formData.billing,
                     mailchimpOptIn: formData.mailchimpOptIn,
                     successUrl: `${window.location.origin}/signup.html?payment=success`,
                     cancelUrl: `${window.location.origin}/signup.html?payment=cancelled`
@@ -395,8 +447,10 @@ async function handleSubmit() {
                 saveSignupResumeState({
                     email: formData.email,
                     plan: formData.plan,
+                    billing: formData.billing,
                     resumeToken: startData.resumeToken || null
                 })
+                trackEvent('checkout_redirect', { plan: formData.plan, billing: formData.billing })
                 submitBtnText.textContent = 'Redirecting to payment...'
                 window.location.href = startData.url
                 return

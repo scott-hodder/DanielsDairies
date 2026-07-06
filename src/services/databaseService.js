@@ -1,5 +1,11 @@
 import { getSupabaseClient } from '../supabaseClient.js'
 import { setChildPasswordServer, verifyChildPasswordServer } from './childCredentials.js'
+import { trackEvent } from '../lib/telemetry.js'
+
+// Funnel event on first completion of a module (never blocks completion).
+function trackModuleCompleted(moduleId) {
+  try { trackEvent('module_completed', { module_id: moduleId }) } catch { /* ignore */ }
+}
 
 const queryCache = new Map()
 const inflightQueries = new Map()
@@ -826,7 +832,7 @@ export async function completeModule(childId, moduleId) {
     .eq('child_id', childId)
     .eq('module_id', moduleId)
     .single()
-  
+
   const wasCompleted = existing?.is_completed === true
 
   if (existing) {
@@ -834,7 +840,7 @@ export async function completeModule(childId, moduleId) {
     if (!wasCompleted) {
       const { data, error } = await getSupabaseClient()
         .from('child_modules')
-        .update({ 
+        .update({
           is_completed: true,
           completed_at: new Date().toISOString()
         })
@@ -842,11 +848,12 @@ export async function completeModule(childId, moduleId) {
         .eq('module_id', moduleId)
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
+      trackModuleCompleted(moduleId)
       await awardModuleXp(childId, moduleId)
       
       // Temporarily disabled assessment check to identify if this is causing the second modal
@@ -876,11 +883,12 @@ export async function completeModule(childId, moduleId) {
       throw error
     }
 
+    trackModuleCompleted(moduleId)
     await awardModuleXp(childId, moduleId)
-    
+
     // Temporarily disabled assessment check to identify if this is causing the second modal
     // await checkForAssessmentAfterCompletion(childId, moduleId)
-    
+
     invalidateCacheByPrefix(`childModules:${childId}`)
     return data
   }

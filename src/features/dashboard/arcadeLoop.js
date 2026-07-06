@@ -11,7 +11,8 @@
 import { getSupabaseClient } from '../../supabaseClient.js'
 // Pure logic (challenge rotation, reflection prompts) lives in
 // arcadeLoopCore.js so the test suite can import it without a browser env.
-export { CHALLENGE_ROTATION, getDailyChallengeGameId, getReflectionFor } from './arcadeLoopCore.js'
+export { CHALLENGE_ROTATION, getDailyChallengeGameId, getReflectionFor, localDateString } from './arcadeLoopCore.js'
+import { localDateString as localDate } from './arcadeLoopCore.js'
 
 /**
  * Record a finished arcade play. Returns the server's decision:
@@ -21,14 +22,29 @@ export { CHALLENGE_ROTATION, getDailyChallengeGameId, getReflectionFor } from '.
  */
 export async function recordArcadePlay(childId, gameId, { score = 0, success = false } = {}) {
   if (!childId || childId === 'arcade') return null
+  const params = {
+    p_child_id: childId,
+    p_game_id: gameId,
+    p_score: Math.max(0, Math.round(score)),
+    p_success: !!success
+  }
   try {
+    // The child's local date defines their arcade day (local midnight to
+    // local midnight) — the server clamps it so it can't be gamed.
     const { data, error } = await getSupabaseClient().rpc('record_arcade_play', {
-      p_child_id: childId,
-      p_game_id: gameId,
-      p_score: Math.max(0, Math.round(score)),
-      p_success: !!success
+      ...params,
+      p_local_date: localDate()
     })
-    if (error) throw error
+    if (error) {
+      // Pre-migration database (4-arg function): retry without the date
+      // so plays are never lost during a rollout.
+      if (/p_local_date|function .*record_arcade_play/i.test(error.message || '')) {
+        const { data: legacyData, error: legacyError } = await getSupabaseClient().rpc('record_arcade_play', params)
+        if (legacyError) throw legacyError
+        return legacyData
+      }
+      throw error
+    }
     return data
   } catch (err) {
     console.warn('[arcade] Could not record play:', err)
@@ -50,27 +66,39 @@ export async function saveArcadeReflection(playId, reflection) {
 }
 
 /**
- * The child's arcade play for today (local midnight), or null if they
- * haven't played yet. One arcade game per day — fails open on errors so a
- * network blip never bricks the arcade.
+ * Today's arcade state for a child (today = local midnight to local
+ * midnight). One game per day, plus a bonus game for winning Daniel's
+ * challenge. Fails open on errors so a network blip never bricks the
+ * arcade.
+ *
+ * @returns {{ plays: Array<{game_id, created_at, success, is_daily_challenge}>,
+ *             challengeWon: boolean, playsAllowed: number, playsLeft: number }}
  */
-export async function getTodaysArcadePlay(childId) {
-  if (!childId || childId === 'arcade') return null
+export async function getTodaysArcadeState(childId) {
+  const empty = { plays: [], challengeWon: false, playsAllowed: 1, playsLeft: 1 }
+  if (!childId || childId === 'arcade') return empty
   try {
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
     const { data, error } = await getSupabaseClient()
       .from('arcade_plays')
-      .select('game_id, created_at')
+      .select('game_id, created_at, success, is_daily_challenge')
       .eq('child_id', childId)
       .gte('created_at', startOfDay.toISOString())
       .order('created_at', { ascending: true })
-      .limit(1)
     if (error) throw error
-    return (data && data[0]) || null
+    const plays = data || []
+    const challengeWon = plays.some(p => p.is_daily_challenge && p.success)
+    const playsAllowed = 1 + (challengeWon ? 1 : 0)
+    return {
+      plays,
+      challengeWon,
+      playsAllowed,
+      playsLeft: Math.max(0, playsAllowed - plays.length)
+    }
   } catch (err) {
-    console.warn('[arcade] Could not check today\'s play:', err)
-    return null
+    console.warn('[arcade] Could not check today\'s plays:', err)
+    return empty
   }
 }
 

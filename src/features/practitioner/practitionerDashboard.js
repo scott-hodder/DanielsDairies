@@ -1,6 +1,10 @@
 import { supabase } from '../../supabaseClient.js'
 import { escapeHtml } from '../../lib/sanitize.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
+import { initTelemetry, trackEvent } from '../../lib/telemetry.js'
+
+// Error tracking + page view (fail-silent, self-hosted in Supabase)
+initTelemetry()
 
 // Consistent emoji artwork on every device
 initKidIcons()
@@ -32,6 +36,33 @@ let activeDoc = 'plan'      // which document is shown in the Support Plan tab
 
 const SUPPORT_EMAIL = 'info@danielsdiaries.com'
 const INACTIVE_DAYS = 14
+
+// ============================================================
+// Toast notifications
+// ============================================================
+function showToast(message, type = 'info') {
+  let host = document.getElementById('pracToastHost')
+  if (!host) {
+    host = document.createElement('div')
+    host.id = 'pracToastHost'
+    host.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:8px;align-items:center;'
+    document.body.appendChild(host)
+  }
+  const toast = document.createElement('div')
+  const colors = {
+    info: 'background:#16324f;color:#fff;',
+    success: 'background:#0d9488;color:#fff;',
+    error: 'background:#b91c1c;color:#fff;'
+  }
+  toast.style.cssText = `${colors[type] || colors.info}padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;`
+  toast.textContent = message
+  host.appendChild(toast)
+  setTimeout(() => {
+    toast.style.transition = 'opacity .4s'
+    toast.style.opacity = '0'
+    setTimeout(() => toast.remove(), 400)
+  }, 4500)
+}
 
 // ============================================================
 // DOM references
@@ -123,6 +154,30 @@ async function createInvite(email) {
   })
   if (error) throw error
   return data
+}
+
+// ── Self-serve billing (Stripe checkout + billing portal) ──
+async function startPlanCheckout(planCode) {
+  trackEvent('practitioner_checkout_start', { plan: planCode })
+  const { data, error } = await supabase.functions.invoke('practitioner-checkout', {
+    body: {
+      plan: planCode,
+      successUrl: `${window.location.origin}/practitioner-dashboard.html?billing=success`,
+      cancelUrl: `${window.location.origin}/practitioner-dashboard.html?billing=cancelled`
+    }
+  })
+  if (error) throw error
+  if (!data?.url) throw new Error(data?.error || 'Could not start checkout')
+  window.location.href = data.url
+}
+
+async function openBillingPortal() {
+  const { data, error } = await supabase.functions.invoke('practitioner-checkout', {
+    body: { portal: true, returnUrl: `${window.location.origin}/practitioner-dashboard.html` }
+  })
+  if (error) throw error
+  if (!data?.url) throw new Error(data?.error || 'Could not open billing portal')
+  window.location.href = data.url
 }
 
 async function revokeInvite(inviteId) {
@@ -368,6 +423,25 @@ async function init() {
 
     loadingEl.classList.add('hidden')
     mainEl.classList.remove('hidden')
+
+    // Returning from Stripe checkout
+    const billingReturn = new URLSearchParams(window.location.search).get('billing')
+    if (billingReturn) {
+      window.history.replaceState({}, '', window.location.pathname)
+      if (billingReturn === 'success') {
+        showToast('Payment successful — your plan is being activated. This can take a few seconds.', 'success')
+        setView('plan')
+        // The webhook activates the plan; poll briefly so the page reflects it.
+        setTimeout(async () => {
+          try { planUsage = await getPlanUsage() } catch { /* keep current */ }
+          renderPlanNotice()
+          renderPlanView()
+        }, 4000)
+      } else if (billingReturn === 'cancelled') {
+        showToast('Checkout cancelled — no charge was taken.', 'info')
+        setView('plan')
+      }
+    }
   } catch (err) {
     console.error('Init error:', err)
     loadingEl.classList.add('hidden')
@@ -460,7 +534,12 @@ function renderPlanNotice() {
   if (!planUsage) { el.classList.add('hidden'); return }
 
   if (planUsage.trial_expired) {
-    el.innerHTML = `<strong>Your free trial has ended.</strong> You can still view your caseload, but adding clients is paused. <a href="mailto:${SUPPORT_EMAIL}?subject=Practitioner plan">Contact us</a> to activate a plan.`
+    el.innerHTML = `<strong>Your free trial has ended.</strong> You can still view your caseload, but adding clients is paused. <a href="#" data-goto-plan>Choose a plan</a> to keep going — it takes about a minute.`
+    el.className = 'prac-plan-notice warn'
+    return
+  }
+  if (['past_due', 'canceled', 'inactive'].includes(planUsage.status)) {
+    el.innerHTML = `<strong>Your plan is ${planUsage.status === 'past_due' ? 'past due' : 'inactive'}.</strong> Your caseload stays visible, but adding clients is paused. <a href="#" data-goto-plan>Go to Plan &amp; Billing</a> to fix it up.`
     el.className = 'prac-plan-notice warn'
     return
   }
@@ -1142,12 +1221,36 @@ function letterheadKey() {
   return `dd_prac_letterhead_${currentUser?.id || 'anon'}`
 }
 
-function loadLetterhead() {
+// Letterhead lives in the database (practitioner_settings) so credentials,
+// business details and ABN follow the practitioner across devices.
+// localStorage is kept as an offline fallback and migrated up on first load.
+async function loadLetterhead() {
+  let local = {}
+  try { local = JSON.parse(localStorage.getItem(letterheadKey()) || '{}') } catch { /* ignore */ }
+
   try {
-    letterhead = JSON.parse(localStorage.getItem(letterheadKey()) || '{}')
+    const { data, error } = await supabase
+      .from('practitioner_settings')
+      .select('letterhead')
+      .eq('practitioner_user_id', currentUser.id)
+      .maybeSingle()
+    if (error) throw error
+    if (data?.letterhead && Object.keys(data.letterhead).length > 0) {
+      letterhead = data.letterhead
+    } else if (Object.keys(local).length > 0) {
+      // Migrate device-local letterhead up to the database once.
+      letterhead = local
+      supabase.from('practitioner_settings').upsert(
+        { practitioner_user_id: currentUser.id, letterhead: local },
+        { onConflict: 'practitioner_user_id' }
+      ).then(() => {})
+    } else {
+      letterhead = {}
+    }
   } catch {
-    letterhead = {}
+    letterhead = local // offline / pre-migration fallback
   }
+
   const fields = { lhRole: 'role', lhBusiness: 'business', lhAbn: 'abn', lhContact: 'contact' }
   Object.entries(fields).forEach(([id, key]) => {
     const el = document.getElementById(id)
@@ -1163,6 +1266,12 @@ function saveLetterhead() {
     contact: document.getElementById('lhContact').value.trim()
   }
   try { localStorage.setItem(letterheadKey(), JSON.stringify(letterhead)) } catch { /* private mode */ }
+  supabase.from('practitioner_settings').upsert(
+    { practitioner_user_id: currentUser.id, letterhead },
+    { onConflict: 'practitioner_user_id' }
+  ).then(({ error }) => {
+    if (error) console.warn('Letterhead cloud save failed (kept locally):', error.message)
+  })
 }
 
 function setDoc(name) {
@@ -1303,6 +1412,10 @@ async function renderPlanView() {
     ? `<p class="prac-plan-usage-note">Trial ends ${new Date(planUsage.trial_ends_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}. Everything stays saved when you choose a plan.</p>`
     : ''
 
+  // A paid (or previously paid) practitioner has a Stripe customer and can
+  // self-manage via the billing portal; everyone else gets checkout buttons.
+  const isPaid = planUsage.status === 'active' || planUsage.status === 'past_due'
+
   summaryEl.innerHTML = `
     <div class="prac-panel prac-plan-summary">
       <div class="prac-plan-summary-head">
@@ -1310,7 +1423,9 @@ async function renderPlanView() {
           <p class="prac-plan-summary-name">${escapeHtml(planUsage.plan_name)} plan ${statusPill}</p>
           <p class="prac-plan-summary-price">${formatPrice(planUsage.monthly_price_cents, planUsage.currency)}/month${planUsage.status === 'trialing' ? ' after trial' : ''}</p>
         </div>
-        <a class="prac-btn prac-btn-primary prac-btn-sm" href="mailto:${SUPPORT_EMAIL}?subject=Practitioner plan — ${encodeURIComponent(planUsage.plan_name)}">Change plan / set up billing</a>
+        ${isPaid
+          ? '<button class="prac-btn prac-btn-primary prac-btn-sm" id="managePlanBtn">Manage billing</button>'
+          : ''}
       </div>
       <div class="prac-plan-usage">
         <div class="prac-plan-usage-row">
@@ -1324,11 +1439,31 @@ async function renderPlanView() {
         </div>
       </div>
       ${trialLine}
-      <p class="prac-plan-usage-note">Plan changes and billing are handled personally during early access — email us and we'll set it up the same day.</p>
+      <p class="prac-plan-usage-note">Payments are handled securely by Stripe. Cancel any time — your caseload, goals and notes are never deleted. Questions? <a href="mailto:${SUPPORT_EMAIL}?subject=Practitioner plan">Email us</a>.</p>
     </div>`
+
+  const manageBtn = document.getElementById('managePlanBtn')
+  if (manageBtn) {
+    manageBtn.addEventListener('click', async () => {
+      manageBtn.disabled = true
+      manageBtn.textContent = 'Opening…'
+      try {
+        await openBillingPortal()
+      } catch (err) {
+        console.error('Billing portal error:', err)
+        manageBtn.disabled = false
+        manageBtn.textContent = 'Manage billing'
+        showToast('Could not open billing. Please try again or email us.', 'error')
+      }
+    })
+  }
 
   gridEl.innerHTML = plans.map(p => {
     const isCurrent = p.code === planUsage.plan_code
+    const isCurrentPaid = isCurrent && planUsage.status === 'active'
+    const cta = isCurrentPaid
+      ? '<button class="prac-btn prac-btn-ghost prac-btn-sm" disabled style="width:100%;">Current plan</button>'
+      : `<button class="prac-btn prac-btn-primary prac-btn-sm" data-choose-plan="${escapeHtml(p.code)}" style="width:100%;">${planUsage.status === 'active' ? (p.monthly_price_cents > planUsage.monthly_price_cents ? 'Upgrade' : 'Switch') : 'Choose'} ${escapeHtml(p.display_name)}</button>`
     return `
       <div class="prac-plan-card ${isCurrent ? 'current' : ''}">
         ${isCurrent ? '<span class="prac-plan-card-badge">Your plan</span>' : ''}
@@ -1341,8 +1476,25 @@ async function renderPlanView() {
           <li>Printable support plans</li>
         </ul>
         <p class="prac-plan-card-desc">${escapeHtml(p.description || '')}</p>
+        ${cta}
       </div>`
   }).join('')
+
+  gridEl.querySelectorAll('[data-choose-plan]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const code = btn.dataset.choosePlan
+      btn.disabled = true
+      btn.textContent = 'Taking you to payment…'
+      try {
+        await startPlanCheckout(code)
+      } catch (err) {
+        console.error('Plan checkout error:', err)
+        btn.disabled = false
+        btn.textContent = 'Try again'
+        showToast('Could not start checkout. Please try again or email us.', 'error')
+      }
+    })
+  })
 
   await renderInviteList()
 }

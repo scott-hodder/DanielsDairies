@@ -1089,6 +1089,13 @@
                 <p class="section-subtitle">Every plan includes the full Brain Town world, all games, daily quests, rewards, and progress tracking. Plans differ in how many guided modules your child receives each month and how much support you get.</p>
             </div>
 
+            <div style="display:flex;justify-content:center;margin-bottom:26px;">
+                <div id="billingToggle" style="display:inline-flex;background:#eef2f7;border-radius:12px;padding:4px;">
+                    <button type="button" data-billing="monthly" class="billing-toggle-btn" style="padding:9px 20px;border:none;border-radius:9px;background:#405878;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Monthly</button>
+                    <button type="button" data-billing="annual" class="billing-toggle-btn" style="padding:9px 20px;border:none;border-radius:9px;background:transparent;color:#405878;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Annual <span style="font-size:12px;font-weight:600;color:#0d9488;">2 months free</span></button>
+                </div>
+            </div>
+
             <div class="pricing-grid" id="pricingGrid">
                 <div class="price-card">
                     <h3>Bronze</h3>
@@ -1130,7 +1137,7 @@
             </div>
 
             <p class="pricing-note">
-                <strong>How module credits work:</strong> each month your plan adds guided-module credits to your family's account. Unused credits roll over while your subscription is active, and you can buy extra credits any time. Prefer to try first? <a href="/signup.html?trial=true">Start with 2 free modules</a> — no card required. Cancel any time from your account; see our <a href="/terms-of-service.html#billing">cancellation &amp; refund policy</a>.
+                <strong>How module credits work:</strong> each month your plan adds guided-module credits to your family's account. Unused credits roll over while your subscription is active, and you can buy extra credits any time. Annual plans are billed once a year at 10&times; the monthly price (2 months free) and add a full year of module credits up front. Prefer to try first? <a href="/signup.html?trial=true">Start with 2 free modules</a> — no card required. Cancel any time from your account; see our <a href="/terms-of-service.html#billing">cancellation &amp; refund policy</a>.
             </p>
 
             <div class="compare-wrap">
@@ -1189,6 +1196,14 @@
                 <details class="faq-item">
                     <summary>How is my child's data protected?</summary>
                     <div class="faq-body">Data is encrypted in transit and at rest, stored with row-level security so only your family can access it, and never sold. Payment details are handled entirely by Stripe. You can export or delete your family's data at any time. Full details are in our <a href="/privacy-policy.html">privacy policy</a>.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>How does annual billing work?</summary>
+                    <div class="faq-body">Annual plans cost 10&times; the monthly price — you get 12 months for the price of 10 (2 months free). Your full year of module credits is added up front, and credits roll over, so your family can use them at their own pace.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>How do I get help or contact support?</summary>
+                    <div class="faq-body">Email us at <a href="mailto:info@danielsdiaries.com">info@danielsdiaries.com</a> — a real person from the Daniel's Diaries team reads every message, and we aim to reply within one business day.</div>
                 </details>
             </div>
         </div>
@@ -1260,13 +1275,27 @@
             <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;|&nbsp;
             <a href="/terms-of-service.html">Terms of Service</a> &nbsp;|&nbsp;
             <a href="/terms-of-service.html#billing">Cancellation &amp; Refunds</a> &nbsp;|&nbsp;
-            <a href="/how-our-content-is-made.html">How Our Content Is Made</a>
+            <a href="/how-our-content-is-made.html">How Our Content Is Made</a> &nbsp;|&nbsp;
+            <a href="mailto:info@danielsdiaries.com">Support: info@danielsdiaries.com</a>
         </div>
         <p class="footer-disclaimer">Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.</p>
     </footer>
 
     <script type="module">
         import { getSupabaseClient } from '/src/supabaseClient.js'
+        import { initTelemetry, trackEvent } from '/src/lib/telemetry.js'
+        initTelemetry() // page_view + global error capture
+
+        // Funnel: which pricing CTA visitors click (plan + billing interval)
+        document.querySelectorAll('#pricingGrid a[href^="/signup.html?plan="]').forEach((a) => {
+            a.addEventListener('click', () => {
+                const url = new URL(a.getAttribute('href'), window.location.origin)
+                trackEvent('pricing_cta_click', {
+                    plan: url.searchParams.get('plan'),
+                    billing: url.searchParams.get('billing') || 'monthly'
+                })
+            })
+        })
         ;(async () => {
             try {
                 const { data } = await getSupabaseClient()
@@ -1285,19 +1314,59 @@
 
             // Keep displayed prices in sync with the prices actually charged
             // (subscription_tiers is the same source the checkout uses).
+            // Annual = 10x monthly ("2 months free") — must match the
+            // start-paid-signup edge function.
+            const ANNUAL_MONTHS_CHARGED = 10
+            const monthlyCentsByTier = {}
+            document.querySelectorAll('[data-tier-price]').forEach((el) => {
+                // Seed from the static fallback prices so the toggle works
+                // even if the live price fetch fails.
+                const dollars = parseFloat(el.textContent.replace('$', ''))
+                if (!Number.isNaN(dollars)) monthlyCentsByTier[el.dataset.tierPrice] = Math.round(dollars * 100)
+            })
             try {
                 const { data: tiers } = await getSupabaseClient()
                     .from('subscription_tiers')
                     .select('tier, monthly_price_cents')
                     .eq('is_active', true)
                 ;(tiers || []).forEach((tier) => {
-                    const el = document.querySelector(`[data-tier-price="${tier.tier}"]`)
-                    if (el && typeof tier.monthly_price_cents === 'number') {
-                        const dollars = tier.monthly_price_cents / 100
-                        el.textContent = '$' + (dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2))
+                    if (typeof tier.monthly_price_cents === 'number') {
+                        monthlyCentsByTier[tier.tier] = tier.monthly_price_cents
                     }
                 })
             } catch (e) { /* static fallback prices remain */ }
+
+            let billing = 'monthly'
+            function fmt(cents) {
+                const dollars = cents / 100
+                return '$' + (dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2))
+            }
+            function renderPrices() {
+                document.querySelectorAll('[data-tier-price]').forEach((el) => {
+                    const cents = monthlyCentsByTier[el.dataset.tierPrice]
+                    if (typeof cents !== 'number') return
+                    el.textContent = fmt(billing === 'annual' ? cents * ANNUAL_MONTHS_CHARGED : cents)
+                })
+                document.querySelectorAll('.price-period').forEach((el) => {
+                    el.textContent = billing === 'annual' ? '/year AUD' : '/month AUD'
+                })
+                document.querySelectorAll('#pricingGrid a[href^="/signup.html?plan="]').forEach((a) => {
+                    const url = new URL(a.getAttribute('href'), window.location.origin)
+                    if (billing === 'annual') url.searchParams.set('billing', 'annual')
+                    else url.searchParams.delete('billing')
+                    a.setAttribute('href', url.pathname + url.search)
+                })
+                document.querySelectorAll('#billingToggle .billing-toggle-btn').forEach((btn) => {
+                    const active = btn.dataset.billing === billing
+                    btn.style.background = active ? '#405878' : 'transparent'
+                    btn.style.color = active ? '#fff' : '#405878'
+                    btn.querySelectorAll('span').forEach((s) => { s.style.color = active ? '#8ef0e3' : '#0d9488' })
+                })
+            }
+            document.querySelectorAll('#billingToggle .billing-toggle-btn').forEach((btn) => {
+                btn.addEventListener('click', () => { billing = btn.dataset.billing; renderPrices() })
+            })
+            renderPrices()
         })()
     </script>
 </body>

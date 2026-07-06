@@ -324,7 +324,11 @@ function showArcadeEndScreen(host, gameDef, result, { reward, onPlayAgain, onClo
       <p style="margin:6px 0 12px;font-size:14px;color:#6b7e95">${success
         ? 'That practice makes your brain roads stronger.'
         : 'Every try builds the road a little more — good on you for having a go.'}</p>
-      <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#40916c">That was your arcade game for today — a new one unlocks tomorrow! 🌟</p>
+      <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#40916c">${
+        reward?.challenge_won_today && reward?.plays_today === 1
+          ? "You beat Daniel's challenge — that unlocks a BONUS game today! Pick any game in the arcade. 🎉"
+          : 'That was your arcade game for today — a new one unlocks tomorrow! 🌟'
+      }</p>
       <div class="ae-reflection" style="display:none;background:#eef6ff;border:1px solid #cfe3f7;border-radius:14px;padding:12px 14px;margin:0 0 14px;text-align:left">
         <p class="ae-ref-q" style="margin:0 0 8px;font-size:13.5px;font-weight:600;color:#2b4a6f"></p>
         <div class="ae-ref-opts" style="display:flex;flex-direction:column;gap:7px"></div>

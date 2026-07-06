@@ -41,6 +41,15 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
+// Annual = 10 x monthly ("2 months free"). Derived from the same
+// subscription_tiers.monthly_price_cents the monthly plan charges, so
+// repricing a tier automatically reprices its annual option.
+const ANNUAL_MONTHS_CHARGED = 10
+
+function normalizeBilling(value: unknown): 'monthly' | 'annual' {
+  return value === 'annual' ? 'annual' : 'monthly'
+}
+
 // Non-blocking Mailchimp opt-in (same behaviour as complete-signup).
 async function addToMailchimp(email: string, firstName: string, lastName: string) {
   try {
@@ -101,7 +110,7 @@ serve(withCors(async (req) => {
     if (body?.resumeToken) {
       const { data: pending } = await admin
         .from('pending_signups')
-        .select('parent_id, email, plan, status, stripe_customer_id')
+        .select('parent_id, email, plan, status, stripe_customer_id, billing_interval')
         .eq('resume_token', body.resumeToken)
         .maybeSingle()
 
@@ -113,6 +122,7 @@ serve(withCors(async (req) => {
         parentId: pending.parent_id,
         email: pending.email,
         plan: pending.plan,
+        billing: normalizeBilling(pending.billing_interval),
         stripeCustomerId: pending.stripe_customer_id,
         successUrl,
         cancelUrl
@@ -122,6 +132,7 @@ serve(withCors(async (req) => {
 
     // ── New signup path ──
     const { email, password, firstName, lastName, phone, plan, mailchimpOptIn } = body
+    const billing = normalizeBilling(body?.billing)
 
     if (!email || !password || !firstName || !plan) {
       return jsonResponse({ error: 'Missing required fields: email, password, firstName, plan' }, 400)
@@ -157,6 +168,7 @@ serve(withCors(async (req) => {
           full_name: `${firstName} ${lastName || ''}`.trim(),
           phone: phone || '',
           plan: tierCode,
+          billing,
           is_free_trial: false
         },
         emailRedirectTo: `${appUrl}/login.html?confirmed=true`
@@ -251,6 +263,7 @@ serve(withCors(async (req) => {
           parent_id: userId,
           email,
           plan: tierCode,
+          billing_interval: billing,
           status: 'awaiting_payment',
           stripe_customer_id: customer.id,
           updated_at: new Date().toISOString()
@@ -269,6 +282,7 @@ serve(withCors(async (req) => {
       parentId: userId,
       email,
       plan: tierCode,
+      billing,
       stripeCustomerId: customer.id,
       successUrl,
       cancelUrl
@@ -292,6 +306,7 @@ async function createSignupCheckoutSession(
     parentId: string
     email: string
     plan: string
+    billing: 'monthly' | 'annual'
     stripeCustomerId?: string | null
     successUrl: string
     cancelUrl: string
@@ -317,6 +332,12 @@ async function createSignupCheckoutSession(
     customerId = customer.id
   }
 
+  const isAnnual = params.billing === 'annual'
+  const unitAmount = isAnnual ? monthlyPriceCents * ANNUAL_MONTHS_CHARGED : monthlyPriceCents
+  const description = isAnnual
+    ? `${tier?.modules_per_month ?? '?'} guided modules per month, billed yearly (2 months free)`
+    : `${tier?.modules_per_month ?? '?'} guided modules per month`
+
   return await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
@@ -326,11 +347,11 @@ async function createSignupCheckoutSession(
         price_data: {
           currency: 'aud',
           product_data: {
-            name: `Daniel's Diaries - ${tier?.display_name || params.plan}`,
-            description: `${tier?.modules_per_month ?? '?'} guided modules per month`
+            name: `Daniel's Diaries - ${tier?.display_name || params.plan}${isAnnual ? ' (Annual)' : ''}`,
+            description
           },
-          unit_amount: monthlyPriceCents,
-          recurring: { interval: 'month' }
+          unit_amount: unitAmount,
+          recurring: { interval: isAnnual ? 'year' : 'month' }
         },
         quantity: 1
       }
@@ -342,13 +363,15 @@ async function createSignupCheckoutSession(
       metadata: {
         payment_type: 'signup',
         parent_id: params.parentId,
-        tier: params.plan
+        tier: params.plan,
+        billing: params.billing
       }
     },
     metadata: {
       payment_type: 'signup',
       parent_id: params.parentId,
-      plan: params.plan
+      plan: params.plan,
+      billing: params.billing
     }
   })
 }

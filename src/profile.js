@@ -8,6 +8,10 @@ import { showLoadingScreen, hideLoadingScreen } from './features/dashboard/loadi
 import { showToast } from './ui/toast.js'
 import { requireParentGate, openParentPinSettings } from './features/parentGate.js'
 import { initKidIcons } from './lib/kidIcons.js'
+import { initTelemetry, trackEvent } from './lib/telemetry.js'
+
+// Error tracking + page view (fail-silent, self-hosted in Supabase)
+initTelemetry()
 
 // Consistent emoji artwork on every device
 initKidIcons()
@@ -1111,6 +1115,11 @@ function formatDateAU(date) {
 }
 
 async function callCheckoutSession(payload) {
+  trackEvent('upgrade_checkout_start', {
+    payment_type: payload?.paymentType || 'subscription',
+    months: payload?.months || null,
+    credits: payload?.credits || null
+  })
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
   if (!supabaseUrl) throw new Error('Supabase URL is not configured.')
 

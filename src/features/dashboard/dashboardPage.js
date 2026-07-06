@@ -3,6 +3,10 @@ import { escapeHtml } from '../../lib/sanitize.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
 import { requireParentGate } from '../parentGate.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
+import { initTelemetry } from '../../lib/telemetry.js'
+
+// Error tracking + page view (fail-silent, self-hosted in Supabase)
+initTelemetry()
 
 // Consistent emoji artwork on every device (skips the SVG map)
 initKidIcons()
@@ -1196,48 +1200,55 @@ function getEnhancedEditModalHTML() {
     `;
 }
 
-// HTML for ADD Child Modal  
+// HTML for ADD Child Modal
 function getEnhancedAddModalHTML() {
     return `
     <div class="modal-header-fun">
-        <button type="button" class="close-btn-fun" id="closeAddModalBtn">✕</button>
+        <button type="button" class="close-btn-fun" id="closeAddModalBtn" aria-label="Close">✕</button>
         <div class="header-sparkles">
             <span class="header-sparkle">✨</span>
             <span class="header-sparkle">⭐</span>
             <span class="header-sparkle">💫</span>
             <span class="header-sparkle">🌟</span>
         </div>
-        <h2 class="modal-title-fun">Add New Explorer!</h2>
-        <p class="modal-subtitle-fun">Let's create a profile! 🚀</p>
-        
+        <h2 class="modal-title-fun">Add your explorer</h2>
+        <p class="modal-subtitle-fun">Set up their profile — it takes less than a minute</p>
+
         <div class="avatar-preview-wrapper">
             <div class="avatar-preview-circle" id="addAvatarPreviewCircle">🦊</div>
         </div>
     </div>
 
     <div class="modal-body-fun">
-        <div id="modalError" class="error-message hidden"></div>
-        
-        <form id="addChildForm">
+        <div id="modalError" class="error-message hidden" role="alert"></div>
+
+        <form id="addChildForm" novalidate>
             <div class="form-group-fun">
-                <label class="form-label-fun">
+                <label class="form-label-fun" for="childName">
                     <span class="form-label-icon">📝</span>
-                    What's Their Name?
+                    Their name (or nickname)
                 </label>
-                <input type="text" id="childName" class="form-input-fun" placeholder="Type their awesome name..." required>
+                <input type="text" id="childName" class="form-input-fun" placeholder="e.g. Charlie" maxlength="40" autocomplete="off" required>
+                <p class="form-hint-fun">A first name or nickname is perfect — this is what Daniel will call them.</p>
             </div>
 
             <div class="form-group-fun">
-                <label class="form-label-fun">
+                <label class="form-label-fun" for="childDob">
                     <span class="form-label-icon">🎂</span>
-                    Date of Birth
+                    Date of birth
                 </label>
                 <input type="date" id="childDob" class="form-input-fun" required>
+                <p class="form-hint-fun">We use their age to pick the right level for games and modules.</p>
             </div>
 
             <div class="avatar-section-fun" id="addAvatarSectionFun">
-                <h3 class="avatar-section-title"><span>🎭</span> Pick Their Avatar!</h3>
-                <p class="avatar-section-subtitle">Choose a cool character to represent them</p>
+                <div class="avatar-section-head">
+                    <div>
+                        <h3 class="avatar-section-title"><span>🎭</span> Pick their avatar</h3>
+                        <p class="avatar-section-subtitle">They can change it any time</p>
+                    </div>
+                    <button type="button" class="avatar-shuffle-btn" id="addAvatarShuffle">🎲 Surprise me</button>
+                </div>
 
                 <div class="avatar-category">
                     <div class="avatar-category-label"><span>🐾</span> Cool Animals</div>
@@ -1263,8 +1274,8 @@ function getEnhancedAddModalHTML() {
             </div>
 
             <div class="modal-buttons-fun">
-                <button type="button" class="btn-fun btn-secondary-fun" id="cancelAddChild">Maybe Later</button>
-                <button type="submit" class="btn-fun btn-primary-fun"><span>✨</span> Add Child!</button>
+                <button type="button" class="btn-fun btn-secondary-fun" id="cancelAddChild">Maybe later</button>
+                <button type="submit" class="btn-fun btn-primary-fun" id="addChildSubmitBtn"><span>✨</span> Start their adventure</button>
             </div>
         </form>
     </div>
@@ -1318,22 +1329,46 @@ async function handleEditFormSubmit(e) {
 // Form submit handler for ADD
 async function handleAddFormSubmit(e) {
     e.preventDefault();
-    
+
     const modalError = document.getElementById('modalError');
-    
+    const submitBtn = document.getElementById('addChildSubmitBtn');
+
+    const showError = (message) => {
+        modalError.textContent = message;
+        showElement(modalError);
+        modalError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    const name = document.getElementById('childName').value.trim();
+    const dob = document.getElementById('childDob').value;
+    const avatar = document.getElementById('addChildAvatar').value || '🦊';
+
+    // Specific, friendly validation — never a generic "fill in all fields"
+    if (!name) {
+        showError("What should Daniel call them? Add a name or nickname to continue.");
+        document.getElementById('childName').focus();
+        return;
+    }
+    if (!dob) {
+        showError('Add their date of birth so we can match games and modules to their age.');
+        document.getElementById('childDob').focus();
+        return;
+    }
+    const dobDate = new Date(dob);
+    if (dobDate > new Date()) {
+        showError("That birthday is in the future — double-check the date.");
+        document.getElementById('childDob').focus();
+        return;
+    }
+
+    hideElement(modalError);
+
     try {
-        const name = document.getElementById('childName').value.trim();
-        const dob = document.getElementById('childDob').value;
-        const avatar = document.getElementById('addChildAvatar').value || '🦊';
-        
-        if (!name || !dob) {
-            modalError.textContent = 'Please fill in all fields.';
-            showElement(modalError);
-            return;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>⏳</span> Creating their profile…';
         }
-        
-        hideElement(modalError);
-        
+
         const newChild = await createChild(state.currentUser.id, name, dob, avatar);
         setChildren([...state.children, newChild]);
         renderChildren();
@@ -1346,11 +1381,14 @@ async function handleAddFormSubmit(e) {
             const modulesSection = document.getElementById('modulesList') || document.getElementById('modulesSection');
             if (modulesSection) modulesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 600);
-        
+
     } catch (error) {
         console.error('Error creating child:', error);
-        modalError.textContent = error.message || 'Failed to add child';
-        showElement(modalError);
+        showError(error.message || "We couldn't save their profile — please try again.");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>✨</span> Start their adventure';
+        }
     }
 }
 
@@ -1380,6 +1418,30 @@ function setupAddModalListeners() {
     document.getElementById('closeAddModalBtn')?.addEventListener('click', hideAddChildModal);
     document.getElementById('cancelAddChild')?.addEventListener('click', hideAddChildModal);
     document.getElementById('addChildForm')?.addEventListener('submit', handleAddFormSubmit);
+
+    // "Surprise me": pick a random avatar and highlight it in the grid
+    document.getElementById('addAvatarShuffle')?.addEventListener('click', () => {
+        const current = document.getElementById('addChildAvatar')?.value;
+        let next = current;
+        while (next === current) {
+            next = avatarOptions[Math.floor(Math.random() * avatarOptions.length)];
+        }
+        document.querySelectorAll('#addAvatarSectionFun .avatar-option-fun').forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent === next);
+        });
+        const hidden = document.getElementById('addChildAvatar');
+        const preview = document.getElementById('addAvatarPreviewCircle');
+        if (hidden) hidden.value = next;
+        if (preview) {
+            preview.textContent = next;
+            preview.style.transform = 'scale(1.18) rotate(8deg)';
+            setTimeout(() => { preview.style.transform = ''; }, 200);
+        }
+    });
+
+    // DOB can't be in the future
+    const dobInput = document.getElementById('childDob');
+    if (dobInput) dobInput.max = new Date().toISOString().slice(0, 10);
 }
 
 
@@ -1401,36 +1463,67 @@ function promptEditChild(child) {
     setTimeout(() => document.getElementById('editChildName')?.focus(), 100);
 }
 
-function renderEnhancedAvatarPicker(selectedAvatar) {
+// Render the avatar picker into a modal. Both the edit modal
+// (avatarPicker*/avatarPreviewCircle/editChildAvatar) and the add modal
+// (addAvatarPicker*/addAvatarPreviewCircle/addChildAvatar) use this —
+// previously the add modal's picker was never rendered at all because
+// the renderer only knew the edit modal's element ids.
+function renderModalAvatarPicker({ pickerPrefix, previewId, hiddenInputId, selectedAvatar }) {
   const categories = ['animals', 'magical', 'heroes', 'space']
-  
+
+  const setSelection = (emoji) => {
+    const hidden = document.getElementById(hiddenInputId)
+    const preview = document.getElementById(previewId)
+    if (hidden) hidden.value = emoji
+    if (preview) {
+      preview.textContent = emoji
+      // Little pop so the choice feels alive
+      preview.style.transform = 'scale(1.18)'
+      setTimeout(() => { preview.style.transform = '' }, 180)
+    }
+  }
+
   categories.forEach(category => {
-    const pickerElement = document.getElementById(`avatarPicker${category.charAt(0).toUpperCase() + category.slice(1)}`)
+    const idSuffix = category.charAt(0).toUpperCase() + category.slice(1)
+    const pickerElement = document.getElementById(`${pickerPrefix}${idSuffix}`)
     if (!pickerElement) return
-    
+
     pickerElement.innerHTML = ''
     avatarCategories[category].forEach(emoji => {
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'avatar-option-fun'
+      button.setAttribute('aria-label', `Choose ${emoji} avatar`)
       if (selectedAvatar === emoji) {
         button.classList.add('selected')
       }
       button.textContent = emoji
       button.addEventListener('click', () => {
-        document.querySelectorAll('.avatar-option-fun').forEach(btn => btn.classList.remove('selected'))
+        // Only clear selections inside THIS modal's picker groups
+        categories.forEach(cat => {
+          const suffix = cat.charAt(0).toUpperCase() + cat.slice(1)
+          document.getElementById(`${pickerPrefix}${suffix}`)
+            ?.querySelectorAll('.avatar-option-fun')
+            .forEach(btn => btn.classList.remove('selected'))
+        })
         button.classList.add('selected')
-        const editChildAvatar = document.getElementById('editChildAvatar')
-        const avatarPreviewCircle = document.getElementById('avatarPreviewCircle')
-        if (editChildAvatar) editChildAvatar.value = emoji
-        if (avatarPreviewCircle) avatarPreviewCircle.textContent = emoji
+        setSelection(emoji)
       })
       pickerElement.appendChild(button)
     })
   })
-  
-  const avatarPreviewCircle = document.getElementById('avatarPreviewCircle')
-  if (avatarPreviewCircle) avatarPreviewCircle.textContent = selectedAvatar || '🦊'
+
+  setSelection(selectedAvatar || '🦊')
+}
+
+// Back-compat wrapper for the EDIT modal
+function renderEnhancedAvatarPicker(selectedAvatar) {
+  renderModalAvatarPicker({
+    pickerPrefix: 'avatarPicker',
+    previewId: 'avatarPreviewCircle',
+    hiddenInputId: 'editChildAvatar',
+    selectedAvatar
+  })
 }
 
 function closeEditChildModal() {
@@ -2530,14 +2623,33 @@ function showAddChildModal() {
         modal.innerHTML = getEnhancedAddModalHTML();
         setupAddModalListeners();
     }
-    
+
     // Reset form
     document.getElementById('childName').value = '';
     document.getElementById('childDob').value = '';
     hideElement(document.getElementById('modalError'))
-    
-    renderEnhancedAvatarPicker('🦊');
-    
+
+    // Reset the submit button in case a previous attempt left it disabled
+    const submitBtn = document.getElementById('addChildSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>✨</span> Start their adventure';
+    }
+
+    // A random starting avatar makes the picker feel alive (and the
+    // "surprise me" shuffle keeps hesitant kids moving)
+    const randomAvatar = avatarOptions[Math.floor(Math.random() * avatarOptions.length)];
+    renderModalAvatarPicker({
+        pickerPrefix: 'addAvatarPicker',
+        previewId: 'addAvatarPreviewCircle',
+        hiddenInputId: 'addChildAvatar',
+        selectedAvatar: randomAvatar
+    });
+    // Mark the random pick as selected in the grid
+    document.querySelectorAll('#addAvatarSectionFun .avatar-option-fun').forEach(btn => {
+        btn.classList.toggle('selected', btn.textContent === randomAvatar);
+    });
+
     showElement(addChildModal);
     setTimeout(() => document.getElementById('childName')?.focus(), 100);
 }

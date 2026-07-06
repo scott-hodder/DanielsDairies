@@ -13,11 +13,24 @@ export const CHALLENGE_ROTATION = [
   'gratitude-garden', 'breathing-bridge'
 ]
 
-/** Day-of-year rotation, same rule as the SQL function (DOY % 10). */
+/**
+ * Day-of-year rotation, same rule as the SQL function (DOY % 10).
+ * Uses the LOCAL calendar date — the child's day runs midnight to
+ * midnight in their own timezone, and record_arcade_play receives the
+ * same local date so the server agrees on which game is the challenge.
+ */
 export function getDailyChallengeGameId(date = new Date()) {
-  const start = Date.UTC(date.getUTCFullYear(), 0, 0)
-  const doy = Math.floor((Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) - start) / 86400000)
+  const start = Date.UTC(date.getFullYear(), 0, 0)
+  const doy = Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - start) / 86400000)
   return CHALLENGE_ROTATION[doy % CHALLENGE_ROTATION.length]
+}
+
+/** The local calendar date as YYYY-MM-DD (what record_arcade_play expects). */
+export function localDateString(date = new Date()) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 // One short reflection question per game, tied to its Super Skill focus.
