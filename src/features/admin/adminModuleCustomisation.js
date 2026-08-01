@@ -7,7 +7,7 @@ import {
     categoryColors, setCategoryColors,
     customisationSelectedModules, isBulkDeletingModules, setIsBulkDeletingModules,
     getModuleKey, formatCategoryLabel, getAgeRangeLabel,
-    updateStats, loadAllModules, loadCategoryColors
+    updateStats, loadAllModules, loadCategoryColors, getSettings
 } from './adminPage.js';
 
 let superSkillsData = [];
@@ -291,7 +291,6 @@ window.selectModuleForEdit = async function(moduleId) {
 
     // Hide Generate Narration button if text_to_voice feature is disabled
     try {
-        const { getSettings } = await import('./adminPage.js');
         const settings = await getSettings();
         const ttsEnabled = settings?.feature_flags?.text_to_voice !== false;
         const genBtn = document.getElementById('genNarrationBtn');

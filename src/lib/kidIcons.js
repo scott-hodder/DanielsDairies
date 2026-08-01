@@ -91,29 +91,49 @@ export function applyKidIcons(root = document.body) {
  */
 export function initKidIcons() {
   if (_observer) return
-  const run = () => {
+
+  // Re-scan only the mutated subtrees, not the whole document — the
+  // dashboard rebuilds large innerHTML regions constantly (tabs, cards,
+  // map), and a full-body TreeWalker + Twemoji parse on every change
+  // costs jank that scales with total page size instead of the change.
+  const pendingRoots = new Set()
+
+  const flush = () => {
     _scheduled = false
-    try { applyKidIcons(document.body) } catch (e) { console.warn('[kidIcons] parse failed:', e) }
+    const roots = [...pendingRoots]
+    pendingRoots.clear()
+    try {
+      // A huge batch (first paint, tab switch) is cheaper as one body pass
+      if (roots.length > 40) { applyKidIcons(document.body); return }
+      roots.forEach(root => { if (root.isConnected) applyKidIcons(root) })
+    } catch (e) { console.warn('[kidIcons] parse failed:', e) }
   }
 
+  const initial = () => {
+    try { applyKidIcons(document.body) } catch (e) { console.warn('[kidIcons] parse failed:', e) }
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run, { once: true })
+    document.addEventListener('DOMContentLoaded', initial, { once: true })
   } else {
-    run()
+    initial()
   }
 
   _observer = new MutationObserver(mutations => {
-    if (_scheduled) return
-    // Ignore mutation batches that only contain our own <img> insertions
-    const relevant = mutations.some(m =>
-      [...m.addedNodes].some(node =>
-        node.nodeType === 3 ||
-        (node.nodeType === 1 && !node.classList?.contains('kid-icon'))
-      )
-    )
-    if (!relevant) return
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType === 3) {
+          // Ignore text inserted by our own unwrapping step
+          if (node.parentElement && !node.parentElement.classList?.contains('kid-icon')) {
+            pendingRoots.add(node.parentElement)
+          }
+        } else if (node.nodeType === 1 && !node.classList?.contains('kid-icon')) {
+          pendingRoots.add(node)
+        }
+      }
+    }
+    if (!pendingRoots.size || _scheduled) return
     _scheduled = true
-    setTimeout(run, 120)
+    setTimeout(flush, 120)
   })
   _observer.observe(document.body, { childList: true, subtree: true })
 }

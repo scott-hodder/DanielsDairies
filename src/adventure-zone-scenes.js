@@ -30,12 +30,13 @@
 
 // ── Feature flag (cached once per page load) ──────────────────────
 
+import { getSettings } from './services/databaseService.js';
+
 let _flagCache = null;
 
 export async function isSvgScenesEnabled() {
   if (_flagCache !== null) return _flagCache;
   try {
-    const { getSettings } = await import('./services/databaseService.js');
     const settings = await getSettings();
     _flagCache = settings?.feature_flags?.adventure_svg_scenes === true;
   } catch (err) {

@@ -32,7 +32,7 @@ test('landing page shows pricing, plans, and trust content', async ({ page }) =>
 
   // Trust: who's behind it + AI disclosure link
   await expect(page.getByText('Practitioner-led')).toBeVisible()
-  await expect(page.locator('a[href="/how-our-content-is-made.html"]').first()).toBeVisible()
+  await expect(page.getByRole('link', { name: 'See our full content process' })).toBeVisible()
 })
 
 test('content transparency page explains the review process', async ({ page }) => {

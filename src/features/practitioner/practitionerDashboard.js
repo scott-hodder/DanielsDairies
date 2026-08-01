@@ -34,6 +34,7 @@ let selectedGoalTagIds = new Set()
 let familyTiers = null      // family subscription_tiers, for pricing in the NDIS letter
 let letterhead = {}         // practitioner letterhead details, persisted per device
 let activeDoc = 'plan'      // which document is shown in the Support Plan tab
+let progressSummary = null  // this client's progress summary row (practitioner_progress_summaries)
 
 const SUPPORT_EMAIL = 'info@danielsdiaries.com'
 const INACTIVE_DAYS = 14
@@ -339,6 +340,32 @@ async function getClientModuleResponses(childId) {
     .limit(50)
   if (error) throw error
   return data || []
+}
+
+async function getProgressSummary(childId) {
+  const { data, error } = await supabase
+    .from('practitioner_progress_summaries')
+    .select('*')
+    .eq('practitioner_user_id', currentUser.id)
+    .eq('child_id', childId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+async function upsertProgressSummary(childId, fields) {
+  const { data, error } = await supabase
+    .from('practitioner_progress_summaries')
+    .upsert({
+      practitioner_user_id: currentUser.id,
+      child_id: childId,
+      practitioner_name: practitionerProfile?.full_name || null,
+      ...fields
+    }, { onConflict: 'practitioner_user_id,child_id' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
 }
 
 async function getClientNotes(childId) {
@@ -650,13 +677,14 @@ async function openClient(childId) {
 
   // Load all client data in parallel
   try {
-    const [modules, behaviours, notes, weeklyCheckins, moodCheckins, moduleResponses] = await Promise.all([
+    const [modules, behaviours, notes, weeklyCheckins, moodCheckins, moduleResponses, summary] = await Promise.all([
       getClientModules(childId),
       getClientBehaviours(childId),
       getClientNotes(childId),
       getClientWeeklyCheckins(childId).catch(() => []),
       getClientMoodCheckins(childId).catch(() => []),
       getClientModuleResponses(childId).catch(() => []),
+      getProgressSummary(childId).catch(() => null),
       refreshGoalProgress()
     ])
     clientModules = modules
@@ -665,6 +693,7 @@ async function openClient(childId) {
     clientWeeklyCheckins = weeklyCheckins
     clientMoodCheckins = moodCheckins
     clientModuleResponses = moduleResponses
+    progressSummary = summary
 
     renderGoalProgressPanel()
     renderInsights()
@@ -1096,12 +1125,29 @@ function renderGoals() {
   }).join('')
 }
 
+// Split a one-item-per-line field into trimmed, non-empty lines
+function behaviourLines(text) {
+  return (text || '').split('\n').map(l => l.trim()).filter(Boolean)
+}
+
+// Does this behaviour carry any behaviour-plan detail beyond the basics?
+function hasBehaviourDetail(b) {
+  return Object.values(BEHAVIOUR_DETAIL_FIELDS).some(col => b[col])
+}
+
 function renderBehaviours() {
   const el = document.getElementById('behaviourList')
   if (clientBehaviours.length === 0) {
     el.innerHTML = '<p style="font-size:13px;color:#6b7280;">No behaviours recorded yet.</p>'
     return
   }
+
+  const lineList = (label, text) => {
+    const lines = behaviourLines(text)
+    if (lines.length === 0) return ''
+    return `<p class="prac-bx-mini-head">${label}</p><ul class="prac-bx-mini-list">${lines.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>`
+  }
+  const para = (label, text) => text ? `<p class="prac-bx-mini-head">${label}</p><p class="prac-bx-mini-para">${escapeHtml(text)}</p>` : ''
 
   el.innerHTML = clientBehaviours.map(b => `
     <div class="prac-item">
@@ -1112,7 +1158,28 @@ function renderBehaviours() {
         </div>
         <button class="prac-del" data-behaviour-id="${b.id}">Remove</button>
       </div>
-      ${b.baseline ? `<div class="prac-item-tags"><span class="prac-chip prac-chip-amber">Baseline: ${escapeHtml(b.baseline)}</span></div>` : ''}
+      <div class="prac-item-tags">
+        ${b.baseline ? `<span class="prac-chip prac-chip-amber">Baseline: ${escapeHtml(b.baseline)}</span>` : ''}
+        ${b.behaviour_function ? `<span class="prac-chip prac-chip-blue">Function: ${escapeHtml(b.behaviour_function)}</span>` : ''}
+        ${b.review_date ? `<span class="prac-chip prac-chip-blue">Review ${new Date(b.review_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>` : ''}
+      </div>
+      ${hasBehaviourDetail(b) ? `
+        <details class="prac-goal-detail">
+          <summary>Behaviour plan detail</summary>
+          ${para('Operational definition', b.definition)}
+          ${lineList('This looks like', b.looks_like)}
+          ${lineList('This does not include', b.not_included)}
+          ${lineList('Setting events', b.setting_events)}
+          ${lineList('Antecedents / triggers', b.antecedents)}
+          ${para('What typically follows', b.consequences)}
+          ${lineList('What works', b.what_works)}
+          ${lineList('What doesn\'t', b.what_doesnt)}
+          ${lineList('Proactive strategies', b.proactive_strategies)}
+          ${lineList('Response — early signs', b.response_early)}
+          ${lineList('Response — escalation', b.response_escalation)}
+          ${lineList('Response — recovery', b.response_recovery)}
+          ${para('Data source', b.data_source)}
+        </details>` : ''}
     </div>`
   ).join('')
 }
@@ -1154,8 +1221,101 @@ function renderSupportPlan() {
   const completedModules = clientModules.filter(m => m.is_completed)
   const goals = goalsForChild(c.child_id)
 
+  const bxList = (title, text, cls = '') => {
+    const lines = behaviourLines(text)
+    if (lines.length === 0) return ''
+    return `
+      <div class="prac-bx-panel ${cls}">
+        <h5>${title}</h5>
+        <ul>${lines.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+      </div>`
+  }
+  const bxTags = (title, lede, text) => {
+    const lines = behaviourLines(text)
+    if (lines.length === 0) return ''
+    return `
+      <div class="prac-bx-sub">
+        <h5>${title}</h5>
+        <p class="prac-bx-lede">${lede}</p>
+        <div class="prac-bx-tagline">${lines.map(l => `<span class="prac-bx-tag">${escapeHtml(l)}</span>`).join('')}</div>
+      </div>`
+  }
+
+  // A behaviour with plan detail prints as a full behaviour-plan block;
+  // one without falls back to the original single line.
+  const behaviourBlock = (b) => {
+    if (!hasBehaviourDetail(b)) {
+      return `<p class="prac-plan-item">${escapeHtml(b.description)}${b.setting ? ` — <em>${escapeHtml(b.setting)}</em>` : ''}${b.baseline ? ` (baseline: ${escapeHtml(b.baseline)})` : ''}</p>`
+    }
+
+    const definitionCols = (behaviourLines(b.looks_like).length || behaviourLines(b.not_included).length)
+      ? `<div class="prac-bx-cols">${bxList('This looks like', b.looks_like, 'green')}${bxList('This does not include', b.not_included, 'red')}</div>`
+      : ''
+
+    const consequenceHtml = (b.consequences || b.behaviour_function) ? `
+      <div class="prac-bx-sub">
+        <h5>Consequence analysis</h5>
+        ${b.consequences ? `<p class="prac-bx-lede">${escapeHtml(b.consequences)}</p>` : ''}
+        ${b.behaviour_function ? `<p class="prac-bx-lede"><strong>Likely function:</strong> ${escapeHtml(b.behaviour_function)}</p>` : ''}
+      </div>` : ''
+
+    const worksCols = (behaviourLines(b.what_works).length || behaviourLines(b.what_doesnt).length)
+      ? `<div class="prac-bx-sub"><h5>What works and what doesn't</h5>
+         <div class="prac-bx-cols">${bxList('What works', b.what_works, 'green')}${bxList('What doesn\'t', b.what_doesnt, 'red')}</div></div>`
+      : ''
+
+    const proactiveLines = behaviourLines(b.proactive_strategies)
+    const proactiveHtml = proactiveLines.length ? `
+      <div class="prac-bx-sub">
+        <h5>Proactive strategies</h5>
+        <ul class="prac-bx-list">${proactiveLines.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+      </div>` : ''
+
+    const stage = (title, cls, text) => {
+      const lines = behaviourLines(text)
+      if (lines.length === 0) return ''
+      return `
+        <div class="prac-bx-stage ${cls}">
+          <div class="prac-bx-stage-head"><span class="prac-bx-dot"></span><h5>${title}</h5></div>
+          <ul>${lines.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+        </div>`
+    }
+    const stagesHtml = (b.response_early || b.response_escalation || b.response_recovery) ? `
+      <div class="prac-bx-sub">
+        <h5>Response strategies</h5>
+        <div class="prac-bx-stages">
+          ${stage('Early signs', 'calm', b.response_early)}
+          ${stage('Escalation', 'rise', b.response_escalation)}
+          ${stage('Recovery', 'after', b.response_recovery)}
+        </div>
+      </div>` : ''
+
+    const reviewBits = [
+      b.data_source ? `Data source: <strong>${escapeHtml(b.data_source)}</strong>` : null,
+      b.baseline ? `Baseline: <strong>${escapeHtml(b.baseline)}</strong>` : null,
+      b.review_date ? `Next review: <strong>${new Date(b.review_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>` : null
+    ].filter(Boolean)
+
+    return `
+      <div class="prac-bx-block">
+        <div class="prac-bx-banner">
+          <span class="prac-bx-name">${escapeHtml(b.description)}${b.setting ? ` <em>· ${escapeHtml(b.setting)}</em>` : ''}</span>
+          ${b.baseline ? `<span class="prac-bx-baseline">Baseline: ${escapeHtml(b.baseline)}</span>` : ''}
+        </div>
+        ${b.definition ? `<div class="prac-bx-sub"><h5>Operational definition</h5><p class="prac-bx-lede">${escapeHtml(b.definition)}</p></div>` : ''}
+        ${definitionCols}
+        ${bxTags('Setting events', 'Conditions that make an incident more likely on a given day — they lower the threshold rather than trigger the behaviour.', b.setting_events)}
+        ${bxTags('Antecedents / triggers', 'What typically happens immediately before an incident.', b.antecedents)}
+        ${consequenceHtml}
+        ${worksCols}
+        ${proactiveHtml}
+        ${stagesHtml}
+        ${reviewBits.length ? `<div class="prac-bx-review">${reviewBits.map(r => `<span>${r}</span>`).join('')}</div>` : ''}
+      </div>`
+  }
+
   const behaviourHtml = clientBehaviours.length > 0
-    ? clientBehaviours.map(b => `<p class="prac-plan-item">${escapeHtml(b.description)}${b.setting ? ` — <em>${escapeHtml(b.setting)}</em>` : ''}${b.baseline ? ` (baseline: ${escapeHtml(b.baseline)})` : ''}</p>`).join('')
+    ? clientBehaviours.map(behaviourBlock).join('')
     : '<p class="prac-plan-item">None recorded.</p>'
 
   const goalsHtml = goals.length > 0
@@ -1252,7 +1412,7 @@ async function loadLetterhead() {
     letterhead = local // offline / pre-migration fallback
   }
 
-  const fields = { lhRole: 'role', lhBusiness: 'business', lhAbn: 'abn', lhContact: 'contact' }
+  const fields = { lhRole: 'role', lhBusiness: 'business', lhAbn: 'abn', lhNdisId: 'ndisId', lhContact: 'contact' }
   Object.entries(fields).forEach(([id, key]) => {
     const el = document.getElementById(id)
     if (el) el.value = letterhead[key] || ''
@@ -1264,6 +1424,7 @@ function saveLetterhead() {
     role: document.getElementById('lhRole').value.trim(),
     business: document.getElementById('lhBusiness').value.trim(),
     abn: document.getElementById('lhAbn').value.trim(),
+    ndisId: document.getElementById('lhNdisId').value.trim(),
     contact: document.getElementById('lhContact').value.trim()
   }
   try { localStorage.setItem(letterheadKey(), JSON.stringify(letterhead)) } catch { /* private mode */ }
@@ -1275,14 +1436,199 @@ function saveLetterhead() {
   })
 }
 
+// Per-client letter details (diagnosis, functional impact, plan goal…).
+// Device-local: this is sensitive clinical detail the practitioner types for
+// one letter, so it stays on their machine rather than in the app database.
+const LETTER_CLIENT_FIELDS = {
+  lcDiagnosis: 'diagnosis',
+  lcParticipant: 'participant',
+  lcImpact: 'impact',
+  lcPlanGoal: 'planGoal',
+  lcSince: 'since',
+  lcContext: 'context',
+  lcTier: 'tier',
+  lcReview: 'review'
+}
+let letterClient = {}
+
+function letterClientKey() {
+  return `dd_prac_letter_${currentUser?.id || 'anon'}_${selectedClient?.child_id || 'none'}`
+}
+
+function loadLetterClient() {
+  try { letterClient = JSON.parse(localStorage.getItem(letterClientKey()) || '{}') } catch { letterClient = {} }
+  Object.entries(LETTER_CLIENT_FIELDS).forEach(([id, key]) => {
+    const el = document.getElementById(id)
+    if (el) el.value = letterClient[key] || ''
+  })
+}
+
+function saveLetterClient() {
+  letterClient = {}
+  Object.entries(LETTER_CLIENT_FIELDS).forEach(([id, key]) => {
+    const el = document.getElementById(id)
+    if (el) letterClient[key] = el.value.trim()
+  })
+  try { localStorage.setItem(letterClientKey(), JSON.stringify(letterClient)) } catch { /* private mode */ }
+}
+
 function setDoc(name) {
   activeDoc = name
   document.querySelectorAll('.prac-doc-tab').forEach(t => t.classList.toggle('active', t.dataset.doc === name))
   document.getElementById('planDoc').classList.toggle('hidden', name !== 'plan')
   document.getElementById('letterDoc').classList.toggle('hidden', name !== 'letter')
   document.getElementById('letterDetails').classList.toggle('hidden', name !== 'letter')
-  if (name === 'letter') renderLetter()
-  else renderSupportPlan()
+  document.getElementById('summaryDoc').classList.toggle('hidden', name !== 'summary')
+  document.getElementById('summaryDetails').classList.toggle('hidden', name !== 'summary')
+  if (name === 'letter') {
+    loadLetterClient()
+    renderLetter()
+  } else if (name === 'summary') {
+    populateSummaryForm()
+    renderProgressSummaryDoc()
+  } else {
+    renderSupportPlan()
+  }
+}
+
+// ============================================================
+// Render: Progress summary (Family Gold share)
+// ============================================================
+const SUMMARY_FIELDS = {
+  sumPeriod: 'period_label',
+  sumCheckin: 'next_checkin',
+  sumGreen: 'weather_green',
+  sumYellow: 'weather_yellow',
+  sumRed: 'weather_red',
+  sumStory: 'story',
+  sumStronger: 'roads_stronger',
+  sumResting: 'roads_resting',
+  sumNext: 'building_next',
+  sumTryHome: 'try_at_home'
+}
+
+function populateSummaryForm() {
+  Object.entries(SUMMARY_FIELDS).forEach(([id, col]) => {
+    const el = document.getElementById(id)
+    if (el) el.value = progressSummary?.[col] || ''
+  })
+  const shared = document.getElementById('sumShared')
+  if (shared) shared.checked = !!progressSummary?.shared_with_family
+  const state = document.getElementById('sumSaveState')
+  if (state) {
+    state.textContent = progressSummary?.updated_at
+      ? `Last saved ${new Date(progressSummary.updated_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}${progressSummary.shared_with_family ? ' · shared with the family' : ' · not shared yet'}`
+      : 'Not saved yet — it saves automatically as you type.'
+  }
+}
+
+async function saveSummary() {
+  if (!selectedClient) return
+  const fields = {}
+  Object.entries(SUMMARY_FIELDS).forEach(([id, col]) => {
+    fields[col] = document.getElementById(id)?.value.trim() || null
+  })
+  fields.shared_with_family = !!document.getElementById('sumShared')?.checked
+  const state = document.getElementById('sumSaveState')
+  try {
+    progressSummary = await upsertProgressSummary(selectedClient.child_id, fields)
+    if (state) state.textContent = `Saved · ${fields.shared_with_family ? 'shared with the family' : 'not shared yet'}`
+  } catch (err) {
+    console.error('Save summary error:', err)
+    if (state) state.textContent = 'Could not save — check your connection and try again.'
+    showToast('Could not save the progress summary. If this keeps happening, the database may need the latest update.', 'error')
+  }
+}
+
+// Seed → Street → Motorway → City Planner, matching how the program
+// describes skill acquisition. Staying at Seed is still progress.
+function summaryLevel(done, total) {
+  if (!total || done === 0) return '—'
+  const pct = done / total
+  if (pct >= 1) return 'City Planner'
+  if (pct >= 0.7) return 'Motorway'
+  if (pct >= 0.35) return 'Street'
+  return 'Seed'
+}
+
+function renderProgressSummaryDoc() {
+  if (!selectedClient) return
+  const c = selectedClient
+  const childName = escapeHtml((c.child_name || 'Your child').split(/\s+/)[0])
+  const today = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+  const s = progressSummary || {}
+
+  const skillRows = superSkills.map(sk => {
+    const assigned = clientModules.filter(m => m.modules?.super_skill_id === sk.id)
+    const done = assigned.filter(m => m.is_completed).length
+    const pct = assigned.length ? Math.round((done / assigned.length) * 100) : 0
+    return `
+      <div class="prac-sum-row">
+        <span class="prac-sum-skill">${sk.emoji || ''} ${escapeHtml(sk.name)}</span>
+        <div class="prac-progress-track" style="flex:1;"><div class="prac-progress-fill" style="width:${pct}%;background:${sk.theme_color || '#405878'};"></div></div>
+        <span class="prac-sum-count">${done} of ${assigned.length}</span>
+        <span class="prac-sum-level">${summaryLevel(done, assigned.length)}</span>
+      </div>`
+  }).join('')
+
+  const weatherRow = (label, cls, text) => text ? `
+    <div class="prac-sum-weather ${cls}">
+      <span class="prac-sum-weather-dot"></span>
+      <div><strong>${label}</strong><p>${escapeHtml(text)}</p></div>
+    </div>` : ''
+
+  const strongerLines = behaviourLines(s.roads_stronger)
+  const narrative = (title, html) => html ? `<div class="prac-plan-section"><h4>${title}</h4>${html}</div>` : ''
+  const paras = (text) => (text || '').split('\n').map(l => l.trim()).filter(Boolean)
+    .map(l => `<p class="prac-sum-para">${escapeHtml(l)}</p>`).join('')
+
+  document.getElementById('summaryDoc').innerHTML = `
+    <div class="prac-plan-head">
+      <div>
+        <h3>${childName}'s town, right now</h3>
+        <p style="margin:2px 0 0;font-size:13px;color:#6b7280;">Family Gold · From your practitioner${s.period_label ? ` · Covering ${escapeHtml(s.period_label)}` : ''}</p>
+      </div>
+      <div class="prac-plan-meta">
+        Daniel's Diaries Progress Summary<br>
+        ${escapeHtml(practitionerProfile?.full_name || 'Practitioner')}<br>
+        ${today}
+      </div>
+    </div>
+
+    <div class="prac-plan-section">
+      <h4>The Super Skills, at a glance</h4>
+      ${skillRows || '<p class="prac-plan-item">No modules assigned yet.</p>'}
+      <p class="prac-sum-legend">Levels follow how skills are actually acquired: Seed (noticing and naming) → Street (practising on purpose) → Motorway (using it smoothly) → City Planner (owning and teaching it). Staying at Seed for as long as Seed is needed is progress.</p>
+    </div>
+
+    ${(s.weather_green || s.weather_yellow || s.weather_red) ? `
+      <div class="prac-plan-section">
+        <h4>Check-in weather this period</h4>
+        ${weatherRow('Green days', 'green', s.weather_green)}
+        ${weatherRow('Yellow days', 'yellow', s.weather_yellow)}
+        ${weatherRow('Red days', 'red', s.weather_red)}
+        <p class="prac-sum-legend">The colours come from ${childName}'s own daily Traffic Light check-ins. They are self-reports, not scores — and honest reporting, whatever the colour, is itself the skill working.</p>
+      </div>` : ''}
+
+    ${narrative('The story so far', paras(s.story))}
+    ${strongerLines.length ? `
+      <div class="prac-plan-section">
+        <h4>Roads getting stronger</h4>
+        <div class="prac-bx-tagline">${strongerLines.map(l => `<span class="prac-bx-tag">${escapeHtml(l)}</span>`).join('')}</div>
+      </div>` : ''}
+    ${narrative('Roads we\'re resting for now', paras(s.roads_resting))}
+    ${narrative('What we\'re building next', paras(s.building_next))}
+    ${narrative('One thing to try at home', paras(s.try_at_home))}
+
+    <div class="prac-plan-section">
+      <p class="prac-sum-para" style="margin-top:8px;">Warmly,<br><strong>${escapeHtml(practitionerProfile?.full_name || 'Your practitioner')}</strong>${letterhead.role ? ` · ${escapeHtml(letterhead.role)}` : ''}</p>
+      ${s.next_checkin ? `<p class="prac-sum-para">We'll check in again around ${escapeHtml(s.next_checkin)} — and if anything here raises questions before then, you can raise it at our next appointment.</p>` : ''}
+    </div>
+
+    <div class="prac-plan-section app-data">
+      <h4>Practitioner note</h4>
+      <p style="font-size:12px;color:#6b7280;margin:0;">Daniel's Diaries is an educational wellbeing tool, not therapy or clinical treatment. This summary reflects app engagement and practitioner observation, written for the family.</p>
+    </div>`
 }
 
 async function renderLetter() {
@@ -1293,18 +1639,28 @@ async function renderLetter() {
   const today = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
   const pracName = practitionerProfile?.full_name || 'Practitioner'
   const activeGoals = activeGoalsForChild(c.child_id)
+  const lc = letterClient
+  const tierName = lc.tier ? lc.tier.charAt(0).toUpperCase() + lc.tier.slice(1) : ''
 
-  // Live family pricing so the letter never quotes stale numbers
-  let priceLine = 'A family subscription is a low-cost monthly support'
+  // Live family pricing so the letter never quotes stale numbers. If a tier
+  // is selected, quote that tier's price specifically.
+  let priceLine = tierName
+    ? `The ${tierName} subscription is a low-cost monthly support`
+    : 'A family subscription is a low-cost monthly support'
   try {
     const tiers = await getFamilyTiers()
-    const prices = tiers.map(t => t.monthly_price_cents).filter(p => p > 0)
-    if (prices.length > 0) {
-      const min = Math.round(Math.min(...prices) / 100)
-      const max = Math.round(Math.max(...prices) / 100)
-      priceLine = min === max
-        ? `A family subscription costs A$${min} per month`
-        : `A family subscription costs between A$${min} and A$${max} per month, depending on the plan the family selects`
+    const chosen = lc.tier ? tiers.find(t => (t.tier || '').toLowerCase() === lc.tier) : null
+    if (chosen && chosen.monthly_price_cents > 0) {
+      priceLine = `The ${tierName} subscription is billed at A$${Math.round(chosen.monthly_price_cents / 100)} per month`
+    } else {
+      const prices = tiers.map(t => t.monthly_price_cents).filter(p => p > 0)
+      if (prices.length > 0) {
+        const min = Math.round(Math.min(...prices) / 100)
+        const max = Math.round(Math.max(...prices) / 100)
+        priceLine = min === max
+          ? `A family subscription costs A$${min} per month`
+          : `A family subscription costs between A$${min} and A$${max} per month, depending on the plan the family selects`
+      }
     }
   } catch { /* keep generic line */ }
 
@@ -1319,39 +1675,73 @@ async function renderLetter() {
   }).join('')
 
   const goalsBlock = activeGoals.length > 0
-    ? `<p>The program directly supports the goals I am currently working on with ${escapeHtml(childName)}:</p>
+    ? `<p>Within the program, these are the goals I am currently working on with ${escapeHtml(childName)}:</p>
        <ul>${goalItems}</ul>
        <p>Daniel's Diaries lets me see which modules ${escapeHtml(childName)} completes and how they count toward these goals between sessions, making structured home practice part of ${escapeHtml(childName)}'s support.</p>`
-    : `<p>The program provides structured, guided practice in areas such as emotional regulation, flexible thinking, resilience and social skills, and lets me monitor engagement and progress between sessions.</p>
-       <p class="prac-letter-note">Tip: add an active goal for this client to include their specific goals in this letter.</p>`
+    : `<p class="prac-letter-note">Tip: add an active goal for this client to include their specific goals in this letter.</p>`
+
+  // Paragraph 1 — who you are and the context of your involvement
+  const roleIntro = letterhead.role ? `a ${escapeHtml(letterhead.role)}` : 'a practitioner'
+  const involvement = [
+    lc.since ? `since ${escapeHtml(lc.since)}` : null,
+    lc.context ? `in the context of ${escapeHtml(lc.context)}` : null
+  ].filter(Boolean).join(' ')
+  const p1 = `I am ${roleIntro} and I have been working with ${escapeHtml(childName)}${involvement ? ' ' + involvement : ''}.`
+
+  // Paragraph 2 — functional impact of the disability, and the plan goal
+  const impactBits = []
+  if (lc.diagnosis) impactBits.push(`${escapeHtml(childName)} lives with ${escapeHtml(lc.diagnosis)}.`)
+  if (lc.impact) impactBits.push(`In day-to-day terms, this means ${escapeHtml(childName)} finds it hard to ${escapeHtml(lc.impact)}.`)
+  if (lc.planGoal) impactBits.push(`${escapeHtml(childName)}'s current NDIS plan includes the goal of ${escapeHtml(lc.planGoal)}.`)
+  const p2 = impactBits.join(' ')
+  const impactTip = !p2
+    ? `<p class="prac-letter-note">Tip: fill in the diagnosis, functional impact and plan goal above. Plan managers now expect the letter to name the functional impact — not just the diagnosis — and tie it to a goal that is actually in the plan.</p>`
+    : ''
+
+  // Paragraph 3 — the recommendation and why this program addresses the impact
+  const p3 = `To support ${lc.planGoal ? 'this goal' : escapeHtml(childName)}, I recommend a ${tierName ? `<strong>${escapeHtml(tierName)}</strong> ` : ''}subscription to
+    <strong>Daniel's Diaries</strong> — a structured, evidence-informed psychoeducation program that teaches
+    children emotional regulation, resilience and social understanding through guided weekly modules completed
+    with adult support. The program gives ${escapeHtml(childName)} structured weekly practice in the skills described above,
+    complements the supports already in place and extends practice between sessions; it does not replace clinical services.`
+
+  // Paragraph 4 — value for money and review period
+  const reviewSentence = lc.review
+    ? ` I suggest an initial period of ${escapeHtml(lc.review)}, after which I will review ${escapeHtml(childName)}'s progress and advise whether continuing is warranted.`
+    : ''
+  const p4 = `${priceLine}, which represents strong value for money against the cost of additional
+    clinician-delivered sessions targeting the same skills.${reviewSentence}`
 
   const headerBits = [
     letterhead.business ? escapeHtml(letterhead.business) : null,
     escapeHtml(pracName) + (letterhead.role ? `, ${escapeHtml(letterhead.role)}` : ''),
     letterhead.abn ? `ABN ${escapeHtml(letterhead.abn)}` : null,
+    letterhead.ndisId ? `NDIS practitioner ID ${escapeHtml(letterhead.ndisId)}` : null,
     letterhead.contact ? escapeHtml(letterhead.contact) : null
   ].filter(Boolean).join('<br>')
+
+  const reLine = `Re: ${escapeHtml(c.child_name || childName)}${lc.participant ? ` — NDIS participant ${escapeHtml(lc.participant)}` : ''}`
 
   el.innerHTML = `
     <div class="prac-plan-head">
       <div>
         <h3>Recommendation — Daniel's Diaries</h3>
-        <p style="margin:2px 0 0;font-size:13px;color:#6b7280;">Re: ${escapeHtml(childName)}</p>
+        <p style="margin:2px 0 0;font-size:13px;color:#6b7280;">${reLine}</p>
       </div>
       <div class="prac-plan-meta">${headerBits}<br>${today}</div>
     </div>
 
     <div class="prac-plan-section prac-letter-body">
       <p>To whom it may concern,</p>
-      <p>
-        I am currently supporting ${escapeHtml(childName)} and, as part of this work, I recommend the family use
-        <strong>Daniel's Diaries</strong> — a structured, evidence-informed psychoeducational program in which
-        children build skills through guided interactive modules.
-      </p>
+      <p>${p1}</p>
+      ${p2 ? `<p>${p2}</p>` : ''}
+      ${impactTip}
+      <p>${p3}</p>
       ${goalsBlock}
+      <p>${p4}</p>
       <p>
-        ${priceLine}. In my professional opinion this is a low-cost support that will assist
-        ${escapeHtml(childName)} to work toward the goals above. Families who self-manage or plan-manage their
+        This recommendation is provided as my professional opinion for consideration against
+        ${escapeHtml(childName)}'s plan, goals and available budget. Families who self-manage or plan-manage their
         NDIS funding commonly purchase low-cost supports of this kind; the family's plan manager can confirm
         claimability under their individual plan.
       </p>
@@ -1533,28 +1923,48 @@ async function renderInviteList() {
 // ============================================================
 // Render: Resources
 // ============================================================
-const RESOURCE_TOPICS = [
-  { title: 'NDIS Plans & Daniel\'s Diaries', desc: 'How families typically fund the program, and how to use the recommendation letter with plan managers.', tag: 'Funding', color: '#405878', href: '/ndis-funding.html' },
-  { title: 'Understanding Emotions', desc: 'Help children build a vocabulary for their feelings and recognise body cues.', tag: 'Emotional Awareness', color: '#f46b6b' },
-  { title: 'Building Resilience', desc: 'Tools and activities for developing coping strategies and bounce-back skills.', tag: 'Resilience', color: '#f4a73b' },
-  { title: 'Social Skills & Friendships', desc: 'Navigating peer relationships, conflict resolution, and teamwork.', tag: 'Social Skills', color: '#4caf50' },
-  { title: 'Managing Anxiety', desc: 'Practical strategies for when worries feel too big, including breathing and grounding.', tag: 'Anxiety', color: '#35a4d4' },
-  { title: 'Self-Awareness', desc: 'Understanding how your brain works and recognising patterns in thinking.', tag: 'Self-Awareness', color: '#ab47bc' },
-  { title: 'Behaviour & Choices', desc: 'The connection between feelings, thoughts and actions, and making good choices.', tag: 'Behaviour', color: '#40916c' }
+// Featured resources sit above the grid: Meet Your Brain Town underpins the
+// whole program and the Super Skills Map shows how the skills link together,
+// so practitioners are pointed at those two before anything else.
+const FEATURED_RESOURCES = [
+  { title: 'Meet Your Brain Town', desc: 'The key resource that underpins the whole Daniel\'s Diaries program — the Brain Town model, the crew, and the language children learn to use about their own minds.', tag: 'Read this first', color: '#405878', href: '/resources/meet-your-brain-town.pdf', kind: 'PDF workbook' },
+  { title: 'Super Skills Map', desc: 'How all the Super Skills link together — the roadmap that connects every module and workbook below into one program.', tag: 'Read this first', color: '#2f9c8d', href: '/resources/super-skills-map.html', kind: 'Guide' }
 ]
 
-function renderResources() {
-  document.getElementById('resourceGrid').innerHTML = RESOURCE_TOPICS.map(r => {
-    const card = `
-      <div class="prac-guide">
-        <div class="prac-guide-band" style="background:linear-gradient(135deg,${r.color},${r.color}cc);">${r.title}</div>
-        <div class="prac-guide-body">
-          <p>${r.desc}</p>
-          <span class="prac-guide-tag">${r.tag}</span>
+const RESOURCE_TOPICS = [
+  { title: 'Practitioner Guide to the Super Skills Roadmap', desc: 'Written for Practitioner Hub accounts: how to use the Super Skills sequence in your clinical work, session by session.', tag: 'Practitioner', color: '#22364e', href: '/resources/practitioner-guide-super-skills.html', kind: 'Guide' },
+  { title: 'Practitioner Companion — The Decoder', desc: 'The practitioner version of the Parent\'s Decoder: the brain story behind what kids say, and how to work with it in session.', tag: 'Practitioner', color: '#22364e', href: '/resources/practitioner-companion.pdf', kind: 'PDF guide' },
+  { title: 'The Parent\'s Decoder', desc: 'Five things kids say and what they actually mean — share with families alongside the "Does This Sound Like Me?" conversation.', tag: 'For families', color: '#8a6d00', href: '/resources/parents-decoder.pdf', kind: 'PDF guide' },
+  { title: 'Traffic Light Check-In — Parent Guide', desc: 'The daily thirty-second check-in: fridge card, the brain story behind each colour, and what to say back. Pairs with the What\'s My Road Today worksheet.', tag: 'For families', color: '#8a6d00', href: '/resources/traffic-light-parent-guide.pdf', kind: 'PDF guide' },
+  { title: 'Understanding Emotions', desc: 'The Emotion Navigator — help children build a vocabulary for their feelings and recognise body cues.', tag: 'Emotional Awareness', color: '#f46b6b', href: '/resources/understanding-emotions.html', kind: 'Explainer workbook' },
+  { title: 'Building Resilience', desc: 'Tools and activities for developing coping strategies and bounce-back skills.', tag: 'Resilience', color: '#f4a73b', href: '/resources/building-resilience.pdf', kind: 'PDF workbook' },
+  { title: 'Social Skills & Friendships', desc: 'Navigating peer relationships, conflict resolution, and teamwork.', tag: 'Social Skills', color: '#4caf50', href: '/resources/social-skills-friendships.pdf', kind: 'PDF workbook' },
+  { title: 'Managing Anxiety', desc: 'Practical strategies for when worries feel too big, including breathing and grounding.', tag: 'Anxiety', color: '#35a4d4', href: '/resources/managing-anxiety.html', kind: 'Explainer workbook' },
+  { title: 'Self-Awareness', desc: 'Understanding how your brain works and recognising patterns in thinking.', tag: 'Self-Awareness', color: '#ab47bc', href: '/resources/self-awareness.html', kind: 'Explainer workbook' },
+  { title: 'Behaviour & Choices', desc: 'The connection between feelings, thoughts and actions, and making good choices.', tag: 'Behaviour', color: '#40916c', href: '/resources/behaviour-and-choices.pdf', kind: 'PDF workbook' },
+  { title: 'NDIS Plans & Daniel\'s Diaries', desc: 'Where the subscription fits in a plan, what plan managers look for in 2026, and how to make a claim as clean as possible.', tag: 'Funding', color: '#405878', href: '/resources/ndis-plans-and-daniels-diaries.html', kind: 'Guide' },
+  { title: 'NDIS Recommendation Letter — Template', desc: 'The one-page letter template that makes the reasonable-and-necessary link. A pre-filled version is also generated in each client\'s Support Plan tab.', tag: 'Funding', color: '#8a6d00', href: '/resources/ndis-recommendation-letter-template.html', kind: 'Template' }
+]
+
+function resourceCard(r, featured = false) {
+  const card = `
+    <div class="prac-guide ${featured ? 'prac-guide-featured' : ''}">
+      <div class="prac-guide-band" style="background:linear-gradient(135deg,${r.color},${r.color}cc);">${r.title}</div>
+      <div class="prac-guide-body">
+        <p>${r.desc}</p>
+        <div class="prac-guide-foot">
+          <span class="prac-guide-tag ${featured ? 'prac-guide-tag-featured' : ''}">${r.tag}</span>
+          <span class="prac-guide-kind">${r.kind} · opens in new tab</span>
         </div>
-      </div>`
-    return r.href ? `<a href="${r.href}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">${card}</a>` : card
-  }).join('')
+      </div>
+    </div>`
+  return `<a href="${r.href}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">${card}</a>`
+}
+
+function renderResources() {
+  const featuredEl = document.getElementById('resourceFeatured')
+  if (featuredEl) featuredEl.innerHTML = FEATURED_RESOURCES.map(r => resourceCard(r, true)).join('')
+  document.getElementById('resourceGrid').innerHTML = RESOURCE_TOPICS.map(r => resourceCard(r)).join('')
 }
 
 // ============================================================
@@ -1695,7 +2105,7 @@ function setupEventListeners() {
 
   // Letterhead details: persist and refresh the letter as they type
   let letterheadTimeout = null
-  ;['lhRole', 'lhBusiness', 'lhAbn', 'lhContact'].forEach(id => {
+  ;['lhRole', 'lhBusiness', 'lhAbn', 'lhNdisId', 'lhContact'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', () => {
       clearTimeout(letterheadTimeout)
       letterheadTimeout = setTimeout(() => {
@@ -1703,6 +2113,45 @@ function setupEventListeners() {
         if (activeDoc === 'letter') renderLetter()
       }, 300)
     })
+  })
+
+  // Per-client letter details: persist per child and refresh the letter
+  let letterClientTimeout = null
+  Object.keys(LETTER_CLIENT_FIELDS).forEach(id => {
+    const el = document.getElementById(id)
+    if (!el) return
+    const handler = () => {
+      clearTimeout(letterClientTimeout)
+      letterClientTimeout = setTimeout(() => {
+        saveLetterClient()
+        if (activeDoc === 'letter') renderLetter()
+      }, 300)
+    }
+    el.addEventListener('input', handler)
+    el.addEventListener('change', handler)
+  })
+
+  // Progress summary: auto-save as they type, refresh the document live
+  let summaryTimeout = null
+  Object.keys(SUMMARY_FIELDS).forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      clearTimeout(summaryTimeout)
+      const state = document.getElementById('sumSaveState')
+      if (state) state.textContent = 'Saving…'
+      summaryTimeout = setTimeout(async () => {
+        await saveSummary()
+        if (activeDoc === 'summary') renderProgressSummaryDoc()
+      }, 600)
+    })
+  })
+  document.getElementById('sumShared')?.addEventListener('change', async () => {
+    clearTimeout(summaryTimeout)
+    await saveSummary()
+    if (progressSummary) {
+      showToast(progressSummary.shared_with_family
+        ? 'Progress summary shared — the family will see it on their Family Gold dashboard.'
+        : 'Progress summary is no longer shared with the family.', 'success')
+    }
   })
 
   // Delegated clicks: deletes, goal status, invites, plan link
@@ -1875,25 +2324,67 @@ async function handleRemoveClient() {
   }
 }
 
+const BEHAVIOUR_DETAIL_FIELDS = {
+  bDefinition: 'definition',
+  bLooksLike: 'looks_like',
+  bNotIncluded: 'not_included',
+  bSettingEvents: 'setting_events',
+  bAntecedents: 'antecedents',
+  bConsequences: 'consequences',
+  bFunction: 'behaviour_function',
+  bWhatWorks: 'what_works',
+  bWhatDoesnt: 'what_doesnt',
+  bProactive: 'proactive_strategies',
+  bRespEarly: 'response_early',
+  bRespEscalation: 'response_escalation',
+  bRespRecovery: 'response_recovery',
+  bDataSource: 'data_source',
+  bReviewDate: 'review_date'
+}
+
 async function handleAddBehaviour() {
   if (!selectedClient) return
   const desc = document.getElementById('bDesc').value.trim()
   if (!desc) return
 
+  const base = {
+    description: desc,
+    setting: document.getElementById('bSetting').value.trim(),
+    baseline: document.getElementById('bBaseline').value.trim()
+  }
+  // Only send detail columns that were filled in, so the quick-add path
+  // still works on databases without the behaviour-plan migration.
+  const detail = {}
+  Object.entries(BEHAVIOUR_DETAIL_FIELDS).forEach(([id, col]) => {
+    const val = document.getElementById(id)?.value.trim()
+    if (val) detail[col] = val
+  })
+
   try {
-    await addBehaviour(selectedClient.child_id, {
-      description: desc,
-      setting: document.getElementById('bSetting').value.trim(),
-      baseline: document.getElementById('bBaseline').value.trim()
-    })
+    try {
+      await addBehaviour(selectedClient.child_id, { ...base, ...detail })
+    } catch (err) {
+      // Detail columns missing (migration not applied yet) — save the basics.
+      const missingColumn = Object.keys(detail).length > 0 &&
+        (err?.code === 'PGRST204' || err?.code === '42703' || /column/i.test(err?.message || ''))
+      if (!missingColumn) throw err
+      await addBehaviour(selectedClient.child_id, base)
+      showToast('Saved the behaviour, but the plan-detail fields need the latest database update.', 'error')
+    }
     document.getElementById('bDesc').value = ''
     document.getElementById('bSetting').value = ''
     document.getElementById('bBaseline').value = ''
+    Object.keys(BEHAVIOUR_DETAIL_FIELDS).forEach(id => {
+      const el = document.getElementById(id)
+      if (el) el.value = ''
+    })
+    document.getElementById('behaviourDetailForm')?.removeAttribute('open')
     document.getElementById('addBehaviourForm').classList.add('hidden')
     clientBehaviours = await getClientBehaviours(selectedClient.child_id)
     renderBehaviours()
   } catch (err) {
     console.error('Add behaviour error:', err)
+    showToast(err.message || 'Could not save the behaviour. Please try again.', 'error')
   }
 }
 

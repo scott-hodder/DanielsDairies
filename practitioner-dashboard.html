@@ -10,7 +10,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media=&#39;all&#39;">
 
   <link rel="stylesheet" href="/styles/practitioner.css">
   <style>
@@ -202,6 +202,37 @@
                 <div class="prac-field"><label>Common setting</label><input id="bSetting" placeholder="e.g. Homework, transitions"></div>
                 <div class="prac-field"><label>Baseline (per week)</label><input id="bBaseline" placeholder="e.g. 5 times"></div>
               </div>
+
+              <details class="prac-bx-detail-form" id="behaviourDetailForm">
+                <summary>Behaviour plan detail (optional) — operational definition, triggers, function &amp; strategies</summary>
+                <p class="prac-field-hint" style="margin:8px 0 12px;">Everything you add here flows into the printable Support Plan in the format of a behaviour support plan. For list fields, put one item per line.</p>
+                <div class="prac-field"><label>Operational definition</label><textarea id="bDefinition" rows="2" placeholder="What the behaviour objectively is, e.g. Hits, kicks or throws objects toward another person, usually within 1–2 minutes of a request or transition"></textarea></div>
+                <div class="prac-field-row">
+                  <div class="prac-field"><label>This looks like (one per line)</label><textarea id="bLooksLike" rows="3" placeholder="Hitting or kicking directed at a parent or sibling&#10;Throwing objects toward a person"></textarea></div>
+                  <div class="prac-field"><label>This does not include (one per line)</label><textarea id="bNotIncluded" rows="3" placeholder="Raised voice or verbal refusal on its own&#10;Rough play both children are enjoying"></textarea></div>
+                </div>
+                <div class="prac-field-row">
+                  <div class="prac-field"><label>Setting events (one per line)</label><textarea id="bSettingEvents" rows="3" placeholder="Poor sleep the night before&#10;Difficult day at school"></textarea></div>
+                  <div class="prac-field"><label>Antecedents / triggers (one per line)</label><textarea id="bAntecedents" rows="3" placeholder="Being asked to stop gaming mid-round&#10;Homework demands after 5pm"></textarea></div>
+                </div>
+                <div class="prac-field"><label>What typically follows, and what the child gets or avoids</label><textarea id="bConsequences" rows="2" placeholder="e.g. The request is dropped while everyone de-escalates — avoids the demand"></textarea></div>
+                <div class="prac-field"><label>Likely function</label><input id="bFunction" placeholder="e.g. Escape · Connection · Access · Sensory"></div>
+                <div class="prac-field-row">
+                  <div class="prac-field"><label>What works (one per line)</label><textarea id="bWhatWorks" rows="3" placeholder="Five-minute warning before end of screen time&#10;Offering a choice between two options"></textarea></div>
+                  <div class="prac-field"><label>What doesn't (one per line)</label><textarea id="bWhatDoesnt" rows="3" placeholder="Repeating the instruction louder&#10;Debating fairness while heightened"></textarea></div>
+                </div>
+                <div class="prac-field"><label>Proactive strategies (one per line)</label><textarea id="bProactive" rows="3" placeholder="Environment: visual timer for gaming sessions&#10;Routine: snack + movement break before homework"></textarea></div>
+                <div class="prac-field-row">
+                  <div class="prac-field"><label>Response — early signs (one per line)</label><textarea id="bRespEarly" rows="3" placeholder="Name it lightly, offer the regulation tool&#10;Reduce the demand to one small step"></textarea></div>
+                  <div class="prac-field"><label>Response — escalation (one per line)</label><textarea id="bRespEscalation" rows="3" placeholder="Safety first: give space, move siblings away&#10;Minimal language, no new demands"></textarea></div>
+                </div>
+                <div class="prac-field"><label>Response — recovery (one per line)</label><textarea id="bRespRecovery" rows="2" placeholder="Allow full return to calm before any debrief&#10;Reconnect first, then repair"></textarea></div>
+                <div class="prac-field-row">
+                  <div class="prac-field"><label>Data source</label><input id="bDataSource" placeholder="e.g. Parent report + app self-report"></div>
+                  <div class="prac-field"><label>Next review</label><input id="bReviewDate" type="date"></div>
+                </div>
+              </details>
+
               <button class="prac-btn prac-btn-ghost prac-btn-sm" id="submitBehaviour">Add Behaviour</button>
             </div>
           </div>
@@ -271,22 +302,75 @@
           <div class="prac-doc-switch">
             <button class="prac-doc-tab active" data-doc="plan">Support plan</button>
             <button class="prac-doc-tab" data-doc="letter">NDIS recommendation letter</button>
+            <button class="prac-doc-tab" data-doc="summary">Progress summary</button>
           </div>
 
           <div id="letterDetails" class="prac-letter-details hidden">
-            <p class="prac-letter-details-head">Your letterhead details <span>(saved on this device, optional)</span></p>
+            <p class="prac-letter-details-head">Your letterhead details <span>(saved to your account, optional)</span></p>
             <div class="prac-field-row">
               <div class="prac-field"><label>Role / credentials</label><input id="lhRole" placeholder="e.g. Behaviour Support Practitioner, BPsySc"></div>
               <div class="prac-field"><label>Practice / business name</label><input id="lhBusiness" placeholder="e.g. Bright Steps Allied Health"></div>
             </div>
             <div class="prac-field-row">
               <div class="prac-field"><label>ABN</label><input id="lhAbn" placeholder="e.g. 12 345 678 901"></div>
+              <div class="prac-field"><label>NDIS practitioner ID (if applicable)</label><input id="lhNdisId" placeholder="Optional"></div>
+            </div>
+            <div class="prac-field-row">
               <div class="prac-field"><label>Contact phone / email</label><input id="lhContact" placeholder="Shown under your signature"></div>
             </div>
+
+            <p class="prac-letter-details-head" style="margin-top:6px;">About this client <span>(saved on this device — strengthens the reasonable-and-necessary link plan managers now look for)</span></p>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>Disability / diagnosis</label><input id="lcDiagnosis" placeholder="e.g. autism (level 2)"></div>
+              <div class="prac-field"><label>NDIS participant number</label><input id="lcParticipant" placeholder="Optional"></div>
+            </div>
+            <div class="prac-field"><label>Functional impact — what they find hard day to day</label><input id="lcImpact" placeholder="e.g. recognising and naming emotions before they escalate, recovering after setbacks"></div>
+            <div class="prac-field"><label>NDIS plan goal (quote or closely paraphrase)</label><input id="lcPlanGoal" placeholder="e.g. build skills to manage emotions and get along with peers"></div>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>Supporting them since</label><input id="lcSince" placeholder="e.g. March 2026"></div>
+              <div class="prac-field"><label>Context of your involvement</label><input id="lcContext" placeholder="e.g. behaviour support under their current plan"></div>
+            </div>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>Recommended tier</label>
+                <select id="lcTier">
+                  <option value="">Not specified</option>
+                  <option value="bronze">Bronze</option>
+                  <option value="silver">Silver</option>
+                  <option value="gold">Gold</option>
+                </select>
+              </div>
+              <div class="prac-field"><label>Initial period before review</label><input id="lcReview" placeholder="e.g. six months"></div>
+            </div>
+          </div>
+
+          <div id="summaryDetails" class="prac-letter-details hidden">
+            <p class="prac-letter-details-head">Progress summary details <span>(saved to your account — the Super Skills table fills itself from app data)</span></p>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>Period covered</label><input id="sumPeriod" placeholder="e.g. the last six weeks"></div>
+              <div class="prac-field"><label>We'll check in again around</label><input id="sumCheckin" placeholder="e.g. mid-September"></div>
+            </div>
+            <div class="prac-field"><label>Green days</label><input id="sumGreen" placeholder="e.g. Most mornings — regulated, ready, open to a gentle stretch"></div>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>Yellow days</label><input id="sumYellow" placeholder="e.g. Common after school — settled well with quiet and a snack"></div>
+              <div class="prac-field"><label>Red days</label><input id="sumRed" placeholder="e.g. Rare this period — twice, both around disrupted sleep"></div>
+            </div>
+            <div class="prac-field"><label>The story so far</label><textarea id="sumStory" rows="4" placeholder="Plain, warm language a tired parent can read in three minutes. Strengths first, jargon never, no diagnosis."></textarea></div>
+            <div class="prac-field-row">
+              <div class="prac-field"><label>Roads getting stronger (one per line)</label><textarea id="sumStronger" rows="3" placeholder="Naming feelings before they peak&#10;Asking for a break instead of leaving the room"></textarea></div>
+              <div class="prac-field"><label>Roads we're resting for now</label><textarea id="sumResting" rows="3" placeholder="Framed as choosing a different route, never going backwards"></textarea></div>
+            </div>
+            <div class="prac-field"><label>What we're building next</label><textarea id="sumNext" rows="2" placeholder="The next stretch of road, and the language the family will start hearing at home"></textarea></div>
+            <div class="prac-field"><label>One thing to try at home</label><textarea id="sumTryHome" rows="2" placeholder="One small, specific, doable thing — never a program"></textarea></div>
+            <label class="prac-share-row">
+              <input type="checkbox" id="sumShared">
+              <span><strong>Share with the family</strong> — shows in their "Guides from your practitioner" section on the Family Gold dashboard. Untick to unshare.</span>
+            </label>
+            <p id="sumSaveState" class="prac-field-hint" style="margin-top:6px;"></p>
           </div>
 
           <div class="prac-plan-doc" id="planDoc"></div>
           <div class="prac-plan-doc hidden" id="letterDoc"></div>
+          <div class="prac-plan-doc hidden" id="summaryDoc"></div>
         </div>
       </div>
     </div>
@@ -298,6 +382,14 @@
           <h2>Resources</h2>
           <p>Guides and information available to Practitioner Hub accounts.</p>
         </div>
+      </div>
+      <div class="prac-section-head">
+        <h3>Start here</h3>
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin:-6px 0 14px;">These two resources underpin everything else — the Brain Town model the program is built on, and the map of how the Super Skills fit together.</p>
+      <div class="prac-guides-featured" id="resourceFeatured"></div>
+      <div class="prac-section-head" style="margin-top:28px;">
+        <h3>Explainer workbooks &amp; guides</h3>
       </div>
       <div class="prac-guides-grid" id="resourceGrid"></div>
     </div>

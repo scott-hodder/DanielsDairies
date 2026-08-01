@@ -1,5 +1,20 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { resolve } from 'path'
+
+// Every page's critical path starts with Supabase (auth + first queries).
+// Preconnecting overlaps DNS + TLS with script parse instead of paying it
+// on the first request.
+function supabasePreconnectPlugin(env) {
+  let origin = ''
+  try { origin = new URL(env.VITE_SUPABASE_URL).origin } catch (_) { /* no env, skip */ }
+  return {
+    name: 'inject-supabase-preconnect',
+    transformIndexHtml(html) {
+      if (!origin) return html
+      return html.replace('<head>', `<head>\n    <link rel="preconnect" href="${origin}" crossorigin>`)
+    }
+  }
+}
 
 // Vite plugin to inject security meta tags into all HTML pages
 function securityHeadersPlugin() {
@@ -30,8 +45,8 @@ function securityHeadersPlugin() {
   }
 }
 
-export default defineConfig({
-  plugins: [securityHeadersPlugin()],
+export default defineConfig(({ mode }) => ({
+  plugins: [securityHeadersPlugin(), supabasePreconnectPlugin(loadEnv(mode, process.cwd(), 'VITE_'))],
 
   server: {
     port: 3000,
@@ -47,6 +62,27 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
+      output: {
+        // Vite 8 / Rolldown: function-form manualChunks is deprecated and
+        // only partially honoured — the Supabase SDK was silently fused
+        // into the adventure-map chunk and shipped to every page.
+        // advancedChunks groups are matched in order (first match wins).
+        advancedChunks: {
+          groups: [
+            // Includes the app's data-access glue: without capturing it
+            // here, Rolldown parks these shared modules inside whichever
+            // feature chunk imports them first (minigames), dragging that
+            // whole chunk onto the login/landing pages.
+            { name: 'vendor-supabase', test: /node_modules[/\\]@supabase[/\\]|[/\\]src[/\\](supabaseClient\.js|services[/\\]databaseService\.js)$/ },
+            { name: 'vendor-ui', test: /node_modules[/\\](dompurify|@twemoji)[/\\]/ },
+            { name: 'minigames', test: /[/\\]src[/\\]minigames[/\\]/ },
+            { name: 'brain-town-map', test: /[/\\]brainTownSvgMap\.js$/ },
+            { name: 'brain-town-shell', test: /[/\\][^/\\]*brainTown/ },
+            { name: 'adventure-map', test: /[/\\][^/\\]*(adventure-map|adventure-zone)/ },
+            { name: 'learning-systems', test: /[/\\](daily-quest-system|daniel-relationship-system|roadblock-system|progress-tracking-system)\.js$/ }
+          ]
+        }
+      },
       input: {
         main: resolve(__dirname, 'index.html'),
         login: resolve(__dirname, 'login.html'),
@@ -65,10 +101,11 @@ export default defineConfig({
         auth: resolve(__dirname, 'auth.html'),
         schoolsLogin: resolve(__dirname, 'schools-login.html'),
         schoolsDashboard: resolve(__dirname, 'schools-dashboard.html'),
-        practitionerDashboard: resolve(__dirname, 'practitioner-dashboard.html')
+        practitionerDashboard: resolve(__dirname, 'practitioner-dashboard.html'),
+        familyLibrary: resolve(__dirname, 'family-library.html')
       }
     }
   },
 
   publicDir: 'public'
-})
+}))

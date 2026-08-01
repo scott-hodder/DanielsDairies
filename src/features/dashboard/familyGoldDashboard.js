@@ -58,7 +58,7 @@ let _ctx = null
 let _superSkills = null
 let _parentId = null
 // DB-backed hub state, loaded in init and mutated by event handlers.
-let _gold = { time: { days: [], time: '16:00' }, appt: null, tasks: [] }
+let _gold = { time: { days: [], time: '16:00' }, appt: null, tasks: [], summaries: [] }
 
 // ── Public API ────────────────────────────────────────────────────
 
@@ -92,11 +92,25 @@ export async function initFamilyGoldTab(container, ctx) {
   render()
 }
 
+// Progress summaries the practitioner has shared with this family.
+// RLS only returns rows marked shared_with_family for the parent's own child.
+async function getSharedSummaries(childId) {
+  const { data, error } = await getSupabaseClient()
+    .from('practitioner_progress_summaries')
+    .select('*')
+    .eq('child_id', childId)
+    .eq('shared_with_family', true)
+    .order('updated_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
 async function reloadGoldData(childId) {
-  const [settings, appt, tasks] = await Promise.all([
+  const [settings, appt, tasks, summaries] = await Promise.all([
     getGoldSettings(childId).catch(() => null),
     getNextGoldAppointment(childId).catch(() => null),
-    getGoldTasks(childId).catch(() => [])
+    getGoldTasks(childId).catch(() => []),
+    getSharedSummaries(childId).catch(() => [])
   ])
   _gold = {
     time: {
@@ -106,7 +120,8 @@ async function reloadGoldData(childId) {
     appt: appt
       ? { id: appt.id, date: appt.appt_date, time: (appt.appt_time || '15:30').slice(0, 5), type: appt.appt_type }
       : null,
-    tasks: tasks
+    tasks: tasks,
+    summaries: summaries
   }
 }
 
@@ -259,8 +274,19 @@ function render() {
 
       <div class="fg-panel">
         <h3>Guides from your practitioner</h3>
-        <p class="fg-desc">Plain-language guides on how your child's profile shows up day to day, and what helps.</p>
-        <p class="fg-note">Nothing shared yet. Guides your practitioner shares with you will appear here.</p>
+        <p class="fg-desc">Plain-language updates on how ${name}'s journey is going, written for you by your practitioner.</p>
+        ${_gold.summaries.length
+          ? _gold.summaries.map(s => renderSharedSummary(s, name)).join('')
+          : '<p class="fg-note">Nothing shared yet. Progress summaries your practitioner shares with you will appear here.</p>'}
+      </div>
+
+      <div class="fg-launch fg-library">
+        <span class="fg-library-ic">📚</span>
+        <div>
+          <h3>Parent Library</h3>
+          <p>Your Family Gold guides and worksheets — Meet Your Brain Town, the Traffic Light Check-In, the Parent's Decoder and more, all in one place.</p>
+        </div>
+        <a class="fg-btn fg-btn-gold" href="/family-library.html">Open the Library →</a>
       </div>
 
       <div class="fg-launch">
@@ -277,6 +303,47 @@ function render() {
   `
 
   wireEvents(childId, time, appt, tasks)
+}
+
+// ── Shared progress summary card ─────────────────────────────────
+
+function summaryParas(text) {
+  return (text || '').split('\n').map(l => l.trim()).filter(Boolean)
+    .map(l => `<p class="fg-sum-p">${escapeHtml(l)}</p>`).join('')
+}
+
+function renderSharedSummary(s, childName) {
+  const updated = s.updated_at
+    ? new Date(s.updated_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+    : ''
+  const weather = (label, cls, text) => text ? `
+    <div class="fg-sum-weather ${cls}"><span class="fg-sum-dot"></span><div><strong>${label}</strong><p>${escapeHtml(text)}</p></div></div>` : ''
+  const section = (title, html) => html ? `<div class="fg-sum-sec"><h4>${title}</h4>${html}</div>` : ''
+  const strongerChips = (s.roads_stronger || '').split('\n').map(l => l.trim()).filter(Boolean)
+    .map(l => `<span class="fg-sum-chip">${escapeHtml(l)}</span>`).join('')
+
+  return `
+    <div class="fg-summary">
+      <div class="fg-sum-head">
+        <div>
+          <div class="fg-sum-title">${childName}'s town, right now</div>
+          <div class="fg-sum-meta">From ${escapeHtml(s.practitioner_name || 'your practitioner')}${s.period_label ? ` · covering ${escapeHtml(s.period_label)}` : ''}${updated ? ` · updated ${updated}` : ''}</div>
+        </div>
+        <span class="fg-sum-badge">★ Family Gold</span>
+      </div>
+      ${(s.weather_green || s.weather_yellow || s.weather_red) ? `
+        <div class="fg-sum-sec"><h4>Check-in weather</h4>
+          ${weather('Green days', 'green', s.weather_green)}
+          ${weather('Yellow days', 'yellow', s.weather_yellow)}
+          ${weather('Red days', 'red', s.weather_red)}
+        </div>` : ''}
+      ${section('The story so far', summaryParas(s.story))}
+      ${strongerChips ? `<div class="fg-sum-sec"><h4>Roads getting stronger</h4><div class="fg-sum-chips">${strongerChips}</div></div>` : ''}
+      ${section("Roads we're resting for now", summaryParas(s.roads_resting))}
+      ${section("What we're building next", summaryParas(s.building_next))}
+      ${section('One thing to try at home', summaryParas(s.try_at_home))}
+      <div class="fg-sum-sign">Warmly, <strong>${escapeHtml(s.practitioner_name || 'Your practitioner')}</strong>${s.next_checkin ? ` · We'll check in again around ${escapeHtml(s.next_checkin)}` : ''}</div>
+    </div>`
 }
 
 // ── Events ────────────────────────────────────────────────────────
@@ -486,7 +553,27 @@ function injectStyles() {
 .fg-launch-dog{width:64px;height:64px;object-fit:contain}
 .fg-launch h3{margin:0 0 3px;color:#fff;font-size:19px;font-family:'Fredoka',sans-serif}
 .fg-launch p{margin:0;color:#bcd0e6;font-size:13.5px;max-width:480px}
-.fg-launch .fg-btn-gold{margin-left:auto}
+.fg-launch .fg-btn-gold{margin-left:auto;text-decoration:none;display:inline-block}
+.fg-library{background:linear-gradient(135deg,#3d5a80,#2b4562)}
+.fg-library-ic{font-size:44px}
+.fg-summary{border:1px solid #f0dca0;border-radius:16px;background:linear-gradient(180deg,#fffdf6,#fff);padding:18px 20px;margin-bottom:12px}
+.fg-sum-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.fg-sum-title{font-family:'Fredoka',sans-serif;font-weight:600;font-size:17px;color:#16324f}
+.fg-sum-meta{font-size:12px;color:#6b7e95;margin-top:2px}
+.fg-sum-badge{font-family:'Fredoka',sans-serif;font-size:12px;font-weight:500;background:linear-gradient(135deg,#fff6df,#fdeeca);border:1px solid #f0dca0;color:#7a5a00;border-radius:999px;padding:4px 12px;white-space:nowrap}
+.fg-sum-sec{margin-bottom:12px}
+.fg-sum-sec h4{font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#405878;margin:0 0 6px}
+.fg-sum-p{font-size:13.5px;color:#2c3e53;margin:0 0 7px}
+.fg-sum-chips{display:flex;flex-wrap:wrap;gap:8px}
+.fg-sum-chip{background:#eef7f0;border:1px solid #d3e9db;color:#2c6e4f;border-radius:999px;padding:5px 13px;font-size:12.5px;font-weight:600}
+.fg-sum-weather{display:flex;gap:9px;align-items:flex-start;border:1px solid #e5e7eb;border-radius:11px;padding:9px 12px;margin-bottom:7px}
+.fg-sum-weather strong{font-size:12.5px;color:#16324f}
+.fg-sum-weather p{font-size:12.5px;color:#6b7e95;margin:1px 0 0}
+.fg-sum-dot{width:11px;height:11px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.fg-sum-weather.green{background:#eef7f0;border-color:#d3e9db}.fg-sum-weather.green .fg-sum-dot{background:#3d9970}
+.fg-sum-weather.yellow{background:#fdf6e8;border-color:#f0e2bd}.fg-sum-weather.yellow .fg-sum-dot{background:#c99a1e}
+.fg-sum-weather.red{background:#fdf0ee;border-color:#f2ddd8}.fg-sum-weather.red .fg-sum-dot{background:#c96a5a}
+.fg-sum-sign{font-size:13px;color:#405878;border-top:1px solid #f0e6c8;padding-top:10px;margin-top:4px}
 .fg-footer{font-size:12px;color:#6b7e95;text-align:center;margin-top:8px;padding-top:16px;border-top:1px solid #e5e7eb}
 @media(max-width:820px){
   .fg-grid2{grid-template-columns:1fr}

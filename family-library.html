@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parent Library - Daniel's Diaries</title>
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media=&#39;all&#39;">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: #eef1f5;
+      color: #2c3e53;
+      font-size: 15px;
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+    .hidden { display: none !important; }
+
+    .lib-header {
+      background: #16324f;
+      color: #fff;
+      padding: 14px 22px;
+    }
+    .lib-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .lib-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
+    .lib-brand img { width: 40px; height: 40px; object-fit: contain; }
+    .lib-brand h1 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 18px; }
+    .lib-brand p { font-size: 12px; color: #bcd0e6; }
+    .lib-back {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      color: #fff;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 11px;
+      padding: 9px 16px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .lib-main { max-width: 1100px; margin: 0 auto; padding: 26px 22px 60px; }
+
+    .lib-hero {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 26px 28px;
+      box-shadow: 0 2px 10px rgba(8,37,64,.06);
+      margin-bottom: 20px;
+    }
+    .lib-hero h2 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 26px; color: #16324f; margin-bottom: 6px; }
+    .lib-hero > p { color: #6b7e95; max-width: 720px; }
+    .lib-hero-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .lib-chip {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      border-radius: 999px;
+      padding: 6px 14px;
+      background: #f4f7fb;
+      border: 1px solid #e5e7eb;
+      color: #405878;
+    }
+    .lib-chip.gold { background: linear-gradient(135deg,#fff6df,#fdeeca); border-color: #f0dca0; color: #7a5a00; }
+
+    .lib-note {
+      font-size: 13.5px;
+      color: #6b7e95;
+      background: #f4f7fb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    .lib-note strong { color: #405878; }
+
+    .lib-section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 26px 0 14px;
+    }
+    .lib-section-head h3 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 19px; color: #16324f; }
+    .lib-section-head span { font-size: 13px; color: #6b7e95; }
+
+    .lib-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+    .lib-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 10px rgba(8,37,64,.05);
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .lib-card:hover { box-shadow: 0 6px 18px rgba(8,37,64,.12); transform: translateY(-2px); }
+    .lib-card-role {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 500;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
+    .lib-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .lib-card-emoji { font-size: 26px; }
+    .lib-card h4 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 16.5px; color: #16324f; }
+    .lib-card p { font-size: 13px; color: #6b7e95; flex: 1; margin-bottom: 12px; }
+    .lib-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .lib-card-meta { font-size: 11.5px; font-weight: 700; color: #8a97a8; }
+    .lib-card-open {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      color: #16324f;
+      background: #f4f7fb;
+      border: 1px solid #d7deea;
+      border-radius: 999px;
+      padding: 5px 14px;
+    }
+    .lib-card.featured { border: 2px solid #f0dca0; background: linear-gradient(180deg,#fffdf6,#fff); }
+    .lib-card.featured .lib-card-open { background: linear-gradient(135deg,#f2c94c,#e6a800); border-color: #e6a800; color: #16324f; }
+
+    .lib-coming {
+      border: 2px dashed #d7deea;
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #6b7e95;
+      font-size: 13px;
+      background: transparent;
+    }
+    .lib-coming span { font-size: 24px; }
+
+    .lib-footer {
+      font-size: 12px;
+      color: #6b7e95;
+      text-align: center;
+      margin-top: 34px;
+      padding-top: 18px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .lib-gate {
+      max-width: 560px;
+      margin: 60px auto;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 34px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(8,37,64,.06);
+    }
+    .lib-gate h2 { font-family: 'Fredoka', sans-serif; color: #16324f; margin-bottom: 10px; }
+    .lib-gate p { color: #6b7e95; margin-bottom: 18px; }
+    .lib-gate a {
+      display: inline-block;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 600;
+      background: linear-gradient(135deg,#f2c94c,#e6a800);
+      color: #16324f;
+      border-radius: 12px;
+      padding: 11px 22px;
+      text-decoration: none;
+    }
+
+    @media (max-width: 640px) {
+      .lib-hero { padding: 20px; }
+      .lib-main { padding: 18px 14px 50px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="lib-header">
+  <div class="lib-header-inner">
+    <a href="/dashboard.html" class="lib-brand">
+      <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries logo">
+      <div>
+        <h1>Daniel's Diaries</h1>
+        <p>Parent Library · Family Gold</p>
+      </div>
+    </a>
+    <a class="lib-back" href="/dashboard.html">&larr; Back to dashboard</a>
+  </div>
+</header>
+
+<main class="lib-main">
+  <div id="libLoading" style="text-align:center;padding:70px 20px;">
+    <div style="font-family:'Fredoka';font-weight:600;font-size:20px;color:#405878;">Loading your library…</div>
+  </div>
+
+  <div id="libGate" class="lib-gate hidden">
+    <h2>Parent Library is part of Family Gold</h2>
+    <p>The full library of guides and worksheets — written to pair with your child's Daniel's Diaries journey — is included with a Family Gold membership.</p>
+    <a href="/billing.html">See plans</a>
+  </div>
+
+  <div id="libContent" class="hidden">
+    <div class="lib-hero">
+      <h2>Parent Library</h2>
+      <p>Your Daniel's Diaries guides and worksheets, all in one place — built on the same brain-as-a-town language your child is learning. New resources are added regularly.</p>
+      <div class="lib-hero-chips">
+        <span class="lib-chip gold">★ Included with Family Gold</span>
+        <span class="lib-chip">📖 Guides <strong id="libGuideCount"></strong></span>
+        <span class="lib-chip">✂️ Worksheets <strong id="libSheetCount"></strong></span>
+      </div>
+    </div>
+
+    <div class="lib-note"><strong>How to use these:</strong> each guide is a short read for grown-ups — the reframe, the five-minute conversation to have with your child, one small build to do together, and the everyday language that keeps it alive. Start with <strong>Meet Your Brain Town</strong>, then follow your child's need.</div>
+
+    <div class="lib-section-head"><h3>📖 Guides</h3><span>short reads for grown-ups</span></div>
+    <div class="lib-grid" id="libGuides"></div>
+
+    <div class="lib-section-head"><h3>✂️ Worksheets</h3><span>print them and do them together</span></div>
+    <div class="lib-note"><strong>How to use these:</strong> print them, do them together with your child, and keep what you make — the fridge card, the answers, the dates you'll check back in. These are for kids and grown-ups side by side. <strong>Listening only — no fixing.</strong></div>
+    <div class="lib-grid" id="libSheets"></div>
+
+    <p class="lib-footer">Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.</p>
+  </div>
+</main>
+
+<script type="module" src="/src/features/dashboard/familyLibrary.js"></script>
+</body>
+</html>

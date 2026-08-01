@@ -21,9 +21,18 @@ export default defineConfig({
   timeout: 45_000,
   retries: process.env.CI ? 1 : 0,
   reporter: [['list']],
+  webServer: process.env.E2E_BASE_URL ? undefined : {
+    command: 'npm run dev -- --host 127.0.0.1',
+    url: 'http://127.0.0.1:3000/index.html',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+    stdout: 'pipe',
+    stderr: 'pipe'
+  },
   use: {
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
     screenshot: 'only-on-failure',
-    trace: 'retain-on-failure'
+    trace: 'retain-on-failure',
+    browserName: 'chromium'
   }
 })

@@ -1587,22 +1587,30 @@ async function selectChild(child) {
     return
   }
   
-  // Fetch fresh child data to ensure we have latest level/XP values
+  // Everything below only needs child.id, so all four queries leave
+  // together — one round-trip of latency instead of three sequential ones.
+  const freshChildPromise = supabase
+    .from('children')
+    .select('*')
+    .eq('id', child.id)
+    .single()
+  const criticalBatch = Promise.allSettled([
+    getChildModules(child.id),
+    checkFocusPlan(child.id),
+    getChildCredits(child.id),
+    refreshMoodCheckinState(child.id)
+  ])
+
+  // Fresh child data ensures we have latest level/XP values
   try {
-    const { data: freshChild, error } = await supabase
-      .from('children')
-      .select('*')
-      .eq('id', child.id)
-      .single()
-    
-    
+    const { data: freshChild, error } = await freshChildPromise
     if (!error && freshChild) {
       child = freshChild
     }
   } catch (err) {
     console.warn('Could not fetch fresh child data:', err)
   }
-  
+
   setSelectedChild(child)
   setAppState('selectedChild', child)
   rememberSelectedChildId(child.id)
@@ -1629,12 +1637,8 @@ async function selectChild(child) {
   localStorage.setItem(levelKey, String(currentLevel))
   
   try {
-    // CRITICAL PATH - only child modules and focus plan block the UI
-    const [childModulesResult, focusPlanResult, childCreditsResult] = await Promise.allSettled([
-      getChildModules(child.id),
-      checkFocusPlan(child.id),
-      getChildCredits(child.id)
-    ])
+    // CRITICAL PATH - the batch has been in flight since selectChild began
+    const [childModulesResult, focusPlanResult, childCreditsResult] = await criticalBatch
 
     // Process child modules
     if (childModulesResult.status === 'fulfilled') {
@@ -1667,9 +1671,9 @@ async function selectChild(child) {
       window.initDailyQuest(child.id)
     }
 
+    // Mood check-in state already loaded in the critical batch above
     setupDanielMoodCheckin()
-    await refreshMoodCheckinState(child.id)
-    
+
     // ... (rest of the code remains the same)
     
     // DEFERRED - weekly plan, streak, and leaderboard data load in background

@@ -423,24 +423,20 @@ export async function getModules() {
   })
 }
 
-// Get all Super Skills for dropdowns
+// Get all Super Skills for dropdowns.
+// Cached: reference data requested by several dashboard layers per load
+// (map, gold tab, module cards) — one round-trip covers them all.
 export async function getSuperSkills() {
-  console.log('[Database] Fetching Super Skills...');
-  const { data, error } = await getSupabaseClient()
-    .from('super_skills')
-    .select('*')
-    // .eq('is_active', true)  // Temporarily removed - show all skills
-    .order('sort_order', { ascending: true })
-  
-  console.log('[Database] Super Skills query result:', { data, error });
-  
-  if (error) {
-    console.error('[Database] Super Skills query error:', error);
-    throw error
-  }
-  
-  console.log('[Database] Returning Super Skills:', data);
-  return data
+  return withCachedQuery('superSkills:all', 300_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('super_skills')
+      .select('*')
+      // .eq('is_active', true)  // Temporarily removed - show all skills
+      .order('sort_order', { ascending: true })
+
+    if (error) throw error
+    return data
+  })
 }
 
 // Get modules a parent has access to
@@ -755,14 +751,17 @@ export async function getCategoryColors() {
   })
 }
 
-// Get child's module progress
+// Get child's module progress.
+// Metadata columns only on the joined module — modules.html_content is the
+// full generated module body and pulling it here put megabytes on the
+// dashboard's critical path. module.html loads content itself when opened.
 export async function getChildModules(childId) {
   return withCachedQuery(`childModules:${childId}`, 300_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('child_modules')
       .select(`
         *,
-        modules (*)
+        modules (id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, xp_reward, stars_reward, character_name, card_color, is_active, created_at)
       `)
       .eq('child_id', childId)
 

@@ -5711,8 +5711,7 @@ body::after {
 }
 
 /* Emotional color coding for journey titles */
-.adventure-title[data-journey="anger"],
-.adventure-title:has(+ .adventure-subtitle:contains("anger")) {
+.adventure-title[data-journey="anger"] {
     color: #e63946 !important;
 }
 
@@ -7402,7 +7401,7 @@ button:active, .btn:active {
    ADVENTURES TAB — WIDE DESKTOP LAYOUT
    The kid dashboard is a centered app-style column; on big screens the
    adventure journey gets to break out of it (centred on the viewport)
-   and Brain Town friends fill the space either side.
+   while keeping the surrounding space visually clean.
    ======================================== */
 @media (min-width: 1280px) {
     #adventuresTabContent {
@@ -7420,42 +7419,6 @@ button:active, .btn:active {
     #adventuresTabContent .adventure-viewport {
         height: 600px !important;
     }
-
-    /* Daniel building the road on the left… */
-    #adventuresTabContent::before {
-        content: '';
-        position: absolute;
-        top: 300px;
-        left: calc(50% - var(--adv-w) / 2 - 205px);
-        width: 185px;
-        height: 230px;
-        background: url('/images/characters/Daniel_Building.webp') no-repeat center / contain;
-        filter: drop-shadow(0 12px 24px rgba(30, 58, 95, 0.25));
-        animation: advSideBob 3.2s ease-in-out infinite;
-        pointer-events: none;
-        z-index: 1;
-    }
-    /* …and two Brain Town friends cheering from the right */
-    #adventuresTabContent::after {
-        content: '';
-        position: absolute;
-        top: 180px;
-        right: calc(50% - var(--adv-w) / 2 - 215px);
-        width: 195px;
-        height: 460px;
-        background:
-            url('/images/characters/superskill-characters/Coco.png') no-repeat center top / 150px auto,
-            url('/images/characters/superskill-characters/Kip.png') no-repeat center bottom / 130px auto;
-        filter: drop-shadow(0 12px 24px rgba(30, 58, 95, 0.22));
-        animation: advSideBob 3.8s ease-in-out 0.6s infinite;
-        pointer-events: none;
-        z-index: 1;
-    }
-}
-
-@keyframes advSideBob {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-14px); }
 }
 
 /* ========================================

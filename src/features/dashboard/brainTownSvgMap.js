@@ -31,13 +31,22 @@ import { computeSkillStates, getUnlockRequirement } from './superSkillGate.js'
 const W = 2400, H = 1800
 const CX = 1200, CY = 900 // Town Square centre
 
-// Lite mode for touch devices: SVG filters and always-on idle animations
-// force the browser to re-rasterise the whole 2400×1800 map every frame,
-// which makes panning crawl on phones. In lite mode we strip filters and
-// ambient animation.
+// Lite mode: SVG filters and always-on idle animations force the browser
+// to re-rasterise the whole 2400×1800 map every frame, which makes panning
+// crawl on weak hardware. In lite mode the scenery is rasterised once to a
+// bitmap and filters/ambient animation are stripped.
+//
+// Triggers: touch devices, small screens, low-end desktops (few cores /
+// little RAM), or a previous visit where the FPS probe measured the full
+// map running slowly on this machine (persisted flag).
+const LITE_FLAG_KEY = 'dd_bt_lite'
 const LITE_MODE = (() => {
   try {
-    return window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820
+    if (localStorage.getItem(LITE_FLAG_KEY) === '1') return true
+    if (window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820) return true
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) return true
+    if (navigator.deviceMemory && navigator.deviceMemory <= 4) return true
+    return false
   } catch (_) { return false }
 })()
 
@@ -1513,6 +1522,7 @@ function createDaniel(worldEl) {
     route = routeToHub().concat(outbound)
     atSlug = slug
     rIdx = 0; state = 'walking'; img.src = DANIEL_FRAMES[0]
+    startLoop()
   }
 
   function walkHome(cb) {
@@ -1522,37 +1532,51 @@ function createDaniel(worldEl) {
     atSlug = null
     if (route.length === 0) { state = 'idle'; if (cb) cb(); return }
     rIdx = 0; state = 'walking'; img.src = DANIEL_FRAMES[0]
+    startLoop()
+  }
+
+  // The walk loop only runs WHILE walking. When Daniel is standing still
+  // the rAF stops entirely and the bob comes from a compositor-only CSS
+  // animation on the sprite — zero per-frame script/layout work at rest.
+  let rafId = 0
+
+  function setResting(resting) {
+    el.classList.toggle('svg-daniel-rest', resting)
   }
 
   function loop() {
     tick++
-    if (state === 'idle') {
-      const bob = Math.sin(tick * 0.03) * 2
-      el.style.top = (pos.y - 122 + bob) + 'px'
-    }
     if (state === 'walking' && route.length) {
       if (tick % 6 === 0) { fIdx = (fIdx + 1) % DANIEL_FRAMES.length; img.src = DANIEL_FRAMES[fIdx] }
       if (tick % 2 === 0) {
         const prev = rIdx; rIdx++
         if (rIdx >= route.length) {
           state = 'arrived'; img.src = DANIEL_IDLE
+          rafId = 0; setResting(true)
           if (onDone) { onDone(); onDone = null }
-        } else {
-          const pt = route[rIdx], pp = route[prev]
-          place(pt.x, pt.y)
-          const ddx = pt.x - pp.x
-          if (Math.abs(ddx) > 0.5) { const flip = ddx < 0; if (flip !== flipped) { el.style.transform = flip ? 'scaleX(-1)' : ''; flipped = flip } }
+          return
         }
+        const pt = route[rIdx], pp = route[prev]
+        place(pt.x, pt.y)
+        const ddx = pt.x - pp.x
+        if (Math.abs(ddx) > 0.5) { const flip = ddx < 0; if (flip !== flipped) { el.style.transform = flip ? 'scaleX(-1)' : ''; flipped = flip } }
       }
+      rafId = requestAnimationFrame(loop)
+      return
     }
-    if (state === 'arrived') { const bob = Math.sin(tick * 0.04) * 1.5; el.style.top = (pos.y - 122 + bob) + 'px' }
-    requestAnimationFrame(loop)
+    rafId = 0
+    setResting(true)
+  }
+
+  function startLoop() {
+    setResting(false)
+    if (!rafId) rafId = requestAnimationFrame(loop)
   }
 
   place(CX, CY)
-  requestAnimationFrame(loop)
+  setResting(true)
 
-  return { walkToward, walkHome, el }
+  return { walkToward, walkHome, el, startLoop }
 }
 
 /* ─────────────────────────────────────────────
@@ -1724,6 +1748,9 @@ function injectStyles() {
 .bt-bob-slow{animation:btBob 4.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes btFlick{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.25) scaleX(.9)}}
 .bt-flicker{animation:btFlick .7s ease-in-out infinite;transform-box:fill-box;transform-origin:bottom center}
+/* Daniel at rest: compositor-only bob, no per-frame script */
+@keyframes btDanielBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.svg-daniel-rest img{animation:btDanielBob 2.8s ease-in-out infinite}
 /* ── Pins ── */
 .svg-pin{cursor:pointer;transition:transform .2s ease;transform-box:fill-box;transform-origin:center}
 .svg-pin:hover,.svg-pin.hover,.svg-pin:focus-visible{transform:translateY(-5px) scale(1.05)}
@@ -1790,7 +1817,7 @@ function injectStyles() {
    competes with repaints (applies on every device). */
 .bt-svg-vp.grabbing *{animation-play-state:paused!important}
 @media(prefers-reduced-motion:reduce){
-  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps{animation:none!important}
+  .bt-sway,.bt-sway-s,.bt-twinkle,.bt-twinkle-d,.bt-glow,.bt-hub-glow,.bt-spin,.bt-spin-rev,.bt-spin-slow,.bt-scan,.bt-bob,.bt-bob-slow,.bt-flicker,.svg-pin-bob,.svg-pin-ring,.svg-road-glow.active,.bt-svg-ps,.svg-daniel-rest img{animation:none!important}
   .bt-svg-popup{transition:opacity .2s ease}
 }
 `
@@ -1904,6 +1931,52 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
   ctrls.querySelector('#svgZI').addEventListener('click', () => pz.zoomBy(1.25))
   ctrls.querySelector('#svgZO').addEventListener('click', () => pz.zoomBy(0.8))
   ctrls.querySelector('#svgHm').addEventListener('click', pz.home)
+
+  const svgEl = world.querySelector('#brainTownMap')
+
+  if (!LITE_MODE && svgEl) {
+    // While the pointer is down, pause SMIL scenery animation too (CSS
+    // animations are already paused via the .grabbing rule) so panning
+    // never competes with re-rasterisation.
+    vp.addEventListener('pointerdown', () => { try { svgEl.pauseAnimations() } catch (_) {} })
+    const resumeSmil = () => {
+      if (container._btDegraded) return
+      try { svgEl.unpauseAnimations() } catch (_) {}
+    }
+    vp.addEventListener('pointerup', resumeSmil)
+    vp.addEventListener('pointercancel', resumeSmil)
+
+    // One-time FPS probe: hardware that passes the static heuristics can
+    // still be too weak for the fully animated map (old desktop GPUs).
+    // If the measured frame rate is poor, degrade live — strip ambient
+    // animation and filters — and remember the verdict for next time so
+    // the map starts straight on the fast bitmap path.
+    const degrade = () => {
+      container._btDegraded = true
+      vp.classList.add('bt-svg-lite')
+      try { svgEl.pauseAnimations() } catch (_) {}
+      svgEl.querySelectorAll('[filter]').forEach(n => n.removeAttribute('filter'))
+      try { localStorage.setItem(LITE_FLAG_KEY, '1') } catch (_) {}
+    }
+    if (!window._btFpsProbed) {
+      setTimeout(() => {
+        // Only measure a map that is actually visible; otherwise leave the
+        // probe armed for a later init.
+        if (document.hidden || container.dataset.svgMapGen !== gen || !container.offsetParent) return
+        window._btFpsProbed = true
+        let frames = 0
+        const t0 = performance.now()
+        const count = () => {
+          frames++
+          if (performance.now() - t0 < 1500) { requestAnimationFrame(count); return }
+          if (document.hidden || container.dataset.svgMapGen !== gen) return
+          const fps = frames / ((performance.now() - t0) / 1000)
+          if (fps < 42) degrade()
+        }
+        requestAnimationFrame(count)
+      }, 900)
+    }
+  }
 
   // Daniel
   const daniel = createDaniel(world)

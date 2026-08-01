@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media=&#39;all&#39;">
     <link href="/styles/dashboard.css" rel="stylesheet">
     <link href="/src/features/dashboard/brainTownStyles.css" rel="stylesheet">
 
@@ -855,57 +855,19 @@
     <script type="module" src="./src/daniel-relationship-system.js"></script>
     <!-- <script type="module" src="./src/superskills-adventure-map.js"></script> -->
     <script>
-// Initialize daily quest when child is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait for child to be selected
-    const checkChild = setInterval(() => {
-        const child = window.selectedChild;
-        if (child && child.id) {
-            clearInterval(checkChild);
-            if (typeof window.initDailyQuest === 'function') {
-                window.initDailyQuest(child.id);
-            }
-        }
-    }, 500);
-});
-
-// Also re-init when child selection changes
+// Initialize daily quest — event-driven off childSelected (dispatched by
+// dashboardPage), with a one-shot fallback if a child was already selected.
 window.addEventListener('childSelected', (e) => {
     if (e.detail && e.detail.childId && typeof window.initDailyQuest === 'function') {
         window.initDailyQuest(e.detail.childId);
     }
 });
-
-// Initialize Module Gallery
-function initModuleGallery() {
-    if (window.ModuleGallery && window.modules) {
-        const gallery = new window.ModuleGallery('moduleGalleryContainer');
-        gallery.init(
-            window.modules || [],
-            window.parentModules || [],
-            window.childModules || []
-        );
-        window.moduleGallery = gallery;
-    }
-}
-
-// Try to init gallery when data is ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Check periodically for data availability
-    let galleryCheckCount = 0;
-    const galleryCheck = setInterval(() => {
-        galleryCheckCount++;
-        if (window.modules && window.modules.length > 0) {
-            clearInterval(galleryCheck);
-            setTimeout(initModuleGallery, 100);
-        } else if (galleryCheckCount > 50) {
-            clearInterval(galleryCheck);
-        }
-    }, 200);
+    const child = window.selectedChild;
+    if (child && child.id && typeof window.initDailyQuest === 'function') {
+        window.initDailyQuest(child.id);
+    }
 });
-
-// Refresh gallery when modules change
-window.addEventListener('modulesLoaded', initModuleGallery);
 
 // Load progress assessment data for Parent Insights
 async function loadProgressAssessments() {

@@ -21,7 +21,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withCors } from '../_shared/cors.ts';
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdmin } from '../_shared/auth.ts';
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "https://app.danielsdiaries.com.au",
@@ -459,6 +459,9 @@ serve(withCors(async (req) => {
     return jsonResponse({ error: "Use POST" }, 405);
   }
 
+  const auth = await requireAdmin(req);
+  if (auth instanceof Response) return auth;
+
   const ttsProvider = getTtsProvider();
   console.log(`[TTS] ====== generate-narration (${ttsProvider.provider}) called ======`);
   console.log(`[TTS] env REPLICATE_API_TOKEN=${Deno.env.get("REPLICATE_API_TOKEN") ? "SET" : "MISSING"}`);
@@ -472,10 +475,7 @@ serve(withCors(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const supabaseClient = createClient(
-    supabaseUrl,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  );
+  const supabaseClient = auth.admin;
 
   try {
     const body = await req.json().catch(() => ({}));
