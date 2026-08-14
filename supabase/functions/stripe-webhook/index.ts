@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.25.0?target=denonext'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature'
 }
 
@@ -95,6 +95,51 @@ serve(async (req) => {
     }
   })
 
+  // ── Event-level idempotency ──
+  // Stripe retries deliver the same event id. Recording the id before doing
+  // any work means a retried (or concurrently re-delivered) event is acked
+  // without re-processing, so credits/subscription changes never run twice.
+  const { error: eventInsertError } = await supabase
+    .from('stripe_webhook_events')
+    .insert({ event_id: event.id, event_type: event.type })
+
+  if (eventInsertError) {
+    if (eventInsertError.code === '23505') {
+      console.log(`[Webhook] Duplicate event ${event.id} (${event.type}) — already processed, acking.`)
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    // If the idempotency table is unavailable, fail the delivery so Stripe
+    // retries later rather than risking unrecorded processing.
+    console.error('[Webhook] Failed to record event id:', eventInsertError)
+    return new Response(JSON.stringify({ error: 'Event log unavailable' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
+
+  // ── Grant-level idempotency ──
+  // Both checkout.session.completed and invoice.paid can attempt to grant
+  // credits for the same invoice. Each grant is keyed (invoice or session id)
+  // and only executes when its key is newly inserted.
+  async function grantCreditsOnce(grantKey: string, parentId: string, credits: number, source: string): Promise<boolean> {
+    if (credits <= 0) return false
+    const { error: grantError } = await supabase
+      .from('stripe_credit_grants')
+      .insert({ grant_key: grantKey, parent_id: parentId, credits, source })
+    if (grantError) {
+      if (grantError.code === '23505') {
+        console.log(`[Webhook] Credits already granted for ${grantKey} — skipping.`)
+        return false
+      }
+      throw grantError
+    }
+    await addCreditsToFamily(parentId, credits)
+    return true
+  }
+
   async function findParentId(customerId?: string | null, subscriptionId?: string | null) {
     if (subscriptionId) {
       const { data } = await supabase
@@ -171,8 +216,9 @@ serve(async (req) => {
     currentPeriodStart?: number | null
     currentPeriodEnd?: number | null
     cancelAtPeriodEnd?: boolean
+    billingInterval?: 'monthly' | 'annual' | null
   }) {
-    const payload = {
+    const payload: Record<string, unknown> = {
       parent_id: params.parentId,
       tier: normalizeTierCode(params.tier),
       status: mapStripeStatus(params.stripeStatus ?? undefined),
@@ -186,9 +232,38 @@ serve(async (req) => {
       cancel_at_period_end: Boolean(params.cancelAtPeriodEnd),
       updated_at: new Date().toISOString()
     }
+    if (params.billingInterval) payload.billing_interval = params.billingInterval
 
     const { error } = await supabase.from('parent_subscriptions').upsert(payload, { onConflict: 'parent_id' })
-    if (error) throw error
+    if (error) {
+      // billing_interval only exists once the annual-billing migration is
+      // applied — retry without it rather than failing the whole event.
+      if (params.billingInterval && `${error.message}`.includes('billing_interval')) {
+        delete payload.billing_interval
+        const { error: retryError } = await supabase.from('parent_subscriptions').upsert(payload, { onConflict: 'parent_id' })
+        if (retryError) throw retryError
+        return
+      }
+      throw error
+    }
+  }
+
+  // How many months of module credits an invoice covers: a yearly price
+  // covers 12 months at once (credits roll over, so the family gets the
+  // whole year's credits up front).
+  function monthsCoveredByPrice(price: Stripe.Price | null | undefined): number {
+    const interval = price?.recurring?.interval
+    const count = price?.recurring?.interval_count ?? 1
+    if (interval === 'year') return 12 * count
+    if (interval === 'month') return count
+    return 1
+  }
+
+  function billingIntervalFromPrice(price: Stripe.Price | null | undefined): 'monthly' | 'annual' | null {
+    const interval = price?.recurring?.interval
+    if (interval === 'year') return 'annual'
+    if (interval === 'month') return 'monthly'
+    return null
   }
 
   async function grantCreditsFromInvoice(invoice: Stripe.Invoice) {
@@ -261,18 +336,27 @@ serve(async (req) => {
       stripeStatus: subscription.status,
       currentPeriodStart: subscription.current_period_start,
       currentPeriodEnd: subscription.current_period_end,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      billingInterval: billingIntervalFromPrice(price)
     })
 
-    // Grant credits directly to parent_profiles and children
-    await addCreditsToFamily(parentId, tierRow.modules_per_month)
-    console.log(`[Webhook] Granted ${tierRow.modules_per_month} credits to family of ${parentId} (invoice ${invoice.id}, tier ${resolvedTier})`)
+    // Grant credits (idempotent per invoice — safe even if both
+    // checkout.session.completed and invoice.paid fire for this invoice).
+    // An annual invoice covers 12 months, so it grants 12 months of credits
+    // up front (credits roll over while the subscription is active).
+    const monthsCovered = monthsCoveredByPrice(price)
+    const creditsToGrant = tierRow.modules_per_month * monthsCovered
+    const granted = await grantCreditsOnce(`invoice:${invoice.id}`, parentId, creditsToGrant, 'subscription_invoice')
+    if (granted) {
+      console.log(`[Webhook] Granted ${creditsToGrant} credits (${monthsCovered} month(s)) to family of ${parentId} (invoice ${invoice.id}, tier ${resolvedTier})`)
+    }
   }
 
   async function grantSubscriptionExtensionCredits(params: {
     parentId: string
     months: number
     tier?: string | null
+    grantKey: string
   }) {
     const { parentId, months } = params
     if (months <= 0) return
@@ -300,9 +384,93 @@ serve(async (req) => {
     const creditsToGrant = tierRow.modules_per_month * months
     if (creditsToGrant <= 0) return
 
-    // Grant credits directly to parent_profiles and children
-    await addCreditsToFamily(parentId, creditsToGrant)
-    console.log(`Granted ${creditsToGrant} extension credits to family of ${parentId} (${months} months)`)
+    const granted = await grantCreditsOnce(params.grantKey, parentId, creditsToGrant, 'subscription_extension')
+    if (granted) {
+      console.log(`Granted ${creditsToGrant} extension credits to family of ${parentId} (${months} months)`)
+    }
+  }
+
+  // ── Practitioner plan billing ──
+  // Practitioner subscriptions live in practitioner_subscriptions and are
+  // identified by metadata.payment_type === 'practitioner_plan' (or by a
+  // matching stripe_customer_id / stripe_subscription_id).
+  async function activatePractitionerPlan(session: Stripe.Checkout.Session) {
+    const practitionerId = session.metadata?.practitioner_user_id ?? session.client_reference_id
+    const planCode = session.metadata?.plan_code
+    if (!practitionerId || !planCode) {
+      console.error('[Webhook] practitioner_plan session missing metadata', session.id)
+      return
+    }
+
+    const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
+    const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
+
+    // Upgrade path: cancel the plan being replaced once the new one is paid.
+    const previousSubscriptionId = session.metadata?.previous_subscription_id || null
+    if (previousSubscriptionId && previousSubscriptionId !== subscriptionId) {
+      try {
+        await stripe.subscriptions.cancel(previousSubscriptionId)
+      } catch (cancelError) {
+        const message = cancelError instanceof Error ? cancelError.message.toLowerCase() : ''
+        if (!message.includes('no such subscription')) throw cancelError
+      }
+    }
+
+    let periodEnd: string | null = null
+    let status = 'active'
+    if (subscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+      periodEnd = toIsoTimestamp(subscription.current_period_end)
+      status = mapStripeStatus(subscription.status)
+    }
+
+    const { error } = await supabase.from('practitioner_subscriptions').upsert(
+      {
+        practitioner_user_id: practitionerId,
+        plan_code: planCode,
+        status,
+        stripe_customer_id: customerId ?? null,
+        stripe_subscription_id: subscriptionId ?? null,
+        current_period_end: periodEnd,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: 'practitioner_user_id' }
+    )
+    if (error) throw error
+    console.log(`[Webhook] Practitioner plan activated: ${practitionerId} → ${planCode}`)
+  }
+
+  // Keep practitioner subscription status in sync on renewals, payment
+  // failures, and cancellations. Returns true when the subscription
+  // belonged to a practitioner (so parent handling is skipped).
+  async function syncPractitionerSubscription(subscription: Stripe.Subscription): Promise<boolean> {
+    const practitionerId = subscription.metadata?.practitioner_user_id
+    let match: { practitioner_user_id: string } | null = null
+
+    if (practitionerId) {
+      match = { practitioner_user_id: practitionerId }
+    } else {
+      const { data } = await supabase
+        .from('practitioner_subscriptions')
+        .select('practitioner_user_id')
+        .eq('stripe_subscription_id', subscription.id)
+        .maybeSingle()
+      match = data ?? null
+    }
+    if (!match) return false
+
+    const { error } = await supabase
+      .from('practitioner_subscriptions')
+      .update({
+        status: mapStripeStatus(subscription.status),
+        current_period_end: toIsoTimestamp(subscription.current_period_end),
+        stripe_subscription_id: subscription.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('practitioner_user_id', match.practitioner_user_id)
+    if (error) throw error
+    console.log(`[Webhook] Practitioner subscription synced: ${match.practitioner_user_id} → ${subscription.status}`)
+    return true
   }
 
   try {
@@ -311,6 +479,12 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
+
+        if (session.metadata?.payment_type === 'practitioner_plan') {
+          await activatePractitionerPlan(session)
+          break
+        }
+
         const parentId = session.client_reference_id ?? session.metadata?.parent_id ?? null
         if (!parentId) break
 
@@ -376,7 +550,8 @@ serve(async (req) => {
           await grantSubscriptionExtensionCredits({
             parentId,
             months,
-            tier: currentSub?.tier || session.metadata?.tier || 'low'
+            tier: currentSub?.tier || session.metadata?.tier || 'low',
+            grantKey: `session:${session.id}`
           })
 
           console.log(`Subscription extended for ${parentId}: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`)
@@ -387,10 +562,9 @@ serve(async (req) => {
         if (session.mode === 'payment' && paymentType === 'prepaid_credits') {
           const credits = parseInt(session.metadata?.credits || '0')
           if (credits > 0) {
-            // Grant credits directly to parent_profiles and children
             try {
-              await addCreditsToFamily(parentId, credits)
-              console.log(`Granted ${credits} prepaid credits to family of ${parentId}`)
+              const granted = await grantCreditsOnce(`session:${session.id}`, parentId, credits, 'prepaid_credits')
+              if (granted) console.log(`Granted ${credits} prepaid credits to family of ${parentId}`)
             } catch (creditError) {
               console.error('Failed to grant prepaid credits:', creditError)
             }
@@ -427,7 +601,8 @@ serve(async (req) => {
           stripeStatus: subscriptionDetails?.status ?? 'active',
           currentPeriodStart: subscriptionDetails?.current_period_start ?? null,
           currentPeriodEnd: subscriptionDetails?.current_period_end ?? null,
-          cancelAtPeriodEnd: subscriptionDetails?.cancel_at_period_end ?? false
+          cancelAtPeriodEnd: subscriptionDetails?.cancel_at_period_end ?? false,
+          billingInterval: billingIntervalFromPrice(subscriptionPrice)
         })
 
         const sessionInvoiceId = typeof session.invoice === 'string' ? session.invoice : session.invoice?.id
@@ -436,6 +611,42 @@ serve(async (req) => {
           await grantCreditsFromInvoice(invoice)
         }
 
+        // New paid signup: the account was created server-side before
+        // checkout (start-paid-signup). Activate it now.
+        if (paymentType === 'signup') {
+          const signupTier = normalizeTierCode(session.metadata?.plan) ?? resolvedTier
+          if (signupTier) {
+            const { error: profileError } = await supabase
+              .from('parent_profiles')
+              .update({ subscription_tier: signupTier })
+              .eq('id', parentId)
+            if (profileError) console.error('[Webhook] Failed to set profile tier after signup:', profileError)
+          }
+          const { error: pendingError } = await supabase
+            .from('pending_signups')
+            .update({ status: 'completed', updated_at: new Date().toISOString() })
+            .eq('parent_id', parentId)
+          if (pendingError) console.error('[Webhook] Failed to mark pending signup complete:', pendingError)
+          console.log(`[Webhook] Activated signup for ${parentId} (tier ${signupTier})`)
+        }
+
+        break
+      }
+
+      case 'checkout.session.expired': {
+        const session = event.data.object as Stripe.Checkout.Session
+        const parentId = session.client_reference_id ?? session.metadata?.parent_id ?? null
+        if (parentId && session.metadata?.payment_type === 'signup') {
+          // The account stays usable (0 credits, inactive subscription) so the
+          // parent can log in and subscribe from their profile — we only stop
+          // the stale resume token from creating further sessions.
+          await supabase
+            .from('pending_signups')
+            .update({ status: 'expired', updated_at: new Date().toISOString() })
+            .eq('parent_id', parentId)
+            .eq('status', 'awaiting_payment')
+          console.log(`[Webhook] Signup checkout expired for ${parentId}`)
+        }
         break
       }
 
@@ -443,6 +654,10 @@ serve(async (req) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
+
+        // Practitioner subscriptions sync to their own table.
+        if (await syncPractitionerSubscription(subscription)) break
+
         const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id
         const parentId = subscription.metadata?.parent_id ?? (await findParentId(customerId, subscription.id))
         if (!parentId) break
@@ -459,7 +674,8 @@ serve(async (req) => {
           stripeStatus: subscription.status,
           currentPeriodStart: subscription.current_period_start,
           currentPeriodEnd: subscription.current_period_end,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          billingInterval: billingIntervalFromPrice(price)
         })
         break
       }
@@ -502,14 +718,16 @@ serve(async (req) => {
 
         // Send notification email to the parent about the failed payment
         try {
+          // parent_profiles is keyed by id and has no email column — the
+          // email comes from auth, with the Stripe customer as fallback.
           const { data: parentProfile } = await supabase
             .from('parent_profiles')
-            .select('email, first_name')
-            .eq('user_id', parentId)
+            .select('full_name')
+            .eq('id', parentId)
             .maybeSingle()
 
-          // Also try auth user email as fallback
-          let email = parentProfile?.email
+          const { data: authUser } = await supabase.auth.admin.getUserById(parentId)
+          let email = authUser?.user?.email
           if (!email && customerId) {
             const customer = await stripe.customers.retrieve(customerId as string)
             if (customer && !customer.deleted) {
@@ -518,7 +736,7 @@ serve(async (req) => {
           }
 
           if (email) {
-            const firstName = parentProfile?.first_name || 'there'
+            const firstName = (parentProfile?.full_name || '').trim().split(/\s+/)[0] || 'there'
             const isFirstAttempt = attemptCount <= 1
             const subject = isFirstAttempt
               ? "Payment failed — let's get this sorted"
@@ -560,7 +778,8 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('Webhook error:', error)
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', stack: error instanceof Error ? error.stack : null }), {
+    console.error('[stripe-webhook] Unhandled error:', error instanceof Error ? error.stack : error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

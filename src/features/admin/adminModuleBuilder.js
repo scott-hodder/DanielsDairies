@@ -1175,10 +1175,21 @@ function buildAIGenerationLookupContext(params) {
 // ================================================================================
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
+async function adminFunctionHeaders() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Your admin session has expired. Please sign in again.');
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+        "apikey": requireSupabaseEnv().key
+    };
+}
+
 async function startGenerationJob(payload) {
+    const headers = await adminFunctionHeaders();
     const response = await fetch(`${requireSupabaseEnv().url}/functions/v1/generate-module`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${requireSupabaseEnv().key}`, "apikey": requireSupabaseEnv().key },
+        headers,
         body: JSON.stringify({ ...payload, async: true })
     });
     if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP ${response.status}: ${errorText}`); }
@@ -1190,12 +1201,13 @@ async function startGenerationJob(payload) {
 async function pollForJobResult(jobId, maxAttempts = 300) {
     const statusEl = document.getElementById("aiGenerationStatus");
     const pollIntervalMs = 3000;
+    const headers = await adminFunctionHeaders();
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         let response;
         try {
             response = await fetch(`${requireSupabaseEnv().url}/functions/v1/generate-module/status/${jobId}`, {
                 method: "GET",
-                headers: { "Authorization": `Bearer ${requireSupabaseEnv().key}`, "apikey": requireSupabaseEnv().key }
+                headers
             });
         } catch (err) {
             console.warn(`[AI] Polling fetch error (attempt ${attempt}):`, err);

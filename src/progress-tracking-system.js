@@ -2,6 +2,7 @@
 // PROGRESS TRACKING SYSTEM
 // Psychology-Based Assessment & Progress Monitoring
 // ================================================
+import { escapeHtml } from './lib/sanitize.js'
 
 // This system uses validated psychological frameworks to track measurable progress:
 // - SDQ (Strengths and Difficulties Questionnaire) adapted for specific domains

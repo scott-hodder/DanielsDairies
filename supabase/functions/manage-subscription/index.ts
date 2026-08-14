@@ -1,9 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { withCors } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.25.0?target=denonext'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 
@@ -20,7 +21,7 @@ function isAction(value: string): value is Action {
   return value === 'cancel' || value === 'pause' || value === 'resume'
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -152,4 +153,4 @@ serve(async (req) => {
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : 'Unknown error' }, 400)
   }
-})
+}))

@@ -4,15 +4,28 @@
 // ================================================
 
 import { getZoneState } from './adventure-map-zones.js';
+import { getZoneSceneCss, getZoneFillerCss, getZoneGround, isSvgScenesEnabled } from './adventure-zone-scenes.js';
 import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
 // Side-effect import: defines window.roadblockSystem on load.
 import './roadblock-system.js';
 import { isMiniGamesEnabled } from './minigames/index.js';
+// Side-effect import: EnhancedDashboard class, init/bootstrap, window globals
+import './enhanced-dashboard.js';
 
 // Cached once per page load so sync code paths (render) can check it.
 let _miniGamesFlag = null;
 isMiniGamesEnabled().then((v) => { _miniGamesFlag = v; }).catch(() => { _miniGamesFlag = false; });
 function miniGamesActive() { return _miniGamesFlag === true; }
+
+// SVG district scenes flag (Admin Centre → Features). The first render can
+// happen before the flag resolves, so re-apply the background once it does.
+let _svgScenesFlag = null;
+isSvgScenesEnabled().then((v) => {
+  _svgScenesFlag = v;
+  var map = window.enhancedDashboard && window.enhancedDashboard.adventureMap;
+  if (v && map && typeof map.applyZoneBackground === 'function') map.applyZoneBackground();
+}).catch(() => { _svgScenesFlag = false; });
+function svgScenesActive() { return _svgScenesFlag === true; }
 
 // Show the dashboard footer once the map is fully rendered
 function showDashboardFooter() {
@@ -47,253 +60,29 @@ function getDashboardData() {
 }
 
 // ================================================
-// SUPER SKILL THEME CONFIGURATIONS
+// THEME & CONFIG IMPORTS (extracted to adventure-map-themes.js)
 // ================================================
+import {
+  SUPER_SKILL_THEMES, CATEGORY_THEMES, KID_FRIENDLY_COPY,
+  CATEGORY_TO_SUPERSKILL, MAP_ZONE_PROGRESSION, DANIEL_EXPRESSIONS
+} from './adventure-map-themes.js';
+import { injectAdventureMapStyles } from './adventure-map-styles.js';
+import { getSkillGate, getUnlockRequirement } from './features/dashboard/superSkillGate.js';
 
 // Super Skills data loaded from database (will be populated on init)
 let superSkillsFromDB = [];
 let cyclesFromDB = [];
 
-const SUPER_SKILL_THEMES = {
-  all: {
-    name: 'All Adventures',
-    emoji: '🗺️',
-    color: '#405878',
-    description: 'View all your skill adventures',
-    skyGradientStart: ['#B0C4DE', '#A8B8CC', '#9AACBE', '#8CA0B0', '#7E94A2'],
-    skyGradientEnd: ['#87CEEB', '#98D8C8', '#7CCD7C', '#90EE90', '#98FB98'],
-    decorationsStart: ['🌲', '🌳', '🍂', '🍃'],
-    decorationsEnd: ['🌸', '🌻', '🌼', '🦋', '🐦', '🌈'],
-    pathColor: { main: '#A08868', light: '#C4A882', shadow: 'rgba(101, 78, 55, 0.3)' },
-    startMarker: '🏠',
-    endMarker: '🏁',
-    destination: { name: "Adventure's End", emoji: '🏆' },
-    nodeEmojis: { incomplete: '📘', complete: '✨' },
-    danielExpressions: { start: 'focused', middle: 'happy', end: 'proud' }
-  },
-  
-  'brain-builder': {
-    name: 'Brain Builder',
-    emoji: '🧠',
-    color: '#6366F1',
-    description: 'Master your mind through understanding how your brain works',
-    skyGradientStart: ['#778899', '#8899AA', '#99AABB', '#AABBCC', '#BBCCDD'],
-    skyGradientEnd: ['#00CED1', '#48D1CC', '#40E0D0', '#7FFFD4', '#AFEEEE'],
-    decorationsStart: ['💭', '🌫️', '❓', '🤔'],
-    decorationsEnd: ['💡', '⭐', '🌟', '✨', '🎯', '🏆'],
-    pathColor: { main: '#6366F1', light: '#818CF8', shadow: 'rgba(99, 102, 241, 0.3)' },
-    startMarker: '💭',
-    endMarker: '💡',
-    destination: { name: 'Clarity Peak', emoji: '💡' },
-    nodeEmojis: { incomplete: '🤔', complete: '🧠' },
-    danielExpressions: { start: 'curious', middle: 'thinking', end: 'enlightened' }
-  },
-  
-  'thought-driver': {
-    name: 'Thought Driver',
-    emoji: '💭',
-    color: '#8B5CF6',
-    description: 'Take control of your thoughts and steer them positively',
-    skyGradientStart: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2'],
-    skyGradientEnd: ['#E0FFFF', '#B0E0E6', '#ADD8E6', '#87CEEB', '#87CEFA'],
-    decorationsStart: ['💭', '🌀', '❓', '💫'],
-    decorationsEnd: ['💡', '🎯', '⭐', '✨', '🌈', '🦋'],
-    pathColor: { main: '#8B5CF6', light: '#A78BFA', shadow: 'rgba(139, 92, 246, 0.3)' },
-    startMarker: '💭',
-    endMarker: '🎯',
-    destination: { name: 'Focus Point', emoji: '🎯' },
-    nodeEmojis: { incomplete: '🤔', complete: '💡' },
-    danielExpressions: { start: 'confused', middle: 'focused', end: 'clear' }
-  },
-  
-  'emotion-navigator': {
-    name: 'Emotion Navigator',
-    emoji: '🧭',
-    color: '#EC4899',
-    description: 'Navigate through all emotions with confidence',
-    skyGradientStart: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8A2BE2'],
-    skyGradientEnd: ['#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFF0F5', '#FFFAFA'],
-    decorationsStart: ['💭', '❓', '🌀', '💫'],
-    decorationsEnd: ['💖', '😊', '🌈', '✨', '🦋', '🌸'],
-    pathColor: { main: '#EC4899', light: '#F472B6', shadow: 'rgba(236, 72, 153, 0.3)' },
-    startMarker: '🧭',
-    endMarker: '💖',
-    destination: { name: 'Heart Haven', emoji: '💖' },
-    nodeEmojis: { incomplete: '🤔', complete: '😊' },
-    danielExpressions: { start: 'curious', middle: 'understanding', end: 'loving' }
-  },
-  
-  'body-boss': {
-    name: 'Body Boss',
-    emoji: '💪',
-    color: '#10B981',
-    description: 'Understand and control your body signals',
-    skyGradientStart: ['#FF8C00', '#FFA500', '#FFB347', '#FFCC00', '#FFD700'],
-    skyGradientEnd: ['#87CEEB', '#B0E0E6', '#ADD8E6', '#E0FFFF', '#F0FFFF'],
-    decorationsStart: ['⚡', '💨', '🔥', '💪'],
-    decorationsEnd: ['🧘', '🌊', '🍃', '🦋', '🌸', '☀️'],
-    pathColor: { main: '#10B981', light: '#34D399', shadow: 'rgba(16, 185, 129, 0.3)' },
-    startMarker: '⚡',
-    endMarker: '🧘',
-    destination: { name: 'Zen Garden', emoji: '🧘' },
-    nodeEmojis: { incomplete: '😤', complete: '😌' },
-    danielExpressions: { start: 'tense', middle: 'relaxing', end: 'zen' }
-  },
-  
-  'connection-captain': {
-    name: 'Connection Captain',
-    emoji: '🤝',
-    color: '#F59E0B',
-    description: 'Build strong relationships and communicate well',
-    skyGradientStart: ['#90A4AE', '#A5B5BF', '#B0BEC5', '#CFD8DC', '#ECEFF1'],
-    skyGradientEnd: ['#98FB98', '#90EE90', '#7CCD7C', '#66CDAA', '#3CB371'],
-    decorationsStart: ['🏠', '🚪', '🌲'],
-    decorationsEnd: ['👫', '🤝', '❤️', '🎉', '🎊', '🦋', '🌈'],
-    pathColor: { main: '#F59E0B', light: '#FBBF24', shadow: 'rgba(245, 158, 11, 0.3)' },
-    startMarker: '🏠',
-    endMarker: '🎉',
-    destination: { name: 'Friendship Circle', emoji: '🎉' },
-    nodeEmojis: { incomplete: '🙂', complete: '😄' },
-    danielExpressions: { start: 'shy', middle: 'friendly', end: 'celebrating' }
-  },
-  
-  'calm-controller': {
-    name: 'Calm Controller',
-    emoji: '🧘',
-    color: '#06B6D4',
-    description: 'Master techniques to find peace and stay centered',
-    skyGradientStart: ['#4A5568', '#5A6578', '#6B7B8C', '#7C8B9C', '#8D9BAC'],
-    skyGradientEnd: ['#87CEEB', '#FFE4B5', '#FFFACD', '#FFF8DC', '#FFFFF0'],
-    decorationsStart: ['🌧️', '💨', '☁️', '🌫️', '⛈️'],
-    decorationsEnd: ['☀️', '🌈', '🌻', '🦋', '🐦', '🌸'],
-    pathColor: { main: '#06B6D4', light: '#22D3EE', shadow: 'rgba(6, 182, 212, 0.3)' },
-    startMarker: '🌧️',
-    endMarker: '☀️',
-    destination: { name: 'Sunny Clearing', emoji: '🌅' },
-    nodeEmojis: { incomplete: '😰', complete: '😌' },
-    danielExpressions: { start: 'worried', middle: 'hopeful', end: 'peaceful' }
-  },
-  
-  'resilience-ranger': {
-    name: 'Resilience Ranger',
-    emoji: '🏔️',
-    color: '#EF4444',
-    description: 'Bounce back from challenges and grow stronger',
-    skyGradientStart: ['#1a1a2e', '#16213e', '#1f3460', '#2C3E50', '#34495E'],
-    skyGradientEnd: ['#87CEEB', '#FFB347', '#FFCC33', '#FFD700', '#FFF8DC'],
-    decorationsStart: ['🌙', '✨', '🌑', '💫'],
-    decorationsEnd: ['🌻', '🌷', '🌸', '🦋', '🐦', '☀️', '🌈'],
-    pathColor: { main: '#EF4444', light: '#F87171', shadow: 'rgba(239, 68, 68, 0.3)' },
-    startMarker: '🌙',
-    endMarker: '🌻',
-    destination: { name: 'Bright Garden', emoji: '🌻' },
-    nodeEmojis: { incomplete: '😔', complete: '😊' },
-    danielExpressions: { start: 'sad', middle: 'hopeful', end: 'joyful' }
-  }
-};
+// NOTE: SUPER_SKILL_THEMES, CATEGORY_THEMES, KID_FRIENDLY_COPY,
+// CATEGORY_TO_SUPERSKILL, MAP_ZONE_PROGRESSION, DANIEL_EXPRESSIONS
+// are now imported from ./adventure-map-themes.js
 
-// Mapping from old category names to super skill slugs (for backward compatibility)
-const CATEGORY_TO_SUPERSKILL = {
-  'anger': 'emotion-navigator',
-  'anxiety': 'calm-controller', 
-  'depression': 'resilience-ranger',
-  'emotions': 'emotion-navigator',
-  'body': 'body-boss',
-  'cognitive': 'brain-builder',
-  'social': 'connection-captain',
-  'general': 'all'
-};
-
-// For backward compatibility, CATEGORY_THEMES points to SUPER_SKILL_THEMES
-const CATEGORY_THEMES = SUPER_SKILL_THEMES;
-
-// ================================================
-// MAP ZONE PROGRESSION SYSTEM (4-ZONE)
-// ================================================
-// Zones unlock after completing a set number of modules.
-const MAP_ZONE_PROGRESSION = [
-  {
-    range: '1–3',
-    label: 'Zone 1: Foundations',
-    unlocksAfterModules: 0,
-    conceptualPurpose: 'Introduce the journey, establish routines, and build comfort with the map flow.',
-    emotionalShift: 'From uncertainty to cautious curiosity.',
-    progressFeelsLike: 'Small wins, steady practice, and growing confidence with the basics.',
-    roadChanges: 'The road is narrow and slightly uneven, with a basic path line and minimal structure. Edges are soft and forgiving, with no intersections or traffic guidance yet.',
-    townChanges: 'A handful of small, low structures appear at a distance from the road, spaced apart with open gaps. Details are minimal, suggesting a quiet start rather than a fully formed neighborhood.',
-    zoneCompletionTransition: 'Freeze input for a beat as the scene holds. The path line brightens and steadies, smoothing out as it widens slightly. The ground around the road subtly aligns into more orderly edges, signaling that thoughts have formed a stronger route. Interaction resumes once the upgraded path settles.',
-    visualChangesAllowed: 'Subtle increases in clarity and contrast, gentle emphasis on completed modules, and minimal motion cues.'
-  },
-  {
-    range: '4–6',
-    label: 'Zone 2: Momentum',
-    unlocksAfterModules: 3,
-    conceptualPurpose: 'Reinforce skills through repetition and start connecting ideas across modules.',
-    emotionalShift: 'From curiosity to determination.',
-    progressFeelsLike: 'A rhythm of achievement, with progress feeling more consistent and predictable.',
-    roadChanges: 'The road widens and smooths, with clearer borders and a consistent lane-like structure. The first intersections appear, along with simple directional signs.',
-    townChanges: 'More buildings begin to line the road, still simple in form but closer together. A few paths and shared edges hint at connections forming between structures.',
-    zoneCompletionTransition: 'Pause interaction briefly as the road surface tightens and becomes more uniform. Lane structure resolves into crisp lines, and a new intersection fades in, underscoring that thoughts now move along a clearer route. Resume interaction as the new junction locks into place.',
-    visualChangesAllowed: 'Slightly richer color saturation, clearer path highlighting, and more noticeable progress markers.'
-  },
-  {
-    range: '7–9',
-    label: 'Zone 3: Mastery Building',
-    unlocksAfterModules: 6,
-    conceptualPurpose: 'Deepen understanding and encourage independent application of skills.',
-    emotionalShift: 'From determination to self-assurance.',
-    progressFeelsLike: 'Confident strides, with progress feeling earned and meaningful.',
-    roadChanges: 'The road becomes broader and more structured, with well-defined lanes and smoother transitions. Intersections are more frequent, with clearer signage and the first guidance lights.',
-    townChanges: 'Buildings grow taller and denser, with clearer clusters that feel like small blocks. Walkways and shared boundaries make the town feel cohesive rather than scattered.',
-    zoneCompletionTransition: 'Hold input as the road expands to a wider, steadier corridor. Guidance lights pulse on in sequence along the path, and intersections clarify into a clean grid, reinforcing that thoughts now travel with strength and direction. Interaction returns after the lights settle.',
-    visualChangesAllowed: 'Stronger emphasis on completed sections, increased depth through layering, and more prominent milestone cues.'
-  },
-  {
-    range: '10–12',
-    label: 'Zone 4: Celebration',
-    unlocksAfterModules: 9,
-    conceptualPurpose: 'Celebrate growth and reinforce the child’s sense of accomplishment.',
-    emotionalShift: 'From self-assurance to pride.',
-    progressFeelsLike: 'A satisfying finish, with a clear sense of achievement and closure.',
-    roadChanges: 'The road is at its widest and smoothest, fully structured with clear lanes. Intersections are well organized, with prominent signs and steady guidance lights marking the final stretch.',
-    townChanges: 'The town becomes an active center with taller structures, tighter spacing, and connected streets that wrap around the road. The environment feels established and complete, reinforcing a sense of arrival.',
-    zoneCompletionTransition: 'Briefly pause interaction as the path locks into its final, strongest form. The surface polishes to a consistent, confident flow, intersections align with clear guidance, and the full route glows subtly to show thoughts becoming their strongest path. Resume control once the glow fades to steady.',
-    visualChangesAllowed: 'Highest brightness within the palette, enhanced polish on key elements, and celebratory emphasis on completion.'
-  }
-];
-
-// Daniel expression images mapping
-const DANIEL_EXPRESSIONS = {
-  stressed: '/images/characters/DanielTheDog.webp',
-  worried: '/images/characters/DanielTheDog.webp',
-  sad: '/images/characters/DanielTheDog.webp',
-  tense: '/images/characters/DanielTheDog.webp',
-  confused: '/images/characters/DanielTheDog.webp',
-  shy: '/images/characters/DanielTheDog.webp',
-  curious: '/images/characters/DanielTheDog.webp',
-  focused: '/images/characters/DanielTheDog.webp',
-  hopeful: '/images/characters/DanielTheDog.webp',
-  relaxing: '/images/characters/DanielTheDog.webp',
-  thinking: '/images/characters/DanielTheDog.webp',
-  friendly: '/images/characters/DanielTheDog.webp',
-  learning: '/images/characters/DanielTheDog.webp',
-  understanding: '/images/characters/DanielTheDog.webp',
-  happy: '/images/characters/DanielTheDog.webp',
-  calm: '/images/characters/DanielTheDog.webp',
-  peaceful: '/images/characters/DanielTheDog.webp',
-  joyful: '/images/characters/DanielTheDog.webp',
-  loving: '/images/characters/DanielTheDog.webp',
-  zen: '/images/characters/DanielTheDog.webp',
-  enlightened: '/images/characters/DanielTheDog.webp',
-  celebrating: '/images/characters/DanielTheDog.webp',
-  proud: '/images/characters/DanielTheDog.webp'
-};
 
 // ================================================
 // ADVENTURE MAP V4 CLASS
 // ================================================
 
-class AdventureMapV4 {
+export class AdventureMapV4 {
   constructor() {
     this.modules = [];
     this.allModules = [];
@@ -326,11 +115,11 @@ class AdventureMapV4 {
     
     this.config = {
       nodeSize: this.isMobile ? 50 : 72,
-      nodeSpacingY: this.isMobile ? 85 : 140,
-      pathAmplitude: this.isMobile ? 55 : 140,
-      zigzagFrequency: this.isMobile ? 0.8 : 1.2,
-      topPadding: this.isMobile ? 250 : 120,
-      bottomPadding: this.isMobile ? 80 : 160,
+      nodeSpacingY: this.isMobile ? 85 : 130,
+      pathAmplitude: this.isMobile ? 50 : 110,
+      zigzagFrequency: this.isMobile ? 0.8 : 1.0,
+      topPadding: this.isMobile ? 200 : 80,
+      bottomPadding: this.isMobile ? 80 : 120,
       sidePadding: this.isMobile ? 36 : 100,
       minCanvasHeight: this.isMobile ? 400 : 500
     };
@@ -449,244 +238,7 @@ class AdventureMapV4 {
     }
   }
 
-  injectStyles() {
-    if (document.getElementById('adventure-map-v4-styles')) return;
-    
-    var css = [];
-    css.push('.adventure-map-section { background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(245,250,255,0.4) 30%, rgba(240,248,255,0.3) 100%); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 24px; padding: 0; box-shadow: 0 8px 32px rgba(64,88,120,0.08), 0 2px 8px rgba(64,88,120,0.04), inset 0 1px 0 rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5); margin-top: 0; overflow: hidden; position: relative; }');
-    css.push('.adventure-map-header-fixed { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 16px; text-align: center; }');
-    css.push('.adventure-header { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 24px 14px; position: relative; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%); }');
-    css.push('.adventure-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 32px; margin: 0; color: #1E293B; display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; justify-content: center; }');
-    css.push('.adventure-subtitle { margin: 2px 0 0; color: #64748B; font-size: 14px; font-weight: 500; }');
-    css.push('.category-filter-container { display: flex; align-items: center; gap: 10px; margin: 0 20px 10px; padding: 10px 20px; flex-wrap: wrap; justify-content: center; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.6); }');
-    css.push('.category-filter-label { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 600; color: #64748B; }');
-    css.push('.category-filter-select { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 600; padding: 10px 36px 10px 16px; border-radius: 14px; border: 1.5px solid rgba(64,88,120,0.12); background: rgba(255,255,255,0.85); color: #1E293B; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748B\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 180px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }');
-    css.push('.category-filter-select:hover { border-color: rgba(99,102,241,0.35); box-shadow: 0 2px 8px rgba(99,102,241,0.08); }');
-    css.push('.category-filter-select:focus { outline: none; border-color: rgba(99,102,241,0.4); box-shadow: 0 0 0 3px rgba(99,102,241,0.08); }');
-    css.push('.category-badge { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); letter-spacing: 0.2px; }');
-    css.push('.cycle-badge { background: rgba(255,255,255,0.85); color: #405878; border: 1.5px solid rgba(64,88,120,0.1); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }');
-    css.push('.town-progress-cue { margin: 0 20px 12px; border-radius: 18px; border: none; background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(248,250,255,0.5) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 2px 12px rgba(64,88,120,0.06), inset 0 1px 0 rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.55); overflow: hidden; }');
-    css.push('.town-progress-cue-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px 8px; }');
-    css.push('.town-progress-cue-title { font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px; }');
-    css.push('.town-progress-cue-stage { font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; color: #6366F1; background: rgba(99,102,241,0.1); border-radius: 999px; padding: 5px 12px; }');
-    css.push('.town-progress-cue-copy { padding: 0 20px 14px; font-size: 12px; line-height: 1.5; color: #64748B; }');
-    css.push('.town-progress-cue-strong { color: #1E293B; font-weight: 700; }');
-    css.push('.town-progress-cue-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 10px; position: relative; }');
-    css.push('.town-progress-cue-timeline::before { content: ""; position: absolute; top: 24px; left: 12%; right: 12%; height: 4px; background: #E2E8F0; border-radius: 2px; z-index: 0; }');
-    css.push('.town-progress-cue-step { text-align: center; padding: 10px 8px; position: relative; z-index: 1; transition: all 0.3s ease; border-radius: 14px; }');
-    css.push('.town-progress-cue-step-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #F1F5F9; border: 3px solid #E2E8F0; transition: all 0.3s ease; }');
-    css.push('.town-progress-cue-step strong { display: block; font-family: "Fredoka", sans-serif; color: #94A3B8; font-size: 11px; margin-top: 1px; font-weight: 600; }');
-    css.push('.town-progress-cue-step small { font-size: 10px; color: #CBD5E1; font-weight: 500; }');
-    css.push('.town-progress-cue-step.active { background: rgba(99,102,241,0.06); }');
-    css.push('.town-progress-cue-step.active .town-progress-cue-step-dot { background: linear-gradient(135deg, #6366F1, #818CF8); border-color: #6366F1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15), 0 3px 8px rgba(99,102,241,0.25); }');
-    css.push('.town-progress-cue-step.active strong { color: #4338CA; font-weight: 700; }');
-    css.push('.town-progress-cue-step.active small { color: #6366F1; font-weight: 600; }');
-    css.push('.town-progress-cue-step.done .town-progress-cue-step-dot { background: linear-gradient(135deg, #22C55E, #4ADE80); border-color: #22C55E; box-shadow: 0 2px 6px rgba(34,197,94,0.25); }');
-    css.push('.town-progress-cue-step.done strong { color: #16A34A; font-weight: 700; }');
-    css.push('.town-progress-cue-step.done small { color: #22C55E; }');
-    css.push('@media (max-width: 768px) { .town-progress-cue-title { display: none; } .town-progress-cue-copy { display: none; } .town-progress-cue-head { padding: 10px 16px 6px; } .town-progress-cue { margin: 0 12px 10px; } }');
-    css.push('.adventure-viewport { position: relative; width: 100%; height: 500px; border-radius: 0 0 22px 22px; overflow: hidden; cursor: grab; border: none; border-top: 1px solid rgba(64,88,120,0.06); box-shadow: inset 0 0 80px rgba(135,206,235,0.15); user-select: none; -webkit-user-select: none; touch-action: none; background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%); }');
-    css.push('.adventure-viewport[data-zone] { background-color: #e9f2f8; background-position: center; background-size: cover; background-repeat: no-repeat; }');
-    css.push('.adventure-viewport[data-zone="1"] { background-image: url("/images/zones/zone1.png"); }');
-    css.push('.adventure-viewport[data-zone="2"] { background-image: url("/images/zones/zone2.png"); }');
-    css.push('.adventure-viewport[data-zone="3"] { background-image: url("/images/zones/zone3.png"); }');
-    css.push('.adventure-viewport[data-zone="4"] { background-image: url("/images/zones/zone4.png"); }');
-    css.push('.adventure-viewport[data-zone] .map-bg-stack { opacity: 0; }');
-    css.push('.adventure-viewport::after { content: ""; position: absolute; inset: 0; border-radius: 0 0 22px 22px; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), inset 0 -30px 50px rgba(15, 23, 42, 0.06); }');
-    css.push('.adventure-viewport:active, .adventure-viewport.dragging { cursor: grabbing; }');
-    css.push('.map-bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }');
-    css.push('.map-bg-sky { transition: background 0.8s ease; }');
-    css.push('.map-bg-hills { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 1200 200\' preserveAspectRatio=\'none\'%3E%3Cpath d=\'M0,200 Q150,80 300,120 T600,80 T900,110 T1200,70 L1200,200 Z\' fill=\'%2368B868\'/%3E%3Cpath d=\'M0,200 Q200,100 400,130 T800,90 T1200,120 L1200,200 Z\' fill=\'%2358A858\'/%3E%3C/svg%3E"); background-size: 100% 140px; background-repeat: no-repeat; background-position: center 35%; }');
-    css.push('.map-bg-grass { background: linear-gradient(180deg, transparent 0%, transparent 50%, #4CAF50 50%, #43A047 100%); }');
-    css.push('.map-bg-clouds { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 500 120\'%3E%3Cellipse cx=\'70\' cy=\'50\' rx=\'40\' ry=\'24\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'100\' cy=\'42\' rx=\'30\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'50\' cy=\'48\' rx=\'25\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'85\' cy=\'55\' rx=\'28\' ry=\'15\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'350\' cy=\'60\' rx=\'45\' ry=\'26\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'385\' cy=\'52\' rx=\'32\' ry=\'20\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'330\' cy=\'58\' rx=\'28\' ry=\'18\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3Cellipse cx=\'365\' cy=\'65\' rx=\'30\' ry=\'16\' fill=\'white\' fill-opacity=\'0.9\'/%3E%3C/svg%3E"); background-size: 600px 120px; background-repeat: repeat-x; background-position: 0 15px; animation: cloudsDrift 90s linear infinite; }');
-    css.push('@keyframes cloudsDrift { from { background-position-x: 0; } to { background-position-x: 600px; } }');
-    css.push('.map-bg-trees { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 70\'%3E%3Cpath d=\'M10,70 L20,35 L15,40 L25,18 L20,23 L30,0 L40,23 L35,18 L45,40 L40,35 L50,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M55,70 L63,42 L59,46 L67,28 L63,32 L71,14 L79,32 L75,28 L83,46 L79,42 L87,70 Z\' fill=\'%231B5E20\'/%3E%3Cpath d=\'M95,70 L107,32 L101,38 L113,10 L125,38 L119,32 L131,70 Z\' fill=\'%232E7D32\'/%3E%3Cpath d=\'M140,70 L148,45 L144,49 L152,32 L148,36 L156,20 L164,36 L160,32 L168,49 L164,45 L172,70 Z\' fill=\'%231B5E20\'/%3E%3C/svg%3E"); background-size: 250px 90px; background-repeat: repeat-x; background-position: 0 bottom; }');
-    css.push('.adventure-canvas { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; transition: transform 0.05s linear; z-index: 5; }');
-    css.push('.adventure-viewport.dragging .adventure-canvas { transition: none; }');
-    css.push('.map-bg-stack { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }');
-    css.push('.map-bg-layer { z-index: 0; }');
-    css.push('.map-decorations { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }');
-    css.push('.map-decoration { position: absolute; font-size: 26px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)); opacity: 0.85; }');
-    css.push('.map-decoration.animate { animation: decorSway 4s ease-in-out infinite; }');
-    css.push('.map-town { position: absolute; display: flex; align-items: flex-end; gap: 6px; z-index: 2; pointer-events: none; }');
-    css.push('.map-town-item { font-size: 26px; filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.25)); }');
-    css.push('.map-town-label { margin-left: 8px; padding: 4px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.9); color: #1e293b; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18); }');
-    css.push('@keyframes decorSway { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.05); } }');
-    css.push('.adventure-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; }');
-    css.push('.path-shadow { fill: none; stroke-width: 36; stroke-linecap: round; stroke-linejoin: round; }');
-    css.push('.path-main { fill: none; stroke-width: 30; stroke-linecap: round; stroke-linejoin: round; }');
-    css.push('.path-light { fill: none; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }');
-    css.push('.path-dashes { fill: none; stroke: rgba(255,255,255,0.5); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 18; animation: dashMove 1s linear infinite; }');
-    css.push('@keyframes dashMove { to { stroke-dashoffset: -36; } }');
-    css.push('@keyframes roadDashFlow0 { to { stroke-dashoffset: -40; } }');
-    css.push('@keyframes roadDashFlow1 { to { stroke-dashoffset: -56; } }');
-    css.push('@keyframes roadDashFlow2 { to { stroke-dashoffset: -60; } }');
-    css.push('@keyframes roadDashFlow3 { to { stroke-dashoffset: -68; } }');
-    css.push('.road-dash-s0 { animation: roadDashFlow0 3s linear infinite; }');
-    css.push('.road-dash-s1 { animation: roadDashFlow1 2s linear infinite; }');
-    css.push('.road-dash-s2 { animation: roadDashFlow2 1.4s linear infinite; }');
-    css.push('.road-dash-s3 { animation: roadDashFlow3 1s linear infinite; }');
-    css.push('.adventure-nodes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }');
-    css.push('.adventure-node { position: absolute; width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translate(-50%, -50%); transition: transform 0.2s ease, box-shadow 0.2s ease; z-index: 10; overflow: visible; }');
-    css.push('.adventure-node:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 20; }');
-    css.push('.adventure-node .node-emoji { font-size: 28px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2)); }');
-    css.push('.adventure-node.completed { background: linear-gradient(145deg, #4ADE80 0%, #22C55E 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), 0 0 0 4px rgba(34, 197, 94, 0.2); }');
-    css.push('.adventure-node.available { background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 100%); border: 4px solid #fff; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); animation: availablePulse 2s ease-in-out infinite; }');
-    css.push('@keyframes availablePulse { 0%, 100% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25); } 50% { box-shadow: 0 8px 30px rgba(245, 158, 11, 0.7), 0 0 0 8px rgba(245, 158, 11, 0.15); } }');
-    css.push('.adventure-node.locked { background: linear-gradient(145deg, #9CA3AF 0%, #6B7280 100%); border: 4px solid rgba(255,255,255,0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; opacity: 0.8; }');
-    css.push('.adventure-node.locked .node-emoji { filter: grayscale(0.7) drop-shadow(0 2px 3px rgba(0,0,0,0.2)); opacity: 0.6; }');
-    css.push('.node-number { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2px solid rgba(64,88,120,0.15); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #405878; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-family: "Fredoka", sans-serif; }');
-    css.push('.node-badge { position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }');
-    css.push('.node-badge.check { background: linear-gradient(145deg, #10B981 0%, #059669 100%); color: #fff; }');
-    css.push('.node-badge.star { background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 100%); color: #fff; font-size: 14px; }');
-    css.push('.node-category-dot { position: absolute; top: -4px; left: -4px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }');
-    css.push('.node-tooltip { position: absolute; bottom: calc(100% + 14px); left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(30, 41, 59, 0.95); color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 13px; white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.2s ease; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }');
-    css.push('.node-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 8px solid transparent; border-top-color: rgba(30, 41, 59, 0.95); }');
-    css.push('.adventure-node:hover .node-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }');
-    css.push('.tooltip-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }');
-    css.push('.tooltip-category { font-size: 11px; opacity: 0.7; margin-bottom: 4px; }');
-    css.push('.tooltip-status { font-size: 12px; opacity: 0.85; }');
-    css.push('.tooltip-status.ready { color: #FBBF24; }');
-    css.push('.tooltip-status.done { color: #4ADE80; }');
-    css.push('.current-indicator { position: absolute; top: -90px; left: calc(50% + 110px); transform: translateX(-50%); width: 132px; height: 132px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 16px 18px rgba(15, 23, 42, 0.45)); animation: characterBounce 1.2s ease-in-out infinite; z-index: 15; }');
-    css.push('.current-indicator img { width: 100%; height: 100%; object-fit: contain; border-radius: 0; pointer-events: none; }');
-    css.push('.current-indicator-label { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.95); color: #1e3a8a; font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; box-shadow: 0 6px 14px rgba(30, 64, 175, 0.2); white-space: nowrap; }');
-    css.push('.adventure-node.is-current::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.25), 0 12px 24px rgba(30, 64, 175, 0.25); animation: currentRing 2.2s ease-in-out infinite; }');
-    css.push('@keyframes currentRing { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.06); opacity: 0.6; } }');
-    css.push('@keyframes characterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }');
-    css.push('.map-progress { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); border: 1px solid rgba(64,88,120,0.1); font-family: "Fredoka", sans-serif; z-index: 50; }');
-    css.push('.cycle-complete-popup-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.45); display: flex; align-items: center; justify-content: center; z-index: 12000; padding: 16px; animation: fadeInOverlay 0.25s ease; }');
-    css.push('.cycle-complete-popup-wrap { position: relative; width: min(560px, 96vw); }');
-    css.push('.cycle-complete-popup-daniel { position: absolute; top: -112px; left: 50%; transform: translateX(-50%); width: 180px; height: 180px; object-fit: contain; filter: drop-shadow(0 12px 16px rgba(0,0,0,0.28)); pointer-events: none; }');
-    css.push('.cycle-complete-popup { margin-top: 56px; width: 100%; background: linear-gradient(180deg, #ffffff 0%, #fef3c7 100%); border-radius: 20px; border: 2px solid rgba(245, 158, 11, 0.35); box-shadow: 0 16px 38px rgba(15, 23, 42, 0.3); padding: 18px; font-family: "Fredoka", sans-serif; color: #7c5c00; }');
-    css.push('.cycle-complete-popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }');
-    css.push('.cycle-complete-popup-title { font-size: 22px; font-weight: 700; margin: 0; color: #9a6500; }');
-    css.push('.cycle-complete-popup-text { font-size: 14px; color: #8f6a00; margin: 0 0 14px 0; line-height: 1.5; }');
-    css.push('.cycle-complete-popup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }');
-    css.push('.cycle-popup-btn { border: 0; border-radius: 12px; padding: 10px 14px; font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }');
-    css.push('.cycle-popup-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(124, 92, 0, 0.2); }');
-    css.push('.cycle-popup-btn.primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }');
-    css.push('.cycle-popup-btn.secondary { background: #fff; color: #8f6a00; border: 2px solid rgba(245, 158, 11, 0.3); }');
-    css.push('.cycle-complete-popup-selectors { display: none; gap: 8px; flex-wrap: wrap; align-items: center; }');
-    css.push('.cycle-complete-popup-selectors.visible { display: flex; }');
-    css.push('@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }');
-    css.push('.progress-icon { font-size: 20px; }');
-    css.push('.progress-text { font-size: 14px; font-weight: 600; color: #405878; }');
-    css.push('.progress-bar { width: 80px; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }');
-    css.push('.progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }');
-    css.push('.scroll-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(30, 41, 59, 0.85); color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; z-index: 50; animation: hintFade 3s ease-in-out infinite; }');
-    css.push('@keyframes hintFade { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.6; } }');
-    css.push('.scroll-hint.hidden { opacity: 0; pointer-events: none; }');
-    css.push('.scroll-hint-icon { font-size: 16px; animation: hintBounce 1s ease-in-out infinite; }');
-    css.push('@keyframes hintBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }');
-    css.push('.map-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }');
-    css.push('.map-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid rgba(64,88,120,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }');
-    css.push('.map-btn:hover { background: #fff; transform: scale(1.08); }');
-    css.push('@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }');
-    css.push('.map-marker { position: absolute; width: 46px; height: 46px; z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); pointer-events: none; background-repeat: no-repeat; background-position: center; background-size: contain; }');
-    css.push('.map-marker.start { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%23ffffff\' d=\'M32 6c-9 0-16 7-16 16 0 12 16 32 16 32s16-20 16-32c0-9-7-16-16-16z\'/%3E%3Cpath fill=\'%234f6b8f\' d=\'M32 10c-6.6 0-12 5.4-12 12 0 8.8 12 26 12 26s12-17.2 12-26c0-6.6-5.4-12-12-12z\'/%3E%3Ccircle cx=\'32\' cy=\'22\' r=\'6\' fill=\'%23f8fafc\'/%3E%3C/svg%3E"); animation: markerPop 0.5s ease-out; }');
-    css.push('.map-marker.finish { background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Cpath fill=\'%2340597a\' d=\'M16 10h4v44h-4z\'/%3E%3Cpath fill=\'%23ffffff\' d=\'M20 14l28 6-12 6 12 6-28 6z\'/%3E%3Cpath fill=\'%23e2e8f0\' d=\'M20 14l20 4-10 5 10 5-20 4z\'/%3E%3C/svg%3E"); animation: flagWave 1.5s ease-in-out infinite; }');
-    css.push('@keyframes markerPop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }');
-    css.push('@keyframes flagWave { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }');
-    css.push('.floating-cloud { position: absolute; font-size: 40px; opacity: 0.6; z-index: 0; animation: cloudFloat 20s linear infinite; pointer-events: none; }');
-    css.push('@keyframes cloudFloat { 0% { transform: translateX(-100px); } 100% { transform: translateX(calc(100% + 100px)); } }');
-    css.push('.zone-label { position: absolute; font-family: "Fredoka", sans-serif; font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; letter-spacing: 1.3px; pointer-events: none; z-index: 4; text-shadow: 0 2px 6px rgba(0,0,0,0.4); background: rgba(15, 23, 42, 0.35); padding: 6px 14px; border-radius: 16px; }');
-    css.push('.map-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; text-align: center; color: #6d86a8; }');
-    css.push('.map-empty-emoji { font-size: 64px; margin-bottom: 16px; opacity: 0.6; }');
-    css.push('.map-empty-title { font-family: "Fredoka", sans-serif; font-size: 20px; font-weight: 600; color: #405878; margin-bottom: 8px; }');
-    css.push('.map-empty-text { font-size: 14px; max-width: 300px; }');
-    
-    // Enhanced "next" node styles - bigger, pulsing, dramatic
-    css.push('.adventure-node.available { width: 82px; height: 82px; background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%); animation: nextNodePulse 2s ease-in-out infinite, nextNodeGlow 1.5s ease-in-out infinite alternate; }');
-    css.push('.adventure-node.available .node-emoji { font-size: 32px; animation: emojiShake 0.5s ease-in-out infinite; }');
-    css.push('@keyframes nextNodePulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }');
-    css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');
-    css.push('@keyframes emojiShake { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }');
-    
-    // Available-next: unlocked modules beyond the current one — subtler style
-    css.push('.adventure-node.available-next { width: 72px; height: 72px; background: linear-gradient(145deg, #FDE68A 0%, #FCD34D 50%, #FBBF24 100%); border: 4px solid rgba(255,255,255,0.85); box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3), 0 0 0 3px rgba(251, 191, 36, 0.15); animation: nextAvailSoft 3s ease-in-out infinite; }');
-    css.push('.adventure-node.available-next .node-emoji { font-size: 28px; animation: none; opacity: 0.8; }');
-    css.push('@keyframes nextAvailSoft { 0%, 100% { box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3), 0 0 0 3px rgba(251, 191, 36, 0.15); } 50% { box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4), 0 0 0 5px rgba(251, 191, 36, 0.1); } }');
-
-    // Node loading state - gentle pulse on click while async checks run
-    css.push('@keyframes nodeLoadingPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }');
-    css.push('.adventure-node.node-loading { animation: nodeLoadingPulse 0.8s ease-in-out infinite !important; pointer-events: none !important; }');
-
-    // Daniel companion on path styles
-    css.push('.daniel-companion { position: absolute; width: 64px; height: 64px; z-index: 12; pointer-events: none; transition: all 0.5s ease; }');
-    css.push('.daniel-companion-inner { width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,0.95); padding: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: danielWalk 1s ease-in-out infinite; }');
-    css.push('.daniel-companion img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }');
-    css.push('.daniel-expression-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; color: #405878; white-space: nowrap; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 10px; font-family: "Fredoka", sans-serif; }');
-    css.push('@keyframes danielWalk { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }');
-    
-    // Destination marker styles
-    css.push('.destination-marker { position: absolute; z-index: 6; text-align: center; pointer-events: none; animation: destinationFloat 3s ease-in-out infinite; }');
-    css.push('.destination-icon { font-size: 52px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }');
-    css.push('.destination-label { font-family: "Fredoka", sans-serif; font-size: 14px; font-weight: 700; color: #fff; background: linear-gradient(135deg, rgba(34,197,94,0.9), rgba(22,163,74,0.9)); padding: 6px 14px; border-radius: 20px; margin-top: 8px; display: inline-block; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }');
-    css.push('@keyframes destinationFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }');
-    
-    // Mini-moments on path (signposts, campfires)
-    css.push('.path-moment { position: absolute; z-index: 3; pointer-events: none; text-align: center; }');
-    css.push('.path-moment-icon { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }');
-    css.push('.path-moment-label { font-family: "Fredoka", sans-serif; font-size: 11px; font-weight: 600; color: #405878; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: 8px; margin-top: 4px; display: block; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }');
-    css.push('.path-moment.campfire .path-moment-icon { animation: campfireFlicker 0.5s ease-in-out infinite alternate; }');
-    css.push('@keyframes campfireFlicker { 0% { transform: scale(1); filter: drop-shadow(0 2px 4px rgba(255,100,0,0.4)); } 100% { transform: scale(1.1); filter: drop-shadow(0 2px 8px rgba(255,150,0,0.6)); } }');
-    
-    // Environmental feedback elements
-    css.push('.env-element { position: absolute; pointer-events: none; z-index: 1; transition: opacity 0.5s ease; }');
-    css.push('.env-element.bloom { animation: bloomIn 0.8s ease-out forwards; }');
-    css.push('@keyframes bloomIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }');
-    css.push('.env-butterfly { animation: butterflyFloat 4s ease-in-out infinite; }');
-    css.push('@keyframes butterflyFloat { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 25% { transform: translate(10px, -15px) rotate(5deg); } 50% { transform: translate(20px, 0) rotate(0deg); } 75% { transform: translate(10px, 10px) rotate(-5deg); } }');
-    css.push('.env-bird { animation: birdFly 6s ease-in-out infinite; }');
-    css.push('@keyframes birdFly { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -20px); } }');
-    css.push('.env-sparkle { animation: sparkleShine 1.5s ease-in-out infinite; }');
-    css.push('@keyframes sparkleShine { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }');
-    
-    // Progress-reactive grass layer
-    css.push('.map-bg-grass-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; pointer-events: none; transition: background 0.8s ease; }');
-    
-    // Cracked ground effect for start zone
-    css.push('.env-crack { position: absolute; font-size: 20px; opacity: 0.6; pointer-events: none; }');
-    
-    // Zone upgrade celebration styles
-    css.push('.zone-upgrade-shimmer { position: absolute; inset: 0; z-index: 60; pointer-events: none; background: linear-gradient(135deg, rgba(255,215,0,0.0) 0%, rgba(255,215,0,0.45) 40%, rgba(255,255,255,0.7) 50%, rgba(255,215,0,0.45) 60%, rgba(255,215,0,0.0) 100%); background-size: 300% 300%; animation: zoneShimmerSweep 1.2s ease-out forwards; border-radius: 20px; }');
-    css.push('@keyframes zoneShimmerSweep { 0% { background-position: 150% 150%; opacity: 0; } 30% { opacity: 1; } 100% { background-position: -50% -50%; opacity: 0; } }');
-    
-    css.push('.zone-upgrade-banner { position: absolute; top: 0; left: 0; right: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; padding: 0; animation: zoneBannerSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform: translateY(-100%); pointer-events: auto; }');
-    css.push('.zone-upgrade-banner.dismissing { animation: zoneBannerSlideOut 0.5s ease-in forwards; }');
-    css.push('@keyframes zoneBannerSlideIn { 0% { transform: translateY(-100%); } 100% { transform: translateY(0); } }');
-    css.push('@keyframes zoneBannerSlideOut { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100%); opacity: 0; } }');
-    
-    css.push('.zone-upgrade-card { position: relative; width: 92%; max-width: 420px; margin-top: 16px; background: linear-gradient(135deg, #fffbe6 0%, #fff7cc 40%, #fff3b0 100%); border: 3px solid #f59e0b; border-radius: 20px; padding: 20px 20px 18px; box-shadow: 0 8px 32px rgba(245, 158, 11, 0.35), 0 0 0 6px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255,255,255,0.8); text-align: center; overflow: visible; cursor: pointer; }');
-    css.push('.zone-upgrade-card::before { content: ""; position: absolute; inset: -3px; border-radius: 22px; background: linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24, #fcd34d); z-index: -1; animation: zoneBorderGlow 2s ease-in-out infinite; }');
-    css.push('@keyframes zoneBorderGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }');
-    
-    css.push('.zone-upgrade-daniel { width: 80px; height: 80px; margin: -56px auto 8px; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25)); animation: zoneDanielBounce 0.8s ease-in-out 0.4s infinite alternate; }');
-    css.push('.zone-upgrade-daniel img { width: 100%; height: 100%; object-fit: contain; }');
-    css.push('@keyframes zoneDanielBounce { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-8px) scale(1.05); } }');
-    
-    css.push('.zone-upgrade-emoji { font-size: 36px; margin-bottom: 4px; animation: zoneEmojiPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both; }');
-    css.push('@keyframes zoneEmojiPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }');
-    
-    css.push('.zone-upgrade-title { font-family: "Fredoka", "Fredoka", system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 4px; line-height: 1.2; }');
-    css.push('.zone-upgrade-subtitle { font-family: "Fredoka", sans-serif; font-size: 13px; color: #b45309; margin: 0 0 10px; line-height: 1.4; }');
-    
-    css.push('.zone-upgrade-new-label { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-family: "Fredoka", sans-serif; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35); }');
-    
-    css.push('.zone-upgrade-tap-hint { font-family: "Fredoka", sans-serif; font-size: 11px; color: #d97706; margin-top: 8px; opacity: 0.7; }');
-    
-    css.push('.zone-upgrade-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 20px; z-index: 79; }');
-    css.push('.zone-confetti-piece { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: zoneConfettiFall 2.5s ease-in forwards; }');
-    css.push('@keyframes zoneConfettiFall { 0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(500px) rotate(720deg) scale(0.3); opacity: 0; } }');
-    
-    css.push('@media (max-width: 768px) { .adventure-viewport { height: 420px; } .adventure-node { width: 58px; height: 58px; } .adventure-node .node-emoji { font-size: 24px; } .node-number { width: 20px; height: 20px; font-size: 9px; } .node-badge { width: 22px; height: 22px; font-size: 11px; } .category-filter-container { flex-direction: column; align-items: stretch; } .category-filter-select { width: 100%; } .path-shadow { stroke-width: 24 !important; } .path-main { stroke-width: 20 !important; } .path-light { stroke-width: 14 !important; } .map-decoration { font-size: 20px; } .map-town-item { font-size: 22px; } .map-town-label { font-size: 10px; } .zone-label { font-size: 12px; padding: 4px 10px; } .current-indicator { width: 104px; height: 104px; top: -80px; left: calc(50% + 78px); } .current-indicator-label { font-size: 10px; } .adventure-node.is-current::after { inset: -8px; } .node-tooltip { font-size: 12px; padding: 10px 12px; } .map-progress { padding: 8px 12px; font-size: 12px; } .progress-bar { width: 60px; } .progress-text { font-size: 12px; } .progress-icon { font-size: 16px; } .cycle-complete-popup-title { font-size: 19px; } .cycle-complete-popup-actions, .cycle-complete-popup-selectors { flex-direction: column; } .cycle-popup-btn { width: 100%; } .cycle-complete-popup-daniel { width: 140px; height: 140px; top: -86px; } .zone-upgrade-card { padding: 16px 14px 14px; max-width: 340px; } .zone-upgrade-title { font-size: 17px; } .zone-upgrade-subtitle { font-size: 12px; } .zone-upgrade-daniel { width: 64px; height: 64px; margin-top: -44px; } .zone-upgrade-emoji { font-size: 28px; } }');
-    
-    var styles = document.createElement('style');
-    styles.id = 'adventure-map-v4-styles';
-    styles.textContent = css.join('\n');
-    document.head.appendChild(styles);
-  }
+  injectStyles() { injectAdventureMapStyles(); }
 
   ensureZoneStyles() {
     if (document.getElementById('adventure-map-zones-css')) return;
@@ -726,6 +278,18 @@ class AdventureMapV4 {
       }
     }
     this._userSelectedEmptyCycle = false;
+
+    // Always show the skill picker first so the user chooses each session.
+    // Once they click a card, _skillSelectedThisSession is set and the map renders.
+    if (!this._skillSelectedThisSession && this.getAvailableCategories().length > 1) {
+      this.renderSkillPickerInline();
+      showDashboardFooter();
+      if (typeof window._dashboardRenderComplete === 'function') {
+        window._dashboardRenderComplete();
+        window._dashboardRenderComplete = null;
+      }
+      return;
+    }
 
     // Run DOM updates directly - callers already handle framing
     this.createMapHTML();
@@ -905,6 +469,19 @@ class AdventureMapV4 {
       // If no category selected, use the first available one
       var availableCategories = this.getAvailableCategories();
       this.currentCategory = availableCategories.length > 0 ? availableCategories[0] : 'all';
+    }
+
+    // Sequential unlock clamp: whatever path set the category (picker, quiz,
+    // focus plan, stored value), a locked Super Skill is never shown — the
+    // child is redirected to the skill they're meant to be working on.
+    var gate = getSkillGate();
+    if (gate && this.currentCategory && this.currentCategory !== 'all') {
+      var gateState = gate.bySlug[this.currentCategory];
+      if (gateState && gateState.state === 'locked' && gate.activeSlug) {
+        this.currentCategory = gate.activeSlug;
+        this.setStoredCategory(gate.activeSlug);
+        this.currentCycleId = null;
+      }
     }
 
     var availableCycles = this.getAvailableCyclesForCategory();
@@ -1204,13 +781,19 @@ class AdventureMapV4 {
   showCycleCompletionPopup() {
     if (!this.currentCycleId) return;
     var self = this;
+    var popupGate = getSkillGate();
     var allSkillCycleOptions = this.getAvailableCategories().map(function(category) {
       return {
         category: category,
         theme: CATEGORY_THEMES[category] || CATEGORY_THEMES.all,
         cycles: self.getAvailableCyclesForCategory(category)
       };
-    }).filter(function(option) { return option.cycles && option.cycles.length > 0; });
+    }).filter(function(option) {
+      if (!option.cycles || option.cycles.length === 0) return false;
+      // Locked Super Skills can't be jumped to from the cycle popup
+      if (popupGate && popupGate.bySlug[option.category] && popupGate.bySlug[option.category].state === 'locked') return false;
+      return true;
+    });
     var eligibleOptions = this.getEligibleSkillCycleOptions();
     var overlay = document.createElement('div');
     overlay.className = 'cycle-complete-popup-overlay';
@@ -1330,6 +913,406 @@ class AdventureMapV4 {
     }
   }
 
+  // =============================================
+  // SKILL PICKER - Card-based Super Skill selection (inline, replaces map)
+  // =============================================
+  renderSkillPickerInline() {
+    var container = document.getElementById('adventureMapContainer');
+    if (!container) return;
+
+    this.ensureZoneStyles();
+    var self = this;
+
+    // Show ALL active super skills from DB, not just ones with modules
+    var allSlugs = [];
+    if (superSkillsFromDB && superSkillsFromDB.length > 0) {
+      allSlugs = superSkillsFromDB.map(function(s) { return s.slug; }).filter(Boolean);
+    }
+    // Fallback to module-based categories if DB isn't loaded yet
+    if (allSlugs.length === 0) {
+      allSlugs = this.getAvailableCategories();
+    }
+
+    var pickerGate = getSkillGate();
+
+    // Build skill card data with progress
+    var skillCards = allSlugs.map(function(cat) {
+      var theme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
+      var dbSkill = superSkillsFromDB.find(function(s) { return s.slug === cat; });
+      var gateState = pickerGate && pickerGate.bySlug[cat] ? pickerGate.bySlug[cat].state : null;
+      var unlockReq = gateState === 'locked' ? getUnlockRequirement(cat, pickerGate) : null;
+      var totalModules = self.allModules.filter(function(m) { return !m.isRoadBuilder && (m.superSkillSlug === cat || m.category === cat); }).length;
+      var completedModules = self.allModules.filter(function(m) { return !m.isRoadBuilder && (m.superSkillSlug === cat || m.category === cat) && self.isModuleComplete(m); }).length;
+      var description = (dbSkill && dbSkill.description) || theme.description || '';
+      var characterImg = dbSkill ? ((dbSkill.characters && dbSkill.characters.image_url) || dbSkill.character_image_url) : null;
+      var characterName = dbSkill ? ((dbSkill.characters && dbSkill.characters.name) || dbSkill.character_name) : null;
+
+      var kidCopy = KID_FRIENDLY_COPY[cat] || {};
+      var kidDescription = kidCopy.description || description;
+      var pickThisIf = kidCopy.pickThisIf || '';
+      var tag = kidCopy.tag || (dbSkill && dbSkill.domain) || '';
+      var youllLearn = kidCopy.youllLearn || [];
+
+      return {
+        slug: cat,
+        name: theme.name,
+        emoji: theme.emoji,
+        color: theme.color,
+        description: kidDescription,
+        pickThisIf: pickThisIf,
+        tag: tag,
+        youllLearn: youllLearn,
+        characterImg: characterImg,
+        characterName: characterName,
+        totalModules: totalModules,
+        completedModules: completedModules,
+        bgColor: kidCopy.bgColor || '#fff',
+        borderColor: kidCopy.borderColor || '#e2e8f0',
+        btnColor: kidCopy.btnColor || '#405878',
+        decos: kidCopy.decos || [],
+        speechNew: kidCopy.speechNew || '',
+        speechCurrent: kidCopy.speechCurrent || '',
+        locked: gateState === 'locked',
+        unlockName: unlockReq ? unlockReq.name : null
+      };
+    });
+
+    var lastChosen = this.getStoredCategory() || this.currentCategory;
+
+    // Sort: last-chosen skill first, locked skills last (journey order kept)
+    skillCards.sort(function(a, b) {
+      if (lastChosen && lastChosen !== 'all') {
+        if (a.slug === lastChosen && !a.locked) return -1;
+        if (b.slug === lastChosen && !b.locked) return 1;
+      }
+      if (a.locked !== b.locked) return a.locked ? 1 : -1;
+      return 0;
+    });
+
+    var cardsHtml = skillCards.map(function(card) {
+      var progressPct = card.totalModules > 0 ? Math.round((card.completedModules / card.totalModules) * 100) : 0;
+      var isLastChosen = card.slug === lastChosen && lastChosen !== 'all' && !card.locked;
+      var cardClasses = 'skill-card' + (isLastChosen ? ' last-chosen' : '') + (card.locked ? ' skill-card-locked' : '');
+      var decosHtml = card.decos.map(function(d) { return '<span class="skill-card-deco">' + d + '</span>'; }).join('');
+      var speechText = card.locked
+        ? (card.unlockName ? 'Complete ' + card.unlockName + ' to unlock me!' : 'You\'ll unlock me later on your journey!')
+        : (isLastChosen ? card.speechCurrent : (card.completedModules === 0 ? card.speechNew : ''));
+      var btnLabel = card.locked
+        ? (card.unlockName ? '🔒 Complete ' + card.unlockName + ' first' : '🔒 Unlocks later')
+        : (isLastChosen ? 'Continue quest' : (card.completedModules > 0 ? 'Keep exploring' : 'Start adventure'));
+      var progressLabel = card.locked
+        ? (card.unlockName ? 'Unlocks after ' + card.unlockName : 'Next on your journey')
+        : (card.completedModules > 0
+          ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' steps completed'
+          : card.totalModules + ' steps to explore');
+      var btnStyle = card.locked
+        ? 'background: linear-gradient(135deg, #9AA5B1, #5B6773)'
+        : 'background: linear-gradient(135deg, ' + card.btnColor + ', ' + card.btnColor + 'dd)';
+
+      return '<div class="' + cardClasses + '" data-skill="' + card.slug + '" style="--card-bg: ' + card.bgColor + '; --card-border: ' + card.borderColor + '">' +
+        '<div class="skill-card-decos">' + decosHtml + '</div>' +
+        (isLastChosen ? '<span class="skill-card-continue-badge">⭐ Your current quest</span>' : '') +
+        (card.locked ? '<span class="skill-card-locked-badge">🔒 ' + (card.unlockName ? 'Complete ' + card.unlockName + ' first' : 'Unlocks later') + '</span>' : '') +
+        (card.characterImg ? '<img class="skill-card-character" src="' + card.characterImg + '" alt="' + (card.characterName || '') + '" />' : '') +
+        (speechText ? '<div class="skill-card-speech">' + speechText + '</div>' : '') +
+        '<div class="skill-card-top">' +
+        '<div class="skill-card-emoji">' + card.emoji + '</div>' +
+        '<div class="skill-card-name">' + card.name + '</div>' +
+        '</div>' +
+        '<div class="skill-card-desc">' + card.description + '</div>' +
+        (card.pickThisIf && !card.locked ? '<div class="skill-card-pick-label">Pick this if:</div><div class="skill-card-pick-text">' + card.pickThisIf + '</div>' : '') +
+        (card.tag ? '<div class="skill-card-tags"><span class="skill-card-tag">' + card.tag + '</span></div>' : '') +
+        '<div class="skill-card-progress">' +
+        '<div class="skill-card-progress-bar"><div class="skill-card-progress-fill" style="width: ' + progressPct + '%; background: ' + card.btnColor + ';"></div></div>' +
+        '<span class="skill-card-progress-text">' + progressLabel + '</span>' +
+        '</div>' +
+        '<button class="skill-card-btn" style="' + btnStyle + '">' + btnLabel + '</button>' +
+        '</div>';
+    }).join('');
+
+    container.innerHTML =
+      '<div class="skill-picker-inline">' +
+      '<div class="skill-picker-header">' +
+      '<h2 class="skill-picker-title">🗺️ Choose Your Adventure</h2>' +
+      '<p class="skill-picker-subtitle">Each Super Skill is a different adventure world. Pick the one that feels right for you!</p>' +
+      '<div class="skill-picker-help-wrap">' +
+      '<button class="skill-picker-help-btn" id="helpMeChooseBtn">✨ Help me choose</button>' +
+      '<p class="skill-picker-help-hint">Not sure where to start? Answer a few quick questions.</p>' +
+      '</div>' +
+      '</div>' +
+      '<div class="skill-picker-cards' + (lastChosen && lastChosen !== 'all' ? ' has-chosen' : '') + '">' + cardsHtml + '</div>' +
+      '</div>';
+
+    // Event: clicking a card opens the preview modal
+    container.querySelectorAll('.skill-card').forEach(function(cardEl) {
+      var slug = cardEl.dataset.skill;
+      var cardData = skillCards.find(function(c) { return c.slug === slug; });
+      var openPreview = function() {
+        if (cardData) self.showSkillPreviewModal(cardData);
+      };
+      cardEl.addEventListener('click', function(e) {
+        if (e.target.classList.contains('skill-card-btn')) return;
+        openPreview();
+      });
+      var btn = cardEl.querySelector('.skill-card-btn');
+      if (btn) btn.addEventListener('click', openPreview);
+    });
+
+    // Event: Help me choose quiz
+    var helpBtn = container.querySelector('#helpMeChooseBtn');
+    if (helpBtn) {
+      helpBtn.addEventListener('click', function() {
+        self.showHelpMeChooseQuiz();
+      });
+    }
+  }
+
+  // =============================================
+  // SKILL PREVIEW MODAL - shown before entering a skill
+  // =============================================
+  showSkillPreviewModal(cardData) {
+    var self = this;
+    var overlay = document.createElement('div');
+    overlay.className = 'skill-preview-overlay';
+
+    var kidCopy = KID_FRIENDLY_COPY[cardData.slug] || {};
+    var btnColor = kidCopy.btnColor || '#405878';
+    var bgColor = kidCopy.bgColor || '#f8fafc';
+
+    var learnHtml = cardData.youllLearn.map(function(item) {
+      return '<li>' + item + '</li>';
+    }).join('');
+
+    var isLocked = !!cardData.locked;
+    var btnLabel = isLocked
+      ? (cardData.unlockName ? '🔒 Complete ' + cardData.unlockName + ' first' : '🔒 Unlocks later')
+      : (cardData.completedModules > 0 ? 'Continue quest' : 'Start adventure');
+    var lockedNote = isLocked
+      ? '<div class="skill-preview-desc" style="font-weight:600;color:#5B6773">🔒 ' +
+        (cardData.unlockName
+          ? 'This adventure unlocks when you complete the <strong>' + cardData.unlockName + '</strong> Super Skill.'
+          : 'This adventure unlocks later on your journey.') + '</div>'
+      : '';
+
+    overlay.innerHTML =
+      '<div class="skill-preview-modal">' +
+      '<div class="skill-preview-header" style="background: ' + bgColor + '">' +
+      '<div class="skill-preview-top">' +
+      '<div class="skill-preview-emoji">' + cardData.emoji + '</div>' +
+      (cardData.characterImg ? '<img class="skill-preview-character" src="' + cardData.characterImg + '" alt="' + (cardData.characterName || '') + '" ' + (isLocked ? 'style="filter:grayscale(.7);opacity:.85"' : '') + '/>' : '') +
+      '</div>' +
+      '<div class="skill-preview-name">' + cardData.name + '</div>' +
+      '</div>' +
+      '<div class="skill-preview-body">' +
+      lockedNote +
+      '<div class="skill-preview-desc">' + cardData.description + '</div>' +
+      (learnHtml ? '<div class="skill-preview-learn-label">You\'ll learn how to:</div>' +
+      '<ul class="skill-preview-learn-list">' + learnHtml + '</ul>' : '') +
+      '<div class="skill-preview-actions">' +
+      '<button class="skill-preview-btn primary" id="previewStartBtn" ' + (isLocked ? 'disabled ' : '') + 'style="background: linear-gradient(135deg, ' + (isLocked ? '#9AA5B1, #5B6773' : btnColor + ', ' + btnColor + 'dd') + ')' + (isLocked ? ';opacity:.75;cursor:not-allowed' : '') + '">' + btnLabel + '</button>' +
+      '<button class="skill-preview-btn secondary" id="previewBackBtn">Choose another skill</button>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.querySelector('#previewStartBtn').addEventListener('click', function() {
+      if (isLocked) return;
+      self.currentCategory = cardData.slug;
+      self.setStoredCategory(cardData.slug);
+      self._skillSelectedThisSession = true;
+      self.currentCycleId = null;
+      self.translateX = 0;
+      self.translateY = 0;
+      self.hasUserInteracted = false;
+      overlay.remove();
+      self.render();
+    });
+
+    overlay.querySelector('#previewBackBtn').addEventListener('click', function() {
+      overlay.remove();
+    });
+  }
+
+  // =============================================
+  // HELP ME CHOOSE - Kid-friendly quiz
+  // =============================================
+  showHelpMeChooseQuiz() {
+    var self = this;
+    var currentQuestion = 0;
+    var answers = [];
+
+    var overlay = document.createElement('div');
+    overlay.className = 'quiz-overlay';
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    var container = overlay;
+
+    var questions = [
+      {
+        question: 'How are you feeling today?',
+        options: [
+          { emoji: '\uD83D\uDE21', label: 'Angry or frustrated', skills: ['emotion-navigator', 'calm-controller'] },
+          { emoji: '\uD83D\uDE1F', label: 'Worried or nervous', skills: ['calm-controller', 'thought-driver'] },
+          { emoji: '\uD83D\uDE22', label: 'Sad or down', skills: ['emotion-navigator', 'resilience-ranger'] },
+          { emoji: '\uD83D\uDE10', label: 'Not sure', skills: ['brain-builder', 'emotion-navigator'] },
+          { emoji: '\uD83D\uDE04', label: 'Good!', skills: ['connection-captain', 'brain-builder'] }
+        ]
+      },
+      {
+        question: 'What do you want help with?',
+        options: [
+          { emoji: '\uD83E\uDDE0', label: 'Understanding my feelings', skills: ['emotion-navigator', 'brain-builder'] },
+          { emoji: '\uD83D\uDC42', label: 'Staying calm', skills: ['calm-controller', 'body-boss'] },
+          { emoji: '\uD83D\uDDE3\uFE0F', label: 'Talking to people', skills: ['connection-captain'] },
+          { emoji: '\uD83D\uDCAA', label: 'Being brave', skills: ['resilience-ranger', 'thought-driver'] },
+          { emoji: '\uD83C\uDF08', label: 'Making friends', skills: ['connection-captain'] }
+        ]
+      },
+      {
+        question: 'When things get tough, what do you usually do?',
+        options: [
+          { emoji: '\uD83C\uDFC3', label: 'I want to run away', skills: ['calm-controller', 'resilience-ranger'] },
+          { emoji: '\uD83D\uDE24', label: 'I get really upset', skills: ['emotion-navigator', 'body-boss'] },
+          { emoji: '\uD83E\uDD14', label: 'I think too much about it', skills: ['thought-driver', 'brain-builder'] },
+          { emoji: '\uD83E\uDD10', label: 'I go quiet', skills: ['connection-captain', 'emotion-navigator'] },
+          { emoji: '\uD83E\uDD37', label: 'I\'m not sure', skills: ['brain-builder'] }
+        ]
+      }
+    ];
+
+    function renderQuestion(qIndex) {
+      var q = questions[qIndex];
+      var dotsHtml = questions.map(function(_, i) {
+        var cls = 'quiz-dot';
+        if (i < qIndex) cls += ' done';
+        if (i === qIndex) cls += ' active';
+        return '<span class="' + cls + '"></span>';
+      }).join('');
+
+      var optionsHtml = q.options.map(function(opt, i) {
+        return '<div class="quiz-option" data-index="' + i + '">' +
+          '<span class="quiz-option-emoji">' + opt.emoji + '</span>' +
+          '<span>' + opt.label + '</span>' +
+          '</div>';
+      }).join('');
+
+      container.innerHTML =
+        '<div class="quiz-container">' +
+        '<div class="quiz-header">' +
+        '<h2 class="quiz-title">&#10024; Help Me Choose</h2>' +
+        '<p class="quiz-subtitle">Answer a few quick questions and we\'ll find the best adventure for you!</p>' +
+        '<div class="quiz-progress-dots">' + dotsHtml + '</div>' +
+        '</div>' +
+        '<div class="quiz-body">' +
+        '<div class="quiz-question">' + q.question + '</div>' +
+        '<div class="quiz-options">' + optionsHtml + '</div>' +
+        '<button class="quiz-next-btn" id="quizNextBtn" disabled>Next</button>' +
+        '</div>' +
+        '</div>';
+
+      var selectedIndex = null;
+      container.querySelectorAll('.quiz-option').forEach(function(opt) {
+        opt.addEventListener('click', function() {
+          selectedIndex = parseInt(opt.dataset.index);
+          container.querySelectorAll('.quiz-option').forEach(function(o) { o.classList.remove('selected'); });
+          opt.classList.add('selected');
+          container.querySelector('#quizNextBtn').disabled = false;
+        });
+      });
+
+      container.querySelector('#quizNextBtn').addEventListener('click', function() {
+        if (selectedIndex === null) return;
+        answers.push(q.options[selectedIndex].skills);
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          renderQuestion(currentQuestion);
+        } else {
+          showResult();
+        }
+      });
+    }
+
+    function showResult() {
+      // Tally up skill scores
+      var scores = {};
+      answers.forEach(function(skillList) {
+        skillList.forEach(function(skill, i) {
+          // First skill in list gets more weight
+          scores[skill] = (scores[skill] || 0) + (skillList.length - i);
+        });
+      });
+
+      // Find the best match among available (unlocked) categories
+      var quizGate = getSkillGate();
+      var availableCategories = self.getAvailableCategories().filter(function(cat) {
+        return !(quizGate && quizGate.bySlug[cat] && quizGate.bySlug[cat].state === 'locked');
+      });
+      var bestSkill = null;
+      var bestScore = -1;
+      availableCategories.forEach(function(cat) {
+        var score = scores[cat] || 0;
+        if (score > bestScore) {
+          bestScore = score;
+          bestSkill = cat;
+        }
+      });
+
+      // Fallback if no match
+      if (!bestSkill && availableCategories.length > 0) {
+        bestSkill = availableCategories[0];
+      }
+
+      var theme = CATEGORY_THEMES[bestSkill] || CATEGORY_THEMES.all;
+      var dbSkill = superSkillsFromDB.find(function(s) { return s.slug === bestSkill; });
+      var description = (dbSkill && dbSkill.description) || theme.description || '';
+
+      container.innerHTML =
+        '<div class="quiz-container">' +
+        '<div class="quiz-header">' +
+        '<h2 class="quiz-title">&#10024; We found your adventure!</h2>' +
+        '<p class="quiz-subtitle">Based on your answers, we think you should start with...</p>' +
+        '</div>' +
+        '<div class="quiz-result">' +
+        '<div class="quiz-result-label">We recommend</div>' +
+        '<div class="quiz-result-skill" style="color: ' + theme.color + '">' + theme.emoji + ' ' + theme.name + '</div>' +
+        '<div class="quiz-result-desc">' + description + '</div>' +
+        '<div class="quiz-result-actions">' +
+        '<button class="quiz-result-btn primary" id="quizStartBtn">Start here</button>' +
+        '<button class="quiz-result-btn secondary" id="quizOtherBtn">Show me other options</button>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+
+      container.querySelector('#quizStartBtn').addEventListener('click', function() {
+        self.currentCategory = bestSkill;
+        self.setStoredCategory(bestSkill);
+        self._skillSelectedThisSession = true;
+        self.currentCycleId = null;
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        overlay.remove();
+        self.render();
+      });
+
+      container.querySelector('#quizOtherBtn').addEventListener('click', function() {
+        overlay.remove();
+      });
+    }
+
+    renderQuestion(0);
+  }
+
   getModuleEmoji(module, superSkillSlug) {
     if (!module) return '📘';
     var title = (module.title || '').toLowerCase();
@@ -1379,11 +1362,6 @@ class AdventureMapV4 {
     var canvasHeight = Math.max(this.config.minCanvasHeight, this.config.topPadding + (numModules * this.config.nodeSpacingY) + this.config.bottomPadding);
 
     var self = this;
-    var categoryOptions = availableCategories.map(function(cat) {
-      var catTheme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.all;
-      var count = self.allModules.filter(function(m) { return !m.isRoadBuilder && m.category === cat; }).length;
-      return '<option value="' + cat + '"' + (cat === self.currentCategory ? ' selected' : '') + '>' + catTheme.emoji + ' ' + catTheme.name + ' (' + count + ')</option>';
-    }).join('');
 
     var cycleOptions = availableCycles.map(function(cycle) {
       var cycleNumber = cycle.cycle_number ? 'Cycle ' + cycle.cycle_number : 'Cycle';
@@ -1400,26 +1378,55 @@ class AdventureMapV4 {
       : remainingCount > 0
         ? completedCount + ' of ' + numModules + ' modules completed - ' + remainingCount + ' more to go!'
         : 'All ' + numModules + ' modules completed - amazing work! 🎉';
+    var stages = this.getTownStageMeta();
+    var stageIndex = this.getTownStage();
+    var stage = stages[stageIndex] || stages[0];
+
     var html = '<div class="adventure-header">' +
-      '<h2 class="adventure-title">🗺️ Your Adventure Map</h2>' +
-      '<p class="adventure-subtitle">' + progressMsg + '</p>' +
+      '<div class="adventure-header-top">' +
+      '<div class="current-skill-badge" id="openSkillPicker" title="Choose a different Super Skill">' +
+      '<span class="current-skill-badge-emoji">' + theme.emoji + '</span>' +
+      '<span class="current-skill-badge-name">' + theme.name + '</span>' +
+      '<span class="current-skill-badge-change">Change</span>' +
       '</div>' +
-      '<div class="category-filter-container">' +
-      '<label class="category-filter-label">Skill:</label>' +
-      '<select class="category-filter-select" id="categoryFilter">' + categoryOptions + '</select>' +
-      (availableCycles.length > 0 ? '<label class="category-filter-label" style="margin-left: 6px;">Cycle:</label>' +
-      '<select class="category-filter-select" id="cycleFilter">' + cycleOptions + '</select>' +
-      '<span class="category-badge cycle-badge" style="border-color: ' + theme.color + '">' + cycleBadgeLabel + '</span>' : '') +
-      '<span class="category-badge" style="background: ' + theme.color + '">' + theme.emoji + ' ' + numModules + ' module' + (numModules !== 1 ? 's' : '') + '</span>' +
+      (availableCycles.length > 0 ? '<select class="category-filter-select cycle-select-compact" id="cycleFilter">' + cycleOptions + '</select>' : '') +
+      '<span class="category-badge" style="background: ' + theme.color + '">' + completedCount + '/' + numModules + '</span>' +
+      '</div>' +
+      '</div>';
+
+    // Compact progression tracker
+    var nextStage = stages[Math.min(stageIndex + 1, stages.length - 1)];
+    var nextMilestone = stage.milestone;
+    var modulesLeft = nextMilestone ? Math.max(0, nextMilestone - completedCount) : 0;
+    var rbForNote = this.modules.filter(function(m) { return m.isRoadBuilder; });
+    var rbNeededForNote = stageIndex + 1;
+    var rbDoneForNote = rbForNote.slice(0, rbNeededForNote).every(function(rb) { return rb && rb.status === 'completed'; });
+    var progressNote;
+    if (!nextMilestone) {
+      progressNote = 'All stages unlocked!';
+    } else if (modulesLeft <= 0 && !rbDoneForNote) {
+      progressNote = 'Complete the Road Builder to unlock ' + nextStage.emoji + ' ' + nextStage.label;
+    } else {
+      progressNote = modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + ' to unlock ' + nextStage.emoji + ' ' + nextStage.label;
+    }
+
+    var timelineHtml = stages.map(function(s, idx) {
+      var cls = 'progression-step';
+      if (idx < stageIndex) cls += ' done';
+      if (idx === stageIndex) cls += ' active';
+      return '<div class="' + cls + '">' +
+        '<div class="progression-step-icon">' + s.emoji + '</div>' +
+        '<div class="progression-step-label">' + s.label + '</div>' +
+        '<div class="progression-step-range">' + s.rangeLabel + ' modules</div>' +
+        '</div>';
+    }).join('');
+
+    html += '<div class="progression-tracker">' +
+      '<div class="progression-steps">' + timelineHtml + '</div>' +
+      '<div class="progression-note">' + progressNote + '</div>' +
       '</div>';
 
     if (this.modules.length > 0) {
-      html += this.getTownProgressCueHtml(completedCount);
-      html += '<div class="adventure-skill-banner" style="--skill-color: ' + theme.color + '">' +
-        '<span class="adventure-skill-emoji">' + theme.emoji + '</span>' +
-        '<span class="adventure-skill-name">' + theme.name + '</span>' +
-        '<span class="adventure-skill-desc">' + theme.description + '</span>' +
-        '</div>';
       html += '<div class="adventure-viewport" id="adventureViewport">' +
         '<div class="adventure-canvas" id="adventureCanvas" style="height: ' + canvasHeight + 'px;">' +
         '<div class="map-zone-layers" aria-hidden="true"></div>' +
@@ -1458,6 +1465,9 @@ class AdventureMapV4 {
     container.innerHTML = html;
     this.viewport = document.getElementById('adventureViewport');
     this.canvas = document.getElementById('adventureCanvas');
+    // Keep the canvas on its own GPU layer so dragging is a composite,
+    // not a repaint — critical on mobile.
+    if (this.canvas) this.canvas.style.willChange = 'transform';
     this.applyZoneBackground();
   }
 
@@ -1486,12 +1496,32 @@ class AdventureMapV4 {
     if (!this.viewport) return;
 
     // Use completed module count to determine zone (matches the progress cue)
-    var townStage = this.getTownStage(); // 0=Trailhead, 1=Village, 2=Town Center, 3=City
+    var townStage = this.getTownStage(); // 0=Trailhead, 1=Village, 2=Town Centre, 3=City
     var newZone = townStage + 1; // zones are 1-4
 
     var previousZone = this.currentZone;
     this.viewport.dataset.zone = newZone;
     this.currentZone = newZone;
+
+    // SVG district scenes (feature-flagged): the background is this Super
+    // Skill's own Brain Town district. It grows twice over — every completed
+    // module adds a prop to the scene, and each town stage transforms it.
+    // When the flag is off, clearing the inline styles falls back to the
+    // classic image map CSS.
+    if (svgScenesActive()) {
+      var completedForScene = this.modules.filter(function(m) { return !m.isRoadBuilder && m.status === 'completed'; }).length;
+      // The scene lives INSIDE the canvas so the landscape pans 1:1 with
+      // the road. The viewport's own background is disabled meanwhile.
+      this.viewport.style.backgroundImage = 'none';
+      this.viewport.style.backgroundSize = '';
+      this.viewport.style.backgroundPosition = '';
+      this.renderSceneLayer(townStage, completedForScene);
+    } else {
+      this.viewport.style.backgroundImage = '';
+      this.viewport.style.backgroundSize = '';
+      this.viewport.style.backgroundPosition = '';
+      this.removeSceneLayer();
+    }
 
     // Detect zone upgrade: only when moving to a higher zone (not zone 1)
     var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
@@ -1511,6 +1541,53 @@ class AdventureMapV4 {
         }, 800);
       }
     }
+  }
+
+  // Injects the district scene INSIDE the canvas (behind the road and
+  // nodes, via negative z-index) so the whole landscape moves 1:1 with
+  // the road when the child pans. The scene sits at the top of the road
+  // at its natural 3:2 aspect — horizon and hill pass first — and a
+  // seamless meadow filler continues beneath it for the rest of the road.
+  renderSceneLayer(stage, completed) {
+    if (!this.canvas) return;
+    this.removeSceneLayer();
+
+    // Bleed past the canvas edges so the ±50px sideways pan never
+    // reveals the container behind the map.
+    var BLEED = 60;
+    var cw = this.canvas.offsetWidth || (this.viewport ? this.viewport.offsetWidth : 0) || 1200;
+    var layerW = cw + BLEED * 2;
+    var sceneH = Math.round(layerW / 1.5); // scenes are drawn at 3:2
+    var ground = getZoneGround(this.currentCategory, stage);
+
+    var layer = document.createElement('div');
+    layer.className = 'zone-scene-layer';
+    // translateZ(0) gives the scenery its own GPU texture so animated
+    // road nodes never force these big backgrounds to re-rasterise.
+    layer.style.cssText = 'position:absolute;top:0;left:' + (-BLEED) + 'px;right:' + (-BLEED) + 'px;bottom:' + (-BLEED) + 'px;z-index:-1;pointer-events:none;overflow:hidden;transform:translateZ(0);';
+
+    // Built via style properties (not innerHTML) because the data-URI
+    // background values contain quotes.
+    var top = document.createElement('div');
+    top.style.cssText = 'position:absolute;top:0;left:0;right:0;height:' + sceneH + 'px;background-size:100% 100%;background-repeat:no-repeat;';
+    top.style.backgroundImage = getZoneSceneCss(this.currentCategory, stage, completed);
+
+    // The district continues for the whole length of the road: a scenery
+    // tile (same stage of buildings) repeats seamlessly beneath the scene.
+    var fill = document.createElement('div');
+    fill.style.cssText = 'position:absolute;top:' + sceneH + 'px;left:0;right:0;bottom:0;background-size:100% auto;background-repeat:repeat-y;';
+    fill.style.backgroundColor = ground.color;
+    fill.style.backgroundImage = getZoneFillerCss(this.currentCategory, stage);
+
+    layer.appendChild(top);
+    layer.appendChild(fill);
+    this.canvas.insertBefore(layer, this.canvas.firstChild);
+  }
+
+  removeSceneLayer() {
+    if (!this.canvas) return;
+    var layer = this.canvas.querySelector('.zone-scene-layer');
+    if (layer) layer.remove();
   }
 
   showZoneUpgradeBanner(zone, completedCount) {
@@ -1537,17 +1614,17 @@ class AdventureMapV4 {
     var stage = stages[stageIndex];
     var zoneTitles = [
       '',
-      'Your Brain Town is Starting!',
+      'Your Adventure Begins at the Trailhead!',
       'Your Brain Town Grew Into a Village!',
-      'Your Brain Town is Now a City!',
-      'Your Brain Town is a Metropolis!'
+      'Your Village Grew Into a Town Centre!',
+      'Your Town Centre Grew Into a City!'
     ];
     var zoneSubtitles = [
       '',
       'Every module builds new pathways in your brain!',
       'Look! Houses and fences appeared - your brain pathways are growing stronger!',
-      'Shops and street lights! Your brain connections are getting really powerful!',
-      'A whole skyline! Your brain is an incredible network of pathways!'
+      'Shops, lamps and a clock tower! Your brain connections are getting really powerful!',
+      'Tall buildings and a whole skyline! Your brain is an incredible network of pathways!'
     ];
 
     var title = zoneTitles[zone] || 'Your Brain Town Upgraded!';
@@ -1667,7 +1744,7 @@ class AdventureMapV4 {
     return [
       { label: 'Trailhead', emoji: '🌱', minComplete: 0, maxComplete: 2, milestone: 3, rangeLabel: '1-3' },
       { label: 'Village', emoji: '🏡', minComplete: 3, maxComplete: 5, milestone: 6, rangeLabel: '4-6' },
-      { label: 'Town Center', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '7-9' },
+      { label: 'Town Centre', emoji: '🏘️', minComplete: 6, maxComplete: 8, milestone: 9, rangeLabel: '7-9' },
       { label: 'City', emoji: '🏙️', minComplete: 9, maxComplete: 99, milestone: null, rangeLabel: '10+' }
     ];
   }
@@ -1679,9 +1756,21 @@ class AdventureMapV4 {
     var nextStage = stages[Math.min(stageIndex + 1, stages.length - 1)];
     var nextMilestone = stage.milestone;
     var modulesLeft = nextMilestone ? Math.max(0, nextMilestone - completedCount) : 0;
-    var transitionCopy = nextMilestone
-      ? 'Complete <span class="town-progress-cue-strong">' + modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + '</span> to unlock <span class="town-progress-cue-strong">' + nextStage.emoji + ' ' + nextStage.label + '</span>.'
-      : 'You unlocked the final town stage. Keep reviewing modules to strengthen those pathways.';
+
+    // Check if modules are sufficient but road builder is blocking progression
+    var roadBuilders = this.modules.filter(function(m) { return m.isRoadBuilder; });
+    var rbNeeded = stageIndex + 1; // road builder 1 needed for Village, 2 for Town Centre, etc.
+    var rbDone = roadBuilders.slice(0, rbNeeded).every(function(rb) { return rb && rb.status === 'completed'; });
+    var transitionCopy;
+    if (!nextMilestone) {
+      transitionCopy = 'You unlocked the final town stage. Keep reviewing modules to strengthen those pathways.';
+    } else if (modulesLeft <= 0 && !rbDone) {
+      transitionCopy = 'Complete the <span class="town-progress-cue-strong">Road Builder challenge</span> to unlock <span class="town-progress-cue-strong">' + nextStage.emoji + ' ' + nextStage.label + '</span>.';
+    } else if (modulesLeft > 0) {
+      transitionCopy = modulesLeft + ' more module' + (modulesLeft === 1 ? '' : 's') + ' to unlock ' + nextStage.emoji + ' ' + nextStage.label;
+    } else {
+      transitionCopy = 'Complete <span class="town-progress-cue-strong">the Road Builder</span> to unlock <span class="town-progress-cue-strong">' + nextStage.emoji + ' ' + nextStage.label + '</span>.';
+    }
 
     var timeline = stages.map(function(item, idx) {
       var statusClass = 'town-progress-cue-step';
@@ -1752,7 +1841,7 @@ class AdventureMapV4 {
       { main: '#6B7280', light: '#9CA3AF', shadow: 'rgba(55, 65, 81, 0.35)',
         shadowW: 38, mainW: 32, lightW: 24, dashW: 3, dashArray: '12 16',
         dashColor: 'rgba(255,255,255,0.7)' },
-      // Town Center: highway - dark asphalt, wider, double lane markings
+      // Town Centre: highway - dark asphalt, wider, double lane markings
       { main: '#4B5563', light: '#6B7280', shadow: 'rgba(31, 41, 55, 0.4)',
         shadowW: 46, mainW: 40, lightW: 30, dashW: 3, dashArray: '18 12',
         dashColor: 'rgba(255,255,255,0.85)' },
@@ -1839,10 +1928,10 @@ class AdventureMapV4 {
     if (!anchor) return;
 
     var townStages = [
-      { label: 'Wild Woods', buildings: ['🌲', '🌳', '⛺'] },
-      { label: 'Little Village', buildings: ['🏠', '🏡', '🏘️'] },
-      { label: 'Growing Town', buildings: ['🏫', '🏬', '🏪', '🏠'] },
-      { label: 'Big City', buildings: ['🏢', '🏦', '🏙️', '🏬'] }
+      { label: 'Trailhead', buildings: ['🌲', '🌳', '⛺'] },
+      { label: 'Village', buildings: ['🏠', '🏡', '🏘️'] },
+      { label: 'Town Centre', buildings: ['🏫', '🏬', '🏪', '🏠'] },
+      { label: 'City', buildings: ['🏢', '🏦', '🏙️', '🏬'] }
     ];
 
     var stageData = townStages[townStage];
@@ -2071,6 +2160,11 @@ class AdventureMapV4 {
         badge.textContent = '★';
         node.appendChild(badge);
         statusLabel = (index === currentIndex) ? 'Next' : '';
+      } else if (module.status === 'locked') {
+        var lockBadge = document.createElement('div');
+        lockBadge.className = 'node-lock';
+        lockBadge.textContent = '🔒';
+        node.appendChild(lockBadge);
       }
 
       if (statusLabel) {
@@ -2108,6 +2202,7 @@ class AdventureMapV4 {
       var tooltip = document.createElement('div');
       tooltip.className = 'node-tooltip';
 
+      var moduleTitle = (module.module && (module.module.title || module.module.name)) || module.title || module.name || 'Module ' + moduleNumber;
       var statusText = '';
       var statusClass = '';
       if (module.status === 'completed') {
@@ -2117,9 +2212,11 @@ class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = module.canUnlock ? 'Locked - spend 1 credit to unlock' : 'Locked - start with the first lock';
+        statusText = module.canUnlock ? '🔒 Spend 1 credit to unlock' : '🔒 Complete earlier modules first';
         statusClass = 'locked-status';
       }
+      tooltip.innerHTML = '<strong style="display:block;margin-bottom:4px;font-size:14px;">' + moduleTitle + '</strong><span class="' + statusClass + '">' + statusText + '</span>';
+      node.appendChild(tooltip);
 
       node.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -2250,19 +2347,14 @@ class AdventureMapV4 {
     
     var self = this;
     
-    // Always attach dropdown listeners regardless of viewport
-    var categoryFilter = document.getElementById('categoryFilter');
-    if (categoryFilter) {
-      this._categoryChangeHandler = function(e) {
-        self.currentCategory = e.target.value;
-        self.setStoredCategory(self.currentCategory);
-        self.currentCycleId = null;
-        self.translateX = 0;
-        self.translateY = 0;
-        self.hasUserInteracted = false;
+    // Skill picker badge click - go back to skill picker
+    var openSkillPicker = document.getElementById('openSkillPicker');
+    if (openSkillPicker) {
+      this._openSkillPickerHandler = function() {
+        self._skillSelectedThisSession = false;
         self.render();
       };
-      categoryFilter.addEventListener('change', this._categoryChangeHandler);
+      openSkillPicker.addEventListener('click', this._openSkillPickerHandler);
     }
 
     var cycleFilter = document.getElementById('cycleFilter');
@@ -2364,10 +2456,10 @@ class AdventureMapV4 {
       window.removeEventListener('resize', this.boundHandlers.resize);
     }
 
-    // Remove dropdown event listeners
-    var categoryFilter = document.getElementById('categoryFilter');
-    if (categoryFilter && this._categoryChangeHandler) {
-      categoryFilter.removeEventListener('change', this._categoryChangeHandler);
+    // Remove skill picker badge listener
+    var openSkillPicker = document.getElementById('openSkillPicker');
+    if (openSkillPicker && this._openSkillPickerHandler) {
+      openSkillPicker.removeEventListener('click', this._openSkillPickerHandler);
     }
 
     var cycleFilter = document.getElementById('cycleFilter');
@@ -2381,7 +2473,10 @@ class AdventureMapV4 {
     if (!this.canvas) return;
     this.isDragging = true;
     this.viewport.classList.add('dragging');
-    
+    // No transition while the finger is down — a lingering transform
+    // transition makes every drag frame animate and feel laggy.
+    this.canvas.style.transition = 'none';
+
     var point = e.type.indexOf('touch') >= 0 ? e.touches[0] : e;
     this.startX = point.clientX;
     this.startY = point.clientY;
@@ -2414,7 +2509,7 @@ class AdventureMapV4 {
 
     this.translateY = Math.min(maxY, Math.max(minY, this.translateY));
     this.translateX = Math.min(50, Math.max(-50, this.translateX));
-    this.canvas.style.transform = 'translate(' + this.translateX + 'px, ' + this.translateY + 'px)';
+    this.canvas.style.transform = 'translate3d(' + this.translateX + 'px, ' + this.translateY + 'px, 0)';
 
     if (e.type.indexOf('touch') >= 0) e.preventDefault();
   }
@@ -2487,10 +2582,10 @@ class AdventureMapV4 {
       
       var self = this;
       this.canvas.style.transition = 'transform 0.5s ease';
-      this.canvas.style.transform = 'translate(' + this.translateX + 'px, ' + this.translateY + 'px)';
-      
+      this.canvas.style.transform = 'translate3d(' + this.translateX + 'px, ' + this.translateY + 'px, 0)';
+
       setTimeout(function() {
-        if (self.canvas) self.canvas.style.transition = 'transform 0.05s linear';
+        if (self.canvas) self.canvas.style.transition = 'none';
       }, 500);
     }
   }
@@ -2501,505 +2596,9 @@ class AdventureMapV4 {
     this.translateX = 0;
     var self = this;
     this.canvas.style.transition = 'transform 0.5s ease';
-    this.canvas.style.transform = 'translate(' + this.translateX + 'px, ' + this.translateY + 'px)';
+    this.canvas.style.transform = 'translate3d(' + this.translateX + 'px, ' + this.translateY + 'px, 0)';
     setTimeout(function() {
-      if (self.canvas) self.canvas.style.transition = 'transform 0.05s linear';
+      if (self.canvas) self.canvas.style.transition = 'none';
     }, 500);
   }
 }
-
-// ================================================
-// DAILY QUESTS & ENHANCED DASHBOARD
-// ================================================
-
-var DAILY_QUESTS = [
-  { id: 'q1', name: 'Complete any module', reward: 5 },
-  { id: 'q2', name: 'Practice deep breathing', reward: 3 },
-  { id: 'q3', name: 'Talk about your feelings', reward: 4 },
-  { id: 'q4', name: 'Help someone today', reward: 5 },
-  { id: 'q5', name: 'Try something new', reward: 4 }
-];
-
-var DANIEL_MOODS = [
-  "Ready for adventure! 🌟",
-  "Let's learn together! 📚",
-  "You're doing great! 💪",
-  "I believe in you! ⭐",
-  "Time to explore! 🗺️"
-];
-
-var DANIEL_IMAGES = [
-  "/images/characters/DanielTheDog.webp",
-  "/images/characters/DanielReading.webp",
-  "/images/characters/DanielTheDogHoldingHeart.webp",
-  "/images/characters/DanielTheDogReading.webp",
-  "/images/characters/DanielTheDogThumbsUp.webp",
-  "/images/characters/DanielWithFootball.webp"
-];
-
-class EnhancedDashboard {
-  constructor() {
-    this.adventureMap = null;
-    this.currentQuest = null;
-    this.questProgress = 0;
-    this.danielMoodIndex = 0;
-    this.initialized = false;
-    this.eventListenersAttached = false;
-  }
-
-  init() {
-    var self = this;
-    getDashboardData();
-
-    // Only attach event listeners once
-    if (!this.eventListenersAttached) {
-      this.setupDanielHub();
-      this.setupModulePreview();
-      this.eventListenersAttached = true;
-    }
-
-    // Load quest data (synchronous localStorage read)
-    this.loadDailyQuest();
-
-    // Update UI synchronously - these are fast DOM writes
-    this.updateDanielMood();
-    this.updateQuestDisplay();
-    this.updateRankDisplay();
-
-    // Setup adventure map - render() has its own rAF
-    this.setupAdventureMap();
-
-    this.initialized = true;
-  }
-
-  setupDanielHub() {
-    if (isDanielMoodCheckinEnabled()) return;
-    var self = this;
-    var danielHub = document.getElementById('danielHub');
-    if (danielHub) danielHub.addEventListener('click', function() { self.interactWithDaniel(); });
-  }
-
-  interactWithDaniel() {
-    if (isDanielMoodCheckinEnabled()) return;
-    var danielAvatar = document.querySelector('.hero-daniel-img') || document.querySelector('.daniel-avatar');
-    var moodText = document.getElementById('moodText');
-    
-    if (danielAvatar) {
-      danielAvatar.style.transform = 'scale(1.2)';
-      setTimeout(function() { danielAvatar.style.transform = 'scale(1)'; }, 200);
-    }
-
-    // Randomly select a mood quote
-    this.danielMoodIndex = (this.danielMoodIndex + 1) % DANIEL_MOODS.length;
-    if (moodText) moodText.textContent = DANIEL_MOODS[this.danielMoodIndex];
-
-    // Randomly select and set a new Daniel image
-    var randomImageIndex = Math.floor(Math.random() * DANIEL_IMAGES.length);
-    if (danielAvatar && DANIEL_IMAGES[randomImageIndex]) {
-      danielAvatar.src = DANIEL_IMAGES[randomImageIndex];
-    }
-
-    this.addSparkleEffect(danielAvatar);
-  }
-
-  updateDanielMood() {
-    if (isDanielMoodCheckinEnabled()) return;
-    var moodText = document.getElementById('moodText');
-    if (moodText) moodText.textContent = DANIEL_MOODS[this.danielMoodIndex];
-  }
-
-  addSparkleEffect(element) {
-    if (!element) return;
-    var sparkles = ['✨', '⭐', '💫', '🌟'];
-    var rect = element.getBoundingClientRect();
-    
-    for (var i = 0; i < 5; i++) {
-      var sparkle = document.createElement('div');
-      sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
-      sparkle.style.cssText = 'position: fixed; left: ' + (rect.left + Math.random() * rect.width) + 'px; top: ' + (rect.top + Math.random() * rect.height) + 'px; font-size: 20px; pointer-events: none; z-index: 9999; animation: sparkleFloat 1s ease-out forwards;';
-      document.body.appendChild(sparkle);
-      (function(s) {
-        setTimeout(function() { s.remove(); }, 1000);
-      })(sparkle);
-    }
-  }
-
-  setupDailyQuest() {
-    this.loadDailyQuest();
-    this.updateQuestDisplay();
-  }
-
-  loadDailyQuest() {
-    var today = new Date().toDateString();
-    var savedQuest = localStorage.getItem('dailyQuest_' + today);
-    
-    if (savedQuest) {
-      var questData = JSON.parse(savedQuest);
-      this.currentQuest = questData.quest;
-      this.questProgress = questData.progress;
-    } else {
-      var randomQuest = DAILY_QUESTS[Math.floor(Math.random() * DAILY_QUESTS.length)];
-      this.currentQuest = { id: randomQuest.id, name: randomQuest.name, reward: randomQuest.reward, target: 1, completed: false };
-      this.questProgress = 0;
-      this.saveDailyQuest();
-    }
-  }
-
-  saveDailyQuest() {
-    var today = new Date().toDateString();
-    localStorage.setItem('dailyQuest_' + today, JSON.stringify({
-      quest: this.currentQuest,
-      progress: this.questProgress
-    }));
-  }
-
-  updateQuestDisplay() {
-    var questDescription = document.getElementById('questDescription');
-    var questProgressFill = document.getElementById('questProgressFill');
-    var questProgressText = document.getElementById('questProgressText');
-    var questRewardText = document.getElementById('questRewardText');
-
-    if (this.currentQuest) {
-      if (questDescription) questDescription.textContent = this.currentQuest.name;
-      if (questRewardText) questRewardText.textContent = '+' + this.currentQuest.reward + ' Star' + (this.currentQuest.reward > 1 ? 's' : '');
-      
-      var progressPercent = Math.min((this.questProgress / this.currentQuest.target) * 100, 100);
-      if (questProgressFill) questProgressFill.style.width = progressPercent + '%';
-      if (questProgressText) questProgressText.textContent = this.questProgress + '/' + this.currentQuest.target;
-
-      if (this.questProgress >= this.currentQuest.target && !this.currentQuest.completed) {
-        this.completeQuest();
-      }
-    }
-  }
-
-  completeQuest() {
-    if (this.currentQuest && !this.currentQuest.completed) {
-      this.currentQuest.completed = true;
-      this.saveDailyQuest();
-    }
-  }
-
-  setupAdventureMap() {
-    if (!this.adventureMap) {
-      this.adventureMap = new AdventureMapV4();
-    }
-    this.adventureMap.init();
-  }
-
-  setupModulePreview() {
-    var self = this;
-    var closeBtn = document.getElementById('closePreviewBtn');
-    if (closeBtn) closeBtn.addEventListener('click', function() { self.hideModulePreview(); });
-
-    var previewCloseBtn = document.getElementById('previewCloseBtn');
-    if (previewCloseBtn) previewCloseBtn.addEventListener('click', function() { self.hideModulePreview(); });
-  }
-
-  showModulePreview(module) {
-    var panels = document.querySelectorAll('.module-preview-panel');
-    if (!panels || panels.length === 0) return;
-
-    var emoji = document.getElementById('previewEmoji');
-    var title = document.getElementById('previewTitle');
-    var description = document.getElementById('previewDescription');
-    var startBtnA = document.getElementById('startModuleBtn');
-
-    var titleB = document.getElementById('previewModuleTitle');
-    var imageB = document.getElementById('previewImage');
-    var startBtnB = document.getElementById('previewStartBtn');
-
-    var moduleTitle = (module.module && (module.module.title || module.module.name)) || module.title || module.name || 'Module';
-    var moduleDescription = '';
-    if (module.module) {
-      moduleDescription = module.module.short_description || module.module.description || module.module.long_description || '';
-    }
-    moduleDescription = moduleDescription || module.short_description || module.description || 'Explore emotions and learn coping strategies in this interactive module.';
-
-    if (emoji) emoji.textContent = module.emoji || '📘';
-    if (title) title.textContent = moduleTitle;
-    if (description) description.textContent = moduleDescription;
-
-    if (titleB) titleB.textContent = moduleTitle;
-    if (imageB) {
-      imageB.innerHTML = '<div class="preview-placeholder">' + (module.emoji || '📚') + '</div>';
-    }
-
-    var self = this;
-    var startHandler = function() {
-      self.hideModulePreview();
-      self.startModule(module);
-    };
-
-    if (startBtnA) startBtnA.onclick = startHandler;
-    if (startBtnB) startBtnB.onclick = startHandler;
-
-    panels.forEach(function(p) {
-      p.classList.remove('hidden');
-    });
-  }
-
-  hideModulePreview() {
-    var panels = document.querySelectorAll('.module-preview-panel');
-    if (!panels || panels.length === 0) return;
-    panels.forEach(function(p) {
-      p.classList.add('hidden');
-    });
-  }
-
-  async startModule(module) {
-    var child = window.selectedChild || (window.state && window.state.selectedChild) || dashboardSelectedChild;
-    if (!module.module || !child) {
-      return;
-    }
-
-    var mod = module.module;
-    var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
-
-    try {
-      var superSkillId = mod.super_skill_id || null;
-
-      // Check 1: Periodic check-in (every 3 modules) - takes priority over intro
-      var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-      console.log('[AdventureMap.startModule] Check 1 (periodic) - needsCheckin:', needsCheckin);
-      if (needsCheckin) {
-        if (typeof window.showCheckinPopup === 'function') {
-          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-          console.log('[AdventureMap.startModule] Calling showCheckinPopup with skipIntro=true');
-          window.showCheckinPopup(popupModule, function() {
-            window.location.href = moduleUrl;
-          }, true);
-          return;
-        }
-      }
-
-      // Check 2: First module in a super skill → show character intro
-      console.log('[AdventureMap.startModule] Check 2 (intro) - superSkillId:', superSkillId, 'childId:', child.id);
-      if (superSkillId && typeof window.showCheckinPopup === 'function') {
-        var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
-        var alreadySeen = localStorage.getItem(introKey);
-        console.log('[AdventureMap.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen);
-        if (!alreadySeen) {
-          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-          window.showCheckinPopup(popupModule, function() {
-            localStorage.setItem(introKey, 'true');
-            window.location.href = moduleUrl;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      console.error('[StartModule] Error checking checkin:', e);
-    }
-
-    window.location.href = moduleUrl;
-  }
-  
-  // Check if a check-in is needed based on completed module count (every 3 modules)
-  async shouldTriggerCheckinForModuleCount(childId, superSkillId) {
-    if (!childId || !window.supabase) return false;
-    var CHECKIN_MODULE_INTERVAL = 3;
-
-    try {
-      // Count completed modules for this child IN this super skill
-      var completedCount = 0;
-      if (superSkillId) {
-        var completedResult = await window.supabase
-          .from('child_modules')
-          .select('id, modules!inner(super_skill_id)')
-          .eq('child_id', childId)
-          .eq('is_completed', true)
-          .eq('modules.super_skill_id', superSkillId);
-
-        if (completedResult.error) {
-          console.error('[Check-in] Error counting completed modules:', completedResult.error);
-          return false;
-        }
-        completedCount = (completedResult.data && completedResult.data.length) || 0;
-      } else {
-        var completedResult = await window.supabase
-          .from('child_modules')
-          .select('id')
-          .eq('child_id', childId)
-          .eq('is_completed', true);
-
-        if (completedResult.error) return false;
-        completedCount = (completedResult.data && completedResult.data.length) || 0;
-      }
-
-      // Count check-ins for this child for this super skill's pathway
-      var checkinCount = 0;
-      if (superSkillId) {
-        var skillResult = await window.supabase
-          .from('super_skills')
-          .select('slug')
-          .eq('id', superSkillId)
-          .single();
-
-        var slug = skillResult.data && skillResult.data.slug;
-        if (slug) {
-          var checkinResult = await window.supabase
-            .from('pathway_assessments')
-            .select('id')
-            .eq('child_id', childId)
-            .eq('pathway_category', slug)
-            .in('assessment_type', ['checkin', 'check_in']);
-
-          if (!checkinResult.error) {
-            checkinCount = (checkinResult.data && checkinResult.data.length) || 0;
-          }
-        }
-      }
-      // If no super skill or slug lookup failed, count all check-ins
-      if (!superSkillId || checkinCount === 0) {
-        var allCheckinsResult = await window.supabase
-          .from('pathway_assessments')
-          .select('id')
-          .eq('child_id', childId)
-          .in('assessment_type', ['checkin', 'check_in']);
-        checkinCount = (allCheckinsResult.data && allCheckinsResult.data.length) || 0;
-      }
-
-      // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
-      // Don't include the initial intro check-in (that's separate)
-      var expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL);
-
-      console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins);
-
-      if (expectedCheckins > 0 && checkinCount < expectedCheckins) {
-        console.log('[Check-in] Triggering check-in - need to catch up');
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      console.error('Error checking checkin status:', e);
-      return false;
-    }
-  }
-
-  async getPathwayProgress(childId, pathwayCategory) {
-    if (!window.progressTrackingSystem || !window.supabase) return null;
-    await window.progressTrackingSystem.init(window.supabase);
-    var assessments = await window.progressTrackingSystem.getProgressData(childId, pathwayCategory);
-    return window.progressTrackingSystem.generateProgressReport(assessments);
-  }
-
-  updateRankDisplay() {
-    getDashboardData();
-    var rankElement = document.getElementById('childRank');
-    if (rankElement && dashboardSelectedChild) {
-      if (dashboardChildren && dashboardChildren.length > 0) {
-        var sortedChildren = dashboardChildren.filter(function(child) { return child.total_stars !== undefined; }).sort(function(a, b) { return (b.total_stars || 0) - (a.total_stars || 0); });
-        var rank = -1;
-        for (var i = 0; i < sortedChildren.length; i++) {
-          if (sortedChildren[i].id === dashboardSelectedChild.id) {
-            rank = i + 1;
-            break;
-          }
-        }
-        rankElement.textContent = rank > 0 ? '#' + rank : '#1';
-      } else {
-        rankElement.textContent = '#1';
-      }
-    }
-  }
-}
-
-// CSS Animation for sparkles
-var sparkleCSS = document.createElement('style');
-sparkleCSS.textContent = '@keyframes sparkleFloat { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(0); opacity: 0; } }';
-document.head.appendChild(sparkleCSS);
-
-// Initialize
-var enhancedDashboard;
-var enhancedDashboardInitialized = false;
-
-function initEnhancedDashboard() {
-  if (enhancedDashboardInitialized && enhancedDashboard) {
-    // Already initialized, just refresh
-    enhancedDashboard.init();
-    return;
-  }
-
-  console.log('Initializing enhanced dashboard with Adventure Map V4 (Super Skills Themed)...');
-  enhancedDashboard = new EnhancedDashboard();
-  enhancedDashboardInitialized = true;
-  window.enhancedDashboard = enhancedDashboard;
-  enhancedDashboard.init();
-  
-  // Footer is shown after the adventure map finishes rendering
-  // (via window._dashboardRenderComplete below)
-}
-
-// OPTIMIZED: Use event-driven initialization instead of polling
-document.addEventListener('DOMContentLoaded', function() {
-  // Check immediately if data is available
-  if (typeof window.modules !== 'undefined' && window.modules && window.modules.length > 0) {
-    requestAnimationFrame(initEnhancedDashboard);
-    return;
-  }
-  
-  // If not ready, use MutationObserver to watch for data instead of polling
-  var checkCount = 0;
-  var maxChecks = 25; // Max 5 seconds (25 * 200ms)
-  
-  function checkDataReady() {
-    checkCount++;
-    // Check for window.modules OR window.state.selectedChild (the actual variable used)
-    if (typeof window.modules !== 'undefined' || (window.state && window.state.selectedChild)) {
-      requestAnimationFrame(initEnhancedDashboard);
-    } else if (checkCount < maxChecks) {
-      setTimeout(checkDataReady, 200);
-    } else {
-      console.warn('Enhanced dashboard: Data not available after timeout');
-    }
-  }
-  
-  // Start checking after a short delay
-  setTimeout(checkDataReady, 100);
-});
-
-// Refresh function - immediate execution, debounces rapid successive calls
-var refreshDebounceTimer = null;
-window.refreshEnhancedDashboard = function() {
-  // If a call is already pending, skip (debounce)
-  if (refreshDebounceTimer) {
-    return;
-  }
-  // Execute immediately
-  if (enhancedDashboard) {
-    enhancedDashboard.init();
-  } else {
-    initEnhancedDashboard();
-  }
-  // Block subsequent calls for 50ms
-  refreshDebounceTimer = setTimeout(function() {
-    refreshDebounceTimer = null;
-  }, 50);
-};
-
-window.initEnhancedDashboard = initEnhancedDashboard;
-
-// Function to set super skill from focus plan (called by dashboard.js)
-window.setAdventureMapSuperSkill = function(superSkillSlug) {
-  if (!superSkillSlug) return;
-  
-  // Store globally
-  window.currentFocusSuperSkill = superSkillSlug;
-  
-  // Update the adventure map if it exists
-  if (enhancedDashboard && enhancedDashboard.adventureMap) {
-    enhancedDashboard.adventureMap.currentCategory = superSkillSlug;
-    enhancedDashboard.adventureMap.setStoredCategory(superSkillSlug);
-    enhancedDashboard.adventureMap.render();
-  }
-};
-
-// Export the category to super skill mapping for use by focus-plan.js
-window.CATEGORY_TO_SUPERSKILL = CATEGORY_TO_SUPERSKILL;
-function isDanielMoodCheckinEnabled() {
-  return Boolean(window.__danielMoodCheckinEnabled || document.getElementById('danielMoodModal'))
-}
-
-

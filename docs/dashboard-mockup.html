@@ -1,0 +1,1136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daniel's Diaries - Brain Town</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --header1:#5e7197;--header2:#46587a;--gold:#f2c94c;--gold-deep:#e6a800;
+  --navy:#16324f;--ink:#1e3a5f;--primary:#405878;--muted:#6b7e95;
+  --purple1:#6366F1;--purple2:#8b5cf6;--coral1:#f4a45e;--coral2:#ed7a50;
+  --card:#fff;--line:#e7ecf3;--soft:#f4f7fb;
+  /* Noah diagnosis palette */
+  --fasd:#C0404A;--adhd:#3A6EA8;--odd:#C96B28;--asd:#7048A8;--anx:#2A7A5F;--short:#B8860B;
+  --calm:#43a047;--storm:#8a6d3b;
+  --shadow:0 8px 26px rgba(40,60,90,.10);--shadow-sm:0 3px 12px rgba(40,60,90,.08);
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Fredoka',sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,#a3d1ef 0%,#c7e3f5 20%,#e9f3fb 46%,#fdfbf2 100%);
+  background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;}
+button{font-family:'Fredoka',sans-serif;cursor:pointer;}
+.hidden{display:none !important;}
+h1,h2,h3,h4{margin:0;}
+
+/* header */
+.header{background:linear-gradient(135deg,var(--header1),var(--header2));border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:40;box-shadow:0 3px 14px rgba(0,0,0,.16);}
+.hwrap{max-width:1180px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.hleft{display:flex;align-items:center;gap:12px;}
+.logo{width:46px;height:46px;border-radius:13px;background:#eef3fb;display:flex;align-items:center;justify-content:center;font-size:26px;}
+.htitle{color:#fff;font-weight:700;font-size:20px;line-height:1.05;}
+.hsub{color:#d3e0f0;font-size:12px;font-weight:400;}
+.hmini{display:flex;align-items:center;gap:8px;}
+.chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;}
+.hhelp{background:#fff;color:var(--ink);border:none;border-radius:999px;padding:8px 13px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;}
+.hhelp .q{width:18px;height:18px;border-radius:50%;background:var(--purple1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;}
+
+/* nav */
+.nav{position:sticky;top:70px;z-index:30;display:flex;justify-content:center;padding:14px 12px 4px;}
+.navbar{background:#fff;border-radius:999px;padding:6px;box-shadow:var(--shadow);display:flex;gap:4px;overflow-x:auto;max-width:100%;}
+.navbtn{border:none;background:transparent;color:#3f5170;font-weight:600;font-size:14px;padding:10px 16px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;gap:7px;}
+.navbtn:hover{background:var(--soft);}
+.navbtn.active{background:#3f5170;color:#fff;}
+
+.wrap{max-width:1180px;margin:0 auto;padding:14px 22px 40px;}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:22px;margin-bottom:20px;}
+.sec-title{font-size:23px;font-weight:700;color:var(--navy);}
+.sec-sub{color:var(--muted);font-size:14px;font-weight:400;margin-top:3px;}
+.tagnew{display:inline-block;background:var(--gold);color:var(--navy);font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.4px;vertical-align:middle;margin-left:8px;}
+.btn{border:none;border-radius:13px;padding:12px 20px;font-weight:600;font-size:14.5px;display:inline-flex;align-items:center;gap:8px;transition:.15s;}
+.btn:hover{transform:translateY(-1px);}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--navy);}
+.btn-purple{background:linear-gradient(135deg,var(--purple1),var(--purple2));color:#fff;}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-ghost{background:#fff;color:var(--primary);border:1.5px solid var(--line);}
+.btn-sm{padding:9px 15px;font-size:13.5px;border-radius:11px;}
+
+/* ===== WORLD ===== */
+.welcome{background:linear-gradient(135deg,#0e2c4a,#16324f);color:#fff;border-radius:22px;padding:18px 22px;display:flex;align-items:center;gap:16px;margin-bottom:18px;box-shadow:var(--shadow);}
+.welcome .wd{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle,#fbe7a6,#f6cf6a);display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0;animation:bob 4s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.welcome h2{font-size:18px;color:#fff;}
+.welcome p{font-size:13.5px;color:#cfe0f0;margin:3px 0 0;max-width:560px;}
+
+.maptitle{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.brainbanner{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#6366F1,#8b5cf6);color:#fff;border-radius:20px;padding:16px 20px;margin-bottom:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.brainbanner .bb-icon{font-size:48px;animation:pulse 2.2s ease-in-out infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}
+.brainbanner h2{font-size:21px;color:#fff;}
+.brainbanner p{font-size:13.5px;color:#ece9ff;margin:3px 0 0;max-width:580px;}
+.brainbanner .spark{position:absolute;font-size:18px;opacity:.55;animation:pulse 3s ease-in-out infinite;}
+.maplegend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:12.5px;color:var(--primary);font-weight:600;}
+.maplegend .lg{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px;}
+.maplegend .lg .e{font-size:15px;}
+.pl-head{font-size:13px;font-weight:700;color:var(--navy);margin:4px 0 8px;display:flex;align-items:center;gap:7px;}
+.map{position:relative;border-radius:22px;overflow:hidden;box-shadow:var(--shadow);min-height:380px;
+  background:linear-gradient(180deg,#bfe3fb 0%,#d8eefb 38%,#cde6c2 38%,#bfe0b2 100%);}
+.map svg.roads{position:absolute;inset:0;width:100%;height:100%;}
+.sun{position:absolute;top:18px;right:26px;font-size:34px;}
+.cloud2{position:absolute;font-size:30px;opacity:.9;animation:drift 18s linear infinite;}
+@keyframes drift{from{transform:translateX(-10px)}to{transform:translateX(30px)}}
+.pin{position:absolute;transform:translate(-50%,-50%);text-align:center;width:96px;}
+.pin button{width:60px;height:60px;border-radius:18px;border:3px solid #fff;background:#fff;font-size:30px;box-shadow:0 6px 16px rgba(20,50,80,.22);display:flex;align-items:center;justify-content:center;margin:0 auto;transition:.15s;position:relative;}
+.pin button:hover{transform:translateY(-3px) scale(1.05);}
+.pin .plabel{margin-top:5px;font-size:11.5px;font-weight:600;color:var(--navy);background:rgba(255,255,255,.82);border-radius:8px;padding:2px 6px;display:inline-block;line-height:1.15;}
+.pin.go button{background:linear-gradient(135deg,var(--gold),var(--gold-deep));border-color:#fff;}
+.pin .state{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;border:2px solid #fff;background:var(--calm);}
+.pin .state.ring{background:var(--fasd);animation:flash 1s infinite;}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.35}}
+.maphint{text-align:center;font-size:12.5px;color:var(--primary);padding:10px;background:rgba(255,255,255,.7);}
+
+/* explorable draggable map */
+.xm-stage{position:relative;margin-bottom:20px;}
+.xm-viewport{position:relative;height:62vh;min-height:440px;border-radius:22px;overflow:hidden;border:1.5px solid var(--line);box-shadow:var(--shadow);cursor:grab;touch-action:none;background:linear-gradient(160deg,#dff0e2,#dfeef4);}
+.xm-viewport.grabbing{cursor:grabbing;}
+.xm-world{position:absolute;top:0;left:0;width:1600px;height:1100px;transform-origin:0 0;will-change:transform;background:radial-gradient(620px 380px at 28% 30%,#e8f6ea,transparent 62%),radial-gradient(560px 340px at 78% 74%,#e1f1f6,transparent 62%),linear-gradient(160deg,#d8ecda,#d2e7ec);}
+.xm-world svg{position:absolute;top:0;left:0;width:1600px;height:1100px;}
+.xm-pond{position:absolute;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c6e6f1,#9ed0e2);opacity:.9;pointer-events:none;}
+.xm-deco{position:absolute;font-size:34px;pointer-events:none;transform:translate(-50%,-50%);}
+.xm-bld{position:absolute;transform:translate(-50%,-50%);background:#fff;border:2px solid var(--line);border-radius:16px;padding:11px 14px;box-shadow:var(--shadow);text-align:center;min-width:112px;cursor:pointer;transition:transform .14s,box-shadow .14s;}
+.xm-bld:hover{transform:translate(-50%,-50%) scale(1.06);}
+.xm-bld .em{font-size:32px;line-height:1;}
+.xm-bld .mt{font-size:13.5px;font-weight:700;color:var(--navy);margin-top:4px;line-height:1.1;}
+.xm-bld .rg{font-size:10.5px;color:var(--muted);margin-top:1px;}
+.xm-bld.home{border-color:var(--gold);background:#fff8e6;}
+.xm-bld.go{border-color:var(--gold-deep);background:linear-gradient(160deg,#fff,#fff4d8);}
+.xm-bld .state{position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;border:2px solid #fff;background:var(--calm);}
+.xm-bld .state.ring{background:var(--fasd);animation:flash 1s infinite;}
+.xm-here{position:absolute;transform:translate(-50%,-50%);font-size:11px;font-weight:700;color:#fff;background:var(--purple1);padding:4px 10px;border-radius:999px;white-space:nowrap;box-shadow:var(--shadow-sm);pointer-events:none;}
+.xm-here::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--purple1);}
+.xm-paw{position:absolute;top:0;left:0;width:30px;height:30px;display:grid;place-items:center;font-size:23px;opacity:0;}
+.xm-paw.go{opacity:1;}
+.xm-controls{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:6;}
+.xm-ctrl{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--navy);font-size:20px;font-weight:700;display:grid;place-items:center;box-shadow:var(--shadow-sm);}
+.xm-ctrl:hover{background:var(--soft);}
+.xm-hint{position:absolute;left:14px;top:14px;z-index:6;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--navy);box-shadow:var(--shadow-sm);}
+.xm-tip{position:absolute;left:14px;bottom:14px;z-index:6;max-width:60%;background:#fff8e6;border:1px solid #f3e2a8;border-radius:14px;padding:10px 14px;font-size:12.5px;color:var(--navy);line-height:1.45;box-shadow:var(--shadow-sm);}
+.xm-scrim{position:absolute;inset:0;background:rgba(30,40,70,.18);opacity:0;visibility:hidden;transition:.25s;z-index:7;}
+.xm-scrim.open{opacity:1;visibility:visible;}
+.xm-drawer{position:absolute;top:0;right:0;height:100%;width:340px;max-width:86%;background:#fff;box-shadow:-14px 0 40px rgba(40,55,95,.18);transform:translateX(108%);transition:transform .3s cubic-bezier(.3,.8,.3,1);z-index:8;display:flex;flex-direction:column;}
+.xm-drawer.open{transform:translateX(0);}
+.xm-d-head{padding:22px 22px 16px;background:linear-gradient(160deg,var(--soft),#fff);border-bottom:1px solid var(--line);position:relative;}
+.xm-d-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:0;background:#fff;color:var(--navy);font-size:16px;font-weight:700;box-shadow:var(--shadow-sm);}
+.xm-d-em{font-size:46px;line-height:1;}
+.xm-d-name{font-size:21px;margin-top:6px;color:var(--navy);font-weight:700;}
+.xm-d-region{font-size:12px;font-weight:700;color:var(--purple1);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.xm-d-body{padding:18px 22px;overflow:auto;flex:1;}
+.xm-d-body p{font-size:14px;color:var(--primary);line-height:1.6;margin:0;}
+.xm-d-blk{margin-bottom:14px;}
+.xm-d-blk .xm-d-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px;}
+.xm-d-blk.live .xm-d-h{color:var(--fasd);}
+.xm-d-foot{padding:16px 22px;border-top:1px solid var(--line);}
+.xm-d-cta{width:100%;justify-content:center;}
+.xm-bld.lib{border-color:#7048A8;background:#f6f0ff;}
+.xm-d-region-card{border:1px solid var(--line);border-left:4px solid var(--purple1);border-radius:12px;padding:11px 13px;margin-bottom:11px;background:#fff;}
+.xm-d-region-card .xrc-name{font-weight:700;color:var(--navy);font-size:14px;}
+.xm-d-region-card .xrc-real{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;}
+.xm-d-region-card .xrc-blk{font-size:12.5px;color:var(--primary);line-height:1.5;margin-top:5px;}
+.xm-d-region-card .xrc-h{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--purple1);}
+.xm-prog{background:var(--soft);border-radius:12px;padding:12px;margin:4px 0 14px;}
+.xm-prog-top{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--navy);margin-bottom:6px;}
+.xm-prog-track{height:12px;background:#e3e8ef;border-radius:999px;overflow:hidden;}
+.xm-prog-fill{height:100%;border-radius:999px;transition:width .5s;}
+.xm-prog-note{font-size:11.5px;color:var(--muted);margin-top:7px;}
+
+/* mobile fallback list for map */
+.placelist{display:none;}
+.placelist .pl{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;}
+.placelist .pl .e{font-size:26px;}
+.placelist .pl b{color:var(--navy);font-size:14px;} .placelist .pl span{color:var(--muted);font-size:12px;}
+
+.feature{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px;}
+.feat{border-radius:20px;padding:22px;color:#fff;position:relative;overflow:hidden;}
+.feat.road{background:linear-gradient(135deg,#1f6f43,#2e8b57);}
+.feat.adv{background:linear-gradient(135deg,#6d5ae0,#8b5cf6);}
+.feat h3{font-size:19px;color:#fff;} .feat p{font-size:13px;opacity:.93;margin:6px 0 14px;max-width:320px;}
+.feat .btn{background:#fff;color:var(--navy);}
+.feat .big{position:absolute;right:14px;top:10px;font-size:44px;opacity:.85;}
+
+.gorow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:6px;}
+.gotile{border:1px solid var(--line);background:#fff;border-radius:18px;padding:16px 12px;text-align:center;transition:.15s;}
+.gotile:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+.gotile .ge{font-size:30px;} .gotile b{display:block;color:var(--navy);font-size:14px;margin-top:6px;} .gotile span{font-size:11.5px;color:var(--muted);}
+
+/* ===== ROAD BUILDER ===== */
+.rbwrap{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;}
+.rbstage{background:linear-gradient(180deg,#bfe3fb,#d8eefb 45%,#cde6c2 45%,#bfe0b2);border-radius:20px;padding:14px;position:relative;min-height:280px;}
+#roadSvg{width:100%;height:auto;display:block;}
+.rbmeter{margin-top:12px;}
+.rbmeter .ml{display:flex;justify-content:space-between;font-size:12px;color:var(--primary);font-weight:600;margin-bottom:5px;}
+.rbmeter .track{height:14px;background:#e6efe6;border-radius:999px;overflow:hidden;}
+.rbmeter .fill{height:100%;width:18%;background:linear-gradient(90deg,#66bb6a,#2e8b57);border-radius:999px;transition:width .5s;}
+.scn{background:#fff;border-radius:18px;padding:18px;border:1px solid var(--line);}
+.scn .sit{background:#fff4e6;border:1px solid #f3dcc0;border-radius:14px;padding:14px;font-size:15px;color:var(--navy);font-weight:600;}
+.scn .sit .ic{font-size:24px;}
+.choice{display:block;width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:14px;padding:14px;margin-top:12px;font-size:14px;color:var(--ink);font-weight:500;transition:.15s;}
+.choice:hover{border-color:var(--primary);}
+.choice .ct{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px;}
+.choice.a .ct{color:var(--calm);} .choice.b .ct{color:var(--storm);}
+.rbresult{margin-top:14px;border-radius:14px;padding:14px;font-size:14px;display:none;}
+.rbresult.calm{background:#e9f6ea;border:1px solid #bfe3c2;color:#1f6f43;}
+.rbresult.storm{background:#f6efe2;border:1px solid #e6d6b8;color:#6b552a;}
+.rbresult b{display:block;margin-bottom:3px;}
+.rbnav{display:flex;gap:10px;margin-top:12px;}
+
+/* ===== ADVENTURES ===== */
+.journeys{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px;}
+.jcard{border:1px solid var(--line);border-radius:18px;padding:16px;background:#fff;transition:.18s;}
+.jcard:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+.jtop{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.jic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:23px;color:#fff;flex-shrink:0;}
+.jname{font-weight:700;color:var(--navy);font-size:15.5px;line-height:1.1;} .jguide{font-size:11px;color:var(--muted);}
+.jrow{font-size:12.5px;color:var(--primary);margin:5px 0;} .jrow b{color:var(--navy);}
+.jcard .btn{width:100%;justify-content:center;margin-top:10px;}
+.route{background:#fff;border:2px dashed var(--adhd);border-radius:18px;padding:16px 18px;margin-bottom:18px;}
+.route .rl{font-size:11px;font-weight:700;color:var(--adhd);text-transform:uppercase;letter-spacing:.5px;}
+.route h4{font-size:16px;color:var(--navy);margin:3px 0 8px;}
+.routeflow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.rstep{display:flex;align-items:center;gap:7px;background:var(--soft);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--navy);}
+.rdot{width:9px;height:9px;border-radius:50%;}.rarr{color:#b7c2cf;}
+.toggle-wrap{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);font-weight:600;}
+.switch{width:42px;height:24px;border-radius:999px;background:#cdd6e1;position:relative;border:none;}
+.switch.on{background:var(--adhd);}.switch .kn{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;}.switch.on .kn{left:21px;}
+
+/* ===== ARCADE ===== */
+.arcade{background:linear-gradient(160deg,#15184a,#241a55);border-radius:24px;padding:24px;color:#fff;box-shadow:var(--shadow);}
+.arcade .ahead{text-align:center;margin-bottom:18px;}
+.arcade h2{font-size:28px;color:#fff;letter-spacing:1px;text-shadow:0 0 18px rgba(124,92,255,.7);}
+.arcade .asub{color:#bdb6f0;font-size:13.5px;}
+.cabs{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.cab{border-radius:20px;padding:22px;position:relative;overflow:hidden;border:2px solid rgba(255,255,255,.14);}
+.cab.kid{background:linear-gradient(160deg,#1565c0,#0d3f7a);}
+.cab.par{background:linear-gradient(160deg,#7e3ff2,#5a23b8);}
+.cab .for{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;padding:3px 10px;border-radius:999px;margin-bottom:10px;}
+.cab.kid .for{background:#ffd54f;color:#0d3f7a;}
+.cab.par .for{background:#ffd54f;color:#5a23b8;}
+.cab h3{font-size:21px;color:#fff;} .cab p{font-size:13px;color:#e6e1ff;margin:7px 0 14px;}
+.cab .play{background:#ffd54f;color:#15184a;border:none;border-radius:13px;padding:13px 22px;font-weight:700;font-size:15px;width:100%;}
+.cab .reward{margin-top:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 12px;font-size:12px;color:#f1eeff;}
+.cab .reward b{color:#ffd54f;}
+.coins{display:flex;gap:10px;justify-content:center;margin:14px 0 0;flex-wrap:wrap;}
+.coinbox{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:8px 14px;text-align:center;}
+.coinbox .v{font-size:20px;font-weight:700;color:#ffd54f;} .coinbox .l{font-size:10.5px;color:#cfc8f5;text-transform:uppercase;letter-spacing:.4px;}
+
+/* ===== LIBRARY ===== */
+.bmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+.bpart{background:#fff;border-radius:16px;padding:15px;border-top:5px solid var(--adhd);box-shadow:var(--shadow-sm);position:relative;}
+.bpart .state{position:absolute;top:12px;right:12px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;background:var(--calm);box-shadow:0 0 0 1px var(--line);}
+.bpart .state.ring{background:var(--fasd);animation:flash 1s infinite;}
+.bpart .bp-ic{font-size:26px;}
+.bpart h4{font-size:15.5px;color:var(--navy);margin:6px 0 1px;}
+.bpart .real{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+.bpart .blk{margin-top:9px;} .bpart .blk .h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--primary);}
+.bpart .blk p{font-size:12.5px;color:var(--primary);margin:2px 0 0;}
+.bpart .blk.real-h .h{color:var(--gold-deep);}
+.keybanner{background:linear-gradient(135deg,#0e2c4a,#16324f);color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0;}
+.keybanner b{color:var(--gold);} .keybanner p{margin:0;font-size:13.5px;color:#dbe6f2;}
+.dxgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.dx{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;}
+.dx .dxh{padding:13px 16px;color:#fff;display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+.dx .dxb{padding:14px 16px;}
+.dx .blk{margin-bottom:9px;} .dx .blk:last-child{margin-bottom:0;}
+.dx .blk .h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+.dx .blk.see .h{color:var(--gold-deep);} .dx .blk.help .h{color:var(--calm);}
+.dx .blk p{font-size:12.5px;color:var(--primary);margin:2px 0 0;}
+
+/* ===== PLAN ===== */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.days{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.calmonth{font-weight:700;color:var(--navy);font-size:16px;}
+.calnav{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:18px;color:var(--primary);}
+.calnav:hover{background:var(--soft);}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+.caldow{margin-bottom:6px;} .caldow span{text-align:center;font-size:11px;font-weight:700;color:var(--muted);}
+.calday{aspect-ratio:1/1;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:14px;color:var(--ink);font-weight:600;display:flex;align-items:center;justify-content:center;position:relative;}
+.calday:hover:not(:disabled):not(.empty){border-color:var(--calm);transform:translateY(-1px);}
+.calday.empty{border:none;background:transparent;cursor:default;}
+.calday.past{color:#c2ccd6;background:#f7f9fb;cursor:not-allowed;}
+.calday.today{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);}
+.calday.booked{background:#e9f6ea;border-color:var(--calm);color:#1f6f43;}
+.calday .pawmk{position:absolute;bottom:2px;font-size:10px;line-height:1;}
+.quickfill{margin-top:14px;background:var(--soft);border-radius:12px;padding:12px;}
+.day{width:46px;height:46px;border-radius:14px;border:1.5px solid var(--line);background:#fff;font-weight:600;font-size:13px;color:var(--primary);}
+.day.on{background:var(--calm);color:#fff;border-color:transparent;}
+.field{margin-bottom:14px;} .field label{display:block;font-size:12.5px;font-weight:600;color:var(--primary);margin-bottom:5px;}
+.field input,.field select{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:'Fredoka';color:var(--ink);background:#fff;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.upcoming{list-style:none;margin:0;padding:0;}
+.upcoming li{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--soft);font-size:14px;}
+.upcoming li .dot{width:36px;height:36px;border-radius:11px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.modelcard{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--soft);}
+.modelcard h4{font-size:14px;color:var(--navy);}.modelcard p{font-size:12.5px;color:var(--primary);margin:5px 0 0;}
+
+/* modals */
+.overlay{position:fixed;inset:0;background:rgba(16,36,60,.55);display:flex;align-items:center;justify-content:center;z-index:60;padding:18px;}
+.modal{background:#fff;border-radius:24px;max-width:520px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.34);overflow:hidden;max-height:92vh;overflow-y:auto;}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.modal-head h3{font-size:18px;color:var(--navy);} .x{background:none;border:none;font-size:20px;color:var(--muted);}
+.modal-pad{padding:20px;}
+.ob-top{background:linear-gradient(135deg,#0e2c4a,#16324f);color:#fff;padding:24px;text-align:center;}
+.ob-dog{width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,#fbe7a6,#f6cf6a);display:flex;align-items:center;justify-content:center;font-size:50px;margin:0 auto 10px;animation:bob 4s ease-in-out infinite;}
+.ob-top h2{font-size:21px;color:#fff;}
+.ob-body{padding:20px 24px;} .ob-body p{color:var(--primary);font-size:14.5px;line-height:1.55;text-align:center;max-width:400px;margin:0 auto;}
+.ob-loop{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;margin:0;}
+.ob-visual{margin:16px 0;display:flex;justify-content:center;}
+.ob-tri text{font-family:'Fredoka',sans-serif;}
+.ob-planner{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;}
+.ob-planner .pp{text-align:center;}
+.ob-planner .pe{font-size:38px;line-height:1;}
+.ob-planner .pt{font-size:11.5px;font-weight:600;color:var(--navy);margin-top:3px;}
+.ob-planner .par{font-size:24px;color:var(--gold-deep);font-weight:700;}
+/* re-openable explainer card on world */
+.bigidea{display:flex;align-items:center;gap:14px;background:#fff;border:2px solid var(--gold);border-radius:18px;padding:14px 18px;margin-bottom:18px;box-shadow:var(--shadow);cursor:pointer;transition:.15s;}
+.bigidea:hover{transform:translateY(-2px);}
+.bigidea .bd{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,#fbe7a6,#f6cf6a);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;}
+.bigidea h3{font-size:16px;color:var(--navy);}
+.bigidea p{font-size:12.5px;color:var(--muted);margin:2px 0 0;}
+.bigidea .go{margin-left:auto;background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--navy);border:none;border-radius:12px;padding:10px 16px;font-weight:700;font-size:13.5px;white-space:nowrap;}
+.lnode{background:#16324f;color:#fff;border-radius:11px;padding:9px 14px;font-weight:600;font-size:13.5px;}
+.lnode.grow{background:var(--gold);color:var(--navy);} .larr{color:var(--gold-deep);font-size:16px;font-weight:700;}
+.ob-dots{display:flex;gap:7px;justify-content:center;margin:16px 0;}
+.ob-dots i{width:9px;height:9px;border-radius:50%;background:#d7deea;}.ob-dots i.on{background:var(--gold);width:22px;border-radius:999px;}
+.ob-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.region-real{display:inline-block;font-size:11px;font-weight:700;color:#fff;padding:3px 9px;border-radius:999px;margin-bottom:8px;}
+.region-blk{margin-top:12px;} .region-blk .h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+.region-blk.live .h{color:var(--fasd);} .region-blk p{font-size:13.5px;color:var(--primary);margin:3px 0 0;line-height:1.5;}
+.moodopts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.moodopt{border:2px solid var(--line);background:#fff;border-radius:14px;padding:12px 16px;font-size:14px;font-weight:600;color:var(--navy);text-align:center;}
+.moodopt .me{font-size:26px;display:block;}
+
+/* snake / word */
+#snakeCanvas{background:#0e2c4a;border-radius:14px;display:block;margin:0 auto;width:300px;height:300px;max-width:100%;}
+.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:6px;justify-content:center;margin:14px auto 0;}
+.dpad button{border:none;background:var(--soft);border-radius:10px;font-size:18px;color:var(--navy);}
+.gscore{text-align:center;font-weight:700;color:var(--navy);font-size:15px;margin:10px 0;}
+.wgrid{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;justify-content:center;margin:6px 0 14px;}
+.wrow{display:grid;grid-template-columns:repeat(5,46px);gap:6px;}
+.wtile{width:46px;height:46px;border:2px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--navy);text-transform:uppercase;}
+.wtile.g{background:#5aa469;border-color:#5aa469;color:#fff;}.wtile.y{background:#e6b94a;border-color:#e6b94a;color:#fff;}.wtile.x{background:#9aa6b2;border-color:#9aa6b2;color:#fff;}
+.wkeys{display:flex;flex-direction:column;gap:6px;align-items:center;}.wkrow{display:flex;gap:5px;}
+.wkey{min-width:30px;height:42px;padding:0 8px;border:none;border-radius:7px;background:#e8edf3;color:var(--navy);font-weight:600;font-size:13px;}
+.wmsg{text-align:center;font-weight:600;color:var(--navy);min-height:20px;margin-top:8px;}
+
+@media(max-width:820px){
+  .feature,.cabs,.grid2,.rbwrap{grid-template-columns:1fr;}
+  .gorow{grid-template-columns:1fr 1fr;}
+  .hsub{display:none;}
+  .xm-stage{display:none;} .placelist{display:block;}
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="hwrap">
+    <div class="hleft">
+      <div class="logo">🐶</div>
+      <div><div class="htitle">Daniel's Diaries</div><div class="hsub">Welcome back, Daniel Beinke!</div></div>
+    </div>
+    <div class="hmini">
+      <span class="chip">⭐ 1</span><span class="chip">🔥 2</span><span class="chip">🎟️ 6</span>
+      <button class="hhelp" onclick="openOnboarding(0)"><span class="q">?</span> How this works</button>
+    </div>
+  </div>
+</header>
+
+<div class="nav"><div class="navbar" id="navbar">
+  <button class="navbtn active" data-view="world">🗺️ World</button>
+  <button class="navbtn" data-view="road">🛣️ Road Builder</button>
+  <button class="navbtn" data-view="adventures">🧭 Adventures</button>
+  <button class="navbtn" data-view="arcade">🎮 Arcade</button>
+  <button class="navbtn" data-view="library">📚 Library</button>
+  <button class="navbtn" data-view="plan">🗓️ Plan</button>
+</div></div>
+
+<div class="wrap">
+
+<!-- ===================== WORLD ===================== -->
+<div id="view-world">
+  <div class="welcome">
+    <div class="wd" onclick="openMood()">🐶</div>
+    <div>
+      <h2 id="welcomeTitle">Welcome to your Brain Town!</h2>
+      <p id="welcomeMsg">This is your town, and you are the town planner. Tap me to tell me how you feel, tap a building to see what it does, or head to the Road Builder to grow a road.</p>
+    </div>
+    <button class="btn btn-gold btn-sm" style="margin-left:auto" onclick="openMood()">How do I feel?</button>
+  </div>
+
+  <!-- re-openable big idea explainer -->
+  <div class="bigidea" onclick="openOnboarding(0)">
+    <div class="bd">🐶</div>
+    <div>
+      <h3>Daniel explains the big idea</h3>
+      <p>Two quick things about your brain: you are the town planner, and the thoughts, feelings, actions triangle. Tap to watch again any time.</p>
+    </div>
+    <button class="go" onclick="event.stopPropagation();openOnboarding(0)">▶ Watch (1 min)</button>
+  </div>
+
+  <div class="brainbanner">
+    <span class="spark" style="top:10px;right:30px;">✨</span><span class="spark" style="bottom:12px;right:80px;">⭐</span>
+    <div class="bb-icon">🧠</div>
+    <div class="bb-text">
+      <h2>This whole world is your brain!</h2>
+      <p>Visit the Library to learn how every part of your brain works, then travel a Super Skill road. Each road grows wider the more modules you finish.</p>
+    </div>
+  </div>
+  <div class="maplegend">
+    <span class="lg"><span class="e">📚</span> Library, tap to learn how every brain part works</span>
+    <span class="lg"><span class="e">🧭</span> Super Skill roads, each one grows as you finish modules</span>
+  </div>
+
+  <!-- MAP (desktop/tablet) -->
+  <div class="xm-stage" id="xmStage">
+    <div class="xm-viewport" id="xmViewport">
+      <div class="xm-world" id="xmWorld">
+        <span class="xm-pond" style="left:1040px;top:120px;width:300px;height:170px"></span>
+        <span class="xm-pond" style="left:230px;top:720px;width:200px;height:120px"></span>
+        <svg id="xmRoads" viewBox="0 0 1600 1100"></svg>
+        <span class="xm-deco" style="left:660px;top:430px">🌲</span>
+        <span class="xm-deco" style="left:950px;top:470px">🌳</span>
+        <span class="xm-deco" style="left:1180px;top:760px">🌲</span>
+        <span class="xm-deco" style="left:560px;top:680px">🌳</span>
+        <span class="xm-deco" style="left:980px;top:720px">🌳</span>
+        <span class="xm-deco" style="left:640px;top:200px;font-size:26px">🪨</span>
+        <span class="xm-deco" style="left:1180px;top:170px;font-size:28px">⛵</span>
+        <div class="xm-paw" id="xmPaw">🐾</div>
+      </div>
+      <div class="xm-hint">🗺️ Drag to explore · tap a place to open it</div>
+      <div class="xm-tip" id="xmTip"><b>Each road leads to a Super Skill.</b> Finish modules in a skill and watch its road grow wider, that's your brain building a main street.</div>
+      <div class="xm-controls">
+        <button class="xm-ctrl" id="xmZoomIn" aria-label="Zoom in">+</button>
+        <button class="xm-ctrl" id="xmZoomOut" aria-label="Zoom out">−</button>
+        <button class="xm-ctrl" id="xmRecenter" aria-label="Recentre" style="font-size:17px">⤾</button>
+      </div>
+      <div class="xm-scrim" id="xmScrim"></div>
+      <aside class="xm-drawer" id="xmDrawer" aria-hidden="true">
+        <div class="xm-d-head">
+          <button class="xm-d-close" id="xmClose" aria-label="Close">✕</button>
+          <div class="xm-d-em" id="xmEm">🏠</div>
+          <div class="xm-d-name" id="xmName">Town Square</div>
+          <div class="xm-d-region" id="xmRegion">Home base</div>
+        </div>
+        <div class="xm-d-body" id="xmBody"></div>
+        <div class="xm-d-foot"><button class="btn btn-purple xm-d-cta" id="xmCta">Enter</button></div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- MAP (mobile list) -->
+  <div class="placelist" id="placeList"></div>
+
+  <!-- feature: road builder + adventures -->
+  <div class="feature">
+    <div class="feat road"><span class="big">🛣️</span>
+      <h3>Build a Road</h3>
+      <p>Every time you think, feel, and act, you build a road. Make a choice and watch your calm road grow bigger and easier to travel.</p>
+      <button class="btn btn-sm" onclick="setView('road')">Start building →</button></div>
+    <div class="feat adv"><span class="big">🧭</span>
+      <h3>Choose an Adventure</h3>
+      <p>Seven Super Skill worlds. Each one helps with something different. Pick the one that feels right, or let Daniel help you choose.</p>
+      <button class="btn btn-sm" onclick="setView('adventures')">See the worlds →</button></div>
+  </div>
+
+  <!-- where to next -->
+  <div class="card" style="margin-top:18px;">
+    <h2 class="sec-title" style="font-size:19px;">Where to next?</h2>
+    <div class="gorow" style="margin-top:12px;">
+      <button class="gotile" onclick="setView('arcade')"><div class="ge">🎮</div><b>Arcade</b><span>Quick games</span></button>
+      <button class="gotile" onclick="setView('library')"><div class="ge">📚</div><b>Library</b><span>How brains work</span></button>
+      <button class="gotile" onclick="setView('plan')"><div class="ge">🗓️</div><b>Plan</b><span>Book Daniel time</span></button>
+      <button class="gotile" onclick="openMood()"><div class="ge">💛</div><b>Check in</b><span>How I feel</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ROAD BUILDER ===================== -->
+<div id="view-road" class="hidden">
+  <div class="card">
+    <h2 class="sec-title">🛣️ Road Builder <span class="tagnew">THE BIG IDEA</span></h2>
+    <p class="sec-sub" style="margin-bottom:16px;">Your brain is a town, and every think, feel, and act builds a road. The more you travel a road, the bigger and easier it gets. You choose which roads to build, so you get a say in how you feel.</p>
+    <div class="rbwrap">
+      <div>
+        <div class="rbstage">
+          <svg id="roadSvg" viewBox="0 0 360 220">
+            <!-- destinations -->
+            <text x="330" y="34" font-size="26" text-anchor="middle">🏖️</text>
+            <text x="330" y="50" font-size="9" text-anchor="middle" fill="#1f6f43" font-weight="700">Calm Cove</text>
+            <text x="330" y="196" font-size="26" text-anchor="middle">⛈️</text>
+            <text x="330" y="212" font-size="9" text-anchor="middle" fill="#6b552a" font-weight="700">Grumpy Gulch</text>
+            <!-- grumpy road -->
+            <path id="roadStorm" d="M30,120 C120,140 200,180 300,185" fill="none" stroke="#b59a6a" stroke-width="6" stroke-linecap="round" opacity=".5"/>
+            <!-- calm road (grows) -->
+            <path id="roadCalm" d="M30,120 C120,100 200,55 300,45" fill="none" stroke="#2e8b57" stroke-width="8" stroke-linecap="round"/>
+            <path id="roadCalmDash" d="M30,120 C120,100 200,55 300,45" fill="none" stroke="#bfe3c2" stroke-width="2" stroke-dasharray="2 10" stroke-linecap="round"/>
+            <!-- start -->
+            <circle cx="30" cy="120" r="9" fill="#16324f"/>
+            <text id="traveller" x="30" y="124" font-size="18" text-anchor="middle">🐶</text>
+          </svg>
+        </div>
+        <div class="rbmeter">
+          <div class="ml"><span>Your calm road</span><span id="roadStrengthLbl">A new path</span></div>
+          <div class="track"><div class="fill" id="roadFill"></div></div>
+        </div>
+      </div>
+      <div class="scn">
+        <div class="sit"><span class="ic">🧩</span> <span id="scnText">Loading...</span></div>
+        <button class="choice a" id="choiceA" onclick="choose('a')"><span class="ct">Calm road</span><span id="choiceAText"></span></button>
+        <button class="choice b" id="choiceB" onclick="choose('b')"><span class="ct">Bumpy road</span><span id="choiceBText"></span></button>
+        <div class="rbresult" id="rbResult"></div>
+        <div class="rbnav hidden" id="rbNav">
+          <button class="btn btn-gold btn-sm" onclick="nextScenario()">Next scenario →</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetScenario()">Try this one again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADVENTURES ===================== -->
+<div id="view-adventures" class="hidden">
+  <div class="route" id="routeBanner" style="display:none;">
+    <div class="rl">Guided path · set by your facilitator</div>
+    <h4>Your journey: calmer with big feelings</h4>
+    <div class="routeflow">
+      <span class="rstep"><span class="rdot" style="background:#35a4d4"></span>Brain Builder</span><span class="rarr">→</span>
+      <span class="rstep"><span class="rdot" style="background:#f46b6b"></span>Emotion Navigator</span><span class="rarr">→</span>
+      <span class="rstep"><span class="rdot" style="background:#f4a73b"></span>Resilience Architect</span><span class="rarr">→</span>
+      <span class="rstep"><span class="rdot" style="background:#40916c"></span>Behaviour Engineer</span>
+    </div>
+  </div>
+  <div class="card" id="chooseCard">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+      <div><h2 class="sec-title">🧭 Choose your adventure</h2><p class="sec-sub" id="chooseSub">Each Super Skill is a different world. Here's what each one helps with.</p></div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="toggle-wrap">Demo: facilitator set a path <button class="switch" id="routeSwitch" onclick="toggleRoute()"><span class="kn"></span></button></span>
+        <button class="btn btn-purple btn-sm" onclick="alert('Help me choose: a few friendly questions that suggest the best first journey.')">✨ Help me choose</button>
+      </div>
+    </div>
+    <div class="journeys" id="journeyGrid"></div>
+  </div>
+</div>
+
+<!-- ===================== ARCADE ===================== -->
+<div id="view-arcade" class="hidden">
+  <div class="arcade">
+    <div class="ahead"><h2>🎮 DANIEL'S ARCADE</h2><div class="asub">Two games. One for kids, one just for grown ups.</div></div>
+    <div class="cabs">
+      <div class="cab kid">
+        <span class="for">★ FOR KIDS ★</span>
+        <h3>Road Runner</h3>
+        <p>Build the longest road in Brain Town. Collect the stars, dodge the walls. A 60 second hit that keeps your streak alive.</p>
+        <button class="play" onclick="openSnake()">▶ PLAY</button>
+        <div class="reward">Win stars for your Spend Stars shop. <b>High score today: 7</b></div>
+      </div>
+      <div class="cab par">
+        <span class="for">☕ FOR GROWN UPS ☕</span>
+        <h3>Daniel's Daily Word</h3>
+        <p>This one is for you, not the kids. One word a day, about a minute. Keep your streak going and earn Calm Coins you can put toward real rewards.</p>
+        <button class="play" onclick="openWord()">▶ PLAY TODAY'S WORD</button>
+        <div class="reward">Earn <b>Calm Coins</b>: 50 = $5 off Gold, or 50 bonus stars for your child.</div>
+      </div>
+    </div>
+    <div class="coins">
+      <div class="coinbox"><div class="v" id="coinBal">0</div><div class="l">Calm Coins</div></div>
+      <div class="coinbox"><div class="v" id="parentStreak">0</div><div class="l">Grown up streak</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== LIBRARY ===================== -->
+<div id="view-library" class="hidden">
+  <div class="card">
+    <h2 class="sec-title">🧠 How your brain works</h2>
+    <p class="sec-sub" style="margin-bottom:16px;">Your brain town has buildings, and each one has a job. Tap to see how it works and what you might notice in real life.</p>
+    <div class="bmap" id="brainLibrary"></div>
+    <div class="keybanner"><p><b>The most important thing:</b> a child's brain is not choosing to be difficult. It is doing its best with a nervous system that is genuinely, neurologically different. Our job is to understand the map and build the roads, together.</p></div>
+  </div>
+  <div class="card">
+    <h2 class="sec-title">💡 Understanding your child</h2>
+    <p class="sec-sub" style="margin-bottom:6px;">Plain, strengths first explainers, with what you might see and what helps. Not labels, understanding.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">A child is not a list of diagnoses. They are a whole person navigating a world that was not built for their brain.</p>
+    <div class="dxgrid" id="dxGrid"></div>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:16px;">Daniel's Diaries is an educational wellbeing tool, not therapy and not a diagnosis. Diagnosis information is for understanding and support. If you have concerns about your child, please speak with a qualified professional.</p>
+  </div>
+</div>
+
+<!-- ===================== PLAN ===================== -->
+<div id="view-plan" class="hidden">
+  <div class="card">
+    <h2 class="sec-title">🗓️ Plan your Daniel time</h2>
+    <p class="sec-sub" style="margin-bottom:16px;">Tap a day on the calendar to book your Daniel time. Booked days show a 🐶, and they appear in your list. Little and often is what builds the road.</p>
+    <div class="field-row" style="max-width:420px;">
+      <div class="field"><label>What time?</label><input type="time" id="calTime" value="16:30"></div>
+      <div class="field"><label>Reminder</label><select id="calRemind"><option value="15">15 minutes before</option><option value="60" selected>1 hour before</option></select></div>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="calhead">
+          <button class="calnav" onclick="calMonth(-1)">‹</button>
+          <div class="calmonth" id="calMonthLbl"></div>
+          <button class="calnav" onclick="calMonth(1)">›</button>
+        </div>
+        <div class="calgrid caldow"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div class="calgrid" id="calDays"></div>
+        <div class="quickfill">
+          <span style="font-size:12px;color:var(--muted);font-weight:600;">Quick fill your usual days, then book a whole term at once:</span>
+          <div class="days" id="daysRow" style="margin-top:8px;"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="quickFill()">📌 Book these for the next 8 weeks</button>
+        </div>
+      </div>
+      <div>
+        <h4 style="color:var(--navy);font-size:15px;margin-bottom:10px;">Your upcoming Daniel time</h4>
+        <ul class="upcoming" id="upcomingList"></ul>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+          <button class="btn btn-gold btn-sm" onclick="addGoogle()">📅 Add to Google</button>
+          <button class="btn btn-navy btn-sm" onclick="downloadICS()">⬇ Apple / Outlook / family</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;">Pop it in the shared family calendar so it doesn't all fall to one parent.</p>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 class="sec-title" style="font-size:19px;">With Gold, your facilitator helps you run it</h2>
+    <p class="sec-sub" style="margin-bottom:14px;">Pick the model that suits your family. Either way, the calendar and reminders are the backbone.</p>
+    <div class="grid2">
+      <div class="modelcard"><h4>① In session, together</h4><p>You and your child do the modules with the facilitator, in person or online. They guide it, you watch how it's done.</p></div>
+      <div class="modelcard"><h4>② At home, with check ins</h4><p>A parent, carer, or support worker runs the modules with the child. The facilitator checks in, supports you, and gives feedback.</p></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ONBOARDING -->
+<div class="overlay hidden" id="obOverlay"><div class="modal">
+  <div class="ob-top"><div class="ob-dog">🐶</div><h2 id="obTitle">Hi, I'm Daniel!</h2></div>
+  <div class="ob-body">
+    <p id="obText"></p>
+    <div id="obVisual" class="ob-visual hidden"></div>
+    <div class="ob-dots" id="obDots"></div>
+    <div class="ob-foot">
+      <button class="btn btn-ghost btn-sm" id="obBack" onclick="obStep(-1)">Back</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeOnboarding()" style="color:var(--muted);border-color:transparent;">Skip</button>
+      <button class="btn btn-gold btn-sm" id="obNext" onclick="obStep(1)">Next →</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- REGION MODAL -->
+<div class="overlay hidden" id="regionModal"><div class="modal">
+  <div class="modal-head"><h3 id="regName">Region</h3><button class="x" onclick="closeRegion()">✕</button></div>
+  <div class="modal-pad">
+    <span class="region-real" id="regReal"></span>
+    <div class="region-blk"><div class="h">How it works</div><p id="regHow"></p></div>
+    <div class="region-blk live"><div class="h">What you might see in real life</div><p id="regSee"></p></div>
+  </div>
+</div></div>
+
+<!-- MOOD MODAL -->
+<div class="overlay hidden" id="moodModal"><div class="modal" style="max-width:440px;">
+  <div class="ob-top" style="padding:20px;"><div class="ob-dog" style="width:70px;height:70px;font-size:38px;">🐶</div><h2 style="font-size:19px;">How are you feeling right now?</h2></div>
+  <div class="modal-pad">
+    <div class="moodopts">
+      <button class="moodopt" onclick="setMood('calm')"><span class="me">😌</span>Calm</button>
+      <button class="moodopt" onclick="setMood('wobbly')"><span class="me">😟</span>Wobbly</button>
+      <button class="moodopt" onclick="setMood('big')"><span class="me">😣</span>Big feelings</button>
+    </div>
+    <p style="text-align:center;font-size:12.5px;color:var(--muted);margin:14px 0 0;">Watch the Alarm Station and Town Hall on your map change with you.</p>
+  </div>
+</div></div>
+
+<!-- SNAKE -->
+<div class="overlay hidden" id="snakeModal"><div class="modal" style="max-width:380px;">
+  <div class="modal-head"><h3>🛣️ Road Runner</h3><button class="x" onclick="closeSnake()">✕</button></div>
+  <div class="modal-pad">
+    <div class="gscore">Road length: <span id="snakeScore">0</span></div>
+    <canvas id="snakeCanvas" width="300" height="300"></canvas>
+    <div class="dpad"><span></span><button onclick="setDir(0,-1)">▲</button><span></span>
+      <button onclick="setDir(-1,0)">◀</button><button onclick="setDir(0,1)">▼</button><button onclick="setDir(1,0)">▶</button></div>
+    <button class="btn btn-gold btn-sm" style="width:100%;justify-content:center;margin-top:10px;" onclick="startSnake()">Restart</button>
+  </div>
+</div></div>
+
+<!-- WORD -->
+<div class="overlay hidden" id="wordModal"><div class="modal" style="max-width:420px;">
+  <div class="modal-head"><h3>🔤 Daniel's Daily Word · for grown ups</h3><button class="x" onclick="closeWord()">✕</button></div>
+  <div class="modal-pad">
+    <p style="text-align:center;font-size:12.5px;color:var(--muted);margin:0 0 12px;">Guess the 5 letter word. Green is right spot, amber is right letter wrong spot.</p>
+    <div class="wgrid" id="wordGrid"></div>
+    <div class="wmsg" id="wordMsg"></div>
+    <div class="wkeys" id="wordKeys"></div>
+  </div>
+</div></div>
+
+<script>
+/* ---------- nav ---------- */
+const VIEWS=['world','road','adventures','arcade','library','plan'];
+function setView(v){
+  VIEWS.forEach(n=>document.getElementById('view-'+n).classList.toggle('hidden',n!==v));
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  if(v==='road') ensureScenario();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+
+/* ---------- regions (from Noah's Brain Town) ---------- */
+const REGIONS={
+ pfc:{name:'🏛️ Town Hall',real:'Prefrontal cortex',color:'#3A6EA8',
+   how:"The planning office. Where you stop, think, plan, and decide, and put the brakes on before you act.",
+   see:"When the alarm is loud, the Town Hall empties out. That's when a child can know the rule, agree to it, and still not do it a moment later."},
+ amygdala:{name:'🚨 Alarm Station',real:'Amygdala',color:'#C0404A',
+   how:"Your safety alarm. It watches for anything scary or unfair and sounds the siren fast, switching on fight, flight, or freeze.",
+   see:"The alarm can ring many times a day, sometimes over things that look small. Every time it rings, the thinking part goes offline. You can't reason with a ringing alarm, calm comes first."},
+ hippocampus:{name:'📦 Memory Warehouse',real:'Hippocampus',color:'#C96B28',
+   how:"Where new things get filed away so you can find them again. The more you travel a road, the easier the memory is to reach.",
+   see:"Sometimes deliveries get lost on the way in, so a child 'forgets' what they knew yesterday. When the alarm is ringing, nothing new gets filed at all."},
+ social:{name:'🌐 Social Hub',real:'Social brain network',color:'#7048A8',
+   how:"Where you read faces, share, and connect. It runs the translation software for other people.",
+   see:"It can be open but short staffed and running slow. A child may want connection deeply, yet find reading and answering people tiring. What looks like not caring is often real effort with limited tools."},
+ intero:{name:'🌡️ Body Signal Station',real:'Interoception',color:'#2A7A5F',
+   how:"Senses what's happening inside, hunger, tiredness, needing the loo, and the first flicker of a feeling.",
+   see:"Signals can arrive late or not at all. A child might not notice they're hungry until they're dysregulated, or not feel a feeling until it's already a full alarm. Checking in with the body is a skill we build."},
+ roads:{name:'🛣️ The Roads',real:'White matter, connectivity',color:'#B8860B',
+   how:"The roads between the buildings. They carry messages so the thinking part and the feeling part can talk to each other.",
+   see:"Some roads are still being built, so knowing and doing don't always travel together. A child can know something is wrong and still not be able to stop, the link between knowing and doing is genuinely under construction."}
+};
+function openRegion(k){const r=REGIONS[k];document.getElementById('regName').textContent=r.name;
+  const rr=document.getElementById('regReal');rr.textContent=r.real;rr.style.background=r.color;
+  document.getElementById('regHow').textContent=r.how;document.getElementById('regSee').textContent=r.see;
+  document.getElementById('regionModal').classList.remove('hidden');}
+function closeRegion(){document.getElementById('regionModal').classList.add('hidden');}
+
+/* library brain map + mobile place list */
+document.getElementById('brainLibrary').innerHTML=Object.entries(REGIONS).map(([k,r])=>`
+  <div class="bpart" style="border-top-color:${r.color}">
+    ${k==='amygdala'?'<span class="state" id="stAlarm" title="Live state"></span>':k==='pfc'?'<span class="state" id="stHall" title="Live state"></span>':''}
+    <div class="bp-ic">${r.name.split(' ')[0]}</div>
+    <h4>${r.name.replace(/^\S+\s/,'')}</h4><div class="real">${r.real}</div>
+    <div class="blk"><div class="h">How it works</div><p>${r.how}</p></div>
+    <div class="blk real-h"><div class="h">What you might see</div><p>${r.see}</p></div>
+  </div>`).join('');
+const PLACES=[['amygdala','🚨','Alarm Station','How feelings fire'],['pfc','🏛️','Town Hall','Thinking & deciding'],
+ ['hippocampus','📦','Memory Warehouse','Saving & finding'],['social','🌐','Social Hub','Reading people'],
+ ['intero','🌡️','Body Signal','Inside signals']];
+function renderPlaceList(){document.getElementById('placeList').innerHTML =
+  '<div class="pl-head">📚 Learn how your brain works</div>'+
+  `<button class="pl" onclick="setView('library')"><span class="e">📚</span><span><b>Library</b><br><span>Tap for every brain part explained</span></span></button>`+
+  '<div class="pl-head" style="margin-top:14px;">🧭 Super Skill roads, grow as you finish modules</div>'+
+  SKILLS.map(s=>`<button class="pl" onclick="setView('adventures')"><span class="e">${s.ic}</span><span><b>${s.name}</b><br><span>${s.done} of ${s.total} modules done</span></span></button>`).join('');}
+
+/* ---------- real-time mood ---------- */
+function openMood(){document.getElementById('moodModal').classList.remove('hidden');}
+function setMood(m){
+  document.getElementById('moodModal').classList.add('hidden');
+  const alarm=document.getElementById('stAlarm'),hall=document.getElementById('stHall');
+  const wt=document.getElementById('welcomeTitle'),wm=document.getElementById('welcomeMsg');
+  const set=(el,cls,bg)=>{if(!el)return;el.className=cls;if(bg)el.style.background=bg;};
+  if(m==='big'){set(alarm,'state ring');set(hall,'state','#cdd6e1');
+    wt.textContent="Your alarm is ringing, that's okay.";
+    wm.innerHTML="When the alarm is loud, the thinking Town Hall goes quiet. Let's build a calm road first. <b style='color:#ffd54f'>Tap Road Builder.</b>";}
+  else if(m==='wobbly'){set(alarm,'state','#e6a800');set(hall,'state','#e6a800');
+    wt.textContent="A little wobbly, good noticing.";
+    wm.textContent="Catching it early is a superpower. A quick road in the Road Builder can help it settle.";}
+  else{set(alarm,'state','var(--calm)');set(hall,'state','var(--calm)');
+    wt.textContent="Feeling calm, lovely.";
+    wm.textContent="Calm is a great time to build new roads, they grow faster when the alarm is quiet. Pick an adventure or build a road.";}
+}
+
+/* ---------- Daniel's Big Idea explainer ---------- */
+const TRI=`<svg class="ob-tri" viewBox="0 0 280 212" width="100%" style="max-width:300px">
+ <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#e6a800"/></marker></defs>
+ <path d="M112,76 Q80,102 80,130" fill="none" stroke="#e6a800" stroke-width="3" marker-end="url(#ah)"/>
+ <path d="M90,176 Q140,198 190,176" fill="none" stroke="#e6a800" stroke-width="3" marker-end="url(#ah)"/>
+ <path d="M200,130 Q208,102 170,78" fill="none" stroke="#e6a800" stroke-width="3" marker-end="url(#ah)"/>
+ <g><circle cx="140" cy="48" r="33" fill="#eef0fb" stroke="#6366F1" stroke-width="2.5"/>
+   <text x="140" y="46" text-anchor="middle" font-size="24">💭</text>
+   <text x="140" y="66" text-anchor="middle" font-size="11" font-weight="700" fill="#16324f">Thoughts</text></g>
+ <g><circle cx="54" cy="164" r="33" fill="#fdecec" stroke="#f46b6b" stroke-width="2.5"/>
+   <text x="54" y="162" text-anchor="middle" font-size="24">❤️</text>
+   <text x="54" y="182" text-anchor="middle" font-size="11" font-weight="700" fill="#16324f">Feelings</text></g>
+ <g><circle cx="226" cy="164" r="33" fill="#e9f4ee" stroke="#40916c" stroke-width="2.5"/>
+   <text x="226" y="162" text-anchor="middle" font-size="24">🦶</text>
+   <text x="226" y="182" text-anchor="middle" font-size="11" font-weight="700" fill="#16324f">Actions</text></g>
+</svg>`;
+const PLANNER=`<div class="ob-planner">
+  <div class="pp"><div class="pe">🧠</div><div class="pt">Your brain</div></div>
+  <div class="par">→</div>
+  <div class="pp"><div class="pe">👷</div><div class="pt">You, the planner</div></div>
+  <div class="par">→</div>
+  <div class="pp"><div class="pe">🏙️</div><div class="pt">Your town</div></div>
+</div>`;
+const LOOPV=`<div class="ob-loop"><span class="lnode">Think</span><span class="larr">→</span><span class="lnode">Feel</span><span class="larr">→</span><span class="lnode">Act</span><span class="larr">↻</span><span class="lnode grow">Road grows</span></div>`;
+const OB=[
+ {t:"Hi, I'm Daniel!",x:"Let me show you two big things about your amazing brain. It only takes a minute, and you can come back and read it again any time.",v:null},
+ {t:"You are the town planner",x:"Your brain is like a whole town, and here is the magic: it is built so that YOU are the town planner. Your brain is wired to learn and grow, so you get to help build it.",v:'planner'},
+ {t:"Thoughts, feelings, actions",x:"These three are all joined together, like a triangle. What you THINK changes how you FEEL, and that changes what you DO. Then it goes around again.",v:'triangle'},
+ {t:"Have a go!",x:"The best way to learn is to try. In the Road Builder you get a real life situation and you choose which road to build. Pick the calm road and watch it grow. You can come back and practice any time.",v:'loop'}
+];
+let obi=0;
+function openOnboarding(i){obi=i||0;renderOb();document.getElementById('obOverlay').classList.remove('hidden');}
+function closeOnboarding(){document.getElementById('obOverlay').classList.add('hidden');}
+function obStep(d){obi+=d;if(obi<0)obi=0;if(obi>=OB.length){closeOnboarding();setView('road');return;}renderOb();}
+function renderOb(){const s=OB[obi];document.getElementById('obTitle').textContent=s.t;document.getElementById('obText').textContent=s.x;
+  const vis=document.getElementById('obVisual');
+  if(s.v==='triangle')vis.innerHTML=TRI;else if(s.v==='planner')vis.innerHTML=PLANNER;else if(s.v==='loop')vis.innerHTML=LOOPV;else vis.innerHTML='';
+  vis.classList.toggle('hidden',!s.v);
+  document.getElementById('obDots').innerHTML=OB.map((_,i)=>`<i class="${i===obi?'on':''}"></i>`).join('');
+  document.getElementById('obBack').style.visibility=obi===0?'hidden':'visible';
+  document.getElementById('obNext').textContent=obi===OB.length-1?"Try the Road Builder →":"Next →";}
+
+/* ---------- ROAD BUILDER scenarios ---------- */
+const SCN=[
+ {q:"Your block tower just got knocked over. Your alarm starts ringing!",
+  a:"Take 3 dragon breaths and ask for help rebuilding.",
+  b:"Yell and knock the rest down too.",
+  ca:"You cooled the alarm and your hands felt steady again. The tower can be rebuilt.",
+  cb:"It felt big for a second, but now the tower's gone and the yucky feeling stuck around."},
+ {q:"Someone got the last blue cup, and you really wanted it.",
+  a:"Tell yourself: I'll use green today, blue tomorrow.",
+  b:"Grab the cup off them.",
+  ca:"Your thinking part stayed switched on. Small wobble, quick recovery.",
+  cb:"Now there's a cup problem and a friend problem to fix."},
+ {q:"Your worry says: don't go to the party, it's too much.",
+  a:"Make a plan: stay 20 minutes and find one friend.",
+  b:"Hide in your room and skip it.",
+  ca:"Brave step, small dose. The worry got quieter once you had a plan.",
+  cb:"The worry felt better for now, but it got a little bigger for next time."},
+ {q:"Your little brother knocked over the model you worked hard on.",
+  a:"Walk away for a minute and tell a grown up how you feel.",
+  b:"Knock over his toys to get him back.",
+  ca:"You let the alarm cool before you acted. The model can be fixed, and you stayed the kind of kid you want to be.",
+  cb:"Now there are two broken things and two upset kids to sort out."},
+ {q:"You made a mistake on your work and feel like giving up.",
+  a:"Tell yourself: mistakes help my brain grow. Try one more time.",
+  b:"Scrunch it up and throw it on the floor.",
+  ca:"That's a Brain Builder road. Every retry makes the road a little stronger.",
+  cb:"The work is still there to do, and now the grumpy feeling is too."},
+ {q:"It's bedtime, you're not tired, and everything feels annoying.",
+  a:"Do some slow dragon breaths and listen to a story.",
+  b:"Yell that bed is stupid and refuse to go.",
+  ca:"Slow breaths told your body it was safe to wind down. Tricky moment, handled.",
+  cb:"The cranky feeling got bigger, and bedtime got harder for everyone."}
+];
+let scnIdx=0, strength=1, answered=false;
+function ensureScenario(){ if(!answered && document.getElementById('scnText').textContent==='Loading...') renderScenario(); else if(document.getElementById('scnText').textContent==='Loading...') renderScenario(); }
+function renderScenario(){
+  const s=SCN[scnIdx];answered=false;
+  document.getElementById('scnText').textContent=s.q;
+  document.getElementById('choiceAText').textContent=s.a;
+  document.getElementById('choiceBText').textContent=s.b;
+  document.getElementById('choiceA').disabled=false;document.getElementById('choiceB').disabled=false;
+  document.getElementById('choiceA').style.opacity=1;document.getElementById('choiceB').style.opacity=1;
+  document.getElementById('rbResult').style.display='none';
+  document.getElementById('rbNav').classList.add('hidden');
+  resetTraveller();updateRoad();
+}
+function resetTraveller(){const t=document.getElementById('traveller');t.setAttribute('x',30);t.setAttribute('y',124);}
+function pointAt(pathId,frac){const p=document.getElementById(pathId);const L=p.getTotalLength();return p.getPointAtLength(L*frac);}
+function travel(pathId,then){let f=0;const t=document.getElementById('traveller');
+  const step=()=>{f+=0.03;if(f>1)f=1;const pt=pointAt(pathId,f);t.setAttribute('x',pt.x);t.setAttribute('y',pt.y+4);
+    if(f<1)requestAnimationFrame(step);else then&&then();};requestAnimationFrame(step);}
+function choose(opt){
+  if(answered)return;answered=true;
+  const s=SCN[scnIdx];
+  document.getElementById('choiceA').disabled=true;document.getElementById('choiceB').disabled=true;
+  const other=opt==='a'?'choiceB':'choiceA';document.getElementById(other).style.opacity=.45;
+  const res=document.getElementById('rbResult');
+  if(opt==='a'){
+    travel('roadCalm',()=>{ if(strength<6){strength++;updateRoad();} });
+    res.className='rbresult calm';res.style.display='block';
+    res.innerHTML='<b>🏖️ You arrived at Calm Cove!</b>'+s.ca+' Your calm road just got a little wider, easier to travel next time.';
+  }else{
+    travel('roadStorm');
+    res.className='rbresult storm';res.style.display='block';
+    res.innerHTML='<b>⛈️ That road led to Grumpy Gulch.</b>'+s.cb+' No worries though, the calm road is always here when you\'re ready to build it.';
+  }
+  document.getElementById('rbNav').classList.remove('hidden');
+}
+function updateRoad(){
+  const w=4+strength*3;
+  document.getElementById('roadCalm').setAttribute('stroke-width',w);
+  document.getElementById('roadFill').style.width=Math.min(100,(strength/6)*100)+'%';
+  const labels=['A new path','A little track','A worn path','A proper road','A wide road','A smooth street','A calm motorway!'];
+  document.getElementById('roadStrengthLbl').textContent=labels[Math.min(strength,6)];
+}
+function nextScenario(){scnIdx=(scnIdx+1)%SCN.length;renderScenario();}
+function resetScenario(){renderScenario();}
+
+/* ---------- adventures ---------- */
+const SKILLS=[
+ {id:'brain',c:'#35a4d4',ic:'🧠',name:'Brain Builder',guide:'with Lenny',helps:'How your brain grows and changes',work:'Noticing your roads and how practice makes them stronger',done:4,total:6,x:800,y:230},
+ {id:'emotion',c:'#f46b6b',ic:'💭',name:'Emotion Navigator',guide:'with Kip',helps:'Big feelings and what your body is telling you',work:'Naming feelings, reading body clues, finding calm',done:2,total:6,x:1140,y:330},
+ {id:'thought',c:'#e6a800',ic:'🚦',name:'Thought Driver',guide:'with Coco',helps:'Tricky or stuck thoughts',work:'Noticing thoughts as roads and choosing a better one',done:1,total:6,x:1290,y:600},
+ {id:'behaviour',c:'#40916c',ic:'🛠️',name:'Behaviour Engineer',guide:'with Pepper',helps:'Habits and the choices you make',work:'Spotting patterns and planning before you act',done:0,total:6,x:1140,y:870},
+ {id:'resilience',c:'#f4a73b',ic:'🏗️',name:'Resilience Architect',guide:'with Eddie',helps:'Bouncing back from hard moments',work:'Spotting a storm early and finding your calm road',done:0,total:6,x:800,y:910},
+ {id:'social',c:'#4caf50',ic:'🗺️',name:'Social Mapper',guide:'with Kai',helps:'Friends, groups and reading the room',work:'Reading faces, joining in, fixing the oops moments',done:0,total:6,x:470,y:870},
+ {id:'future',c:'#ab47bc',ic:'🔭',name:'Future Designer',guide:'with Billie',helps:'Dreams, goals and what comes next',work:'Imagining ahead and taking the first step',done:0,total:6,x:320,y:560}
+];
+document.getElementById('journeyGrid').innerHTML=SKILLS.map(s=>`
+  <div class="jcard"><div class="jtop"><div class="jic" style="background:${s.c}">${s.ic}</div>
+    <div><div class="jname">${s.name}</div><div class="jguide">${s.guide}</div></div></div>
+    <div class="jrow"><b>Helps with:</b> ${s.helps}</div>
+    <div class="jrow"><b>You'll work on:</b> ${s.work}</div>
+    <button class="btn btn-ghost btn-sm" style="border-color:${s.c}44;color:${s.c}">Start this journey →</button></div>`).join('');
+let routeOn=false;
+function toggleRoute(){routeOn=!routeOn;document.getElementById('routeSwitch').classList.toggle('on',routeOn);
+  document.getElementById('routeBanner').style.display=routeOn?'block':'none';
+  document.getElementById('chooseCard').style.opacity=routeOn?.55:1;
+  document.getElementById('chooseSub').textContent=routeOn?"Your facilitator has set your path above, so you don't have to choose. You can still explore here.":"Each Super Skill is a different world. Here's what each one helps with.";}
+
+/* ---------- diagnoses (from Noah) ---------- */
+const DX=[
+ {n:'FASD',ic:'🧬',c:'#C0404A',what:"A lifelong difference in how the brain is built, from prenatal alcohol exposure. It shapes how everything else shows up. A spectrum, so no two people are the same.",
+  see:"Memory that's here today, gone tomorrow; learning that doesn't always carry across situations; a younger developmental age; often very verbal, so they can sound more capable than they can act in the moment.",
+  help:"Treat the gap between talking and doing as real and neurological, not laziness or defiance. Keep it concrete, repeat often, and lead with warmth. These are warm, creative, genuine kids."},
+ {n:'ADHD, combined',ic:'⚡',c:'#3A6EA8',what:"Both the inattentive and the busy, impulsive sides together. Less a shortage of attention, more a brain that's hard to brake and hard to steer on demand.",
+  see:"Hard to stay with non preferred tasks, acts before thinking, feelings hit fast and hard, loses and forgets steps, needs movement, lives in now and not now. Can hyperfocus on what genuinely interests them.",
+  help:"Short bursts, movement built in, quick wins, and novelty. With FASD on top, standard ADHD strategies need softening and simplifying."},
+ {n:'Demand avoidance',ic:'🔥',c:'#C96B28',what:"Tendencies that can look oppositional are, in a neurodivergent child, best understood as demand avoidance and nervous system overwhelm, not wilful defiance. There is no formal ODD diagnosis here.",
+  see:"A request, any request, can register as a genuine threat, so the child digs in or avoids the moment something becomes a must.",
+  help:"Offer choices and invitations instead of demands, lower the pressure, and let them feel in control. Collaboration over instruction. Traditional discipline makes it worse."},
+ {n:'ASD Level 2',ic:'🧩',c:'#7048A8',what:"Autism needing substantial support, affecting social communication, sensory processing, and flexibility, all compounded by FASD and anxiety.",
+  see:"Loves predictability, takes things literally, sensitive to noise, light, or texture, with deep focus on what they love.",
+  help:"Keep routines steady, say things plainly, warn before changes, manage the sensory load, and lean into their interests."},
+ {n:'Anxiety',ic:'🌊',c:'#2A7A5F',what:"Chronic, pervasive worry from a brain that struggles to predict and control its world. Often the most undertreated part of the picture.",
+  see:"Lots of what ifs, hanging back from the new, and needing to know what's coming.",
+  help:"Maximise predictability, name the worry out loud, and take brave steps in small, doable doses."},
+ {n:'Short stature',ic:'📏',c:'#B8860B',what:"A physical feature that can be linked to FASD.",
+  see:"Others often treat the child as younger than they are. That can match their developmental age, but it creates social confusion.",
+  help:"Meet them at their developmental age, and help others do the same, without ever making them feel small."}
+];
+document.getElementById('dxGrid').innerHTML=DX.map(d=>`
+  <div class="dx"><div class="dxh" style="background:${d.c}">${d.ic} ${d.n}</div>
+    <div class="dxb">
+      <div class="blk"><div class="h">What it is</div><p>${d.what}</p></div>
+      <div class="blk see"><div class="h">What you might see</div><p>${d.see}</p></div>
+      <div class="blk help"><div class="h">What helps</div><p>${d.help}</p></div>
+    </div></div>`).join('');
+
+/* ---------- planner calendar ---------- */
+const DAYS=[{l:'Mon',i:1},{l:'Tue',i:2},{l:'Wed',i:3},{l:'Thu',i:4},{l:'Fri',i:5},{l:'Sat',i:6},{l:'Sun',i:0}];
+let selDays=[2,4], booked=new Set();
+const todayCal=new Date();todayCal.setHours(0,0,0,0);
+let viewY=todayCal.getFullYear(), viewM=todayCal.getMonth();
+function pad(n){return String(n).padStart(2,'0');}
+function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function renderDays(){document.getElementById('daysRow').innerHTML=DAYS.map(d=>`<button class="day ${selDays.includes(d.i)?'on':''}" onclick="toggleDay(${d.i})">${d.l}</button>`).join('');}
+function toggleDay(i){selDays=selDays.includes(i)?selDays.filter(x=>x!==i):[...selDays,i];renderDays();}
+function calMonth(delta){viewM+=delta;if(viewM<0){viewM=11;viewY--;}if(viewM>11){viewM=0;viewY++;}renderCal();}
+function renderCal(){
+  document.getElementById('calMonthLbl').textContent=new Date(viewY,viewM,1).toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  const offset=(new Date(viewY,viewM,1).getDay()+6)%7;
+  const dim=new Date(viewY,viewM+1,0).getDate();
+  let html='';
+  for(let i=0;i<offset;i++)html+='<div class="calday empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const dt=new Date(viewY,viewM,d);dt.setHours(0,0,0,0);const ds=key(dt);
+    const past=dt<todayCal,isToday=dt.getTime()===todayCal.getTime(),isB=booked.has(ds);
+    const cls='calday'+(past?' past':'')+(isToday?' today':'')+(isB?' booked':'');
+    html+=`<button class="${cls}" ${past?'disabled':''} onclick="toggleBook('${ds}')">${d}${isB?'<span class="pawmk">🐶</span>':''}</button>`;
+  }
+  document.getElementById('calDays').innerHTML=html;
+}
+function toggleBook(ds){if(booked.has(ds))booked.delete(ds);else booked.add(ds);renderCal();renderUpcoming();}
+function quickFill(){
+  if(!selDays.length){alert('Pick your usual days first');return;}
+  let cur=new Date(todayCal);const end=new Date(todayCal);end.setDate(end.getDate()+56);let g=0;
+  while(cur<=end&&g<70){if(selDays.includes(cur.getDay()))booked.add(key(cur));cur=new Date(cur.getTime()+864e5);g++;}
+  renderCal();renderUpcoming();
+}
+function bookedFuture(){const t=document.getElementById('calTime').value.split(':').map(Number);
+  return [...booked].map(ds=>{const [y,m,d]=ds.split('-').map(Number);return new Date(y,m-1,d,t[0],t[1],0,0);})
+    .filter(dt=>dt>new Date()).sort((a,b)=>a-b);}
+function renderUpcoming(){const occ=bookedFuture();const el=document.getElementById('upcomingList');
+  el.innerHTML=occ.length?occ.slice(0,8).map(d=>`<li><div class="dot">🐶</div><div><b style="color:var(--navy)">${d.toLocaleDateString('en-AU',{weekday:'long'})}</b><br><span style="color:var(--muted);font-size:12px">${d.toLocaleDateString('en-AU',{day:'numeric',month:'short'})} · ${d.toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})}</span></div></li>`).join(''):'<li style="color:var(--muted)">Tap a day on the calendar to book your first Daniel time.</li>';}
+function fstamp(d){return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';}
+function downloadICS(){const occ=bookedFuture();if(!occ.length){alert('Tap a day to book first');return;}const rem=document.getElementById('calRemind').value;
+  const ev=occ.map(f=>{const end=new Date(f.getTime()+15*6e4);return ['BEGIN:VEVENT','UID:dd'+f.getTime()+'@danielsdiaries','DTSTAMP:'+fstamp(new Date()),'DTSTART:'+fstamp(f),'DTEND:'+fstamp(end),"SUMMARY:🐶 Daniel's Diaries time",'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Daniel time soon','TRIGGER:-PT'+rem+'M','END:VALARM','END:VEVENT'].join('\r\n');});
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Daniels Diaries//EN',...ev,'END:VCALENDAR'].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='daniels-diaries.ics';a.click();}
+function addGoogle(){const occ=bookedFuture();if(!occ.length){alert('Tap a day to book first');return;}const f=occ[0],end=new Date(f.getTime()+15*6e4);
+  window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent("🐶 Daniel's Diaries time")+'&dates='+fstamp(f)+'/'+fstamp(end),'_blank');}
+document.getElementById('calTime').addEventListener('change',renderUpcoming);
+
+/* ---------- snake ---------- */
+let snake,food,dir,nextDir,snakeTimer,grid=15,cell=20;
+function openSnake(){document.getElementById('snakeModal').classList.remove('hidden');startSnake();}
+function closeSnake(){document.getElementById('snakeModal').classList.add('hidden');clearInterval(snakeTimer);}
+function startSnake(){snake=[{x:7,y:7}];dir={x:1,y:0};nextDir={x:1,y:0};placeFood();document.getElementById('snakeScore').textContent=0;clearInterval(snakeTimer);snakeTimer=setInterval(tick,130);}
+function placeFood(){do{food={x:Math.floor(Math.random()*grid),y:Math.floor(Math.random()*grid)};}while(snake.some(s=>s.x===food.x&&s.y===food.y));}
+function setDir(x,y){if(snake&&(x!==-dir.x||y!==-dir.y))nextDir={x,y};}
+function tick(){dir=nextDir;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+  if(h.x<0||h.y<0||h.x>=grid||h.y>=grid||snake.some(s=>s.x===h.x&&s.y===h.y)){clearInterval(snakeTimer);drawSnake(true);return;}
+  snake.unshift(h);if(h.x===food.x&&h.y===food.y){document.getElementById('snakeScore').textContent=snake.length-1;placeFood();}else snake.pop();drawSnake(false);}
+function drawSnake(over){const cv=document.getElementById('snakeCanvas'),x=cv.getContext('2d');x.fillStyle='#0e2c4a';x.fillRect(0,0,300,300);
+  x.font='16px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('⭐',food.x*cell+cell/2,food.y*cell+cell/2);
+  snake.forEach((s,i)=>{x.fillStyle=i===0?'#f2c94c':'#e6a800';x.fillRect(s.x*cell+2,s.y*cell+2,cell-4,cell-4);});
+  if(over){x.fillStyle='rgba(14,44,74,.82)';x.fillRect(0,0,300,300);x.fillStyle='#fff';x.font='600 22px Fredoka,sans-serif';x.fillText('Road length: '+(snake.length-1),150,135);x.font='14px Fredoka,sans-serif';x.fillText('Tap Restart to go again',150,165);}}
+document.addEventListener('keydown',e=>{if(document.getElementById('snakeModal').classList.contains('hidden'))return;
+  const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+  if(m[e.key]){e.preventDefault();setDir(m[e.key][0],m[e.key][1]);}});
+
+/* ---------- word game + incentives ---------- */
+const ANSWER='BRAVE';let wRow=0,wCol=0,wGuess='',wDone=false,coins=0,pstreak=0;
+function openWord(){document.getElementById('wordModal').classList.remove('hidden');buildWord();}
+function closeWord(){document.getElementById('wordModal').classList.add('hidden');}
+function buildWord(){wRow=0;wCol=0;wGuess='';wDone=false;document.getElementById('wordMsg').textContent='';
+  let g='';for(let r=0;r<6;r++){g+='<div class="wrow">';for(let c=0;c<5;c++)g+=`<div class="wtile" id="t${r}-${c}"></div>`;g+='</div>';}document.getElementById('wordGrid').innerHTML=g;
+  const rows=['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+  document.getElementById('wordKeys').innerHTML=rows.map((row,i)=>'<div class="wkrow">'+(i===2?'<button class="wkey" onclick="wEnter()">Enter</button>':'')+row.split('').map(k=>`<button class="wkey" onclick="wType('${k}')">${k}</button>`).join('')+(i===2?'<button class="wkey" onclick="wBack()">⌫</button>':'')+'</div>').join('');}
+function wType(k){if(wDone||wCol>=5)return;wGuess+=k;document.getElementById(`t${wRow}-${wCol}`).textContent=k;wCol++;}
+function wBack(){if(wDone||wCol<=0)return;wCol--;wGuess=wGuess.slice(0,-1);document.getElementById(`t${wRow}-${wCol}`).textContent='';}
+function wEnter(){if(wDone||wGuess.length<5){document.getElementById('wordMsg').textContent='Need 5 letters';return;}
+  const ans=ANSWER.split(''),gs=wGuess.split('');
+  gs.forEach((ch,i)=>{const t=document.getElementById(`t${wRow}-${i}`);if(ch===ans[i])t.classList.add('g');else if(ans.includes(ch))t.classList.add('y');else t.classList.add('x');});
+  if(wGuess===ANSWER){coins+=10;pstreak+=1;document.getElementById('coinBal').textContent=coins;document.getElementById('parentStreak').textContent=pstreak;
+    document.getElementById('wordMsg').innerHTML='🎉 Got it! +10 Calm Coins. Come back tomorrow to keep your streak.';wDone=true;return;}
+  wRow++;wCol=0;wGuess='';if(wRow>=6){document.getElementById('wordMsg').textContent='So close! The word was '+ANSWER+'. Try again tomorrow.';wDone=true;}}
+document.addEventListener('keydown',e=>{if(document.getElementById('wordModal').classList.contains('hidden'))return;
+  if(/^[a-zA-Z]$/.test(e.key))wType(e.key.toUpperCase());else if(e.key==='Enter')wEnter();else if(e.key==='Backspace')wBack();});
+
+/* ---------- explorable brain town map ---------- */
+(function(){
+  const WORLD_W=1600,WORLD_H=1100,CX=800,CY=560;
+  const vp=document.getElementById('xmViewport'),world=document.getElementById('xmWorld'),paw=document.getElementById('xmPaw'),tip=document.getElementById('xmTip'),roadsSvg=document.getElementById('xmRoads');
+  if(!vp)return;
+  let tx=0,ty=0,scale=1,wasDragging=false;
+
+  // ----- roads, one per Super Skill, width grows with modules done -----
+  function roadPath(x,y){const mx=(CX+x)/2,my=(CY+y)/2,dx=x-CX,dy=y-CY,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,off=46;
+    return `M${CX},${CY} Q${mx+nx*off},${my+ny*off} ${x},${y}`;}
+  function roadWidth(s){return 5+ (s.done/s.total)*20;}
+  const NS='http://www.w3.org/2000/svg';
+  // neutral path to the Library
+  const LIB={x:470,y:300};
+  const libPath=document.createElementNS(NS,'path');
+  libPath.setAttribute('d',roadPath(LIB.x,LIB.y));libPath.setAttribute('fill','none');
+  libPath.setAttribute('stroke','#cdbf9f');libPath.setAttribute('stroke-width','9');libPath.setAttribute('stroke-linecap','round');
+  libPath.setAttribute('stroke-dasharray','3 16');libPath.setAttribute('opacity','.6');roadsSvg.appendChild(libPath);
+  // skill roads
+  SKILLS.forEach(s=>{
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',roadPath(s.x,s.y));p.setAttribute('fill','none');p.setAttribute('stroke',s.c);
+    p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-width',roadWidth(s));
+    p.style.opacity='.9';p.id='road-'+s.id;roadsSvg.appendChild(p);
+    s._path=p;
+  });
+
+  // ----- buildings: home (centre), library, 7 skills -----
+  const B=[
+   {type:'home',x:CX,y:CY,cls:'home',em:'🏠',name:'Town Square',region:'Home base'},
+   {type:'library',x:LIB.x,y:LIB.y,cls:'lib',em:'📚',name:'Library',region:'How your brain works'}
+  ].concat(SKILLS.map(s=>({type:'skill',skill:s,x:s.x,y:s.y,em:s.ic,name:s.name,region:'Super Skill',color:s.c})));
+
+  B.forEach(b=>{
+    const el=document.createElement('div');
+    el.className='xm-bld'+(b.cls?' '+b.cls:'');
+    el.style.left=b.x+'px';el.style.top=b.y+'px';el.tabIndex=0;
+    if(b.color)el.style.borderColor=b.color;
+    el.innerHTML=`<div class="em">${b.em}</div><div class="mt">${b.name}</div><div class="rg">${b.region}</div>`;
+    el.addEventListener('click',()=>{if(wasDragging)return;openDrawer(b);});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter')openDrawer(b);});
+    world.insertBefore(el,paw);
+    b._el=el;
+  });
+
+  function apply(){world.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;}
+  function clampPan(){const vw=vp.clientWidth,vh=vp.clientHeight,ww=WORLD_W*scale,wh=WORLD_H*scale;
+    if(ww<=vw)tx=(vw-ww)/2;else tx=Math.max(vw-ww,Math.min(0,tx));
+    if(wh<=vh)ty=(vh-wh)/2;else ty=Math.max(vh-wh,Math.min(0,ty));}
+  function centerOn(wx,wy){const vw=vp.clientWidth,vh=vp.clientHeight;tx=vw/2-wx*scale;ty=vh/2-wy*scale;clampPan();apply();}
+  function centerHome(){scale=1;centerOn(CX,CY);}
+  let down=false,lastX=0,lastY=0,moved=0;
+  vp.addEventListener('pointerdown',e=>{if(e.target.closest('.xm-drawer')||e.target.closest('.xm-controls'))return;down=true;moved=0;wasDragging=false;lastX=e.clientX;lastY=e.clientY;vp.classList.add('grabbing');try{vp.setPointerCapture(e.pointerId);}catch(_){}});
+  vp.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;moved+=Math.abs(dx)+Math.abs(dy);if(moved>6)wasDragging=true;tx+=dx;ty+=dy;clampPan();apply();});
+  function endPan(){down=false;vp.classList.remove('grabbing');}
+  vp.addEventListener('pointerup',endPan);vp.addEventListener('pointercancel',endPan);vp.addEventListener('pointerleave',()=>{if(down)endPan();});
+  function zoomBy(f){const ns=Math.max(0.6,Math.min(1.5,scale*f)),cx=vp.clientWidth/2,cy=vp.clientHeight/2;tx=cx-(cx-tx)*(ns/scale);ty=cy-(cy-ty)*(ns/scale);scale=ns;clampPan();apply();}
+  document.getElementById('xmZoomIn').addEventListener('click',()=>zoomBy(1.2));
+  document.getElementById('xmZoomOut').addEventListener('click',()=>zoomBy(1/1.2));
+  document.getElementById('xmRecenter').addEventListener('click',centerHome);
+  vp.addEventListener('wheel',e=>{if(e.ctrlKey){e.preventDefault();zoomBy(e.deltaY<0?1.1:1/1.1);}},{passive:false});
+  window.addEventListener('resize',()=>{clampPan();apply();});
+
+  // ----- drawer -----
+  const drawer=document.getElementById('xmDrawer'),scrim=document.getElementById('xmScrim'),
+    xmEm=document.getElementById('xmEm'),xmName=document.getElementById('xmName'),xmRegion=document.getElementById('xmRegion'),
+    xmBody=document.getElementById('xmBody'),xmCta=document.getElementById('xmCta');
+  function openDrawer(b){
+    xmEm.textContent=b.em;xmName.textContent=b.name;xmRegion.textContent=b.region;
+    if(b.type==='home'){
+      xmBody.innerHTML=`<p>Your home base, where Daniel meets you. Start here and tell Daniel how you feel, then travel a Super Skill road.</p>`;
+      xmCta.textContent='Tell Daniel how I feel';xmCta.onclick=()=>{closeDrawer();openMood();};
+    } else if(b.type==='library'){
+      xmRegion.textContent='Every part of your brain';
+      xmBody.innerHTML='<p style="margin-bottom:14px">Your brain town has lots of parts, and each one has a job. Here is how every part works, and what you might notice in real life.</p>'+
+        Object.values(REGIONS).map(r=>`<div class="xm-d-region-card" style="border-left-color:${r.color}">
+          <div class="xrc-name">${r.name}</div><div class="xrc-real">${r.real}</div>
+          <div class="xrc-blk"><span class="xrc-h">How it works</span> ${r.how}</div>
+          <div class="xrc-blk"><span class="xrc-h" style="color:var(--gold-deep)">What you might see</span> ${r.see}</div>
+        </div>`).join('');
+      xmCta.textContent='Open the full Library →';xmCta.onclick=()=>{closeDrawer();setView('library');};
+    } else { // skill
+      renderSkillDrawer(b.skill);
+    }
+    drawer.classList.add('open');scrim.classList.add('open');drawer.setAttribute('aria-hidden','false');
+  }
+  function renderSkillDrawer(s){
+    const pct=Math.round((s.done/s.total)*100);
+    xmBody.innerHTML=`
+      <div class="xm-d-blk"><div class="xm-d-h">Helps with</div><p>${s.helps}</p></div>
+      <div class="xm-d-blk"><div class="xm-d-h">You'll work on</div><p>${s.work}</p></div>
+      <div class="xm-prog">
+        <div class="xm-prog-top"><span>Modules finished</span><span id="xmProgNum">${s.done} of ${s.total}</span></div>
+        <div class="xm-prog-track"><div class="xm-prog-fill" id="xmProgFill" style="width:${pct}%;background:${s.c}"></div></div>
+        <div class="xm-prog-note">Every module you finish makes this road wider on the map.</div>
+      </div>
+      <button class="btn btn-gold btn-sm xm-mod-btn" id="xmModBtn" style="width:100%;justify-content:center">${s.done>=s.total?'All modules finished 🎉':'Finish a module (+1)'}</button>`;
+    const btn=document.getElementById('xmModBtn');
+    btn.onclick=()=>{ if(s.done>=s.total)return; s.done++; growRoad(s); travelSkill(s);
+      const pct2=Math.round((s.done/s.total)*100);
+      document.getElementById('xmProgFill').style.width=pct2+'%';
+      document.getElementById('xmProgNum').textContent=s.done+' of '+s.total;
+      if(s.done>=s.total)btn.textContent='All modules finished 🎉';
+      tip.innerHTML=`<b>${s.name} road just grew.</b> ${s.done} of ${s.total} modules done, the more you finish, the wider and easier the road.`;
+    };
+    xmCta.textContent='Open this adventure →';xmCta.onclick=()=>{closeDrawer();setView('adventures');};
+  }
+  function growRoad(s){ if(s._path) s._path.setAttribute('stroke-width',roadWidth(s)); }
+  function closeDrawer(){drawer.classList.remove('open');scrim.classList.remove('open');drawer.setAttribute('aria-hidden','true');}
+  document.getElementById('xmClose').addEventListener('click',closeDrawer);
+  scrim.addEventListener('click',closeDrawer);
+
+  // ----- Daniel paw travels a skill road when a module is finished -----
+  let traveling=false;
+  function travelSkill(s){ if(traveling)return; traveling=true;
+    const d=roadPath(s.x,s.y); paw.style.offsetPath=`path('${d}')`; paw.style.webkitOffsetPath=`path('${d}')`;
+    paw.classList.add('go');
+    paw.animate([{offsetDistance:'0%'},{offsetDistance:'100%'}],{duration:1100,easing:'ease-in-out',fill:'forwards'}).onfinish=()=>{paw.classList.remove('go');traveling=false;};
+  }
+
+  setTimeout(centerHome,140);window.addEventListener('load',centerHome);
+})();
+
+/* ---------- init ---------- */
+renderDays();renderPlaceList();
+(function(){let c=new Date(todayCal);for(let i=0;i<21;i++){if(selDays.includes(c.getDay()))booked.add(key(c));c=new Date(c.getTime()+864e5);}})();
+renderCal();renderUpcoming();renderScenario();
+setTimeout(()=>openOnboarding(0),400);
+</script>
+</body>
+</html>

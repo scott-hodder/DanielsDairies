@@ -27,6 +27,8 @@ pnpm-debug.log*
 # optional caches
 .eslintcache
 *.tsbuildinfo
+playwright-report/
+test-results/
 
 # debug files
 .claude/

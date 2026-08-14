@@ -1,9 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { withCors } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.25.0?target=denonext'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 
@@ -43,7 +44,7 @@ function calculateSubscriptionPrice(
   return Math.round(basePrice * (1 - discount))
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -74,74 +75,13 @@ serve(async (req) => {
       }
     })
 
-    // ── Signup checkout (no auth required) ──
+    // ── Signup checkout has moved ──
+    // The old unauthenticated signup branch created a checkout session with
+    // no account behind it, forcing the browser to hold credentials across
+    // the redirect. Paid signups now go through start-paid-signup, which
+    // creates the (pending) account server-side first.
     if (paymentType === 'signup' || body?.plan) {
-      const email = body?.email
-      const plan = body?.plan
-      const successUrl = body?.successUrl || `${appUrl}/signup.html?payment=success`
-      const cancelUrl = body?.cancelUrl || `${appUrl}/signup.html?payment=cancelled`
-
-      if (!email || !plan) {
-        return jsonResponse({ error: 'email and plan are required for signup checkout' }, 400)
-      }
-
-      const tierCode = normalizeTierCode(plan)
-      const { data: tierPricing } = await admin
-        .from('subscription_tiers')
-        .select('monthly_price_cents, display_name, modules_per_month')
-        .eq('tier', tierCode)
-        .maybeSingle()
-
-      const monthlyPriceCents =
-        typeof tierPricing?.monthly_price_cents === 'number' && tierPricing.monthly_price_cents > 0
-          ? tierPricing.monthly_price_cents
-          : DEFAULT_MONTHLY_PRICE
-
-      const planName = tierPricing?.display_name || plan
-      const modules = tierPricing?.modules_per_month || '?'
-
-      // Create a Stripe customer for this new signup
-      const customer = await stripe.customers.create({
-        email,
-        metadata: { signup_plan: tierCode }
-      })
-
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        customer: customer.id,
-        line_items: [{
-          price_data: {
-            currency: 'aud',
-            product_data: {
-              name: `Daniel's Diaries - ${planName}`,
-              description: `${modules} guided modules per month`
-            },
-            unit_amount: monthlyPriceCents,
-            recurring: {
-              interval: 'month'
-            }
-          },
-          quantity: 1
-        }],
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        allow_promotion_codes: true,
-        subscription_data: {
-          metadata: {
-            payment_type: 'signup',
-            email,
-            plan: tierCode,
-          }
-        },
-        metadata: {
-          payment_type: 'signup',
-          email,
-          plan: tierCode,
-          stripe_customer_id: customer.id
-        }
-      })
-
-      return jsonResponse({ url: session.url, id: session.id })
+      return jsonResponse({ error: 'Signup checkout has moved. Use the start-paid-signup function.', code: 'use_start_paid_signup' }, 410)
     }
 
     // ── Authenticated flows (subscription extension / prepaid credits) ──
@@ -299,4 +239,4 @@ serve(async (req) => {
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : 'Unknown error' }, 400)
   }
-})
+}))

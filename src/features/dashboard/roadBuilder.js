@@ -6,6 +6,7 @@
 // ================================================
 
 import { getSupabaseClient } from '../../supabaseClient.js';
+import { escapeHtml } from '../../lib/sanitize.js';
 
 // Eagerly pull in the mini-game framework so games are registered and
 // the feature flag is resolved before a user clicks a road-builder stop.
@@ -35,8 +36,12 @@ function runMiniGameInModal(modal, done, isAborted) {
     // Build a container inside the modal that the game can own.
     var host = document.createElement('div');
     host.className = 'rb-minigame-host';
-    host.style.padding = '16px';
-    host.style.minHeight = '360px';
+    host.style.cssText = 'position:relative;width:100%;height:0;padding:0;flex:1;overflow:hidden;';
+    // The host fills the remaining modal space for the game canvas
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.height = '90vh';
+    modal.style.maxHeight = '720px';
     modal.appendChild(host);
 
     var child = window.selectedChild || (window.state && window.state.selectedChild) || {};
@@ -70,10 +75,10 @@ function runMiniGameInModal(modal, done, isAborted) {
         var scorer = new Scorer(difficulty);
         stars = scorer.stars(result.score || 0);
       }
-      if (!result.success) stars = Math.max(1, stars); // Always at least 1 for finishing.
+      if (!result.success) stars = 0;
       try { game.dispose(); } catch (e) {}
       audio.dispose();
-      done(Math.max(1, Math.min(3, stars)));
+      done(Math.min(3, stars));
     }).catch(function (err) {
       console.error('[minigame-in-modal] run failed', err);
       try { game.dispose(); } catch (e) {}
@@ -238,7 +243,7 @@ function injectStyles() {
   // Overlay & modal
   css.push('.rb-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); animation: rbFadeIn 0.3s ease; }');
   css.push('@keyframes rbFadeIn { from { opacity: 0; } to { opacity: 1; } }');
-  css.push('.rb-modal { position: relative; width: 94vw; max-width: 500px; max-height: 92vh; overflow-y: auto; border-radius: 24px; padding: 28px 22px 24px; color: #fff; font-family: "Fredoka", "League Spartan", sans-serif; animation: rbSlideUp 0.4s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }');
+  css.push('.rb-modal { position: relative; width: 96vw; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 24px; padding: 28px 22px 24px; color: #fff; font-family: "Fredoka", "League Spartan", sans-serif; animation: rbSlideUp 0.4s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }');
   css.push('@keyframes rbSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }');
   css.push('.rb-modal::-webkit-scrollbar { width: 0; }');
 
@@ -553,6 +558,8 @@ function showCelebration(modal, stars, bg, zoneTransition, onContinue) {
   modal.innerHTML = '';
   modal.style.background = bg;
 
+  var isFailure = stars <= 0;
+
   var ZONE_MESSAGES = [
     "With your help, the trailhead has grown into a little village! Your brain pathways are building new connections.",
     "Amazing - the village has grown into a busy town! Your brain connections are getting stronger and faster.",
@@ -560,47 +567,55 @@ function showCelebration(modal, stars, bg, zoneTransition, onContinue) {
   ];
   var zoneMsg = ZONE_MESSAGES[Math.min(zoneTransition - 1, ZONE_MESSAGES.length - 1)];
 
-  // Confetti
-  var cWrap = document.createElement('div');
-  cWrap.className = 'rb-confetti-wrap';
-  var colors = ['#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#fb923c'];
-  for (var i = 0; i < 30; i++) {
-    var c = document.createElement('div');
-    c.className = 'rb-confetti';
-    c.style.left = Math.random() * 100 + '%';
-    c.style.background = colors[Math.floor(Math.random() * colors.length)];
-    c.style.animationDelay = Math.random() * 1.5 + 's';
-    cWrap.appendChild(c);
+  // Confetti (only on success)
+  if (!isFailure) {
+    var cWrap = document.createElement('div');
+    cWrap.className = 'rb-confetti-wrap';
+    var colors = ['#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#fb923c'];
+    for (var i = 0; i < 30; i++) {
+      var c = document.createElement('div');
+      c.className = 'rb-confetti';
+      c.style.left = Math.random() * 100 + '%';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDelay = Math.random() * 1.5 + 's';
+      cWrap.appendChild(c);
+    }
+    modal.appendChild(cWrap);
   }
-  modal.appendChild(cWrap);
 
   var cel = document.createElement('div');
   cel.className = 'rb-celebration';
 
   var img = document.createElement('img');
   img.className = 'rb-celeb-daniel';
-  img.src = '/images/characters/DanielTheDogThumbsUp.webp';
-  img.alt = 'Daniel celebrating';
+  img.src = isFailure
+    ? '/images/characters/Daniel_Thinking.webp'
+    : '/images/characters/DanielTheDogThumbsUp.webp';
+  img.alt = isFailure ? 'Daniel thinking' : 'Daniel celebrating';
   cel.appendChild(img);
 
   var t = document.createElement('h2');
   t.className = 'rb-celeb-title';
-  t.textContent = 'Amazing work!';
+  t.textContent = isFailure ? 'Good effort!' : 'Amazing work!';
   cel.appendChild(t);
 
   var s = document.createElement('p');
   s.className = 'rb-celeb-sub';
-  s.textContent = zoneMsg;
+  s.textContent = isFailure
+    ? "Don't worry — every try helps your brain grow stronger. You'll get it next time!"
+    : zoneMsg;
   cel.appendChild(s);
 
-  var badge = document.createElement('div');
-  badge.className = 'rb-stars-badge';
-  badge.textContent = '+' + stars + ' Stars!';
-  cel.appendChild(badge);
+  if (!isFailure) {
+    var badge = document.createElement('div');
+    badge.className = 'rb-stars-badge';
+    badge.textContent = '+' + stars + ' Stars!';
+    cel.appendChild(badge);
+  }
 
   var btn = document.createElement('button');
   btn.className = 'rb-continue-btn';
-  btn.textContent = "Let's keep going!";
+  btn.textContent = isFailure ? "Try again next time!" : "Let's keep going!";
   btn.addEventListener('click', onContinue);
   cel.appendChild(btn);
 

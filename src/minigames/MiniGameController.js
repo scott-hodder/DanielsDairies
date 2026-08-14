@@ -77,8 +77,10 @@ export async function tryRunMiniGame({ roadblock, container, spawn, child, onCom
 
   try {
     const result = await game.run();
-    // Compute stars if the game didn't already.
-    if (result.starsEarned == null) {
+    // Stars only on success. Failure = 0 stars always.
+    if (!result.success) {
+      result.starsEarned = 0;
+    } else if (result.starsEarned == null) {
       const scorer = new Scorer(difficulty);
       result.starsEarned = scorer.stars(result.score || 0);
     }

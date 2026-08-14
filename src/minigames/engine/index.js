@@ -1,0 +1,11 @@
+export { default as GameCanvas } from './GameCanvas.js';
+export { default as Sprite } from './Sprite.js';
+export { default as ScrollingScene, createSkyLayer, createHillsLayer, createObjectsLayer } from './ScrollingScene.js';
+export { default as InputManager } from './InputManager.js';
+export { default as ParticleEmitter } from './ParticleEmitter.js';
+export { default as HUD } from './HUD.js';
+export { default as DialogueBox } from './DialogueBox.js';
+export { default as TweenManager } from './Tween.js';
+export { default as Daniel } from '../characters/Daniel.js';
+export { default as DanielPlayer, DANIEL_IMAGES as DANIEL_ASSETS } from './DanielPlayer.js';
+export { showIntroScreen, showCompletionScreen, DANIEL_IMAGES } from './GameShell.js';

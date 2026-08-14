@@ -1,9 +1,5 @@
 // Central registry. Games register themselves here so the controller can
 // look them up by id without the framework importing every game.
-//
-// Phase 0: empty. Phase 1+ will add entries like:
-//   import balloonBreathing from './games/balloon-breathing/index.js';
-//   register(balloonBreathing);
 
 /** @type {Map<string, import('./types.js').MiniGameDefinition>} */
 const registry = new Map();

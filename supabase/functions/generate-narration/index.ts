@@ -20,10 +20,11 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withCors } from '../_shared/cors.ts';
+import { requireAdmin } from '../_shared/auth.ts';
 
 const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://app.danielsdiaries.com.au",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -41,10 +42,20 @@ const VOICEBOX_INSTRUCT = "Warm, friendly, encouraging Australian voice for chil
 // audio_prompt for voice cloning; standard supports it.
 const REPLICATE_CHATTERBOX_URL = "https://api.replicate.com/v1/models/resemble-ai/chatterbox/predictions";
 
-// Cartesia Sonic — commercial voice cloning, stored voice IDs, consistent output
+// Cartesia Sonic — commercial voice cloning, stored voice IDs, consistent output.
+// IMPORTANT: the model matters for accent fidelity. Clones sound like the
+// playground only on the current Sonic generation — the legacy sonic-2 path
+// drifted cloned voices toward American. Pin the model the playground uses;
+// override with CARTESIA_MODEL_ID if Cartesia ships a newer one.
 const CARTESIA_TTS_URL = "https://api.cartesia.ai/tts/bytes";
-const CARTESIA_VERSION = "2024-11-13";
-const CARTESIA_MODEL = "sonic-2";
+const CARTESIA_VERSION = "2026-03-01";
+const CARTESIA_MODEL = Deno.env.get("CARTESIA_MODEL_ID") || "sonic-3.5";
+
+// ElevenLabs — highest-fidelity voice cloning (Professional Voice Clone).
+// Configure ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID to use. Model is
+// multilingual v2 by default; set ELEVENLABS_MODEL_ID=eleven_flash_v2_5 to
+// halve credit usage at slightly lower fidelity.
+const ELEVENLABS_TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech";
 
 interface NarrationEntry {
   pageIndex: number;
@@ -75,21 +86,39 @@ async function hashText(text: string): Promise<string> {
  * Determine which TTS provider to use.
  */
 function getTtsProvider(): {
-  provider: "cartesia" | "replicate" | "voicebox" | "openai";
+  provider: "cartesia" | "elevenlabs" | "replicate" | "voicebox" | "openai";
   voiceboxUrl?: string;
   profileId?: string;
   replicateToken?: string;
   replicateVoiceUrl?: string;
   cartesiaKey?: string;
   cartesiaVoiceId?: string;
+  elevenLabsKey?: string;
+  elevenLabsVoiceId?: string;
 } {
-  // Cartesia first — commercial cloning with stored voice IDs, consistent + cheap
+  const override = Deno.env.get("TTS_PROVIDER");
   const cartesiaKey = Deno.env.get("CARTESIA_API_KEY");
   const cartesiaVoiceId = Deno.env.get("CARTESIA_VOICE_ID");
+  const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
+  const elevenLabsVoiceId = Deno.env.get("ELEVENLABS_VOICE_ID");
+
+  // Explicit override wins — lets you A/B cloning providers by flipping one
+  // secret without removing the others' keys.
+  if (override === "elevenlabs" && elevenLabsKey && elevenLabsVoiceId) {
+    return { provider: "elevenlabs", elevenLabsKey, elevenLabsVoiceId };
+  }
+  if (override === "cartesia" && cartesiaKey && cartesiaVoiceId) {
+    return { provider: "cartesia", cartesiaKey, cartesiaVoiceId };
+  }
+
+  // Default priority: Cartesia (cheap commercial cloning) → ElevenLabs
+  // (highest-fidelity cloning) → legacy providers → OpenAI (no cloning).
   if (cartesiaKey && cartesiaVoiceId) {
     return { provider: "cartesia", cartesiaKey, cartesiaVoiceId };
   }
-  const override = Deno.env.get("TTS_PROVIDER");
+  if (elevenLabsKey && elevenLabsVoiceId) {
+    return { provider: "elevenlabs", elevenLabsKey, elevenLabsVoiceId };
+  }
   const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
   if (override === "replicate" && replicateToken) {
     return {
@@ -224,28 +253,84 @@ async function generateAudioCartesia(
 ): Promise<ArrayBuffer> {
   console.log(`[Cartesia] text len=${text.length}, voice=${voiceId}`);
   const t0 = Date.now();
-  const res = await fetch(CARTESIA_TTS_URL, {
-    method: "POST",
-    headers: {
-      "X-API-Key": apiKey,
-      "Cartesia-Version": CARTESIA_VERSION,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model_id: CARTESIA_MODEL,
-      transcript: text,
-      voice: { mode: "id", id: voiceId },
-      output_format: { container: "mp3", sample_rate: 44100, bit_rate: 128000 },
-      language: "en",
-    }),
-    signal: AbortSignal.timeout(120 * 1000),
-  });
+
+  // Free/Pro tiers allow very few concurrent requests — retry 429s with
+  // backoff instead of failing the page.
+  const maxAttempts = 6;
+  let res: Response;
+  let attempt = 0;
+  while (true) {
+    res = await fetch(CARTESIA_TTS_URL, {
+      method: "POST",
+      headers: {
+        "X-API-Key": apiKey,
+        "Cartesia-Version": CARTESIA_VERSION,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model_id: CARTESIA_MODEL,
+        transcript: text,
+        voice: { mode: "id", id: voiceId },
+        output_format: { container: "mp3", sample_rate: 44100, bit_rate: 128000 },
+        language: "en",
+      }),
+      signal: AbortSignal.timeout(120 * 1000),
+    });
+    if (res.status !== 429) break;
+    attempt++;
+    if (attempt >= maxAttempts) break;
+    const retryAfter = parseInt(res.headers.get("retry-after") || "0", 10);
+    const waitMs = (retryAfter > 0 ? retryAfter : Math.min(2 ** attempt, 20)) * 1000 + Math.random() * 500;
+    console.log(`[Cartesia] 429 concurrency limit, waiting ${Math.round(waitMs)}ms (attempt ${attempt}/${maxAttempts})`);
+    await res.body?.cancel();
+    await new Promise((r) => setTimeout(r, waitMs));
+  }
+
   if (!res.ok) {
     const err = await res.text().catch(() => "");
     throw new Error(`Cartesia error ${res.status}: ${err.slice(0, 500)}`);
   }
   const buf = await res.arrayBuffer();
   console.log(`[Cartesia] DONE in ${Date.now() - t0}ms — ${buf.byteLength} bytes`);
+  return buf;
+}
+
+/**
+ * Call ElevenLabs to generate audio with a cloned voice.
+ * Returns MP3 bytes synchronously.
+ */
+async function generateAudioElevenLabs(
+  text: string,
+  apiKey: string,
+  voiceId: string,
+): Promise<ArrayBuffer> {
+  const modelId = Deno.env.get("ELEVENLABS_MODEL_ID") || "eleven_multilingual_v2";
+  console.log(`[ElevenLabs] text len=${text.length}, voice=${voiceId}, model=${modelId}`);
+  const t0 = Date.now();
+  const res = await fetch(`${ELEVENLABS_TTS_URL}/${voiceId}?output_format=mp3_44100_128`, {
+    method: "POST",
+    headers: {
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      text,
+      model_id: modelId,
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.75,
+        style: 0.3,
+        use_speaker_boost: true,
+      },
+    }),
+    signal: AbortSignal.timeout(120 * 1000),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`ElevenLabs error ${res.status}: ${err.slice(0, 500)}`);
+  }
+  const buf = await res.arrayBuffer();
+  console.log(`[ElevenLabs] DONE in ${Date.now() - t0}ms — ${buf.byteLength} bytes`);
   return buf;
 }
 
@@ -349,6 +434,10 @@ async function generateAudio(
     const buffer = await generateAudioCartesia(text, ttsProvider.cartesiaKey!, ttsProvider.cartesiaVoiceId!);
     return { buffer, contentType: "audio/mpeg" };
   }
+  if (ttsProvider.provider === "elevenlabs") {
+    const buffer = await generateAudioElevenLabs(text, ttsProvider.elevenLabsKey!, ttsProvider.elevenLabsVoiceId!);
+    return { buffer, contentType: "audio/mpeg" };
+  }
   if (ttsProvider.provider === "replicate") {
     const buffer = await generateAudioReplicate(text, ttsProvider.replicateToken!, ttsProvider.replicateVoiceUrl);
     return { buffer, contentType: "audio/wav" };
@@ -361,7 +450,7 @@ async function generateAudio(
   return { buffer, contentType: "audio/mpeg" };
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -369,6 +458,9 @@ serve(async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Use POST" }, 405);
   }
+
+  const auth = await requireAdmin(req);
+  if (auth instanceof Response) return auth;
 
   const ttsProvider = getTtsProvider();
   console.log(`[TTS] ====== generate-narration (${ttsProvider.provider}) called ======`);
@@ -383,10 +475,7 @@ serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const supabaseClient = createClient(
-    supabaseUrl,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  );
+  const supabaseClient = auth.admin;
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -549,7 +638,10 @@ serve(async (req) => {
     }
 
     // 5. Build work list (pages that actually need generation)
-    const PARALLEL_BATCH = ttsProvider.provider === "voicebox" ? 1 : ttsProvider.provider === "replicate" ? 3 : ttsProvider.provider === "cartesia" ? 6 : 5;
+    // Concurrency is plan-limited on both cloning providers (Cartesia free/Pro
+    // tiers allow very few concurrent requests; ElevenLabs Creator allows 5).
+    // Stay low — the 429 retry handles the rest.
+    const PARALLEL_BATCH = ttsProvider.provider === "voicebox" ? 1 : ttsProvider.provider === "replicate" ? 3 : ttsProvider.provider === "cartesia" ? 2 : ttsProvider.provider === "elevenlabs" ? 3 : 5;
     const narrationData: NarrationEntry[] = [...existingNarration];
     const pagesToProcess = requestedPages || existingNarration.map((_: NarrationEntry, i: number) => i);
 
@@ -694,4 +786,4 @@ serve(async (req) => {
       error: err instanceof Error ? err.message : "Internal server error",
     }, 500);
   }
-});
+}));

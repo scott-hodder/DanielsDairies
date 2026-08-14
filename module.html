@@ -6,29 +6,27 @@
   <title>Loading Module...</title>
   
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/images/logos/FM-LOGO-Light.png">
-  <link rel="apple-touch-icon" href="/images/logos/FM-LOGO-Light.png">
+  <link rel="icon" type="image/png" href="/images/logos/dd-favicon.png">
+  <link rel="apple-touch-icon" href="/images/logos/dd-favicon.png">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media=&#39;all&#39;">
   
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind utilities (static build — see tailwind.module.config.js).
+       Replaces the runtime CDN script, which flashed unstyled content and
+       made the core child experience depend on a third-party CDN. -->
+  <link rel="stylesheet" href="/styles/module-tailwind.css">
   
   <!-- Module stylesheets -->
   <link rel="stylesheet" href="/modules/shared/module-header.css">
   <link rel="stylesheet" href="/modules/shared/module-theme.css">
   <link rel="stylesheet" href="/modules/shared/module-base.css">
   
-  <!-- Module header script - makes window.initModuleHeader available -->
-  <script src="/modules/shared/module-header.js"></script>
+  <!-- Module header script - makes window.initModuleHeader available.
+       Deferred: only stored module scripts call it, long after parse. -->
+  <script src="/modules/shared/module-header.js" defer></script>
   
   <style>
     
@@ -133,7 +131,7 @@
     }
     
     .completion-title {
-      font-family: 'Fredoka One', cursive;
+      font-family: 'Fredoka', cursive;
       font-size: 36px;
       color: #264653;
       margin-bottom: 16px;
@@ -1032,9 +1030,9 @@
         setTimeout(() => {
           modal.remove();
           if (_state.childId) {
-            window.location.href = '/dashboard.html?childId=' + _state.childId;
+            window.location.href = '/dashboard.html?childId=' + _state.childId + '&completed=1';
           } else {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard.html?completed=1';
           }
         }, 300);
       }

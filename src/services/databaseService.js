@@ -1,5 +1,11 @@
 import { getSupabaseClient } from '../supabaseClient.js'
 import { setChildPasswordServer, verifyChildPasswordServer } from './childCredentials.js'
+import { trackEvent } from '../lib/telemetry.js'
+
+// Funnel event on first completion of a module (never blocks completion).
+function trackModuleCompleted(moduleId) {
+  try { trackEvent('module_completed', { module_id: moduleId }) } catch { /* ignore */ }
+}
 
 const queryCache = new Map()
 const inflightQueries = new Map()
@@ -417,24 +423,20 @@ export async function getModules() {
   })
 }
 
-// Get all Super Skills for dropdowns
+// Get all Super Skills for dropdowns.
+// Cached: reference data requested by several dashboard layers per load
+// (map, gold tab, module cards) — one round-trip covers them all.
 export async function getSuperSkills() {
-  console.log('[Database] Fetching Super Skills...');
-  const { data, error } = await getSupabaseClient()
-    .from('super_skills')
-    .select('*')
-    // .eq('is_active', true)  // Temporarily removed - show all skills
-    .order('sort_order', { ascending: true })
-  
-  console.log('[Database] Super Skills query result:', { data, error });
-  
-  if (error) {
-    console.error('[Database] Super Skills query error:', error);
-    throw error
-  }
-  
-  console.log('[Database] Returning Super Skills:', data);
-  return data
+  return withCachedQuery('superSkills:all', 300_000, async () => {
+    const { data, error } = await getSupabaseClient()
+      .from('super_skills')
+      .select('*')
+      // .eq('is_active', true)  // Temporarily removed - show all skills
+      .order('sort_order', { ascending: true })
+
+    if (error) throw error
+    return data
+  })
 }
 
 // Get modules a parent has access to
@@ -749,14 +751,17 @@ export async function getCategoryColors() {
   })
 }
 
-// Get child's module progress
+// Get child's module progress.
+// Metadata columns only on the joined module — modules.html_content is the
+// full generated module body and pulling it here put megabytes on the
+// dashboard's critical path. module.html loads content itself when opened.
 export async function getChildModules(childId) {
   return withCachedQuery(`childModules:${childId}`, 300_000, async () => {
     const { data, error } = await getSupabaseClient()
       .from('child_modules')
       .select(`
         *,
-        modules (*)
+        modules (id, code, title, short_description, description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, xp_reward, stars_reward, character_name, card_color, is_active, created_at)
       `)
       .eq('child_id', childId)
 
@@ -826,7 +831,7 @@ export async function completeModule(childId, moduleId) {
     .eq('child_id', childId)
     .eq('module_id', moduleId)
     .single()
-  
+
   const wasCompleted = existing?.is_completed === true
 
   if (existing) {
@@ -834,7 +839,7 @@ export async function completeModule(childId, moduleId) {
     if (!wasCompleted) {
       const { data, error } = await getSupabaseClient()
         .from('child_modules')
-        .update({ 
+        .update({
           is_completed: true,
           completed_at: new Date().toISOString()
         })
@@ -842,11 +847,12 @@ export async function completeModule(childId, moduleId) {
         .eq('module_id', moduleId)
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
+      trackModuleCompleted(moduleId)
       await awardModuleXp(childId, moduleId)
       
       // Temporarily disabled assessment check to identify if this is causing the second modal
@@ -876,11 +882,12 @@ export async function completeModule(childId, moduleId) {
       throw error
     }
 
+    trackModuleCompleted(moduleId)
     await awardModuleXp(childId, moduleId)
-    
+
     // Temporarily disabled assessment check to identify if this is causing the second modal
     // await checkForAssessmentAfterCompletion(childId, moduleId)
-    
+
     invalidateCacheByPrefix(`childModules:${childId}`)
     return data
   }
@@ -1145,9 +1152,12 @@ export async function updateLoginStreak(userId, childId = null) {
       return newRecord
     }
     
+    // Remember the previous login date before we update
+    const previousLoginDate = streakRecord.last_login_date
+
     // Check if already logged in today
     if (streakRecord.last_login_date === today) {
-      return streakRecord // No update needed
+      return { ...streakRecord, _previousLoginDate: previousLoginDate }
     }
     
     // Calculate yesterday's date
@@ -1190,7 +1200,7 @@ export async function updateLoginStreak(userId, childId = null) {
       .single()
     
     if (updateError) throw updateError
-    return updatedRecord
+    return { ...updatedRecord, _previousLoginDate: previousLoginDate }
     
   } catch (error) {
     console.error('Error updating login streak:', error)

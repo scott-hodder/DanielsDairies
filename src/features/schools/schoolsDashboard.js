@@ -1,4 +1,5 @@
 import { supabase } from '../../supabaseClient.js'
+import { escapeHtml } from '../../lib/sanitize.js'
 import { getCurrentSchoolUser, getActiveWorkbook } from './schoolsService.js'
 
 // ============================================================

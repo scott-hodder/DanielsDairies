@@ -1,7 +1,11 @@
 // ── Daniel's Diaries - Sign Up Page ──
+import { escapeHtml } from './lib/sanitize.js'
 import { signUp } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
 import { getSubscriptionTiers } from './services/databaseService.js'
+import { initTelemetry, trackEvent } from './lib/telemetry.js'
+
+initTelemetry()
 
 // ── State ──
 let currentStep = 1
@@ -15,7 +19,17 @@ const formData = {
     phone: '',
     password: '',
     plan: null,       // will be set from DB tiers (e.g. 'low', 'mid', 'top')
+    billing: 'monthly', // 'monthly' | 'annual' (annual = 10x monthly, 2 months free)
     mailchimpOptIn: false
+}
+
+// Annual price is always 10 x the monthly price ("2 months free") — must
+// match ANNUAL_MONTHS_CHARGED in the start-paid-signup edge function.
+const ANNUAL_MONTHS_CHARGED = 10
+
+function formatDollars(cents) {
+    const dollars = cents / 100
+    return '$' + (dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2))
 }
 
 // ── DOM Elements ──
@@ -30,32 +44,31 @@ async function init() {
     const params = new URLSearchParams(window.location.search)
     isFreeTrial = params.get('trial') === 'true'
 
-    // Check if returning from successful Stripe payment
+    // Practitioner invite: stash the code so the dashboard can link this
+    // family to their practitioner after signup/login completes.
+    const inviteCode = params.get('invite')
+    if (inviteCode) localStorage.setItem('dd_practitioner_invite', inviteCode)
+
+    // Returning from successful Stripe payment: the account was already
+    // created server-side before checkout, so nothing sensitive is needed
+    // here — just confirm and hand over to login.
     if (params.get('payment') === 'success') {
-        await completeSignupAfterPayment()
+        const resume = readSignupResumeState()
+        clearSignupResumeState()
+        trackEvent('signup_payment_success', { plan: resume?.plan || null, billing: resume?.billing || null })
+        showPaymentSuccessScreen(resume?.email || '')
         return
     }
 
-    // Check if payment was cancelled - restore form state
+    // Payment cancelled: the account exists (pending, no charge taken).
+    // Offer a safe retry via the single-purpose resume token — never by
+    // re-collecting or re-storing credentials.
     if (params.get('payment') === 'cancelled') {
-        const pending = localStorage.getItem('dd_pending_signup')
-        if (pending) {
-            const data = JSON.parse(pending)
-            formData.firstName = data.firstName
-            formData.lastName = data.lastName
-            formData.email = data.email
-            formData.phone = data.phone
-            formData.password = data.password
-            formData.plan = data.plan
-            formData.mailchimpOptIn = data.mailchimpOptIn || false
-
-            // Restore form field values
-            document.getElementById('firstName').value = data.firstName
-            document.getElementById('lastName').value = data.lastName
-            document.getElementById('email').value = data.email
-            document.getElementById('phone').value = data.phone || ''
-            const mailchimpCheckbox = document.getElementById('mailchimpOptIn')
-            if (mailchimpCheckbox) mailchimpCheckbox.checked = formData.mailchimpOptIn
+        const resume = readSignupResumeState()
+        trackEvent('signup_payment_cancelled', { plan: resume?.plan || null, has_resume: !!resume?.resumeToken })
+        if (resume?.resumeToken) {
+            showPaymentCancelledScreen(resume)
+            return
         }
     }
 
@@ -81,17 +94,23 @@ async function init() {
     // Load subscription tiers from DB
     await loadTiers()
 
-    // Pre-select plan from URL if provided
+    // Pre-select plan and billing from URL if provided
     const planParam = params.get('plan')
     if (planParam && tiers.some(t => t.tier === planParam)) {
         formData.plan = planParam
     }
+    if (params.get('billing') === 'annual') {
+        formData.billing = 'annual'
+        const container = document.getElementById('planCardsContainer')
+        if (container) renderPlanCards(container)
+    }
     updatePlanSelection()
 
-    // If returning from cancelled payment, go to step 2 (plan selection)
+    // Cancelled payment with no resume state (e.g. new browser): no charge
+    // was taken. If they already created the account, login is the recovery
+    // path; otherwise they can start over.
     if (params.get('payment') === 'cancelled') {
-        showAlert('error', 'Payment was cancelled. Please choose your plan and try again.')
-        await loadTiers()
+        showAlert('error', 'Payment was cancelled and no charge was taken. If you already created your account, log in to finish upgrading from your profile — or start again below.')
         goToStep(2)
     }
 }
@@ -121,11 +140,42 @@ async function loadTiers() {
 }
 
 function renderPlanCards(container) {
+    // The container must NOT be the grid itself — the toggle sits above
+    // the grid, otherwise it becomes a squashed grid cell.
+    container.classList.remove('plan-cards')
     container.innerHTML = ''
 
+    // Monthly / annual segmented toggle (annual = 2 months free)
+    const toggle = document.createElement('div')
+    toggle.className = 'billing-toggle-wrap'
+    toggle.innerHTML = `
+        <div class="billing-toggle">
+            <button type="button" data-billing="monthly" class="${formData.billing === 'monthly' ? 'active' : ''}">Monthly</button>
+            <button type="button" data-billing="annual" class="${formData.billing === 'annual' ? 'active' : ''}">Annual</button>
+        </div>
+        <span class="billing-toggle-note">${formData.billing === 'annual' ? 'Nice choice — 2 months free!' : 'Save with annual: 2 months free'}</span>
+    `
+    toggle.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            formData.billing = btn.dataset.billing
+            renderPlanCards(container)
+        })
+    })
+    container.appendChild(toggle)
+
+    const grid = document.createElement('div')
+    grid.className = 'plan-cards'
+    container.appendChild(grid)
+
     tiers.forEach((tier, index) => {
-        const priceInDollars = tier.monthly_price_cents ? (tier.monthly_price_cents / 100) : 0
-        const priceDisplay = priceInDollars % 1 === 0 ? priceInDollars.toFixed(0) : priceInDollars.toFixed(2)
+        const monthlyCents = tier.monthly_price_cents || 0
+        const isAnnual = formData.billing === 'annual'
+        const priceHtml = isAnnual
+            ? `${formatDollars(monthlyCents * ANNUAL_MONTHS_CHARGED)}<span>/yr</span>`
+            : `${formatDollars(monthlyCents)}<span>/mo</span>`
+        const annualNote = isAnnual
+            ? `<div class="plan-card-annual-note">${formatDollars(monthlyCents * ANNUAL_MONTHS_CHARGED / 12)}/mo equivalent — 2 months free</div>`
+            : ''
         const isMiddle = index === 1 && tiers.length >= 2
 
         // Build features list
@@ -148,14 +198,15 @@ function renderPlanCards(container) {
         card.dataset.plan = tier.tier
 
         card.innerHTML = `
-            <input type="radio" name="plan" value="${tier.tier}" ${formData.plan === tier.tier ? 'checked' : ''}>
+            <input type="radio" name="plan" value="${escapeHtml(tier.tier)}" ${formData.plan === tier.tier ? 'checked' : ''}>
             ${isMiddle ? '<div class="plan-card-popular">Most Popular</div>' : ''}
-            <div class="plan-card-name">${tier.display_name || tier.tier}</div>
-            <div class="plan-card-price">$${priceDisplay}<span>/mo</span></div>
+            <div class="plan-card-name">${escapeHtml(tier.display_name || tier.tier)}</div>
+            <div class="plan-card-price">${priceHtml}</div>
+            ${annualNote}
             <ul class="plan-card-features-list">
                 ${features.map(f => `<li><span class="plan-feature-check">&#10003;</span> ${f}</li>`).join('')}
             </ul>
-            ${tagline ? `<p class="plan-card-tagline">${tagline}</p>` : ''}
+            ${tagline ? `<p class="plan-card-tagline">${escapeHtml(tagline)}</p>` : ''}
         `
 
         card.addEventListener('click', () => {
@@ -164,7 +215,7 @@ function renderPlanCards(container) {
             updatePlanSelection()
         })
 
-        container.appendChild(card)
+        grid.appendChild(card)
     })
 
     updatePlanSelection()
@@ -253,6 +304,8 @@ function handleStep1(e) {
     formData.password = password
     formData.mailchimpOptIn = document.getElementById('mailchimpOptIn')?.checked || false
 
+    trackEvent('signup_start', { trial: isFreeTrial })
+
     // If free trial, skip plan selection - go straight to review
     if (isFreeTrial) {
         formData.plan = null  // no plan for free trial
@@ -298,9 +351,13 @@ function populateReview() {
     } else {
         const selectedTier = tiers.find(t => t.tier === formData.plan)
         if (selectedTier) {
-            const price = selectedTier.monthly_price_cents ? (selectedTier.monthly_price_cents / 100) : 0
-            document.getElementById('reviewPlan').textContent = selectedTier.display_name || selectedTier.tier
-            document.getElementById('reviewTotal').textContent = `$${price % 1 === 0 ? price.toFixed(0) : price.toFixed(2)}/mo`
+            const monthlyCents = selectedTier.monthly_price_cents || 0
+            const isAnnual = formData.billing === 'annual'
+            document.getElementById('reviewPlan').textContent =
+                `${selectedTier.display_name || selectedTier.tier}${isAnnual ? ' (Annual)' : ''}`
+            document.getElementById('reviewTotal').textContent = isAnnual
+                ? `${formatDollars(monthlyCents * ANNUAL_MONTHS_CHARGED)}/yr (2 months free)`
+                : `${formatDollars(monthlyCents)}/mo`
         } else {
             document.getElementById('reviewPlan').textContent = formData.plan || '-'
             document.getElementById('reviewTotal').textContent = '-'
@@ -355,39 +412,56 @@ async function handleSubmit() {
             clearAlerts()
             submitSpinner.classList.add('hidden')
 
+            trackEvent('free_trial_created')
+
             // Show inline login form (same as paid flow)
             showPostSignupLoginForm(formData.email)
 
         } else {
-            // ── Paid plan: redirect to Stripe FIRST, account created after payment ──
-            submitBtnText.textContent = 'Redirecting to payment...'
-
-            // Store signup details so we can create the account after payment
-            localStorage.setItem('dd_pending_signup', JSON.stringify({
-                email: formData.email,
-                password: formData.password,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                phone: formData.phone,
-                plan: formData.plan,
-                mailchimpOptIn: formData.mailchimpOptIn
-            }))
+            // ── Paid plan: account is created SERVER-SIDE first (pending,
+            // zero credits), then we redirect to Stripe. The webhook
+            // activates the plan after payment. The password is sent once to
+            // the edge function and never stored in the browser.
+            submitBtnText.textContent = 'Setting up your account...'
 
             const supabase = getSupabaseClient()
-            const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-session', {
+            const { data: startData, error: startError } = await supabase.functions.invoke('start-paid-signup', {
                 body: {
-                    plan: formData.plan,
                     email: formData.email,
+                    password: formData.password,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phone: formData.phone,
+                    plan: formData.plan,
+                    billing: formData.billing,
+                    mailchimpOptIn: formData.mailchimpOptIn,
                     successUrl: `${window.location.origin}/signup.html?payment=success`,
                     cancelUrl: `${window.location.origin}/signup.html?payment=cancelled`
                 }
             })
 
-            if (checkoutError) throw checkoutError
+            if (startError) {
+                let errorMsg = startError.message || 'Failed to start signup'
+                if (startError.context && typeof startError.context.json === 'function') {
+                    try {
+                        const errorBody = await startError.context.json()
+                        if (errorBody?.error) errorMsg = errorBody.error
+                    } catch (e) { /* ignore */ }
+                }
+                throw new Error(errorMsg)
+            }
 
-            const redirectUrl = checkoutData?.url || checkoutData?.paymentLink
-            if (redirectUrl) {
-                window.location.href = redirectUrl
+            if (startData?.url) {
+                // Keep only non-sensitive resume state for the cancelled path.
+                saveSignupResumeState({
+                    email: formData.email,
+                    plan: formData.plan,
+                    billing: formData.billing,
+                    resumeToken: startData.resumeToken || null
+                })
+                trackEvent('checkout_redirect', { plan: formData.plan, billing: formData.billing })
+                submitBtnText.textContent = 'Redirecting to payment...'
+                window.location.href = startData.url
                 return
             }
 
@@ -412,137 +486,90 @@ async function handleSubmit() {
     }
 }
 
-// After Stripe payment success, complete account creation via server-side edge function
-async function completeSignupAfterPayment() {
-    const pending = localStorage.getItem('dd_pending_signup')
-    if (!pending) {
-        showAlert('error', 'Could not find your signup details. Please try signing up again.')
-        return
-    }
+// ── Signup resume state (non-sensitive) ──
+// Only the email, plan, and a single-purpose resume token are kept, so a
+// cancelled checkout can be retried. Never store passwords in the browser.
+const RESUME_STATE_KEY = 'dd_signup_resume'
 
-    const data = JSON.parse(pending)
-
-    // Populate formData so the review step shows correct info
-    formData.firstName = data.firstName
-    formData.lastName = data.lastName
-    formData.email = data.email
-    formData.phone = data.phone
-    formData.plan = data.plan
-
-    // Load tiers so populateReview can show the plan name/price
-    await loadTiers()
-
-    const submitBtn = document.getElementById('submitBtn')
-    const submitBtnText = document.getElementById('submitBtnText')
-    const submitSpinner = document.getElementById('submitSpinner')
-
-    try {
-        // Show step 3 with the review populated
-        goToStep(3)
-        if (submitBtn) submitBtn.disabled = true
-        if (submitBtnText) submitBtnText.textContent = 'Setting up your account...'
-        if (submitSpinner) submitSpinner.classList.remove('hidden')
-
-        showAlert('success', 'Payment successful! Creating your account...')
-
-        // Call the server-side edge function that uses service role
-        const supabase = getSupabaseClient()
-        const { data: result, error: fnError } = await supabase.functions.invoke('complete-signup', {
-            body: {
-                email: data.email,
-                password: data.password,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                phone: data.phone,
-                plan: data.plan,
-                mailchimpOptIn: data.mailchimpOptIn || false
-            }
-        })
-
-        if (fnError) {
-            // Try to get the actual error message from the response
-            let errorMsg = fnError.message || 'Failed to create account'
-            if (fnError.context && typeof fnError.context.json === 'function') {
-                try {
-                    const errorBody = await fnError.context.json()
-                    if (errorBody?.error) errorMsg = errorBody.error
-                } catch (e) { /* ignore parse errors */ }
-            }
-            throw new Error(errorMsg)
-        }
-
-        console.log('Account created successfully:', result)
-
-        // Clear pending data
-        localStorage.removeItem('dd_pending_signup')
-
-        // Clear the "Payment successful! Creating your account..." banner
-        clearAlerts()
-
-        // Show inline login form
-        showPostSignupLoginForm(data.email)
-
-    } catch (error) {
-        console.error('Post-payment signup error:', error)
-
-        if (submitBtn) submitBtn.disabled = false
-        if (submitBtnText) submitBtnText.textContent = 'Retry'
-        if (submitSpinner) submitSpinner.classList.add('hidden')
-
-        let message = 'Payment was successful but we had trouble creating your account. Please contact support.'
-        if (error.message) {
-            if (error.message.includes('already exists') || error.message.includes('already registered')) {
-                message = 'An account with this email already exists. Please log in instead.'
-                localStorage.removeItem('dd_pending_signup')
-            } else {
-                message = error.message
-            }
-        }
-        showAlert('error', message)
-
-        // Allow retry - keep localStorage so they can try again
-        if (submitBtn) {
-            submitBtn.disabled = false
-            submitBtn.onclick = () => completeSignupAfterPayment()
-        }
-    }
+function saveSignupResumeState(state) {
+    try { sessionStorage.setItem(RESUME_STATE_KEY, JSON.stringify(state)) } catch (e) { /* ignore */ }
 }
 
-// Helper to update parent profile with retry logic
-async function updateParentProfile(userId, updateData) {
-    const supabase = getSupabaseClient()
-    const maxRetries = 5
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 600 * attempt))
+function readSignupResumeState() {
+    try { return JSON.parse(sessionStorage.getItem(RESUME_STATE_KEY)) } catch (e) { return null }
+}
 
-        const { data: existingProfile } = await supabase
-            .from('parent_profiles')
-            .select('id')
-            .eq('id', userId)
-            .maybeSingle()
+function clearSignupResumeState() {
+    try { sessionStorage.removeItem(RESUME_STATE_KEY) } catch (e) { /* ignore */ }
+}
 
-        if (!existingProfile) {
-            console.log(`Profile not found yet, attempt ${attempt}/${maxRetries}`)
-            continue
+// ── Payment success screen ──
+// Account + subscription were created and activated server-side; nothing to
+// do here but confirm and hand over to email verification + login.
+function showPaymentSuccessScreen(email) {
+    goToStep(3)
+    clearAlerts()
+    showAlert('success', 'Payment successful! Your account and subscription are active.')
+    showPostSignupLoginForm(email)
+}
+
+// ── Payment cancelled screen ──
+function showPaymentCancelledScreen(resume) {
+    goToStep(3)
+    const step3 = document.getElementById('step3')
+    if (!step3) return
+
+    const stepIndicator = document.querySelector('.step-indicator')
+    if (stepIndicator) stepIndicator.style.display = 'none'
+
+    step3.innerHTML = `
+        <div class="form-header" style="margin-bottom: 8px;">
+            <div style="font-size: 48px; margin-bottom: 12px;">💳</div>
+            <h2>Payment not completed</h2>
+            <p style="margin-bottom: 16px;">No charge was taken. Your account for <strong>${escapeHtml(resume.email || '')}</strong> is created and waiting — you can finish your subscription now, or log in later and upgrade from your profile.</p>
+        </div>
+        <div id="cancelledMessages"></div>
+        <div class="form-buttons" style="justify-content: center; flex-direction: column; gap: 12px; align-items: center;">
+            <button type="button" class="btn-submit" id="resumeCheckoutBtn">
+                <span id="resumeCheckoutBtnText">Try payment again</span>
+                <span id="resumeCheckoutSpinner" class="spinner hidden"></span>
+            </button>
+            <a href="/login.html" style="color: #6B9BD1; font-size: 14px; text-decoration: underline;">Log in instead</a>
+        </div>
+    `
+
+    document.getElementById('resumeCheckoutBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('resumeCheckoutBtn')
+        const btnText = document.getElementById('resumeCheckoutBtnText')
+        const spinner = document.getElementById('resumeCheckoutSpinner')
+        const messages = document.getElementById('cancelledMessages')
+        btn.disabled = true
+        btnText.textContent = 'Preparing payment...'
+        spinner.classList.remove('hidden')
+
+        try {
+            const supabase = getSupabaseClient()
+            const { data, error } = await supabase.functions.invoke('start-paid-signup', {
+                body: {
+                    resumeToken: resume.resumeToken,
+                    successUrl: `${window.location.origin}/signup.html?payment=success`,
+                    cancelUrl: `${window.location.origin}/signup.html?payment=cancelled`
+                }
+            })
+            if (error) throw error
+            if (data?.url) {
+                window.location.href = data.url
+                return
+            }
+            throw new Error('Could not restart payment. Please log in and upgrade from your profile.')
+        } catch (err) {
+            console.error('Resume checkout error:', err)
+            messages.innerHTML = '<div class="alert alert-error visible">Could not restart payment. Please log in and upgrade from your profile, or contact support.</div>'
+            btn.disabled = false
+            btnText.textContent = 'Try payment again'
+            spinner.classList.add('hidden')
         }
-
-        const { data: updateResult, error: updateError } = await supabase
-            .from('parent_profiles')
-            .update(updateData)
-            .eq('id', userId)
-            .select()
-
-        if (updateError) {
-            console.error(`Update error on attempt ${attempt}:`, updateError)
-            continue
-        }
-
-        if (updateResult && updateResult.length > 0) {
-            console.log('Profile updated successfully:', updateResult[0])
-            return
-        }
-    }
-    console.error('Failed to update profile after all retries')
+    })
 }
 
 
@@ -559,7 +586,7 @@ function showPostSignupLoginForm(email) {
         <div class="form-header" style="margin-bottom: 8px;">
             <div style="font-size: 48px; margin-bottom: 12px;">📬</div>
             <h2>Check your inbox</h2>
-            <p style="margin-bottom: 16px;">We've sent a confirmation link to <strong>${email}</strong></p>
+            <p style="margin-bottom: 16px;">We've sent a confirmation link to <strong>${email ? escapeHtml(email) : 'your email address'}</strong></p>
         </div>
 
         <div class="email-confirm-steps">
@@ -634,7 +661,7 @@ function showPostSignupLoginForm(email) {
             } else if (msg.includes('Invalid login credentials')) {
                 msg = 'Invalid email or password. Please try again.'
             }
-            messagesDiv.innerHTML = `<div class="alert alert-error visible">${msg}</div>`
+            messagesDiv.innerHTML = `<div class="alert alert-error visible">${escapeHtml(msg)}</div>`
             loginBtn.disabled = false
             loginBtnText.textContent = 'Log In'
             loginSpinner.classList.add('hidden')

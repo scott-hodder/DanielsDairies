@@ -179,6 +179,15 @@ class ModuleWrapper {
   }
   
   showCompletionMessage() {
+    const encouragements = [
+      "You're building amazing skills!",
+      "Every module makes you stronger!",
+      "You're becoming an emotion expert!",
+      "Daniel is so proud of you!",
+      "Your brain is growing right now!"
+    ]
+    const encouragement = encouragements[Math.floor(Math.random() * encouragements.length)]
+
     const modal = document.createElement('div')
     modal.innerHTML = `
       <style>
@@ -196,7 +205,7 @@ class ModuleWrapper {
           z-index: 10000;
           font-family: 'Fredoka', sans-serif;
         }
-        
+
         .completion-modal {
           background-color: #fffff5;
           border-radius: 24px;
@@ -206,42 +215,72 @@ class ModuleWrapper {
           text-align: center;
           border: 8px solid #4c6c96;
         }
-        
+
         .completion-icon {
           font-size: 80px;
           margin-bottom: 24px;
         }
-        
+
         .completion-title {
           font-size: 36px;
           color: #405878;
           margin-bottom: 16px;
           font-weight: 700;
         }
-        
+
         .completion-message {
           font-size: 18px;
           color: #364f66;
-          margin-bottom: 24px;
+          margin-bottom: 8px;
         }
-        
+
+        .completion-encouragement {
+          font-size: 15px;
+          color: #6b7c8f;
+          margin-bottom: 24px;
+          font-style: italic;
+        }
+
         .completion-stars {
           font-size: 32px;
           color: #4c6c96;
           font-weight: 700;
           margin-bottom: 32px;
         }
-        
+
         .completion-button {
           padding: 16px 48px;
-          background: linear-gradient(135deg, #405878 0%, #4c6c96 100%);
-          color: #fffff5;
+          background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+          color: #fff;
           border: none;
           border-radius: 12px;
           font-size: 18px;
           font-weight: 700;
           cursor: pointer;
           font-family: 'Fredoka', sans-serif;
+          box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+          margin-bottom: 12px;
+          display: block;
+          width: 100%;
+        }
+
+        .completion-button:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(20, 184, 166, 0.4);
+        }
+
+        .completion-button-secondary {
+          padding: 12px 32px;
+          background: #e8edf4;
+          color: #405878;
+          border: none;
+          border-radius: 12px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'Fredoka', sans-serif;
+          display: block;
+          width: 100%;
         }
       </style>
       <div class="completion-modal-overlay">
@@ -249,16 +288,20 @@ class ModuleWrapper {
           <div class="completion-icon">🎉</div>
           <h1 class="completion-title">Module Complete!</h1>
           <p class="completion-message">Great job! You've completed this module.</p>
+          <p class="completion-encouragement">${encouragement}</p>
           <div class="completion-stars">
             ⭐ ${this.starsEarned} stars earned!
           </div>
           <button class="completion-button" onclick="moduleWrapper.returnToDashboard()">
-            Return to Dashboard
+            Ready for the next one!
+          </button>
+          <button class="completion-button-secondary" onclick="moduleWrapper.returnToDashboard()">
+            Back to Dashboard
           </button>
         </div>
       </div>
     `
-    
+
     document.body.appendChild(modal)
   }
   

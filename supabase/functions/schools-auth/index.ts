@@ -1,13 +1,14 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { withCors } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://app.danielsdiaries.com.au",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req: Request) => {
+serve(withCors(async (req: Request) => {
   console.log("[schools-auth] Request received:", req.method, req.url);
 
   // Handle CORS preflight
@@ -51,7 +52,7 @@ serve(async (req: Request) => {
       }
     );
   }
-});
+}));
 
 async function handleSignup(
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -74,9 +75,10 @@ async function handleSignup(
     return jsonResponse({ error: "Invalid role" }, 400);
   }
 
-  if (password.length < 6) {
+  // These accounts access children's data — hold them to a real standard.
+  if (password.length < 12) {
     return jsonResponse(
-      { error: "Password must be at least 6 characters" },
+      { error: "Password must be at least 12 characters" },
       400
     );
   }

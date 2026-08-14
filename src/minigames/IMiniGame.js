@@ -1,4 +1,5 @@
 import StateMachine from './core/StateMachine.js';
+import Scorer from './core/Scorer.js';
 
 /**
  * Abstract base class for all mini-games.
@@ -83,31 +84,47 @@ export default class IMiniGame {
    * @param {Partial<import('./types.js').MiniGameResult>} partial
    */
   _complete(partial = {}) {
-    if (this.state.current === 'completed') return;
+    if (!this.state.is('playing', 'paused')) return;
     this.state.transition('completed');
     this._finish(true, partial);
   }
 
   _fail(partial = {}) {
-    if (this.state.current === 'failed') return;
+    if (!this.state.is('playing', 'paused')) return;
     this.state.transition('failed');
     this._finish(false, partial);
   }
 
   _finish(success, partial) {
     const durationMs = Math.round(performance.now() - this._startedAt);
+    const finalScore = partial.score ?? this._score;
+
+    // Auto-calculate stars from score if not explicitly provided.
+    // On failure, always 0 stars. On success, use Scorer with difficulty thresholds.
+    let stars = partial.starsEarned;
+    if (stars == null || stars === undefined) {
+      if (!success) {
+        stars = 0;
+      } else {
+        stars = new Scorer(this.ctx.difficulty || 'easy').stars(finalScore);
+        // Guarantee at least 1 star on any successful completion
+        if (stars < 1) stars = 1;
+      }
+    }
+
     /** @type {import('./types.js').MiniGameResult} */
     const result = {
       gameId: this.ctx.gameId,
       completed: true,
       success,
-      score: partial.score ?? this._score,
-      starsEarned: partial.starsEarned ?? 0,
+      score: finalScore,
+      starsEarned: stars,
       durationMs,
       attempts: partial.attempts ?? this._attempts,
       skillTags: partial.skillTags ?? [],
       events: [],
       ...partial,
+      starsEarned: stars, // ensure stars override any spread from partial
     };
     this.ctx.emit(success ? 'game.success' : 'game.fail', { durationMs, score: result.score });
     this._resolve?.(result);

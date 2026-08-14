@@ -26,6 +26,170 @@ export function determineConfidenceLevel(checkinCount, moduleCount) {
   return CONFIDENCE.NOT_ENOUGH
 }
 
+// ── Check-in → Super Skill recommendation ──
+// Pure mapping from a weekly check-in (challenge + triggers) to one of the
+// 7 Super Skills. Deliberately framed as a supportive learning suggestion,
+// never a clinical assessment: "worth practising", not "your child has X".
+
+var CHALLENGE_TO_SKILL = {
+  'Morning routine': 'Behaviour Engineer',
+  'School refusal / drop-off': 'Thought Driver',
+  'Homework / focus': 'Behaviour Engineer',
+  'Bedtime': 'Behaviour Engineer',
+  'Sibling conflict': 'Social Mapper',
+  'Social worries': 'Social Mapper',
+  'Anger outbursts': 'Emotion Navigator',
+  'Sensory overwhelm': 'Emotion Navigator'
+}
+
+var TRIGGER_TO_SKILL = {
+  'Anger': 'Emotion Navigator',
+  'Frustration': 'Emotion Navigator',
+  'Overwhelm': 'Emotion Navigator',
+  'Worry/Anxiety': 'Thought Driver',
+  'Sadness': 'Resilience Architect'
+}
+
+var SKILL_REASONS = {
+  'Emotion Navigator': 'noticing big feelings early and using calming tools before they take over',
+  'Thought Driver': 'spotting worried or unhelpful thoughts and steering them somewhere more helpful',
+  'Behaviour Engineer': 'building predictable routines and habits that make tricky moments smaller',
+  'Social Mapper': 'reading social situations and practising what to say and do with others',
+  'Resilience Architect': 'bouncing back from hard moments and building inner strength',
+  'Brain Builder': 'understanding how the brain works — a great foundation for every other skill',
+  'Future Designer': 'setting small goals and imagining the person they want to become'
+}
+
+/**
+ * @param {Object|null} checkin - latest weekly check-in ({ challenge, triggers })
+ * @returns {Object|null} { skillName, reason, message } or null when no signal
+ */
+export function computeCheckinRecommendation(checkin) {
+  if (!checkin) return null
+
+  var skillName = CHALLENGE_TO_SKILL[checkin.challenge] || null
+  if (!skillName) {
+    var triggers = checkin.triggers || []
+    for (var i = 0; i < triggers.length && !skillName; i++) {
+      skillName = TRIGGER_TO_SKILL[triggers[i]] || null
+    }
+  }
+  if (!skillName) return null
+
+  var reason = SKILL_REASONS[skillName] || 'practising this skill together'
+  return {
+    skillName: skillName,
+    reason: reason,
+    message: "Based on this week's check-in, Daniel recommends practising " + skillName +
+      ' — ' + reason + '. A learning suggestion, not a diagnosis: you know your child best.'
+  }
+}
+
+// ── Game metadata (mirrors the arcade registry — keeps this module pure) ──
+var GAME_INFO = {
+  'shield-sprint': { name: 'Shield Sprint', skill: 'Helpful self-talk' },
+  'calm-river-rapids': { name: 'Calm River Rapids', skill: 'Pausing and noticing' },
+  'courage-canyon': { name: 'Courage Canyon', skill: 'Breathing and courage' },
+  'thought-forest': { name: 'Thought Forest', skill: 'Unhelpful thoughts' },
+  'emotion-ocean': { name: 'Emotion Ocean', skill: 'Reading feelings' },
+  'kindness-kingdom': { name: 'Kindness Kingdom', skill: 'Empathy and kindness' },
+  'focus-firefly-forest': { name: 'Focus Firefly Forest', skill: 'Focus and attention' },
+  'coping-cave': { name: 'Coping Cave', skill: 'Coping strategies' },
+  'gratitude-garden': { name: 'Gratitude Garden', skill: 'Gratitude' },
+  'breathing-bridge': { name: 'Breathing Bridge', skill: 'Calm breathing' }
+}
+
+export function gameInfoFor(gameId) {
+  return GAME_INFO[gameId] || { name: gameId, skill: 'Wellbeing practice' }
+}
+
+// ── This week vs last week momentum ──
+// Parents scan for "is it working *now*" before anything all-time. Counts
+// every activity stream in two 7-day windows and summarises the direction.
+export function computeWeeklyActivity(data) {
+  var now = Date.now()
+  var weekMs = 7 * 24 * 60 * 60 * 1000
+  var weekAgo = now - weekMs
+  var twoWeeksAgo = now - 2 * weekMs
+
+  function countIn(rows, field, from, to) {
+    return (rows || []).filter(function(r) {
+      var raw = r[field]
+      if (!raw) return false
+      var t = new Date(raw).getTime()
+      return t >= from && t < to
+    }).length
+  }
+
+  function windowCounts(from, to) {
+    return {
+      modules: countIn(data.completedModules, 'completed_at', from, to),
+      games: countIn(data.arcadePlays, 'created_at', from, to),
+      quests: countIn(data.dailyQuests, 'completed_at', from, to),
+      roadblocks: countIn(data.roadblocks, 'completed_at', from, to),
+      checkins: countIn(data.weeklyCheckins, 'created_at', from, to) +
+                countIn(data.moodCheckins, 'created_at', from, to)
+    }
+  }
+
+  var thisWeek = windowCounts(weekAgo, now + 1)
+  var lastWeek = windowCounts(twoWeeksAgo, weekAgo)
+
+  function total(w) { return w.modules + w.games + w.quests + w.roadblocks + w.checkins }
+  var thisTotal = total(thisWeek)
+  var lastTotal = total(lastWeek)
+
+  var trend = 'steady'
+  if (thisTotal > lastTotal) trend = 'up'
+  else if (thisTotal < lastTotal) trend = 'down'
+
+  var summaryLine
+  if (thisTotal === 0 && lastTotal === 0) {
+    summaryLine = 'A quiet fortnight — a single module or daily quest is an easy way back in.'
+  } else if (thisTotal === 0) {
+    summaryLine = 'Quieter this week. No pressure — small, regular moments matter more than big bursts.'
+  } else if (trend === 'up') {
+    summaryLine = 'More activity than last week — momentum is building.'
+  } else if (trend === 'down') {
+    summaryLine = 'A little less than last week — completely normal. Consistency over weeks is what counts.'
+  } else {
+    summaryLine = 'A steady week — regular practice is exactly how skills stick.'
+  }
+
+  return {
+    show: thisTotal > 0 || lastTotal > 0,
+    thisWeek: thisWeek,
+    lastWeek: lastWeek,
+    thisTotal: thisTotal,
+    lastTotal: lastTotal,
+    trend: trend,
+    summaryLine: summaryLine
+  }
+}
+
+// ── The child's own voice ──
+// After each arcade game the child answers one Super-Skill reflection
+// ("Which helpful thought will you keep?" → "I can ask for help"). Their own
+// words are the most meaningful data on this page — surface them verbatim.
+export function computeChildVoice(arcadePlays) {
+  var withReflection = (arcadePlays || []).filter(function(p) {
+    return p.reflection && String(p.reflection).trim().length > 0
+  })
+
+  // Newest first, capped so the card stays scannable.
+  withReflection.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at) })
+
+  return withReflection.slice(0, 6).map(function(p) {
+    var info = gameInfoFor(p.game_id)
+    return {
+      reflection: String(p.reflection).trim(),
+      gameName: info.name,
+      skill: info.skill,
+      date: p.created_at
+    }
+  })
+}
+
 // ── Main entry point ──
 export function computeInsights(rawData) {
   var child = rawData.child || {}
@@ -34,6 +198,10 @@ export function computeInsights(rawData) {
   var weeklyCheckins = rawData.weeklyCheckins || []
   var moodCheckins = rawData.moodCheckins || []
   var superSkills = rawData.superSkills || []
+  var arcadePlays = rawData.arcadePlays || []
+  var dailyQuests = rawData.dailyQuests || []
+  var roadblocks = rawData.roadblocks || []
+  var streak = rawData.streak || null
 
   var completedCMs = childModules.filter(function(cm) { return cm.is_completed === true })
   var completedModules = completedCMs.map(function(cm) {
@@ -51,24 +219,35 @@ export function computeInsights(rawData) {
   var moodCount = moodCheckins.length
   var confidence = determineConfidenceLevel(checkinCount, moduleCount)
 
-  var isNewUser = moduleCount === 0 && checkinCount === 0 && moodCount === 0
+  var isNewUser = moduleCount === 0 && checkinCount === 0 && moodCount === 0 &&
+    arcadePlays.length === 0 && dailyQuests.length === 0
 
   return {
     isNewUser: isNewUser,
     confidence: confidence,
     confidenceLabel: CONFIDENCE_LABELS[confidence],
-    hero: computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins),
+    hero: computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins, streak, arcadePlays),
+    weeklyActivity: computeWeeklyActivity({
+      completedModules: completedCMs,
+      arcadePlays: arcadePlays,
+      dailyQuests: dailyQuests,
+      roadblocks: roadblocks,
+      weeklyCheckins: weeklyCheckins,
+      moodCheckins: moodCheckins
+    }),
+    childVoice: computeChildVoice(arcadePlays),
     observations: computeRecentObservations(completedModules, inProgressModules, weeklyCheckins, moodCheckins),
     patterns: computeEmergingPatterns(weeklyCheckins, moodCheckins, completedModules, superSkills, confidence),
     homeContext: computeHomeContext(weeklyCheckins),
     actions: computeWeeklyActions(weeklyCheckins, completedModules),
-    celebrations: computeCelebrations(child, completedModules, moodCheckins, weeklyCheckins),
-    goalFollowUp: computeGoalFollowUp(weeklyCheckins)
+    celebrations: computeCelebrations(child, completedModules, moodCheckins, weeklyCheckins, arcadePlays, dailyQuests, streak),
+    goalFollowUp: computeGoalFollowUp(weeklyCheckins),
+    recommendation: computeCheckinRecommendation(weeklyCheckins[0] || null)
   }
 }
 
 // ── Hero Summary ──
-function computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins) {
+function computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins, streak, arcadePlays) {
   var level = child.level || 1
   var totalXp = child.total_xp || 0
   var xpPerLevel = 500
@@ -76,6 +255,9 @@ function computeHeroSummary(child, completedModules, inProgressModules, weeklyCh
   var progressPercent = Math.min(100, (xpIntoLevel / xpPerLevel) * 100)
 
   var totalCheckins = weeklyCheckins.length + moodCheckins.length
+  var currentStreak = streak ? (streak.current_streak || 0) : (child.day_streak || child.streak || 0)
+  var longestStreak = streak ? (streak.longest_streak || 0) : 0
+  var gamesPlayed = (arcadePlays || []).length
 
   var engagementLine = ''
   if (completedModules.length === 0 && inProgressModules.length === 0) {
@@ -97,6 +279,9 @@ function computeHeroSummary(child, completedModules, inProgressModules, weeklyCh
     modulesCompleted: completedModules.length,
     modulesInProgress: inProgressModules.length,
     totalCheckins: totalCheckins,
+    currentStreak: currentStreak,
+    longestStreak: longestStreak,
+    gamesPlayed: gamesPlayed,
     engagementLine: engagementLine
   }
 }
@@ -368,8 +553,27 @@ function computeWeeklyActions(weeklyCheckins, completedModules) {
 }
 
 // ── Celebrations ──
-function computeCelebrations(child, completedModules, moodCheckins, weeklyCheckins) {
+function computeCelebrations(child, completedModules, moodCheckins, weeklyCheckins, arcadePlays, dailyQuests, streak) {
   var wins = []
+  arcadePlays = arcadePlays || []
+  dailyQuests = dailyQuests || []
+
+  // Streak wins (login_streaks is the source of truth, child column fallback)
+  var currentStreak = streak ? (streak.current_streak || 0) : (child.day_streak || 0)
+  if (currentStreak >= 7) wins.push({ icon: '🔥', title: currentStreak + '-day streak', detail: 'Showing up every day — that\'s how habits form' })
+  else if (currentStreak >= 3) wins.push({ icon: '🔥', title: currentStreak + ' days in a row', detail: 'A routine is starting to take shape' })
+
+  // Practice through play
+  var reflectionCount = arcadePlays.filter(function(p) { return p.reflection }).length
+  if (reflectionCount >= 3) {
+    wins.push({ icon: '💬', title: 'Reflecting after games', detail: reflectionCount + ' reflections shared in their own words — see "In their own words" above' })
+  } else if (arcadePlays.length >= 5) {
+    wins.push({ icon: '🎮', title: 'Practising through play', detail: arcadePlays.length + ' arcade games — each one rehearses a real skill' })
+  }
+
+  // Daily quest consistency
+  if (dailyQuests.length >= 10) wins.push({ icon: '🗓️', title: 'Daily quest regular', detail: dailyQuests.length + ' daily quests — small check-ins building self-awareness' })
+  else if (dailyQuests.length >= 3) wins.push({ icon: '🌤️', title: 'Daily quests started', detail: dailyQuests.length + ' quests done — a lovely daily rhythm forming' })
 
   // Module milestones
   var count = completedModules.length

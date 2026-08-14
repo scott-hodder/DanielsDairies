@@ -1,9 +1,21 @@
 // Profile Page - Separate from Dashboard
+import { escapeHtml } from './lib/sanitize.js'
 import { signOut, getCurrentUser } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
 import { showElement, hideElement } from './utils/dom.js'
 import { switchStripeSubscriptionPlan, manageSubscription } from './services/databaseService.js'
-import { showLoadingScreen, hideLoadingScreen } from './loading-screen.js'
+import { showLoadingScreen, hideLoadingScreen } from './features/dashboard/loadingScreen.js'
+import { showToast } from './ui/toast.js'
+import { requireParentGate, openParentPinSettings } from './features/parentGate.js'
+import { initKidIcons } from './lib/kidIcons.js'
+import { initTelemetry, trackEvent } from './lib/telemetry.js'
+import { childAvatarHTML, DD_AVATARS } from './lib/childAvatar.js'
+
+// Error tracking + page view (fail-silent, self-hosted in Supabase)
+initTelemetry()
+
+// Consistent emoji artwork on every device
+initKidIcons()
 
 const supabase = getSupabaseClient()
 
@@ -28,6 +40,7 @@ async function checkIsAdmin() {
 
 // Avatar categories for the fun picker
 const avatarCategories = {
+    crew: Object.keys(DD_AVATARS),
   animals: ['🦊', '🐼', '🦁', '🐨', '🦋', '🐸', '🐯', '🐺'],
   magical: ['🧚', '🧙', '🧜', '🐉', '🦄', '🌈', '🔮', '🦕'],
   heroes: ['🦸', '🦹', '🥷', '🤖', '👑', '🎭', '🎯', '💎'],
@@ -81,6 +94,16 @@ async function init() {
     }
 
     state.currentUser = user
+
+    // Parent Zone gate: the whole profile page (children, billing, account)
+    // is parent-only, so verify before anything renders
+    hideLoadingScreen()
+    const gatePassed = await requireParentGate()
+    if (!gatePassed) {
+      window.location.href = '/dashboard.html'
+      return
+    }
+    showLoadingScreen()
 
     // Update header
     if (headerSubtitle) {
@@ -155,6 +178,16 @@ async function loadData() {
         if (subscription.subscription_tiers) {
           subscription.tierData = subscription.subscription_tiers
         }
+
+        // Self-healing: if Stripe has a customer for this family but the
+        // subscription doesn't look active (e.g. a webhook delivery was
+        // missed after checkout), ask the server to sync the truth from
+        // Stripe. Idempotent — it can activate and grant missed credits,
+        // never double-grant.
+        if (subscription.stripe_customer_id &&
+            !['active', 'trialing'].includes(subscription.status)) {
+          maybeSyncSubscription()
+        }
       }
     }
 
@@ -167,6 +200,31 @@ async function loadData() {
 
   } catch (error) {
     console.error('Error loading data:', error)
+  }
+}
+
+// Ask the server to reconcile the subscription with Stripe. Fire-and-
+// forget with a page refresh only when something actually changed.
+let _syncAttempted = false
+async function maybeSyncSubscription() {
+  if (_syncAttempted) return
+  _syncAttempted = true
+  try {
+    const { data, error } = await supabase.functions.invoke('sync-subscription', { body: {} })
+    if (error || !data?.synced) return
+    if (['active', 'trialing'].includes(data.status) || data.credits_granted > 0) {
+      showToast(
+        data.credits_granted > 0
+          ? `Subscription activated — ${data.credits_granted} module credits added!`
+          : 'Subscription status updated.',
+        'success'
+      )
+      // Reload so the plan section and credit counts reflect reality
+      setTimeout(() => window.location.reload(), 1500)
+    }
+  } catch (err) {
+    console.warn('Subscription sync failed (will retry next visit):', err)
+    _syncAttempted = false
   }
 }
 
@@ -256,10 +314,13 @@ function renderBasicProfileSections(container) {
 
     <!-- Privacy & Data - subtle footer links -->
     <div style="margin-top:32px; padding:0 24px 24px; text-align:center;">
+      <p style="font-size:12px; font-weight:600; color:#6b7c8f; margin:0 0 10px; font-family:'Fredoka',sans-serif;">Account</p>
       <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
-        <button id="downloadDataBtn" type="button" style="background:none; border:none; color:#9ca3af; font-size:11px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Download My Data</button>
-        <span style="color:#d1d5db; font-size:11px;">|</span>
-        <button id="deleteAccountBtn" type="button" style="background:none; border:none; color:#9ca3af; font-size:11px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Delete Account</button>
+        <button id="parentPinBtn" type="button" style="background:none; border:none; color:#6b7c8f; font-size:13px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Parent Zone PIN</button>
+        <span style="color:#d1d5db; font-size:13px;">|</span>
+        <button id="downloadDataBtn" type="button" style="background:none; border:none; color:#6b7c8f; font-size:13px; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Download My Data</button>
+        <span style="color:#d1d5db; font-size:13px;">|</span>
+        <button id="deleteAccountBtn" type="button" style="background:none; border:none; color:#dc2626; font-size:13px; font-weight:600; font-family:'Fredoka',sans-serif; cursor:pointer; text-decoration:underline; padding:0;">Delete Account</button>
       </div>
       <p id="dataActionStatus" style="font-size:11px; color:#9ca3af; margin-top:8px;"></p>
     </div>
@@ -416,6 +477,11 @@ function renderBasicProfileSections(container) {
       }
     })
   }
+
+  // ── Parent Zone PIN ──
+  document.getElementById('parentPinBtn')?.addEventListener('click', () => {
+    openParentPinSettings()
+  })
 
   // ── Delete My Account ──
   const deleteBtn = document.getElementById('deleteAccountBtn')
@@ -579,11 +645,98 @@ function renderPlanSection() {
         <button class="profile-action-btn profile-action-btn-primary" id="makePaymentBtn">Make a Payment</button>
       </div>
       <div class="plan-manage-links">
+        ${sub && sub.status && sub.status !== 'inactive' ? '<button type="button" id="printStatementBtn" class="plan-manage-link">Print plan statement (for NDIS claims)</button>' : ''}
         ${manageLinks}
       </div>
     </div>
   `
 }
+
+// Printable subscription statement, worded so plan managers can process
+// self/plan-managed NDIS claims (business identity + service description).
+const STATEMENT_BUSINESS = {
+  name: "Daniel's Diaries — Foundational Minds",
+  abn: '', // set before public release; the ABN row is hidden while empty
+  email: 'info@danielsdiaries.com',
+  web: 'danielsdiaries.com'
+}
+
+async function openPlanStatement() {
+  const sub = window.currentSubscription || state.subscription
+  if (!sub || !sub.status || sub.status === 'inactive') {
+    showToast('You need an active subscription to generate a statement.', 'error')
+    return
+  }
+
+  const tierData = sub.subscription_tiers || sub.tierData || {}
+  const price = tierData.monthly_price_cents ? `A$${(tierData.monthly_price_cents / 100).toFixed(2)} per month` : '—'
+  const planName = tierData.display_name || (sub.tier || '').toUpperCase()
+
+  let parentName = ''
+  try {
+    const { data } = await supabase
+      .from('parent_profiles')
+      .select('full_name')
+      .eq('id', state.currentUser.id)
+      .maybeSingle()
+    parentName = data?.full_name || ''
+  } catch { /* fall back to email only */ }
+
+  const fmt = (d) => {
+    const date = new Date(d)
+    return isNaN(date.getTime()) ? null : date.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+  const periodStart = fmt(sub.stripe_current_period_start || sub.current_period_start)
+  const periodEnd = fmt(sub.stripe_current_period_end || sub.current_period_end)
+  const today = fmt(new Date())
+
+  const win = window.open('', '_blank')
+  if (!win) {
+    showToast('Please allow pop-ups to print your statement.', 'error')
+    return
+  }
+
+  const row = (label, value) => value
+    ? `<tr><td style="padding:6px 14px 6px 0;color:#6b7280;white-space:nowrap;">${label}</td><td style="padding:6px 0;font-weight:600;">${value}</td></tr>`
+    : ''
+
+  win.document.write(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Subscription statement — Daniel's Diaries</title>
+<style>
+  body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: #1f2937; max-width: 720px; margin: 40px auto; padding: 0 24px; line-height: 1.6; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .muted { color: #6b7280; font-size: 13px; }
+  table { border-collapse: collapse; font-size: 14px; margin: 18px 0; }
+  .box { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 20px; margin-top: 18px; font-size: 13px; }
+  @media print { .noprint { display: none; } }
+</style></head><body>
+  <h1>Subscription statement</h1>
+  <p class="muted">${escapeHtml(STATEMENT_BUSINESS.name)}${STATEMENT_BUSINESS.abn ? ' · ABN ' + escapeHtml(STATEMENT_BUSINESS.abn) : ''} · ${escapeHtml(STATEMENT_BUSINESS.web)} · ${escapeHtml(STATEMENT_BUSINESS.email)}</p>
+  <p class="muted">Statement generated ${today}</p>
+  <table>
+    ${row('Account holder', escapeHtml(parentName))}
+    ${row('Account email', escapeHtml(state.currentUser?.email || ''))}
+    ${row('Service', "Daniel's Diaries — structured psychoeducational skill-building program for children (family subscription)")}
+    ${row('Plan', escapeHtml(planName))}
+    ${row('Subscription price', escapeHtml(price))}
+    ${row('Status', escapeHtml((sub.status || '').replace('_', ' ')))}
+    ${row('Current billing period', periodStart && periodEnd ? `${periodStart} — ${periodEnd}` : null)}
+  </table>
+  <div class="box">
+    This statement is provided to assist families who self-manage or plan-manage NDIS funding. Daniel's Diaries is a
+    mainstream educational wellbeing product; whether a subscription can be claimed depends on the participant's plan
+    and is a matter for the participant, their plan manager and the NDIA. Payment receipts for individual charges are
+    issued by our payment processor (Stripe) at the time of each payment.
+  </div>
+  <p class="noprint" style="margin-top:24px;"><button onclick="window.print()" style="padding:10px 18px;font-size:14px;cursor:pointer;">Print / Save as PDF</button></p>
+</body></html>`)
+  win.document.close()
+}
+
+// Delegated so it survives plan-section re-renders
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#printStatementBtn')) openPlanStatement()
+})
 
 // Render modules section content
 function renderModulesSection() {
@@ -636,9 +789,9 @@ function renderChildrenList() {
   
   childrenList.innerHTML = state.children.map(child => `
     <div class="child-card" data-child-id="${child.id}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 12px; margin-bottom: 8px; cursor: pointer;">
-      <span style="font-size: 32px;">${child.avatar || '🦊'}</span>
+      <span style="font-size: 32px;">${childAvatarHTML(child.avatar)}</span>
       <div style="flex: 1;">
-        <div style="font-weight: 600; color: #405878;">${child.name}</div>
+        <div style="font-weight: 600; color: #405878;">${escapeHtml(child.name)}</div>
         <div style="font-size: 12px; color: #6c757d;">Click to view dashboard</div>
       </div>
       <button class="edit-child-btn" data-child-id="${child.id}" style="background: none; border: none; cursor: pointer; font-size: 18px;">✏️</button>
@@ -674,7 +827,7 @@ function openEditChildModal(child) {
   const avatarInput = document.getElementById('editChildAvatar')
   if (avatarInput) avatarInput.value = currentAvatar
   const preview = document.getElementById('editAvatarPreviewCircle')
-  if (preview) preview.textContent = currentAvatar
+  if (preview) preview.innerHTML = childAvatarHTML(currentAvatar)
 
   const errorEl = document.getElementById('editModalError')
   if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden') }
@@ -727,7 +880,7 @@ function setupNavigation() {
       window.location.href = '/login.html'
     } catch (error) {
       console.error('Logout error:', error)
-      alert('Failed to logout. Please try again.')
+      showToast('Failed to logout. Please try again.', 'error')
     }
   }
   
@@ -767,7 +920,7 @@ function setupNavigation() {
 // Render emoji avatar picker into a modal (add or edit)
 function renderAvatarPicker(prefix, selectedAvatar) {
   const selected = selectedAvatar || '🦊'
-  const categoryNames = ['animals', 'magical', 'heroes', 'space']
+  const categoryNames = ['crew', 'animals', 'magical', 'heroes', 'space']
 
   categoryNames.forEach(cat => {
     const container = document.getElementById(prefix + 'AvatarPicker' + cat.charAt(0).toUpperCase() + cat.slice(1))
@@ -777,17 +930,18 @@ function renderAvatarPicker(prefix, selectedAvatar) {
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'avatar-option-fun' + (emoji === selected ? ' selected' : '')
-      btn.textContent = emoji
+      btn.dataset.avatar = emoji
+      btn.innerHTML = childAvatarHTML(emoji)
       btn.addEventListener('click', () => {
         // Deselect all in this modal
-        document.querySelectorAll('#' + prefix + 'AvatarPickerAnimals .avatar-option-fun, #' + prefix + 'AvatarPickerMagical .avatar-option-fun, #' + prefix + 'AvatarPickerHeroes .avatar-option-fun, #' + prefix + 'AvatarPickerSpace .avatar-option-fun')
+        document.querySelectorAll('#' + prefix + 'AvatarPickerCrew .avatar-option-fun, #' + prefix + 'AvatarPickerAnimals .avatar-option-fun, #' + prefix + 'AvatarPickerMagical .avatar-option-fun, #' + prefix + 'AvatarPickerHeroes .avatar-option-fun, #' + prefix + 'AvatarPickerSpace .avatar-option-fun')
           .forEach(b => b.classList.remove('selected'))
         btn.classList.add('selected')
         // Update hidden input and preview
         const hiddenInput = document.getElementById(prefix + 'ChildAvatar')
         const preview = document.getElementById(prefix + 'AvatarPreviewCircle')
         if (hiddenInput) hiddenInput.value = emoji
-        if (preview) preview.textContent = emoji
+        if (preview) preview.innerHTML = childAvatarHTML(emoji)
       })
       container.appendChild(btn)
     })
@@ -952,7 +1106,7 @@ function setupModals() {
       hideElement(removeChildModal)
     } catch (err) {
       console.error('Error removing child:', err)
-      alert('Could not remove child. Please try again.')
+      showToast('Could not remove child. Please try again.', 'error')
     }
   })
 }
@@ -999,6 +1153,11 @@ function formatDateAU(date) {
 }
 
 async function callCheckoutSession(payload) {
+  trackEvent('upgrade_checkout_start', {
+    payment_type: payload?.paymentType || 'subscription',
+    months: payload?.months || null,
+    credits: payload?.credits || null
+  })
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
   if (!supabaseUrl) throw new Error('Supabase URL is not configured.')
 
@@ -1076,16 +1235,16 @@ async function handleSubscriptionAction(action, button, onComplete) {
     const sub = window.currentSubscription || state.subscription
     if (action === 'cancel') {
       if (sub) sub.cancel_at_period_end = true
-      alert('Your subscription will be cancelled at the end of the billing period.')
+      showToast('Your subscription will be cancelled at the end of the billing period.', 'info')
     } else if (action === 'pause') {
       if (sub) sub.status = 'paused'
-      alert('Your subscription has been paused.')
+      showToast('Your subscription has been paused.', 'info')
     } else if (action === 'resume') {
       if (sub) {
         sub.status = 'active'
         sub.cancel_at_period_end = false
       }
-      alert('Your subscription is active again!')
+      showToast('Your subscription is active again!', 'success')
     }
 
     if (onComplete) onComplete()
@@ -1104,7 +1263,7 @@ async function handleSubscriptionAction(action, button, onComplete) {
     }
   } catch (error) {
     console.error('Subscription action failed:', error)
-    alert(error?.message || 'Something went wrong. Please try again.')
+    showToast(error?.message || 'Something went wrong. Please try again.', 'error')
     if (button) {
       button.disabled = false
       button.textContent = originalLabel

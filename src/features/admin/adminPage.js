@@ -1,5 +1,5 @@
 import { supabase } from '../../supabaseClient.js';
-import { getSettings, updateSettings } from '../../database.js';
+import { getSettings, updateSettings } from '../../services/databaseService.js';
 import { requireSupabaseEnv } from './runtimeConfig.js';
 
 // Re-export for sub-modules
@@ -310,6 +310,10 @@ function hideAdminLoading() {
 async function init() {
     const hasAccess = await checkAdminAccess();
     if (!hasAccess) { hideAdminLoading(); return; }
+
+    // Unlock the admin container now that access is verified server-side
+    const adminContainer = document.getElementById('adminContainer');
+    if (adminContainer) adminContainer.classList.remove('admin-locked');
 
     await Promise.all([
         loadAllChildren(),

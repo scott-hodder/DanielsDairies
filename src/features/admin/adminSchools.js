@@ -1,4 +1,5 @@
 import { supabase } from '../../supabaseClient.js';
+import { escapeHtml } from '../../lib/sanitize.js';
 import {
   getAllSchools, createSchool, updateSchool, deleteSchool,
   getAllWorkbooks, createWorkbook, updateWorkbook, deleteWorkbook, activateWorkbook,
@@ -299,7 +300,7 @@ function renderSchoolUsersList(container) {
               <strong style="color:#1a1a2e; font-size:14px;">${escapeHtml(u.display_name)}</strong>
               <div style="font-size:11px; color:#6b7c8f; margin-top:2px;">
                 ${u.role === 'child' ? 'Student' : 'Practitioner'}
-                &nbsp;|&nbsp; ${u.schools?.name || 'Unknown school'}
+                &nbsp;|&nbsp; ${escapeHtml(u.schools?.name || 'Unknown school')}
                 &nbsp;|&nbsp; ${u.is_active ? '<span style="color:#2d6a4f;">Active</span>' : '<span style="color:#c62828;">Inactive</span>'}
               </div>
             </div>
@@ -317,9 +318,3 @@ function renderSchoolUsersList(container) {
 // ============================================================
 // Utility
 // ============================================================
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}

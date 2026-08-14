@@ -2,30 +2,30 @@
 // Child Focus Plan - Onboarding & Management
 // ================================================
 
+// Focus plan onboarding is a 2-step parent conversation: goals, then
+// context (frequency/intensity/notes). It no longer asks "where should we
+// begin?" — the Super Skill journey is sequential (see superSkillGate.js),
+// so the starting point is not a parent choice anymore.
 import { supabase } from '../../supabaseClient.js'
-import { 
-  getChildFocusPlan, 
-  createChildFocusPlan, 
-  updateChildFocusPlan,
-  getCategories, 
-  getPathways,
-  determineDefaultPathwayWithModules 
-} from '../../database.js'
+import { escapeHtml } from '../../lib/sanitize.js'
+import {
+  getChildFocusPlan,
+  createChildFocusPlan
+} from '../../services/databaseService.js'
 
 // State for focus plan onboarding
 let focusPlanState = {
   currentStep: 1,
-  selectedCategories: [],
   selectedGoalKeys: [],
   customGoalText: '',
   frequency: null,
   intensity: null,
   comments: '',
-  categories: [],
-  pathways: [],
   childId: null,
   onComplete: null
 }
+
+const TOTAL_STEPS = 2
 
 // Goal options - loaded from DB, with hardcoded fallbacks
 const FALLBACK_GOAL_OPTIONS = [
@@ -93,7 +93,6 @@ export async function showFocusPlanOnboarding(childId, onComplete) {
   focusPlanState.childId = childId
   focusPlanState.onComplete = onComplete
   focusPlanState.currentStep = 1
-  focusPlanState.selectedCategories = []
   focusPlanState.selectedGoalKeys = []
   focusPlanState.customGoalText = ''
   focusPlanState.frequency = null
@@ -103,103 +102,15 @@ export async function showFocusPlanOnboarding(childId, onComplete) {
   // Load configurable options from DB (falls back to hardcoded if DB fails)
   await loadFocusPlanOptions()
 
-  // Load focus area categories from focus_plan_categories table (with super_skill link)
-  try {
-    const { data: fpCats, error: fpCatsError } = await supabase
-      .from('focus_plan_categories')
-      .select('id, name, icon, short_description, super_skill_id')
-      .eq('is_active', true)
-      .order('sort_order')
-
-    if (!fpCatsError && fpCats && fpCats.length > 0) {
-      focusPlanState.categories = fpCats.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        icon: cat.icon || '📚',
-        short_description: cat.short_description || '',
-        super_skill_id: cat.super_skill_id || null
-      }))
-    } else {
-      // Fall back to category_colors if focus_plan_categories is empty or errors
-      const rawCategories = await getCategories()
-      focusPlanState.categories = rawCategories.map(cat => {
-        const categoryName = cat.name || cat.category || 'Unknown'
-        const icon = getCategoryIcon(categoryName)
-        return {
-          id: cat.id,
-          name: capitalizeFirstLetter(categoryName),
-          icon: icon,
-          short_description: cat.short_description || ''
-        }
-      })
-    }
-    focusPlanState.pathways = await getPathways()
-  } catch (error) {
-    console.error('Error loading focus plan data:', error)
-    // Use fallback categories if DB fails
-    focusPlanState.categories = getFallbackCategories()
-  }
-  
-  // If no categories loaded, use fallback
-  if (!focusPlanState.categories || focusPlanState.categories.length === 0) {
-    focusPlanState.categories = getFallbackCategories()
-  }
-
   // Create and show modal
   createFocusPlanModal()
   renderStep(1)
-  
+
   const modal = document.getElementById('focusPlanModal')
   if (modal) {
     modal.style.display = 'flex'
     document.body.style.overflow = 'hidden'
   }
-}
-
-// Helper function to capitalize first letter
-function capitalizeFirstLetter(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
-
-// Helper function to get icon for category
-function getCategoryIcon(categoryName) {
-  const iconMap = {
-    'regulation': '🎯',
-    'thinking & planning': '🧠',
-    'body & sensory': '�',
-    'social connection': '👫',
-    'big feelings': '�🔥',
-    'wellbeing & energy': '🌟',
-    'safety & supports': '🛡️',
-    // Legacy mappings
-    'anger': '🔥',
-    'anxiety': '🌧️',
-    'sadness': '🌙',
-    'depression': '🌙',
-    'emotions': '💭',
-    'body': '💪',
-    'social': '👫',
-    'cognitive': '🧠',
-    'general': '📚',
-    'foundations': '🏗️'
-  }
-  
-  const lowerName = (categoryName || '').toLowerCase()
-  return iconMap[lowerName] || '📚'
-}
-
-// Fallback categories if database fetch fails
-function getFallbackCategories() {
-  return [
-    { id: 'regulation', name: 'Regulation', icon: '🎯', short_description: 'Managing emotions and impulses' },
-    { id: 'thinking-planning', name: 'Thinking & Planning', icon: '🧠', short_description: 'Building focus and problem-solving' },
-    { id: 'body-sensory', name: 'Body & Sensory', icon: '💪', short_description: 'Connecting with your body' },
-    { id: 'social-connection', name: 'Social Connection', icon: '�', short_description: 'Making friends and connections' },
-    { id: 'big-feelings', name: 'Big Feelings', icon: '�', short_description: 'Working through intense emotions' },
-    { id: 'wellbeing-energy', name: 'Wellbeing & Energy', icon: '🌟', short_description: 'Building resilience and energy' },
-    { id: 'safety-supports', name: 'Safety & Supports', icon: '🛡️', short_description: 'Creating safety and support networks' }
-  ]
 }
 
 // Create the modal HTML structure
@@ -218,11 +129,9 @@ function createFocusPlanModal() {
             <div class="progress-step active" data-step="1">1</div>
             <div class="progress-line"></div>
             <div class="progress-step" data-step="2">2</div>
-            <div class="progress-line"></div>
-            <div class="progress-step" data-step="3">3</div>
           </div>
-          <h2 class="focus-plan-title" id="focusPlanTitle">Where should we start?</h2>
-          <p class="focus-plan-subtitle" id="focusPlanSubtitle">Pick up to 3 areas to focus on first</p>
+          <h2 class="focus-plan-title" id="focusPlanTitle">What matters most?</h2>
+          <p class="focus-plan-subtitle" id="focusPlanSubtitle">Choose the goals that matter most to your family</p>
         </div>
 
         <div class="focus-plan-body" id="focusPlanBody">
@@ -267,112 +176,37 @@ function renderStep(step) {
   
   // Update next button text
   const nextBtn = document.getElementById('focusPlanNext')
-  nextBtn.textContent = step === 3 ? "Let's begin" : 'Continue'
-  
-  // Render step content
+  nextBtn.textContent = step === TOTAL_STEPS ? "Let's begin" : 'Continue'
+
+  // Render step content. The old "Where should we begin?" category step is
+  // gone — children work through the Super Skills in order now, so the
+  // starting point isn't a choice the parent makes.
   const body = document.getElementById('focusPlanBody')
   const title = document.getElementById('focusPlanTitle')
   const subtitle = document.getElementById('focusPlanSubtitle')
-  
+
   switch (step) {
     case 1:
-      title.innerHTML = "Where should we begin?"
-      subtitle.textContent = 'Pick up to 3 areas to focus on first'
-      body.innerHTML = renderStep1()
-      setupStep1Listeners()
-      break
-    case 2:
       title.innerHTML = "What matters most?"
       subtitle.textContent = 'Choose the goals that matter most to your family'
-      body.innerHTML = renderStep2()
-      setupStep2Listeners()
+      body.innerHTML = renderGoalsStep()
+      setupGoalsStepListeners()
       break
-    case 3:
+    case 2:
       title.innerHTML = "Help us personalise the journey"
       subtitle.textContent = 'These details help us match the right level of support'
-      body.innerHTML = renderStep3()
-      setupStep3Listeners()
+      body.innerHTML = renderDetailsStep()
+      setupDetailsStepListeners()
       break
   }
-  
+
   updateNextButtonState()
 }
 
-// Step 1: Category Selection
-function renderStep1() {
-  const categories = focusPlanState.categories
-  
-  return `
-    <p class="focus-plan-intro">Every child is different, and that's a good thing. Your choices here shape how the adventure starts - we'll tailor the first modules to what matters most. You can always adjust this later.</p>
-
-    <div class="focus-categories-grid">
-      ${categories.map(cat => `
-        <button type="button"
-                class="focus-category-card ${focusPlanState.selectedCategories.includes(cat.id) ? 'selected' : ''}"
-                data-category-id="${cat.id}"
-                data-category-name="${cat.name}">
-          <span class="category-check-circle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 8l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <span class="category-icon">${cat.icon || '📚'}</span>
-          <span class="category-name">${cat.name}</span>
-          <span class="category-desc">${cat.short_description || ''}</span>
-        </button>
-      `).join('')}
-    </div>
-    <div class="selection-pills">
-      <span class="selection-pill ${focusPlanState.selectedCategories.length >= 1 ? 'filled' : ''}"></span>
-      <span class="selection-pill ${focusPlanState.selectedCategories.length >= 2 ? 'filled' : ''}"></span>
-      <span class="selection-pill ${focusPlanState.selectedCategories.length >= 3 ? 'filled' : ''}"></span>
-    </div>
-    <p class="selection-hint">
-      <span class="selection-count">${focusPlanState.selectedCategories.length}</span>/3 selected
-      ${focusPlanState.selectedCategories.length === 0 ? ' - pick at least 1' : ''}
-    </p>
-  `
-}
-
-function setupStep1Listeners() {
-  document.querySelectorAll('.focus-category-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const categoryId = card.dataset.categoryId
-      const index = focusPlanState.selectedCategories.indexOf(categoryId)
-      
-      if (index > -1) {
-        // Remove selection
-        focusPlanState.selectedCategories.splice(index, 1)
-        card.classList.remove('selected')
-      } else if (focusPlanState.selectedCategories.length < 3) {
-        // Add selection (max 3)
-        focusPlanState.selectedCategories.push(categoryId)
-        card.classList.add('selected')
-      } else {
-        // Show max selection feedback
-        card.classList.add('shake')
-        setTimeout(() => card.classList.remove('shake'), 500)
-      }
-      
-      // Update count display and pills
-      const countEl = document.querySelector('.selection-count')
-      const hintEl = document.querySelector('.selection-hint')
-      if (countEl) countEl.textContent = focusPlanState.selectedCategories.length
-      if (hintEl) {
-        hintEl.innerHTML = `
-          <span class="selection-count">${focusPlanState.selectedCategories.length}</span>/3 selected
-          ${focusPlanState.selectedCategories.length === 0 ? ' - pick at least 1' : ''}
-        `
-      }
-      document.querySelectorAll('.selection-pill').forEach((pill, i) => {
-        pill.classList.toggle('filled', i < focusPlanState.selectedCategories.length)
-      })
-      
-      updateNextButtonState()
-    })
-  })
-}
-
-// Step 2: Goal Selection (multiple selection allowed)
-function renderStep2() {
+// Step 1: Goal Selection (multiple selection allowed)
+function renderGoalsStep() {
   const nonCustomGoals = GOAL_OPTIONS.filter(g => g.key !== 'custom')
-  const hasCustomSelected = focusPlanState.selectedGoalKeys.includes('custom')
+  
   
   return `
     <div class="focus-goals-grid">
@@ -381,7 +215,7 @@ function renderStep2() {
                 class="focus-goal-chip ${focusPlanState.selectedGoalKeys.includes(goal.key) ? 'selected' : ''}"
                 data-goal-key="${goal.key}">
           <span class="goal-icon">${goal.icon}</span>
-          <span class="goal-label">${goal.label}</span>
+          <span class="goal-label">${escapeHtml(goal.label)}</span>
         </button>
       `).join('')}
     </div>
@@ -393,7 +227,7 @@ function renderStep2() {
              class="custom-goal-input"
              placeholder="Type your own goal here..."
              maxlength="200"
-             value="${focusPlanState.customGoalText}">
+             value="${escapeHtml(focusPlanState.customGoalText)}">
       <span class="char-count">${focusPlanState.customGoalText.length}/200</span>
     </div>
 
@@ -401,7 +235,7 @@ function renderStep2() {
   `
 }
 
-function setupStep2Listeners() {
+function setupGoalsStepListeners() {
   document.querySelectorAll('.focus-goal-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const goalKey = chip.dataset.goalKey
@@ -430,7 +264,7 @@ function setupStep2Listeners() {
 }
 
 // Step 3: Frequency & Intensity + Comments
-function renderStep3() {
+function renderDetailsStep() {
   return `
     <div class="focus-options-section">
       <h3 class="options-label">How often do these challenges show up?</h3>
@@ -476,7 +310,7 @@ function renderStep3() {
   `
 }
 
-function setupStep3Listeners() {
+function setupDetailsStepListeners() {
   // Frequency buttons
   document.querySelectorAll('[data-frequency]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -516,7 +350,7 @@ function goToPreviousStep() {
 }
 
 async function goToNextStep() {
-  if (focusPlanState.currentStep < 3) {
+  if (focusPlanState.currentStep < TOTAL_STEPS) {
     renderStep(focusPlanState.currentStep + 1)
   } else {
     // Submit the plan
@@ -527,85 +361,47 @@ async function goToNextStep() {
 function updateNextButtonState() {
   const nextBtn = document.getElementById('focusPlanNext')
   if (!nextBtn) return
-  
-  // Step 1 requires at least 1 category
-  if (focusPlanState.currentStep === 1) {
-    nextBtn.disabled = focusPlanState.selectedCategories.length === 0
-  } else {
-    nextBtn.disabled = false
-  }
+  // Every field is optional — the plan is a conversation, not a gate.
+  nextBtn.disabled = false
 }
 
-// Submit the focus plan
+// Submit the focus plan. The starting Super Skill is no longer chosen
+// here — the sequential skill gate decides where every child begins.
 async function submitFocusPlan() {
   const nextBtn = document.getElementById('focusPlanNext')
   nextBtn.disabled = true
   nextBtn.textContent = 'Creating plan...'
-  
-  try {
-    console.log('Focus Plan: Starting submission...')
-    
-    // Get category names for pathway determination
-    const selectedCategoryNames = focusPlanState.selectedCategories.map(id => {
-      const cat = focusPlanState.categories.find(c => c.id === id)
-      return cat ? cat.name : id
-    })
-    
-    console.log('Focus Plan: Selected categories:', selectedCategoryNames)
-    console.log('Focus Plan: Available pathways:', focusPlanState.pathways.map(p => p.name))
-    
-    // Determine default pathway with module availability check
-    let defaultPathway = await determineDefaultPathwayWithModules(selectedCategoryNames, focusPlanState.pathways, focusPlanState.childId)
-    
-    // If no pathway with modules was found, use the original logic but warn about it
-    if (!defaultPathway) {
-      console.warn('Focus Plan: No pathway with modules found, using default pathway selection')
-      // Fall back to original pathway determination
-      const { determineDefaultPathway } = await import('../../database.js')
-      defaultPathway = determineDefaultPathway(selectedCategoryNames, focusPlanState.pathways)
-      if (defaultPathway) {
-        console.warn(`Focus Plan: Using pathway "${defaultPathway.name}" which may not have modules`)
-      }
-    }
-    
-    console.log('Focus Plan: Selected pathway:', defaultPathway?.name)
-    
-    // Resolve super_skill_id from the first selected category (if linked)
-    const primaryCat = focusPlanState.categories.find(c => c.id === focusPlanState.selectedCategories[0])
-    const superSkillId = primaryCat?.super_skill_id || null
 
-    // Create the focus plan with multiple goals and comments
+  try {
     const plan = await createChildFocusPlan({
       childId: focusPlanState.childId,
-      targetCategoryIds: focusPlanState.selectedCategories,
-      defaultPathwayId: defaultPathway?.id || null,
+      targetCategoryIds: [],
+      defaultPathwayId: null,
       goalKeys: focusPlanState.selectedGoalKeys.length > 0 ? focusPlanState.selectedGoalKeys : null,
       goalText: focusPlanState.customGoalText || null,
       frequency: focusPlanState.frequency,
       intensity: focusPlanState.intensity,
       comments: focusPlanState.comments || null,
-      superSkillId: superSkillId
+      superSkillId: null
     })
-    
-    console.log('Focus Plan: Plan created successfully')
-    
+
     // Close modal
     closeFocusPlanModal()
-    
+
     // Show success toast
     showFocusPlanToast('Plan set! Let\'s start your journey! 🎉')
-    
-    // Call completion callback with the plan and pathway
+
+    // Call completion callback with the plan (no pathway — the sequential
+    // Super Skill gate decides where the child starts)
     if (focusPlanState.onComplete) {
-      console.log('Focus Plan: Calling completion callback...')
-      focusPlanState.onComplete(plan, defaultPathway)
+      focusPlanState.onComplete(plan, null)
     }
-    
+
   } catch (error) {
     console.error('Error creating focus plan:', error)
     console.error('Error details:', error.message, error.stack)
     nextBtn.disabled = false
-    nextBtn.textContent = '✨ Start Journey!'
+    nextBtn.textContent = "Let's begin"
     showFocusPlanToast('Something went wrong. Please try again.', 'error')
   }
 }
@@ -648,31 +444,17 @@ function showFocusPlanToast(message, type = 'success') {
 // Focus Plan Settings (Edit Mode)
 // ================================================
 
+// The settings modal shows what the family shared (goals, how often, how
+// big, notes) and offers a fresh start. There is nothing else to "edit":
+// focus areas and pathways no longer exist — the Super Skill journey is
+// sequential.
 export async function showFocusPlanSettings(childId, currentPlan, onUpdate) {
   focusPlanState.childId = childId
   focusPlanState.onComplete = onUpdate
-  
-  // Load current plan data
-  if (currentPlan) {
-    focusPlanState.selectedCategories = currentPlan.target_category_ids || []
-    focusPlanState.selectedGoalKey = currentPlan.goal_key
-    focusPlanState.customGoalText = currentPlan.goal_text || ''
-    focusPlanState.frequency = currentPlan.frequency
-    focusPlanState.intensity = currentPlan.intensity
-  }
-  
-  // Load categories and pathways
-  try {
-    focusPlanState.categories = await getCategories()
-    focusPlanState.pathways = await getPathways()
-  } catch (error) {
-    console.error('Error loading focus plan data:', error)
-    focusPlanState.categories = getFallbackCategories()
-  }
-  
-  // Create settings modal
+
+  await loadFocusPlanOptions()
   createFocusPlanSettingsModal(currentPlan)
-  
+
   const modal = document.getElementById('focusPlanSettingsModal')
   if (modal) {
     modal.style.display = 'flex'
@@ -684,131 +466,72 @@ function createFocusPlanSettingsModal(currentPlan) {
   // Remove existing modal if present
   const existingModal = document.getElementById('focusPlanSettingsModal')
   if (existingModal) existingModal.remove()
-  
-  const categories = focusPlanState.categories
-  
+
+  const goalKeys = currentPlan?.goal_keys || (currentPlan?.goal_key ? [currentPlan.goal_key] : [])
+  const goalChips = goalKeys
+    .map(key => GOAL_OPTIONS.find(g => g.key === key))
+    .filter(Boolean)
+    .map(g => `<span class="focus-goal-chip selected" style="cursor:default"><span class="goal-icon">${g.icon}</span><span class="goal-label">${escapeHtml(g.label)}</span></span>`)
+    .join('')
+  const frequency = FREQUENCY_OPTIONS.find(f => f.value === currentPlan?.frequency)
+  const intensity = INTENSITY_OPTIONS.find(i => i.value === currentPlan?.intensity)
+
   const modalHTML = `
     <div id="focusPlanSettingsModal" class="focus-plan-modal" style="display: none;">
       <div class="focus-plan-modal-content settings-mode">
         <div class="focus-plan-header">
           <button type="button" class="close-settings-btn" id="closeFocusPlanSettings">✕</button>
-          <h2 class="focus-plan-title">⚙️ Focus Plan Settings</h2>
-          <p class="focus-plan-subtitle">Update your child's focus areas and goals</p>
+          <h2 class="focus-plan-title">Your family's plan</h2>
+          <p class="focus-plan-subtitle">What you told us — it shapes recommendations and check-ins</p>
         </div>
-        
+
         <div class="focus-plan-body">
           <div class="settings-section">
-            <h3>Focus Areas (up to 3)</h3>
-            <div class="focus-categories-grid compact">
-              ${categories.map(cat => `
-                <button type="button" 
-                        class="focus-category-card ${focusPlanState.selectedCategories.includes(cat.id) ? 'selected' : ''}"
-                        data-category-id="${cat.id}">
-                  <span class="category-icon">${cat.icon || '📚'}</span>
-                  <span class="category-name">${cat.name}</span>
-                  <span class="category-check">✓</span>
-                </button>
-              `).join('')}
-            </div>
-            <p class="selection-hint">
-              <span class="selection-count">${focusPlanState.selectedCategories.length}</span>/3 selected
-            </p>
+            <h3>Goals you chose</h3>
+            ${goalChips
+              ? `<div class="focus-goals-grid" style="pointer-events:none">${goalChips}</div>`
+              : '<p style="font-size:14px;color:#6b7e95;margin:4px 0 0">No goals picked yet.</p>'}
+            ${currentPlan?.goal_text ? `<p style="font-size:14px;color:#405878;margin-top:10px;"><strong>In your words:</strong> ${escapeHtml(currentPlan.goal_text)}</p>` : ''}
           </div>
-          
+
+          ${(frequency || intensity) ? `
           <div class="settings-section">
-            <h3>Default Pathway</h3>
-            <select id="pathwaySelect" class="pathway-select">
-              ${focusPlanState.pathways.map(p => `
-                <option value="${p.id}" ${currentPlan?.default_pathway_id === p.id ? 'selected' : ''}>
-                  ${p.name}
-                </option>
-              `).join('')}
-            </select>
-          </div>
-          
+            <h3>What you shared</h3>
+            <p style="font-size:14px;color:#405878;line-height:1.7;margin:4px 0 0">
+              ${frequency ? `How often: <strong>${escapeHtml(frequency.label)}</strong> (${escapeHtml(frequency.description)})<br>` : ''}
+              ${intensity ? `How big it feels: <strong>${escapeHtml(intensity.label)}</strong> (${escapeHtml(intensity.description)})` : ''}
+            </p>
+          </div>` : ''}
+
+          ${currentPlan?.comments ? `
+          <div class="settings-section">
+            <h3>Your notes</h3>
+            <p style="font-size:14px;color:#405878;line-height:1.6;margin:4px 0 0">${escapeHtml(currentPlan.comments)}</p>
+          </div>` : ''}
+
           <div class="settings-section">
             <button type="button" class="new-cycle-btn" id="startNewCycleBtn">
-              🔄 Start New Cycle
+              🔄 Refresh the plan
             </button>
-            <p class="new-cycle-hint">This will archive the current plan and create a fresh start</p>
+            <p class="new-cycle-hint">Answer the two quick questions again — useful when your family's goals have changed</p>
           </div>
         </div>
-        
+
         <div class="focus-plan-footer">
-          <button type="button" class="focus-plan-btn secondary" id="cancelFocusPlanSettings">
-            Cancel
-          </button>
-          <button type="button" class="focus-plan-btn primary" id="saveFocusPlanSettings">
-            💾 Save Changes
+          <button type="button" class="focus-plan-btn primary" id="cancelFocusPlanSettings">
+            Done
           </button>
         </div>
       </div>
     </div>
   `
-  
-  document.body.insertAdjacentHTML('beforeend', modalHTML)
-  
-  // Setup event listeners
-  setupSettingsListeners(currentPlan)
-}
 
-function setupSettingsListeners(currentPlan) {
-  // Close button
+  document.body.insertAdjacentHTML('beforeend', modalHTML)
+
   document.getElementById('closeFocusPlanSettings').addEventListener('click', closeFocusPlanSettingsModal)
   document.getElementById('cancelFocusPlanSettings').addEventListener('click', closeFocusPlanSettingsModal)
-  
-  // Category selection
-  document.querySelectorAll('#focusPlanSettingsModal .focus-category-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const categoryId = card.dataset.categoryId
-      const index = focusPlanState.selectedCategories.indexOf(categoryId)
-      
-      if (index > -1) {
-        focusPlanState.selectedCategories.splice(index, 1)
-        card.classList.remove('selected')
-      } else if (focusPlanState.selectedCategories.length < 3) {
-        focusPlanState.selectedCategories.push(categoryId)
-        card.classList.add('selected')
-      }
-      
-      // Update count
-      const countEl = document.querySelector('#focusPlanSettingsModal .selection-count')
-      if (countEl) countEl.textContent = focusPlanState.selectedCategories.length
-    })
-  })
-  
-  // Save button
-  document.getElementById('saveFocusPlanSettings').addEventListener('click', async () => {
-    if (focusPlanState.selectedCategories.length === 0) {
-      showFocusPlanToast('Please select at least 1 focus area', 'error')
-      return
-    }
-    
-    const pathwaySelect = document.getElementById('pathwaySelect')
-    const newPathwayId = pathwaySelect.value
-    
-    try {
-      await updateChildFocusPlan(currentPlan.id, {
-        target_category_ids: focusPlanState.selectedCategories,
-        default_pathway_id: newPathwayId
-      })
-      
-      closeFocusPlanSettingsModal()
-      showFocusPlanToast('Focus plan updated! 🎉')
-      
-      if (focusPlanState.onComplete) {
-        const updatedPathway = focusPlanState.pathways.find(p => p.id === newPathwayId)
-        focusPlanState.onComplete(currentPlan, updatedPathway)
-      }
-    } catch (error) {
-      console.error('Error updating focus plan:', error)
-      showFocusPlanToast('Failed to update plan', 'error')
-    }
-  })
-  
-  // New cycle button
-  document.getElementById('startNewCycleBtn').addEventListener('click', async () => {
-    if (confirm('Start a new cycle? This will archive your current plan.')) {
+  document.getElementById('startNewCycleBtn').addEventListener('click', () => {
+    if (confirm('Refresh the plan? This will archive the current plan and ask the two quick questions again.')) {
       closeFocusPlanSettingsModal()
       showFocusPlanOnboarding(focusPlanState.childId, focusPlanState.onComplete)
     }

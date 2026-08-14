@@ -22,5 +22,11 @@ jobs:
         run: npm run typecheck
       - name: Test
         run: npm test
+      - name: Production dependency audit
+        run: npm run audit:prod
       - name: Build all
         run: npm run build:all
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Public browser smoke tests
+        run: npm run test:e2e

@@ -2,6 +2,7 @@
 // DANIEL RELATIONSHIP SYSTEM
 // Making Daniel central - The child helps Daniel grow
 // ================================================
+import { escapeHtml } from './lib/sanitize.js'
 
 // Daniel's emotional states and expressions
 const DANIEL_EMOTIONS = {
@@ -296,9 +297,15 @@ class DanielDialogueSystem {
     this.loadProgress();
   }
 
+  // Key progress per child so siblings sharing a device don't share Daniel's memory
+  progressKey() {
+    const childId = window.selectedChild?.id || 'default';
+    return `danielProgress_${childId}`;
+  }
+
   loadProgress() {
     try {
-      const saved = localStorage.getItem('danielProgress');
+      const saved = localStorage.getItem(this.progressKey());
       if (saved) {
         const data = JSON.parse(saved);
         this.completedModules = data.completedModules || [];
@@ -312,7 +319,7 @@ class DanielDialogueSystem {
 
   saveProgress() {
     try {
-      localStorage.setItem('danielProgress', JSON.stringify({
+      localStorage.setItem(this.progressKey(), JSON.stringify({
         completedModules: this.completedModules,
         learnedSkills: this.learnedSkills,
         currentZone: this.currentZone
@@ -873,7 +880,7 @@ class DanielDialogueSystem {
     }
 
     if (questionEl) {
-      const skillText = reaction.skillAcknowledgment.replace('{skill}', skill || 'this skill');
+      const skillText = reaction.skillAcknowledgment.replace('{skill}', escapeHtml(skill || 'this skill'));
       questionEl.innerHTML = `${skillText}<br><em style="font-size: 15px; color: #64748B; font-weight: 400;">${reaction.confidenceBoost}</em>`;
     }
 

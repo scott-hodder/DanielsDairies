@@ -233,8 +233,8 @@ schoolSignupForm.addEventListener('submit', async (e) => {
     return
   }
 
-  if (password.length < 6) {
-    showError('Password must be at least 6 characters.')
+  if (password.length < 12) {
+    showError('Password must be at least 12 characters.')
     return
   }
 

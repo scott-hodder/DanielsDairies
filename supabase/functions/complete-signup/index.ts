@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { withCors } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHash } from 'node:crypto'
 
@@ -63,7 +64,7 @@ async function addToMailchimp(email: string, firstName: string, lastName: string
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 
@@ -74,7 +75,7 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -379,4 +380,4 @@ serve(async (req) => {
       error: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
-})
+}))

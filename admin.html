@@ -11,8 +11,6 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="/styles/admin-stylesheet.css" rel="stylesheet">
     
     <!-- External JS modules (loaded at end of body) -->
@@ -33,10 +31,10 @@
             <p style="color:#405878;font-size:15px;font-weight:600;font-family:'Fredoka',sans-serif;">Loading Admin Centre...</p>
         </div>
     </div>
-    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    <style>@keyframes spin{to{transform:rotate(360deg)}} .container.admin-locked{visibility:hidden;pointer-events:none;}</style>
 
     <!-- Main Content -->
-    <main class="container">
+    <main class="container admin-locked" id="adminContainer">
         <!-- Stats -->
         <div class="stats">
             <div class="stat-card">
@@ -2637,8 +2635,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     </script>
     
-    <script type="module" src="/src/admin.js"></script>
-    <script type="module" src="/src/module-builder-integration.js"></script>
+    <script type="module" src="/src/features/admin/adminPage.js"></script>
+    <script type="module" src="/src/features/modules/moduleBuilderIntegration.js"></script>
     <script type="module">
         import('/src/features/admin/reference-data-grids.js').catch(err => {
             console.error('[Admin] Failed to load reference-data-grids.js:', err);

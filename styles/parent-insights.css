@@ -1332,3 +1332,71 @@ body {
         border: 1px solid #ddd;
     }
 }
+
+/* ── This week at a glance ── */
+.pi-week-trend {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+.pi-week-trend.up { background: #e8f5e9; color: #2e7d32; }
+.pi-week-trend.down { background: #fff3e0; color: #b26a00; }
+.pi-week-trend.steady { background: #eef2f7; color: var(--primary-light); }
+
+.pi-week-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+    margin: 14px 0 12px;
+}
+.pi-week-tile {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    position: relative;
+}
+.pi-week-icon { display: block; font-size: 20px; margin-bottom: 4px; }
+.pi-week-tile strong {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 24px;
+    color: var(--primary);
+    line-height: 1;
+}
+.pi-week-delta {
+    font-size: 11.5px;
+    font-weight: 700;
+    margin-left: 4px;
+    vertical-align: super;
+}
+.pi-week-delta.up { color: #2e7d32; }
+.pi-week-delta.down { color: #b26a00; }
+.pi-week-label {
+    display: block;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+}
+.pi-week-summary { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+/* ── In their own words ── */
+.pi-voice-intro { font-size: 13px; color: var(--text-muted); margin: 0 0 14px; }
+.pi-voice-item {
+    border-left: 3px solid var(--accent);
+    background: var(--background);
+    border-radius: 0 12px 12px 0;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+.pi-voice-quote {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 15.5px;
+    color: var(--text);
+}
+.pi-voice-meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }

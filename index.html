@@ -2,34 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daniel's Diaries - Helping Children Build Emotional Intelligence</title>
-    <meta name="description" content="Daniel's Diaries is an interactive workbook platform helping children build emotional intelligence, resilience, and coping skills through engaging stories and activities.">
+    <meta name="description" content="Daniel's Diaries helps children build emotional intelligence through interactive, story-based modules — while giving parents and practitioners real-time insight into their progress.">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/dd-favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/dd-favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/dd-favicon.png">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media=&#39;all&#39;">
 
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html, body {
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Fredoka', sans-serif;
-            -webkit-font-smoothing: antialiased;
+        html {
+            scroll-behavior: smooth;
         }
 
-        .landing {
+        body {
+            font-family: 'Fredoka', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #1e3a5f;
+            background: #f8fafc;
+        }
+
+        /* ══════════════════════════════════════════
+           HERO SECTION (full viewport)
+           ══════════════════════════════════════════ */
+        .hero {
             position: relative;
             width: 100%;
-            height: 100%;
+            height: 100vh;
+            min-height: 600px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -37,22 +45,17 @@
             overflow: hidden;
         }
 
-        /* ── Sky gradient ── */
         .sky {
             position: absolute;
             inset: 0;
             background: linear-gradient(180deg,
-                #d4eaf7 0%,
-                #e3f1fb 35%,
-                #eef6fd 60%,
-                #c8e6c9 82%,
-                #81c784 92%,
-                #4caf50 100%
+                #d4eaf7 0%, #e3f1fb 35%, #eef6fd 60%,
+                #c8e6c9 82%, #81c784 92%, #4caf50 100%
             );
             z-index: 0;
         }
 
-        /* ── CSS Clouds ── */
+        /* Clouds */
         .cloud {
             position: absolute;
             background: rgba(255, 255, 255, 0.85);
@@ -65,137 +68,63 @@
             background: inherit;
             border-radius: 50%;
         }
-
-        .cloud-1 {
-            width: 180px; height: 50px;
-            top: 8%; left: -5%;
-            animation: cloudDrift1 35s linear infinite;
-        }
+        .cloud-1 { width: 180px; height: 50px; top: 8%; left: -5%; animation: cloudDrift1 35s linear infinite; }
         .cloud-1::before { width: 70px; height: 70px; top: -35px; left: 30px; }
         .cloud-1::after { width: 90px; height: 80px; top: -40px; right: 20px; }
-
-        .cloud-2 {
-            width: 140px; height: 40px;
-            top: 14%; right: 5%;
-            animation: cloudDrift2 42s linear infinite;
-        }
+        .cloud-2 { width: 140px; height: 40px; top: 14%; right: 5%; animation: cloudDrift2 42s linear infinite; }
         .cloud-2::before { width: 55px; height: 55px; top: -28px; left: 20px; }
         .cloud-2::after { width: 70px; height: 60px; top: -32px; right: 15px; }
-
-        .cloud-3 {
-            width: 200px; height: 55px;
-            top: 22%; left: 25%;
-            animation: cloudDrift3 50s linear infinite;
-        }
+        .cloud-3 { width: 200px; height: 55px; top: 22%; left: 25%; animation: cloudDrift3 50s linear infinite; }
         .cloud-3::before { width: 80px; height: 75px; top: -38px; left: 35px; }
         .cloud-3::after { width: 100px; height: 85px; top: -42px; right: 25px; }
-
-        .cloud-4 {
-            width: 120px; height: 35px;
-            top: 6%; left: 55%;
-            opacity: 0.7;
-            animation: cloudDrift1 60s linear infinite reverse;
-        }
+        .cloud-4 { width: 120px; height: 35px; top: 6%; left: 55%; opacity: 0.7; animation: cloudDrift1 60s linear infinite reverse; }
         .cloud-4::before { width: 45px; height: 45px; top: -22px; left: 18px; }
         .cloud-4::after { width: 60px; height: 50px; top: -26px; right: 12px; }
 
-        @keyframes cloudDrift1 {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(120vw); }
-        }
-        @keyframes cloudDrift2 {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-120vw); }
-        }
-        @keyframes cloudDrift3 {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(80vw); }
-        }
+        @keyframes cloudDrift1 { 0% { transform: translateX(0); } 100% { transform: translateX(120vw); } }
+        @keyframes cloudDrift2 { 0% { transform: translateX(0); } 100% { transform: translateX(-120vw); } }
+        @keyframes cloudDrift3 { 0% { transform: translateX(0); } 100% { transform: translateX(80vw); } }
 
-        /* ── Rolling hills ── */
-        .hills {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 28%;
-            z-index: 2;
-            overflow: hidden;
-        }
+        /* Hills */
+        .hills { position: absolute; bottom: 0; left: 0; width: 100%; height: 28%; z-index: 2; overflow: hidden; }
+        .hill { position: absolute; border-radius: 50%; }
+        .hill-1 { width: 120%; height: 300px; bottom: -100px; left: -10%; background: linear-gradient(180deg, #66bb6a, #43a047); }
+        .hill-2 { width: 60%; height: 220px; bottom: -80px; left: -15%; background: linear-gradient(180deg, #81c784, #66bb6a); }
+        .hill-3 { width: 55%; height: 200px; bottom: -70px; right: -10%; background: linear-gradient(180deg, #81c784, #66bb6a); }
 
-        .hill {
-            position: absolute;
-            border-radius: 50%;
-        }
-
-        .hill-1 {
-            width: 120%;
-            height: 300px;
-            bottom: -100px;
-            left: -10%;
-            background: linear-gradient(180deg, #66bb6a 0%, #43a047 100%);
-        }
-
-        .hill-2 {
-            width: 60%;
-            height: 220px;
-            bottom: -80px;
-            left: -15%;
-            background: linear-gradient(180deg, #81c784 0%, #66bb6a 100%);
-        }
-
-        .hill-3 {
-            width: 55%;
-            height: 200px;
-            bottom: -70px;
-            right: -10%;
-            background: linear-gradient(180deg, #81c784 0%, #66bb6a 100%);
-        }
-
-        /* ── CSS Trees ── */
-        .tree {
-            position: absolute;
-            z-index: 3;
-        }
-        .tree-trunk {
-            width: 12px;
-            background: #795548;
-            border-radius: 0 0 4px 4px;
-            margin: 0 auto;
-        }
-        .tree-top {
-            border-radius: 50%;
-            margin: 0 auto;
-        }
-
+        /* Trees */
+        .tree { position: absolute; z-index: 3; }
+        .tree-trunk { width: 12px; background: #795548; border-radius: 0 0 4px 4px; margin: 0 auto; }
+        .tree-top { border-radius: 50%; margin: 0 auto; }
         .tree-1 { bottom: 14%; left: 6%; }
         .tree-1 .tree-trunk { height: 24px; }
         .tree-1 .tree-top { width: 48px; height: 48px; background: linear-gradient(135deg, #388e3c, #2e7d32); margin-bottom: -4px; }
-
         .tree-2 { bottom: 16%; left: 12%; }
         .tree-2 .tree-trunk { height: 18px; width: 10px; }
         .tree-2 .tree-top { width: 36px; height: 36px; background: linear-gradient(135deg, #43a047, #388e3c); margin-bottom: -3px; }
-
         .tree-3 { bottom: 12%; right: 8%; }
         .tree-3 .tree-trunk { height: 28px; width: 14px; }
         .tree-3 .tree-top { width: 56px; height: 52px; background: linear-gradient(135deg, #388e3c, #2e7d32); margin-bottom: -5px; }
-
         .tree-4 { bottom: 15%; right: 16%; }
         .tree-4 .tree-trunk { height: 16px; width: 8px; }
         .tree-4 .tree-top { width: 30px; height: 30px; background: linear-gradient(135deg, #4caf50, #388e3c); margin-bottom: -3px; }
 
-        /* ── Grass tufts ── */
-        .grass {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 6%;
-            z-index: 4;
-            background: linear-gradient(180deg, transparent 0%, #388e3c 100%);
+        .grass { position: absolute; bottom: 0; width: 100%; height: 6%; z-index: 4; background: linear-gradient(180deg, transparent, #388e3c); }
+
+        /* Stars */
+        .star { position: absolute; z-index: 5; font-size: 22px; animation: starFloat 4s ease-in-out infinite; opacity: 0.7; }
+        .star-1 { top: 30%; left: 10%; animation-delay: 0s; font-size: 18px; }
+        .star-2 { top: 18%; right: 12%; animation-delay: 1.2s; font-size: 24px; }
+        .star-3 { top: 45%; left: 5%; animation-delay: 2.4s; font-size: 16px; }
+        .star-4 { top: 50%; right: 7%; animation-delay: 0.8s; font-size: 20px; }
+        .star-5 { top: 35%; right: 22%; animation-delay: 1.8s; font-size: 14px; }
+        @keyframes starFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-12px) rotate(15deg); opacity: 1; }
         }
 
-        /* ── Main content ── */
-        .content {
+        /* Hero content */
+        .hero-content {
             position: relative;
             z-index: 10;
             display: flex;
@@ -204,26 +133,29 @@
             text-align: center;
             padding: 0 24px;
             margin-top: -6%;
+            animation: contentFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* ── Character ── */
+        @keyframes contentFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(-6%); }
+        }
+
         .character {
-            width: 240px;
-            height: 240px;
+            width: 220px;
+            height: 220px;
             border-radius: 28px;
             object-fit: contain;
             filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.15));
             animation: characterBob 3s ease-in-out infinite;
             margin-bottom: 16px;
         }
-
         @keyframes characterBob {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
 
-        /* ── Title ── */
-        .landing-title {
+        .hero-title {
             font-size: 42px;
             font-weight: 700;
             color: #1e3a5f;
@@ -233,33 +165,31 @@
             text-shadow: 0 2px 8px rgba(255, 255, 255, 0.5);
         }
 
-        /* ── Tagline ── */
-        .landing-tagline {
-            font-size: 17px;
+        .hero-tagline {
+            font-size: 18px;
             font-weight: 400;
             color: #3d6b99;
-            max-width: 440px;
+            max-width: 520px;
             line-height: 1.5;
-            margin-bottom: 36px;
+            margin-bottom: 32px;
             text-shadow: 0 1px 4px rgba(255, 255, 255, 0.4);
         }
 
-        /* ── Buttons ── */
-        .landing-buttons {
+        .hero-buttons {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
             width: 100%;
             max-width: 340px;
         }
 
-        .btn-landing {
+        .btn {
             display: block;
             width: 100%;
-            padding: 18px 32px;
-            border-radius: 18px;
+            padding: 16px 32px;
+            border-radius: 16px;
             font-family: 'Fredoka', sans-serif;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             text-decoration: none;
             text-align: center;
@@ -267,226 +197,1105 @@
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             cursor: pointer;
             border: none;
-            position: relative;
-            overflow: hidden;
         }
 
-        .btn-signup {
-            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-            color: #ffffff;
-            box-shadow:
-                0 6px 20px rgba(99, 102, 241, 0.35),
-                0 2px 4px rgba(99, 102, 241, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35), 0 2px 4px rgba(99, 102, 241, 0.2);
         }
-        .btn-signup:hover {
-            transform: translateY(-2px);
-            box-shadow:
-                0 10px 28px rgba(99, 102, 241, 0.45),
-                0 4px 8px rgba(99, 102, 241, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        }
-        .btn-signup:active {
-            transform: translateY(0);
-        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99, 102, 241, 0.45); }
 
-        .btn-login {
+        .btn-secondary {
             background: rgba(30, 58, 95, 0.85);
-            color: #ffffff;
-            box-shadow:
-                0 4px 14px rgba(30, 58, 95, 0.25),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(30, 58, 95, 0.25);
             backdrop-filter: blur(4px);
         }
-        .btn-login:hover {
-            background: rgba(30, 58, 95, 0.95);
-            transform: translateY(-2px);
-            box-shadow:
-                0 8px 22px rgba(30, 58, 95, 0.35),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
-        }
-        .btn-login:active {
-            transform: translateY(0);
-        }
+        .btn-secondary:hover { background: rgba(30, 58, 95, 0.95); transform: translateY(-2px); }
 
-        .btn-trial {
+        .btn-outline {
             background: transparent;
             color: #1e3a5f;
             border: 2px solid rgba(30, 58, 95, 0.25);
-            box-shadow: none;
             font-size: 15px;
-            padding: 14px 28px;
+            padding: 13px 28px;
         }
-        .btn-trial:hover {
-            background: rgba(255, 255, 255, 0.4);
-            border-color: rgba(30, 58, 95, 0.4);
-            transform: translateY(-1px);
-        }
-        .btn-trial:active {
-            transform: translateY(0);
-        }
+        .btn-outline:hover { background: rgba(255, 255, 255, 0.4); border-color: rgba(30, 58, 95, 0.4); }
 
         .btn-schools {
-            background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
-            color: #ffffff;
-            box-shadow:
-                0 4px 14px rgba(45, 106, 79, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            background: linear-gradient(135deg, #2d6a4f, #40916c);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(45, 106, 79, 0.3);
             font-size: 15px;
-            padding: 14px 28px;
+            padding: 13px 28px;
         }
-        .btn-schools:hover {
-            transform: translateY(-2px);
-            box-shadow:
-                0 8px 22px rgba(45, 106, 79, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.12);
-        }
-        .btn-schools:active {
-            transform: translateY(0);
-        }
+        .btn-schools:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(45, 106, 79, 0.4); }
 
-        /* ── Floating stars ── */
-        .star {
+        .scroll-hint {
             position: absolute;
-            z-index: 5;
-            font-size: 22px;
-            animation: starFloat 4s ease-in-out infinite;
-            opacity: 0.7;
+            bottom: 24px;
+            z-index: 10;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            animation: bounceHint 2s ease-in-out infinite;
         }
-        .star-1 { top: 30%; left: 10%; animation-delay: 0s; font-size: 18px; }
-        .star-2 { top: 18%; right: 12%; animation-delay: 1.2s; font-size: 24px; }
-        .star-3 { top: 45%; left: 5%; animation-delay: 2.4s; font-size: 16px; }
-        .star-4 { top: 50%; right: 7%; animation-delay: 0.8s; font-size: 20px; }
-        .star-5 { top: 35%; right: 22%; animation-delay: 1.8s; font-size: 14px; }
+        .scroll-hint span { display: block; font-size: 20px; margin-bottom: 4px; }
+        @keyframes bounceHint {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
+        }
 
-        @keyframes starFloat {
-            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
-            50% { transform: translateY(-12px) rotate(15deg); opacity: 1; }
+        /* ══════════════════════════════════════════
+           CONTENT SECTIONS
+           ══════════════════════════════════════════ */
+        .section {
+            padding: 80px 24px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #4338ca;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 34px;
+            font-weight: 700;
+            color: #1e3a5f;
+            line-height: 1.2;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 17px;
+            color: #4b647d;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ── Value prop section ── */
+        .value-section {
+            background: #fff;
+            border-bottom: 1px solid #e8ecf0;
+        }
+        .value-section .section {
+            padding-top: 88px;
+            padding-bottom: 88px;
+        }
+
+        .value-statement {
+            text-align: center;
+            max-width: 780px;
+            margin: 0 auto 56px;
+        }
+        .value-statement h2 {
+            font-size: 30px;
+            font-weight: 700;
+            color: #1e3a5f;
+            line-height: 1.3;
+            margin-bottom: 20px;
+        }
+        .value-statement p {
+            font-size: 18px;
+            color: #4b647d;
+            line-height: 1.7;
+        }
+
+        .value-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .value-card {
+            text-align: center;
+            padding: 32px 24px;
+            border-radius: 20px;
+            background: #f8fafc;
+            border: 1px solid #e8ecf0;
+        }
+
+        .value-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 16px;
+        }
+
+        .value-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 8px;
+        }
+
+        .value-card p {
+            font-size: 15px;
+            color: #4b647d;
+            line-height: 1.6;
+        }
+
+        /* ── How it works ── */
+        .how-section {
+            background: #f0f4f8;
+            border-bottom: 1px solid #e0e6ec;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            counter-reset: step;
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: #fff;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+        }
+
+        .step h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 8px;
+        }
+
+        .step p {
+            font-size: 15px;
+            color: #4b647d;
+            line-height: 1.6;
+        }
+
+        /* ── Features ── */
+        .features-section {
+            background: #fff;
+            border-bottom: 1px solid #e8ecf0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+        }
+
+        .feature-card {
+            display: flex;
+            gap: 20px;
+            padding: 28px;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid #e8ecf0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .feature-card h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 6px;
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: #4b647d;
+            line-height: 1.6;
+        }
+
+        /* ── For who ── */
+        .audience-section {
+            background: linear-gradient(180deg, #f0f4f8, #e8eef4);
+            border-bottom: 1px solid #dde4ec;
+        }
+
+        .audience-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+        }
+
+        .audience-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 36px 28px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e8ecf0;
+        }
+
+        .audience-card .audience-emoji {
+            font-size: 40px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .audience-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 12px;
+        }
+
+        .audience-card ul {
+            list-style: none;
+            text-align: left;
+            font-size: 14px;
+            color: #4b647d;
+            line-height: 2;
+        }
+
+        .audience-card ul li::before {
+            content: '\2713';
+            color: #4caf50;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+
+        /* ── Super Skills world ── */
+        .skills-section {
+            background: linear-gradient(180deg, #eef6fd, #f8fafc);
+            border-bottom: 1px solid #e8ecf0;
+        }
+        .skills-intro {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            max-width: 780px;
+            margin: 0 auto 40px;
+        }
+        .skills-intro img {
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            flex-shrink: 0;
+            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.12));
+        }
+        .skills-intro p {
+            font-size: 16px;
+            color: #3d5a7a;
+            line-height: 1.7;
+        }
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .skill-card {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid #e8ecf0;
+            padding: 24px 18px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease;
+        }
+        .skill-card:hover { transform: translateY(-3px); }
+        .skill-card img {
+            width: 84px;
+            height: 84px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        .skill-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+        .skill-card .skill-character { font-size: 12px; font-weight: 500; color: #526a82; margin-bottom: 8px; }
+        .skill-card p { font-size: 13px; color: #4b647d; line-height: 1.55; }
+
+        /* ── Screenshots ── */
+        .shots-section { background: #fff; border-bottom: 1px solid #e8ecf0; }
+        .shots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+        }
+        .shot-card { text-align: center; }
+        .shot-card img {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid #dde4ec;
+            box-shadow: 0 8px 28px rgba(30, 58, 95, 0.10);
+        }
+        .shot-card figcaption { margin-top: 10px; font-size: 14px; font-weight: 500; color: #3d5a7a; }
+
+        /* ── Pricing ── */
+        .pricing-section {
+            background: linear-gradient(180deg, #f0f4f8, #e8eef4);
+            border-bottom: 1px solid #dde4ec;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            align-items: stretch;
+        }
+        .price-card {
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid #e8ecf0;
+            padding: 32px 26px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            position: relative;
+        }
+        .price-card.popular { border: 2px solid #4caf50; box-shadow: 0 8px 30px rgba(76, 175, 80, 0.15); }
+        .price-card .popular-badge {
+            position: absolute;
+            top: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2e7d32;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 100px;
+            padding: 4px 14px;
+            white-space: nowrap;
+        }
+        .price-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .price-card .price-line { margin: 10px 0 4px; }
+        .price-card .price-amount { font-size: 40px; font-weight: 700; color: #1e3a5f; }
+        .price-card .price-period { font-size: 14px; color: #526a82; }
+        .price-card .price-desc { font-size: 13.5px; color: #4b647d; line-height: 1.6; margin-bottom: 18px; min-height: 66px; }
+        .price-card ul { list-style: none; text-align: left; font-size: 14px; color: #3d5a7a; line-height: 2.1; margin-bottom: 22px; flex: 1; }
+        .price-card ul li::before { content: '\2713'; color: #4caf50; font-weight: 700; margin-right: 8px; }
+        .price-card .btn { margin-top: auto; }
+        .pricing-note {
+            text-align: center;
+            font-size: 13px;
+            color: #6b8098;
+            max-width: 640px;
+            margin: 26px auto 0;
+            line-height: 1.7;
+        }
+        .pricing-note a { color: #3d6b99; }
+
+        /* ── Comparison table ── */
+        .compare-wrap { overflow-x: auto; margin-top: 40px; }
+        .compare-table {
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            font-size: 14px;
+        }
+        .compare-table th, .compare-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eef2f6;
+            text-align: center;
+            color: #3d5a7a;
+        }
+        .compare-table th { background: #f4f8fb; font-weight: 600; color: #1e3a5f; }
+        .compare-table td:first-child, .compare-table th:first-child { text-align: left; }
+        .compare-check { color: #4caf50; font-weight: 700; }
+        .compare-dash { color: #c3ccd6; }
+
+        /* ── FAQ ── */
+        .faq-section { background: #fff; border-bottom: 1px solid #e8ecf0; }
+        .faq-list { max-width: 760px; margin: 0 auto; }
+        .faq-item {
+            border: 1px solid #e8ecf0;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+        }
+        .faq-item summary {
+            cursor: pointer;
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #1e3a5f;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary::after { content: '+'; font-size: 20px; color: #7a8fa8; }
+        .faq-item[open] summary::after { content: '\2212'; }
+        .faq-item .faq-body { padding: 0 20px 16px; font-size: 14px; color: #4b647d; line-height: 1.7; }
+
+        /* ── Trust / about ── */
+        .trust-section {
+            background: linear-gradient(180deg, #f0f4f8, #e8eef4);
+            border-bottom: 1px solid #dde4ec;
+        }
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            margin-top: 12px;
+        }
+        .trust-card {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid #e8ecf0;
+            padding: 28px 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .trust-card .trust-icon { font-size: 30px; display: block; margin-bottom: 12px; }
+        .trust-card h3 { font-size: 17px; font-weight: 600; color: #1e3a5f; margin-bottom: 8px; }
+        .trust-card p { font-size: 14px; color: #4b647d; line-height: 1.7; }
+        .trust-card a { color: #3d6b99; }
+        .trust-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 28px 0 0;
+        }
+        .trust-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #fff;
+            border: 1px solid #dde4ec;
+            border-radius: 100px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #3d5a7a;
+        }
+
+        /* ── Final CTA ── */
+        .final-cta {
+            background: linear-gradient(180deg, #eef6fd, #d4eaf7);
+            text-align: center;
+        }
+        .final-cta h2 { font-size: 28px; font-weight: 700; color: #1e3a5f; margin-bottom: 10px; }
+        .final-cta p { font-size: 16px; color: #3d5a7a; margin-bottom: 26px; max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+        .final-cta .cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .final-cta .btn { width: auto; min-width: 220px; display: inline-block; }
 
         /* ── Footer ── */
-        .landing-footer {
-            position: absolute;
-            bottom: 12px;
-            z-index: 10;
+        .site-footer {
+            background: #152d4a;
+            color: rgba(255, 255, 255, 0.6);
             text-align: center;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 11px;
-            font-weight: 400;
+            padding: 28px 24px;
+            font-size: 13px;
         }
-        .landing-footer a {
-            color: rgba(255, 255, 255, 0.85);
+        .site-footer a {
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
         }
-        .landing-footer a:hover {
-            text-decoration: underline;
+        .site-footer a:hover { text-decoration: underline; }
+        .site-footer .footer-links { margin-bottom: 8px; }
+        .site-footer .footer-disclaimer {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.78);
+            max-width: 600px;
+            margin: 8px auto 0;
+            line-height: 1.5;
         }
 
-        /* ── Mobile ── */
-        @media (max-width: 480px) {
-            .character {
-                width: 200px;
-                height: 200px;
-                border-radius: 24px;
-            }
-            .landing-title {
-                font-size: 32px;
-            }
-            .landing-tagline {
-                font-size: 15px;
-                margin-bottom: 28px;
-            }
-            .btn-landing {
-                padding: 16px 28px;
-                font-size: 16px;
-                border-radius: 16px;
-            }
-            .landing-buttons {
-                max-width: 300px;
-            }
-            .tree { display: none; }
-            .star { display: none; }
+        /* ══════════════════════════════════════════
+           RESPONSIVE
+           ══════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .hero-title { font-size: 32px; }
+            .hero-tagline { font-size: 16px; }
+            .character { width: 180px; height: 180px; }
+            .section { padding: 56px 20px; }
+            .section-title { font-size: 26px; }
+            .value-grid, .steps, .audience-grid { grid-template-columns: 1fr; gap: 20px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .skills-intro { flex-direction: column; text-align: center; }
+            .skills-grid { grid-template-columns: repeat(2, 1fr); }
+            .shots-grid { grid-template-columns: repeat(2, 1fr); }
+            .price-card .price-desc { min-height: 0; }
+            .value-statement h2 { font-size: 24px; }
+            .cta-section h2 { font-size: 26px; }
+            .cta-buttons { flex-direction: column; align-items: center; }
+            .tree, .star { display: none; }
         }
 
         @media (max-height: 600px) {
-            .content { margin-top: -2%; }
+            .hero-content { margin-top: -2%; }
             .character { width: 90px; height: 90px; margin-bottom: 10px; }
-            .landing-title { font-size: 28px; margin-bottom: 8px; }
-            .landing-tagline { font-size: 14px; margin-bottom: 20px; }
-            .btn-landing { padding: 14px 24px; font-size: 15px; }
-            .landing-buttons { gap: 10px; }
-        }
-
-        /* ── Entrance animation ── */
-        .content {
-            animation: contentFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes contentFadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(-6%); }
+            .hero-title { font-size: 28px; margin-bottom: 8px; }
+            .hero-tagline { font-size: 14px; margin-bottom: 20px; }
+            .btn { padding: 14px 24px; font-size: 15px; }
+            .hero-buttons { gap: 10px; }
         }
     </style>
 </head>
 <body>
-    <div class="landing">
-        <!-- Sky -->
+    <!-- ══════════════════════════════════════════
+         HERO SECTION
+         ══════════════════════════════════════════ -->
+    <section class="hero">
         <div class="sky"></div>
 
-        <!-- Clouds -->
         <div class="cloud cloud-1"></div>
         <div class="cloud cloud-2"></div>
         <div class="cloud cloud-3"></div>
         <div class="cloud cloud-4"></div>
 
-        <!-- Floating stars -->
         <span class="star star-1">&#11088;</span>
         <span class="star star-2">&#10024;</span>
         <span class="star star-3">&#11088;</span>
         <span class="star star-4">&#10024;</span>
         <span class="star star-5">&#11088;</span>
 
-        <!-- Hills -->
         <div class="hills">
             <div class="hill hill-2"></div>
             <div class="hill hill-3"></div>
             <div class="hill hill-1"></div>
         </div>
 
-        <!-- Trees -->
         <div class="tree tree-1"><div class="tree-top"></div><div class="tree-trunk"></div></div>
         <div class="tree tree-2"><div class="tree-top"></div><div class="tree-trunk"></div></div>
         <div class="tree tree-3"><div class="tree-top"></div><div class="tree-trunk"></div></div>
         <div class="tree tree-4"><div class="tree-top"></div><div class="tree-trunk"></div></div>
 
-        <!-- Grass -->
         <div class="grass"></div>
 
-        <!-- Content -->
-        <div class="content">
+        <div class="hero-content">
             <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="character">
-            <h1 class="landing-title">Daniel's Diaries</h1>
-            <p class="landing-tagline">
-                Helping children build emotional intelligence, resilience, and coping skills through stories and adventure.
+            <h1 class="hero-title">Daniel's Diaries</h1>
+            <p class="hero-tagline">
+                Helping children build emotional intelligence, resilience, and coping skills through interactive stories and adventure.
             </p>
-            <div class="landing-buttons">
-                <a href="/signup.html" class="btn-landing btn-signup">Get Started</a>
-                <a href="/signup.html?trial=true" class="btn-landing btn-trial">Try Free - 2 Modules on Us</a>
-                <a href="/login.html" class="btn-landing btn-login">I Have an Account</a>
-                <a href="/schools-login.html" class="btn-landing btn-schools" id="schoolsProgramBtn" style="display:none;">Schools Program</a>
+            <div class="hero-buttons">
+                <a href="/signup.html" class="btn btn-primary">Get Started</a>
+                <a href="/signup.html?trial=true" class="btn btn-outline" id="freeTrialBtn" style="display:none;">Try Free - 2 Modules on Us</a>
+                <a href="/login.html" class="btn btn-secondary">I Have an Account</a>
+                <a href="/schools-login.html" class="btn btn-schools" id="schoolsProgramBtn" style="display:none;">Schools Program</a>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="landing-footer">
-            <span>&copy; 2026 Daniel's Diaries by Foundational Minds &nbsp;|&nbsp;
-            <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy</a> &nbsp;|&nbsp;
-            <a href="/terms-of-service.html" target="_blank" rel="noopener">Terms</a></span>
-            <span style="display:block; margin-top:6px; font-size:11px; opacity:0.7;">Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.</span>
+        <a href="#value" class="scroll-hint">
+            <span>&#8595;</span>
+            Learn more
+        </a>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         VALUE PROPOSITION
+         ══════════════════════════════════════════ -->
+    <div class="value-section" id="value">
+        <div class="section">
+            <div class="value-statement">
+                <h2>Building emotional skills that last a lifetime</h2>
+                <p>Daniel's Diaries uses interactive, story-based modules personalised to your child's age and needs. Children learn by doing — exploring emotions, building resilience, and developing coping strategies through guided adventures with Daniel the Dog.</p>
+            </div>
+
+            <div class="value-grid">
+                <div class="value-card">
+                    <div class="value-icon" style="background: #ede9fe;">&#128218;</div>
+                    <h3>Personalised Modules</h3>
+                    <p>AI-powered content tailored to your child's age, interests, and emotional development stage.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon" style="background: #dcfce7;">&#127793;</div>
+                    <h3>Evidence-Based</h3>
+                    <p>Built on developmental psychology frameworks including emotional regulation, social skills, and resilience theory.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon" style="background: #fef3c7;">&#11088;</div>
+                    <h3>Gamified Learning</h3>
+                    <p>Adventure maps, stars, streaks, and rewards keep children engaged and motivated to build new skills.</p>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- ══════════════════════════════════════════
+         HOW IT WORKS
+         ══════════════════════════════════════════ -->
+    <div class="how-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">How it works</p>
+                <h2 class="section-title">Get started in minutes</h2>
+                <p class="section-subtitle">No complicated setup. Create an account, add your child, and they can start their first module straight away.</p>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Create Your Account</h3>
+                    <p>Sign up in under a minute. No credit card required to get started.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Add Your Child</h3>
+                    <p>Enter their name and age. We'll personalise their experience based on their developmental stage.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Start Exploring</h3>
+                    <p>Your child begins their adventure with Daniel, building emotional skills through stories and activities.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         FEATURES
+         ══════════════════════════════════════════ -->
+    <div class="features-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Features</p>
+                <h2 class="section-title">Everything your family needs</h2>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #ede9fe;">&#128302;</div>
+                    <div>
+                        <h3>AI-Personalised Content</h3>
+                        <p>Modules are generated to match your child's age, learning style, and focus areas — no two experiences are the same.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #dcfce7;">&#128506;</div>
+                    <div>
+                        <h3>Adventure Map</h3>
+                        <p>A visual journey that grows as your child completes modules — making progress tangible and exciting.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #fef3c7;">&#128200;</div>
+                    <div>
+                        <h3>Parent Insights</h3>
+                        <p>Track your child's emotional development with progress reports, mood check-ins, and weekly summaries.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #fce7f3;">&#128170;</div>
+                    <div>
+                        <h3>Focus Plans</h3>
+                        <p>Set goals around specific areas like anxiety, friendships, or self-regulation — and watch targeted progress.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #e0f2fe;">&#127911;</div>
+                    <div>
+                        <h3>Narrated Stories</h3>
+                        <p>AI-generated narration brings stories to life, making modules accessible for all reading levels.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #f0fdf4;">&#129309;</div>
+                    <div>
+                        <h3>Practitioner Integration</h3>
+                        <p>Share progress with your child's therapist, psychologist, or school counsellor for a joined-up approach.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         WHO IT'S FOR
+         ══════════════════════════════════════════ -->
+    <div class="audience-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Who it's for</p>
+                <h2 class="section-title">Built for families, schools, and practitioners</h2>
+            </div>
+
+            <div class="audience-grid">
+                <div class="audience-card">
+                    <span class="audience-emoji">&#128104;&#8205;&#128105;&#8205;&#128103;</span>
+                    <h3>Parents &amp; Carers</h3>
+                    <ul>
+                        <li>Track emotional development</li>
+                        <li>Weekly mood check-ins</li>
+                        <li>Personalised module paths</li>
+                        <li>Fun rewards and streaks</li>
+                    </ul>
+                </div>
+                <div class="audience-card">
+                    <span class="audience-emoji">&#127979;</span>
+                    <h3>Schools</h3>
+                    <ul>
+                        <li>Whole-class wellbeing programs</li>
+                        <li>Individual student progress</li>
+                        <li>Curriculum-aligned modules</li>
+                        <li>Teacher dashboard</li>
+                    </ul>
+                </div>
+                <div class="audience-card">
+                    <span class="audience-emoji">&#129657;</span>
+                    <h3>Practitioners</h3>
+                    <ul>
+                        <li>Client progress sharing</li>
+                        <li>Session-to-session tracking</li>
+                        <li>Goal setting and notes</li>
+                        <li>Evidence-informed modules</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SUPER SKILLS / BRAIN TOWN WORLD
+         ══════════════════════════════════════════ -->
+    <div class="skills-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">The 7 Super Skills</p>
+                <h2 class="section-title">Meet Daniel and the Brain Town crew</h2>
+                <p class="section-subtitle">Every module, game, and activity builds one of seven practical life skills — each championed by a friendly character in Brain Town, the world your child explores as they grow.</p>
+            </div>
+
+            <div class="skills-intro">
+                <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog">
+                <p><strong>Daniel the Dog</strong> is your child's guide. He walks with them through Brain Town, cheers them on in games, and helps them practise real coping skills — like spotting unhelpful thoughts, calming big feelings, and bouncing back from tough days — in ways they can actually use at school and at home.</p>
+            </div>
+
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Lenny.webp" alt="Lenny" loading="lazy" decoding="async">
+                    <h3>Brain Builder</h3>
+                    <div class="skill-character">with Lenny</div>
+                    <p>Understanding how your brain works — the foundation for every other skill.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Coco.webp" alt="Coco" loading="lazy" decoding="async">
+                    <h3>Thought Driver</h3>
+                    <div class="skill-character">with Coco</div>
+                    <p>Noticing thoughts and steering them in helpful directions.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Kip.webp" alt="Kip" loading="lazy" decoding="async">
+                    <h3>Emotion Navigator</h3>
+                    <div class="skill-character">with Kip</div>
+                    <p>Recognising and moving through big feelings with confidence.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Pepper.webp" alt="Pepper" loading="lazy" decoding="async">
+                    <h3>Behaviour Engineer</h3>
+                    <div class="skill-character">with Pepper</div>
+                    <p>Building helpful habits and taking charge of actions.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Eddie.webp" alt="Eddie" loading="lazy" decoding="async">
+                    <h3>Resilience Architect</h3>
+                    <div class="skill-character">with Eddie</div>
+                    <p>Growing inner strength and bouncing back from challenges.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Kai.webp" alt="Kai" loading="lazy" decoding="async">
+                    <h3>Social Mapper</h3>
+                    <div class="skill-character">with Kai</div>
+                    <p>Reading social situations and building stronger friendships.</p>
+                </div>
+                <div class="skill-card">
+                    <img src="/images/characters/superskill-characters/Billie.webp" alt="Billie" loading="lazy" decoding="async">
+                    <h3>Future Designer</h3>
+                    <div class="skill-character">with Billie</div>
+                    <p>Setting goals and imagining the person they want to become.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SCREENSHOTS
+         ══════════════════════════════════════════ -->
+    <div class="shots-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">See it in action</p>
+                <h2 class="section-title">A world your child will want to come back to</h2>
+            </div>
+            <div class="shots-grid">
+                <figure class="shot-card">
+                    <img src="/images/steps/step1.webp" alt="Child dashboard with Daniel, stars, streak and daily quest" loading="lazy">
+                    <figcaption>A home base with Daniel, stars &amp; streaks</figcaption>
+                </figure>
+                <figure class="shot-card">
+                    <img src="/images/steps/step2.webp" alt="Adventure map showing module progress" loading="lazy">
+                    <figcaption>Adventure maps that grow with every module</figcaption>
+                </figure>
+                <figure class="shot-card">
+                    <img src="/images/steps/step5.2.webp" alt="Daily quest check-in" loading="lazy">
+                    <figcaption>Daily quests that build a check-in habit</figcaption>
+                </figure>
+                <figure class="shot-card">
+                    <img src="/images/steps/step6.2.webp" alt="Star shop rewards" loading="lazy">
+                    <figcaption>A star shop with rewards you can customise</figcaption>
+                </figure>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         PRICING
+         ══════════════════════════════════════════ -->
+    <div class="pricing-section" id="pricing">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Pricing</p>
+                <h2 class="section-title">Simple plans, no surprises</h2>
+                <p class="section-subtitle">Every plan includes the full Brain Town world, all games, daily quests, rewards, and progress tracking. Plans differ in how many guided modules your child receives each month and how much support you get.</p>
+            </div>
+
+            <div style="display:flex;justify-content:center;margin-bottom:26px;">
+                <div id="billingToggle" style="display:inline-flex;background:#eef2f7;border-radius:12px;padding:4px;">
+                    <button type="button" data-billing="monthly" class="billing-toggle-btn" style="padding:9px 20px;border:none;border-radius:9px;background:#405878;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Monthly</button>
+                    <button type="button" data-billing="annual" class="billing-toggle-btn" style="padding:9px 20px;border:none;border-radius:9px;background:transparent;color:#405878;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Annual <span style="font-size:12px;font-weight:600;color:#0f766e;">2 months free</span></button>
+                </div>
+            </div>
+
+            <div class="pricing-grid" id="pricingGrid">
+                <div class="price-card">
+                    <h3>Bronze</h3>
+                    <div class="price-line"><span class="price-amount" data-tier-price="low">$19</span><span class="price-period">/month AUD</span></div>
+                    <p class="price-desc">A simple, affordable starting point for steady emotional growth at home.</p>
+                    <ul>
+                        <li>4 guided modules per month</li>
+                        <li>Full Brain Town world &amp; all games</li>
+                        <li>Daily quests, stars &amp; rewards</li>
+                        <li>Progress tracking</li>
+                    </ul>
+                    <a href="/signup.html?plan=low" class="btn btn-outline">Choose Bronze</a>
+                </div>
+                <div class="price-card popular">
+                    <span class="popular-badge">Most popular</span>
+                    <h3>Silver</h3>
+                    <div class="price-line"><span class="price-amount" data-tier-price="mid">$39</span><span class="price-period">/month AUD</span></div>
+                    <p class="price-desc">Deeper progress and clearer visibility for families who want more support.</p>
+                    <ul>
+                        <li>6 guided modules per month</li>
+                        <li>Everything in Bronze</li>
+                        <li>Parent insights reports</li>
+                        <li>Weekly progress emails</li>
+                    </ul>
+                    <a href="/signup.html?plan=mid" class="btn btn-primary">Choose Silver</a>
+                </div>
+                <div class="price-card">
+                    <h3>Gold</h3>
+                    <div class="price-line"><span class="price-amount" data-tier-price="top">$69</span><span class="price-period">/month AUD</span></div>
+                    <p class="price-desc">Our most comprehensive package, with behavioural support from Foundational Minds.</p>
+                    <ul>
+                        <li>8 guided modules per month</li>
+                        <li>Everything in Silver</li>
+                        <li>Behavioural support from a registered Behaviour Support Practitioner</li>
+                        <li>Family Gold support hub</li>
+                    </ul>
+                    <a href="/signup.html?plan=top" class="btn btn-outline">Choose Gold</a>
+                </div>
+            </div>
+
+            <p class="pricing-note">
+                <strong>How module credits work:</strong> each month your plan adds guided-module credits to your family's account. Unused credits roll over while your subscription is active, and you can buy extra credits any time. Annual plans are billed once a year at 10&times; the monthly price (2 months free) and add a full year of module credits up front. Prefer to try first? <a href="/signup.html?trial=true">Start with 2 free modules</a> — no card required. Cancel any time from your account; see our <a href="/terms-of-service.html#billing">cancellation &amp; refund policy</a>.
+            </p>
+
+            <div class="compare-wrap">
+                <table class="compare-table">
+                    <thead>
+                        <tr><th>What's included</th><th>Bronze</th><th>Silver</th><th>Gold</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Guided modules per month</td><td>4</td><td>6</td><td>8</td></tr>
+                        <tr><td>Brain Town world, games &amp; daily quests</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Stars, streaks &amp; reward shop</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Unused credits roll over</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Parent insights reports</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Behavioural support (Foundational Minds)</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Family Gold support hub</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         FAQ
+         ══════════════════════════════════════════ -->
+    <div class="faq-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Questions</p>
+                <h2 class="section-title">Answers for parents</h2>
+            </div>
+            <div class="faq-list">
+                <details class="faq-item">
+                    <summary>What ages is Daniel's Diaries for?</summary>
+                    <div class="faq-body">The program is designed for primary-school-aged children (roughly 5–13). Module content is matched to your child's age and stage, so a 6-year-old and an 11-year-old get different language, activities, and depth.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>Who creates the content? Is it safe?</summary>
+                    <div class="faq-body">Content is drafted with the help of AI, then audited and reviewed by a qualified practitioner at Foundational Minds before it's approved for children. It's grounded in evidence-based psychology and behaviour support practice. Read exactly how it works on our <a href="/how-our-content-is-made.html">content &amp; review process page</a>.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>Is this therapy?</summary>
+                    <div class="faq-body">No. Daniel's Diaries is an educational wellbeing tool — it helps children learn and practise emotional skills, but it is not therapy, diagnosis, or clinical treatment, and it doesn't replace professional care. If your child needs clinical support, please speak with your GP or a qualified professional.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>What happens if we don't use all our module credits?</summary>
+                    <div class="faq-body">Nothing is lost — unused credits stay in your account and roll over while your subscription is active. Busy month? Your credits will be waiting.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>Can I cancel any time?</summary>
+                    <div class="faq-body">Yes. You can cancel future renewals any time from your account billing settings and keep access until the end of your paid period. See the <a href="/terms-of-service.html#billing">cancellation &amp; refund policy</a> for details.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>What does Gold's behavioural support include?</summary>
+                    <div class="faq-body">Gold families are supported by Foundational Minds, led by a registered Behaviour Support Practitioner with over five years of experience in the field. Support includes guidance tailored to your child, practitioner-set tasks and follow-ups in your Family Gold hub, and help applying the Super Skills at home.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>How is my child's data protected?</summary>
+                    <div class="faq-body">Data is encrypted in transit and at rest, stored with row-level security so only your family can access it, and never sold. Payment details are handled entirely by Stripe. You can export or delete your family's data at any time. Full details are in our <a href="/privacy-policy.html">privacy policy</a>.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>How does annual billing work?</summary>
+                    <div class="faq-body">Annual plans cost 10&times; the monthly price — you get 12 months for the price of 10 (2 months free). Your full year of module credits is added up front, and credits roll over, so your family can use them at their own pace.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>How do I get help or contact support?</summary>
+                    <div class="faq-body">Email us at <a href="mailto:info@danielsdiaries.com">info@danielsdiaries.com</a> — a real person from the Daniel's Diaries team reads every message, and we aim to reply within one business day.</div>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TRUST / WHO'S BEHIND IT
+         ══════════════════════════════════════════ -->
+    <div class="trust-section">
+        <div class="section">
+            <div class="section-header">
+                <p class="section-label">Who's behind it</p>
+                <h2 class="section-title">Built with practitioner oversight</h2>
+                <p class="section-subtitle">Daniel's Diaries is operated with Foundational Minds, a behaviour support practice — not a faceless app studio.</p>
+            </div>
+
+            <div class="trust-grid">
+                <div class="trust-card">
+                    <span class="trust-icon">&#129657;</span>
+                    <h3>Practitioner-led</h3>
+                    <p>Foundational Minds is led by a registered Behaviour Support Practitioner with 5+ years of experience working with children and families, currently completing Honours in Psychology. She oversees the program's content and provides the behavioural support in the Gold plan.</p>
+                </div>
+                <div class="trust-card">
+                    <span class="trust-icon">&#128221;</span>
+                    <h3>AI-assisted, human-reviewed</h3>
+                    <p>AI helps draft and audit module content — a practitioner reviews it before it reaches children, and everything is aligned with evidence-based psychology and behaviour support practice. <a href="/how-our-content-is-made.html">See our full content process</a>.</p>
+                </div>
+                <div class="trust-card">
+                    <span class="trust-icon">&#128274;</span>
+                    <h3>Privacy first</h3>
+                    <p>Your family's data is encrypted, protected by row-level security, and never sold. Children use nicknames and avatars. You can export or delete your data whenever you choose. <a href="/privacy-policy.html">Read the privacy policy</a>.</p>
+                </div>
+                <div class="trust-card">
+                    <span class="trust-icon">&#128106;</span>
+                    <h3>Built with families in mind</h3>
+                    <p>Designed alongside real families and behaviour support practice — for parents, children, schools, and practitioners who want emotional skills taught in a way kids genuinely enjoy.</p>
+                </div>
+            </div>
+
+            <div class="trust-badges">
+                <span class="trust-badge">&#9989; Practitioner reviewed</span>
+                <span class="trust-badge">&#128218; Evidence-informed</span>
+                <span class="trust-badge">&#129302; AI-assisted, human reviewed</span>
+                <span class="trust-badge">&#129309; Created with behaviour support oversight</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         FINAL CTA
+         ══════════════════════════════════════════ -->
+    <div class="final-cta">
+        <div class="section">
+            <h2>Start your child's adventure today</h2>
+            <p>Try 2 guided modules free — no card required. See how your child takes to Daniel and Brain Town before you choose a plan.</p>
+            <div class="cta-buttons">
+                <a href="/signup.html?trial=true" class="btn btn-primary">Try Free — 2 Modules on Us</a>
+                <a href="#pricing" class="btn btn-outline">See Plans</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         FOOTER
+         ══════════════════════════════════════════ -->
+    <footer class="site-footer">
+        <div class="footer-links">
+            &copy; 2026 Daniel's Diaries by Foundational Minds &nbsp;|&nbsp;
+            <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;|&nbsp;
+            <a href="/terms-of-service.html">Terms of Service</a> &nbsp;|&nbsp;
+            <a href="/terms-of-service.html#billing">Cancellation &amp; Refunds</a> &nbsp;|&nbsp;
+            <a href="/how-our-content-is-made.html">How Our Content Is Made</a> &nbsp;|&nbsp;
+            <a href="mailto:info@danielsdiaries.com">Support: info@danielsdiaries.com</a>
+        </div>
+        <p class="footer-disclaimer">Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy, clinical treatment, or a substitute for professional advice.</p>
+    </footer>
+
     <script type="module">
         import { getSupabaseClient } from '/src/supabaseClient.js'
+        import { initTelemetry, trackEvent } from '/src/lib/telemetry.js'
+        initTelemetry() // page_view + global error capture
+
+        // Funnel: which pricing CTA visitors click (plan + billing interval)
+        document.querySelectorAll('#pricingGrid a[href^="/signup.html?plan="]').forEach((a) => {
+            a.addEventListener('click', () => {
+                const url = new URL(a.getAttribute('href'), window.location.origin)
+                trackEvent('pricing_cta_click', {
+                    plan: url.searchParams.get('plan'),
+                    billing: url.searchParams.get('billing') || 'monthly'
+                })
+            })
+        })
         ;(async () => {
             try {
                 const { data } = await getSupabaseClient()
@@ -497,7 +1306,67 @@
                     const btn = document.getElementById('schoolsProgramBtn')
                     if (btn) btn.style.display = ''
                 }
+                if (data?.feature_flags?.free_trial_enabled !== false) {
+                    const trialBtn = document.getElementById('freeTrialBtn')
+                    if (trialBtn) trialBtn.style.display = ''
+                }
             } catch (e) { /* flag defaults to off */ }
+
+            // Keep displayed prices in sync with the prices actually charged
+            // (subscription_tiers is the same source the checkout uses).
+            // Annual = 10x monthly ("2 months free") — must match the
+            // start-paid-signup edge function.
+            const ANNUAL_MONTHS_CHARGED = 10
+            const monthlyCentsByTier = {}
+            document.querySelectorAll('[data-tier-price]').forEach((el) => {
+                // Seed from the static fallback prices so the toggle works
+                // even if the live price fetch fails.
+                const dollars = parseFloat(el.textContent.replace('$', ''))
+                if (!Number.isNaN(dollars)) monthlyCentsByTier[el.dataset.tierPrice] = Math.round(dollars * 100)
+            })
+            try {
+                const { data: tiers } = await getSupabaseClient()
+                    .from('subscription_tiers')
+                    .select('tier, monthly_price_cents')
+                    .eq('is_active', true)
+                ;(tiers || []).forEach((tier) => {
+                    if (typeof tier.monthly_price_cents === 'number') {
+                        monthlyCentsByTier[tier.tier] = tier.monthly_price_cents
+                    }
+                })
+            } catch (e) { /* static fallback prices remain */ }
+
+            let billing = 'monthly'
+            function fmt(cents) {
+                const dollars = cents / 100
+                return '$' + (dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2))
+            }
+            function renderPrices() {
+                document.querySelectorAll('[data-tier-price]').forEach((el) => {
+                    const cents = monthlyCentsByTier[el.dataset.tierPrice]
+                    if (typeof cents !== 'number') return
+                    el.textContent = fmt(billing === 'annual' ? cents * ANNUAL_MONTHS_CHARGED : cents)
+                })
+                document.querySelectorAll('.price-period').forEach((el) => {
+                    el.textContent = billing === 'annual' ? '/year AUD' : '/month AUD'
+                })
+                document.querySelectorAll('#pricingGrid a[href^="/signup.html?plan="]').forEach((a) => {
+                    const url = new URL(a.getAttribute('href'), window.location.origin)
+                    if (billing === 'annual') url.searchParams.set('billing', 'annual')
+                    else url.searchParams.delete('billing')
+                    a.setAttribute('href', url.pathname + url.search)
+                })
+                document.querySelectorAll('#billingToggle .billing-toggle-btn').forEach((btn) => {
+                    const active = btn.dataset.billing === billing
+                    btn.style.background = active ? '#405878' : 'transparent'
+                    btn.style.color = active ? '#fff' : '#405878'
+                    btn.querySelectorAll('span').forEach((s) => { s.style.color = active ? '#8ef0e3' : '#0f766e' })
+                })
+            }
+            document.querySelectorAll('#billingToggle .billing-toggle-btn').forEach((btn) => {
+                btn.addEventListener('click', () => { billing = btn.dataset.billing; renderPrices() })
+            })
+            renderPrices()
         })()
     </script>
 </body>

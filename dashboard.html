@@ -6,17 +6,17 @@
     <title>Daniel's Diaries - Dashboard</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/FM-LOGO-Light.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/FM-LOGO-Light.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logos/dd-favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logos/dd-favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logos/dd-favicon.png">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media=&#39;all&#39;">
     <link href="/styles/dashboard.css" rel="stylesheet">
-    <!-- Adventure UI Overhaul -->
-    <link href="/styles/dashboard-adventure.css" rel="stylesheet">
+    <link href="/src/features/dashboard/brainTownStyles.css" rel="stylesheet">
 
     <style>
       body { display: flex; flex-direction: column; min-height: 100vh; }
@@ -48,13 +48,23 @@
                     <button class="btn-header" id="profileButtonDesktop">
                         Profile
                     </button>
+                    <button class="btn-header" id="tabParentInsights" title="For parents and carers: detailed progress insights">
+                        Parent Insights
+                    </button>
+                    <button class="btn-header" id="familyGoldButtonDesktop" style="display:none" title="Your Family Gold hub">
+                        ⭐ Family Gold
+                    </button>
                     <button class="btn-header" id="logoutButtonDesktop">Logout</button>
-                    <button class="btn-header settings hidden" id="adminButtonDesktop" style="margin-left: 12px;">
-                        Admin Centre
-                    </button>
-                    <button class="btn-header hidden" id="schoolsButtonDesktop" style="margin-left: 8px; background: linear-gradient(135deg, #2d6a4f, #40916c); color: white; border: none;">
-                        Schools Program
-                    </button>
+                    <div class="admin-dropdown-wrap hidden" id="adminDropdownWrap" style="position:relative;margin-left:12px;">
+                        <button class="btn-header" id="adminDropdownToggle" style="display:flex;align-items:center;gap:6px;">
+                            Admin <span style="font-size:10px;">&#9660;</span>
+                        </button>
+                        <div class="admin-dropdown-menu hidden" id="adminDropdownMenu">
+                            <button class="admin-dropdown-item hidden" id="adminButtonDesktop">Admin Centre</button>
+                            <button class="admin-dropdown-item hidden" id="schoolsButtonDesktop">Schools Program</button>
+                            <button class="admin-dropdown-item hidden" id="practiceHubButtonDesktop">Practitioner Hub</button>
+                        </div>
+                    </div>
                 </div>
                 <button class="header-help-btn" id="howThisWorksBtn" title="How this works">
                     <span class="header-help-icon">?</span>
@@ -80,6 +90,14 @@
                         <span class="dropdown-icon">❓</span>
                         How this works
                     </button>
+                    <button class="dropdown-item" id="parentInsightsButtonMobile">
+                        <span class="dropdown-icon">📊</span>
+                        Parent Insights
+                    </button>
+                    <button class="dropdown-item" id="familyGoldButtonMobile" style="display:none">
+                        <span class="dropdown-icon">⭐</span>
+                        Family Gold
+                    </button>
                     <button class="dropdown-item" id="adminButton" style="display: none;">
                         <span class="dropdown-icon">⚙️</span>
                         Admin Centre
@@ -87,6 +105,10 @@
                     <button class="dropdown-item" id="schoolsButton" style="display: none;">
                         <span class="dropdown-icon">🏫</span>
                         Schools Program
+                    </button>
+                    <button class="dropdown-item" id="practiceHubButton" style="display: none;">
+                        <span class="dropdown-icon">&#x1F9ED;</span>
+                        Practitioner Hub
                     </button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item logout" id="logoutButton">
@@ -110,24 +132,30 @@
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
                 <div class="nav-tabs-content">
-                    <button class="nav-tab active" id="tabDashboard" data-emoji="🎯">
-                        🎯 Dashboard
+                    <button class="nav-tab active" id="tabDashboard" data-emoji="🗺️" data-label="Brain Town">
+                        🗺️ Brain Town
                     </button>
-                    <button class="nav-tab hidden" id="tabModules" data-emoji="📖">
+                    <button class="nav-tab" id="tabAdventures" data-emoji="🧭" data-label="Adventures">
+                        🧭 Adventures
+                    </button>
+                    <button class="nav-tab hidden" id="tabModules" data-emoji="📖" data-label="Modules">
                         📖 My Modules
                     </button>
-                    <button class="nav-tab" id="tabLeaderboard" data-emoji="🏆">
-                        🏆 Leaderboard
+                    <button class="nav-tab" id="tabArcade" data-emoji="🎮" data-label="Arcade">
+                        🎮 Arcade
                     </button>
-                    <button class="nav-tab" id="tabSpendStars" data-emoji="🎁">
+                    <button class="nav-tab" id="tabSpendStars" data-emoji="🎁" data-label="Rewards">
                         🎁 Spend Stars
                     </button>
-                    <button class="nav-tab nav-tab-highlight" id="tabParentInsights" data-emoji="📊" title="View detailed progress insights">
-                        📊 Progress and Insights
+                    <button class="nav-tab" id="tabLeaderboard" data-emoji="🏆" data-label="Leaders" style="display:none">
+                        🏆 Leaderboard
                     </button>
                 </div>
             </div>
             
+
+            <!-- Family Gold Tab (Gold members only, shown via JS) -->
+            <div id="familyGoldTabContent" class="hidden"></div>
 
             <!-- Dashboard Tab -->
             <div id="dashboardTabContent">
@@ -161,9 +189,9 @@
                             <div class="hero-stat-lbl">Streak</div>
                         </div>
                         <div class="hero-stat">
-                            <div class="hero-stat-icon">🏆</div>
-                            <div class="hero-stat-val" id="childRank">#-</div>
-                            <div class="hero-stat-lbl">Rank</div>
+                            <div class="hero-stat-icon">🛣️</div>
+                            <div class="hero-stat-val" id="roadsBuilt">0</div>
+                            <div class="hero-stat-lbl">Roads built</div>
                         </div>
                     </div>
 
@@ -202,11 +230,13 @@
                 </div>
 
 
-<!-- 
-  ADVENTURE MAP V3 - HTML SNIPPET
-  Replace your existing adventure-map-section div with this.
-  This works with dashboard-enhanced-v3.js
--->
+<!-- Brain Town Section -->
+<div id="brainTownSection"></div>
+
+            </div>
+
+            <!-- Adventures Tab -->
+            <div id="adventuresTabContent" class="hidden">
 
 <!-- Adventure Map Section -->
 <div class="adventure-map-section">
@@ -267,7 +297,12 @@
                 </div>
             </div>
 
-            <!-- Leaderboard Tab -->
+            <!-- Arcade Tab -->
+            <div id="arcadeTabContent" class="hidden">
+                <div id="arcadeMount"></div>
+            </div>
+
+            <!-- Leaderboard Tab (feature-flagged, hidden by default) -->
             <div id="leaderboardTabContent" class="hidden">
                 <div class="leaderboard-header">
                     <h2 class="leaderboard-title">Leaderboard</h2>
@@ -284,47 +319,37 @@
 
             <!-- Star Shop Tab -->
             <div id="spendStarsTabContent" class="hidden">
-                <!-- Shop Header -->
-                <div class="shop-header">
-                    <div class="shop-title-section">
-                        <h2 class="shop-title">🌟 Daniel's Star Shop</h2>
-                        <p class="shop-subtitle">Spend your hard-earned stars on awesome rewards!</p>
+                <!-- Star Wallet Hero -->
+                <div class="star-wallet-hero">
+                    <div class="star-wallet-available">
+                        <div class="star-wallet-icon">⭐</div>
+                        <div class="star-wallet-number" id="availableStarsCount">0</div>
+                        <div class="star-wallet-label">Stars to Spend</div>
                     </div>
-                    <div class="shop-stars-display">
-                        <div class="stars-stats">
-                            <div class="star-stat">
-                                <span class="stat-label">⭐ Total Stars</span>
-                                <span class="stat-value" id="totalStarsCount">0</span>
-                            </div>
-                            <div class="star-stat">
-                                <span class="stat-label">✨ Spent</span>
-                                <span class="stat-value" id="spentStarsCount">0</span>
-                            </div>
-                            <div class="star-stat">
-                                <span class="stat-label">🌟 Available</span>
-                                <span class="stat-value" id="availableStarsCount">0</span>
-                            </div>
+                    <div class="star-wallet-meta">
+                        <div class="star-wallet-meta-item">
+                            <span class="star-wallet-meta-num" id="totalStarsCount">0</span>
+                            <span class="star-wallet-meta-label">Earned</span>
+                        </div>
+                        <div class="star-wallet-divider"></div>
+                        <div class="star-wallet-meta-item">
+                            <span class="star-wallet-meta-num" id="spentStarsCount">0</span>
+                            <span class="star-wallet-meta-label">Spent</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Real Rewards Grid -->
-                <div class="rewards-header">
-                    <h3 class="rewards-title">🎁 Available Rewards</h3>
-                    <button id="addCustomRewardBtn" class="btn-secondary add-reward-btn">
-                        ➕ Add Custom Reward
-                    </button>
+                <!-- Rewards Grid -->
+                <div class="rewards-section-header">
+                    <h3 class="rewards-section-title">Rewards</h3>
+                    <button id="addCustomRewardBtn" class="rewards-add-btn">+ Add</button>
                 </div>
-                <div class="shop-items-grid" id="rewardsGrid">
-                    <!-- Rewards will be populated by JavaScript -->
-                </div>
+                <div class="rewards-grid" id="rewardsGrid"></div>
 
-                <!-- Purchase History Section -->
-                <div class="my-inventory-section">
-                    <h3 class="inventory-title">📜 Purchase History</h3>
-                    <div class="purchase-history" id="purchaseHistory">
-                        <!-- Purchase history will be populated by JavaScript -->
-                    </div>
+                <!-- Purchase History -->
+                <div class="purchase-section">
+                    <h3 class="purchase-section-title">Recent Purchases</h3>
+                    <div id="purchaseHistory"></div>
                 </div>
             </div>
 
@@ -823,63 +848,26 @@
     </div>
 
     <script type="module" src="./src/progress-tracking-system.js"></script>
-    <script type="module" src="./src/dashboard.js"></script>
+    <script type="module" src="./src/features/dashboard/dashboardPage.js"></script>
+    <script type="module" src="./src/features/dashboard/brainTownBootstrap.js"></script>
    <script type="module" src="./src/dashboard-enhanced.js"></script>
     <script type ="module" src="./src/daily-quest-system.js"></script>
     <script type="module" src="./src/daniel-relationship-system.js"></script>
     <!-- <script type="module" src="./src/superskills-adventure-map.js"></script> -->
     <script>
-// Initialize daily quest when child is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait for child to be selected
-    const checkChild = setInterval(() => {
-        const child = window.selectedChild;
-        if (child && child.id) {
-            clearInterval(checkChild);
-            if (typeof window.initDailyQuest === 'function') {
-                window.initDailyQuest(child.id);
-            }
-        }
-    }, 500);
-});
-
-// Also re-init when child selection changes
+// Initialize daily quest — event-driven off childSelected (dispatched by
+// dashboardPage), with a one-shot fallback if a child was already selected.
 window.addEventListener('childSelected', (e) => {
     if (e.detail && e.detail.childId && typeof window.initDailyQuest === 'function') {
         window.initDailyQuest(e.detail.childId);
     }
 });
-
-// Initialize Module Gallery
-function initModuleGallery() {
-    if (window.ModuleGallery && window.modules) {
-        const gallery = new window.ModuleGallery('moduleGalleryContainer');
-        gallery.init(
-            window.modules || [],
-            window.parentModules || [],
-            window.childModules || []
-        );
-        window.moduleGallery = gallery;
-    }
-}
-
-// Try to init gallery when data is ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Check periodically for data availability
-    let galleryCheckCount = 0;
-    const galleryCheck = setInterval(() => {
-        galleryCheckCount++;
-        if (window.modules && window.modules.length > 0) {
-            clearInterval(galleryCheck);
-            setTimeout(initModuleGallery, 100);
-        } else if (galleryCheckCount > 50) {
-            clearInterval(galleryCheck);
-        }
-    }, 200);
+    const child = window.selectedChild;
+    if (child && child.id && typeof window.initDailyQuest === 'function') {
+        window.initDailyQuest(child.id);
+    }
 });
-
-// Refresh gallery when modules change
-window.addEventListener('modulesLoaded', initModuleGallery);
 
 // Load progress assessment data for Parent Insights
 async function loadProgressAssessments() {
