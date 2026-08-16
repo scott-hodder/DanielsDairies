@@ -42,21 +42,35 @@ function moduleLockedForChild(lockMap, moduleId) {
   return lockMap.get(moduleId) !== false
 }
 
-// Fixed banner shown while a practitioner is viewing a client's dashboard.
+// Floating panel (bottom-right, follows scroll) shown while a practitioner
+// is viewing a client's dashboard, with a one-click way back to the hub.
 function showPractitionerViewBanner(child) {
-  if (document.getElementById('pracViewBanner')) return
-  const banner = document.createElement('div')
-  banner.id = 'pracViewBanner'
-  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:12000;background:#0d9488;color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 16px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.2);'
-  const name = document.createElement('span')
-  name.textContent = `👁 Viewing ${child.name || 'this child'}'s dashboard as their practitioner — changes are not saved`
+  if (document.getElementById('pracViewPanel')) return
+  const panel = document.createElement('div')
+  panel.id = 'pracViewPanel'
+  panel.style.cssText = [
+    'position:fixed', 'bottom:18px', 'right:18px', 'z-index:12000',
+    'background:linear-gradient(135deg,#0d9488,#14b8a6)', 'color:#fff',
+    'border-radius:16px', 'padding:14px 16px', 'max-width:280px',
+    'box-shadow:0 10px 30px rgba(13,148,136,.45)',
+    "font-family:'Fredoka',sans-serif"
+  ].join(';')
+
+  const title = document.createElement('div')
+  title.style.cssText = 'font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;'
+  title.textContent = `👁 Viewing as ${child.name || 'this child'}`
+
+  const sub = document.createElement('div')
+  sub.style.cssText = 'font-size:12px;opacity:.9;margin:4px 0 10px;line-height:1.4;'
+  sub.textContent = "Practitioner view — you're seeing this client's dashboard. Changes aren't saved."
+
   const back = document.createElement('a')
   back.href = '/practitioner-dashboard.html'
-  back.textContent = 'Back to Practitioner Hub'
-  back.style.cssText = 'color:#fff;text-decoration:underline;white-space:nowrap;'
-  banner.append(name, back)
-  document.body.prepend(banner)
-  document.body.style.paddingTop = '40px'
+  back.textContent = '← Back to Practitioner Hub'
+  back.style.cssText = 'display:block;text-align:center;background:#fff;color:#0d9488;font-size:13px;font-weight:700;padding:9px 12px;border-radius:10px;text-decoration:none;'
+
+  panel.append(title, sub, back)
+  document.body.appendChild(panel)
 }
 import { showToast } from '../../ui/toast.js'
 

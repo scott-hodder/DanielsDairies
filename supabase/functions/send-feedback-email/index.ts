@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { requireUser } from '../_shared/auth.ts'
 import { withCors } from '../_shared/cors.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -71,28 +72,22 @@ serve(withCors(async (req) => {
       <p style="color:#94a3b8; font-size:12px; font-family:sans-serif;">Sent from the Daniel's Diaries profile page</p>
     `
 
-    // Use Supabase's built-in email by creating a temporary "magic link" style approach
-    // Actually, use pg_net to send via SMTP from inside the database
-    // The most reliable approach: use the database's mail sending capability via pg_net HTTP extension
-
-    // Call Supabase's own SMTP via the internal auth endpoint to send a raw email
-    // This piggybacks on the already-configured SMTP in the Supabase dashboard
-    const { error } = await admin.rpc('send_feedback_email', {
-      recipient: 'info@danielsdiaries.com',
+    const mailResult = await sendEmail({
+      to: 'info@danielsdiaries.com',
       subject: `Feedback${rating ? ` (${rating}/5)` : ''} from ${email || 'a user'}`,
-      html_body: htmlBody
+      html: htmlBody
     })
 
-    if (error) {
-      console.error('RPC send_feedback_email error:', error)
+    if (!mailResult.sent) {
+      console.error('Feedback email send failed:', mailResult.reason)
       // Email failed but feedback is already in the DB — that's fine
-      return new Response(JSON.stringify({ sent: false, reason: error.message }), {
+      return new Response(JSON.stringify({ sent: false, reason: mailResult.reason }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    console.log('Feedback email sent via pg_net')
+    console.log('Feedback email sent')
 
     return new Response(JSON.stringify({ sent: true }), {
       status: 200,

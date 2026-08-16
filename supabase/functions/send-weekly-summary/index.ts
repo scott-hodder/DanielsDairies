@@ -25,6 +25,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Shared with the Node test suite (tests/weeklySummary.test.mjs).
 import { isoWeekKey } from '../_shared/weekKey.mjs'
+import { sendEmail } from '../_shared/email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -257,16 +258,12 @@ serve(async (req) => {
           </p>
         </div>`
 
-      const { error: sendError } = await admin.rpc('send_feedback_email', {
-        recipient: email,
-        subject,
-        html_body: html
-      })
+      const mailResult = await sendEmail({ to: email, subject, html })
 
-      if (sendError) {
+      if (!mailResult.sent) {
         // Free the log slot so a retry run can attempt this parent again.
         await admin.from('weekly_email_log').delete().eq('parent_id', parentId).eq('week_key', weekKey)
-        results[parentId] = `error:${sendError.message}`
+        results[parentId] = `error:${mailResult.reason || 'email send failed'}`
         continue
       }
 

@@ -13,6 +13,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { requireAdmin } from '../_shared/auth.ts'
 import { withCors } from '../_shared/cors.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -117,18 +118,16 @@ serve(withCors(async (req) => {
         <p style="color:#94a3b8; font-size:12px; font-family:sans-serif;">Sent by the Daniel's Diaries team. Questions? Reply to info@danielsdiaries.com</p>
       `
 
-      let emailSent = true
-      const { error: mailError } = await admin.rpc('send_feedback_email', {
-        recipient: email,
+      const mailResult = await sendEmail({
+        to: email,
         subject: "Your Daniel's Diaries Practitioner Hub invitation",
-        html_body: htmlBody
+        html: htmlBody
       })
-      if (mailError) {
-        console.error('[invite-practitioner] email send failed:', mailError)
-        emailSent = false
+      if (!mailResult.sent) {
+        console.error('[invite-practitioner] email send failed:', mailResult.reason)
       }
 
-      return json({ success: true, email, link, emailSent, reused: !!existing })
+      return json({ success: true, email, link, emailSent: mailResult.sent, reused: !!existing })
     }
 
     if (action === 'revoke') {
