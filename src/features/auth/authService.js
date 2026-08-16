@@ -1,9 +1,43 @@
 import { getSupabaseClient } from '../../supabaseClient.js'
 
-// Check if user is logged in
+// Check if user is logged in.
+//
+// A transient null from getSession() must NOT bounce the user to the login
+// page: when a second tab opens (or a suspended tab wakes up) the access
+// token may be mid-refresh, and supabase-js coordinates that refresh across
+// tabs with a browser lock — during that window getSession can briefly
+// report no session even though the user is still signed in. Give the
+// refresh a short grace period before treating the user as signed out.
 export async function checkAuth() {
-  const { data: { session } } = await getSupabaseClient().auth.getSession()
-  return session
+  const supabase = getSupabaseClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session) return session
+
+  return await new Promise((resolve) => {
+    let settled = false
+    let subscription = null
+    const finish = (result) => {
+      if (settled) return
+      settled = true
+      try { subscription?.unsubscribe() } catch { /* already gone */ }
+      resolve(result)
+    }
+
+    const { data } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (newSession) finish(newSession)
+      else if (event === 'SIGNED_OUT') finish(null)
+    })
+    subscription = data?.subscription
+
+    setTimeout(async () => {
+      try {
+        const { data: retry } = await supabase.auth.getSession()
+        finish(retry.session)
+      } catch {
+        finish(null)
+      }
+    }, 1500)
+  })
 }
 
 // Sign in with email and password

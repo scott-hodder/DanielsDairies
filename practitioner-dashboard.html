@@ -33,11 +33,10 @@
     </div>
     <div class="header-right">
       <nav class="prac-nav">
-        <button class="prac-nav-btn" id="backToDashboardBtn">Dashboard</button>
         <button class="prac-nav-btn active" data-view="overview">Overview</button>
         <button class="prac-nav-btn" data-view="caseload">Caseload</button>
         <button class="prac-nav-btn" data-view="resources">Resources</button>
-        <button class="prac-nav-btn" data-view="plan">Plan &amp; Billing</button>
+        <a href="/landing.html" id="viewChildDashboardLink" style="align-self:center;font-size:13px;color:#e0f2f1;text-decoration:underline;white-space:nowrap;margin-left:8px;">View Child's Dashboard</a>
       </nav>
     </div>
   </div>
@@ -195,6 +194,7 @@
           <p class="prac-ws-sub" id="wsSub"></p>
         </div>
         <div class="prac-ws-actions">
+          <button class="prac-btn prac-btn-primary prac-btn-sm" id="viewClientDashboardBtn">View Their Dashboard</button>
           <button class="prac-btn prac-btn-danger prac-btn-sm" id="removeClientBtn">Remove Client</button>
         </div>
       </div>

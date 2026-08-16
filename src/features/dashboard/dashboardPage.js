@@ -29,6 +29,35 @@ import { initFamilyGoldTab, isGoldTier } from './familyGoldDashboard.js'
 import { startModule } from './dashboardCheckinInterception.js'
 import { setupDanielMoodCheckin, refreshMoodCheckinState, updateMoodHeroText } from './dashboardMoodCheckin.js'
 import { getCurrencyFormatter } from './dashboardProfileHub.js'
+import { isPractitionerSession } from './superSkillGate.js'
+
+// Practitioner "view as client" mode: a practitioner opens a caseload child's
+// dashboard read-only via /dashboard.html?childId=X&pracView=1. Reads work
+// through the practitioner RLS policies; write paths are skipped.
+const isPracView = new URLSearchParams(window.location.search).get('pracView') === '1'
+
+// Practitioners see every module unlocked — no per-child credit locks.
+function moduleLockedForChild(lockMap, moduleId) {
+  if (isPractitionerSession()) return false
+  return lockMap.get(moduleId) !== false
+}
+
+// Fixed banner shown while a practitioner is viewing a client's dashboard.
+function showPractitionerViewBanner(child) {
+  if (document.getElementById('pracViewBanner')) return
+  const banner = document.createElement('div')
+  banner.id = 'pracViewBanner'
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:12000;background:#0d9488;color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 16px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.2);'
+  const name = document.createElement('span')
+  name.textContent = `👁 Viewing ${child.name || 'this child'}'s dashboard as their practitioner — changes are not saved`
+  const back = document.createElement('a')
+  back.href = '/practitioner-dashboard.html'
+  back.textContent = 'Back to Practitioner Hub'
+  back.style.cssText = 'color:#fff;text-decoration:underline;white-space:nowrap;'
+  banner.append(name, back)
+  document.body.prepend(banner)
+  document.body.style.paddingTop = '40px'
+}
 import { showToast } from '../../ui/toast.js'
 
 let currentCreditSummary = null
@@ -247,7 +276,7 @@ function getNextUnlockableModule(referenceModule = null) {
     childModuleLockMap.set(cm.module_id, cm.locked !== false)
   })
 
-  return orderedModules.find((module) => childModuleLockMap.get(module.id) !== false) || null
+  return orderedModules.find((module) => moduleLockedForChild(childModuleLockMap, module.id)) || null
 }
 
 function isModuleNextUnlockable(module) {
@@ -670,7 +699,8 @@ async function init() {
     initPushNotifications()
 
     // Link this family to a practitioner if they arrived with an invite code
-    redeemPendingPractitionerInvite()
+    // (not when a practitioner is only viewing a client's dashboard)
+    if (!isPracView) redeemPendingPractitionerInvite()
 
     if (state.currentUser && state.currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
@@ -861,12 +891,29 @@ async function init() {
         // Skip password check when returning from module (already authenticated)
         // selectChild now waits for the map to render before hiding the loading screen
         await selectChild(childFromUrl)
-        
+
         // Switch to specific tab if requested
         if (tabFromUrl) {
           showTab(tabFromUrl)
         }
-        
+
+        clearTimeout(loadingTimeout)
+        return
+      }
+    }
+
+    // Practitioner viewing a caseload child: the child isn't in this user's
+    // own list, but the practitioner RLS read policy lets us fetch it by id.
+    if (childIdFromUrl && isPracView && isPractitionerSession()) {
+      const { data: clientChild } = await supabase
+        .from('children')
+        .select('*')
+        .eq('id', childIdFromUrl)
+        .maybeSingle()
+      if (clientChild) {
+        showPractitionerViewBanner(clientChild)
+        await selectChild(clientChild)
+        if (tabFromUrl) showTab(tabFromUrl)
         clearTimeout(loadingTimeout)
         return
       }
@@ -1016,6 +1063,14 @@ function getNextCreditRefreshDateLabel() {
 
 function updateCreditWalletBadge() {
   if (!creditWalletValue) return
+  // Practitioners never buy credits — everything is already unlocked for
+  // them, so the wallet and buy prompts are hidden entirely.
+  if (isPractitionerSession()) {
+    if (creditWalletBadge) hideElement(creditWalletBadge)
+    const pracBuyBtn = document.getElementById('buyCreditsBtn')
+    if (pracBuyBtn) pracBuyBtn.style.display = 'none'
+    return
+  }
   const creditsAvailable = currentCreditSummary?.credits_available ?? 0
   creditWalletValue.textContent = String(creditsAvailable)
   if (creditWalletBadge) {
@@ -1693,7 +1748,7 @@ async function selectChild(child) {
     // DEFERRED - weekly plan, streak, and leaderboard data load in background
     Promise.allSettled([
       loadLatestWeeklyPlanData(child.id),
-      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
+      (state.currentUser && !isPracView) ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('Streak not recorded (practitioner view or no user)')
     ]).then(([weeklyPlanResult, streakResult]) => {
       if (weeklyPlanResult.status === 'fulfilled') {
         setCurrentWeeklyPlan(weeklyPlanResult.value)
@@ -2370,8 +2425,8 @@ function renderModules() {
     return
   }
 
-  const unlockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) === false)
-  const lockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) !== false)
+  const unlockedModules = visibleModules.filter((module) => !moduleLockedForChild(childModuleLockMap, module.id))
+  const lockedModules = visibleModules.filter((module) => moduleLockedForChild(childModuleLockMap, module.id))
 
   // Separate completed and incomplete modules for modules the family has unlocked
   const incompleteModules = unlockedModules.filter(module => {

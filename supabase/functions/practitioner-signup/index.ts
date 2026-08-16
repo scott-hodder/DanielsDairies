@@ -114,14 +114,14 @@ serve(withCors(async (req) => {
 
         const { error: updateError } = await admin
           .from('parent_profiles')
-          .update({ full_name: fullName, is_practitioner: true, credits: 5 })
+          .update({ full_name: fullName, is_practitioner: true })
           .eq('id', userId)
         if (!updateError) { flagged = true; break }
       }
       if (!flagged) {
         const { error: insertError } = await admin
           .from('parent_profiles')
-          .insert({ id: userId, full_name: fullName, is_practitioner: true, credits: 5 })
+          .insert({ id: userId, full_name: fullName, is_practitioner: true })
         if (insertError) console.error('[practitioner-signup] profile provisioning failed:', insertError)
         else flagged = true
       }

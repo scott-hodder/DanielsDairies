@@ -584,6 +584,13 @@ function tagChips(goalTags) {
 // Render: plan notice banner
 // ============================================================
 function renderPlanNotice() {
+  // FREE PERIOD: the Practitioner Hub is free while the offering is being
+  // developed — no trial countdowns or plan warnings. The billing plumbing
+  // stays intact underneath; delete this block when the paywall returns.
+  document.getElementById('planNotice')?.classList.add('hidden')
+  // eslint-disable-next-line no-unreachable
+  return
+  /* Original notice logic preserved below for the paywall's return. */
   const el = document.getElementById('planNotice')
   if (!el) return
   if (!planUsage) { el.classList.add('hidden'); return }
@@ -618,9 +625,8 @@ function renderCaseload() {
   const attentionCount = clients.filter(c => attentionFlags(c).some(f => f.type === 'warn')).length
 
   document.getElementById('statClients').textContent = clients.length
-  document.getElementById('statClientsNote').textContent = planUsage
-    ? `of ${planUsage.included_clients} included in your plan`
-    : ''
+  // Free period: no plan-limit messaging on the client count.
+  document.getElementById('statClientsNote').textContent = ''
   document.getElementById('statGoals').textContent = activeGoals.length
   document.getElementById('statGoalsNote').textContent = atTarget > 0
     ? `${atTarget} reached their module target`
@@ -781,12 +787,8 @@ function renderOverview() {
   document.getElementById('ovModulesWeek').textContent = stats.modulesThisWeek
   document.getElementById('ovGoalsDue').textContent = stats.goalsDueSoon
 
-  const clientsNote = document.getElementById('ovClientsNote')
-  if (planUsage?.included_clients) {
-    clientsNote.textContent = `of ${planUsage.included_clients} on your plan`
-  } else {
-    clientsNote.textContent = ''
-  }
+  // Free period: no plan-limit messaging on the client count.
+  document.getElementById('ovClientsNote').textContent = ''
 
   // Needs attention
   const attentionEl = document.getElementById('ovAttentionList')
@@ -2096,9 +2098,10 @@ function setupEventListeners() {
     btn.addEventListener('click', () => setView(btn.dataset.view))
   })
 
-  // Dashboard button
-  document.getElementById('backToDashboardBtn').addEventListener('click', () => {
-    window.location.href = '/dashboard.html'
+  // View the selected client's dashboard as their practitioner (read-only)
+  document.getElementById('viewClientDashboardBtn')?.addEventListener('click', () => {
+    if (!selectedClient) return
+    window.location.href = `/dashboard.html?childId=${selectedClient.child_id}&pracView=1`
   })
 
   // Close guardrail
