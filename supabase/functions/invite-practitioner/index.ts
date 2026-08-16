@@ -6,14 +6,18 @@
 //   { action: 'list' }            — recent invites for the admin panel
 //   { action: 'revoke', inviteId }— revoke a pending invite
 //
-// The signup link points at practitioner-signup.html?token=..., served from the
-// requesting origin when it is on the CORS allowlist (so dev invites stay on
-// the dev site), falling back to APP_URL.
+// The invite email is sent by Supabase AUTH's own mailer via
+// auth.admin.inviteUserByEmail — the same system that delivers signup
+// confirmation emails, so no extra email provider is needed. The invite link
+// lands on practitioner-signup.html?token=... with a session; the token (also
+// carried in user metadata as a fallback) is what grants is_practitioner via
+// redeem_practitioner_account_invite. For emails that already have an
+// account, Auth can't send an invite — the admin shares the link instead and
+// practitioner access activates at their next login.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { requireAdmin } from '../_shared/auth.ts'
 import { withCors } from '../_shared/cors.ts'
-import { sendEmail } from '../_shared/email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -108,26 +112,27 @@ serve(withCors(async (req) => {
       }
 
       const link = signupLink(req, token!)
-      const htmlBody = `
-        <h2 style="color:#2b3a55; font-family:sans-serif;">You're invited to the Daniel's Diaries Practitioner Hub</h2>
-        <p style="font-family:sans-serif; color:#334155;">Daniel's Diaries gives you a professional workspace for the children you support — engagement data, goals with automatic module tracking, session notes and printable support plans — plus full access to the program content itself.</p>
-        <p style="font-family:sans-serif;">
-          <a href="${link}" style="display:inline-block; background:#14b8a6; color:#ffffff; padding:12px 24px; border-radius:10px; text-decoration:none; font-weight:600;">Create your practitioner account</a>
-        </p>
-        <p style="font-family:sans-serif; color:#64748b; font-size:13px;">This link is personal to you and expires in 14 days. If the button doesn't work, copy this address into your browser:<br>${link}</p>
-        <p style="color:#94a3b8; font-size:12px; font-family:sans-serif;">Sent by the Daniel's Diaries team. Questions? Reply to info@danielsdiaries.com</p>
-      `
 
-      const mailResult = await sendEmail({
-        to: email,
-        subject: "Your Daniel's Diaries Practitioner Hub invitation",
-        html: htmlBody
+      // Send through Supabase Auth's mailer (the same channel as signup
+      // confirmations). This also pre-creates the auth user; the token in
+      // user metadata survives even if the redirect strips query params.
+      let emailSent = false
+      let alreadyRegistered = false
+      const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: link,
+        data: { prac_invite_token: token, practitioner_invite: true }
       })
-      if (!mailResult.sent) {
-        console.error('[invite-practitioner] email send failed:', mailResult.reason)
+      if (!inviteError) {
+        emailSent = true
+      } else if (/already|registered|exists/i.test(inviteError.message || '')) {
+        // Existing account: Auth won't re-invite. The admin shares the link;
+        // redemption happens at the user's next login.
+        alreadyRegistered = true
+      } else {
+        console.error('[invite-practitioner] inviteUserByEmail failed:', inviteError)
       }
 
-      return json({ success: true, email, link, emailSent: mailResult.sent, reused: !!existing })
+      return json({ success: true, email, link, emailSent, alreadyRegistered, reused: !!existing })
     }
 
     if (action === 'revoke') {

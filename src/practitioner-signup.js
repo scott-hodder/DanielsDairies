@@ -26,7 +26,13 @@ const submitSpinner = document.getElementById('pracSubmitSpinner')
 // login page (existing account, or confirming email on this device).
 const INVITE_STORAGE_KEY = 'dd_prac_account_invite'
 
-const token = new URLSearchParams(window.location.search).get('token') || ''
+const urlToken = new URLSearchParams(window.location.search).get('token') || ''
+
+// The invite email is sent by Supabase Auth (inviteUserByEmail), so the link
+// arrives here WITH a session. The token also travels in user metadata as a
+// fallback in case the redirect dropped the query string.
+let token = urlToken
+let invitedSession = null
 
 function showError(message) {
   errorMessage.textContent = message
@@ -62,9 +68,29 @@ async function callSignupFunction(body) {
 }
 
 async function init() {
+  // Invited users arrive with a session (Supabase Auth invite link). Give
+  // detectSessionInUrl a moment to consume the URL hash, then check.
+  try {
+    const supabase = getSupabaseClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      invitedSession = session
+      token = urlToken || session.user.user_metadata?.prac_invite_token || ''
+    }
+  } catch { /* fall through to the tokened flow */ }
+
   if (!token) {
     subtitle.textContent = 'Invitation required'
     showOnly(invalidInvite)
+    return
+  }
+
+  if (invitedSession) {
+    // Already authenticated via the invite email — just finish the account.
+    localStorage.setItem(INVITE_STORAGE_KEY, token)
+    subtitle.textContent = 'Set a password to finish your account'
+    emailInput.value = invitedSession.user.email || ''
+    showOnly(signupForm)
     return
   }
 
@@ -98,6 +124,35 @@ signupForm.addEventListener('submit', async (e) => {
 
   try {
     setSubmitting(true)
+
+    if (invitedSession) {
+      // Authenticated invite flow: set the password on the existing session,
+      // then redeem the invite (grants is_practitioner + demo child) and go
+      // straight to the hub — email is already confirmed by the invite link.
+      const supabase = getSupabaseClient()
+      const { error: pwError } = await supabase.auth.updateUser({
+        password,
+        data: { full_name: fullName }
+      })
+      if (pwError) throw pwError
+
+      await supabase.from('parent_profiles')
+        .update({ full_name: fullName })
+        .eq('id', invitedSession.user.id)
+
+      const { data: redeemed, error: redeemError } = await supabase
+        .rpc('redeem_practitioner_account_invite', { p_token: token })
+      if (redeemError) throw redeemError
+      if (!redeemed?.success && redeemed?.reason !== 'invalid') {
+        throw new Error('Could not activate practitioner access. Please contact info@danielsdiaries.com')
+      }
+
+      localStorage.removeItem(INVITE_STORAGE_KEY)
+      try { sessionStorage.setItem('dd_is_practitioner', '1') } catch { /* private mode */ }
+      window.location.href = '/practitioner-dashboard.html'
+      return
+    }
+
     const result = await callSignupFunction({ action: 'complete', token, password, fullName })
 
     if (result?.alreadyRegistered) {

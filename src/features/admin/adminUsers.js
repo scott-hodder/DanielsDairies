@@ -497,6 +497,8 @@ window._adminSendPracInvite = async function() {
         const result = await invokePracInvite({ action: 'create', email });
         if (result.emailSent) {
             pracInviteFeedback(`Invite ${result.reused ? 're-sent' : 'sent'} to ${email}.`);
+        } else if (result.alreadyRegistered) {
+            pracInviteFeedback(`${email} already has an account, so no email was sent. Use Copy link to share the invite — their practitioner access activates when they open it or next log in.`, true);
         } else {
             pracInviteFeedback(`Invite created but the email could not be sent — use Copy link to share it with ${email} yourself.`, true);
         }

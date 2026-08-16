@@ -34,7 +34,9 @@ async function resolvePostLoginDestination() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return '/landing.html'
 
-    const inviteToken = localStorage.getItem(PRAC_INVITE_KEY)
+    // The token can arrive via the signup page (localStorage) or ride along
+    // in user metadata when the invite email was sent by Supabase Auth.
+    const inviteToken = localStorage.getItem(PRAC_INVITE_KEY) || user.user_metadata?.prac_invite_token
     if (inviteToken) {
       const { data: redeemed } = await supabase.rpc('redeem_practitioner_account_invite', { p_token: inviteToken })
       // Clear on success or a dead token; keep it only for transient failures.
