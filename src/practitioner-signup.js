@@ -8,6 +8,7 @@ const subtitle = document.getElementById('pracSubtitle')
 const errorMessage = document.getElementById('errorMessage')
 const successMessage = document.getElementById('successMessage')
 const invalidInvite = document.getElementById('invalidInvite')
+const wrongAccount = document.getElementById('wrongAccount')
 const existingAccount = document.getElementById('existingAccount')
 const existingEmail = document.getElementById('existingEmail')
 const signupForm = document.getElementById('pracSignupForm')
@@ -44,7 +45,7 @@ function clearError() {
 }
 
 function showOnly(section) {
-  for (const el of [invalidInvite, existingAccount, signupForm, signupDone]) {
+  for (const el of [invalidInvite, wrongAccount, existingAccount, signupForm, signupDone]) {
     el.classList.toggle('hidden', el !== section)
   }
 }
@@ -68,16 +69,18 @@ async function callSignupFunction(body) {
 }
 
 async function init() {
-  // Invited users arrive with a session (Supabase Auth invite link). Give
-  // detectSessionInUrl a moment to consume the URL hash, then check.
+  // A session may be present: either the invited user arriving from the
+  // Supabase Auth invite email, or someone else (e.g. an admin) who is
+  // already logged in in this browser. Only trust it if the session's email
+  // MATCHES the invite — otherwise setting a password here would hit the
+  // wrong account.
+  let session = null
   try {
     const supabase = getSupabaseClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      invitedSession = session
-      token = urlToken || session.user.user_metadata?.prac_invite_token || ''
-    }
-  } catch { /* fall through to the tokened flow */ }
+    ;({ data: { session } } = await supabase.auth.getSession())
+  } catch { /* treat as signed out */ }
+
+  token = urlToken || session?.user?.user_metadata?.prac_invite_token || ''
 
   if (!token) {
     subtitle.textContent = 'Invitation required'
@@ -85,15 +88,7 @@ async function init() {
     return
   }
 
-  if (invitedSession) {
-    // Already authenticated via the invite email — just finish the account.
-    localStorage.setItem(INVITE_STORAGE_KEY, token)
-    subtitle.textContent = 'Set a password to finish your account'
-    emailInput.value = invitedSession.user.email || ''
-    showOnly(signupForm)
-    return
-  }
-
+  let inviteEmail = ''
   try {
     const result = await callSignupFunction({ action: 'validate', token })
     if (!result?.valid) {
@@ -101,16 +96,41 @@ async function init() {
       showOnly(invalidInvite)
       return
     }
-    localStorage.setItem(INVITE_STORAGE_KEY, token)
-    subtitle.textContent = 'Set up your professional workspace'
-    emailInput.value = result.email
-    showOnly(signupForm)
+    inviteEmail = String(result.email || '')
   } catch (err) {
     console.error('Invite validation error:', err)
     subtitle.textContent = 'Invitation required'
     showOnly(invalidInvite)
+    return
+  }
+
+  localStorage.setItem(INVITE_STORAGE_KEY, token)
+  emailInput.value = inviteEmail
+
+  const sessionEmail = (session?.user?.email || '').toLowerCase()
+  if (session && sessionEmail === inviteEmail.toLowerCase()) {
+    // Authenticated as the invitee (came from the invite email).
+    invitedSession = session
+    subtitle.textContent = 'Set a password to finish your account'
+    showOnly(signupForm)
+  } else if (session) {
+    // Logged in as someone else — do not touch that account.
+    subtitle.textContent = 'Almost there'
+    document.getElementById('wrongAccountInvitee').textContent = inviteEmail
+    document.getElementById('wrongAccountCurrent').textContent = session.user.email || 'another account'
+    showOnly(wrongAccount)
+  } else {
+    subtitle.textContent = 'Set up your professional workspace'
+    showOnly(signupForm)
   }
 }
+
+document.getElementById('wrongAccountSignOut')?.addEventListener('click', async () => {
+  try {
+    await getSupabaseClient().auth.signOut()
+  } catch { /* session already gone */ }
+  window.location.reload()
+})
 
 signupForm.addEventListener('submit', async (e) => {
   e.preventDefault()
@@ -162,7 +182,29 @@ signupForm.addEventListener('submit', async (e) => {
       return
     }
 
-    subtitle.textContent = 'Check your email'
+    // The account is created already-confirmed (the invite token proved
+    // email ownership), so sign straight in and land in the hub.
+    if (result?.canSignIn) {
+      try {
+        const supabase = getSupabaseClient()
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: result.email || emailInput.value,
+          password
+        })
+        if (!signInError) {
+          localStorage.removeItem(INVITE_STORAGE_KEY)
+          try { sessionStorage.setItem('dd_is_practitioner', '1') } catch { /* private mode */ }
+          window.location.href = '/practitioner-dashboard.html'
+          return
+        }
+        console.error('Auto sign-in failed:', signInError)
+      } catch (err) {
+        console.error('Auto sign-in error:', err)
+      }
+    }
+
+    // Fallback: account exists, just have them log in normally.
+    subtitle.textContent = 'Account created'
     doneEmail.textContent = result?.email || emailInput.value
     showOnly(signupDone)
   } catch (err) {

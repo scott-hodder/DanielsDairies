@@ -74,30 +74,48 @@ serve(withCors(async (req) => {
       if (password.length < 8) return json({ error: 'Password must be at least 8 characters' }, 400)
       if (!fullName) return json({ error: 'Please enter your name' }, 400)
 
-      const appUrl = Deno.env.get('APP_URL') || 'https://app.danielsdiaries.com.au'
-      const anonClient = createClient(supabaseUrl, anonKey, {
-        auth: { autoRefreshToken: false, persistSession: false }
-      })
-
-      // Confirmation email goes out here; the redirect carries the invite
-      // token so redemption still works when they confirm on another device.
-      const { data: signUpData, error: signUpError } = await anonClient.auth.signUp({
+      // Create the account already-confirmed — the invite token IS the proof
+      // of email ownership, so no confirmation round-trip is needed and the
+      // page can sign the practitioner in immediately afterwards.
+      //
+      // The auth user may already exist UNCONFIRMED when the invite email was
+      // sent (inviteUserByEmail pre-creates it); in that case set the
+      // password on that user instead of creating a new one.
+      let userId: string | null = null
+      const { data: created, error: createError } = await admin.auth.admin.createUser({
         email: invite.email,
         password,
-        options: {
-          data: { full_name: fullName, practitioner_invite: true },
-          emailRedirectTo: `${appUrl}/login.html?confirmed=true&pracToken=${token}`
-        }
+        email_confirm: true,
+        user_metadata: { full_name: fullName, practitioner_invite: true, prac_invite_token: token }
       })
 
-      if (signUpError) {
-        if (signUpError.message?.includes('already been registered') || signUpError.message?.includes('already exists')) {
+      if (!createError) {
+        userId = created.user?.id ?? null
+      } else if (/already|registered|exists/i.test(createError.message || '')) {
+        // Locate the existing user. (Pagination note: fine while the user
+        // base fits one page; revisit past ~1000 accounts.)
+        const { data: page } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+        const existing = page?.users?.find((u: { email?: string }) =>
+          (u.email || '').toLowerCase() === invite.email.toLowerCase())
+
+        if (existing && !existing.email_confirmed_at) {
+          // Pre-created by the invite email, never completed: claim it.
+          const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
+            password,
+            email_confirm: true,
+            user_metadata: { ...(existing.user_metadata || {}), full_name: fullName, prac_invite_token: token }
+          })
+          if (updateError) return json({ error: updateError.message }, 500)
+          userId = existing.id
+        } else {
+          // A real, confirmed account: they log in instead (the invite token
+          // is redeemed at login via metadata/localStorage).
           return json({ alreadyRegistered: true, email: invite.email })
         }
-        return json({ error: signUpError.message || 'Failed to create account' }, 400)
+      } else {
+        return json({ error: createError.message || 'Failed to create account' }, 400)
       }
 
-      const userId = signUpData.user?.id
       if (!userId) return json({ error: 'Account creation failed' }, 500)
 
       // The parent_profiles row is created by a DB trigger shortly after
@@ -145,7 +163,7 @@ serve(withCors(async (req) => {
         .update({ status: 'accepted', accepted_user_id: userId, accepted_at: new Date().toISOString() })
         .eq('id', invite.id)
 
-      return json({ success: true, email: invite.email, practitionerFlagged: flagged })
+      return json({ success: true, email: invite.email, practitionerFlagged: flagged, canSignIn: true })
     }
 
     return json({ error: 'Unknown action' }, 400)

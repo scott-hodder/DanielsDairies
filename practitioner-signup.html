@@ -348,6 +348,12 @@
                     <p class="login-note">Already have practitioner access? <a class="login-link" href="/login.html">Sign in</a></p>
                 </div>
 
+                <!-- Signed in as a different account than the invite -->
+                <div id="wrongAccount" class="hidden">
+                    <p class="info-text">This invite is for <strong id="wrongAccountInvitee"></strong>, but you're currently signed in as <strong id="wrongAccountCurrent"></strong>. Sign out first, or open the invite link in a private/incognito window.</p>
+                    <button type="button" class="btn-primary" id="wrongAccountSignOut">Sign out &amp; continue</button>
+                </div>
+
                 <!-- Existing account: log in instead -->
                 <div id="existingAccount" class="hidden">
                     <p class="info-text">Good news — <strong id="existingEmail"></strong> already has a Daniel's Diaries account. Sign in with your usual password and your practitioner access will be switched on automatically.</p>
@@ -384,9 +390,9 @@
                     <p class="login-note" style="font-size:12px; margin-top:16px;">The Practitioner Hub is free to use during our early access period, and your account includes a demo child profile so you can explore the full program. By creating an account you agree to our <a class="login-link" href="/terms-of-service.html">Terms of Service</a> and <a class="login-link" href="/privacy-policy.html">Privacy Policy</a>.</p>
                 </form>
 
-                <!-- Success -->
+                <!-- Success (fallback when auto sign-in didn't complete) -->
                 <div id="signupDone" class="hidden">
-                    <p class="info-text"><strong>Almost there!</strong> We've sent a confirmation email to <strong id="doneEmail"></strong>. Click the link in that email, then sign in — you'll land straight in your Practitioner Hub.</p>
+                    <p class="info-text"><strong>Your account is ready!</strong> Sign in as <strong id="doneEmail"></strong> with the password you just chose — you'll land straight in your Practitioner Hub.</p>
                     <a class="btn-primary" style="display:block; text-align:center; text-decoration:none;" href="/login.html">Go to sign in</a>
                 </div>
             </div>
