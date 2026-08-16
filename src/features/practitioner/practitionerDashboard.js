@@ -3,6 +3,7 @@ import { escapeHtml } from '../../lib/sanitize.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
 import { initTelemetry, trackEvent } from '../../lib/telemetry.js'
 import { childAvatarHTML } from '../../lib/childAvatar.js'
+import { computeOverviewStats, computeNeedsAttention, relativeDayLabel } from './overviewStats.js'
 
 // Error tracking + page view (fail-silent, self-hosted in Supabase)
 initTelemetry()
@@ -35,6 +36,7 @@ let familyTiers = null      // family subscription_tiers, for pricing in the NDI
 let letterhead = {}         // practitioner letterhead details, persisted per device
 let activeDoc = 'plan'      // which document is shown in the Support Plan tab
 let progressSummary = null  // this client's progress summary row (practitioner_progress_summaries)
+let recentCompletions = []  // latest module completions across the caseload (Overview feed)
 
 const SUPPORT_EMAIL = 'info@danielsdiaries.com'
 const INACTIVE_DAYS = 14
@@ -221,6 +223,22 @@ async function unlinkClient(childId) {
     .eq('practitioner_user_id', currentUser.id)
     .eq('child_id', childId)
   if (error) throw error
+}
+
+// Latest completions across the whole caseload, for the Overview feed.
+// Practitioner read access to child_modules comes from the caseload RLS.
+async function getRecentCompletions(childIds) {
+  if (!childIds.length) return []
+  const { data, error } = await supabase
+    .from('child_modules')
+    .select('child_id, completed_at, is_completed, modules(title, category)')
+    .in('child_id', childIds)
+    .eq('is_completed', true)
+    .not('completed_at', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(15)
+  if (error) throw error
+  return data || []
 }
 
 async function getClientModules(childId) {
@@ -448,6 +466,15 @@ async function init() {
     renderPlanNotice()
     renderCaseload()
     loadLetterhead()
+
+    // Overview feed loads after the caseload is known; never blocks the hub.
+    try {
+      recentCompletions = await getRecentCompletions(clients.map(c => c.child_id))
+    } catch (err) {
+      console.error('Error loading recent activity:', err)
+      recentCompletions = []
+    }
+    renderOverview()
 
     loadingEl.classList.add('hidden')
     mainEl.classList.remove('hidden')
@@ -721,14 +748,77 @@ function showCaseload() {
 // Views & tabs
 // ============================================================
 function setView(view) {
+  document.getElementById('viewOverview').classList.toggle('hidden', view !== 'overview')
   document.getElementById('viewCaseload').classList.toggle('hidden', view !== 'caseload')
   document.getElementById('viewClient').classList.toggle('hidden', view !== 'client')
   document.getElementById('viewResources').classList.toggle('hidden', view !== 'resources')
   document.getElementById('viewPlan').classList.toggle('hidden', view !== 'plan')
   const navView = view === 'client' ? 'caseload' : view
   document.querySelectorAll('.prac-nav-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === navView))
+  if (view === 'overview') renderOverview()
   if (view === 'resources') renderResources()
   if (view === 'plan') renderPlanView()
+}
+
+// ============================================================
+// Render: Overview (the hub's home view)
+// ============================================================
+function renderOverview() {
+  const greetingEl = document.getElementById('overviewGreeting')
+  if (!greetingEl) return
+
+  const firstName = (practitionerProfile?.full_name || '').trim().split(/\s+/)[0]
+  const hour = new Date().getHours()
+  const timeOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  greetingEl.textContent = firstName ? `${timeOfDay}, ${firstName}` : `${timeOfDay}`
+  document.getElementById('overviewSub').textContent = new Date().toLocaleDateString(undefined, {
+    weekday: 'long', day: 'numeric', month: 'long'
+  })
+
+  const stats = computeOverviewStats({ clients, goalProgress, recentCompletions })
+  document.getElementById('ovClients').textContent = stats.activeClients
+  document.getElementById('ovActiveWeek').textContent = stats.activeThisWeek
+  document.getElementById('ovModulesWeek').textContent = stats.modulesThisWeek
+  document.getElementById('ovGoalsDue').textContent = stats.goalsDueSoon
+
+  const clientsNote = document.getElementById('ovClientsNote')
+  if (planUsage?.included_clients) {
+    clientsNote.textContent = `of ${planUsage.included_clients} on your plan`
+  } else {
+    clientsNote.textContent = ''
+  }
+
+  // Needs attention
+  const attentionEl = document.getElementById('ovAttentionList')
+  const attention = computeNeedsAttention({ clients, goalProgress })
+  if (!clients.length) {
+    attentionEl.innerHTML = '<p style="font-size:14px;color:#6b7280;">No clients yet — add your first client to start seeing engagement data here.</p>'
+  } else if (!attention.length) {
+    attentionEl.innerHTML = '<p style="font-size:14px;color:#0d9488;font-weight:600;">All quiet — nothing needs chasing right now.</p>'
+  } else {
+    attentionEl.innerHTML = attention.map(a => `
+      <div class="prac-ov-row" data-child-id="${escapeHtml(a.childId)}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;cursor:pointer;">
+        <span style="font-weight:600;color:#16324f;flex:1;">${escapeHtml(a.childName || 'Client')}</span>
+        ${a.reasons.map(r => `<span style="background:#FEF3C7;color:#92400E;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;">${escapeHtml(r)}</span>`).join('')}
+      </div>`).join('')
+    attentionEl.querySelectorAll('.prac-ov-row').forEach(row => {
+      row.addEventListener('click', () => openClient(row.dataset.childId))
+    })
+  }
+
+  // Recent activity
+  const feedEl = document.getElementById('ovActivityFeed')
+  if (!recentCompletions.length) {
+    feedEl.innerHTML = '<p style="font-size:14px;color:#6b7280;">No module completions yet. Once your clients start working through the program, their latest wins show up here.</p>'
+  } else {
+    const nameById = Object.fromEntries(clients.map(c => [c.child_id, c.child_name]))
+    feedEl.innerHTML = recentCompletions.slice(0, 8).map(cm => `
+      <div style="display:flex;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid #f1f5f9;">
+        <span style="font-weight:600;color:#16324f;white-space:nowrap;">${escapeHtml(nameById[cm.child_id] || 'Client')}</span>
+        <span style="font-size:13px;color:#475569;flex:1;">completed <strong>${escapeHtml(cm.modules?.title || 'a module')}</strong></span>
+        <span style="font-size:12px;color:#94a3b8;white-space:nowrap;">${escapeHtml(relativeDayLabel(cm.completed_at))}</span>
+      </div>`).join('')
+  }
 }
 
 function setTab(name) {
@@ -2029,6 +2119,17 @@ function setupEventListeners() {
   document.querySelectorAll('.prac-tab').forEach(t => {
     t.addEventListener('click', () => setTab(t.dataset.tab))
   })
+
+  // Overview quick actions
+  document.getElementById('overviewAddClientBtn')?.addEventListener('click', openAddClientModal)
+  document.getElementById('qaInviteFamily')?.addEventListener('click', () => {
+    openAddClientModal()
+    setAddClientMode('invite')
+  })
+  document.getElementById('qaExploreApp')?.addEventListener('click', () => {
+    window.location.href = '/landing.html'
+  })
+  document.getElementById('qaResources')?.addEventListener('click', () => setView('resources'))
 
   // Add client modal
   document.getElementById('addClientBtn').addEventListener('click', openAddClientModal)

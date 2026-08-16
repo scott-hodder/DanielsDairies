@@ -19,6 +19,33 @@
 
 const slugOf = (sk) => sk.slug || (sk.name || '').toLowerCase().replace(/\s+/g, '-')
 
+// Practitioners see the whole map: every skill is open so they can tour the
+// program without completing modules. The flag is stamped into sessionStorage
+// at login (loginPage) and when the dashboard resolves practitioner status
+// (dashboardPage), so this stays a synchronous read.
+const PRACTITIONER_SESSION_KEY = 'dd_is_practitioner'
+
+export function isPractitionerSession() {
+  try {
+    return sessionStorage.getItem(PRACTITIONER_SESSION_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Pure transform: open every skill for practitioner accounts.
+ * Completed skills keep their state; everything else becomes reachable.
+ */
+export function applyPractitionerOverride(gate) {
+  if (!gate) return gate
+  const bySlug = {}
+  Object.entries(gate.bySlug).forEach(([slug, p]) => {
+    bySlug[slug] = { ...p, state: p.state === 'completed' ? 'completed' : 'active' }
+  })
+  return { ...gate, bySlug }
+}
+
 /**
  * Pure state computation.
  * @param {Array} skills - super_skills rows ({ id, slug, name, sort_order, is_active })
@@ -92,7 +119,8 @@ export function getSkillGate() {
   const modules = window.modules || window.state?.modules
   const childModules = window.childModules || window.state?.childModules
   if (!Array.isArray(skills) || skills.length === 0) return null
-  return computeSkillStates(skills, modules, childModules)
+  const gate = computeSkillStates(skills, modules, childModules)
+  return isPractitionerSession() ? applyPractitionerOverride(gate) : gate
 }
 
 export function isSlugLocked(slug, gate = undefined) {

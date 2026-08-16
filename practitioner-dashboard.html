@@ -34,7 +34,8 @@
     <div class="header-right">
       <nav class="prac-nav">
         <button class="prac-nav-btn" id="backToDashboardBtn">Dashboard</button>
-        <button class="prac-nav-btn active" data-view="caseload">Caseload</button>
+        <button class="prac-nav-btn active" data-view="overview">Overview</button>
+        <button class="prac-nav-btn" data-view="caseload">Caseload</button>
         <button class="prac-nav-btn" data-view="resources">Resources</button>
         <button class="prac-nav-btn" data-view="plan">Plan &amp; Billing</button>
       </nav>
@@ -79,8 +80,73 @@
     <!-- Trial / plan notice -->
     <div class="prac-plan-notice hidden" id="planNotice"></div>
 
+    <!-- ===== OVERVIEW VIEW ===== -->
+    <div id="viewOverview">
+      <div class="prac-page-head">
+        <div>
+          <h2 id="overviewGreeting">Welcome back</h2>
+          <p id="overviewSub">Here's how your caseload is going.</p>
+        </div>
+        <button class="prac-btn prac-btn-primary" id="overviewAddClientBtn">+ Add Client</button>
+      </div>
+
+      <div class="prac-stat-strip" id="overviewStatStrip">
+        <div class="prac-stat">
+          <div class="prac-stat-label">Active Clients</div>
+          <div class="prac-stat-value" id="ovClients">0</div>
+          <div class="prac-stat-note" id="ovClientsNote"></div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Active This Week</div>
+          <div class="prac-stat-value" id="ovActiveWeek">0</div>
+          <div class="prac-stat-note">Children who used the app</div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Modules This Week</div>
+          <div class="prac-stat-value" id="ovModulesWeek">0</div>
+          <div class="prac-stat-note">Completed across your caseload</div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Goal Reviews Due</div>
+          <div class="prac-stat-value" id="ovGoalsDue">0</div>
+          <div class="prac-stat-note">Due within 7 days</div>
+        </div>
+      </div>
+
+      <div class="prac-panel-split">
+        <div class="prac-panel">
+          <h3>Needs your attention</h3>
+          <p class="prac-panel-desc">Clients who've gone quiet or have a goal review due.</p>
+          <div id="ovAttentionList"></div>
+        </div>
+        <div class="prac-panel">
+          <h3>Recent activity</h3>
+          <p class="prac-panel-desc">Latest module completions across your caseload.</p>
+          <div id="ovActivityFeed"></div>
+        </div>
+      </div>
+
+      <div class="prac-section-head" style="margin-top:24px;">
+        <h3>Quick actions</h3>
+      </div>
+      <div class="prac-stat-strip" id="ovQuickActions">
+        <button class="prac-stat prac-quick-action" id="qaInviteFamily" style="cursor:pointer;text-align:left;border:none;font-family:inherit;">
+          <div class="prac-stat-label">Invite a family</div>
+          <div class="prac-stat-note">Send a private code that links their child to your caseload</div>
+        </button>
+        <button class="prac-stat prac-quick-action" id="qaExploreApp" style="cursor:pointer;text-align:left;border:none;font-family:inherit;">
+          <div class="prac-stat-label">Explore the program</div>
+          <div class="prac-stat-note">Tour the adventure map and modules — every Super Skill is unlocked for you</div>
+        </button>
+        <button class="prac-stat prac-quick-action" id="qaResources" style="cursor:pointer;text-align:left;border:none;font-family:inherit;">
+          <div class="prac-stat-label">Browse resources</div>
+          <div class="prac-stat-note">Explainer workbooks and guides for your practice</div>
+        </button>
+      </div>
+    </div>
+
     <!-- ===== CASELOAD VIEW ===== -->
-    <div id="viewCaseload">
+    <div id="viewCaseload" class="hidden">
       <div class="prac-page-head">
         <div>
           <h2>Your Caseload</h2>

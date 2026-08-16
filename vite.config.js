@@ -102,6 +102,7 @@ export default defineConfig(({ mode }) => ({
         schoolsLogin: resolve(__dirname, 'schools-login.html'),
         schoolsDashboard: resolve(__dirname, 'schools-dashboard.html'),
         practitionerDashboard: resolve(__dirname, 'practitioner-dashboard.html'),
+        practitionerSignup: resolve(__dirname, 'practitioner-signup.html'),
         familyLibrary: resolve(__dirname, 'family-library.html')
       }
     }

@@ -814,6 +814,20 @@ async function init() {
 
       // Show Schools Program button for admins and practitioners (only if feature flag is on)
       const isPractitioner = practitionerResult.status === 'fulfilled' && practitionerResult.value
+
+      // Stamp practitioner status for the super-skill gate (practitioners see
+      // the whole adventure map unlocked) and re-render the map if it painted
+      // with locks before this resolved.
+      try {
+        const prev = sessionStorage.getItem('dd_is_practitioner')
+        sessionStorage.setItem('dd_is_practitioner', isPractitioner ? '1' : '0')
+        if (isPractitioner && prev !== '1') {
+          // The map may have painted with locks before this resolved.
+          if (typeof window.initBrainTown === 'function') window.initBrainTown()
+          const map = window.enhancedDashboard?.adventureMap
+          if (map && typeof map.render === 'function') map.render()
+        }
+      } catch { /* private mode */ }
       if (state.isCurrentUserAdmin || isPractitioner) {
         getSettings().then(settings => {
           if (settings?.feature_flags?.schools_program_enabled) {
