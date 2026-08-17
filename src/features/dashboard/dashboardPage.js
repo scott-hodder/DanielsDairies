@@ -1774,8 +1774,11 @@ async function selectChild(child) {
           const dayStreakEl = document.getElementById('dayStreak')
           if (dayStreakEl) dayStreakEl.textContent = streakData.current_streak ?? 0
 
-          // Queue popups to show AFTER loading screen is fully hidden
+          // Queue popups to show AFTER loading screen is fully hidden.
+          // Practitioners touring a dashboard (their demo child or a client)
+          // are not the child — no streak or welcome-back celebrations.
           const showAfterLoad = () => {
+            if (isPractitionerSession()) return
             // Show streak popup for day 1+ (encourage from the very start)
             if (streakData.current_streak >= 1 && !hasStreakPopupBeenShownToday(child.id)) {
               markStreakPopupAsShown(child.id)
@@ -1812,7 +1815,10 @@ async function selectChild(child) {
       }
     })
 
-    if (!state.currentFocusPlan) {
+    // The "What matters most?" focus-plan onboarding is a parent decision —
+    // practitioners viewing a dashboard skip it (the map fails open without
+    // a plan and every Super Skill is unlocked for them anyway).
+    if (!state.currentFocusPlan && !isPractitionerSession()) {
       // No active focus plan - show onboarding
       showFocusPlanOnboarding(child.id, async (plan, superSkillOrPathway) => {
         setCurrentFocusPlan(plan)
