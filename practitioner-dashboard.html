@@ -89,6 +89,27 @@
         <button class="prac-btn prac-btn-primary" id="overviewAddClientBtn">+ Add Client</button>
       </div>
 
+      <!-- Empty caseload: getting-started guide -->
+      <div id="ovEmptyState" class="prac-panel hidden" style="margin-bottom:24px;">
+        <h3 style="margin-bottom:6px;">👋 Invite your clients to begin</h3>
+        <p class="prac-panel-desc">Your caseload is empty right now. Here's how it works:</p>
+        <div style="display:grid;gap:14px;margin:18px 0 20px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;">1</span>
+            <p style="margin:2px 0 0;font-size:14px;color:#334155;"><strong>Invite a family.</strong> Click the button below to create a private invite code and share it with the family (or search for a family already using Daniel's Diaries).</p>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;">2</span>
+            <p style="margin:2px 0 0;font-size:14px;color:#334155;"><strong>They join with your code.</strong> The family signs up (or logs in) with it, and their child is linked to your caseload automatically.</p>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;">3</span>
+            <p style="margin:2px 0 0;font-size:14px;color:#334155;"><strong>Support them from here.</strong> As the child plays and learns, you'll see their engagement data, set goals that track automatically, keep session notes, and share progress summaries with the family.</p>
+          </div>
+        </div>
+        <button class="prac-btn prac-btn-primary" id="ovEmptyInviteBtn">+ Invite your first client</button>
+      </div>
+
       <div class="prac-stat-strip" id="overviewStatStrip">
         <div class="prac-stat">
           <div class="prac-stat-label">Active Clients</div>
@@ -112,7 +133,7 @@
         </div>
       </div>
 
-      <div class="prac-panel-split">
+      <div class="prac-panel-split" id="ovPanels">
         <div class="prac-panel">
           <h3>Needs your attention</h3>
           <p class="prac-panel-desc">Clients who've gone quiet or have a goal review due.</p>

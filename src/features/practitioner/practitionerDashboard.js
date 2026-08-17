@@ -781,6 +781,13 @@ function renderOverview() {
     weekday: 'long', day: 'numeric', month: 'long'
   })
 
+  // Empty caseload: swap the zero-filled stats for a getting-started guide.
+  const isEmpty = !clients.length
+  document.getElementById('ovEmptyState')?.classList.toggle('hidden', !isEmpty)
+  document.getElementById('overviewStatStrip')?.classList.toggle('hidden', isEmpty)
+  document.getElementById('ovPanels')?.classList.toggle('hidden', isEmpty)
+  if (isEmpty) return
+
   const stats = computeOverviewStats({ clients, goalProgress, recentCompletions })
   document.getElementById('ovClients').textContent = stats.activeClients
   document.getElementById('ovActiveWeek').textContent = stats.activeThisWeek
@@ -2125,6 +2132,10 @@ function setupEventListeners() {
 
   // Overview quick actions
   document.getElementById('overviewAddClientBtn')?.addEventListener('click', openAddClientModal)
+  document.getElementById('ovEmptyInviteBtn')?.addEventListener('click', () => {
+    openAddClientModal()
+    setAddClientMode('invite')
+  })
   document.getElementById('qaInviteFamily')?.addEventListener('click', () => {
     openAddClientModal()
     setAddClientMode('invite')
