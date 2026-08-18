@@ -13,6 +13,8 @@ let usersFilterStatus = 'all'; // 'all', 'active', 'inactive'
 // ================================================================================
 window._adminLoadUsersData = async function loadUsersData() {
     try {
+        // Practitioner invites panel loads alongside the users table
+        window._adminLoadPracInvites?.();
         // Load children with their parent info and subscription status
         const { data: children, error: childrenError } = await supabase
             .from('children')
@@ -425,6 +427,110 @@ window._adminExportUsersCsv = function() {
     link.href = URL.createObjectURL(blob);
     link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+};
+
+// ================================================================================
+// PRACTITIONER ACCOUNT INVITES
+// Managed through the invite-practitioner edge function (admin-gated
+// server-side); the invite link creates a practitioner account directly.
+// ================================================================================
+function pracInviteFeedback(message, isError = false) {
+    const el = document.getElementById('pracInviteFeedback');
+    if (!el) return;
+    el.textContent = message;
+    el.style.color = isError ? '#C62828' : '#0d9488';
+}
+
+async function invokePracInvite(body) {
+    const { data, error } = await supabase.functions.invoke('invite-practitioner', { body });
+    if (error) {
+        let detail = null;
+        try { detail = await error.context?.json(); } catch { /* not json */ }
+        throw new Error(detail?.error || error.message || 'Request failed');
+    }
+    return data;
+}
+
+window._adminLoadPracInvites = async function() {
+    const listEl = document.getElementById('pracInviteList');
+    if (!listEl) return;
+    try {
+        const { invites } = await invokePracInvite({ action: 'list' });
+        if (!invites?.length) {
+            listEl.innerHTML = '<p style="color:#6b7c8f;">No practitioner invites yet.</p>';
+            return;
+        }
+        const statusBadge = (status) => {
+            const colors = {
+                pending: 'background:#FEF3C7;color:#92400E;',
+                accepted: 'background:#D1FAE5;color:#065F46;',
+                revoked: 'background:#FEE2E2;color:#991B1B;',
+                expired: 'background:#E2E8F0;color:#475569;'
+            };
+            return `<span style="${colors[status] || colors.expired}padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;">${escapeHtml(status)}</span>`;
+        };
+        listEl.innerHTML = `
+            <div style="border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;">
+                ${invites.map(inv => `
+                    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #F1F5F9;flex-wrap:wrap;">
+                        <span style="font-weight:600;color:#1e3a5f;flex:1;min-width:180px;">${escapeHtml(inv.email)}</span>
+                        ${statusBadge(inv.status)}
+                        <span style="color:#94a3b8;font-size:12px;">${new Date(inv.created_at).toLocaleDateString()}</span>
+                        ${inv.link ? `<button class="btn" style="background:#E2E8F0;color:#1e3a5f;padding:6px 12px;font-size:12px;font-weight:600;" onclick="_adminCopyPracInvite('${escapeHtml(inv.link)}')">Copy link</button>` : ''}
+                        ${inv.status === 'pending' ? `<button class="btn" style="background:#FEE2E2;color:#991B1B;padding:6px 12px;font-size:12px;font-weight:600;" onclick="_adminRevokePracInvite('${escapeHtml(inv.id)}')">Revoke</button>` : ''}
+                    </div>
+                `).join('')}
+            </div>`;
+    } catch (error) {
+        console.error('Error loading practitioner invites:', error);
+        listEl.innerHTML = `<p style="color:#C62828;">Could not load invites: ${escapeHtml(error.message)}</p>`;
+    }
+};
+
+window._adminSendPracInvite = async function() {
+    const input = document.getElementById('pracInviteEmail');
+    const button = document.getElementById('pracInviteSendBtn');
+    const email = (input?.value || '').trim();
+    if (!email) { pracInviteFeedback('Enter the practitioner\'s email address first.', true); return; }
+    try {
+        if (button) { button.disabled = true; button.textContent = 'Sending...'; }
+        const result = await invokePracInvite({ action: 'create', email });
+        if (result.emailSent) {
+            pracInviteFeedback(`Invite ${result.reused ? 're-sent' : 'sent'} to ${email}.`);
+        } else if (result.alreadyRegistered) {
+            pracInviteFeedback(`${email} already has an account, so no email was sent. Use Copy link to share the invite — their practitioner access activates when they open it or next log in.`, true);
+        } else {
+            pracInviteFeedback(`Invite created but the email could not be sent — use Copy link to share it with ${email} yourself.`, true);
+        }
+        if (input) input.value = '';
+        window._adminLoadPracInvites();
+    } catch (error) {
+        console.error('Error sending practitioner invite:', error);
+        pracInviteFeedback('Could not send invite: ' + error.message, true);
+    } finally {
+        if (button) { button.disabled = false; button.textContent = 'Send Invite'; }
+    }
+};
+
+window._adminCopyPracInvite = async function(link) {
+    try {
+        await navigator.clipboard.writeText(link);
+        pracInviteFeedback('Invite link copied to clipboard.');
+    } catch {
+        pracInviteFeedback(link, false);
+    }
+};
+
+window._adminRevokePracInvite = async function(inviteId) {
+    if (!confirm('Revoke this invite? The signup link will stop working.')) return;
+    try {
+        await invokePracInvite({ action: 'revoke', inviteId });
+        pracInviteFeedback('Invite revoked.');
+        window._adminLoadPracInvites();
+    } catch (error) {
+        console.error('Error revoking practitioner invite:', error);
+        pracInviteFeedback('Could not revoke invite: ' + error.message, true);
+    }
 };
 
 // ================================================================================

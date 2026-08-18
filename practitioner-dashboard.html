@@ -33,10 +33,10 @@
     </div>
     <div class="header-right">
       <nav class="prac-nav">
-        <button class="prac-nav-btn" id="backToDashboardBtn">Dashboard</button>
-        <button class="prac-nav-btn active" data-view="caseload">Caseload</button>
+        <button class="prac-nav-btn active" data-view="overview">Overview</button>
+        <button class="prac-nav-btn" data-view="caseload">Caseload</button>
         <button class="prac-nav-btn" data-view="resources">Resources</button>
-        <button class="prac-nav-btn" data-view="plan">Plan &amp; Billing</button>
+        <a href="/landing.html" id="viewChildDashboardLink" style="align-self:center;font-size:13px;color:#e0f2f1;text-decoration:underline;white-space:nowrap;margin-left:8px;">View Child's Dashboard</a>
       </nav>
     </div>
   </div>
@@ -79,8 +79,94 @@
     <!-- Trial / plan notice -->
     <div class="prac-plan-notice hidden" id="planNotice"></div>
 
+    <!-- ===== OVERVIEW VIEW ===== -->
+    <div id="viewOverview">
+      <div class="prac-page-head">
+        <div>
+          <h2 id="overviewGreeting">Welcome back</h2>
+          <p id="overviewSub">Here's how your caseload is going.</p>
+        </div>
+        <button class="prac-btn prac-btn-primary" id="overviewAddClientBtn">+ Add Client</button>
+      </div>
+
+      <!-- Empty caseload: getting-started guide -->
+      <div id="ovEmptyState" class="prac-panel hidden" style="margin-bottom:24px;">
+        <h3 style="margin-bottom:6px;">👋 Invite your clients to begin</h3>
+        <p class="prac-panel-desc">Your caseload is empty right now. Here's how it works:</p>
+        <div style="display:grid;gap:14px;margin:18px 0 20px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;">1</span>
+            <p style="margin:2px 0 0;font-size:14px;color:#334155;"><strong>Invite a family.</strong> Click the button below to create a private invite code and share it with the family (or search for a family already using Daniel's Diaries).</p>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;">2</span>
+            <p style="margin:2px 0 0;font-size:14px;color:#334155;"><strong>They join with your code.</strong> The family signs up (or logs in) with it, and their child is linked to your caseload automatically.</p>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;">3</span>
+            <p style="margin:2px 0 0;font-size:14px;color:#334155;"><strong>Support them from here.</strong> As the child plays and learns, you'll see their engagement data, set goals that track automatically, keep session notes, and share progress summaries with the family.</p>
+          </div>
+        </div>
+        <button class="prac-btn prac-btn-primary" id="ovEmptyInviteBtn">+ Invite your first client</button>
+      </div>
+
+      <div class="prac-stat-strip" id="overviewStatStrip">
+        <div class="prac-stat">
+          <div class="prac-stat-label">Active Clients</div>
+          <div class="prac-stat-value" id="ovClients">0</div>
+          <div class="prac-stat-note" id="ovClientsNote"></div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Active This Week</div>
+          <div class="prac-stat-value" id="ovActiveWeek">0</div>
+          <div class="prac-stat-note">Children who used the app</div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Modules This Week</div>
+          <div class="prac-stat-value" id="ovModulesWeek">0</div>
+          <div class="prac-stat-note">Completed across your caseload</div>
+        </div>
+        <div class="prac-stat">
+          <div class="prac-stat-label">Goal Reviews Due</div>
+          <div class="prac-stat-value" id="ovGoalsDue">0</div>
+          <div class="prac-stat-note">Due within 7 days</div>
+        </div>
+      </div>
+
+      <div class="prac-panel-split" id="ovPanels">
+        <div class="prac-panel">
+          <h3>Needs your attention</h3>
+          <p class="prac-panel-desc">Clients who've gone quiet or have a goal review due.</p>
+          <div id="ovAttentionList"></div>
+        </div>
+        <div class="prac-panel">
+          <h3>Recent activity</h3>
+          <p class="prac-panel-desc">Latest module completions across your caseload.</p>
+          <div id="ovActivityFeed"></div>
+        </div>
+      </div>
+
+      <div class="prac-section-head" style="margin-top:24px;">
+        <h3>Quick actions</h3>
+      </div>
+      <div class="prac-stat-strip" id="ovQuickActions">
+        <button class="prac-stat prac-quick-action" id="qaInviteFamily" style="cursor:pointer;text-align:left;border:none;font-family:inherit;">
+          <div class="prac-stat-label">Invite a family</div>
+          <div class="prac-stat-note">Send a private code that links their child to your caseload</div>
+        </button>
+        <button class="prac-stat prac-quick-action" id="qaExploreApp" style="cursor:pointer;text-align:left;border:none;font-family:inherit;">
+          <div class="prac-stat-label">Explore the program</div>
+          <div class="prac-stat-note">Tour the adventure map and modules — every Super Skill is unlocked for you</div>
+        </button>
+        <button class="prac-stat prac-quick-action" id="qaResources" style="cursor:pointer;text-align:left;border:none;font-family:inherit;">
+          <div class="prac-stat-label">Browse resources</div>
+          <div class="prac-stat-note">Explainer workbooks and guides for your practice</div>
+        </button>
+      </div>
+    </div>
+
     <!-- ===== CASELOAD VIEW ===== -->
-    <div id="viewCaseload">
+    <div id="viewCaseload" class="hidden">
       <div class="prac-page-head">
         <div>
           <h2>Your Caseload</h2>
@@ -129,6 +215,7 @@
           <p class="prac-ws-sub" id="wsSub"></p>
         </div>
         <div class="prac-ws-actions">
+          <button class="prac-btn prac-btn-primary prac-btn-sm" id="viewClientDashboardBtn">View Their Dashboard</button>
           <button class="prac-btn prac-btn-danger prac-btn-sm" id="removeClientBtn">Remove Client</button>
         </div>
       </div>

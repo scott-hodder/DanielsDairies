@@ -67,7 +67,7 @@ import {
   CATEGORY_TO_SUPERSKILL, MAP_ZONE_PROGRESSION, DANIEL_EXPRESSIONS
 } from './adventure-map-themes.js';
 import { injectAdventureMapStyles } from './adventure-map-styles.js';
-import { getSkillGate, getUnlockRequirement } from './features/dashboard/superSkillGate.js';
+import { getSkillGate, getUnlockRequirement, isPractitionerSession } from './features/dashboard/superSkillGate.js';
 
 // Super Skills data loaded from database (will be populated on init)
 let superSkillsFromDB = [];
@@ -402,7 +402,8 @@ export class AdventureMapV4 {
       this.allModules = sorted.map(function(m, index) {
         var childModule = childMods.find(function(cm) { return cm.module_id === m.id; }) || null;
         var completed = !!(childModule && childModule.is_completed);
-        var isLocked = childModule ? childModule.locked !== false : true;
+        // Practitioner accounts tour the whole program: nothing is credit-locked.
+        var isLocked = isPractitionerSession() ? false : (childModule ? childModule.locked !== false : true);
         var status = completed ? 'completed' : (isLocked ? 'locked' : 'available');
         var seriesName = (m.series && m.series.label) || m.series_name || m.series || '';
         

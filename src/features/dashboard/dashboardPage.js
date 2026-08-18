@@ -29,6 +29,49 @@ import { initFamilyGoldTab, isGoldTier } from './familyGoldDashboard.js'
 import { startModule } from './dashboardCheckinInterception.js'
 import { setupDanielMoodCheckin, refreshMoodCheckinState, updateMoodHeroText } from './dashboardMoodCheckin.js'
 import { getCurrencyFormatter } from './dashboardProfileHub.js'
+import { isPractitionerSession } from './superSkillGate.js'
+
+// Practitioner "view as client" mode: a practitioner opens a caseload child's
+// dashboard read-only via /dashboard.html?childId=X&pracView=1. Reads work
+// through the practitioner RLS policies; write paths are skipped.
+const isPracView = new URLSearchParams(window.location.search).get('pracView') === '1'
+
+// Practitioners see every module unlocked — no per-child credit locks.
+function moduleLockedForChild(lockMap, moduleId) {
+  if (isPractitionerSession()) return false
+  return lockMap.get(moduleId) !== false
+}
+
+// Floating panel (bottom-right, follows scroll) shown while a practitioner
+// is viewing a client's dashboard, with a one-click way back to the hub.
+function showPractitionerViewBanner(child) {
+  if (document.getElementById('pracViewPanel')) return
+  const panel = document.createElement('div')
+  panel.id = 'pracViewPanel'
+  panel.style.cssText = [
+    'position:fixed', 'bottom:18px', 'right:18px', 'z-index:12000',
+    'background:linear-gradient(135deg,#0d9488,#14b8a6)', 'color:#fff',
+    'border-radius:16px', 'padding:14px 16px', 'max-width:280px',
+    'box-shadow:0 10px 30px rgba(13,148,136,.45)',
+    "font-family:'Fredoka',sans-serif"
+  ].join(';')
+
+  const title = document.createElement('div')
+  title.style.cssText = 'font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;'
+  title.textContent = `👁 Viewing as ${child.name || 'this child'}`
+
+  const sub = document.createElement('div')
+  sub.style.cssText = 'font-size:12px;opacity:.9;margin:4px 0 10px;line-height:1.4;'
+  sub.textContent = "Practitioner view — you're seeing this client's dashboard. Changes aren't saved."
+
+  const back = document.createElement('a')
+  back.href = '/practitioner-dashboard.html'
+  back.textContent = '← Back to Practitioner Hub'
+  back.style.cssText = 'display:block;text-align:center;background:#fff;color:#0d9488;font-size:13px;font-weight:700;padding:9px 12px;border-radius:10px;text-decoration:none;'
+
+  panel.append(title, sub, back)
+  document.body.appendChild(panel)
+}
 import { showToast } from '../../ui/toast.js'
 
 let currentCreditSummary = null
@@ -247,7 +290,7 @@ function getNextUnlockableModule(referenceModule = null) {
     childModuleLockMap.set(cm.module_id, cm.locked !== false)
   })
 
-  return orderedModules.find((module) => childModuleLockMap.get(module.id) !== false) || null
+  return orderedModules.find((module) => moduleLockedForChild(childModuleLockMap, module.id)) || null
 }
 
 function isModuleNextUnlockable(module) {
@@ -670,7 +713,8 @@ async function init() {
     initPushNotifications()
 
     // Link this family to a practitioner if they arrived with an invite code
-    redeemPendingPractitionerInvite()
+    // (not when a practitioner is only viewing a client's dashboard)
+    if (!isPracView) redeemPendingPractitionerInvite()
 
     if (state.currentUser && state.currentUser.email) {
       headerSubtitle.textContent = `Welcome back, ${state.currentUser.email}!`
@@ -814,6 +858,20 @@ async function init() {
 
       // Show Schools Program button for admins and practitioners (only if feature flag is on)
       const isPractitioner = practitionerResult.status === 'fulfilled' && practitionerResult.value
+
+      // Stamp practitioner status for the super-skill gate (practitioners see
+      // the whole adventure map unlocked) and re-render the map if it painted
+      // with locks before this resolved.
+      try {
+        const prev = sessionStorage.getItem('dd_is_practitioner')
+        sessionStorage.setItem('dd_is_practitioner', isPractitioner ? '1' : '0')
+        if (isPractitioner && prev !== '1') {
+          // The map may have painted with locks before this resolved.
+          if (typeof window.initBrainTown === 'function') window.initBrainTown()
+          const map = window.enhancedDashboard?.adventureMap
+          if (map && typeof map.render === 'function') map.render()
+        }
+      } catch { /* private mode */ }
       if (state.isCurrentUserAdmin || isPractitioner) {
         getSettings().then(settings => {
           if (settings?.feature_flags?.schools_program_enabled) {
@@ -847,12 +905,29 @@ async function init() {
         // Skip password check when returning from module (already authenticated)
         // selectChild now waits for the map to render before hiding the loading screen
         await selectChild(childFromUrl)
-        
+
         // Switch to specific tab if requested
         if (tabFromUrl) {
           showTab(tabFromUrl)
         }
-        
+
+        clearTimeout(loadingTimeout)
+        return
+      }
+    }
+
+    // Practitioner viewing a caseload child: the child isn't in this user's
+    // own list, but the practitioner RLS read policy lets us fetch it by id.
+    if (childIdFromUrl && isPracView && isPractitionerSession()) {
+      const { data: clientChild } = await supabase
+        .from('children')
+        .select('*')
+        .eq('id', childIdFromUrl)
+        .maybeSingle()
+      if (clientChild) {
+        showPractitionerViewBanner(clientChild)
+        await selectChild(clientChild)
+        if (tabFromUrl) showTab(tabFromUrl)
         clearTimeout(loadingTimeout)
         return
       }
@@ -1002,6 +1077,14 @@ function getNextCreditRefreshDateLabel() {
 
 function updateCreditWalletBadge() {
   if (!creditWalletValue) return
+  // Practitioners never buy credits — everything is already unlocked for
+  // them, so the wallet and buy prompts are hidden entirely.
+  if (isPractitionerSession()) {
+    if (creditWalletBadge) hideElement(creditWalletBadge)
+    const pracBuyBtn = document.getElementById('buyCreditsBtn')
+    if (pracBuyBtn) pracBuyBtn.style.display = 'none'
+    return
+  }
   const creditsAvailable = currentCreditSummary?.credits_available ?? 0
   creditWalletValue.textContent = String(creditsAvailable)
   if (creditWalletBadge) {
@@ -1679,7 +1762,7 @@ async function selectChild(child) {
     // DEFERRED - weekly plan, streak, and leaderboard data load in background
     Promise.allSettled([
       loadLatestWeeklyPlanData(child.id),
-      state.currentUser ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('No parent user')
+      (state.currentUser && !isPracView) ? updateLoginStreak(state.currentUser.id, child.id) : Promise.reject('Streak not recorded (practitioner view or no user)')
     ]).then(([weeklyPlanResult, streakResult]) => {
       if (weeklyPlanResult.status === 'fulfilled') {
         setCurrentWeeklyPlan(weeklyPlanResult.value)
@@ -1691,8 +1774,11 @@ async function selectChild(child) {
           const dayStreakEl = document.getElementById('dayStreak')
           if (dayStreakEl) dayStreakEl.textContent = streakData.current_streak ?? 0
 
-          // Queue popups to show AFTER loading screen is fully hidden
+          // Queue popups to show AFTER loading screen is fully hidden.
+          // Practitioners touring a dashboard (their demo child or a client)
+          // are not the child — no streak or welcome-back celebrations.
           const showAfterLoad = () => {
+            if (isPractitionerSession()) return
             // Show streak popup for day 1+ (encourage from the very start)
             if (streakData.current_streak >= 1 && !hasStreakPopupBeenShownToday(child.id)) {
               markStreakPopupAsShown(child.id)
@@ -1729,7 +1815,10 @@ async function selectChild(child) {
       }
     })
 
-    if (!state.currentFocusPlan) {
+    // The "What matters most?" focus-plan onboarding is a parent decision —
+    // practitioners viewing a dashboard skip it (the map fails open without
+    // a plan and every Super Skill is unlocked for them anyway).
+    if (!state.currentFocusPlan && !isPractitionerSession()) {
       // No active focus plan - show onboarding
       showFocusPlanOnboarding(child.id, async (plan, superSkillOrPathway) => {
         setCurrentFocusPlan(plan)
@@ -2356,8 +2445,8 @@ function renderModules() {
     return
   }
 
-  const unlockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) === false)
-  const lockedModules = visibleModules.filter((module) => childModuleLockMap.get(module.id) !== false)
+  const unlockedModules = visibleModules.filter((module) => !moduleLockedForChild(childModuleLockMap, module.id))
+  const lockedModules = visibleModules.filter((module) => moduleLockedForChild(childModuleLockMap, module.id))
 
   // Separate completed and incomplete modules for modules the family has unlocked
   const incompleteModules = unlockedModules.filter(module => {

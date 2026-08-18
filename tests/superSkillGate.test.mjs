@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { computeSkillStates, getUnlockRequirement } from '../src/features/dashboard/superSkillGate.js'
+import { computeSkillStates, getUnlockRequirement, applyPractitionerOverride } from '../src/features/dashboard/superSkillGate.js'
 
 const skills = [
   { id: 'bb', slug: 'brain-builder', name: 'Brain Builder', sort_order: 10, is_active: true },
@@ -87,4 +87,19 @@ test('legacy category matching links modules without super_skill_id', () => {
   const legacyModules = [{ id: 'm9', category: 'Brain Builder' }]
   const g = computeSkillStates(skills, legacyModules, [])
   assert.equal(g.bySlug['brain-builder'].total, 1)
+})
+
+test('practitioner override opens every non-completed skill', () => {
+  const childModules = [
+    { module_id: 'm1', is_completed: true },
+    { module_id: 'm2', is_completed: true }
+  ]
+  const g = applyPractitionerOverride(computeSkillStates(skills, modules, childModules))
+  assert.equal(g.bySlug['brain-builder'].state, 'completed')
+  assert.equal(g.bySlug['thought-driver'].state, 'active')
+  assert.equal(g.bySlug['emotion-navigator'].state, 'active')
+})
+
+test('practitioner override passes null through (fail open)', () => {
+  assert.equal(applyPractitionerOverride(null), null)
 })

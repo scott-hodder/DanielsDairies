@@ -1113,6 +1113,22 @@
 
         <!-- Tab Content: Users -->
         <div id="usersTab" class="tab-content">
+            <!-- Practitioner invites -->
+            <div class="rewards-panel" style="max-width: 1400px; margin-bottom: 24px;">
+                <div style="margin-bottom: 16px;">
+                    <h2 class="panel-title" style="margin-bottom: 4px;">🩺 Practitioner Invites</h2>
+                    <p style="color: #6b7c8f; font-size: 13px; margin: 0;">Invite a practitioner by email. They receive a private signup link that creates their account with Practitioner Hub access — no child profile needed.</p>
+                </div>
+                <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <input type="email" id="pracInviteEmail" placeholder="practitioner@clinic.com.au"
+                           style="flex: 1; min-width: 240px; padding: 12px 16px; border: 1.5px solid #E2E8F0; border-radius: 10px; font-size: 14px;">
+                    <button class="btn" id="pracInviteSendBtn" onclick="_adminSendPracInvite()"
+                            style="background: #0d9488; color: white; padding: 12px 20px; font-size: 14px; font-weight: 600;">Send Invite</button>
+                </div>
+                <div id="pracInviteFeedback" style="font-size: 13px; margin-bottom: 12px;"></div>
+                <div id="pracInviteList" style="font-size: 14px;"></div>
+            </div>
+
             <div class="rewards-panel" style="max-width: 1400px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <div>

@@ -20,6 +20,40 @@ const successMessage = document.getElementById('successMessage')
 let isLoginMode = true
 let isRecoverySession = false
 
+// Practitioner account invite token, stashed by practitioner-signup.html (or
+// carried on the email-confirmation redirect) and redeemed after login.
+const PRAC_INVITE_KEY = 'dd_prac_account_invite'
+const PRAC_SESSION_KEY = 'dd_is_practitioner'
+
+// Where to send a signed-in user: practitioners go straight to the hub.
+// Also redeems any pending practitioner invite so an existing family account
+// invited as a practitioner activates on their next login.
+async function resolvePostLoginDestination() {
+  try {
+    const supabase = getSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return '/landing.html'
+
+    // The token can arrive via the signup page (localStorage) or ride along
+    // in user metadata when the invite email was sent by Supabase Auth.
+    const inviteToken = localStorage.getItem(PRAC_INVITE_KEY) || user.user_metadata?.prac_invite_token
+    if (inviteToken) {
+      const { data: redeemed } = await supabase.rpc('redeem_practitioner_account_invite', { p_token: inviteToken })
+      // Clear on success or a dead token; keep it only for transient failures.
+      if (redeemed?.success || redeemed?.reason === 'invalid') {
+        localStorage.removeItem(PRAC_INVITE_KEY)
+      }
+    }
+
+    const { data: isPractitioner } = await supabase.rpc('is_user_practitioner_check', { user_id: user.id })
+    try { sessionStorage.setItem(PRAC_SESSION_KEY, isPractitioner ? '1' : '0') } catch { /* private mode */ }
+    return isPractitioner ? '/practitioner-dashboard.html' : '/landing.html'
+  } catch (err) {
+    console.error('Post-login routing error:', err)
+    return '/landing.html'
+  }
+}
+
 // Initialize
 async function init() {
   if (renderDevSetupMessage('authContainer')) return
@@ -47,15 +81,22 @@ async function init() {
     const session = await checkAuth()
     console.log('Session check:', session ? 'Logged in' : 'Not logged in')
 
+    // A practitioner invite token can arrive on the email-confirmation
+    // redirect; stash it before any routing so login can redeem it.
+    const urlParams = new URLSearchParams(window.location.search)
+    const pracToken = urlParams.get('pracToken')
+    if (pracToken) {
+      localStorage.setItem(PRAC_INVITE_KEY, pracToken)
+    }
+
     if (session && !session.user?.app_metadata?.provider) {
       // Regular session
-      console.log('Redirecting to landing page...')
-      window.location.href = '/landing.html'
+      console.log('Redirecting...')
+      window.location.href = await resolvePostLoginDestination()
       return
     }
 
     // Check if user just confirmed their email
-    const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('confirmed') === 'true') {
       showLoginForm()
       showSuccess('Email confirmed! Please log in.')
@@ -238,11 +279,12 @@ loginForm.addEventListener('submit', async (e) => {
     
     // Show success message
     showSuccess('Login successful! Redirecting...')
-    
-    // Redirect to landing page
+
+    // Practitioners land in the Practitioner Hub, families on the landing page
+    const destination = await resolvePostLoginDestination()
     setTimeout(() => {
-      window.location.href = '/landing.html'
-    }, 1000)
+      window.location.href = destination
+    }, 400)
     
   } catch (error) {
     console.error('Login error:', error)

@@ -264,6 +264,18 @@
                 
                 // If no children, show welcome landing page
                 if (!children || children.length === 0) {
+                    // Practitioners without child profiles belong in the
+                    // Practitioner Hub, not the add-a-child flow.
+                    try {
+                        const { data: isPractitioner } = await supabase.rpc('is_user_practitioner_check', { user_id: currentUser.id })
+                        if (isPractitioner) {
+                            try { sessionStorage.setItem('dd_is_practitioner', '1') } catch { /* private mode */ }
+                            window.location.href = '/practitioner-dashboard.html'
+                            return
+                        }
+                    } catch (err) {
+                        console.error('Practitioner check failed:', err)
+                    }
                     // Show only welcome landing page
                     showElement(welcomeLandingPage, 'flex')
                     hideElement(welcomeSection)
