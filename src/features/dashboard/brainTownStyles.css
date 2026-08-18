@@ -259,20 +259,6 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.ftg-daniel {
-  flex-shrink: 0;
-  width: 118px;
-  align-self: flex-end;
-  animation: deBob 4s ease-in-out infinite;
-}
-
-.ftg-daniel img {
-  width: 100%;
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 6px 10px rgba(22, 50, 79, 0.18));
-}
-
 .ftg-bubble {
   position: relative;
   flex: 1;
@@ -282,21 +268,6 @@
   padding: 16px 20px 14px;
   box-shadow: 0 6px 20px rgba(40, 60, 90, 0.1);
   margin-bottom: 14px;
-}
-
-/* Speech-bubble tail pointing at Daniel */
-.ftg-bubble::before {
-  content: '';
-  position: absolute;
-  left: -11px;
-  bottom: 22px;
-  width: 18px;
-  height: 18px;
-  background: #fff;
-  border-left: 2px solid #f2c94c;
-  border-bottom: 2px solid #f2c94c;
-  border-bottom-left-radius: 5px;
-  transform: rotate(45deg);
 }
 
 .ftg-spark {
@@ -393,9 +364,7 @@
 }
 
 @media (max-width: 640px) {
-  .ftg-daniel { width: 78px; }
   .ftg-bubble { padding: 14px 16px 12px; }
-  .ftg-bubble::before { bottom: 16px; }
   .ftg-title { font-size: 15.5px; }
   .ftg-text { font-size: 13.5px; }
   .ftg-actions { flex-direction: column; }
@@ -403,7 +372,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ftg-card, .ftg-daniel, .ftg-spark, .ftg-arrow { animation: none !important; }
+  .ftg-card, .ftg-spark, .ftg-arrow { animation: none !important; }
   .ftg-wrap { transition: opacity 0.2s ease; }
 }
 

@@ -34,9 +34,6 @@ export function maybeShowFirstTimeGuide(mount, { childId, mapContainer } = {}) {
   mount.innerHTML = `
     <div class="ftg-wrap" id="danielFirstGuide" role="region" aria-label="Daniel's welcome tip">
       <div class="ftg-card">
-        <div class="ftg-daniel">
-          <img src="/images/characters/DanielTheDogThumbsUp.webp" alt="Daniel the Dog waving" />
-        </div>
         <div class="ftg-bubble">
           <span class="ftg-spark ftg-spark1">✦</span>
           <span class="ftg-spark ftg-spark2">✦</span>

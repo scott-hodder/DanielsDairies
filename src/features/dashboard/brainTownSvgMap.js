@@ -22,7 +22,7 @@
 
 import { getSuperSkills } from '../../services/databaseService.js'
 import { KID_FRIENDLY_COPY } from '../../adventure-map-themes.js'
-import { computeSkillStates, getUnlockRequirement } from './superSkillGate.js'
+import { computeSkillStates, getUnlockRequirement, isPractitionerSession, applyPractitionerOverride } from './superSkillGate.js'
 
 /* ─────────────────────────────────────────────
    1. CONFIG
@@ -51,19 +51,20 @@ const LITE_MODE = (() => {
 })()
 
 // Exactly 7 Super Skill districts. Do not add more.
-// Placement follows the DD Town Map Build Brief compass:
+// Placement follows the DD Town Map Build Brief compass, spread on an even
+// ring around the Town Square so no two districts crowd each other:
 // Coco north (lookout, high ground), Kip west (calm green quarter),
 // Eddie south (dug into low ground), Billie east (the "future" edge),
-// Kai and Lenny close to the Town Square, Pepper on the raised NE paths.
+// Lenny south-west, Kai south-east, Pepper on the raised NE paths.
 const DISTRICTS = {
   'brain-builder': {
-    x: 700, y: 1160, label: 'Brain Builder', color: '#6366F1', accent: '#4338CA',
+    x: 560, y: 1400, label: 'Brain Builder', color: '#6366F1', accent: '#4338CA',
     district: "Lenny's Works Depot", emoji: '\u{1F9E0}',
     zoneColor: '#D6E4F7', zoneRx: 250, zoneRy: 215, seed: 11,
     desc: 'Master your mind through understanding how your brain works!',
   },
   'thought-driver': {
-    x: 1200, y: 320, label: 'Thought Driver', color: '#8B5CF6', accent: '#6D28D9',
+    x: 1200, y: 470, label: 'Thought Driver', color: '#8B5CF6', accent: '#6D28D9',
     district: "Coco's Lookout", emoji: '\u{1F9E9}',
     zoneColor: '#FBF3D0', zoneRx: 310, zoneRy: 250, seed: 23,
     desc: 'Take control of your thoughts and steer them in positive directions!',
@@ -75,7 +76,7 @@ const DISTRICTS = {
     desc: 'Navigate through all emotions with confidence and skill!',
   },
   'behaviour-engineer': {
-    x: 1960, y: 350, label: 'Behaviour Engineer', color: '#F59E0B', accent: '#D97706',
+    x: 1930, y: 460, label: 'Behaviour Engineer', color: '#F59E0B', accent: '#D97706',
     district: "Pepper's Night Pathways", emoji: '⚡',
     zoneColor: '#E4D9F7', zoneRx: 310, zoneRy: 260, seed: 41,
     desc: 'Build powerful habits and take charge of your actions!',
@@ -87,13 +88,13 @@ const DISTRICTS = {
     desc: 'Build inner strength and bounce back from challenges!',
   },
   'social-mapper': {
-    x: 1560, y: 1150, label: 'Social Mapper', color: '#E05297', accent: '#BE185D',
+    x: 1790, y: 1430, label: 'Social Mapper', color: '#E05297', accent: '#BE185D',
     district: "Kai's Town Square", emoji: '\u{1F91D}',
-    zoneColor: '#FBEECB', zoneRx: 230, zoneRy: 200, seed: 67,
+    zoneColor: '#FBEECB', zoneRx: 260, zoneRy: 225, seed: 67,
     desc: 'Map your social world and build stronger connections!',
   },
   'future-designer': {
-    x: 2000, y: 920, label: 'Future Designer', color: '#0EA5E9', accent: '#0284C7',
+    x: 2090, y: 910, label: 'Future Designer', color: '#0EA5E9', accent: '#0284C7',
     district: "Billie's Blueprint Burrows", emoji: '\u{1F52E}',
     zoneColor: '#D8EDFA', zoneRx: 310, zoneRy: 260, seed: 79,
     desc: 'Design your future with imagination and planning!',
@@ -101,13 +102,13 @@ const DISTRICTS = {
 }
 
 const ROAD_PATHS = {
-  'brain-builder':        `M${CX},${CY} C1060,940 900,1030 810,1090 Q750,1130 700,1160`,
-  'thought-driver':       `M${CX},${CY} C1200,760 1205,570 1205,440 Q1202,375 1200,320`,
+  'brain-builder':        `M${CX},${CY} C1030,1010 800,1200 660,1320 Q605,1362 560,1400`,
+  'thought-driver':       `M${CX},${CY} C1200,790 1205,650 1205,570 Q1202,515 1200,470`,
   'emotion-navigator':    `M${CX},${CY} C1000,920 680,930 460,925 Q350,920 260,920`,
-  'behaviour-engineer':   `M${CX},${CY} C1400,770 1600,560 1770,440 Q1870,390 1960,350`,
+  'behaviour-engineer':   `M${CX},${CY} C1380,790 1580,640 1750,550 Q1845,500 1930,460`,
   'resilience-architect': `M${CX},${CY} C1195,1080 1198,1240 1199,1360 Q1200,1440 1200,1500`,
-  'social-mapper':        `M${CX},${CY} C1310,950 1420,1040 1480,1090 Q1525,1125 1560,1150`,
-  'future-designer':      `M${CX},${CY} C1450,905 1680,910 1840,915 Q1920,918 2000,920`,
+  'social-mapper':        `M${CX},${CY} C1330,1000 1550,1200 1690,1320 Q1745,1378 1790,1430`,
+  'future-designer':      `M${CX},${CY} C1420,865 1700,855 1890,880 Q1995,895 2090,910`,
 }
 
 // The central hub — clickable, opens its own welcome popup.
@@ -1042,6 +1043,9 @@ function renderDecorations() {
   s += svgBridge(2020, 1160, -14)
   s += svgLake(170, 1620, 90, 52)
   s += svgBridge(245, 1575, 16)
+  // NW corner lake — fills the quiet quarter between Kip and Coco
+  s += svgLake(500, 450, 95, 55)
+  s += svgBridge(578, 500, 14)
 
   // Stepping-stone trails between areas
   ;[
@@ -1357,10 +1361,24 @@ function createPanZoom(viewport, svgEl) {
     if (!raf) raf = requestAnimationFrame(applyNow)
   }
 
+  // fitMode: true while the "whole town" fullscreen view is active, so a
+  // window resize re-fits instead of snapping back to the hub.
+  let fitMode = false
+
   function home() {
+    fitMode = false
     scale = Math.min(1.05, Math.max(minS() * 1.55, 0.62))
     tx = vw() / 2 - CX * scale
     ty = vh() / 2 - CY * scale
+    clamp(); apply(true)
+  }
+
+  // Zoom all the way out so the entire world fits the viewport, centred.
+  function fit() {
+    fitMode = true
+    scale = minS()
+    tx = (vw() - W * scale) / 2
+    ty = (vh() - H * scale) / 2
     clamp(); apply(true)
   }
 
@@ -1417,9 +1435,9 @@ function createPanZoom(viewport, svgEl) {
   }, { passive: false })
 
   home()
-  window.addEventListener('resize', home)
+  window.addEventListener('resize', () => { fitMode ? fit() : home() })
 
-  return { home, panTo, zoomBy }
+  return { home, fit, panTo, zoomBy }
 }
 
 /* ─────────────────────────────────────────────
@@ -1722,6 +1740,12 @@ function injectStyles() {
 .bt-svg-cb{width:42px;height:42px;border:none;border-radius:12px;background:#fff;color:#16324f;font-size:20px;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;transition:transform .15s;font-family:Fredoka,sans-serif}
 .bt-svg-cb:hover{transform:scale(1.08);background:#f8f9fc}.bt-svg-cb:active{transform:scale(.95)}
 .bt-svg-cbw{width:auto;padding:0 14px;font-size:12px}
+/* ── Fullscreen toggle (top-right, below the "big idea" chip) ── */
+.bt-svg-fsb{position:absolute;top:58px;right:12px;z-index:6;width:42px;height:42px;border:none;border-radius:12px;background:#fff;color:#16324f;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.bt-svg-fsb:hover{transform:scale(1.08);background:#f8f9fc}.bt-svg-fsb:active{transform:scale(.95)}
+.bt-svg-vp.bt-svg-fs{position:fixed;inset:0;z-index:110;height:auto;min-height:0;border-radius:0;border:none}
+.bt-svg-vp.bt-svg-fs .bt-svg-fsb{top:14px;right:14px}
+body.bt-fs-lock{overflow:hidden}
 /* ── Hint ── */
 .bt-svg-hint{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);border-radius:12px;padding:8px 16px;font-size:12px;font-weight:600;color:#16324f;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:none;transition:opacity .5s;font-family:Fredoka,sans-serif}
 /* ── Ambient animations ── */
@@ -1842,6 +1866,8 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
 
   injectStyles()
   container.innerHTML = ''
+  // A re-render replaces any fullscreen map instance — release its scroll lock
+  document.body.classList.remove('bt-fs-lock')
 
   // ── Per-skill progress (drives road build states + marker pills) ──
   const slugOf = sk => sk.slug || (sk.name || '').toLowerCase().replace(/\s+/g, '-')
@@ -1857,8 +1883,11 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
     progressBySlug[slug] = { done, total, pct: total > 0 ? Math.round((done / total) * 100) : 0 }
   })
 
-  // ── Sequential unlock: skills open in sort_order, one at a time ──
-  const gate = computeSkillStates(skills, modules, childModules)
+  // ── Sequential unlock: skills open in sort_order, one at a time.
+  // Practitioners tour the whole town — same override getSkillGate applies;
+  // this map builds its gate from explicit args, so apply it here too. ──
+  let gate = computeSkillStates(skills, modules, childModules)
+  if (isPractitionerSession()) gate = applyPractitionerOverride(gate)
 
   // ── "Next step" flag: the focus skill if set (and not locked), else the
   // gate's active skill — one obvious place to go next. ──
@@ -1915,6 +1944,16 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
   ctrls.innerHTML = `<button class="bt-svg-cb" id="svgZI" aria-label="Zoom in">+</button><button class="bt-svg-cb" id="svgZO" aria-label="Zoom out">&minus;</button><button class="bt-svg-cb bt-svg-cbw" id="svgHm" aria-label="Centre map">Centre</button>`
   vp.appendChild(ctrls)
 
+  // Fullscreen toggle — fills the browser window and zooms right out so
+  // the whole town is visible at once. Sits below the "big idea" chip.
+  const FS_ICON_EXPAND = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>`
+  const FS_ICON_SHRINK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>`
+  const fsBtn = document.createElement('button')
+  fsBtn.className = 'bt-svg-fsb'
+  fsBtn.innerHTML = FS_ICON_EXPAND
+  fsBtn.setAttribute('aria-label', 'See the whole town (full screen)')
+  vp.appendChild(fsBtn)
+
   // Hint
   const hint = document.createElement('div')
   hint.className = 'bt-svg-hint'
@@ -1931,6 +1970,23 @@ export async function initSvgMap(container, { onSelectSkill, modules = [], child
   ctrls.querySelector('#svgZI').addEventListener('click', () => pz.zoomBy(1.25))
   ctrls.querySelector('#svgZO').addEventListener('click', () => pz.zoomBy(0.8))
   ctrls.querySelector('#svgHm').addEventListener('click', pz.home)
+
+  // ── Fullscreen mode ──
+  let fsOn = false
+  function setFullscreen(on) {
+    fsOn = on
+    vp.classList.toggle('bt-svg-fs', on)
+    document.body.classList.toggle('bt-fs-lock', on)
+    fsBtn.innerHTML = on ? FS_ICON_SHRINK : FS_ICON_EXPAND
+    fsBtn.setAttribute('aria-label', on ? 'Exit full screen' : 'See the whole town (full screen)')
+    // Wait a frame so the viewport has its new size before measuring
+    requestAnimationFrame(() => { on ? pz.fit() : pz.home() })
+  }
+  fsBtn.addEventListener('click', () => setFullscreen(!fsOn))
+  document.addEventListener('keydown', e => {
+    // Guard against stale listeners from a previous map init
+    if (e.key === 'Escape' && fsOn && document.body.contains(vp)) setFullscreen(false)
+  })
 
   const svgEl = world.querySelector('#brainTownMap')
 
