@@ -6,7 +6,12 @@
 
 body {
     font-family: 'Fredoka', sans-serif;
-    background: linear-gradient(135deg, #f5f3ed 0%, #e8e4d9 100%);
+    /* Same sky as login/signup — the cream gradient was the odd one out */
+    background: linear-gradient(180deg,
+        #d4eaf7 0%, #e3f1fb 35%, #eef6fd 60%,
+        #c8e6c9 82%, #81c784 92%, #4caf50 100%
+    );
+    background-attachment: fixed;
     min-height: 100vh;
     color: #364f66;
 }

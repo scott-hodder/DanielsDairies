@@ -1887,5 +1887,11 @@
 
     loadModule();
   </script>
+    <script type="module">
+        // Consistent emoji artwork on every device (Twemoji via kidIcons) —
+        // native emoji fonts differ per OS and some render as empty boxes.
+        import { initKidIcons } from '/src/lib/kidIcons.js'
+        initKidIcons()
+    </script>
 </body>
 </html>

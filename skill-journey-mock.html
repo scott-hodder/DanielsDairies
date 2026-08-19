@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DESIGN MOCK — Skill Journey (district interior)</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: 'Fredoka', sans-serif; background: #dff0fa; color: #16324f; padding: 24px; }
+  .mock-note { max-width: 1240px; margin: 0 auto 14px; background: #fff6df; border: 1px solid #f0dca0; border-radius: 12px; padding: 10px 16px; font-size: 13px; color: #7a5a00; }
+  .frame { max-width: 1240px; margin: 0 auto; background: #fff; border-radius: 22px; box-shadow: 0 8px 30px rgba(40,60,90,.12); overflow: hidden; border: 2px solid #e7ecf3; }
+  .hud { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: #fff; flex-wrap: wrap; }
+  .hud-skill { display: flex; align-items: center; gap: 9px; background: #eef0fe; border: 2px solid #c7c9fa; border-radius: 999px; padding: 6px 16px 6px 8px; font-weight: 700; font-size: 15px; color: #4338CA; }
+  .hud-skill img { width: 34px; height: 34px; object-fit: contain; }
+  .hud-progress { flex: 1; min-width: 220px; display: flex; align-items: center; gap: 10px; }
+  .hud-progress .label { font-size: 13px; font-weight: 600; color: #6b7e95; white-space: nowrap; }
+  .hud-track { flex: 1; height: 12px; background: #eef1f4; border-radius: 999px; overflow: hidden; }
+  .hud-fill { width: 8%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #f2c94c, #e6a800); }
+  .hud-back { background: #fff; color: #405878; border: 2px solid #d7deea; border-radius: 12px; padding: 9px 16px; font-family: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer; }
+  .scene-wrap { position: relative; }
+  svg.scene { display: block; width: 100%; height: auto; }
+  .annos { max-width: 1240px; margin: 22px auto 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .anno { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px 18px; box-shadow: 0 2px 10px rgba(8,37,64,.05); }
+  .anno b { display: flex; align-items: center; gap: 8px; font-size: 15px; margin-bottom: 6px; color: #16324f; }
+  .anno .num { width: 24px; height: 24px; border-radius: 50%; background: #f2c94c; color: #16324f; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+  .anno p { font-size: 13.5px; color: #405878; line-height: 1.55; }
+  h1.pagetitle { max-width: 1240px; margin: 0 auto 12px; font-size: 22px; color: #16324f; }
+</style>
+</head>
+<body>
+  <h1 class="pagetitle">Design mock — "Inside the district": the Skill Journey map</h1>
+  <div class="mock-note">Static design mock (not wired up). Open at <b>/skill-journey-mock.html</b>. This is what a child sees after tapping <b>Brain Builder → Start Adventure</b>: they've stepped INSIDE Lenny's district of Brain Town, and the trail to Brain City is the road they are building.</div>
+
+  <div class="frame">
+    <div class="hud">
+      <div class="hud-skill"><img src="/images/characters/superskill-characters/Lenny.webp" alt="Lenny"> Brain Builder &middot; Lenny's Works Depot</div>
+      <div class="hud-progress">
+        <span class="label">🛠️ 1 of 24 roads paved</span>
+        <div class="hud-track"><div class="hud-fill"></div></div>
+        <span class="label">Next stop: Village</span>
+      </div>
+      <button class="hud-back">🗺️ Back to Brain Town</button>
+    </div>
+
+    <div class="scene-wrap">
+    <svg class="scene" viewBox="0 0 1440 840" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#AEE3F5"/><stop offset="100%" stop-color="#D6EFFA"/>
+        </linearGradient>
+        <radialGradient id="meadowG" cx="50%" cy="30%" r="90%">
+          <stop offset="0%" stop-color="#BCE49E"/><stop offset="48%" stop-color="#98CF74"/>
+          <stop offset="82%" stop-color="#77B45C"/><stop offset="100%" stop-color="#5D9A49"/>
+        </radialGradient>
+        <linearGradient id="woodG" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#C99263"/><stop offset="1" stop-color="#8A5B36"/></linearGradient>
+        <linearGradient id="leafG" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#A9DB80"/><stop offset=".55" stop-color="#6FB05E"/><stop offset="1" stop-color="#487F4B"/></linearGradient>
+        <linearGradient id="leafDarkG" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#7CB86A"/><stop offset="1" stop-color="#3C6E44"/></linearGradient>
+        <linearGradient id="creamWallG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFF8E7"/><stop offset="1" stop-color="#EBD9B4"/></linearGradient>
+        <linearGradient id="roofIndigoG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8B8DF5"/><stop offset="1" stop-color="#5457D6"/></linearGradient>
+        <linearGradient id="roofPinkG" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F8A8CB"/><stop offset="1" stop-color="#E0619B"/></linearGradient>
+        <radialGradient id="glowG" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFE9A8" stop-opacity=".85"/><stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/>
+        </radialGradient>
+        <pattern id="worksStripe" width="22" height="22" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <rect width="22" height="22" fill="#F6C445"/><rect width="11" height="22" fill="#3F4652"/>
+        </pattern>
+        <g id="treeRound">
+          <ellipse cy="14" rx="19" ry="7" fill="#2F5B38" opacity=".18"/>
+          <path d="M-4 -6 Q-5 8 -6 14 H6 Q5 8 4 -6Z" fill="url(#woodG)"/>
+          <circle cy="-20" r="23" fill="url(#leafG)"/>
+          <circle cx="-9" cy="-27" r="9" fill="#C4E8A0" opacity=".6"/>
+        </g>
+        <g id="treePine">
+          <ellipse cy="12" rx="15" ry="6" fill="#2F5B38" opacity=".18"/>
+          <rect x="-3" y="-6" width="6" height="19" rx="2" fill="#7A5439"/>
+          <path d="M0 -46 L-17 -18 H-9 L-20 4 H20 L9 -18 H17Z" fill="url(#leafDarkG)"/>
+        </g>
+        <g id="bushS">
+          <ellipse cy="4" rx="17" ry="6" fill="#2F5B38" opacity=".14"/>
+          <ellipse rx="16" ry="11" fill="url(#leafG)"/><circle cx="-8" cy="-5" r="8" fill="#8CC470"/><circle cx="8" cy="-4" r="9" fill="#6FAE5C"/>
+        </g>
+        <g id="flowerP"><path d="M0 2 V12" stroke="#4E8F45" stroke-width="2"/><circle cx="-4" cy="-1" r="3.6" fill="#F7A8C4"/><circle cx="4" cy="-1" r="3.6" fill="#F7A8C4"/><circle cy="-5" r="3.6" fill="#F7A8C4"/><circle cy="4" r="3.4" fill="#F7A8C4"/><circle r="3" fill="#FFE08B"/></g>
+        <g id="flowerY"><path d="M0 2 V12" stroke="#4E8F45" stroke-width="2"/><circle cx="-4" cy="-1" r="3.6" fill="#FFD66B"/><circle cx="4" cy="-1" r="3.6" fill="#FFD66B"/><circle cy="-5" r="3.6" fill="#FFD66B"/><circle cy="4" r="3.4" fill="#FFD66B"/><circle r="3" fill="#F78D5C"/></g>
+      </defs>
+
+      <!-- Sky + ghost skyline (the goal city, pale until you get there) -->
+      <rect width="1440" height="240" fill="url(#skyG)"/>
+      <g opacity="0.8">
+        <ellipse cx="180" cy="70" rx="52" ry="18" fill="#fff"/><ellipse cx="215" cy="78" rx="38" ry="14" fill="#fff"/>
+        <ellipse cx="900" cy="52" rx="46" ry="16" fill="#fff"/><ellipse cx="935" cy="60" rx="32" ry="12" fill="#fff"/>
+      </g>
+      <!-- Brain City silhouette on the horizon -->
+      <g opacity="0.35">
+        <path d="M1120 238 V190 h18 v-24 h16 v24 h14 v48 M1180 238 V160 h22 l6 -18 6 18 h20 V238 M1246 238 V196 h30 v42 M1288 238 V172 h16 v-14 h14 v14 h14 v66" fill="#7FA9C2"/>
+        <circle cx="1214" cy="132" r="9" fill="#7FA9C2"/>
+        <path d="M1100 238 H1360" stroke="#7FA9C2" stroke-width="3"/>
+      </g>
+      <g font-family="Fredoka" text-anchor="middle">
+        <rect x="1152" y="246" width="150" height="30" rx="15" fill="rgba(255,255,255,0.95)" stroke="#7FA9C2" stroke-width="2"/>
+        <text x="1227" y="266" font-size="14" font-weight="700" fill="#4E7A96">🏙️ Brain City</text>
+        <text x="1227" y="292" font-size="11" fill="#5F7B90">your journey's end</text>
+      </g>
+
+      <!-- Meadow -->
+      <rect y="228" width="1440" height="612" fill="url(#meadowG)"/>
+      <path d="M0 238 Q360 210 720 232 Q1080 252 1440 228 V260 H0 Z" fill="#8CC470" opacity=".5"/>
+
+      <!-- ═══ THE ROAD — one continuous journey, built as you play ═══ -->
+      <!-- Paved part (behind the child): full Brain Town road styling -->
+      <path id="roadPaved" d="M150 760 C 260 720 320 660 400 640 C 470 622 520 610 560 585"
+            fill="none" stroke="#C9AA74" stroke-width="56" stroke-linecap="round"/>
+      <path d="M150 760 C 260 720 320 660 400 640 C 470 622 520 610 560 585"
+            fill="none" stroke="#F0DFB4" stroke-width="44" stroke-linecap="round"/>
+      <path d="M150 760 C 260 720 320 660 400 640 C 470 622 520 610 560 585"
+            fill="none" stroke="#FFF8E0" stroke-width="4" stroke-dasharray="16 24" stroke-linecap="round" opacity=".7"/>
+
+      <!-- Under construction: the CURRENT segment (dirt, half-paved) -->
+      <path d="M560 585 C 620 550 680 545 740 530"
+            fill="none" stroke="#C9AA74" stroke-width="52" stroke-linecap="round" opacity=".55"/>
+      <path d="M560 585 C 620 550 680 545 740 530"
+            fill="none" stroke="#E4D5AE" stroke-width="40" stroke-dasharray="34 26" stroke-linecap="round" opacity=".8"/>
+
+      <!-- Future road: faint dashed trail winding to the city -->
+      <path d="M740 530 C 850 500 890 470 950 440 C 1030 400 1060 380 1120 350 C 1180 320 1210 290 1230 268"
+            fill="none" stroke="#C9AA74" stroke-width="30" stroke-dasharray="6 30" stroke-linecap="round" opacity=".38"/>
+
+      <!-- ═══ District gate (bottom-left): you came FROM Brain Town ═══ -->
+      <g transform="translate(150,700)">
+        <ellipse cy="64" rx="120" ry="34" fill="#D6E4F7" stroke="#9FB6CC" stroke-width="3.5" opacity=".9"/>
+        <rect x="-70" y="-28" width="140" height="74" rx="9" fill="#F2F6FC" stroke="#5B679E" stroke-width="3.5"/>
+        <rect x="-78" y="-42" width="156" height="17" rx="8" fill="url(#roofIndigoG)" stroke="#4338CA" stroke-width="3"/>
+        <path d="M-42 -42 Q0 -95 42 -42Z" fill="#E7F6FF" stroke="#5B8FB0" stroke-width="3.5"/>
+        <path d="M-16 18 V46 H16 V18 Q0 6 -16 18Z" fill="url(#woodG)" stroke="#5F4126" stroke-width="2.5"/>
+        <rect x="-58" y="-8" width="26" height="20" rx="4" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="2.5"/>
+        <rect x="32" y="-8" width="26" height="20" rx="4" fill="#FFF3C2" stroke="#C9971F" stroke-width="2.5"/>
+        <g transform="translate(96,10)">
+          <rect x="-3" y="-40" width="6" height="58" rx="3" fill="url(#woodG)"/>
+          <path d="M-3 -38 H-52 L-60 -30 L-52 -22 H-3Z" fill="#FBEECB" stroke="#C9AA74" stroke-width="2"/>
+          <text x="-30" y="-27" font-family="Fredoka" font-size="10.5" font-weight="700" fill="#8A5B36" text-anchor="middle">BRAIN TOWN</text>
+        </g>
+        <text y="86" font-family="Fredoka" font-size="14" font-weight="700" fill="#4338CA" text-anchor="middle">Lenny's Works Depot</text>
+      </g>
+
+      <!-- ═══ Zone 1: TRAILHEAD (where you are) ═══ -->
+      <g transform="translate(300,555)">
+        <path d="M-28 22 L0 -20 L28 22 Z" fill="#8B8DF5" stroke="#5457D6" stroke-width="3"/>
+        <path d="M-8 22 L0 6 L8 22 Z" fill="#3F3F74"/>
+        <g transform="translate(48,16)">
+          <path d="M-10 4 L10 -2 M-10 -2 L10 4" stroke="#96683C" stroke-width="4" stroke-linecap="round"/>
+          <path d="M0 -4 Q-6 -12 -2 -19 Q0 -13 3 -17 Q6 -9 0 -4Z" fill="#F59E0B"/>
+        </g>
+        <rect x="-52" y="34" width="104" height="26" rx="13" fill="rgba(255,255,255,0.96)" stroke="#8B8DF5" stroke-width="2"/>
+        <text y="52" font-family="Fredoka" font-size="13" font-weight="700" fill="#5457D6" text-anchor="middle">🌱 Trailhead</text>
+      </g>
+
+      <!-- Node 1 — COMPLETED: paved circle + the hut it built -->
+      <g transform="translate(400,640)">
+        <circle r="30" fill="#F0DFB4" stroke="#C9AA74" stroke-width="5"/>
+        <circle r="21" fill="#4ADE80" stroke="#22C55E" stroke-width="3"/>
+        <text y="7" font-size="20" text-anchor="middle">✓</text>
+        <g transform="translate(58,52)">
+          <ellipse cy="34" rx="46" ry="13" fill="#D6E4F7" opacity=".7"/>
+          <rect x="-26" y="-8" width="52" height="34" rx="6" fill="url(#creamWallG)" stroke="#B58098" stroke-width="3"/>
+          <path d="M-32 -8 Q0 -34 32 -8Z" fill="url(#roofPinkG)" stroke="#C74C8B" stroke-width="3"/>
+          <rect x="-8" y="10" width="16" height="16" rx="3" fill="url(#woodG)"/>
+        </g>
+      </g>
+
+      <!-- Node 2 — NEXT: glowing works site, Lenny waiting, Daniel walking -->
+      <g transform="translate(560,585)">
+        <circle r="58" fill="url(#glowG)"/>
+        <circle r="32" fill="#FBBF24" stroke="#fff" stroke-width="5"/>
+        <circle r="32" fill="none" stroke="#F59E0B" stroke-width="3" opacity=".5"/>
+        <text y="9" font-size="26" text-anchor="middle">🚧</text>
+        <g transform="translate(-2,52)">
+          <rect x="-44" y="-8" width="88" height="13" rx="6" fill="url(#worksStripe)" stroke="#7A6234" stroke-width="2" opacity=".92"/>
+          <rect x="-40" y="-2" width="7" height="26" rx="3" fill="#A98B52"/><rect x="33" y="-2" width="7" height="26" rx="3" fill="#A98B52"/>
+        </g>
+        <image href="/images/characters/superskill-characters/Lenny.webp" x="34" y="-108" width="92" height="92"/>
+        <g transform="translate(112,-136)">
+          <rect x="-64" y="-20" width="128" height="40" rx="14" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
+          <path d="M-26 20 L-18 34 L-12 20Z" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
+          <text y="-2" font-family="Fredoka" font-size="12.5" font-weight="700" fill="#16324f" text-anchor="middle">Adventure 2 is</text>
+          <text y="13" font-family="Fredoka" font-size="12.5" font-weight="700" fill="#16324f" text-anchor="middle">ready to build!</text>
+        </g>
+      </g>
+      <image href="/images/characters/DanielTheDog.webp" x="428" y="520" width="86" height="86"/>
+
+      <!-- Nodes 3-4 — future construction sites -->
+      <g transform="translate(660,545)" opacity=".7">
+        <circle r="24" fill="#E4D5AE" stroke="#C9AA74" stroke-width="3.5" stroke-dasharray="7 7"/>
+        <text y="7" font-size="17" text-anchor="middle" opacity=".65">3</text>
+      </g>
+      <g transform="translate(740,530)" opacity=".55">
+        <circle r="24" fill="#E4D5AE" stroke="#C9AA74" stroke-width="3.5" stroke-dasharray="7 7"/>
+        <text y="7" font-size="17" text-anchor="middle" opacity=".65">4</text>
+      </g>
+
+      <!-- ═══ Zone 2: VILLAGE — ghost buildings until unlocked ═══ -->
+      <g transform="translate(950,430)">
+        <g opacity=".45" stroke-dasharray="8 7">
+          <rect x="-88" y="-16" width="62" height="42" rx="7" fill="#FFF8E7" stroke="#B58098" stroke-width="3"/>
+          <path d="M-95 -16 Q-57 -46 -19 -16Z" fill="#FBEAF2" stroke="#C74C8B" stroke-width="3"/>
+          <rect x="16" y="-10" width="58" height="38" rx="7" fill="#FFF8E7" stroke="#8878B0" stroke-width="3"/>
+          <path d="M10 -10 Q45 -38 80 -10Z" fill="#EFE9FB" stroke="#6D28D9" stroke-width="3"/>
+        </g>
+        <rect x="-86" y="44" width="176" height="28" rx="14" fill="rgba(255,255,255,0.96)" stroke="#C9AA74" stroke-width="2"/>
+        <text y="63" font-family="Fredoka" font-size="12.5" font-weight="700" fill="#8A5B36" text-anchor="middle">🏘️ Village · 2 adventures away</text>
+      </g>
+
+      <!-- ═══ Zone 3: TOWN CENTRE — fainter still ═══ -->
+      <g transform="translate(1120,340)" opacity=".8">
+        <g opacity=".3">
+          <circle r="26" fill="#F8EDD2" stroke="#CBAE79" stroke-width="3" stroke-dasharray="8 7"/>
+          <circle r="10" fill="#A8DFF2" stroke="#5FA8CC" stroke-width="2.5" stroke-dasharray="5 5"/>
+        </g>
+        <rect x="-64" y="36" width="128" height="26" rx="13" fill="rgba(255,255,255,0.9)" stroke="#CBAE79" stroke-width="2"/>
+        <text y="53" font-family="Fredoka" font-size="12" font-weight="700" fill="#A8895B" text-anchor="middle">⛲ Town Centre</text>
+      </g>
+
+      <!-- Nature dressing — same symbols as Brain Town -->
+      <use href="#treeRound" x="90" y="560" transform="scale(1.15)" transform-origin="90 560"/>
+      <use href="#treePine" x="260" y="500"/>
+      <use href="#treeRound" x="680" y="700"/>
+      <use href="#treePine" x="850" y="620" transform="scale(1.2)" transform-origin="850 620"/>
+      <use href="#treeRound" x="1060" y="560"/>
+      <use href="#treePine" x="1240" y="470"/>
+      <use href="#treeRound" x="1340" y="620" transform="scale(1.3)" transform-origin="1340 620"/>
+      <use href="#bushS" x="480" y="720"/>
+      <use href="#bushS" x="920" y="520"/>
+      <use href="#bushS" x="1180" y="640"/>
+      <use href="#flowerP" x="330" y="700"/>
+      <use href="#flowerY" x="620" y="660"/>
+      <use href="#flowerP" x="1010" y="620"/>
+      <use href="#flowerY" x="200" y="640"/>
+    </svg>
+    </div>
+  </div>
+
+  <div class="annos">
+    <div class="anno"><b><span class="num">1</span> You're inside the district, not another app</b>
+      <p>Tapping the Brain Builder building now means <i>entering it</i>. Lenny's Works Depot sits at the trailhead with a signpost back to Brain Town — same trees, same roads, same art. One world.</p></div>
+    <div class="anno"><b><span class="num">2</span> The zones live ON the road</b>
+      <p>Trailhead → Village → Town Centre → Brain City are real places along one continuous road — not an abstract progress strip. The child literally walks toward the city they're building. Roads = neural pathways stays front and centre.</p></div>
+    <div class="anno"><b><span class="num">3</span> Every module paves road and builds a building</b>
+      <p>A completed module leaves a paved segment and a little building beside it (node 1). The next module is a glowing construction site with Lenny waiting. Future road is a faint dashed trail — "not built yet".</p></div>
+    <div class="anno"><b><span class="num">4</span> The goal is visible from day one</b>
+      <p>Brain City sits pale on the horizon. Each zone unlock colours more of the skyline in. Kids always see where they're going and how the town grows because of THEIR work.</p></div>
+    <div class="anno"><b><span class="num">5</span> Characters anchored properly</b>
+      <p>Daniel walks the road (never cut off — camera keeps him in frame); the district's own guide (Lenny here, Kip for emotions, etc.) waits at the next site. No more mystery fox.</p></div>
+    <div class="anno"><b><span class="num">6</span> HUD carries the meaning</b>
+      <p>"1 of 24 roads paved" + "Next stop: Village" replaces the abstract Trailhead/Village/City strip. The old sky-floating road and duplicate background road are gone — one road, anchored to the ground.</p></div>
+  </div>
+</body>
+</html>

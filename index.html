@@ -570,7 +570,8 @@
         }
         .pricing-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            /* auto-fit keeps the row centered however many tiers are active */
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 24px;
             align-items: stretch;
         }
@@ -618,6 +619,9 @@
 
         /* ── Comparison table ── */
         .compare-wrap { overflow-x: auto; margin-top: 40px; }
+        /* Gold column hidden unless the top tier is active (admin-controlled) */
+        .compare-table .tier-col-top { display: none; }
+        .compare-table.show-tier-top .tier-col-top { display: table-cell; }
         .compare-table {
             width: 100%;
             max-width: 820px;
@@ -1102,7 +1106,7 @@
                     <div class="price-line"><span class="price-amount" data-tier-price="low">$19</span><span class="price-period">/month AUD</span></div>
                     <p class="price-desc">A simple, affordable starting point for steady emotional growth at home.</p>
                     <ul>
-                        <li>4 guided modules per month</li>
+                        <li data-tier-modules="low">2 guided modules per month</li>
                         <li>Full Brain Town world &amp; all games</li>
                         <li>Daily quests, stars &amp; rewards</li>
                         <li>Progress tracking</li>
@@ -1112,22 +1116,23 @@
                 <div class="price-card popular">
                     <span class="popular-badge">Most popular</span>
                     <h3>Silver</h3>
-                    <div class="price-line"><span class="price-amount" data-tier-price="mid">$39</span><span class="price-period">/month AUD</span></div>
+                    <div class="price-line"><span class="price-amount" data-tier-price="mid">$34</span><span class="price-period">/month AUD</span></div>
                     <p class="price-desc">Deeper progress and clearer visibility for families who want more support.</p>
                     <ul>
-                        <li>6 guided modules per month</li>
+                        <li data-tier-modules="mid">4 guided modules per month</li>
                         <li>Everything in Bronze</li>
                         <li>Parent insights reports</li>
                         <li>Weekly progress emails</li>
                     </ul>
                     <a href="/signup.html?plan=mid" class="btn btn-primary">Choose Silver</a>
                 </div>
-                <div class="price-card">
+                <!-- Hidden unless the top tier is active in subscription_tiers (admin-controlled) -->
+                <div class="price-card" data-tier-card="top" style="display:none">
                     <h3>Gold</h3>
-                    <div class="price-line"><span class="price-amount" data-tier-price="top">$69</span><span class="price-period">/month AUD</span></div>
+                    <div class="price-line"><span class="price-amount" data-tier-price="top">$110</span><span class="price-period">/month AUD</span></div>
                     <p class="price-desc">Our most comprehensive package, with behavioural support from Foundational Minds.</p>
                     <ul>
-                        <li>8 guided modules per month</li>
+                        <li data-tier-modules="top">8 guided modules per month</li>
                         <li>Everything in Silver</li>
                         <li>Behavioural support from a registered Behaviour Support Practitioner</li>
                         <li>Family Gold support hub</li>
@@ -1141,18 +1146,18 @@
             </p>
 
             <div class="compare-wrap">
-                <table class="compare-table">
+                <table class="compare-table" id="compareTable">
                     <thead>
-                        <tr><th>What's included</th><th>Bronze</th><th>Silver</th><th>Gold</th></tr>
+                        <tr><th>What's included</th><th>Bronze</th><th>Silver</th><th class="tier-col-top">Gold</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td>Guided modules per month</td><td>4</td><td>6</td><td>8</td></tr>
-                        <tr><td>Brain Town world, games &amp; daily quests</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
-                        <tr><td>Stars, streaks &amp; reward shop</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
-                        <tr><td>Unused credits roll over</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
-                        <tr><td>Parent insights reports</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td></tr>
-                        <tr><td>Behavioural support (Foundational Minds)</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td></tr>
-                        <tr><td>Family Gold support hub</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td></tr>
+                        <tr><td>Guided modules per month</td><td data-tier-modules-cell="low">2</td><td data-tier-modules-cell="mid">4</td><td class="tier-col-top" data-tier-modules-cell="top">8</td></tr>
+                        <tr><td>Brain Town world, games &amp; daily quests</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check tier-col-top">&#10003;</td></tr>
+                        <tr><td>Stars, streaks &amp; reward shop</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check tier-col-top">&#10003;</td></tr>
+                        <tr><td>Unused credits roll over</td><td class="compare-check">&#10003;</td><td class="compare-check">&#10003;</td><td class="compare-check tier-col-top">&#10003;</td></tr>
+                        <tr><td>Parent insights reports</td><td class="compare-dash">&#8212;</td><td class="compare-check">&#10003;</td><td class="compare-check tier-col-top">&#10003;</td></tr>
+                        <tr><td>Behavioural support (Foundational Minds)</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check tier-col-top">&#10003;</td></tr>
+                        <tr><td>Family Gold support hub</td><td class="compare-dash">&#8212;</td><td class="compare-dash">&#8212;</td><td class="compare-check tier-col-top">&#10003;</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1189,7 +1194,7 @@
                     <summary>Can I cancel any time?</summary>
                     <div class="faq-body">Yes. You can cancel future renewals any time from your account billing settings and keep access until the end of your paid period. See the <a href="/terms-of-service.html#billing">cancellation &amp; refund policy</a> for details.</div>
                 </details>
-                <details class="faq-item">
+                <details class="faq-item" data-tier-faq="top" style="display:none">
                     <summary>What does Gold's behavioural support include?</summary>
                     <div class="faq-body">Gold families are supported by Foundational Minds, led by a registered Behaviour Support Practitioner with over five years of experience in the field. Support includes guidance tailored to your child, practitioner-set tasks and follow-ups in your Family Gold hub, and help applying the Super Skills at home.</div>
                 </details>
@@ -1327,13 +1332,28 @@
             try {
                 const { data: tiers } = await getSupabaseClient()
                     .from('subscription_tiers')
-                    .select('tier, monthly_price_cents')
+                    .select('tier, monthly_price_cents, modules_per_month')
                     .eq('is_active', true)
                 ;(tiers || []).forEach((tier) => {
                     if (typeof tier.monthly_price_cents === 'number') {
                         monthlyCentsByTier[tier.tier] = tier.monthly_price_cents
                     }
+                    if (typeof tier.modules_per_month === 'number') {
+                        document.querySelectorAll(`[data-tier-modules="${tier.tier}"]`).forEach((el) => {
+                            el.textContent = `${tier.modules_per_month} guided module${tier.modules_per_month === 1 ? '' : 's'} per month`
+                        })
+                        document.querySelectorAll(`[data-tier-modules-cell="${tier.tier}"]`).forEach((el) => {
+                            el.textContent = tier.modules_per_month
+                        })
+                    }
                 })
+                // The Gold card, compare column, and FAQ stay hidden unless the
+                // admin centre has the top tier active — the same condition
+                // under which checkout will accept plan=top.
+                if ((tiers || []).some((t) => t.tier === 'top')) {
+                    document.querySelectorAll('[data-tier-card="top"], [data-tier-faq="top"]').forEach((el) => { el.style.display = '' })
+                    document.getElementById('compareTable')?.classList.add('show-tier-top')
+                }
             } catch (e) { /* static fallback prices remain */ }
 
             let billing = 'monthly'
@@ -1368,6 +1388,12 @@
             })
             renderPrices()
         })()
+    </script>
+    <script type="module">
+        // Consistent emoji artwork on every device (Twemoji via kidIcons) —
+        // native emoji fonts differ per OS and some render as empty boxes.
+        import { initKidIcons } from '/src/lib/kidIcons.js'
+        initKidIcons()
     </script>
 </body>
 </html>
