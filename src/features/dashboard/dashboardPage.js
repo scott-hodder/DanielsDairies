@@ -20,13 +20,13 @@ import { dashboardState, setAllModulesFilters, setCategoryColors, setChildModule
 import { setAppState, getAppState } from '../../services/appState.js'
 import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
-import { maybeShowOnboarding, addHelpButton } from './onboardingWalkthrough.js'
+import { addHelpButton } from './onboardingWalkthrough.js'
 import { initPushNotifications, removePushNotifications } from '../../services/pushNotifications.js'
 import { initNativeApp } from '../../services/nativeApp.js'
 import { hasStreakPopupBeenShownToday, markStreakPopupAsShown, maybeCelebrateFirstStar, createConfettiCelebration, showStreakPopup, showLevelUpPopup, showWelcomeBackBanner } from './dashboardCelebrations.js'
 import { loadCheckinOptions, setupWeeklyCheckinUI, setupParentInsightsSubtabs, setParentInsightsSubtab, checkWeeklyCheckinSettings, renderWeeklyPlan } from './dashboardCheckin.js'
 import { initFamilyGoldTab, isGoldTier } from './familyGoldDashboard.js'
-import { startModule } from './dashboardCheckinInterception.js'
+import { startModule, maybeShowPostCompletionCheckin } from './dashboardCheckinInterception.js'
 import { setupDanielMoodCheckin, refreshMoodCheckinState, updateMoodHeroText } from './dashboardMoodCheckin.js'
 import { getCurrencyFormatter } from './dashboardProfileHub.js'
 import { isPractitionerSession } from './superSkillGate.js'
@@ -899,6 +899,20 @@ async function init() {
     const childIdFromUrl = params.get('childId')
     const tabFromUrl = params.get('tab')
 
+    // Practitioner view in a fresh tab: the session flag hasn't been stamped
+    // yet, so resolve it BEFORE selecting a child — otherwise the map and
+    // module list paint with locks and the caseload-child branch below is
+    // skipped. The flag is display-only; RLS still guards every read.
+    if (isPracView && !isPractitionerSession()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: isPrac } = await supabase.rpc('is_user_practitioner_check', { user_id: user.id })
+          try { sessionStorage.setItem('dd_is_practitioner', isPrac ? '1' : '0') } catch { /* private mode */ }
+        }
+      } catch { /* leave unset; the async stamp above still recovers */ }
+    }
+
     if (childIdFromUrl && state.children && state.children.length > 0) {
       const childFromUrl = state.children.find(c => String(c.id) === String(childIdFromUrl))
       if (childFromUrl) {
@@ -1731,6 +1745,20 @@ async function selectChild(child) {
       setChildModules([])
     }
 
+    // Progressive disclosure: until the child has completed their first
+    // module, the dashboard shows ONE obvious path (the welcome guide +
+    // map). The Daily Quest banner appears as a fresh discovery after the
+    // first win instead of competing with the first-run call to action.
+    // Body class (not inline style) so later hero re-renders can't undo it.
+    const hasCompletedAnyModule = (state.childModules || []).some(cm => cm.is_completed === true)
+    document.body.classList.toggle('dd-first-run', !hasCompletedAnyModule)
+    if (!document.getElementById('ddFirstRunStyles')) {
+      const st = document.createElement('style')
+      st.id = 'ddFirstRunStyles'
+      st.textContent = 'body.dd-first-run #dailyQuestCard{display:none!important}'
+      document.head.appendChild(st)
+    }
+
     // Process focus plan
     if (focusPlanResult.status === 'fulfilled') {
       setCurrentFocusPlan(focusPlanResult.value)
@@ -1777,10 +1805,20 @@ async function selectChild(child) {
           // Queue popups to show AFTER loading screen is fully hidden.
           // Practitioners touring a dashboard (their demo child or a client)
           // are not the child — no streak or welcome-back celebrations.
-          const showAfterLoad = () => {
+          const showAfterLoad = async () => {
             if (isPractitionerSession()) return
-            // Show streak popup for day 1+ (encourage from the very start)
-            if (streakData.current_streak >= 1 && !hasStreakPopupBeenShownToday(child.id)) {
+
+            // Returning from a just-completed module? Lenny's check-in runs
+            // now (at the moment of victory) — and owns the moment; no
+            // other popups stack on top of it.
+            const checkinShown = await maybeShowPostCompletionCheckin().catch(() => false)
+            if (checkinShown) return
+
+            // Streaks only mean something from day 2 — celebrating "streak
+            // started!" on first ever load (before the child has done
+            // anything) devalues real celebrations. Day-one joy comes from
+            // the first-star celebration when they complete something.
+            if (streakData.current_streak >= 2 && !hasStreakPopupBeenShownToday(child.id)) {
               markStreakPopupAsShown(child.id)
               showStreakPopup(child.name, streakData.current_streak)
             }
@@ -1838,8 +1876,11 @@ async function selectChild(child) {
         await waitForDashboardRender()
         hideLoadingScreen()
 
-        // Show app walkthrough for first-time users after focus plan is set
-        maybeShowOnboarding(child.id)
+        // The 6-step walkthrough no longer auto-plays here — a slideshow
+        // right after the focus plan was one more wall between the family
+        // and the first adventure. The first-time guide on the dashboard
+        // does the onboarding by pointing at ONE next action, and the
+        // walkthrough stays available behind the "How this works" button.
       })
       return // Don't show detail view yet - wait for onboarding
     }
@@ -2819,6 +2860,138 @@ if (unlockResultModal) {
   })
 }
 
+// Spend one credit to unlock a module, update local state and refresh every
+// surface that shows it. Shared by the parent-facing purchase modal and the
+// child-facing silent auto-unlock on the adventure path.
+async function performCreditUnlock(module) {
+  // Spend 1 credit from the child's balance
+  await spendChildCredit(state.selectedChild.id)
+
+  if (state.selectedChild?.id) {
+    const { error: childUnlockError } = await supabase
+      .from('child_modules')
+      .upsert([
+        {
+          child_id: state.selectedChild.id,
+          module_id: module.id,
+          locked: false
+        }
+      ], { onConflict: 'child_id,module_id' })
+
+    if (childUnlockError) throw childUnlockError
+
+    // Immediately update local child modules so the adventure map
+    // reflects the unlock even if the DB re-fetch returns stale data
+    const updatedChildModules = (state.childModules || []).slice()
+    const existingIdx = updatedChildModules.findIndex(cm => cm.module_id === module.id)
+    if (existingIdx >= 0) {
+      updatedChildModules[existingIdx] = { ...updatedChildModules[existingIdx], locked: false }
+    } else {
+      updatedChildModules.push({
+        child_id: state.selectedChild.id,
+        module_id: module.id,
+        locked: false
+      })
+    }
+    setChildModules(updatedChildModules)
+    window.childModules = updatedChildModules
+  }
+
+  // Invalidate child modules cache so selectChild fetches fresh data
+  if (state.selectedChild?.id) {
+    invalidateCacheByPrefix(`childModules:${state.selectedChild.id}`)
+  }
+
+  // Run all refresh queries in parallel - these are independent
+  const [creditResult, legacyResult, unlocksResult] = await Promise.all([
+    getChildCredits(state.selectedChild.id),
+    supabase
+      .from('parent_modules')
+      .select('module_id, is_active, modules(*)')
+      .eq('parent_id', state.currentUser.id),
+    getModuleUnlocks(
+      state.currentUser.id,
+      currentBillingPeriod.periodStart,
+      currentBillingPeriod.periodEnd
+    )
+  ])
+
+  currentCreditSummary = { credits_available: creditResult }
+  updateCreditWalletBadge()
+
+  const mergedMap = new Map()
+  ;[(legacyResult.data || []), ...(unlocksResult || []).map(entry => ({
+    module_id: entry.module_id,
+    is_active: true,
+    modules: entry.modules || null,
+    unlock_source: entry.unlock_source || 'subscription_credit'
+  }))].flat().forEach(entry => {
+    const existing = mergedMap.get(entry.module_id)
+    if (!existing || (entry.is_active && !existing.is_active)) mergedMap.set(entry.module_id, entry)
+  })
+  setParentModules(Array.from(mergedMap.values()))
+
+  renderParentModulesOverview()
+  renderAllModulesGrid()
+
+  // Re-render adventure map immediately with the local state we already updated
+  // (skipping selectChild which would make 3+ redundant DB calls)
+  if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
+    window.enhancedDashboard.adventureMap.render()
+  }
+}
+
+// Child-facing unlock: when the child taps the next adventure and the family
+// has credits, open it silently — no "Spend 1 Credit" dialog, no credit
+// language anywhere near the child. Money stays in the grown-up surfaces
+// (profile/billing); the child just gets confetti and the adventure.
+let _autoUnlockBusy = false
+async function autoUnlockAndStart(moduleLike) {
+  if (_autoUnlockBusy) return
+  _autoUnlockBusy = true
+  try {
+    const module = moduleLike?.module || moduleLike
+    if (!module || !state.selectedChild || !state.currentUser) return
+
+    if (!isModuleNextUnlockable(module)) {
+      showUnlockResultModal({
+        title: 'Almost there!',
+        message: "Let's unlock this path one step at a time. Try the first locked module.",
+        type: 'error'
+      })
+      return
+    }
+
+    const credits = await getChildCredits(state.selectedChild.id).catch(() => 0)
+    if (credits < 1) {
+      showUnlockResultModal({
+        title: 'Ask a grown-up',
+        message: 'This adventure needs a grown-up to open it. Grown-ups: you can add more adventures from the Profile page.',
+        type: 'error'
+      })
+      return
+    }
+
+    await performCreditUnlock(module)
+    createConfettiCelebration()
+
+    // Straight into the adventure — nothing else in the child's way
+    const child = state.selectedChild
+    const url = `/module.html?childId=${child.id}&moduleId=${module.id}&code=${encodeURIComponent(module.code || module.id)}&childName=${encodeURIComponent(child.name || '')}${state.isCurrentUserAdmin ? '&isAdmin=true' : ''}`
+    window.location.href = url
+  } catch (error) {
+    console.error('Auto-unlock error:', error)
+    showUnlockResultModal({
+      title: 'Hmm, that door is stuck',
+      message: 'We could not open this adventure right now. Please try again in a moment.',
+      type: 'error'
+    })
+  } finally {
+    _autoUnlockBusy = false
+  }
+}
+window.autoUnlockAndStart = autoUnlockAndStart
+
 if (confirmPurchaseButton) {
   confirmPurchaseButton.addEventListener('click', async () => {
     if (!state.currentPurchaseModule || !state.currentUser) return
@@ -2837,81 +3010,7 @@ if (confirmPurchaseButton) {
       confirmPurchaseButton.disabled = true
       confirmPurchaseButton.textContent = 'Unlocking...'
 
-      // Spend 1 credit from the child's balance
-      await spendChildCredit(state.selectedChild.id)
-
-      if (state.selectedChild?.id) {
-        const { error: childUnlockError } = await supabase
-          .from('child_modules')
-          .upsert([
-            {
-              child_id: state.selectedChild.id,
-              module_id: state.currentPurchaseModule.id,
-              locked: false
-            }
-          ], { onConflict: 'child_id,module_id' })
-
-        if (childUnlockError) throw childUnlockError
-
-        // Immediately update local child modules so the adventure map
-        // reflects the unlock even if the DB re-fetch returns stale data
-        const updatedChildModules = (state.childModules || []).slice()
-        const existingIdx = updatedChildModules.findIndex(cm => cm.module_id === state.currentPurchaseModule.id)
-        if (existingIdx >= 0) {
-          updatedChildModules[existingIdx] = { ...updatedChildModules[existingIdx], locked: false }
-        } else {
-          updatedChildModules.push({
-            child_id: state.selectedChild.id,
-            module_id: state.currentPurchaseModule.id,
-            locked: false
-          })
-        }
-        setChildModules(updatedChildModules)
-        window.childModules = updatedChildModules
-      }
-
-      // Invalidate child modules cache so selectChild fetches fresh data
-      if (state.selectedChild?.id) {
-        invalidateCacheByPrefix(`childModules:${state.selectedChild.id}`)
-      }
-
-      // Run all refresh queries in parallel - these are independent
-      const [creditResult, legacyResult, unlocksResult] = await Promise.all([
-        getChildCredits(state.selectedChild.id),
-        supabase
-          .from('parent_modules')
-          .select('module_id, is_active, modules(*)')
-          .eq('parent_id', state.currentUser.id),
-        getModuleUnlocks(
-          state.currentUser.id,
-          currentBillingPeriod.periodStart,
-          currentBillingPeriod.periodEnd
-        )
-      ])
-
-      currentCreditSummary = { credits_available: creditResult }
-      updateCreditWalletBadge()
-
-      const mergedMap = new Map()
-      ;[(legacyResult.data || []), ...(unlocksResult || []).map(entry => ({
-        module_id: entry.module_id,
-        is_active: true,
-        modules: entry.modules || null,
-        unlock_source: entry.unlock_source || 'subscription_credit'
-      }))].flat().forEach(entry => {
-        const existing = mergedMap.get(entry.module_id)
-        if (!existing || (entry.is_active && !existing.is_active)) mergedMap.set(entry.module_id, entry)
-      })
-      setParentModules(Array.from(mergedMap.values()))
-
-      renderParentModulesOverview()
-      renderAllModulesGrid()
-
-      // Re-render adventure map immediately with the local state we already updated
-      // (skipping selectChild which would make 3+ redundant DB calls)
-      if (window.enhancedDashboard && window.enhancedDashboard.adventureMap) {
-        window.enhancedDashboard.adventureMap.render()
-      }
+      await performCreditUnlock(state.currentPurchaseModule)
 
       closePurchaseModal()
       createConfettiCelebration()

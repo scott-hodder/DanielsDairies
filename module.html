@@ -325,7 +325,7 @@
   <div id="loader" class="loader-container">
     <div>
       <div class="spinner"></div>
-      <p class="loader-text">Loading module...</p>
+      <p class="loader-text">Daniel is getting your adventure ready&hellip;</p>
     </div>
   </div>
 
@@ -579,32 +579,35 @@
       try {
         let modId = moduleId;
         let xpReward = 0;
-        
+        let moduleMeta = null;
+
         // If we don't have moduleId, try to look it up by code
         if (!modId) {
           const code = modCode || moduleCode;
           const { data: mod, error: modError } = await supabase
             .from('modules')
-            .select('id, xp_reward')
+            .select('id, xp_reward, super_skill_id, title')
             .eq('code', code)
             .single();
-          
+
           if (modError || !mod) {
             throw new Error(`Module not found for code: ${code}`);
           }
           modId = mod.id;
           xpReward = mod.xp_reward || 0;
+          moduleMeta = mod;
         } else {
           const { data: mod, error: modError } = await supabase
             .from('modules')
-            .select('xp_reward')
+            .select('xp_reward, super_skill_id, title')
             .eq('id', modId)
             .single();
-          
+
           if (modError) {
             throw modError;
           }
           xpReward = mod?.xp_reward || 0;
+          moduleMeta = mod;
         }
         
         console.log('[completeModuleDB] Marking module as complete:', { childId: _state.childId, moduleId: modId });
@@ -669,7 +672,21 @@
         if (completionRecorded && xpReward > 0) {
           await awardModuleXp(_state.childId, xpReward);
         }
-        
+
+        // Tell the dashboard a module was just finished so it can run the
+        // post-completion check-in (Lenny's questions moved from before
+        // play to after victory).
+        if (completionRecorded) {
+          try {
+            localStorage.setItem(`dd_just_completed_${_state.childId}`, JSON.stringify({
+              at: Date.now(),
+              moduleId: modId,
+              superSkillId: moduleMeta?.super_skill_id || null,
+              moduleTitle: moduleMeta?.title || ''
+            }));
+          } catch (_) { /* private mode */ }
+        }
+
         return true;
       } catch (e) {
         console.error('[completeModuleDB] Failed:', e);
@@ -1472,11 +1489,45 @@
         });
         doc.querySelectorAll('script').forEach(s => s.remove());
         
-        // Inject HTML
-        document.getElementById('loader').style.display = 'none';
+        // Inject HTML. The loader stays up until the module script has
+        // actually painted the first page — hiding it here left children
+        // staring at a blank beige canvas for several seconds while the
+        // stored script built its pages and the cover image downloaded.
         const div = document.createElement('div');
         div.innerHTML = doc.body.innerHTML;
         while (div.firstChild) document.body.appendChild(div.firstChild);
+
+        function hideLoaderWhenFirstPagePaints() {
+          const loader = document.getElementById('loader');
+          if (!loader) return;
+          let done = false;
+          const hide = () => {
+            if (done) return;
+            done = true;
+            loader.style.display = 'none';
+          };
+          const firstPageReady = () => {
+            const p = document.querySelector('.page');
+            if (!p || !(p.innerText || '').trim()) return false;
+            // If the page leads with an image (module covers do), wait for it
+            const img = p.querySelector('img');
+            if (img && !img.complete) {
+              img.addEventListener('load', hide, { once: true });
+              img.addEventListener('error', hide, { once: true });
+              return true; // stop observing; the image events finish the job
+            }
+            hide();
+            return true;
+          };
+          if (firstPageReady()) return;
+          const obs = new MutationObserver(() => {
+            if (firstPageReady()) obs.disconnect();
+          });
+          obs.observe(document.body, { childList: true, subtree: true });
+          // Failsafe: never hold the loader hostage
+          setTimeout(hide, 4000);
+        }
+        hideLoaderWhenFirstPagePaints();
 
         window.ensureModuleCoverTitle = function() { return ensureModuleCoverTitle(mod); };
         window.ensureModuleCoverTitle();

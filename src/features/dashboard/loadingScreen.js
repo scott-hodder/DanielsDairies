@@ -72,6 +72,43 @@ function cancelPendingHide() {
   if (_hideRAF2) { cancelAnimationFrame(_hideRAF2); _hideRAF2 = null; }
 }
 
+// Watchdog: a loading screen that never resolves reads as "the app is
+// broken" with no way out. If we're still spinning after this long, swap
+// to a friendly retry state instead of holding the family hostage.
+const LOADING_WATCHDOG_MS = 20000;
+let _watchdogTimer = null;
+
+function cancelWatchdog() {
+  if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
+}
+
+function armWatchdog() {
+  cancelWatchdog();
+  _watchdogTimer = setTimeout(() => {
+    const loadingState = document.getElementById('loadingState');
+    if (!loadingState || loadingState.classList.contains('hidden')) return;
+    const container = loadingState.querySelector('.loading-container');
+    if (!container) return;
+    container.innerHTML = `
+      <div class="loading-content">
+        <div class="loading-character">
+          <img src="/images/characters/DanielTheDog.webp" alt="Daniel the Dog" class="character-img">
+        </div>
+        <div class="loading-text" style="text-align:center;">
+          <p class="quote-text">Hmm, the town is taking a while to wake up&hellip;</p>
+          <button type="button" id="loadingRetryBtn"
+            style="margin-top:14px;padding:12px 26px;border:none;border-radius:14px;cursor:pointer;
+                   font-family:'Fredoka',sans-serif;font-weight:700;font-size:15px;color:#16324f;
+                   background:linear-gradient(135deg,#f2c94c,#e6a800);box-shadow:0 4px 14px rgba(230,168,0,.35);">
+            Try again
+          </button>
+        </div>
+      </div>
+    `;
+    document.getElementById('loadingRetryBtn')?.addEventListener('click', () => window.location.reload());
+  }, LOADING_WATCHDOG_MS);
+}
+
 // Create and show loading screen
 export function showLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
@@ -79,6 +116,8 @@ export function showLoadingScreen() {
 
   // Cancel any in-progress fade-out
   cancelPendingHide();
+
+  armWatchdog();
 
   // If already showing the full loading screen (with Daniel), just ensure visible
   if (loadingState.querySelector('.loading-container')) {
@@ -122,6 +161,7 @@ export function showLoadingScreen() {
 // Hide loading screen with smooth fade — waits for content to paint first
 export function hideLoadingScreen() {
   const loadingState = document.getElementById('loadingState');
+  cancelWatchdog();
   if (!loadingState || loadingState.classList.contains('hidden')) return;
 
   cancelPendingHide();

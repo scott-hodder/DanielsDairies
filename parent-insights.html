@@ -377,10 +377,6 @@
         // ── Init ──
         async function init() {
             currentChildId = getChildIdFromContext()
-            if (!currentChildId) {
-                document.getElementById('loadingState').innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:48px;">No child selected. Go back to the dashboard and select a child.</p>'
-                return
-            }
 
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) {
@@ -388,6 +384,26 @@
                 return
             }
             currentUserId = user.id
+
+            // Direct visits (bookmark, typed URL) arrive without ?childId=.
+            // Auto-select when the family has exactly one child; send multi-
+            // child families to the dashboard picker instead of a dead end.
+            if (!currentChildId) {
+                const { data: kids } = await supabase
+                    .from('children')
+                    .select('id')
+                    .eq('parent_user_id', user.id)
+                    .order('created_at', { ascending: true })
+                if (kids && kids.length === 1) {
+                    currentChildId = kids[0].id
+                } else if (kids && kids.length > 1) {
+                    window.location.href = '/dashboard.html'
+                    return
+                } else {
+                    document.getElementById('loadingState').innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:48px;">No child selected. Go back to the dashboard and select a child.</p>'
+                    return
+                }
+            }
 
             // Parent Zone gate: insights contain parent-reported information
             // about the child, so children can't open this page unchecked

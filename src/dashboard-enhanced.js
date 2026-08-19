@@ -2213,7 +2213,7 @@ export class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = module.canUnlock ? '🔒 Spend 1 credit to unlock' : '🔒 Complete earlier modules first';
+        statusText = module.canUnlock ? '✨ Tap to open this adventure!' : '🔒 Complete earlier modules first';
         statusClass = 'locked-status';
       }
       tooltip.innerHTML = '<strong style="display:block;margin-bottom:4px;font-size:14px;">' + moduleTitle + '</strong><span class="' + statusClass + '">' + statusText + '</span>';
@@ -2222,7 +2222,11 @@ export class AdventureMapV4 {
       node.addEventListener('click', function(e) {
         e.stopPropagation();
         if (module.status === 'locked') {
-          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
+          // Child-facing path: unlock silently (credits are a grown-up
+          // concept) and go straight into the adventure.
+          if (module.canUnlock && typeof window.autoUnlockAndStart === 'function') {
+            window.autoUnlockAndStart(module.module || module);
+          } else if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
             window.openPurchaseModal(module.module || module);
           } else if (typeof window.showUnlockResultModal === 'function') {
             window.showUnlockResultModal({
@@ -2250,7 +2254,11 @@ export class AdventureMapV4 {
         e.preventDefault(); // Prevent subsequent click event from double-firing
         e.stopPropagation();
         if (module.status === 'locked') {
-          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
+          // Child-facing path: unlock silently (credits are a grown-up
+          // concept) and go straight into the adventure.
+          if (module.canUnlock && typeof window.autoUnlockAndStart === 'function') {
+            window.autoUnlockAndStart(module.module || module);
+          } else if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
             window.openPurchaseModal(module.module || module);
           } else if (typeof window.showUnlockResultModal === 'function') {
             window.showUnlockResultModal({

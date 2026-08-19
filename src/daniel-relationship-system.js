@@ -996,92 +996,38 @@ class DanielModulePreview {
   }
 
   async showModulePreviewWithDaniel(module) {
-    const category = window.enhancedDashboard?.adventureMap?.currentCategory || 'all';
+    // One tap → play. The check-ins that used to gate this moment (the
+    // "adventure is about to begin" intro and the 6-question assessment)
+    // now happen AFTER a module is completed, back on the dashboard —
+    // they never sit between the child and the content again. The module's
+    // own cover page introduces the guide character.
     const child = window.state?.selectedChild;
-    const self = this;
+    const rawMod = module.module || module;
 
     // Helper to clear the node loading animation
     const clearLoading = () => {
       if (typeof window._clearNodeLoading === 'function') window._clearNodeLoading();
     };
-    
-    // Get module order/position - check if this is the first module
-    // The module object from adventure map has pathwayOrder as a direct property
-    const rawMod = module.module || module;
-    const moduleOrder = module.pathwayOrder; // Direct property from adventure map module
-    
-    // Check if this is the first module in the current adventure map (index 0)
-    const adventureMap = window.enhancedDashboard?.adventureMap;
-    let moduleIndex = -1;
-    if (adventureMap && adventureMap.modules && adventureMap.modules.length > 0) {
-      moduleIndex = adventureMap.modules.findIndex(m => m.id === module.id);
-    }
-    const isFirstModuleInMap = moduleIndex === 0;
-    
-    // First module if pathwayOrder is 1 OR if it's the first in the current map view
-    const isFirstModule = moduleOrder === 1 || isFirstModuleInMap;
-    const superSkillId = rawMod.super_skill_id || null;
 
-    // Check periodic check-in FIRST - it takes priority over super skill intro
-    // (e.g. module 4 needs a check-in, even if it's the first module of a new super skill)
-    if (child && typeof window.showCheckinPopup === 'function') {
-      try {
-        const needsCheckin = await self.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-        console.log('[DanielSystem] Periodic check-in check - needsCheckin:', needsCheckin);
-        if (needsCheckin) {
-          clearLoading();
-          console.log('[DanielSystem] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)');
-          const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
-          window.showCheckinPopup(rawMod, function() {
-            window.location.href = moduleUrl;
-          }, true);
-          return;
-        }
-      } catch (e) {
-        console.error('[Daniel] Error checking periodic check-in:', e);
-      }
-    }
-
-    // Check super skill intro - show character introduction on first module of each super skill
-    console.log('[DanielSystem] Intro check - isFirstModule:', isFirstModule, 'superSkillId:', superSkillId);
-    if (isFirstModule && superSkillId && child && typeof window.showCheckinPopup === 'function') {
-      const introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
-      const alreadySeen = localStorage.getItem(introKey);
-      console.log('[DanielSystem] introKey:', introKey, 'alreadySeen:', alreadySeen);
-      if (!alreadySeen) {
-        clearLoading();
-        console.log('[DanielSystem] Showing INTRO (first module for this super skill)');
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
-        window.showCheckinPopup(rawMod, function() {
-          localStorage.setItem(introKey, 'true');
-          window.location.href = moduleUrl;
-        });
-        return;
-      }
-    }
-
-    // Show Daniel's pre-activity dialogue immediately for fast UI response
     clearLoading();
-    this.dialogueSystem.showPreActivity(module, category, async () => {
-      if (child && module) {
-        const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + (rawMod.id || module.id) + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
 
-        window.location.href = moduleUrl;
-        return;
-      }
+    if (child && rawMod && rawMod.id) {
+      const moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + rawMod.id + '&code=' + (module.code || rawMod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
+      window.location.href = moduleUrl;
+      return;
+    }
 
-      // Fallback to other methods if direct navigation fails
-      if (typeof startModule === 'function') {
-        startModule(module);
-      } else if (window.enhancedDashboard && window.enhancedDashboard.startModule) {
-        // Wrap the module in the expected structure for enhanced dashboard
-        const wrappedModule = {
-          module: module,
-          code: module.code
-        };
-        window.enhancedDashboard.startModule(wrappedModule);
-      }
-    });
+    // Fallback to other methods if direct navigation fails
+    if (typeof startModule === 'function') {
+      startModule(module);
+    } else if (window.enhancedDashboard && window.enhancedDashboard.startModule) {
+      // Wrap the module in the expected structure for enhanced dashboard
+      const wrappedModule = {
+        module: module,
+        code: module.code
+      };
+      window.enhancedDashboard.startModule(wrappedModule);
+    }
   }
   
   // Check if any check-in has been completed for this child
