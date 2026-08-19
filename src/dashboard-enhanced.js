@@ -6,6 +6,7 @@
 import { getZoneState } from './adventure-map-zones.js';
 import { getZoneSceneCss, getZoneFillerCss, getZoneGround, isSvgScenesEnabled } from './adventure-zone-scenes.js';
 import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
+import { renderSkillJourneyView } from './features/dashboard/skillJourneyMap.js';
 // Side-effect import: defines window.roadblockSystem on load.
 import './roadblock-system.js';
 import { isMiniGamesEnabled } from './minigames/index.js';
@@ -283,6 +284,22 @@ export class AdventureMapV4 {
     // Once they click a card, _skillSelectedThisSession is set and the map renders.
     if (!this._skillSelectedThisSession && this.getAvailableCategories().length > 1) {
       this.renderSkillPickerInline();
+      showDashboardFooter();
+      if (typeof window._dashboardRenderComplete === 'function') {
+        window._dashboardRenderComplete();
+        window._dashboardRenderComplete = null;
+      }
+      return;
+    }
+
+    // ── Skill Journey view ("inside the district") ──
+    // The new scene renderer owns the whole Adventures view: one
+    // continuous road from the district depot to Brain City, buildings
+    // that grow as modules complete, and the skill's guide character at
+    // the next stop. The classic vertical map stays available behind
+    // window.DD_CLASSIC_JOURNEY for rollback.
+    if (!window.DD_CLASSIC_JOURNEY && this.modules.length > 0) {
+      renderSkillJourneyView(this);
       showDashboardFooter();
       if (typeof window._dashboardRenderComplete === 'function') {
         window._dashboardRenderComplete();
@@ -1048,15 +1065,27 @@ export class AdventureMapV4 {
     container.querySelectorAll('.skill-card').forEach(function(cardEl) {
       var slug = cardEl.dataset.skill;
       var cardData = skillCards.find(function(c) { return c.slug === slug; });
-      var openPreview = function() {
-        if (cardData) self.showSkillPreviewModal(cardData);
+      // Playable skills go straight in — the card already says everything the
+      // old confirmation modal repeated. Locked skills keep the preview modal
+      // because it explains what unlocks them.
+      var openCard = function() {
+        if (!cardData) return;
+        if (cardData.locked) { self.showSkillPreviewModal(cardData); return }
+        self.currentCategory = cardData.slug;
+        self.setStoredCategory(cardData.slug);
+        self._skillSelectedThisSession = true;
+        self.currentCycleId = null;
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        self.render();
       };
       cardEl.addEventListener('click', function(e) {
         if (e.target.classList.contains('skill-card-btn')) return;
-        openPreview();
+        openCard();
       });
       var btn = cardEl.querySelector('.skill-card-btn');
-      if (btn) btn.addEventListener('click', openPreview);
+      if (btn) btn.addEventListener('click', openCard);
     });
 
     // Event: Help me choose quiz
