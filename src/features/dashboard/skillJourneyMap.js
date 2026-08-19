@@ -74,6 +74,50 @@ function seededRand(seed) {
 
 function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
 
+/* ── Daniel's walk ────────────────────────────────────────────────
+   When the child returns with new progress, Daniel WALKS the freshly
+   built road from where he was to the new frontier (sprite frames +
+   camera follow) instead of teleporting. Their work moves him. */
+
+const WALK_FRAMES = [1, 2, 3, 4, 5].map(n => `/images/characters/daniel-walking${n}.png`)
+
+function walkDaniel(svg, pts, fromIdx, toIdx, follow) {
+  const daniel = svg?.querySelector('#sjDaniel')
+  if (!daniel || toIdx <= fromIdx) return
+  const probe = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  probe.setAttribute('d', smoothPath(pts, fromIdx, toIdx))
+  probe.setAttribute('fill', 'none')
+  probe.setAttribute('stroke', 'none')
+  svg.appendChild(probe)
+  const fullLen = probe.getTotalLength()
+  const len = Math.max(0, fullLen - 74) // stop just before the new site
+  if (!len) { probe.remove(); return }
+  WALK_FRAMES.forEach(src => { const i = new Image(); i.src = src })
+  const idle = daniel.getAttribute('href')
+  const dur = Math.min(3200, Math.max(1300, len * 3))
+  const t0 = performance.now()
+  let frame = 0
+  let lastSwap = 0
+  const step = (now) => {
+    const raw = Math.min(1, (now - t0) / dur)
+    const t = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2
+    const pt = probe.getPointAtLength(len * t)
+    daniel.setAttribute('x', pt.x - 42)
+    daniel.setAttribute('y', pt.y - 80)
+    if (now - lastSwap > 110) {
+      frame = (frame + 1) % WALK_FRAMES.length
+      daniel.setAttribute('href', WALK_FRAMES[frame])
+      lastSwap = now
+    }
+    follow(pt.x)
+    if (raw < 1) { requestAnimationFrame(step) } else {
+      daniel.setAttribute('href', idle)
+      probe.remove()
+    }
+  }
+  requestAnimationFrame(step)
+}
+
 /* ── Scene constants ──────────────────────────────────────────── */
 
 const H = 620                 // world height (viewBox units)
@@ -131,15 +175,17 @@ function defsSvg(theme) {
 }
 
 // A little building that a completed module raises beside the road.
-// Deterministic variety: four styles cycled by module ordinal.
-function grownBuilding(x, y, ordinal, theme) {
+// Deterministic variety: four styles cycled by module ordinal. Buildings
+// sit on the OUTSIDE of the road's curve — below high bends, above low
+// ones — so they never crowd the road or drift into the sky band.
+function grownBuilding(pt, ordinal, theme) {
   const roofs = ['url(#sjRoofPink)', 'url(#sjRoofSkill)', 'url(#sjRoofGreen)', 'url(#sjRoofAmber)']
   const strokes = ['#C74C8B', theme.color, '#2D6A4F', '#B45309']
   const kind = ordinal % 4
   const roof = roofs[kind], stroke = strokes[kind]
-  const flip = ordinal % 2 === 0 ? 1 : -1
-  const bx = x + 62 * flip
-  const by = y - 46
+  const above = pt.y >= ROAD_Y // low bend → build above the road
+  const bx = pt.x + (ordinal % 2 === 0 ? 38 : -38)
+  const by = above ? pt.y - 118 : pt.y + 52
   if (kind === 3) {
     // Garden plot instead of a fourth house — variety keeps the street alive
     return `<g class="sj-grown" transform="translate(${bx},${by + 26})">
@@ -186,7 +232,7 @@ function depotSvg(theme, districtName) {
 function zoneCluster(zoneIdx, x, reached, theme) {
   const ghost = reached ? '' : ` opacity=".42" stroke-dasharray="7 7"`
   const label = ['🌱 Trailhead', '🏡 Village', '⛲ Town Centre', '🏙️ Brain City'][zoneIdx]
-  const y = HORIZON + 74
+  const y = HORIZON + 42
   let art = ''
   if (zoneIdx === 0) {
     art = `
@@ -242,8 +288,9 @@ function zoneCluster(zoneIdx, x, reached, theme) {
           <rect x="38" y="-22" width="8" height="8" rx="2" fill="#FFF3C2"/><rect x="50" y="-22" width="8" height="8" rx="2" fill="#EAF7FF"/>` : ''}
       </g>`
   }
-  // Zone 0's pill floats above its tent (below, it hides behind the depot)
-  const pillY = zoneIdx === 0 ? y - 46 : y + 92
+  // Labels float on the horizon line, above the buildings — below they
+  // collided with the road's high bends and the grown buildings
+  const pillY = zoneIdx === 0 ? y - 46 : HORIZON - 44
   return `${art}
     <g transform="translate(${x},${pillY})">
       <rect x="-72" y="0" width="144" height="28" rx="14" fill="rgba(255,255,255,.95)" stroke="${reached ? theme.color : '#AEB9C4'}" stroke-width="2"/>
@@ -389,8 +436,11 @@ export function renderSkillJourneyView(map) {
     return lastNodeX + 140
   })
   // Trailhead camp sits just BEFORE the first adventure (between the depot
-  // and node 1) so it never crowds the node's own grown building
+  // and node 1); other clusters sit BETWEEN the zone boundary nodes so they
+  // never collide with the buildings the nodes themselves grow
   zoneXs[0] = START_X - 88
+  zoneXs[1] -= NODE_DX / 2 + 40
+  zoneXs[2] -= NODE_DX / 2 + 40
   zoneXs[3] = cityX // the city IS the last zone
 
   /* ── Build scene ── */
@@ -406,6 +456,15 @@ export function renderSkillJourneyView(map) {
   // Distant hills along the horizon
   for (let i = 0; i < Math.ceil(W / 700); i++) {
     s += `<path d="M${i * 700 - 80} ${HORIZON + 14} Q${i * 700 + 150} ${HORIZON - 52} ${i * 700 + 420} ${HORIZON + 14}Z" fill="#B9DCA4" opacity=".7"/>`
+  }
+  // Birds
+  for (let i = 0; i < Math.ceil(W / 900); i++) {
+    const bx = 420 + i * 900
+    const by = 70 + (i % 3) * 30
+    s += `<g opacity=".45" stroke="#4A5A6A" stroke-width="2.4" fill="none" stroke-linecap="round">
+      <path d="M${bx - 8} ${by} Q${bx - 4} ${by - 6} ${bx} ${by} Q${bx + 4} ${by - 6} ${bx + 8} ${by}"/>
+      <path d="M${bx + 30} ${by + 14} Q${bx + 33} ${by + 9} ${bx + 36} ${by + 14} Q${bx + 39} ${by + 9} ${bx + 42} ${by + 14}"/>
+    </g>`
   }
   // Brain City skyline — pale until the child arrives (stage 3)
   const cityReached = stageIndex >= 3
@@ -477,11 +536,11 @@ export function renderSkillJourneyView(map) {
       const popNew = animatePave && e._idx === newestCompleted
       s += `<g class="sj-node" data-node-index="${e._idx}" role="button" tabindex="0" aria-label="${title} — completed">
         <g transform="translate(${pt.x},${pt.y})">
-          <circle r="26" fill="#F0DFB4" stroke="#C9AA74" stroke-width="4.5"/>
-          <circle r="17" fill="#4ADE80" stroke="#22C55E" stroke-width="3"/>
-          <text y="6" font-size="16" text-anchor="middle" fill="#fff" font-weight="700">✓</text>
+          <circle r="18" fill="#F0DFB4" stroke="#C9AA74" stroke-width="3.5"/>
+          <circle r="11.5" fill="#4ADE80" stroke="#22C55E" stroke-width="2.5"/>
+          <text y="4.5" font-size="12" text-anchor="middle" fill="#fff" font-weight="700">✓</text>
         </g>
-        <g${popNew ? ' class="sj-grown-new"' : ''}>${grownBuilding(pt.x, pt.y, ordinal - 1, theme)}</g>
+        <g${popNew ? ' class="sj-grown-new"' : ''}>${grownBuilding(pt, ordinal - 1, theme)}</g>
       </g>`
     } else if (e._idx === currentIdx || e.status === 'available') {
       const isCurrent = e._idx === currentIdx
@@ -513,10 +572,14 @@ export function renderSkillJourneyView(map) {
     const dy = (prev.y + cp.y) / 2 - 78
     const bubbleN = entries.slice(0, currentIdx + 1).filter(e => !e.isRoadBuilder).length
     const isGate = entries[currentIdx].isRoadBuilder
-    s += `<image href="/images/characters/DanielTheDog.webp" x="${dx}" y="${dy}" width="84" height="84"/>`
+    // At a gate the guide waits on the NEAR side (the road is blocked);
+    // at a build site they welcome the child from the far side
+    const gx = isGate ? cp.x - 176 : cp.x + 34
+    const bx2 = gx + 84
+    s += `<image id="sjDaniel" href="/images/characters/DanielTheDog.webp" x="${dx}" y="${dy}" width="84" height="84"/>`
     s += `<g class="sj-bob">
-      <image href="${esc(guide.img)}" x="${cp.x + 34}" y="${cp.y - 118}" width="96" height="96"/>
-      <g transform="translate(${cp.x + 118},${cp.y - 148})">
+      <image href="${esc(guide.img)}" x="${gx}" y="${cp.y - 118}" width="96" height="96"/>
+      <g transform="translate(${bx2},${cp.y - 148})">
         <rect x="-70" y="-20" width="140" height="44" rx="14" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
         <path d="M-38 24 L-30 38 L-24 24Z" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
         <text y="-3" font-family="Fredoka" font-size="12.5" font-weight="700" fill="#16324f" text-anchor="middle">${isGate ? 'A gate game blocks' : `Adventure ${bubbleN} is`}</text>
@@ -615,7 +678,30 @@ export function renderSkillJourneyView(map) {
   }, { passive: false })
 
   const focusX = currentIdx >= 0 ? nodePt(currentIdx).x : (completed >= total && total > 0 ? cityX - 60 : START_X)
-  requestAnimationFrame(() => centerOn(focusX, false))
+
+  // Frontier memory: when the child returns having progressed, Daniel
+  // walks the new road (camera following) instead of teleporting.
+  const frontKey = `sj_front_${child?.id || 'x'}_${map.currentCategory}`
+  const targetPtIdx = currentIdx >= 0 ? currentIdx + 1 : (total > 0 && completed >= total ? pts.length - 1 : -1)
+  let prevPtIdx = -1
+  try {
+    prevPtIdx = parseInt(localStorage.getItem(frontKey) ?? '-1', 10)
+    if (targetPtIdx >= 0) localStorage.setItem(frontKey, String(targetPtIdx))
+  } catch (_) { /* private mode */ }
+  const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const shouldWalk = !noMotion && prevPtIdx >= 1 && targetPtIdx > prevPtIdx
+
+  if (shouldWalk) {
+    requestAnimationFrame(() => {
+      centerOn(pts[prevPtIdx].x, false)
+      walkDaniel(world.querySelector('svg'), pts, prevPtIdx, targetPtIdx, (x) => {
+        tx = viewport.clientWidth / 2 - x * scale()
+        clamp(); apply(false)
+      })
+    })
+  } else {
+    requestAnimationFrame(() => centerOn(focusX, false))
+  }
   container.querySelector('#sjCenter')?.addEventListener('click', () => centerOn(focusX, true))
   container.querySelector('#sjHome')?.addEventListener('click', () => { tx = 0; apply(true) })
   setTimeout(() => { const h = container.querySelector('#sjHint'); if (h) h.style.opacity = '0' }, 4500)
