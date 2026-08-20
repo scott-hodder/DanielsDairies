@@ -186,7 +186,8 @@ function grownBuilding(pt, ordinal, theme, zone = 0) {
   const roof = roofs[kind], stroke = strokes[kind]
   const above = pt.y >= ROAD_Y // low bend → build above the road
   const bx = pt.x + (ordinal % 2 === 0 ? 38 : -38)
-  const by = above ? pt.y - 118 : pt.y + 52
+  const roadHalf = [14, 20, 26, 33][Math.min(3, zone)]
+  const by = above ? pt.y - 106 - roadHalf : pt.y + 40 + roadHalf
   if (kind === 3) {
     // Garden plot instead of a fourth house — variety keeps the street alive
     return `<g class="sj-grown" transform="translate(${bx},${by + 26}) scale(${zs})">
@@ -476,12 +477,13 @@ export function renderSkillJourneyView(map) {
     }
   }
 
-  // One grade of road per zone — width and dressing grow with the town
+  // One grade of road per zone — each surface is unmistakably different:
+  // dirt track → cobbled lane → bitumen road → grand bitumen avenue
   const ROAD_GRADES = [
-    { edge: 22, edgeC: '#B99B6B', fill: 15, fillC: '#E3D2AC', center: null },                          // dirt track
-    { edge: 34, edgeC: '#C9AA74', fill: 25, fillC: '#EAD9B0', center: { w: 2.5, dash: '2 13' } },      // gravel lane
-    { edge: 46, edgeC: '#C9AA74', fill: 36, fillC: '#F0DFB4', center: { w: 3.5, dash: '14 22' } },     // paved road
-    { edge: 60, edgeC: '#C4A26A', fill: 49, fillC: '#F3E4BC', center: { w: 4, dash: '18 26' } },       // grand avenue
+    { edge: 22, edgeC: '#B99B6B', fill: 15, fillC: '#E3D2AC', center: null, cobble: false },
+    { edge: 36, edgeC: '#A8946E', fill: 27, fillC: '#E6D9BC', center: null, cobble: true },
+    { edge: 48, edgeC: '#E0C080', fill: 38, fillC: '#4A4A4A', center: { w: 3.5, dash: '16 20', c: '#FFFFFF' }, cobble: false },
+    { edge: 62, edgeC: '#E0C080', fill: 50, fillC: '#3D3D3D', center: { w: 4, dash: '20 24', c: '#F2C94C' }, cobble: false },
   ]
 
   // Did the child just finish something? Animate the newest paving once.
@@ -581,17 +583,37 @@ export function renderSkillJourneyView(map) {
     s += `<path d="${constrD}" fill="none" stroke="#C9AA74" stroke-width="${cg.edge + 4}" stroke-linecap="round" opacity=".55"/>`
     s += `<path d="${constrD}" fill="none" stroke="#E4D5AE" stroke-width="${cg.fill + 4}" stroke-dasharray="30 22" stroke-linecap="round" opacity=".85"/>`
   }
-  pavedRuns.forEach((run, ri) => {
+  // Draw wider (later) grades first so narrower early roads lie cleanly on
+  // top at the seams; the junction pads under the gates mask the joins.
+  const runsWideFirst = [...pavedRuns].sort((a, b) => b.zone - a.zone)
+  const newestRun = pavedRuns[pavedRuns.length - 1]
+  runsWideFirst.forEach((run) => {
     const g = ROAD_GRADES[run.zone]
     const d = smoothPath(pts, run.from, run.to)
     if (!d) return
-    const isNewest = animatePave && ri === pavedRuns.length - 1
+    const isNewest = animatePave && run === newestRun
     s += `<path d="${d}" fill="none" stroke="#37583B" stroke-width="${g.edge + 2}" stroke-linecap="round" opacity=".14" transform="translate(0 6)"/>`
     s += `<path d="${d}" fill="none" stroke="${g.edgeC}" stroke-width="${g.edge}" stroke-linecap="round"/>`
     s += `<path d="${d}" fill="none" stroke="${g.fillC}" stroke-width="${g.fill}" stroke-linecap="round"${isNewest ? ' class="sj-pave-new" pathLength="1000"' : ''}/>`
-    if (g.center) s += `<path d="${d}" fill="none" stroke="#FFF8E0" stroke-width="${g.center.w}" stroke-dasharray="${g.center.dash}" stroke-linecap="round" opacity=".7"/>`
-    // The grand avenue gets kerb lines — the road itself feels like a city
-    if (run.zone === 3) s += `<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".5" transform="translate(0 ${-g.fill / 2 + 3})"/>`
+    // Cobbled lane: speckled stone texture along the surface
+    if (g.cobble) {
+      s += `<path d="${d}" fill="none" stroke="#D3C4A0" stroke-width="${g.fill - 6}" stroke-dasharray="5 11" stroke-linecap="round" opacity=".85"/>`
+      s += `<path d="${d}" fill="none" stroke="#C4B28C" stroke-width="${Math.max(6, g.fill - 16)}" stroke-dasharray="4 13" stroke-dashoffset="7" stroke-linecap="round" opacity=".6"/>`
+    }
+    if (g.center) s += `<path d="${d}" fill="none" stroke="${g.center.c}" stroke-width="${g.center.w}" stroke-dasharray="${g.center.dash}" stroke-linecap="round" opacity=".85"/>`
+  })
+
+  // Junction pads: every zone gate stands on a small round plaza that both
+  // road grades plug into — no raw seams between surfaces.
+  entries.forEach(e => {
+    if (!e.isRoadBuilder) return
+    const gpt = nodePt(e._idx)
+    if (e._idx + 1 > constructionEnd) return // gate not on the built road yet
+    const zNext = Math.min(3, zoneOfEntry[e._idx] + 1)
+    const g = ROAD_GRADES[zNext]
+    const padR = g.edge / 2 + 8
+    s += `<circle cx="${gpt.x}" cy="${gpt.y}" r="${padR}" fill="#E6D9BC" stroke="#A8946E" stroke-width="3.5"/>`
+    s += `<circle cx="${gpt.x}" cy="${gpt.y}" r="${padR - 8}" fill="none" stroke="#D3C4A0" stroke-width="3" stroke-dasharray="4 8" opacity=".8"/>`
   })
 
   // Depot (over the road start)
@@ -611,13 +633,15 @@ export function renderSkillJourneyView(map) {
     if (e.status === 'completed') {
       // Paved stop + the building this module raised
       const popNew = animatePave && e._idx === newestCompleted
-      s += `<g class="sj-node" data-node-index="${e._idx}" role="button" tabindex="0" aria-label="${title} — completed">
+      // The grown building is SCENERY — only the ✓ stud replays the module.
+      // (Houses inside the tap target sent children into modules by accident.)
+      s += `<g pointer-events="none"${popNew ? ' class="sj-grown-new"' : ''}>${grownBuilding(pt, ordinal - 1, theme, zoneOfEntry[e._idx])}</g>`
+      s += `<g class="sj-node" data-node-index="${e._idx}" role="button" tabindex="0" aria-label="${title} — completed, tap to replay">
         <g transform="translate(${pt.x},${pt.y})">
           <circle r="18" fill="#F0DFB4" stroke="#C9AA74" stroke-width="3.5"/>
           <circle r="11.5" fill="#4ADE80" stroke="#22C55E" stroke-width="2.5"/>
           <text y="4.5" font-size="12" text-anchor="middle" fill="#fff" font-weight="700">✓</text>
         </g>
-        <g${popNew ? ' class="sj-grown-new"' : ''}>${grownBuilding(pt, ordinal - 1, theme, zoneOfEntry[e._idx])}</g>
       </g>`
     } else if (e._idx === currentIdx || e.status === 'available') {
       const isCurrent = e._idx === currentIdx
@@ -654,7 +678,7 @@ export function renderSkillJourneyView(map) {
     const gx = isGate ? cp.x - 176 : cp.x + 34
     const bx2 = gx + 64
     s += `<image id="sjDaniel" href="/images/characters/DanielTheDog.webp" x="${dx}" y="${dy}" width="84" height="84"/>`
-    s += `<g class="sj-bob">
+    s += `<g>
       <image href="${esc(guide.img)}" x="${gx}" y="${cp.y - 96}" width="74" height="74"/>
       <g transform="translate(${bx2},${cp.y - 148})">
         <rect x="-70" y="-20" width="140" height="44" rx="14" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
@@ -666,7 +690,7 @@ export function renderSkillJourneyView(map) {
   } else if (total > 0 && completed >= total) {
     // Everything built — celebrate at the city
     s += `<image href="/images/characters/Daniel_Celebrating.webp" x="${cityX - 150}" y="${HORIZON + 40}" width="104" height="104"/>`
-    s += `<g class="sj-bob"><image href="${esc(guide.img)}" x="${cityX - 44}" y="${HORIZON + 52}" width="84" height="84"/></g>`
+    s += `<g><image href="${esc(guide.img)}" x="${cityX - 44}" y="${HORIZON + 52}" width="84" height="84"/></g>`
     s += `<g transform="translate(${cityX - 40},${HORIZON - 4})">
       <rect x="-108" y="-22" width="216" height="44" rx="14" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
       <text y="-2" font-family="Fredoka" font-size="13" font-weight="700" fill="#16324f" text-anchor="middle">You built the whole road to Brain City!</text>
