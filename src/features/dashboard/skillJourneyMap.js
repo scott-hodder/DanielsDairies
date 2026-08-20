@@ -178,7 +178,8 @@ function defsSvg(theme) {
 // Deterministic variety: four styles cycled by module ordinal. Buildings
 // sit on the OUTSIDE of the road's curve — below high bends, above low
 // ones — so they never crowd the road or drift into the sky band.
-function grownBuilding(pt, ordinal, theme) {
+function grownBuilding(pt, ordinal, theme, zone = 0) {
+  const zs = [0.8, 1, 1.18, 1.36][Math.min(3, zone)]
   const roofs = ['url(#sjRoofPink)', 'url(#sjRoofSkill)', 'url(#sjRoofGreen)', 'url(#sjRoofAmber)']
   const strokes = ['#C74C8B', theme.color, '#2D6A4F', '#B45309']
   const kind = ordinal % 4
@@ -188,14 +189,14 @@ function grownBuilding(pt, ordinal, theme) {
   const by = above ? pt.y - 118 : pt.y + 52
   if (kind === 3) {
     // Garden plot instead of a fourth house — variety keeps the street alive
-    return `<g class="sj-grown" transform="translate(${bx},${by + 26})">
+    return `<g class="sj-grown" transform="translate(${bx},${by + 26}) scale(${zs})">
       <ellipse rx="34" ry="12" fill="#8CC470" opacity=".85"/>
       <ellipse rx="34" ry="12" fill="none" stroke="#5F9448" stroke-width="2" stroke-dasharray="4 6"/>
       <use href="#sjFlowerP" x="-14" y="-4"/><use href="#sjFlowerY" x="2" y="2"/><use href="#sjFlowerP" x="16" y="-6"/>
       <use href="#sjBush" x="-28" y="-8" transform="scale(.7)" transform-origin="-28 -8"/>
     </g>`
   }
-  return `<g class="sj-grown" transform="translate(${bx},${by})">
+  return `<g class="sj-grown" transform="translate(${bx},${by}) scale(${zs})">
     <ellipse cy="42" rx="42" ry="12" fill="#2F5D3A" opacity=".13"/>
     <rect x="-26" y="0" width="52" height="36" rx="6" fill="url(#sjCream)" stroke="${stroke}" stroke-width="3"/>
     <path d="M-32 0 Q0 -28 32 0Z" fill="${roof}" stroke="${stroke}" stroke-width="3"/>
@@ -246,32 +247,58 @@ function zoneCluster(zoneIdx, x, reached, theme) {
         <use href="#sjPine" x="-52" y="6"/>
       </g>`
   } else if (zoneIdx === 1) {
+    // Village: a proper little hamlet — three cottages, fence, well
     art = `
       <g transform="translate(${x},${y})"${ghost}>
-        <g transform="translate(-52,26)">
-          <rect x="-26" y="-6" width="52" height="34" rx="6" fill="url(#sjCream)" stroke="#B58098" stroke-width="3"/>
-          <path d="M-32 -6 Q0 -32 32 -6Z" fill="url(#sjRoofPink)" stroke="#C74C8B" stroke-width="3"/>
+        <g transform="translate(-84,28)">
+          <ellipse cy="44" rx="42" ry="11" fill="#2F5D3A" opacity=".12"/>
+          <rect x="-30" y="-8" width="60" height="40" rx="7" fill="url(#sjCream)" stroke="#B58098" stroke-width="3"/>
+          <path d="M-37 -8 Q0 -38 37 -8Z" fill="url(#sjRoofPink)" stroke="#C74C8B" stroke-width="3"/>
+          <rect x="-18" y="4" width="14" height="12" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="2"/>
+          <rect x="6" y="6" width="13" height="26" rx="3" fill="url(#sjWood)" stroke="#5F4126" stroke-width="2"/>
         </g>
-        <g transform="translate(30,34)">
-          <rect x="-24" y="-6" width="48" height="30" rx="6" fill="url(#sjCream)" stroke="#8878B0" stroke-width="3"/>
-          <path d="M-30 -6 Q0 -30 30 -6Z" fill="url(#sjRoofSkill)" stroke="${theme.color}" stroke-width="3"/>
+        <g transform="translate(6,38)">
+          <rect x="-26" y="-8" width="52" height="36" rx="6" fill="url(#sjCream)" stroke="#8878B0" stroke-width="3"/>
+          <path d="M-33 -8 Q0 -34 33 -8Z" fill="url(#sjRoofSkill)" stroke="${theme.color}" stroke-width="3"/>
+          <rect x="-12" y="2" width="12" height="11" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="2"/>
         </g>
-        ${reached ? `<use href="#sjFlowerP" x="-14" y="66"/><use href="#sjFlowerY" x="58" y="70"/>` : ''}
+        <g transform="translate(84,30)">
+          <rect x="-24" y="-6" width="48" height="34" rx="6" fill="url(#sjCream)" stroke="#2D6A4F" stroke-width="3"/>
+          <path d="M-30 -6 Q0 -30 30 -6Z" fill="url(#sjRoofGreen)" stroke="#2D6A4F" stroke-width="3"/>
+        </g>
+        <g transform="translate(46,80)">
+          <path d="M-40 0 H40 M-40 9 H40" stroke="#B07D4B" stroke-width="3.5"/>
+          <path d="M-36 -7 V14 M0 -7 V14 M36 -7 V14" stroke="#96683C" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        ${reached ? `<use href="#sjFlowerP" x="-34" y="82"/><use href="#sjFlowerY" x="-116" y="86"/><use href="#sjTree" x="130" y="66" transform="scale(.85)" transform-origin="130 66"/>` : ''}
       </g>`
   } else if (zoneIdx === 2) {
+    // Town Centre: a real square — plaza, fountain, two-storey buildings,
+    // lamp posts. Clearly a step up from the village.
     art = `
-      <g transform="translate(${x},${y + 30})"${ghost}>
-        <circle r="30" fill="#F8EDD2" stroke="#CBAE79" stroke-width="3"/>
-        <circle r="12" fill="url(#sjWater)" stroke="#5FA8CC" stroke-width="2.5"/>
-        <circle cy="-3" r="4" fill="#FFF8DE" stroke="#D9A520" stroke-width="1.5"/>
-        <g transform="translate(-52,-14)">
-          <rect x="-16" y="0" width="32" height="24" rx="5" fill="url(#sjCream)" stroke="#B07B33" stroke-width="2.5"/>
-          <path d="M-20 0 Q0 -18 20 0Z" fill="url(#sjRoofAmber)" stroke="#B45309" stroke-width="2.5"/>
+      <g transform="translate(${x},${y + 26})"${ghost}>
+        <ellipse cy="46" rx="120" ry="26" fill="#F8EDD2" stroke="#CBAE79" stroke-width="3"/>
+        <circle cy="40" r="17" fill="url(#sjWater)" stroke="#5FA8CC" stroke-width="2.5"/>
+        <circle cy="34" r="5.5" fill="#FFF8DE" stroke="#D9A520" stroke-width="1.6"/>
+        <g transform="translate(-88,-24)">
+          <rect x="-27" y="0" width="54" height="62" rx="6" fill="url(#sjCream)" stroke="#B07B33" stroke-width="3"/>
+          <path d="M-33 0 Q0 -24 33 0Z" fill="url(#sjRoofAmber)" stroke="#B45309" stroke-width="3"/>
+          <rect x="-17" y="10" width="12" height="11" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
+          <rect x="5" y="10" width="12" height="11" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
+          <rect x="-17" y="30" width="12" height="11" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
+          <rect x="5" y="30" width="12" height="11" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
         </g>
-        <g transform="translate(52,-12)">
-          <rect x="-15" y="0" width="30" height="22" rx="5" fill="url(#sjCream)" stroke="#4E7A96" stroke-width="2.5"/>
-          <path d="M-19 0 Q0 -16 19 0Z" fill="url(#sjRoofGreen)" stroke="#2D6A4F" stroke-width="2.5"/>
+        <g transform="translate(88,-18)">
+          <rect x="-26" y="0" width="52" height="56" rx="6" fill="url(#sjCream)" stroke="#4E7A96" stroke-width="3"/>
+          <path d="M-32 0 Q0 -22 32 0Z" fill="url(#sjRoofGreen)" stroke="#2D6A4F" stroke-width="3"/>
+          <rect x="-16" y="9" width="11" height="10" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
+          <rect x="5" y="9" width="11" height="10" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
+          <rect x="-16" y="27" width="11" height="10" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
+          <rect x="5" y="27" width="11" height="10" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
         </g>
+        ${reached ? `
+        <g transform="translate(-36,6)"><path d="M0 34 V-6" stroke="#5C6470" stroke-width="3"/><rect x="-6" y="-14" width="12" height="10" rx="3" fill="#FFE58B" stroke="#B8912E" stroke-width="1.8"/></g>
+        <g transform="translate(36,6)"><path d="M0 34 V-6" stroke="#5C6470" stroke-width="3"/><rect x="-6" y="-14" width="12" height="10" rx="3" fill="#FFE58B" stroke="#B8912E" stroke-width="1.8"/></g>` : ''}
       </g>`
   } else {
     art = `
@@ -403,6 +430,30 @@ export function renderSkillJourneyView(map) {
 
   const nodePt = i => pts[i + 1] // entries offset by depot point
 
+  // ── Zones: the road itself grows with the town ──
+  // Each entry belongs to a zone (3 modules per zone; a gate closes the
+  // zone it ends). The road through a zone is one grade bigger than the
+  // last: dirt track → gravel lane → paved road → grand avenue. Dragging
+  // back, the child can see how far the road has come.
+  const zoneOfEntry = entries.map(() => 0)
+  {
+    let ord = 0
+    entries.forEach((e, i) => {
+      if (e.isRoadBuilder) {
+        zoneOfEntry[i] = Math.min(3, Math.max(0, Math.ceil(ord / 3) - 1))
+      } else {
+        zoneOfEntry[i] = Math.min(3, Math.floor(ord / 3))
+        ord++
+      }
+    })
+  }
+  // Zone of each pts index (pt 0 = depot; trailing pts = the city road)
+  const zoneOfPt = pts.map((_, pi) => {
+    if (pi === 0) return 0
+    if (pi - 1 < entries.length) return zoneOfEntry[pi - 1]
+    return 3
+  })
+
   // Road segments: paved through last completed entry; construction to the
   // current node; faint trail beyond.
   let lastCompletedIdx = -1
@@ -410,9 +461,28 @@ export function renderSkillJourneyView(map) {
   const pavedEnd = lastCompletedIdx + 1              // pts index
   const constructionEnd = currentIdx >= 0 ? currentIdx + 1 : pavedEnd
 
-  const pavedD = pavedEnd >= 1 ? smoothPath(pts, 0, pavedEnd) : ''
   const constrD = constructionEnd > pavedEnd ? smoothPath(pts, Math.max(0, pavedEnd), constructionEnd) : ''
   const futureD = smoothPath(pts, Math.max(0, constructionEnd), pts.length - 1)
+
+  // Built road, split into runs of equal zone so each zone keeps its grade
+  const pavedRuns = []
+  {
+    let runStart = 0
+    for (let pi = 1; pi <= pavedEnd; pi++) {
+      const z = zoneOfPt[pi]
+      const prevZ = zoneOfPt[Math.max(1, pi === 1 ? 1 : pi - 1)]
+      if (pi > 1 && z !== prevZ) { pavedRuns.push({ from: runStart, to: pi - 1, zone: prevZ }); runStart = pi - 1 }
+      if (pi === pavedEnd) pavedRuns.push({ from: runStart, to: pi, zone: z })
+    }
+  }
+
+  // One grade of road per zone — width and dressing grow with the town
+  const ROAD_GRADES = [
+    { edge: 22, edgeC: '#B99B6B', fill: 15, fillC: '#E3D2AC', center: null },                          // dirt track
+    { edge: 34, edgeC: '#C9AA74', fill: 25, fillC: '#EAD9B0', center: { w: 2.5, dash: '2 13' } },      // gravel lane
+    { edge: 46, edgeC: '#C9AA74', fill: 36, fillC: '#F0DFB4', center: { w: 3.5, dash: '14 22' } },     // paved road
+    { edge: 60, edgeC: '#C4A26A', fill: 49, fillC: '#F3E4BC', center: { w: 4, dash: '18 26' } },       // grand avenue
+  ]
 
   // Did the child just finish something? Animate the newest paving once.
   const child = window.state?.selectedChild
@@ -507,15 +577,22 @@ export function renderSkillJourneyView(map) {
   // ── The road ──
   if (futureD) s += `<path d="${futureD}" fill="none" stroke="#C9AA74" stroke-width="26" stroke-dasharray="5 26" stroke-linecap="round" opacity=".35"/>`
   if (constrD) {
-    s += `<path d="${constrD}" fill="none" stroke="#C9AA74" stroke-width="46" stroke-linecap="round" opacity=".55"/>`
-    s += `<path d="${constrD}" fill="none" stroke="#E4D5AE" stroke-width="36" stroke-dasharray="30 22" stroke-linecap="round" opacity=".85"/>`
+    const cg = ROAD_GRADES[Math.min(3, zoneOfPt[constructionEnd] ?? 0)]
+    s += `<path d="${constrD}" fill="none" stroke="#C9AA74" stroke-width="${cg.edge + 4}" stroke-linecap="round" opacity=".55"/>`
+    s += `<path d="${constrD}" fill="none" stroke="#E4D5AE" stroke-width="${cg.fill + 4}" stroke-dasharray="30 22" stroke-linecap="round" opacity=".85"/>`
   }
-  if (pavedD) {
-    s += `<path d="${pavedD}" fill="none" stroke="#37583B" stroke-width="52" stroke-linecap="round" opacity=".14" transform="translate(0 6)"/>`
-    s += `<path d="${pavedD}" fill="none" stroke="#C9AA74" stroke-width="50" stroke-linecap="round"/>`
-    s += `<path d="${pavedD}" fill="none" stroke="#F0DFB4" stroke-width="40" stroke-linecap="round"${animatePave ? ' class="sj-pave-new" pathLength="1000"' : ''}/>`
-    s += `<path d="${pavedD}" fill="none" stroke="#FFF8E0" stroke-width="3.5" stroke-dasharray="14 22" stroke-linecap="round" opacity=".7"/>`
-  }
+  pavedRuns.forEach((run, ri) => {
+    const g = ROAD_GRADES[run.zone]
+    const d = smoothPath(pts, run.from, run.to)
+    if (!d) return
+    const isNewest = animatePave && ri === pavedRuns.length - 1
+    s += `<path d="${d}" fill="none" stroke="#37583B" stroke-width="${g.edge + 2}" stroke-linecap="round" opacity=".14" transform="translate(0 6)"/>`
+    s += `<path d="${d}" fill="none" stroke="${g.edgeC}" stroke-width="${g.edge}" stroke-linecap="round"/>`
+    s += `<path d="${d}" fill="none" stroke="${g.fillC}" stroke-width="${g.fill}" stroke-linecap="round"${isNewest ? ' class="sj-pave-new" pathLength="1000"' : ''}/>`
+    if (g.center) s += `<path d="${d}" fill="none" stroke="#FFF8E0" stroke-width="${g.center.w}" stroke-dasharray="${g.center.dash}" stroke-linecap="round" opacity=".7"/>`
+    // The grand avenue gets kerb lines — the road itself feels like a city
+    if (run.zone === 3) s += `<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".5" transform="translate(0 ${-g.fill / 2 + 3})"/>`
+  })
 
   // Depot (over the road start)
   s += depotSvg(theme, guide.district)
@@ -540,7 +617,7 @@ export function renderSkillJourneyView(map) {
           <circle r="11.5" fill="#4ADE80" stroke="#22C55E" stroke-width="2.5"/>
           <text y="4.5" font-size="12" text-anchor="middle" fill="#fff" font-weight="700">✓</text>
         </g>
-        <g${popNew ? ' class="sj-grown-new"' : ''}>${grownBuilding(pt, ordinal - 1, theme)}</g>
+        <g${popNew ? ' class="sj-grown-new"' : ''}>${grownBuilding(pt, ordinal - 1, theme, zoneOfEntry[e._idx])}</g>
       </g>`
     } else if (e._idx === currentIdx || e.status === 'available') {
       const isCurrent = e._idx === currentIdx
@@ -575,10 +652,10 @@ export function renderSkillJourneyView(map) {
     // At a gate the guide waits on the NEAR side (the road is blocked);
     // at a build site they welcome the child from the far side
     const gx = isGate ? cp.x - 176 : cp.x + 34
-    const bx2 = gx + 84
+    const bx2 = gx + 64
     s += `<image id="sjDaniel" href="/images/characters/DanielTheDog.webp" x="${dx}" y="${dy}" width="84" height="84"/>`
     s += `<g class="sj-bob">
-      <image href="${esc(guide.img)}" x="${gx}" y="${cp.y - 118}" width="96" height="96"/>
+      <image href="${esc(guide.img)}" x="${gx}" y="${cp.y - 96}" width="74" height="74"/>
       <g transform="translate(${bx2},${cp.y - 148})">
         <rect x="-70" y="-20" width="140" height="44" rx="14" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
         <path d="M-38 24 L-30 38 L-24 24Z" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
@@ -589,7 +666,7 @@ export function renderSkillJourneyView(map) {
   } else if (total > 0 && completed >= total) {
     // Everything built — celebrate at the city
     s += `<image href="/images/characters/Daniel_Celebrating.webp" x="${cityX - 150}" y="${HORIZON + 40}" width="104" height="104"/>`
-    s += `<g class="sj-bob"><image href="${esc(guide.img)}" x="${cityX - 44}" y="${HORIZON + 36}" width="100" height="100"/></g>`
+    s += `<g class="sj-bob"><image href="${esc(guide.img)}" x="${cityX - 44}" y="${HORIZON + 52}" width="84" height="84"/></g>`
     s += `<g transform="translate(${cityX - 40},${HORIZON - 4})">
       <rect x="-108" y="-22" width="216" height="44" rx="14" fill="#fff" stroke="#f2c94c" stroke-width="2.5"/>
       <text y="-2" font-family="Fredoka" font-size="13" font-weight="700" fill="#16324f" text-anchor="middle">You built the whole road to Brain City!</text>

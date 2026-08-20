@@ -101,7 +101,7 @@ class BreathingBridge extends IMiniGame {
     this._piecesBuilt   = 0;
     this._animTime      = 0;
     this._statusText    = 'Hold to breathe in...';
-    this._statusColor   = '#ffffff';
+    this._statusColor   = '#16324f';
     this._feedbackTimer = 0;
     this._feedbackText  = '';
     this._brightness    = 0;        // 0-1 background brightness boost
@@ -171,7 +171,7 @@ class BreathingBridge extends IMiniGame {
     this._phase      = 'inhaling';
     this._holding    = true;
     this._statusText = 'Breathe in slowly...';
-    this._statusColor = '#a7f3d0';
+    this._statusColor = '#0f766e';
   }
 
   _onHoldEnd() {
@@ -249,13 +249,13 @@ class BreathingBridge extends IMiniGame {
 
     if (fill > TOO_TENSE_LVL) {
       this._statusText    = 'Too tense! Try a gentler breath';
-      this._statusColor   = '#fde68a';
+      this._statusColor   = '#b45309';
       this._feedbackText  = 'Try gentler';
       this._feedbackTimer = 1.8;
       this._hud.flash('Try a gentler breath next time', '#fb923c');
     } else if (fill < CALM_LO) {
       this._statusText    = 'Try a slower breath...';
-      this._statusColor   = '#fde68a';
+      this._statusColor   = '#b45309';
       this._feedbackText  = 'Try a slower breath!';
       this._feedbackTimer = 1.8;
       this._hud.flash('Hold a little longer next time!', '#fb923c');
@@ -263,7 +263,7 @@ class BreathingBridge extends IMiniGame {
       // Success — calm zone
       this._piecesBuilt++;
       this._statusText    = 'Perfect breath!';
-      this._statusColor   = '#4ade80';
+      this._statusColor   = '#15803d';
       this._feedbackText  = 'Perfect!';
       this._feedbackTimer = 1.5;
       this._hud.flash(`Bridge piece ${this._piecesBuilt} of ${TOTAL_PIECES} added!`, '#4ade80');
@@ -299,7 +299,8 @@ class BreathingBridge extends IMiniGame {
     this._drawSky(ctx, w, h);
     this._drawBridgeScene(ctx, w, h);
     this._drawBreathingCircle(ctx, w, h);
-    this._drawProgressText(ctx, w);
+    // (progress text removed — the HUD objective pill states the goal and
+    // the breathing circle's centre already counts the pieces built)
     this._drawInstructionText(ctx, w, h);
     this._daniel.render(ctx);
     this._particles.render(ctx);
@@ -553,16 +554,28 @@ class BreathingBridge extends IMiniGame {
     ctx.lineWidth   = R * 0.16 + 2;
     ctx.stroke();
 
-    // "calm zone" label along the green arc
+    // "calm zone" label along the green arc — white pill behind dark green
+    // text so it reads against the sky
     const labelAngle = startAngle + (CALM_LO + (CALM_HI - CALM_LO) / 2) * Math.PI * 2;
-    const labelR     = R + R * 0.32;
+    const labelR     = R + R * 0.38;
     const lx = cx + Math.cos(labelAngle) * labelR;
     const ly = cy + Math.sin(labelAngle) * labelR;
-    ctx.fillStyle    = 'rgba(74,222,128,0.85)';
-    ctx.font         = `bold ${Math.max(10, Math.round(R * 0.2))}px system-ui,sans-serif`;
+    const lFont = Math.max(11, Math.round(R * 0.19));
+    ctx.font         = `bold ${lFont}px 'Fredoka',system-ui,sans-serif`;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('calm zone', lx, ly);
+    const lW = ctx.measureText('calm zone').width + 18;
+    const lH = lFont + 12;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.strokeStyle = 'rgba(74,222,128,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(lx - lW / 2, ly - lH / 2, lW, lH, lH / 2);
+    else ctx.rect(lx - lW / 2, ly - lH / 2, lW, lH);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#15803d';
+    ctx.fillText('calm zone', lx, ly + 1);
 
     // Fill arc — grows clockwise as the player holds
     if (fill > 0) {
@@ -664,10 +677,18 @@ class BreathingBridge extends IMiniGame {
     ctx.save();
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font         = `bold ${fontSize}px system-ui,sans-serif`;
-    ctx.shadowColor  = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur   = 5;
-    ctx.fillStyle    = this._statusColor;
+    ctx.font         = `bold ${fontSize}px 'Fredoka',system-ui,sans-serif`;
+    // White pill behind the instruction so the coloured text stays readable
+    if (mainText) {
+      const tw = ctx.measureText(mainText).width + 26;
+      const th = fontSize + 14;
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(w / 2 - tw / 2, textY - th / 2, tw, th, th / 2);
+      else ctx.rect(w / 2 - tw / 2, textY - th / 2, tw, th);
+      ctx.fill();
+    }
+    ctx.fillStyle = this._statusColor;
     ctx.fillText(mainText, w / 2, textY);
 
     // Feedback flash text (smaller, below main text)
@@ -675,9 +696,9 @@ class BreathingBridge extends IMiniGame {
       const alpha  = Math.min(1, this._feedbackTimer / 0.4);
       const fbSize = Math.max(13, Math.round(this._h * 0.026));
       ctx.globalAlpha = alpha;
-      ctx.font        = `${fbSize}px system-ui,sans-serif`;
-      ctx.fillStyle   = '#fde68a';
-      ctx.fillText(this._feedbackText, w / 2, textY + fontSize + 6);
+      ctx.font        = `bold ${fbSize}px 'Fredoka',system-ui,sans-serif`;
+      ctx.fillStyle   = '#b45309';
+      ctx.fillText(this._feedbackText, w / 2, textY + fontSize + 12);
       ctx.globalAlpha = 1;
     }
 

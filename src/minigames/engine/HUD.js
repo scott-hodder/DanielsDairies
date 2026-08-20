@@ -7,10 +7,10 @@ export default class HUD {
     this.el = document.createElement('div');
     this.el.className = 'mg-hud';
     this.el.style.cssText = `
-      position:absolute;top:0;left:0;right:0;
+      position:absolute;top:12px;left:0;right:0;
       display:flex;justify-content:space-between;align-items:flex-start;
-      padding:8px 44px 8px 10px;pointer-events:none;z-index:10;
-      font-family:'League Spartan',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      padding:0 56px;pointer-events:none;z-index:10;
+      font-family:'Fredoka','League Spartan',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     `;
     container.style.position = 'relative';
     container.appendChild(this.el);
@@ -40,7 +40,7 @@ export default class HUD {
 
   /** Set center objective text. */
   setObjective(text) {
-    this._center.innerHTML = `<span style="font-size:14px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.5);background:rgba(0,0,0,0.35);padding:4px 12px;border-radius:10px;">${text}</span>`;
+    this._center.innerHTML = `<span style="display:inline-block;max-width:100%;font-size:13.5px;font-weight:700;color:#16324f;background:rgba(255,255,255,0.94);border:2px solid #f2c94c;padding:6px 16px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,0.18);">${text}</span>`;
   }
 
   /** Set right-side score/progress text. */
