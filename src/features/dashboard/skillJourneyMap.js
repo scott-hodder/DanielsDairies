@@ -81,27 +81,37 @@ function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&
 
 const WALK_FRAMES = [1, 2, 3, 4, 5].map(n => `/images/characters/daniel-walking${n}.png`)
 
-function walkDaniel(svg, pts, fromIdx, toIdx, follow) {
+function walkDaniel(svg, pts, fromIdx, toIdx, follow, onDone) {
   const daniel = svg?.querySelector('#sjDaniel')
-  if (!daniel || toIdx <= fromIdx) return
+  if (!daniel || toIdx === fromIdx) { onDone?.(); return }
+  const backwards = toIdx < fromIdx
   const probe = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-  probe.setAttribute('d', smoothPath(pts, fromIdx, toIdx))
+  probe.setAttribute('d', backwards ? smoothPath(pts, toIdx, fromIdx) : smoothPath(pts, fromIdx, toIdx))
   probe.setAttribute('fill', 'none')
   probe.setAttribute('stroke', 'none')
   svg.appendChild(probe)
   const fullLen = probe.getTotalLength()
-  const len = Math.max(0, fullLen - 74) // stop just before the new site
-  if (!len) { probe.remove(); return }
+  // Forward: stop just before the new site. Backwards: stop at the door.
+  const trimEnd = backwards ? 46 : 74
+  const len = Math.max(0, fullLen - trimEnd)
+  if (!len) { probe.remove(); onDone?.(); return }
   WALK_FRAMES.forEach(src => { const i = new Image(); i.src = src })
   const idle = daniel.getAttribute('href')
-  const dur = Math.min(3200, Math.max(1300, len * 3))
+  if (backwards) {
+    // Face the way he's walking
+    daniel.style.transformBox = 'fill-box'
+    daniel.style.transformOrigin = 'center'
+    daniel.style.transform = 'scaleX(-1)'
+  }
+  const dur = Math.min(3600, Math.max(1300, len * 3))
   const t0 = performance.now()
   let frame = 0
   let lastSwap = 0
   const step = (now) => {
     const raw = Math.min(1, (now - t0) / dur)
     const t = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2
-    const pt = probe.getPointAtLength(len * t)
+    const at = backwards ? fullLen - len * t : len * t
+    const pt = probe.getPointAtLength(at)
     daniel.setAttribute('x', pt.x - 42)
     daniel.setAttribute('y', pt.y - 80)
     if (now - lastSwap > 110) {
@@ -112,7 +122,9 @@ function walkDaniel(svg, pts, fromIdx, toIdx, follow) {
     follow(pt.x)
     if (raw < 1) { requestAnimationFrame(step) } else {
       daniel.setAttribute('href', idle)
+      daniel.style.transform = ''
       probe.remove()
+      onDone?.()
     }
   }
   requestAnimationFrame(step)
@@ -211,7 +223,7 @@ function grownBuilding(pt, ordinal, theme, zone = 0) {
 
 // The district depot — where the child "arrived" from Brain Town
 function depotSvg(theme, districtName) {
-  return `<g transform="translate(128,${ROAD_Y - 10})">
+  return `<g id="sjDepot" role="button" tabindex="0" aria-label="Walk Daniel home to Brain Town" style="cursor:pointer" transform="translate(128,${ROAD_Y - 10})">
     <ellipse cy="74" rx="128" ry="36" fill="#D6E4F7" stroke="#9FB6CC" stroke-width="3.5" opacity=".9"/>
     <rect x="-72" y="-22" width="144" height="76" rx="9" fill="#F2F6FC" stroke="#5B679E" stroke-width="3.5"/>
     <rect x="-80" y="-38" width="160" height="18" rx="8" fill="url(#sjRoofSkill)" stroke="${theme.color}" stroke-width="3"/>
@@ -274,32 +286,35 @@ function zoneCluster(zoneIdx, x, reached, theme) {
         ${reached ? `<use href="#sjFlowerP" x="-34" y="82"/><use href="#sjFlowerY" x="-116" y="86"/><use href="#sjTree" x="130" y="66" transform="scale(.85)" transform-origin="130 66"/>` : ''}
       </g>`
   } else if (zoneIdx === 2) {
-    // Town Centre: a real square — plaza, fountain, two-storey buildings,
-    // lamp posts. Clearly a step up from the village.
+    // Town Centre: a REAL town — wide plaza, clock tower, three-storey
+    // buildings, fountain and lamps. Dwarfs the village hamlet.
     art = `
-      <g transform="translate(${x},${y + 26})"${ghost}>
-        <ellipse cy="46" rx="120" ry="26" fill="#F8EDD2" stroke="#CBAE79" stroke-width="3"/>
-        <circle cy="40" r="17" fill="url(#sjWater)" stroke="#5FA8CC" stroke-width="2.5"/>
-        <circle cy="34" r="5.5" fill="#FFF8DE" stroke="#D9A520" stroke-width="1.6"/>
-        <g transform="translate(-88,-24)">
-          <rect x="-27" y="0" width="54" height="62" rx="6" fill="url(#sjCream)" stroke="#B07B33" stroke-width="3"/>
-          <path d="M-33 0 Q0 -24 33 0Z" fill="url(#sjRoofAmber)" stroke="#B45309" stroke-width="3"/>
-          <rect x="-17" y="10" width="12" height="11" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
-          <rect x="5" y="10" width="12" height="11" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
-          <rect x="-17" y="30" width="12" height="11" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
-          <rect x="5" y="30" width="12" height="11" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
+      <g transform="translate(${x},${y + 8})"${ghost}>
+        <ellipse cy="78" rx="185" ry="36" fill="#F8EDD2" stroke="#CBAE79" stroke-width="3.5"/>
+        <circle cy="70" r="23" fill="url(#sjWater)" stroke="#5FA8CC" stroke-width="3"/>
+        <circle cy="62" r="7" fill="#FFF8DE" stroke="#D9A520" stroke-width="2"/>
+        <g transform="translate(-128,-40)">
+          <rect x="-34" y="0" width="68" height="104" rx="7" fill="url(#sjCream)" stroke="#B07B33" stroke-width="3.5"/>
+          <path d="M-41 0 Q0 -30 41 0Z" fill="url(#sjRoofAmber)" stroke="#B45309" stroke-width="3.5"/>
+          ${[12, 40, 68].map(wy => `<rect x="-22" y="${wy}" width="15" height="13" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="2"/><rect x="7" y="${wy}" width="15" height="13" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="2"/>`).join('')}
         </g>
-        <g transform="translate(88,-18)">
-          <rect x="-26" y="0" width="52" height="56" rx="6" fill="url(#sjCream)" stroke="#4E7A96" stroke-width="3"/>
-          <path d="M-32 0 Q0 -22 32 0Z" fill="url(#sjRoofGreen)" stroke="#2D6A4F" stroke-width="3"/>
-          <rect x="-16" y="9" width="11" height="10" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
-          <rect x="5" y="9" width="11" height="10" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
-          <rect x="-16" y="27" width="11" height="10" rx="2.5" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>
-          <rect x="5" y="27" width="11" height="10" rx="2.5" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>
+        <g transform="translate(0,-86)">
+          <rect x="-22" y="0" width="44" height="122" rx="6" fill="url(#sjCream)" stroke="#8878B0" stroke-width="3.5"/>
+          <path d="M-28 0 L0 -34 L28 0Z" fill="url(#sjRoofSkill)" stroke="${theme.color}" stroke-width="3.5"/>
+          <circle cy="22" r="13" fill="#FFF7E0" stroke="#8878B0" stroke-width="3"/>
+          <path d="M0 22 V13 M0 22 L7 26" stroke="#4A2F84" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="-11" y="52" width="22" height="16" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="2"/>
+          <rect x="-11" y="82" width="22" height="16" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="2"/>
+        </g>
+        <g transform="translate(128,-28)">
+          <rect x="-32" y="0" width="64" height="92" rx="7" fill="url(#sjCream)" stroke="#4E7A96" stroke-width="3.5"/>
+          <path d="M-38 0 Q0 -28 38 0Z" fill="url(#sjRoofGreen)" stroke="#2D6A4F" stroke-width="3.5"/>
+          ${[12, 38, 62].map(wy => `<rect x="-20" y="${wy}" width="14" height="12" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="2"/><rect x="6" y="${wy}" width="14" height="12" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="2"/>`).join('')}
         </g>
         ${reached ? `
-        <g transform="translate(-36,6)"><path d="M0 34 V-6" stroke="#5C6470" stroke-width="3"/><rect x="-6" y="-14" width="12" height="10" rx="3" fill="#FFE58B" stroke="#B8912E" stroke-width="1.8"/></g>
-        <g transform="translate(36,6)"><path d="M0 34 V-6" stroke="#5C6470" stroke-width="3"/><rect x="-6" y="-14" width="12" height="10" rx="3" fill="#FFE58B" stroke="#B8912E" stroke-width="1.8"/></g>` : ''}
+        <g transform="translate(-62,26)"><path d="M0 42 V-8" stroke="#5C6470" stroke-width="3.5"/><rect x="-7" y="-18" width="14" height="12" rx="3.5" fill="#FFE58B" stroke="#B8912E" stroke-width="2"/></g>
+        <g transform="translate(62,26)"><path d="M0 42 V-8" stroke="#5C6470" stroke-width="3.5"/><rect x="-7" y="-18" width="14" height="12" rx="3.5" fill="#FFE58B" stroke="#B8912E" stroke-width="2"/></g>
+        <use href="#sjTree" x="-186" y="52"/><use href="#sjTree" x="186" y="56"/>` : ''}
       </g>`
   } else {
     art = `
@@ -538,15 +553,48 @@ export function renderSkillJourneyView(map) {
       <path d="M${bx + 30} ${by + 14} Q${bx + 33} ${by + 9} ${bx + 36} ${by + 14} Q${bx + 39} ${by + 9} ${bx + 42} ${by + 14}"/>
     </g>`
   }
-  // Brain City skyline — pale until the child arrives (stage 3)
+  // Brain City — a HUGE skyline. Pale silhouette until the child arrives;
+  // full towers with lit windows once they reach stage 3.
   const cityReached = stageIndex >= 3
-  s += `<g opacity="${cityReached ? .95 : .38}">
-    <g transform="translate(${cityX},${HORIZON + 12})">
-      <path d="M-150 0 V-52 h20 v-20 h16 v20 h14 v52 M-88 0 V-84 h22 l7 -18 7 18 h20 V0 M-20 0 V-44 h30 v44 M22 0 V-66 h16 v-16 h14 v16 h14 v66 M78 0 V-38 h26 v38" fill="${cityReached ? '#8FB8D4' : '#A6C6DC'}"/>
-      <circle cx="-49" cy="-112" r="9" fill="${cityReached ? '#F2C94C' : '#A6C6DC'}"/>
-      <path d="M-170 0 H120" stroke="#7FA9C2" stroke-width="3"/>
-    </g>
-  </g>`
+  if (cityReached) {
+    s += `<g transform="translate(${cityX},${HORIZON + 14})">
+      <ellipse cy="8" rx="300" ry="26" fill="#B9DCA4" opacity=".8"/>
+      <g transform="translate(-218,0)">
+        <rect x="-30" y="-118" width="60" height="118" rx="6" fill="url(#sjCream)" stroke="#4E7A96" stroke-width="4"/>
+        <path d="M-36 -118 Q0 -142 36 -118Z" fill="url(#sjRoofGreen)" stroke="#2D6A4F" stroke-width="3.5"/>
+        ${[-102, -76, -50, -24].map(wy => `<rect x="-19" y="${wy}" width="14" height="12" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/><rect x="5" y="${wy}" width="14" height="12" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>`).join('')}
+      </g>
+      <g transform="translate(-102,0)">
+        <rect x="-36" y="-186" width="72" height="186" rx="6" fill="#F2F6FC" stroke="#5B679E" stroke-width="4"/>
+        <path d="M-36 -186 L0 -222 L36 -186Z" fill="url(#sjRoofSkill)" stroke="${theme.color}" stroke-width="4"/>
+        <circle cy="-206" r="6" fill="#F2C94C" stroke="#C9971F" stroke-width="2"/>
+        ${[-168, -140, -112, -84, -56, -28].map(wy => `<rect x="-24" y="${wy}" width="16" height="13" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/><rect x="8" y="${wy}" width="16" height="13" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>`).join('')}
+      </g>
+      <g transform="translate(6,0)">
+        <rect x="-32" y="-146" width="64" height="146" rx="6" fill="url(#sjCream)" stroke="#B07B33" stroke-width="4"/>
+        <rect x="-38" y="-158" width="76" height="14" rx="6" fill="url(#sjRoofAmber)" stroke="#B45309" stroke-width="3.5"/>
+        ${[-130, -100, -70, -40].map(wy => `<rect x="-20" y="${wy}" width="15" height="13" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/><rect x="5" y="${wy}" width="15" height="13" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>`).join('')}
+      </g>
+      <g transform="translate(112,0)">
+        <rect x="-34" y="-162" width="68" height="162" rx="6" fill="#F2F6FC" stroke="#8878B0" stroke-width="4"/>
+        <path d="M-40 -162 Q0 -188 40 -162Z" fill="url(#sjRoofPink)" stroke="#C74C8B" stroke-width="4"/>
+        ${[-144, -116, -88, -60, -32].map(wy => `<rect x="-22" y="${wy}" width="15" height="13" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/><rect x="7" y="${wy}" width="15" height="13" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/>`).join('')}
+      </g>
+      <g transform="translate(212,0)">
+        <rect x="-28" y="-96" width="56" height="96" rx="6" fill="url(#sjCream)" stroke="#2D6A4F" stroke-width="4"/>
+        <path d="M-34 -96 Q0 -118 34 -96Z" fill="url(#sjRoofGreen)" stroke="#2D6A4F" stroke-width="3.5"/>
+        ${[-80, -52, -26].map(wy => `<rect x="-17" y="${wy}" width="13" height="11" rx="3" fill="#EAF7FF" stroke="#7FA9C2" stroke-width="1.8"/><rect x="4" y="${wy}" width="13" height="11" rx="3" fill="#FFF3C2" stroke="#C9971F" stroke-width="1.8"/>`).join('')}
+      </g>
+    </g>`
+  } else {
+    s += `<g opacity=".38">
+      <g transform="translate(${cityX},${HORIZON + 12}) scale(1.9)">
+        <path d="M-150 0 V-52 h20 v-20 h16 v20 h14 v52 M-88 0 V-84 h22 l7 -18 7 18 h20 V0 M-20 0 V-44 h30 v44 M22 0 V-66 h16 v-16 h14 v16 h14 v66 M78 0 V-38 h26 v38" fill="#A6C6DC"/>
+        <circle cx="-49" cy="-112" r="9" fill="#A6C6DC"/>
+        <path d="M-170 0 H120" stroke="#7FA9C2" stroke-width="3"/>
+      </g>
+    </g>`
+  }
 
   // Meadow
   s += `<rect y="${HORIZON}" width="${W}" height="${H - HORIZON}" fill="url(#sjMeadow)"/>`
@@ -792,17 +840,41 @@ export function renderSkillJourneyView(map) {
   const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const shouldWalk = !noMotion && prevPtIdx >= 1 && targetPtIdx > prevPtIdx
 
+  const followDaniel = (x) => {
+    tx = viewport.clientWidth / 2 - x * scale()
+    clamp(); apply(false)
+  }
+
   if (shouldWalk) {
     requestAnimationFrame(() => {
       centerOn(pts[prevPtIdx].x, false)
-      walkDaniel(world.querySelector('svg'), pts, prevPtIdx, targetPtIdx, (x) => {
-        tx = viewport.clientWidth / 2 - x * scale()
-        clamp(); apply(false)
-      })
+      walkDaniel(world.querySelector('svg'), pts, prevPtIdx, targetPtIdx, followDaniel)
     })
   } else {
     requestAnimationFrame(() => centerOn(focusX, false))
   }
+
+  // Tapping the depot: Daniel walks all the way home along everything the
+  // child has built, then the view returns to Brain Town.
+  let walkingHome = false
+  const goHome = () => { if (window.showDashboardTab) window.showDashboardTab('dashboard') }
+  const startWalkHome = () => {
+    if (walkingHome) return
+    walkingHome = true
+    if (noMotion || targetPtIdx < 1) { goHome(); return }
+    walkDaniel(world.querySelector('svg'), pts, targetPtIdx, 0, followDaniel, () => setTimeout(goHome, 400))
+  }
+  const depotEl = world.querySelector('#sjDepot')
+  depotEl?.addEventListener('click', e => {
+    e.stopPropagation()
+    if (moved > 8) return
+    startWalkHome()
+  })
+  depotEl?.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    startWalkHome()
+  })
   container.querySelector('#sjCenter')?.addEventListener('click', () => centerOn(focusX, true))
   container.querySelector('#sjHome')?.addEventListener('click', () => { tx = 0; apply(true) })
   setTimeout(() => { const h = container.querySelector('#sjHint'); if (h) h.style.opacity = '0' }, 4500)
