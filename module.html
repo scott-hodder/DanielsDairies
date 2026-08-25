@@ -1569,7 +1569,7 @@
           // Inject tracking into renderPage
           code = code.replace(
             /function\s+renderPage\s*\(\s*\)\s*\{/,
-            'function renderPage() { if (window.ensureModuleCoverTitle) { window.ensureModuleCoverTitle(); } setTimeout(function() { if (typeof currentPage !== "undefined") { window.enhancePageTracking(currentPage); window.restorePageResponses(currentPage); } }, 50);'
+            'function renderPage() { if (window.ensureModuleCoverTitle) { window.ensureModuleCoverTitle(); } setTimeout(function() { if (typeof currentPage !== "undefined") { window.enhancePageTracking(currentPage); window.restorePageResponses(currentPage); if (window.SceneEngine) { window.SceneEngine.onPage(currentPage, pages.length); } } }, 50);'
           );
 
           // Admin bypass: skip activity/input validation on nextPage when isAdmin=true in URL
@@ -1612,6 +1612,7 @@
           el.src = scriptUrl;
           el.onload = () => {
             URL.revokeObjectURL(scriptUrl);
+            if (window.SceneEngine) window.SceneEngine.init();
           };
           el.onerror = (e) => console.error('Script load error:', e);
           document.body.appendChild(el);
@@ -1693,6 +1694,204 @@
     // TTS "READ TO ME" PLAYER — Web Speech API (free, instant, no API costs)
     // TTS Player — plays OpenAI-generated MP3 audio, falls back to Web Speech API
     // =========================================
+    // =========================================
+    // SCENE ENGINE (episodes)
+    // Splits the existing module pages into short "scenes" at chapter
+    // breaks — a presentation-layer wrapper only: page content, activity
+    // gating, star logic and completeModuleDB are untouched. Gated by the
+    // settings.feature_flags.town_play flag (absent = enabled) so it can be
+    // switched off without a deploy.
+    // =========================================
+    let _townPlayPromise = null;
+    window.isTownPlayEnabled = function() {
+      if (!_townPlayPromise) {
+        _townPlayPromise = supabase.from('settings').select('feature_flags').maybeSingle()
+          .then(({ data }) => (data?.feature_flags?.town_play !== false))
+          .catch(() => true);
+      }
+      return _townPlayPromise;
+    };
+
+    const SceneEngine = {
+      starts: [],        // page index where each scene begins
+      lastPage: -1,
+      total: 0,
+      enabled: false,
+      saved: null,
+
+      storageKey() {
+        return 'dd_ep_' + (childId || 'guest') + '_' + (moduleId || moduleCode || 'mod');
+      },
+      load() {
+        try { return JSON.parse(localStorage.getItem(this.storageKey()) || 'null'); } catch { return null; }
+      },
+      persist(patch) {
+        const cur = this.load() || { page: 0, scenes: [] };
+        const next = Object.assign(cur, patch);
+        try { localStorage.setItem(this.storageKey(), JSON.stringify(next)); } catch { /* private mode */ }
+        this.saved = next;
+      },
+      clear() {
+        try { localStorage.removeItem(this.storageKey()); } catch { /* ignore */ }
+        this.saved = null;
+      },
+
+      sceneOfPage(p) {
+        let k = 0;
+        for (let i = 0; i < this.starts.length; i++) if (p >= this.starts[i]) k = i;
+        return k;
+      },
+
+      computeStarts(pages) {
+        let starts = [0];
+        for (let i = 1; i < pages.length - 1; i++) {
+          let html = '';
+          try { html = String(pages[i]()); } catch { continue; }
+          if (/Chapter\s+\d+|chapter-title|chapter-badge/i.test(html)) starts.push(i);
+        }
+        if (starts.length < 2) {
+          starts = [];
+          for (let i = 0; i < pages.length - 2; i += 6) starts.push(i);
+        } else {
+          // Subdivide any scene longer than 8 pages so sessions stay short.
+          const out = [];
+          for (let k = 0; k < starts.length; k++) {
+            const a = starts[k];
+            const b = (k + 1 < starts.length) ? starts[k + 1] : pages.length;
+            out.push(a);
+            for (let p = a + 6; p < b - 2; p += 6) out.push(p);
+          }
+          starts = out;
+        }
+        return starts;
+      },
+
+      async init() {
+        if (!Array.isArray(window.pages) || window.pages.length < 8) return;
+        this.enabled = await window.isTownPlayEnabled();
+        if (!this.enabled) return;
+        this.total = window.pages.length;
+        this.starts = this.computeStarts(window.pages);
+        this.saved = this.load();
+        this.injectStyles();
+
+        // Completing the module ends the episode run — clear resume state.
+        const origComplete = window.completeModuleDB;
+        if (typeof origComplete === 'function' && !origComplete._sceneWrapped) {
+          const self = this;
+          window.completeModuleDB = async function(...args) {
+            self.clear();
+            return origComplete.apply(this, args);
+          };
+          window.completeModuleDB._sceneWrapped = true;
+        }
+
+        // Offer to resume a part-finished adventure.
+        const savedPage = this.saved?.page || 0;
+        if (savedPage >= 2 && savedPage < this.total - 1 && typeof window.jumpToPage === 'function') {
+          this.showResume(savedPage);
+        }
+      },
+
+      onPage(p, total) {
+        if (!this.enabled) return;
+        const prev = this.lastPage;
+        this.lastPage = p;
+        this.persist({ page: Math.max(p, this.saved?.page || 0) });
+
+        // Celebrate when the child moves FORWARD across a scene start
+        // (they just finished the scene before it). Never on the final page —
+        // the certificate is its own celebration.
+        if (prev < 0 || p <= prev || p >= total - 1) return;
+        const k = this.starts.indexOf(p);
+        if (k <= 0) return;
+        const done = this.saved?.scenes || [];
+        if (done.includes(p)) return;
+        this.persist({ scenes: done.concat([p]) });
+        this.showSceneBreak(k, this.starts.length);
+      },
+
+      injectStyles() {
+        if (document.getElementById('sceneEngineStyles')) return;
+        const st = document.createElement('style');
+        st.id = 'sceneEngineStyles';
+        st.textContent = [
+          '.se-overlay{position:fixed;inset:0;z-index:11000;background:rgba(22,50,79,.78);display:flex;align-items:center;justify-content:center;padding:20px;animation:seFade .25s ease-out}',
+          '@keyframes seFade{from{opacity:0}to{opacity:1}}',
+          '.se-card{background:linear-gradient(180deg,#fffdf7,#fff);border-radius:24px;max-width:420px;width:100%;padding:30px 26px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.35);font-family:"Nunito",system-ui,sans-serif;animation:sePop .3s ease-out}',
+          '@keyframes sePop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}',
+          '.se-star{font-size:52px;line-height:1;margin-bottom:8px;display:block;animation:seSpin .6s ease-out}',
+          '@keyframes seSpin{from{transform:scale(.3) rotate(-40deg)}to{transform:scale(1) rotate(0)}}',
+          '.se-title{font-size:24px;font-weight:800;color:#16324f;margin:0 0 6px}',
+          '.se-sub{font-size:15px;color:#5b6b80;margin:0 0 20px;line-height:1.5}',
+          '.se-dots{display:flex;gap:7px;justify-content:center;margin-bottom:20px}',
+          '.se-dot{width:12px;height:12px;border-radius:50%;background:#e3e9f2}',
+          '.se-dot.done{background:#f2c94c}',
+          '.se-btn{width:100%;padding:14px;border:none;border-radius:14px;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:10px}',
+          '.se-btn-go{background:linear-gradient(135deg,#f2c94c,#e6a800);color:#5b4300}',
+          '.se-btn-home{background:#fff;border:2px solid #d4dbe6;color:#405878}'
+        ].join('\n');
+        document.head.appendChild(st);
+      },
+
+      buildOverlay(inner) {
+        const ov = document.createElement('div');
+        ov.className = 'se-overlay';
+        ov.innerHTML = '<div class="se-card">' + inner + '</div>';
+        document.body.appendChild(ov);
+        return ov;
+      },
+
+      dots(doneCount, totalScenes) {
+        let s = '<div class="se-dots">';
+        for (let i = 0; i < totalScenes; i++) s += '<div class="se-dot' + (i < doneCount ? ' done' : '') + '"></div>';
+        return s + '</div>';
+      },
+
+      async showSceneBreak(sceneIdx, totalScenes) {
+        const ov = this.buildOverlay(
+          '<span class="se-star">⭐</span>' +
+          '<h3 class="se-title">Scene ' + sceneIdx + ' complete!</h3>' +
+          '<p class="se-sub">You earned a star! Daniel can\'t wait to show you what happens next…</p>' +
+          this.dots(sceneIdx, totalScenes) +
+          '<button class="se-btn se-btn-go" id="seKeepGoing">▶ Keep going!</button>' +
+          '<button class="se-btn se-btn-home" id="seGoHome">🏠 Back to Brain Town</button>'
+        );
+        ov.querySelector('#seKeepGoing').addEventListener('click', () => ov.remove());
+        ov.querySelector('#seGoHome').addEventListener('click', () => {
+          ov.remove();
+          if (typeof window.goHome === 'function') window.goHome();
+          else window.location.href = '/dashboard.html' + (childId ? ('?childId=' + childId) : '');
+        });
+        // One star per finished scene, via the existing single-call helper.
+        try {
+          const newTotal = await window.awardSingleStar?.();
+          const el = document.querySelector('[data-role="star-count"]');
+          if (el && Number.isFinite(newTotal)) el.textContent = newTotal;
+        } catch (e) { /* star display catches up on next load */ }
+      },
+
+      showResume(savedPage) {
+        const scene = this.sceneOfPage(savedPage) + 1;
+        const ov = this.buildOverlay(
+          '<span class="se-star">📖</span>' +
+          '<h3 class="se-title">Welcome back!</h3>' +
+          '<p class="se-sub">You\'re up to Scene ' + scene + ' of ' + this.starts.length + ' in this adventure.</p>' +
+          '<button class="se-btn se-btn-go" id="seResume">▶ Continue Scene ' + scene + '</button>' +
+          '<button class="se-btn se-btn-home" id="seRestart">↺ Start from the beginning</button>'
+        );
+        ov.querySelector('#seResume').addEventListener('click', () => {
+          ov.remove();
+          try { window.jumpToPage(savedPage); } catch (e) { /* stay on cover */ }
+        });
+        ov.querySelector('#seRestart').addEventListener('click', () => {
+          this.clear();
+          ov.remove();
+        });
+      }
+    };
+    window.SceneEngine = SceneEngine;
+
     const TtsPlayer = {
       narrationData: [],
       isPlaying: false,
