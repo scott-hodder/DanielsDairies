@@ -11,9 +11,35 @@ import { escapeHtml } from '../../lib/sanitize.js'
 import { isTownPlayEnabled } from './townPlayFlag.js'
 
 const SKILL_EMOJI = {
-  'brain-builder': '🧠', 'thought-driver': '🚗', 'emotion-navigator': '🧭',
+  'brain-builder': '🧠', 'thought-driver': '💭', 'emotion-navigator': '🧭',
   'behaviour-engineer': '🔧', 'resilience-architect': '🏰', 'social-mapper': '🗺️',
   'future-designer': '🔮'
+}
+
+// Each adventure sticker gets its own art, picked deterministically from the
+// skill's themed pool so the book doesn't read as the same emoji repeated.
+const SKILL_STICKER_POOL = {
+  'brain-builder': ['🧠', '💡', '🏗️', '🧩', '⚡', '📚', '🔬', '🌱'],
+  'thought-driver': ['💭', '🦜', '🌤️', '🛣️', '🚦', '🌈', '🪁', '🔎'],
+  'emotion-navigator': ['🧭', '🐨', '💛', '🌦️', '🌊', '🎈', '🫧', '🌡️'],
+  'behaviour-engineer': ['🔧', '⚙️', '🔨', '🧱', '📋', '⏰', '🪜', '🎯'],
+  'resilience-architect': ['🏰', '🦔', '🛡️', '💪', '🌋', '⛰️', '🌉', '🔥'],
+  'social-mapper': ['🗺️', '🐦', '🤝', '💞', '👋', '🎪', '🧑‍🤝‍🧑', '💬'],
+  'future-designer': ['🔮', '🔭', '✨', '🚀', '🌟', '🎨', '📔', '🌅']
+}
+const STICKER_TINTS = ['#fff7e6', '#eef6ff', '#f0fdf4', '#fdf2f8', '#f5f3ff', '#fffbeb']
+
+function hashStr(s) {
+  let h = 0
+  const str = String(s)
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+function stickerArtFor(moduleId, skillSlug) {
+  const pool = SKILL_STICKER_POOL[skillSlug] || ['📖', '⭐', '🎉', '🌟', '🏅']
+  const h = hashStr(moduleId)
+  return { emoji: pool[h % pool.length], tint: STICKER_TINTS[h % STICKER_TINTS.length] }
 }
 
 const GAME_BADGES = [
@@ -63,10 +89,12 @@ async function loadCollection(childId) {
 
   const adventures = completed.map(c => {
     const skill = skillById[c.modules.super_skill_id]
+    const art = stickerArtFor(c.modules.id, skill?.slug)
     return {
       id: 'mod-' + c.modules.id,
       name: c.modules.title,
-      emoji: SKILL_EMOJI[skill?.slug] || '📖',
+      emoji: art.emoji,
+      tint: art.tint,
       earned: true
     }
   })
@@ -134,7 +162,8 @@ function stickerHtml(s) {
   const art = s.img
     ? `<img src="${escapeHtml(s.img)}" alt="" onerror="this.outerHTML='<span class=em>${s.emoji}</span>'">`
     : `<span class="em">${s.earned ? s.emoji : '❓'}</span>`
-  return `<div class="sb-sticker${s.earned ? '' : ' locked'}" title="${escapeHtml(s.earned ? s.name : (s.hint || 'Keep exploring to earn this!'))}">
+  const tint = s.earned && s.tint ? ` style="background:${s.tint}"` : ''
+  return `<div class="sb-sticker${s.earned ? '' : ' locked'}"${tint} title="${escapeHtml(s.earned ? s.name : (s.hint || 'Keep exploring to earn this!'))}">
     ${s.earned ? art : `<span class="em">❓</span>`}
     <span class="nm">${escapeHtml(s.earned ? s.name : (s.hint || '???'))}</span>
     ${s.sub && s.earned ? `<span class="sub">${escapeHtml(s.sub)}</span>` : ''}

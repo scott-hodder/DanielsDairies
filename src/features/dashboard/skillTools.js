@@ -11,17 +11,38 @@
 import { escapeHtml } from '../../lib/sanitize.js'
 import { isTownPlayEnabled } from './townPlayFlag.js'
 
+// Three tools per Super Skill, unlocking at 1, 4 and 8 completed adventures
+// in that skill — so the shelf keeps growing across a whole skill journey
+// instead of finishing on day one.
 export const SKILL_TOOLS = [
-  { id: 'memory-lantern', skill: 'brain-builder', name: 'Memory Lantern', emoji: '🏮', desc: 'Lights the way when learning feels foggy.', boost: 'Glows in Brain Town' },
-  { id: 'thought-filter', skill: 'thought-driver', name: 'Thought Filter', emoji: '🔍', desc: 'Helps you spot unhelpful thoughts before they spread.', boost: 'Extra heart in Thought Forest' },
-  { id: 'feelings-compass', skill: 'emotion-navigator', name: 'Feelings Compass', emoji: '🧭', desc: 'Points to what you are really feeling.', boost: 'Glows in Brain Town' },
-  { id: 'habit-hammer', skill: 'behaviour-engineer', name: 'Habit Hammer', emoji: '🔨', desc: 'Builds strong habits one small tap at a time.', boost: 'Glows in Brain Town' },
-  { id: 'bounce-shield', skill: 'resilience-architect', name: 'Bounce Shield', emoji: '🛡️', desc: 'Helps you bounce back when things get tough.', boost: 'Extra heart in Courage Canyon' },
-  { id: 'friendship-map', skill: 'social-mapper', name: 'Friendship Map', emoji: '🗺️', desc: 'Shows the way to kinder, stronger friendships.', boost: 'Glows in Brain Town' },
-  { id: 'tomorrow-lens', skill: 'future-designer', name: 'Tomorrow Lens', emoji: '🔭', desc: 'Lets you peek at the future you are building.', boost: 'Glows in Brain Town' }
-]
+  { id: 'memory-lantern', skill: 'brain-builder', unlockAt: 1, name: 'Memory Lantern', emoji: '🏮', desc: 'Lights the way when learning feels foggy.', boost: 'A builder is never lost in the dark' },
+  { id: 'road-kit', skill: 'brain-builder', unlockAt: 4, name: "Road Builder's Kit", emoji: '🧱', desc: 'Every practice lays another brick on your brain roads.', boost: 'Earned by real road-building practice' },
+  { id: 'lennys-whistle', skill: 'brain-builder', unlockAt: 8, name: "Lenny's Golden Whistle", emoji: '📯', desc: "Lenny's own whistle — for a master brain builder who kept showing up.", boost: 'Master builder badge of honour' },
 
-const UNLOCK_AT = 1 // completed modules in the tool's skill
+  { id: 'thought-filter', skill: 'thought-driver', unlockAt: 1, name: 'Thought Filter', emoji: '🔍', desc: 'Helps you spot unhelpful thoughts before they spread.', boost: 'Extra heart in Thought Forest' },
+  { id: 'calm-feather', skill: 'thought-driver', unlockAt: 4, name: "Coco's Calm Feather", emoji: '🪶', desc: 'A feather from Coco — proof you can let squawky thoughts fly past.', boost: 'Steady thoughts, smooth feathers' },
+  { id: 'bright-goggles', skill: 'thought-driver', unlockAt: 8, name: 'Bright-Side Goggles', emoji: '🥽', desc: 'See the fair, true version of any thought.', boost: 'Master thought-driver badge' },
+
+  { id: 'feelings-compass', skill: 'emotion-navigator', unlockAt: 1, name: 'Feelings Compass', emoji: '🧭', desc: 'Points to what you are really feeling.', boost: 'Never lost in a feelings storm' },
+  { id: 'gum-leaf', skill: 'emotion-navigator', unlockAt: 4, name: "Kip's Gum Leaf", emoji: '🍃', desc: 'Kip’s favourite calm-down leaf, for slow koala breaths.', boost: 'Breathe slow like a koala' },
+  { id: 'feelings-thermometer', skill: 'emotion-navigator', unlockAt: 8, name: 'Feelings Thermometer', emoji: '🌡️', desc: 'Measure how big a feeling is before it measures you.', boost: 'Master navigator badge' },
+
+  { id: 'habit-hammer', skill: 'behaviour-engineer', unlockAt: 1, name: 'Habit Hammer', emoji: '🔨', desc: 'Builds strong habits one small tap at a time.', boost: 'Every tap builds the habit' },
+  { id: 'routine-planner', skill: 'behaviour-engineer', unlockAt: 4, name: 'Routine Planner', emoji: '🗓️', desc: 'Hook new habits to things you already do.', boost: 'Same time, same trigger, no forgetting' },
+  { id: 'peppers-pouch', skill: 'behaviour-engineer', unlockAt: 8, name: "Pepper's Night Pouch", emoji: '🎒', desc: "Pepper's own stash pouch — for an engineer whose habits stick.", boost: 'Master engineer badge' },
+
+  { id: 'bounce-shield', skill: 'resilience-architect', unlockAt: 1, name: 'Bounce Shield', emoji: '🛡️', desc: 'Helps you bounce back when things get tough.', boost: 'Extra heart in Courage Canyon' },
+  { id: 'brave-rope', skill: 'resilience-architect', unlockAt: 4, name: 'Brave Rope', emoji: '🪢', desc: 'For climbing back up, one small brave step at a time.', boost: 'Falls are just part of the climb' },
+  { id: 'eddies-spikes', skill: 'resilience-architect', unlockAt: 8, name: "Eddie's Spiky Armour", emoji: '⚔️', desc: "Eddie's gift — you weathered the storms and kept going.", boost: 'Master architect badge' },
+
+  { id: 'friendship-map', skill: 'social-mapper', unlockAt: 1, name: 'Friendship Map', emoji: '🗺️', desc: 'Shows the way to kinder, stronger friendships.', boost: 'Every hello adds to the map' },
+  { id: 'listening-ears', skill: 'social-mapper', unlockAt: 4, name: "Kai's Listening Ears", emoji: '👂', desc: 'Hear what friends mean, not just what they say.', boost: 'The best mappers listen first' },
+  { id: 'kindness-badge', skill: 'social-mapper', unlockAt: 8, name: 'Kindness Badge', emoji: '💞', desc: 'Awarded for mapping the whole world of people with kindness.', boost: 'Master mapper badge' },
+
+  { id: 'tomorrow-lens', skill: 'future-designer', unlockAt: 1, name: 'Tomorrow Lens', emoji: '🔭', desc: 'Lets you peek at the future you are building.', boost: 'See where today is taking you' },
+  { id: 'dream-journal', skill: 'future-designer', unlockAt: 4, name: 'Dream Journal', emoji: '📔', desc: 'Big dreams, written down, become plans.', boost: 'Dreams with pages grow legs' },
+  { id: 'billies-star', skill: 'future-designer', unlockAt: 8, name: "Billie's Wish Star", emoji: '🌠', desc: "Billie's own star — for a designer who builds tomorrow every day.", boost: 'Master designer badge' }
+]
 
 export function toolsStorageKey(childId) { return 'dd_tools_' + childId }
 
@@ -41,7 +62,7 @@ function computeUnlocked({ modules, childModules }) {
     if (!slug) continue
     bySkillSlug[slug] = (bySkillSlug[slug] || 0) + 1
   }
-  return SKILL_TOOLS.filter(t => (bySkillSlug[t.skill] || 0) >= UNLOCK_AT)
+  return SKILL_TOOLS.filter(t => (bySkillSlug[t.skill] || 0) >= t.unlockAt)
 }
 
 function injectStyles() {
@@ -109,11 +130,13 @@ export async function initSkillToolsShelf(container, { child, modules, childModu
   if (!mapContainer || container.querySelector('.stl-shelf')) return
   injectStyles()
 
+  const skillLabel = (slug) => slug.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
+  const lockHint = (t) => `Finish ${t.unlockAt} adventure${t.unlockAt === 1 ? '' : 's'} in ${skillLabel(t.skill)} to unlock`
   const shelf = document.createElement('div')
   shelf.className = 'stl-shelf'
-  shelf.innerHTML = '<span class="stl-label">🧰 My tools:</span>' + SKILL_TOOLS.map(t => {
+  shelf.innerHTML = `<span class="stl-label">🧰 My tools (${unlockedIds.length}/${SKILL_TOOLS.length}):</span>` + SKILL_TOOLS.map(t => {
     const has = unlockedIds.includes(t.id)
-    return `<button type="button" class="stl-tool${has ? '' : ' locked'}" data-tool="${t.id}" title="${escapeHtml(has ? t.name : 'Finish a ' + t.skill.replace(/-/g, ' ') + ' adventure to unlock')}">${has ? t.emoji : '🔒'}</button>`
+    return `<button type="button" class="stl-tool${has ? '' : ' locked'}" data-tool="${t.id}" title="${escapeHtml(has ? t.name : lockHint(t))}">${has ? t.emoji : '🔒'}</button>`
   }).join('')
   // Below the map: the space above it belongs to the explainer chip.
   mapContainer.parentElement.insertBefore(shelf, mapContainer.nextSibling)
@@ -123,7 +146,7 @@ export async function initSkillToolsShelf(container, { child, modules, childModu
       const tool = SKILL_TOOLS.find(t => t.id === btn.dataset.tool)
       if (!tool) return
       if (unlockedIds.includes(tool.id)) showToolCard(tool)
-      else showToolCard({ ...tool, emoji: '🔒', name: '???', desc: 'Finish an adventure in ' + tool.skill.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') + ' to unlock this tool!', boost: tool.boost })
+      else showToolCard({ ...tool, emoji: '🔒', name: 'Locked tool', desc: lockHint(tool) + '!', boost: tool.boost })
     })
   })
 

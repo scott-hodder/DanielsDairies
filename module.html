@@ -1719,21 +1719,59 @@
       enabled: false,
       saved: null,
 
+      moduleKey() { return String(moduleId || moduleCode || 'mod'); },
       storageKey() {
-        return 'dd_ep_' + (childId || 'guest') + '_' + (moduleId || moduleCode || 'mod');
+        return 'dd_ep_' + (childId || 'guest') + '_' + this.moduleKey();
       },
       load() {
         try { return JSON.parse(localStorage.getItem(this.storageKey()) || 'null'); } catch { return null; }
+      },
+      // Cross-device: progress also syncs to child_module_progress. All DB
+      // calls fail soft — localStorage keeps working if the table or the
+      // network is unavailable.
+      async loadRemote() {
+        if (!childId) return null;
+        try {
+          const { data } = await supabase.from('child_module_progress')
+            .select('last_page, scenes_done')
+            .eq('child_id', childId).eq('module_key', this.moduleKey())
+            .maybeSingle();
+          return data ? { page: data.last_page || 0, scenes: data.scenes_done || [] } : null;
+        } catch { return null; }
+      },
+      scheduleSync() {
+        if (!childId) return;
+        clearTimeout(this._syncTimer);
+        this._syncTimer = setTimeout(async () => {
+          const cur = this.saved;
+          if (!cur) return;
+          try {
+            await supabase.from('child_module_progress').upsert({
+              child_id: childId,
+              module_key: this.moduleKey(),
+              last_page: cur.page || 0,
+              scenes_done: cur.scenes || [],
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'child_id,module_key' });
+          } catch { /* local copy still holds */ }
+        }, 1500);
       },
       persist(patch) {
         const cur = this.load() || { page: 0, scenes: [] };
         const next = Object.assign(cur, patch);
         try { localStorage.setItem(this.storageKey(), JSON.stringify(next)); } catch { /* private mode */ }
         this.saved = next;
+        this.scheduleSync();
       },
       clear() {
         try { localStorage.removeItem(this.storageKey()); } catch { /* ignore */ }
         this.saved = null;
+        clearTimeout(this._syncTimer);
+        if (childId) {
+          supabase.from('child_module_progress').delete()
+            .eq('child_id', childId).eq('module_key', this.moduleKey())
+            .then(() => {}, () => {});
+        }
       },
 
       sceneOfPage(p) {
@@ -1743,25 +1781,21 @@
       },
 
       computeStarts(pages) {
-        let starts = [0];
+        const chapterStarts = [];
         for (let i = 1; i < pages.length - 1; i++) {
           let html = '';
           try { html = String(pages[i]()); } catch { continue; }
-          if (/Chapter\s+\d+|chapter-title|chapter-badge/i.test(html)) starts.push(i);
+          if (/Chapter\s+\d+|chapter-title|chapter-badge/i.test(html)) chapterStarts.push(i);
         }
-        if (starts.length < 2) {
+        let starts;
+        if (chapterStarts.length >= 2) {
+          // Scenes ARE the chapters. The cover/intro pages belong to the
+          // first chapter's scene, so the first chapter start is not a
+          // boundary — a scene break must mean "you finished a chapter".
+          starts = [0].concat(chapterStarts.slice(1));
+        } else {
           starts = [];
           for (let i = 0; i < pages.length - 2; i += 6) starts.push(i);
-        } else {
-          // Subdivide any scene longer than 8 pages so sessions stay short.
-          const out = [];
-          for (let k = 0; k < starts.length; k++) {
-            const a = starts[k];
-            const b = (k + 1 < starts.length) ? starts[k + 1] : pages.length;
-            out.push(a);
-            for (let p = a + 6; p < b - 2; p += 6) out.push(p);
-          }
-          starts = out;
         }
         return starts;
       },
@@ -1772,7 +1806,15 @@
         if (!this.enabled) return;
         this.total = window.pages.length;
         this.starts = this.computeStarts(window.pages);
-        this.saved = this.load();
+        // Merge local and remote progress: furthest page wins, celebrated
+        // scenes union — so switching devices never replays or loses a scene.
+        const local = this.load() || { page: 0, scenes: [] };
+        const remote = await this.loadRemote();
+        this.saved = {
+          page: Math.max(local.page || 0, remote?.page || 0),
+          scenes: [...new Set([...(local.scenes || []), ...(remote?.scenes || [])])]
+        };
+        try { localStorage.setItem(this.storageKey(), JSON.stringify(this.saved)); } catch { /* ignore */ }
         this.injectStyles();
 
         // Completing the module ends the episode run — clear resume state.
