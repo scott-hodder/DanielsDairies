@@ -7,6 +7,9 @@
 import { openExplainer, renderExplainerChip } from './danielExplainer.js'
 import { maybeShowFirstTimeGuide } from './firstTimeGuide.js'
 import { initSvgMap } from './brainTownSvgMap.js'
+import { initStickerBook } from './stickerBook.js'
+import { initTownEvents } from './townEvents.js'
+import { initSkillToolsShelf } from './skillTools.js'
 import { initArcadeTab, refreshArcadeBests } from './arcadeTab.js'
 import { recordArcadePlay, saveArcadeReflection, getReflectionFor } from './arcadeLoop.js'
 import { listGames } from '../../minigames/index.js'
@@ -81,6 +84,11 @@ export async function initBrainTown({
     // device shouldn't be welcomed like a first-timer.
     hasProgress: (childModules || []).some(cm => cm.is_completed)
   })
+
+  // ── Town play layer (flag-gated inside each module) ──
+  initStickerBook(mapContainer, selectedChild?.id)
+  initTownEvents(mapContainer, { child: selectedChild })
+  initSkillToolsShelf(container, { child: selectedChild, modules, childModules })
 
   // ── Arcade (mounted in main dashboard tab) ──
   const arcadeMount = document.getElementById('arcadeMount')
