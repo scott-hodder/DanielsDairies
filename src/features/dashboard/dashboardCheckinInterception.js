@@ -4,6 +4,7 @@ import { dashboardState } from '../../state/dashboardState.js'
 import { saveWeeklyCheckin } from '../../services/databaseService.js'
 import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { showToast } from '../../ui/toast.js'
+import { KID_FRIENDLY_COPY } from '../../adventure-map-themes.js'
 
 const state = dashboardState
 
@@ -71,9 +72,12 @@ export async function shouldTriggerCheckinForModuleCount(childId, superSkillId) 
       checkinCount = allCheckins?.length || 0
     }
 
-    // Expected check-ins: one per 3 completed modules (at 3, 6, 9...)
-    // Don't include the initial intro check-in (that's separate)
-    const expectedCheckins = Math.floor(completedCount / CHECKIN_MODULE_INTERVAL)
+    // Expected check-ins: a baseline after the FIRST completed module
+    // (replaces the old pre-play assessment that used to gate module 1),
+    // then one per 3 completions (at 1, 4, 7, 10...)
+    const expectedCheckins = completedCount >= 1
+      ? 1 + Math.floor((completedCount - 1) / CHECKIN_MODULE_INTERVAL)
+      : 0
 
     console.log('[Check-in] SuperSkill:', superSkillId, 'Completed:', completedCount, 'Check-ins done:', checkinCount, 'Expected:', expectedCheckins)
 
@@ -222,7 +226,10 @@ export function showIntroScreen(superSkill, onContinue, onClose) {
   const characterName = character.name || superSkill?.character_name || 'Lenny'
   const characterSpecies = character.species || 'friend'
   const characterImage = character.image_url || superSkill?.character_image_url || '/images/characters/lenny.png'
-  const domain = superSkill?.domain || superSkill?.name || 'important skills'
+  // superSkill.domain holds adult framing ("Prospection, Goal Setting, and
+  // Identity Formation") — use the kid-friendly tag for the child screen.
+  const kidCopy = KID_FRIENDLY_COPY[superSkill?.slug] || {}
+  const domain = kidCopy.tag || superSkill?.name || 'important skills'
   const superSkillName = superSkill?.name || 'Super Skills'
 
   // Create intro overlay
@@ -455,14 +462,21 @@ export async function showCheckinPopup(module, onComplete, skipIntro = false) {
       // onComplete - assessment finished, also record in pathway_assessments so it won't trigger again
       async (results) => {
         try {
+          // weekly_checkins.intensity has a CHECK (1..5) constraint; the raw
+          // psychometric score (0..maxScore) is preserved in the notes field.
+          const rawScore = Number(results?.totalScore) || 0
+          const maxScore = Number(results?.maxScore) || 0
+          const scaledIntensity = maxScore > 0
+            ? Math.min(5, Math.max(1, Math.round((rawScore / maxScore) * 4) + 1))
+            : 3
           await saveWeeklyCheckin({
             parentUserId: state.currentUser?.id || window.state?.currentUser?.id,
             childId: childId,
-            intensity: results?.totalScore || 0,
+            intensity: scaledIntensity,
             challenge: pathwayOrSuperSkill,
             triggers: [],
             goal: null,
-            notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) - score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
+            notes: `Wellbeing check-in completed in the app — score ${rawScore} of ${maxScore}`,
             generatedPlan: null,
             subSkillId: module.sub_skill_id || null,
             weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,
@@ -515,43 +529,52 @@ export async function showCheckinPopup(module, onComplete, skipIntro = false) {
   }
 }
 
-// Start module (with check-in intercept every 3 modules completed)
+// Start module — one tap, straight in. Check-ins no longer gate play:
+// they run AFTER a module is completed (see maybeShowPostCompletionCheckin),
+// so nothing ever sits between the child and the content.
 export async function startModule(module) {
-  console.log('[dashboardPage.startModule] Called - module:', module?.title || module?.id)
   try {
-    if (state.selectedChild && state.currentUser) {
-      const childId = state.selectedChild.id
-
-      const superSkillId = module.super_skill_id || null
-
-      // Check 1: Periodic check-in (every 3 modules) - takes priority over intro
-      const needsCheckin = await shouldTriggerCheckinForModuleCount(childId, superSkillId)
-      console.log('[dashboardPage.startModule] Check 1 (periodic) - needsCheckin:', needsCheckin)
-      if (needsCheckin) {
-        console.log('[dashboardPage.startModule] Showing ENCOURAGEMENT (periodic check-in, skipIntro=true)')
-        showCheckinPopup(module, () => navigateToModule(module), true)
-        return
-      }
-
-      // Check 2: First module in a super skill -> show character intro
-      console.log('[dashboardPage.startModule] Check 2 (intro) - superSkillId:', superSkillId)
-      if (superSkillId) {
-        const introKey = 'superSkillIntroSeen_' + childId + '_' + superSkillId
-        const alreadySeen = localStorage.getItem(introKey)
-        console.log('[dashboardPage.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen)
-        if (!alreadySeen) {
-          console.log('[dashboardPage.startModule] Showing INTRO (first module for this super skill)')
-          showCheckinPopup(module, () => {
-            localStorage.setItem(introKey, 'true')
-            navigateToModule(module)
-          }, false)
-          return
-        }
-      }
-    }
     navigateToModule(module)
   } catch (error) {
     console.error('Error starting module:', error)
     showToast('Failed to start module. Please try again.', 'error')
+  }
+}
+
+// After a module is completed the player stamps a flag (see module.html
+// completeModuleDB); the dashboard calls this on the way back in. If the
+// child is due a check-in (first completion = baseline, then every 3rd),
+// Lenny asks THEN — at the moment of victory, never before play.
+export async function maybeShowPostCompletionCheckin() {
+  try {
+    const childId = state.selectedChild?.id
+    if (!childId) return false
+
+    const flagKey = `dd_just_completed_${childId}`
+    const raw = localStorage.getItem(flagKey)
+    if (!raw) return false
+
+    let flag = null
+    try { flag = JSON.parse(raw) } catch (_) { /* legacy/corrupt flag */ }
+    localStorage.removeItem(flagKey)
+    // Stale flags (e.g. an old tab) don't get to interrupt today's session
+    if (!flag || !flag.at || Date.now() - flag.at > 30 * 60 * 1000) return false
+
+    const superSkillId = flag.superSkillId || null
+    const needsCheckin = await shouldTriggerCheckinForModuleCount(childId, superSkillId)
+    if (!needsCheckin) return false
+
+    const moduleLike = {
+      id: flag.moduleId || null,
+      super_skill_id: superSkillId,
+      title: flag.moduleTitle || ''
+    }
+    // skipIntro=true → the celebratory encouragement screen, then the
+    // check-in. onComplete keeps the child on the dashboard.
+    showCheckinPopup(moduleLike, () => {}, true)
+    return true
+  } catch (error) {
+    console.error('Error running post-completion check-in:', error)
+    return false
   }
 }

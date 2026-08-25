@@ -240,12 +240,25 @@ async function handleDanielMoodOptionClick(score) {
 
 async function handleDanielClick() {
   if (!state.selectedChild?.id) return
+  // Open instantly from the cached check-in state — the modal itself is the
+  // tap feedback. Waiting on the network here made the tap feel dead.
+  const showForState = () => {
+    if (getMoodCooldownState().canRate) {
+      showDanielMoodModalRate()
+    } else {
+      showDanielMoodModalLocked()
+    }
+  }
+  const staleCanRate = getMoodCooldownState().canRate
+  showForState()
+
+  // Refresh in the background; only re-render if the state actually changed
+  // and the child hasn't already closed the modal.
   await refreshMoodCheckinState()
-  const cooldown = getMoodCooldownState()
-  if (cooldown.canRate) {
-    showDanielMoodModalRate()
-  } else {
-    showDanielMoodModalLocked()
+  const { overlay } = getDanielMoodModalElements()
+  const stillOpen = overlay && !overlay.classList.contains('hidden')
+  if (stillOpen && getMoodCooldownState().canRate !== staleCanRate) {
+    showForState()
   }
 }
 

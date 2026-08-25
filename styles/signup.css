@@ -265,7 +265,7 @@ body {
 
 /* ── Right Side Form ── */
 .signup-form-area {
-    padding: 48px 44px;
+    padding: 26px 40px 22px;
     overflow-y: auto;
     max-height: 100vh;
 }
@@ -277,7 +277,7 @@ body {
     font-size: 14px;
     color: var(--dd-text-muted);
     text-decoration: none;
-    margin-bottom: 28px;
+    margin-bottom: 14px;
     transition: color 0.2s ease;
     background: none;
     border: none;
@@ -290,11 +290,11 @@ body {
 }
 
 .form-header {
-    margin-bottom: 32px;
+    margin-bottom: 16px;
 }
 
 .form-header h2 {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
     color: var(--dd-primary);
     margin-bottom: 8px;
@@ -310,12 +310,12 @@ body {
     display: flex;
     align-items: center;
     gap: 0;
-    margin-bottom: 36px;
+    margin-bottom: 18px;
 }
 
 .step-dot {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -363,7 +363,7 @@ body {
 }
 
 .form-group {
-    margin-bottom: 22px;
+    margin-bottom: 13px;
 }
 
 .form-row {
@@ -374,15 +374,15 @@ body {
 
 .form-label {
     display: block;
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 600;
     color: var(--dd-primary);
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
 .form-input {
     width: 100%;
-    padding: 14px 16px;
+    padding: 11px 14px;
     border: 2px solid #dce4ed;
     border-radius: 14px;
     font-size: 16px;
@@ -599,7 +599,7 @@ input[name="plan"] {
 .form-buttons {
     display: flex;
     gap: 12px;
-    margin-top: 32px;
+    margin-top: 16px;
 }
 
 .btn-back {
@@ -765,10 +765,10 @@ input[name="plan"] {
 
 /* ── Terms ── */
 .terms-text {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--dd-text-muted);
-    line-height: 1.6;
-    margin-top: 20px;
+    line-height: 1.5;
+    margin-top: 10px;
     text-align: center;
 }
 

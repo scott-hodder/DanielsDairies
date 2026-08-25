@@ -4723,7 +4723,9 @@ function renderCompletionPage(completion: CompletionContent, metadata: ModuleMet
     5: { bg: 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 30%, #FECDD3 70%, #FDA4AF 100%)', border: '#E11D48', accent: '#BE123C', badge: '💖', emojis: '🎀🌸💝🎈🥳', ribbonColor: '#F43F5E' },
   };
   const style = certificateStyles[styleIndex];
-  const emojiArr = style.emojis.split('').filter(c => c.trim());
+  // Array.from iterates code points; .split('') would tear emoji surrogate
+  // pairs apart and bake broken "?" characters into the page.
+  const emojiArr = Array.from(style.emojis).filter(c => c.trim());
 
   return `
     <div class="page min-h-screen flex items-center justify-center p-4 md:p-8" style="background: ${style.bg};" data-page="completion">

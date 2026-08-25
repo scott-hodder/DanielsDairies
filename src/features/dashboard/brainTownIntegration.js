@@ -76,7 +76,10 @@ export async function initBrainTown({
   // taps a Super Skill district.
   maybeShowFirstTimeGuide(container.querySelector('#danielFirstGuideMount'), {
     childId: selectedChild?.id,
-    mapContainer
+    mapContainer,
+    // Dismissal is stored per device; a child with real progress on a new
+    // device shouldn't be welcomed like a first-timer.
+    hasProgress: (childModules || []).some(cm => cm.is_completed)
   })
 
   // ── Arcade (mounted in main dashboard tab) ──

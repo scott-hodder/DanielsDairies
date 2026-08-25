@@ -4,8 +4,12 @@
 // ================================================
 
 import { getZoneState } from './adventure-map-zones.js';
+// Bundled by Vite; the old runtime <link href="./src/..."> injection 404'd in
+// production builds, so the zone styles never loaded outside dev.
+import './adventure-map-zones.css';
 import { getZoneSceneCss, getZoneFillerCss, getZoneGround, isSvgScenesEnabled } from './adventure-zone-scenes.js';
 import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
+import { renderSkillJourneyView } from './features/dashboard/skillJourneyMap.js';
 // Side-effect import: defines window.roadblockSystem on load.
 import './roadblock-system.js';
 import { isMiniGamesEnabled } from './minigames/index.js';
@@ -241,12 +245,7 @@ export class AdventureMapV4 {
   injectStyles() { injectAdventureMapStyles(); }
 
   ensureZoneStyles() {
-    if (document.getElementById('adventure-map-zones-css')) return;
-    var link = document.createElement('link');
-    link.id = 'adventure-map-zones-css';
-    link.rel = 'stylesheet';
-    link.href = './src/adventure-map-zones.css';
-    document.head.appendChild(link);
+    // Zone styles are now bundled via the static CSS import above.
   }
 
   render() {
@@ -283,6 +282,22 @@ export class AdventureMapV4 {
     // Once they click a card, _skillSelectedThisSession is set and the map renders.
     if (!this._skillSelectedThisSession && this.getAvailableCategories().length > 1) {
       this.renderSkillPickerInline();
+      showDashboardFooter();
+      if (typeof window._dashboardRenderComplete === 'function') {
+        window._dashboardRenderComplete();
+        window._dashboardRenderComplete = null;
+      }
+      return;
+    }
+
+    // ── Skill Journey view ("inside the district") ──
+    // The new scene renderer owns the whole Adventures view: one
+    // continuous road from the district depot to Brain City, buildings
+    // that grow as modules complete, and the skill's guide character at
+    // the next stop. The classic vertical map stays available behind
+    // window.DD_CLASSIC_JOURNEY for rollback.
+    if (!window.DD_CLASSIC_JOURNEY && this.modules.length > 0) {
+      renderSkillJourneyView(this);
       showDashboardFooter();
       if (typeof window._dashboardRenderComplete === 'function') {
         window._dashboardRenderComplete();
@@ -995,17 +1010,19 @@ export class AdventureMapV4 {
       var isLastChosen = card.slug === lastChosen && lastChosen !== 'all' && !card.locked;
       var cardClasses = 'skill-card' + (isLastChosen ? ' last-chosen' : '') + (card.locked ? ' skill-card-locked' : '');
       var decosHtml = card.decos.map(function(d) { return '<span class="skill-card-deco">' + d + '</span>'; }).join('');
+      // Locked cards already carry a lock badge + button label; a speech
+      // bubble repeating the same sentence was pure noise.
       var speechText = card.locked
-        ? (card.unlockName ? 'Complete ' + card.unlockName + ' to unlock me!' : 'You\'ll unlock me later on your journey!')
+        ? ''
         : (isLastChosen ? card.speechCurrent : (card.completedModules === 0 ? card.speechNew : ''));
       var btnLabel = card.locked
         ? (card.unlockName ? '🔒 Complete ' + card.unlockName + ' first' : '🔒 Unlocks later')
         : (isLastChosen ? 'Continue quest' : (card.completedModules > 0 ? 'Keep exploring' : 'Start adventure'));
       var progressLabel = card.locked
-        ? (card.unlockName ? 'Unlocks after ' + card.unlockName : 'Next on your journey')
+        ? ''
         : (card.completedModules > 0
-          ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' steps completed'
-          : card.totalModules + ' steps to explore');
+          ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' adventures completed'
+          : card.totalModules + ' adventure' + (card.totalModules === 1 ? '' : 's') + ' to explore');
       var btnStyle = card.locked
         ? 'background: linear-gradient(135deg, #9AA5B1, #5B6773)'
         : 'background: linear-gradient(135deg, ' + card.btnColor + ', ' + card.btnColor + 'dd)';
@@ -1023,10 +1040,11 @@ export class AdventureMapV4 {
         '<div class="skill-card-desc">' + card.description + '</div>' +
         (card.pickThisIf && !card.locked ? '<div class="skill-card-pick-label">Pick this if:</div><div class="skill-card-pick-text">' + card.pickThisIf + '</div>' : '') +
         (card.tag ? '<div class="skill-card-tags"><span class="skill-card-tag">' + card.tag + '</span></div>' : '') +
-        '<div class="skill-card-progress">' +
-        '<div class="skill-card-progress-bar"><div class="skill-card-progress-fill" style="width: ' + progressPct + '%; background: ' + card.btnColor + ';"></div></div>' +
-        '<span class="skill-card-progress-text">' + progressLabel + '</span>' +
-        '</div>' +
+        (card.locked ? '' :
+          '<div class="skill-card-progress">' +
+          '<div class="skill-card-progress-bar"><div class="skill-card-progress-fill" style="width: ' + progressPct + '%; background: ' + card.btnColor + ';"></div></div>' +
+          '<span class="skill-card-progress-text">' + progressLabel + '</span>' +
+          '</div>') +
         '<button class="skill-card-btn" style="' + btnStyle + '">' + btnLabel + '</button>' +
         '</div>';
     }).join('');
@@ -1048,15 +1066,27 @@ export class AdventureMapV4 {
     container.querySelectorAll('.skill-card').forEach(function(cardEl) {
       var slug = cardEl.dataset.skill;
       var cardData = skillCards.find(function(c) { return c.slug === slug; });
-      var openPreview = function() {
-        if (cardData) self.showSkillPreviewModal(cardData);
+      // Playable skills go straight in — the card already says everything the
+      // old confirmation modal repeated. Locked skills keep the preview modal
+      // because it explains what unlocks them.
+      var openCard = function() {
+        if (!cardData) return;
+        if (cardData.locked) { self.showSkillPreviewModal(cardData); return }
+        self.currentCategory = cardData.slug;
+        self.setStoredCategory(cardData.slug);
+        self._skillSelectedThisSession = true;
+        self.currentCycleId = null;
+        self.translateX = 0;
+        self.translateY = 0;
+        self.hasUserInteracted = false;
+        self.render();
       };
       cardEl.addEventListener('click', function(e) {
         if (e.target.classList.contains('skill-card-btn')) return;
-        openPreview();
+        openCard();
       });
       var btn = cardEl.querySelector('.skill-card-btn');
-      if (btn) btn.addEventListener('click', openPreview);
+      if (btn) btn.addEventListener('click', openCard);
     });
 
     // Event: Help me choose quiz
@@ -2213,7 +2243,7 @@ export class AdventureMapV4 {
         statusText = '▶ Ready to play!';
         statusClass = 'ready';
       } else {
-        statusText = module.canUnlock ? '🔒 Spend 1 credit to unlock' : '🔒 Complete earlier modules first';
+        statusText = module.canUnlock ? '✨ Tap to open this adventure!' : '🔒 Complete earlier modules first';
         statusClass = 'locked-status';
       }
       tooltip.innerHTML = '<strong style="display:block;margin-bottom:4px;font-size:14px;">' + moduleTitle + '</strong><span class="' + statusClass + '">' + statusText + '</span>';
@@ -2222,7 +2252,11 @@ export class AdventureMapV4 {
       node.addEventListener('click', function(e) {
         e.stopPropagation();
         if (module.status === 'locked') {
-          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
+          // Child-facing path: unlock silently (credits are a grown-up
+          // concept) and go straight into the adventure.
+          if (module.canUnlock && typeof window.autoUnlockAndStart === 'function') {
+            window.autoUnlockAndStart(module.module || module);
+          } else if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
             window.openPurchaseModal(module.module || module);
           } else if (typeof window.showUnlockResultModal === 'function') {
             window.showUnlockResultModal({
@@ -2250,7 +2284,11 @@ export class AdventureMapV4 {
         e.preventDefault(); // Prevent subsequent click event from double-firing
         e.stopPropagation();
         if (module.status === 'locked') {
-          if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
+          // Child-facing path: unlock silently (credits are a grown-up
+          // concept) and go straight into the adventure.
+          if (module.canUnlock && typeof window.autoUnlockAndStart === 'function') {
+            window.autoUnlockAndStart(module.module || module);
+          } else if (module.canUnlock && typeof window.openPurchaseModal === 'function') {
             window.openPurchaseModal(module.module || module);
           } else if (typeof window.showUnlockResultModal === 'function') {
             window.showUnlockResultModal({

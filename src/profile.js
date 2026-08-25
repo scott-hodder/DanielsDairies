@@ -29,7 +29,7 @@ async function checkIsAdmin() {
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
     
     if (error) return false
     return data?.is_admin === true

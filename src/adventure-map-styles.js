@@ -176,7 +176,12 @@ export function injectAdventureMapStyles() {
     css.push('.map-empty-text { font-size: 14px; max-width: 300px; }');
     
     // Enhanced "next" node styles - bigger, pulsing, dramatic
-    css.push('.adventure-node.available { width: 82px; height: 82px; background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%); animation: nextNodePulse 2s ease-in-out infinite, nextNodeGlow 1.5s ease-in-out infinite alternate; }');
+    // The pulse lives on a ::before halo, NOT the node itself — animating the
+    // node's transform made the tap target continuously move/resize, which is
+    // hostile to small fingers (and to automation).
+    css.push('.adventure-node.available { width: 82px; height: 82px; background: linear-gradient(145deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%); animation: nextNodeGlow 1.5s ease-in-out infinite alternate; }');
+    css.push('.adventure-node.available::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; background: rgba(245, 158, 11, 0.30); z-index: -1; pointer-events: none; animation: nextNodeHalo 2s ease-in-out infinite; }');
+    css.push('@keyframes nextNodeHalo { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.18); opacity: 0.35; } }');
     css.push('.adventure-node.available .node-emoji { font-size: 32px; animation: emojiShake 2s ease-in-out infinite; }');
     css.push('@keyframes nextNodePulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }');
     css.push('@keyframes nextNodeGlow { 0% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.3); } 100% { box-shadow: 0 8px 35px rgba(245, 158, 11, 0.8), 0 0 0 8px rgba(245, 158, 11, 0.2), 0 0 50px rgba(245, 158, 11, 0.5); } }');

@@ -240,13 +240,9 @@
 
 <!-- Adventure Map Section -->
 <div class="adventure-map-section">
-    <!-- Credits badge - floats inside header -->
-    <div class="credits-display" id="creditsDisplay" title="Module credits available this billing period">
-        <span class="credits-icon">🎟️</span>
-        <span class="credits-value" id="creditWalletValue">0</span>
-        <span class="credits-label">credits</span>
-        <button type="button" class="buy-credits-btn" id="buyCreditsBtn" style="display:none;" onclick="document.getElementById('buyCreditsModal').classList.add('active');document.body.style.overflow='hidden';">Get More</button>
-    </div>
+    <!-- Credits are a grown-up concept: the child never sees them. Balances
+         and top-ups live in the Profile/billing pages; the adventure path
+         unlocks the next module silently when credits exist. -->
 
     <!-- The map will be rendered here by JavaScript -->
     <div id="adventureMapContainer"></div>

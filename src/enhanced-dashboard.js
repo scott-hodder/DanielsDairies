@@ -315,45 +315,11 @@ class EnhancedDashboard {
       return;
     }
 
+    // One tap → play. Check-ins moved to AFTER module completion
+    // (dashboardCheckinInterception.maybeShowPostCompletionCheckin) so they
+    // never sit between the child and the content.
     var mod = module.module;
     var moduleUrl = '/module.html?childId=' + child.id + '&moduleId=' + mod.id + '&code=' + (module.code || mod.code) + '&childName=' + encodeURIComponent(child.name || '') + ((window.state && window.state.isCurrentUserAdmin) ? '&isAdmin=true' : '');
-
-    try {
-      var superSkillId = mod.super_skill_id || null;
-
-      // Check 1: Periodic check-in (every 3 modules) - takes priority over intro
-      var needsCheckin = await this.shouldTriggerCheckinForModuleCount(child.id, superSkillId);
-      console.log('[AdventureMap.startModule] Check 1 (periodic) - needsCheckin:', needsCheckin);
-      if (needsCheckin) {
-        if (typeof window.showCheckinPopup === 'function') {
-          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-          console.log('[AdventureMap.startModule] Calling showCheckinPopup with skipIntro=true');
-          window.showCheckinPopup(popupModule, function() {
-            window.location.href = moduleUrl;
-          }, true);
-          return;
-        }
-      }
-
-      // Check 2: First module in a super skill → show character intro
-      console.log('[AdventureMap.startModule] Check 2 (intro) - superSkillId:', superSkillId, 'childId:', child.id);
-      if (superSkillId && typeof window.showCheckinPopup === 'function') {
-        var introKey = 'superSkillIntroSeen_' + child.id + '_' + superSkillId;
-        var alreadySeen = localStorage.getItem(introKey);
-        console.log('[AdventureMap.startModule] introKey:', introKey, 'alreadySeen:', alreadySeen);
-        if (!alreadySeen) {
-          var popupModule = Object.assign({}, mod, { code: module.code || mod.code });
-          window.showCheckinPopup(popupModule, function() {
-            localStorage.setItem(introKey, 'true');
-            window.location.href = moduleUrl;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      console.error('[StartModule] Error checking checkin:', e);
-    }
-
     window.location.href = moduleUrl;
   }
   

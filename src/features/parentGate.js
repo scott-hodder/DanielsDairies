@@ -170,12 +170,12 @@ function showSetup(modal, { title, sub, allowSkip, allowRemove, onSet, onRemove 
   }
 }
 
-// ── Forgot PIN: re-authenticate with the account password ──
-function showForgot(modal, { onVerified, onBack }) {
+// ── Adult check: re-authenticate with the account password ──
+function showForgot(modal, { title, sub, onVerified, onBack }) {
   modal.innerHTML = `
     <div class="pg-emoji">🔑</div>
-    <h3 class="pg-title">Forgot your PIN?</h3>
-    <p class="pg-sub">Enter your account password (the one you sign in with) to set a new PIN.</p>
+    <h3 class="pg-title">${title || 'Forgot your PIN?'}</h3>
+    <p class="pg-sub">${sub || 'Enter your account password (the one you sign in with) to set a new PIN.'}</p>
     <form id="pgForgotForm">
       <input class="pg-input" id="pgPw" type="password" autocomplete="current-password" placeholder="Account password" style="letter-spacing:2px;font-size:16px">
       <p class="pg-error" id="pgError"></p>
@@ -257,11 +257,22 @@ export async function requireParentGate() {
           finish(true)
         }
       })
-      controls.skip?.addEventListener('click', () => finish(true))
-      controls.dismiss?.addEventListener('click', () => {
+      // Skipping PIN setup still needs an adult: verify the account password
+      // once, otherwise a child could tap "Not now" straight into the parent
+      // zone from the kids' dashboard.
+      const adultCheck = (onVerified) => {
+        showForgot(modal, {
+          title: 'Quick parent check',
+          sub: 'Enter your account password (the one you sign in with) to continue without a PIN.',
+          onVerified,
+          onBack: () => openSetup(allowSkip)
+        })
+      }
+      controls.skip?.addEventListener('click', () => adultCheck(() => finish(true)))
+      controls.dismiss?.addEventListener('click', () => adultCheck(() => {
         try { localStorage.setItem(DISMISS_KEY, '1') } catch { /* ignore */ }
         finish(true)
-      })
+      }))
     }
 
     const openEntry = () => {
