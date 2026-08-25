@@ -1435,7 +1435,26 @@ function createPanZoom(viewport, svgEl) {
   }, { passive: false })
 
   home()
-  window.addEventListener('resize', () => { fitMode ? fit() : home() })
+
+  // The viewport resizes without a window `resize` too — tab switches
+  // (display:none -> visible), fullscreen toggle, layout shifts. Computing
+  // with a hidden (0×0) viewport corrupts the transform and leaves the map
+  // covering only part of the container, so: ignore zero sizes, re-home when
+  // coming back from hidden, and just re-clamp on ordinary size changes so
+  // the child's pan position survives.
+  let lastW = vw(), lastH = vh()
+  const refit = () => {
+    const w = vw(), h = vh()
+    if (!w || !h || (w === lastW && h === lastH)) return
+    const wasHidden = !lastW || !lastH
+    lastW = w; lastH = h
+    if (wasHidden || fitMode) { fitMode ? fit() : home(); return }
+    clamp(); apply(true)
+  }
+  window.addEventListener('resize', refit)
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(refit).observe(viewport)
+  }
 
   return { home, fit, panTo, zoomBy }
 }

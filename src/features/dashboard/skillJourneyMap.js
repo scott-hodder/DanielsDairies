@@ -854,6 +854,20 @@ export function renderSkillJourneyView(map) {
     requestAnimationFrame(() => centerOn(focusX, false))
   }
 
+  // Re-clamp when the viewport changes size (tab switches, rotation); a
+  // hidden viewport measures 0×0, so re-centre when it becomes visible again.
+  if (typeof ResizeObserver !== 'undefined') {
+    let lw = viewport.clientWidth, lh = viewport.clientHeight
+    new ResizeObserver(() => {
+      const w = viewport.clientWidth, h = viewport.clientHeight
+      if (!w || !h || (w === lw && h === lh)) return
+      const wasHidden = !lw || !lh
+      lw = w; lh = h
+      if (wasHidden) centerOn(focusX, false)
+      else { clamp(); apply(false) }
+    }).observe(viewport)
+  }
+
   // Tapping the depot: Daniel walks all the way home along everything the
   // child has built, then the view returns to Brain Town.
   let walkingHome = false
