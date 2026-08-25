@@ -1497,7 +1497,7 @@ class ProgressTrackingSystem {
           <span class="assessment-icon">${assessment.icon}</span>
           <h2 class="assessment-title">${assessment.name}</h2>
           <p class="assessment-description">${timingDescriptions[assessmentType]}</p>
-          <p class="assessment-disclaimer">These questions are not a diagnosis. They help track emotional skills over time.</p>
+          <p class="assessment-disclaimer">This isn't a test and there are no wrong answers — it just helps Daniel see how you're going.</p>
           <span class="assessment-timing-badge ${assessmentType}">${timingLabels[assessmentType]}</span>
         </div>
         

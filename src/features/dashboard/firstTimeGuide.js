@@ -27,9 +27,10 @@ function markGuideSeen(childId) {
  * @param {HTMLElement} opts.mapContainer - The Brain Town map container
  *   (receives the `bt:show-next` event, and is scrolled into view)
  */
-export function maybeShowFirstTimeGuide(mount, { childId, mapContainer } = {}) {
+export function maybeShowFirstTimeGuide(mount, { childId, mapContainer, hasProgress } = {}) {
   if (!mount || !childId) return
   if (hasSeenGuide(childId)) return
+  if (hasProgress) return
 
   mount.innerHTML = `
     <div class="ftg-wrap" id="danielFirstGuide" role="region" aria-label="Daniel's welcome tip">

@@ -5,7 +5,7 @@ const ONBOARDING_STEPS = [
   {
     images: ['/images/steps/step1.webp'],
     title: 'Welcome to your dashboard',
-    description: 'This is your home base. Here can see Daniel, your stars, streak, rank, level, and your Daily Quest.'
+    description: 'This is your home base. Here you can see Daniel, your stars, streak, rank, level, and your Daily Quest.'
   },
   {
     images: ['/images/steps/step2.webp'],

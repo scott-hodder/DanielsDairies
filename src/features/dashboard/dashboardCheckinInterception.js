@@ -4,6 +4,7 @@ import { dashboardState } from '../../state/dashboardState.js'
 import { saveWeeklyCheckin } from '../../services/databaseService.js'
 import { buildModuleUrl } from '../modules/moduleNavigation.js'
 import { showToast } from '../../ui/toast.js'
+import { KID_FRIENDLY_COPY } from '../../adventure-map-themes.js'
 
 const state = dashboardState
 
@@ -225,7 +226,10 @@ export function showIntroScreen(superSkill, onContinue, onClose) {
   const characterName = character.name || superSkill?.character_name || 'Lenny'
   const characterSpecies = character.species || 'friend'
   const characterImage = character.image_url || superSkill?.character_image_url || '/images/characters/lenny.png'
-  const domain = superSkill?.domain || superSkill?.name || 'important skills'
+  // superSkill.domain holds adult framing ("Prospection, Goal Setting, and
+  // Identity Formation") — use the kid-friendly tag for the child screen.
+  const kidCopy = KID_FRIENDLY_COPY[superSkill?.slug] || {}
+  const domain = kidCopy.tag || superSkill?.name || 'important skills'
   const superSkillName = superSkill?.name || 'Super Skills'
 
   // Create intro overlay
@@ -458,14 +462,21 @@ export async function showCheckinPopup(module, onComplete, skipIntro = false) {
       // onComplete - assessment finished, also record in pathway_assessments so it won't trigger again
       async (results) => {
         try {
+          // weekly_checkins.intensity has a CHECK (1..5) constraint; the raw
+          // psychometric score (0..maxScore) is preserved in the notes field.
+          const rawScore = Number(results?.totalScore) || 0
+          const maxScore = Number(results?.maxScore) || 0
+          const scaledIntensity = maxScore > 0
+            ? Math.min(5, Math.max(1, Math.round((rawScore / maxScore) * 4) + 1))
+            : 3
           await saveWeeklyCheckin({
             parentUserId: state.currentUser?.id || window.state?.currentUser?.id,
             childId: childId,
-            intensity: results?.totalScore || 0,
+            intensity: scaledIntensity,
             challenge: pathwayOrSuperSkill,
             triggers: [],
             goal: null,
-            notes: `Psychometric check-in (${results?.assessmentType || 'checkin'}) - score: ${results?.totalScore || 0}/${results?.maxScore || 0}`,
+            notes: `Wellbeing check-in completed in the app — score ${rawScore} of ${maxScore}`,
             generatedPlan: null,
             subSkillId: module.sub_skill_id || null,
             weekNumber: Number(module.week_number || module.pathway_order || module.order || 0) || null,

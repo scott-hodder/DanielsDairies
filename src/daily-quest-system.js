@@ -696,8 +696,8 @@ class DailyQuestManager {
       .quest-complete-btn {
         width: 100%;
         padding: 16px;
-        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-        color: white;
+        background: #cfd8e3;
+        color: #7d8ea5;
         border: none;
         border-radius: 14px;
         font-size: 16px;
@@ -712,6 +712,8 @@ class DailyQuestManager {
       .quest-complete-btn.enabled {
         opacity: 1;
         pointer-events: auto;
+        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        color: white;
       }
 
       .quest-complete-btn.enabled:hover {
@@ -816,7 +818,7 @@ class DailyQuestManager {
           .select('*')
           .eq('child_id', this.childId)
           .eq('completed_date', today)
-          .single();
+          .maybeSingle();
 
         if (data && !error) {
           this.isCompleted = true;
@@ -1086,18 +1088,24 @@ class DailyQuestManager {
           } else {
             circle.textContent = 'Ready';
             instruction.textContent = 'Tap to continue';
+            startBtn.textContent = 'Keep Breathing';
             isBreathing = false;
           }
         }, 4000);
       }, 4000);
     };
 
-    startBtn.addEventListener('click', () => {
+    const beginBreath = () => {
       if (!isBreathing && breathCount < target) {
         isBreathing = true;
         doBreathe();
       }
-    });
+    };
+    startBtn.addEventListener('click', beginBreath);
+    // The on-screen instruction says "Tap to start/continue" pointing at the
+    // circle, so the circle itself must accept the tap too.
+    circle.style.cursor = 'pointer';
+    circle.addEventListener('click', beginBreath);
   }
 
   renderSliderActivity() {
@@ -1622,13 +1630,13 @@ class DailyQuestManager {
             console.error('Error updating child stars:', updateError);
           } else {
             console.log(`Daily Quest: Awarded 1 star. Child now has ${newStars} stars.`);
-            if (typeof window.maybeCelebrateFirstStar === 'function') {
-              window.maybeCelebrateFirstStar({
-                id: this.childId,
-                name: window.selectedChild?.name || window.state?.selectedChild?.name || 'Explorer',
-                stars: newStars
-              });
-            }
+            // Defer the one-time first-star celebration until the quest
+            // success screen is dismissed so the two modals never stack.
+            this.pendingFirstStarChild = {
+              id: this.childId,
+              name: window.selectedChild?.name || window.state?.selectedChild?.name || 'Explorer',
+              stars: newStars
+            };
           }
         }
 
@@ -1689,6 +1697,10 @@ class DailyQuestManager {
 
     document.getElementById('closeSuccessBtn').addEventListener('click', () => {
       this.closeQuestModal();
+      if (this.pendingFirstStarChild && typeof window.maybeCelebrateFirstStar === 'function') {
+        window.maybeCelebrateFirstStar(this.pendingFirstStarChild);
+      }
+      this.pendingFirstStarChild = null;
     });
   }
 

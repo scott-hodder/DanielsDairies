@@ -504,6 +504,23 @@
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
         }
 
+        // Some check-in rows store internal slugs (e.g. "emotion-navigator")
+        // rather than parent-entered text; show them as readable names.
+        var SLUG_DISPLAY_NAMES = {
+            'brain-builder': 'Brain Builder', 'thought-driver': 'Thought Driver',
+            'emotion-navigator': 'Emotion Navigator', 'behaviour-engineer': 'Behaviour Engineer',
+            'resilience-architect': 'Resilience Architect', 'social-mapper': 'Social Mapper',
+            'future-designer': 'Future Designer', 'general': 'General wellbeing'
+        }
+        function humanizeChallenge(value) {
+            var raw = String(value == null ? '' : value)
+            if (SLUG_DISPLAY_NAMES[raw]) return SLUG_DISPLAY_NAMES[raw]
+            if (/^[a-z0-9]+(-[a-z0-9]+)+$/.test(raw)) {
+                return raw.split('-').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1) }).join(' ')
+            }
+            return raw
+        }
+
         function renderWeeklyActivity(activity) {
             if (!activity || !activity.show) return
             document.getElementById('weeklyActivityCard').classList.remove('hidden')
@@ -525,8 +542,8 @@
             tiles.forEach(function(t) {
                 var delta = t.now - t.prev
                 var deltaHtml = ''
-                if (delta > 0) deltaHtml = '<span class="pi-week-delta up">+' + delta + '</span>'
-                else if (delta < 0) deltaHtml = '<span class="pi-week-delta down">' + delta + '</span>'
+                if (delta > 0) deltaHtml = '<span class="pi-week-delta up" title="Up ' + delta + ' on last week">▲' + delta + '</span>'
+                else if (delta < 0) deltaHtml = '<span class="pi-week-delta down" title="Down ' + Math.abs(delta) + ' on last week">▼' + Math.abs(delta) + '</span>'
                 html += '<div class="pi-week-tile"><span class="pi-week-icon">' + t.icon + '</span><strong>' + t.now + '</strong>' + deltaHtml + '<span class="pi-week-label">' + t.label + '</span></div>'
             })
             document.getElementById('weekGrid').innerHTML = html
@@ -639,7 +656,7 @@
                 html += '<div class="pi-checkin-summary">'
                 html += '<p class="pi-checkin-label">Latest check-in</p>'
                 html += '<p class="pi-checkin-detail">Intensity: <strong>' + c.intensity + '/5</strong></p>'
-                if (c.challenge) html += '<p class="pi-checkin-detail">Challenge: ' + esc(c.challenge) + '</p>'
+                if (c.challenge) html += '<p class="pi-checkin-detail">Challenge: ' + esc(humanizeChallenge(c.challenge)) + '</p>'
                 if (c.goal) html += '<p class="pi-checkin-detail">Goal: ' + esc(c.goal) + '</p>'
                 if (c.triggers && c.triggers.length > 0) {
                     html += '<div class="pi-checkin-triggers">'

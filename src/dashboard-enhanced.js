@@ -4,6 +4,9 @@
 // ================================================
 
 import { getZoneState } from './adventure-map-zones.js';
+// Bundled by Vite; the old runtime <link href="./src/..."> injection 404'd in
+// production builds, so the zone styles never loaded outside dev.
+import './adventure-map-zones.css';
 import { getZoneSceneCss, getZoneFillerCss, getZoneGround, isSvgScenesEnabled } from './adventure-zone-scenes.js';
 import { injectRoadBuilderStops, openRoadBuilderGame } from './features/dashboard/roadBuilder.js';
 import { renderSkillJourneyView } from './features/dashboard/skillJourneyMap.js';
@@ -242,12 +245,7 @@ export class AdventureMapV4 {
   injectStyles() { injectAdventureMapStyles(); }
 
   ensureZoneStyles() {
-    if (document.getElementById('adventure-map-zones-css')) return;
-    var link = document.createElement('link');
-    link.id = 'adventure-map-zones-css';
-    link.rel = 'stylesheet';
-    link.href = './src/adventure-map-zones.css';
-    document.head.appendChild(link);
+    // Zone styles are now bundled via the static CSS import above.
   }
 
   render() {
@@ -1012,17 +1010,19 @@ export class AdventureMapV4 {
       var isLastChosen = card.slug === lastChosen && lastChosen !== 'all' && !card.locked;
       var cardClasses = 'skill-card' + (isLastChosen ? ' last-chosen' : '') + (card.locked ? ' skill-card-locked' : '');
       var decosHtml = card.decos.map(function(d) { return '<span class="skill-card-deco">' + d + '</span>'; }).join('');
+      // Locked cards already carry a lock badge + button label; a speech
+      // bubble repeating the same sentence was pure noise.
       var speechText = card.locked
-        ? (card.unlockName ? 'Complete ' + card.unlockName + ' to unlock me!' : 'You\'ll unlock me later on your journey!')
+        ? ''
         : (isLastChosen ? card.speechCurrent : (card.completedModules === 0 ? card.speechNew : ''));
       var btnLabel = card.locked
         ? (card.unlockName ? '🔒 Complete ' + card.unlockName + ' first' : '🔒 Unlocks later')
         : (isLastChosen ? 'Continue quest' : (card.completedModules > 0 ? 'Keep exploring' : 'Start adventure'));
       var progressLabel = card.locked
-        ? (card.unlockName ? 'Unlocks after ' + card.unlockName : 'Next on your journey')
+        ? ''
         : (card.completedModules > 0
-          ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' steps completed'
-          : card.totalModules + ' steps to explore');
+          ? '⭐ ' + card.completedModules + '/' + card.totalModules + ' adventures completed'
+          : card.totalModules + ' adventure' + (card.totalModules === 1 ? '' : 's') + ' to explore');
       var btnStyle = card.locked
         ? 'background: linear-gradient(135deg, #9AA5B1, #5B6773)'
         : 'background: linear-gradient(135deg, ' + card.btnColor + ', ' + card.btnColor + 'dd)';
@@ -1040,10 +1040,11 @@ export class AdventureMapV4 {
         '<div class="skill-card-desc">' + card.description + '</div>' +
         (card.pickThisIf && !card.locked ? '<div class="skill-card-pick-label">Pick this if:</div><div class="skill-card-pick-text">' + card.pickThisIf + '</div>' : '') +
         (card.tag ? '<div class="skill-card-tags"><span class="skill-card-tag">' + card.tag + '</span></div>' : '') +
-        '<div class="skill-card-progress">' +
-        '<div class="skill-card-progress-bar"><div class="skill-card-progress-fill" style="width: ' + progressPct + '%; background: ' + card.btnColor + ';"></div></div>' +
-        '<span class="skill-card-progress-text">' + progressLabel + '</span>' +
-        '</div>' +
+        (card.locked ? '' :
+          '<div class="skill-card-progress">' +
+          '<div class="skill-card-progress-bar"><div class="skill-card-progress-fill" style="width: ' + progressPct + '%; background: ' + card.btnColor + ';"></div></div>' +
+          '<span class="skill-card-progress-text">' + progressLabel + '</span>' +
+          '</div>') +
         '<button class="skill-card-btn" style="' + btnStyle + '">' + btnLabel + '</button>' +
         '</div>';
     }).join('');

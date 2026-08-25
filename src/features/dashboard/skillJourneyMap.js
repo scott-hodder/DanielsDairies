@@ -403,7 +403,7 @@ function injectStyles() {
 .sj-cb{width:40px;height:40px;border:none;border-radius:12px;background:#fff;color:#16324f;font-size:17px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12);font-family:Fredoka,sans-serif}
 .sj-cb:hover{transform:scale(1.07)}
 .sj-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(30,41,59,.82);color:#fff;padding:8px 18px;border-radius:22px;font-size:12.5px;font-weight:600;font-family:Fredoka,sans-serif;pointer-events:none;transition:opacity .5s;z-index:5}
-@media(max-width:720px){.sj-viewport{height:56vh;min-height:360px}.sj-progress{order:3;flex-basis:100%}.sj-progress .sj-plabel{font-size:11px}}
+@media(max-width:720px){.sj-viewport{height:56vh;min-height:360px}.sj-progress{order:3;flex-basis:100%;flex-wrap:wrap}.sj-progress .sj-plabel{font-size:11px;white-space:normal}}
 @media(prefers-reduced-motion:reduce){.sj-halo,.sj-bob,.sj-flicker,.sj-grown-new,.sj-pave-new{animation:none!important}.sj-pave-new{stroke-dashoffset:0}}
 `
   document.head.appendChild(st)
@@ -776,7 +776,7 @@ export function renderSkillJourneyView(map) {
       </div>
       ${availableCycles.length > 0 ? `<select class="sj-cycle" id="cycleFilter">${cycleOptions}</select>` : ''}
       <div class="sj-progress">
-        <span class="sj-plabel">🛠️ ${completed} of ${total} roads paved</span>
+        <span class="sj-plabel">🛠️ ${completed} of ${total} roads paved this cycle</span>
         <div class="sj-track"><div class="sj-fill" style="width:${pct}%;background:linear-gradient(90deg,#f2c94c,#e6a800)"></div></div>
         <span class="sj-plabel">${nextStop}</span>
       </div>

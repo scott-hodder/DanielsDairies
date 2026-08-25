@@ -1,5 +1,6 @@
 import { supabase } from '../../supabaseClient.js'
 import { escapeHtml } from '../../lib/sanitize.js'
+import { humanizeSlug, humanizeResponseValue, humanizeQuestionText } from '../../lib/labels.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
 import { initTelemetry, trackEvent } from '../../lib/telemetry.js'
 import { childAvatarHTML } from '../../lib/childAvatar.js'
@@ -439,6 +440,12 @@ async function init() {
       errorEl.classList.remove('hidden')
       return
     }
+
+    // Stamp the session flag the child dashboard's super-skill gate reads:
+    // practitioners tour every skill and module unlocked. Login stamps it too,
+    // but a fresh tab (bookmark/restored session) skips the login page, and
+    // view-as-client opens dashboard.html in this same tab.
+    try { sessionStorage.setItem('dd_is_practitioner', '1') } catch { /* private mode */ }
 
     // Get profile
     const { data: profile } = await supabase
@@ -930,7 +937,7 @@ function renderInsights() {
     const freq = {}
     clientWeeklyCheckins.forEach(w => { if (w.challenge) freq[w.challenge] = (freq[w.challenge] || 0) + 1 })
     const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1])
-    if (sorted.length > 0) topChallenge = sorted[0][0]
+    if (sorted.length > 0) topChallenge = humanizeSlug(sorted[0][0])
   }
 
   // Most common triggers/feelings
@@ -1112,7 +1119,7 @@ function renderWeeklyCheckins() {
               <span style="font-size:12px;color:#6b7280;">intensity</span>
               <span style="font-size:12px;color:#6b7280;margin-left:auto;">${date}</span>
             </div>
-            <div style="font-size:13px;margin-bottom:4px;"><strong>Challenge:</strong> ${escapeHtml(c.challenge || '—')}</div>
+            <div style="font-size:13px;margin-bottom:4px;"><strong>Challenge:</strong> ${escapeHtml(humanizeSlug(c.challenge) || '—')}</div>
             <div style="font-size:13px;margin-bottom:4px;"><strong>Feelings:</strong> ${escapeHtml(triggers)}</div>
             <div style="font-size:13px;margin-bottom:4px;"><strong>Goal set:</strong> ${escapeHtml(goal)}</div>
             ${c.notes ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;font-style:italic;">"${escapeHtml(c.notes)}"</div>` : ''}
@@ -1149,8 +1156,8 @@ function renderModuleResponses() {
         <div style="margin-top:10px;">
           ${responses.map(r => `
             <div style="font-size:13px;padding:6px 0;border-top:1px solid #f0f0f0;">
-              <div style="color:#6b7280;font-size:11px;margin-bottom:2px;">${escapeHtml(r.question_text)}</div>
-              <div style="font-weight:600;color:#1f2937;">${escapeHtml(r.response_value || (r.response_options && r.selected_option != null ? r.response_options[r.selected_option] : '—'))}${r.is_correct !== null ? (r.is_correct ? ' <span style="color:#22c55e;">Correct</span>' : ' <span style="color:#ef4444;">Incorrect</span>') : ''}</div>
+              <div style="color:#6b7280;font-size:11px;margin-bottom:2px;">${escapeHtml(humanizeQuestionText(r.question_text))}</div>
+              <div style="font-weight:600;color:#1f2937;">${escapeHtml(humanizeResponseValue(r.response_value || (r.response_options && r.selected_option != null ? r.response_options[r.selected_option] : '—')))}${r.is_correct !== null ? (r.is_correct ? ' <span style="color:#22c55e;">Correct</span>' : ' <span style="color:#ef4444;">Incorrect</span>') : ''}</div>
             </div>`).join('')}
         </div>
       </div>`

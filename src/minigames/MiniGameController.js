@@ -75,6 +75,13 @@ export async function tryRunMiniGame({ roadblock, container, spawn, child, onCom
   // Build the game.
   const game = def.factory(ctx);
 
+  // Mercy path: a gate must never hard-block a child who can't win the game.
+  // After 3 failed tries Daniel opens the gate for them (no stars).
+  const mercyKey = `dd_gate_fails_${child?.id || 'guest'}_${roadblock?.id || gameId}`;
+  const readFails = () => { try { return Number(localStorage.getItem(mercyKey) || 0); } catch { return 0; } };
+  const writeFails = (n) => { try { localStorage.setItem(mercyKey, String(n)); } catch { /* ignore */ } };
+  const clearFails = () => { try { localStorage.removeItem(mercyKey); } catch { /* ignore */ } };
+
   try {
     const result = await game.run();
     // Stars only on success. Failure = 0 stars always.
@@ -86,12 +93,26 @@ export async function tryRunMiniGame({ roadblock, container, spawn, child, onCom
     }
     result.events = telemetry.snapshot();
 
+    let mercyPass = false;
+    if (result.success) {
+      clearFails();
+    } else {
+      const fails = readFails() + 1;
+      writeFails(fails);
+      if (fails >= 3) {
+        mercyPass = true;
+        clearFails();
+      }
+    }
+
     await rewardBurst(container, {
       stars: result.starsEarned,
-      message: result.success ? i18n.t('shared.wellDone') : i18n.t('shared.tryAgain'),
+      message: result.success
+        ? i18n.t('shared.wellDone')
+        : (mercyPass ? 'You tried so hard — Daniel opens the gate for you! 🐾' : i18n.t('shared.tryAgain')),
     });
 
-    await onComplete(spawn, !!result.success);
+    await onComplete(spawn, !!result.success || mercyPass);
   } catch (err) {
     console.error('[minigames] game run failed', err);
     // Fail soft: let roadblock close without a reward.
