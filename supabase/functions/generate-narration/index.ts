@@ -496,8 +496,15 @@ async function generateAudio(
   text: string,
   apiKey: string,
   ttsProvider: ReturnType<typeof getTtsProvider>,
-  overrides?: { voice?: string; rate?: string; pitch?: string },
+  overrides?: { provider?: string; voice?: string; rate?: string; pitch?: string },
 ): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+  // Explicit per-request provider (admin A/B testing across modules).
+  if (overrides?.provider === "elevenlabs" && overrides?.voice) {
+    const elKey = Deno.env.get("ELEVENLABS_API_KEY") ?? "";
+    if (!elKey) throw new Error("ELEVENLABS_API_KEY not configured");
+    const buffer = await generateAudioElevenLabs(text, elKey, overrides.voice);
+    return { buffer, contentType: "audio/mpeg" };
+  }
   if (ttsProvider.provider === "azure") {
     const buffer = await generateAudioAzure(
       text,
@@ -559,9 +566,55 @@ serve(withCors(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const { moduleId, variantId, pages: requestedPages, force = false, background = false } = body;
-    // Optional per-request Azure overrides (admin-only function) — lets us
-    // A/B voices and pacing across modules without touching secrets.
-    const ttsOverrides = { voice: body.ttsVoice, rate: body.ttsRate, pitch: body.ttsPitch };
+    // Optional per-request overrides (admin-only function) — lets us A/B
+    // providers, voices and pacing across modules without touching secrets.
+    const ttsOverrides = { provider: body.ttsProvider, voice: body.ttsVoice, rate: body.ttsRate, pitch: body.ttsPitch };
+
+    // ── Voice-library helpers (ElevenLabs) ──
+    if (body.action === "list-voices") {
+      const elKey = Deno.env.get("ELEVENLABS_API_KEY") ?? "";
+      if (!elKey) return jsonResponse({ error: "ELEVENLABS_API_KEY not configured" }, 500);
+      const params = new URLSearchParams({ page_size: "30", language: "en" });
+      if (body.gender) params.set("gender", body.gender);
+      if (body.accent) params.set("accent", body.accent);
+      const trim = (v: Record<string, unknown>) => ({
+        voice_id: v.voice_id,
+        name: v.name,
+        accent: v.accent ?? (v.labels as Record<string, unknown>)?.accent,
+        gender: v.gender ?? (v.labels as Record<string, unknown>)?.gender,
+        age: v.age ?? (v.labels as Record<string, unknown>)?.age,
+        use_case: v.use_case ?? (v.labels as Record<string, unknown>)?.use_case,
+        description: String(v.description || "").slice(0, 140),
+        preview_url: v.preview_url,
+        public_owner_id: v.public_owner_id,
+        cloned_by_count: v.cloned_by_count,
+      });
+      const [mine, shared] = await Promise.all([
+        fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": elKey } })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+        fetch(`https://api.elevenlabs.io/v1/shared-voices?${params}`, { headers: { "xi-api-key": elKey } })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+      ]);
+      return jsonResponse({
+        my_voices: (mine.voices || []).map(trim),
+        shared: (shared.voices || []).map(trim),
+        mine_error: mine.error || mine.detail, shared_error: shared.error || shared.detail,
+      });
+    }
+    if (body.action === "add-voice") {
+      const elKey = Deno.env.get("ELEVENLABS_API_KEY") ?? "";
+      if (!elKey) return jsonResponse({ error: "ELEVENLABS_API_KEY not configured" }, 500);
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/voices/add/${body.publicOwnerId}/${body.voiceId}`,
+        {
+          method: "POST",
+          headers: { "xi-api-key": elKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ new_name: body.name || "AU Narrator" }),
+        },
+      );
+      const out = await res.json().catch(() => ({}));
+      return jsonResponse({ status: res.status, result: out });
+    }
     console.log("[TTS] Request:", JSON.stringify({ moduleId, variantId, force, background, pages: requestedPages }));
 
     if (!moduleId) {
@@ -723,7 +776,10 @@ serve(withCors(async (req) => {
     // Concurrency is plan-limited on both cloning providers (Cartesia free/Pro
     // tiers allow very few concurrent requests; ElevenLabs Creator allows 5).
     // Stay low — the 429 retry handles the rest.
-    const PARALLEL_BATCH = ttsProvider.provider === "voicebox" ? 1 : ttsProvider.provider === "replicate" ? 3 : ttsProvider.provider === "cartesia" ? 2 : ttsProvider.provider === "elevenlabs" ? 3 : 5;
+    // Batch size must follow the provider actually doing the work — a
+    // per-request override can differ from the env-configured default.
+    const effectiveTts = ttsOverrides.provider || ttsProvider.provider;
+    const PARALLEL_BATCH = effectiveTts === "voicebox" ? 1 : effectiveTts === "replicate" ? 3 : effectiveTts === "cartesia" ? 2 : effectiveTts === "elevenlabs" ? 2 : 5;
     const narrationData: NarrationEntry[] = [...existingNarration];
     const pagesToProcess = requestedPages || existingNarration.map((_: NarrationEntry, i: number) => i);
 
