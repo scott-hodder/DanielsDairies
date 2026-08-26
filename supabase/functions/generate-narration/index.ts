@@ -453,10 +453,16 @@ async function generateAudioAzure(
   key: string,
   region: string,
   voice: string,
+  rate?: string,
+  pitch?: string,
 ): Promise<ArrayBuffer> {
+  // Default: slightly faster and brighter than neutral — kid narration reads
+  // flat and slow at Azure's neutral settings.
+  const r = rate || Deno.env.get("AZURE_TTS_RATE") || "+5%";
+  const p = pitch || Deno.env.get("AZURE_TTS_PITCH") || "+3%";
   const ssml =
     `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-AU'>` +
-    `<voice name='${voice}'><prosody rate='-5%'>${escapeXml(text)}</prosody></voice></speak>`;
+    `<voice name='${voice}'><prosody rate='${r}' pitch='${p}'>${escapeXml(text)}</prosody></voice></speak>`;
 
   const doRequest = () =>
     fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
@@ -490,9 +496,17 @@ async function generateAudio(
   text: string,
   apiKey: string,
   ttsProvider: ReturnType<typeof getTtsProvider>,
+  overrides?: { voice?: string; rate?: string; pitch?: string },
 ): Promise<{ buffer: ArrayBuffer; contentType: string }> {
   if (ttsProvider.provider === "azure") {
-    const buffer = await generateAudioAzure(text, ttsProvider.azureKey!, ttsProvider.azureRegion!, ttsProvider.azureVoice!);
+    const buffer = await generateAudioAzure(
+      text,
+      ttsProvider.azureKey!,
+      ttsProvider.azureRegion!,
+      overrides?.voice || ttsProvider.azureVoice!,
+      overrides?.rate,
+      overrides?.pitch,
+    );
     return { buffer, contentType: "audio/mpeg" };
   }
   if (ttsProvider.provider === "cartesia") {
@@ -545,6 +559,9 @@ serve(withCors(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const { moduleId, variantId, pages: requestedPages, force = false, background = false } = body;
+    // Optional per-request Azure overrides (admin-only function) — lets us
+    // A/B voices and pacing across modules without touching secrets.
+    const ttsOverrides = { voice: body.ttsVoice, rate: body.ttsRate, pitch: body.ttsPitch };
     console.log("[TTS] Request:", JSON.stringify({ moduleId, variantId, force, background, pages: requestedPages }));
 
     if (!moduleId) {
@@ -748,7 +765,7 @@ serve(withCors(async (req) => {
 
         const results = await Promise.allSettled(batch.map(async (work) => {
           const { i, text, hash } = work;
-          const { buffer: audioBuffer, contentType } = await generateAudio(text, apiKey, ttsProvider);
+          const { buffer: audioBuffer, contentType } = await generateAudio(text, apiKey, ttsProvider, ttsOverrides);
           const ext = contentType === "audio/wav" ? "wav" : "mp3";
           const fileName = `${storagePath}/page-${i}.${ext}`;
           const { error: uploadError } = await supabaseClient.storage
