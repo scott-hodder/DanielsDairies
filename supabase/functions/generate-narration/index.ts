@@ -86,7 +86,7 @@ async function hashText(text: string): Promise<string> {
  * Determine which TTS provider to use.
  */
 function getTtsProvider(): {
-  provider: "cartesia" | "elevenlabs" | "replicate" | "voicebox" | "openai";
+  provider: "azure" | "cartesia" | "elevenlabs" | "replicate" | "voicebox" | "openai";
   voiceboxUrl?: string;
   profileId?: string;
   replicateToken?: string;
@@ -95,15 +95,24 @@ function getTtsProvider(): {
   cartesiaVoiceId?: string;
   elevenLabsKey?: string;
   elevenLabsVoiceId?: string;
+  azureKey?: string;
+  azureRegion?: string;
+  azureVoice?: string;
 } {
   const override = Deno.env.get("TTS_PROVIDER");
   const cartesiaKey = Deno.env.get("CARTESIA_API_KEY");
   const cartesiaVoiceId = Deno.env.get("CARTESIA_VOICE_ID");
   const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
   const elevenLabsVoiceId = Deno.env.get("ELEVENLABS_VOICE_ID");
+  const azureKey = Deno.env.get("AZURE_SPEECH_KEY");
+  const azureRegion = Deno.env.get("AZURE_SPEECH_REGION");
+  const azureVoice = Deno.env.get("AZURE_TTS_VOICE") || "en-AU-TimNeural";
 
-  // Explicit override wins — lets you A/B cloning providers by flipping one
+  // Explicit override wins — lets you A/B providers by flipping one
   // secret without removing the others' keys.
+  if (override === "azure" && azureKey && azureRegion) {
+    return { provider: "azure", azureKey, azureRegion, azureVoice };
+  }
   if (override === "elevenlabs" && elevenLabsKey && elevenLabsVoiceId) {
     return { provider: "elevenlabs", elevenLabsKey, elevenLabsVoiceId };
   }
@@ -111,8 +120,12 @@ function getTtsProvider(): {
     return { provider: "cartesia", cartesiaKey, cartesiaVoiceId };
   }
 
-  // Default priority: Cartesia (cheap commercial cloning) → ElevenLabs
-  // (highest-fidelity cloning) → legacy providers → OpenAI (no cloning).
+  // Default priority: Azure (native en-AU neural voices — no accent drift)
+  // → Cartesia (cheap commercial cloning) → ElevenLabs (highest-fidelity
+  // cloning) → legacy providers → OpenAI (no cloning).
+  if (azureKey && azureRegion) {
+    return { provider: "azure", azureKey, azureRegion, azureVoice };
+  }
   if (cartesiaKey && cartesiaVoiceId) {
     return { provider: "cartesia", cartesiaKey, cartesiaVoiceId };
   }
@@ -423,6 +436,54 @@ async function generateAudioOpenAI(
 }
 
 /**
+ * Call Azure AI Speech (neural TTS) — native Australian voices, so no
+ * accent drift. SSML with a slightly slowed rate reads better for kids.
+ */
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+async function generateAudioAzure(
+  text: string,
+  key: string,
+  region: string,
+  voice: string,
+): Promise<ArrayBuffer> {
+  const ssml =
+    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-AU'>` +
+    `<voice name='${voice}'><prosody rate='-5%'>${escapeXml(text)}</prosody></voice></speak>`;
+
+  const doRequest = () =>
+    fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": key,
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+        "User-Agent": "daniels-diaries-narration",
+      },
+      body: ssml,
+    });
+
+  let response = await doRequest();
+  // The free (F0) tier rate-limits aggressively — one polite retry.
+  if (response.status === 429) {
+    await new Promise((r) => setTimeout(r, 3000));
+    response = await doRequest();
+  }
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "Unknown error");
+    throw new Error(`Azure TTS error ${response.status}: ${errorBody}`);
+  }
+  return response.arrayBuffer();
+}
+
+/**
  * Generate audio using the configured TTS provider.
  */
 async function generateAudio(
@@ -430,6 +491,10 @@ async function generateAudio(
   apiKey: string,
   ttsProvider: ReturnType<typeof getTtsProvider>,
 ): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+  if (ttsProvider.provider === "azure") {
+    const buffer = await generateAudioAzure(text, ttsProvider.azureKey!, ttsProvider.azureRegion!, ttsProvider.azureVoice!);
+    return { buffer, contentType: "audio/mpeg" };
+  }
   if (ttsProvider.provider === "cartesia") {
     const buffer = await generateAudioCartesia(text, ttsProvider.cartesiaKey!, ttsProvider.cartesiaVoiceId!);
     return { buffer, contentType: "audio/mpeg" };
@@ -471,7 +536,7 @@ serve(withCors(async (req) => {
   const apiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
   if (ttsProvider.provider === "openai" && !apiKey) {
     console.error("[TTS] No TTS provider configured!");
-    return jsonResponse({ error: "No TTS provider configured. Set REPLICATE_API_TOKEN, VOICEBOX_URL+VOICEBOX_PROFILE_ID, or OPENAI_API_KEY." }, 500);
+    return jsonResponse({ error: "No TTS provider configured. Set AZURE_SPEECH_KEY+AZURE_SPEECH_REGION, REPLICATE_API_TOKEN, VOICEBOX_URL+VOICEBOX_PROFILE_ID, or OPENAI_API_KEY." }, 500);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
