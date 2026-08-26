@@ -9,6 +9,7 @@
 import { supabase } from '../../supabaseClient.js'
 import { escapeHtml } from '../../lib/sanitize.js'
 import { isTownPlayEnabled } from './townPlayFlag.js'
+import { trackEvent } from '../../lib/telemetry.js'
 
 // The real Brain Town crew (native Australian animals — matched to the
 // characters table; images load from the DB at init, emoji are fallbacks).
@@ -64,15 +65,28 @@ const EVENTS = [
 
 const FEELINGS = ['😄 Happy', '😌 Calm', '😐 Okay', '😟 Worried', '😢 Sad', '😠 Cross']
 
-function todayKey() {
-  const d = new Date()
+function dateKey(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 }
+
+function todayKey() { return dateKey(new Date()) }
 
 function hashStr(s) {
   let h = 0
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
   return Math.abs(h)
+}
+
+/**
+ * Who needs the child tomorrow? (Same deterministic pick the event system
+ * itself will make.) Used by "come back tomorrow" hooks across the app.
+ */
+export function tomorrowEventChar(childId) {
+  const t = new Date()
+  t.setDate(t.getDate() + 1)
+  const ev = EVENTS[hashStr(dateKey(t) + '|' + childId) % EVENTS.length]
+  const ch = CHARS[ev.c]
+  return { name: ch.name, emoji: ch.emoji }
 }
 
 async function awardStar(childId) {
@@ -142,6 +156,7 @@ function openEvent(ev, childId, chip) {
     const donePortrait = char.img
       ? `<img src="${escapeHtml(char.img)}" alt="" style="width:72px;height:72px;object-fit:contain" onerror="this.outerHTML='${char.emoji}'">`
       : char.emoji
+    const tomorrow = tomorrowEventChar(childId)
     card.innerHTML = `
       <button class="te-x" aria-label="Close">✕</button>
       <div class="te-who">${donePortrait}</div>
@@ -149,7 +164,9 @@ function openEvent(ev, childId, chip) {
       <p class="te-reply">${escapeHtml(reply)}</p>
       <div class="te-star">⭐</div>
       <p class="te-reply" style="color:#b45309">+1 star for helping!</p>
+      <p class="te-reply" style="color:#6b7c8f;font-weight:600">${tomorrow.emoji} ${escapeHtml(tomorrow.name)} has a job for you tomorrow!</p>
       <button class="te-close-btn">Back to Brain Town</button>`
+    trackEvent('town_event_completed', { char: ev.c, type: ev.t })
     card.querySelector('.te-close-btn').addEventListener('click', close)
     card.querySelector('.te-x').addEventListener('click', close)
     awardStar(childId)
@@ -242,6 +259,9 @@ export async function initTownEvents(mapContainer, { child } = {}) {
   chip.addEventListener('click', () => {
     let done = false
     try { done = localStorage.getItem(seenKey(childId)) === '1' } catch { /* ignore */ }
-    if (!done) openEvent(ev, childId, chip)
+    if (!done) {
+      trackEvent('town_event_opened', { char: ev.c, type: ev.t })
+      openEvent(ev, childId, chip)
+    }
   })
 }

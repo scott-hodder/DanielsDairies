@@ -26,3 +26,5 @@ create policy "cmp_update" on public.child_module_progress
 
 create policy "cmp_delete" on public.child_module_progress
   for delete using (child_id in (select id from public.children));
+
+grant select, insert, update, delete on public.child_module_progress to authenticated, service_role;

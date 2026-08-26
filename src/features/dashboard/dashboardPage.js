@@ -3,7 +3,7 @@ import { escapeHtml } from '../../lib/sanitize.js'
 import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
 import { requireParentGate } from '../parentGate.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
-import { initTelemetry } from '../../lib/telemetry.js'
+import { initTelemetry, trackEvent } from '../../lib/telemetry.js'
 import { childAvatarHTML, DD_AVATARS } from '../../lib/childAvatar.js'
 
 // Error tracking + page view (fail-silent, self-hosted in Supabase)
@@ -1808,11 +1808,19 @@ async function selectChild(child) {
           const showAfterLoad = async () => {
             if (isPractitionerSession()) return
 
+            if (streakData._shieldUsed) trackEvent('streak_shield_used', { streak: streakData.current_streak })
+            if (streakData._streakBroken) trackEvent('streak_broken', {})
+
             // Returning from a just-completed module? Lenny's check-in runs
             // now (at the moment of victory) — and owns the moment; no
             // other popups stack on top of it.
             const checkinShown = await maybeShowPostCompletionCheckin().catch(() => false)
             if (checkinShown) return
+
+            // A used shield deserves its own moment — Daniel saved the streak.
+            if (streakData._shieldUsed) {
+              showToast('🛡️ Daniel used your Streak Shield — your streak is safe!', 'success')
+            }
 
             // Streaks only mean something from day 2 — celebrating "streak
             // started!" on first ever load (before the child has done

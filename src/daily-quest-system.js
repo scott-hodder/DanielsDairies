@@ -1683,14 +1683,24 @@ class DailyQuestManager {
 
   showSuccess() {
     const modal = document.querySelector('.quest-modal');
+    // Tomorrow hook: end the session with an appointment, not a full stop.
+    let tomorrowLine = '';
+    try {
+      if (typeof window.ddTomorrowChar === 'function' && this.childId) {
+        const t = window.ddTomorrowChar(this.childId);
+        if (t) tomorrowLine = `<p style="font-size:14px;color:#6d86a8;font-weight:600;margin:6px 0 14px;">${t.emoji} ${t.name} has a job for you tomorrow!</p>`;
+      }
+    } catch (e) { /* optional flourish */ }
     modal.innerHTML = `
       <div class="quest-success">
         <div class="quest-success-icon">🌟</div>
         <h2 class="quest-success-title">Amazing Job!</h2>
         <p class="quest-success-reward">+1 Star Earned!</p>
+        ${tomorrowLine}
         <button class="quest-success-btn" id="closeSuccessBtn">Continue</button>
       </div>
     `;
+    try { window.ddTrackEvent?.('daily_quest_completed', { quest: this.currentQuest?.id }); } catch (e) { /* ignore */ }
 
     // Confetti!
     this.showConfetti();

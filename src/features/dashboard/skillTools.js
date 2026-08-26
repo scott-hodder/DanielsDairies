@@ -10,6 +10,7 @@
 
 import { escapeHtml } from '../../lib/sanitize.js'
 import { isTownPlayEnabled } from './townPlayFlag.js'
+import { trackEvent } from '../../lib/telemetry.js'
 
 // Three tools per Super Skill, unlocking at 1, 4 and 8 completed adventures
 // in that skill — so the shelf keeps growing across a whole skill journey
@@ -153,6 +154,7 @@ export async function initSkillToolsShelf(container, { child, modules, childModu
   // Celebrate one newly unlocked tool per visit (skip a child's very first
   // computation so existing progress doesn't dump celebrations at once).
   if (fresh && previous.length > 0) {
+    trackEvent('tool_unlocked', { tool: fresh.id })
     setTimeout(() => showToolCard(fresh, { isNew: true }), 800)
   }
 }

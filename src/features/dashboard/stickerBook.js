@@ -9,6 +9,7 @@
 import { supabase } from '../../supabaseClient.js'
 import { escapeHtml } from '../../lib/sanitize.js'
 import { isTownPlayEnabled } from './townPlayFlag.js'
+import { trackEvent } from '../../lib/telemetry.js'
 
 const SKILL_EMOJI = {
   'brain-builder': '🧠', 'thought-driver': '💭', 'emotion-navigator': '🧭',
@@ -230,6 +231,7 @@ export async function initStickerBook(mapContainer, childId) {
     chip.disabled = true
     try {
       const col = await loadCollection(childId)
+      trackEvent('sticker_book_opened', { earned: earnedCount(col) })
       openBook(col, childId)
       chip.querySelector('.sb-new')?.remove()
     } catch (e) {
