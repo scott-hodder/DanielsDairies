@@ -320,7 +320,7 @@ async function generateAudioElevenLabs(
   const modelId = Deno.env.get("ELEVENLABS_MODEL_ID") || "eleven_multilingual_v2";
   console.log(`[ElevenLabs] text len=${text.length}, voice=${voiceId}, model=${modelId}`);
   const t0 = Date.now();
-  const res = await fetch(`${ELEVENLABS_TTS_URL}/${voiceId}?output_format=mp3_44100_128`, {
+  const doRequest = () => fetch(`${ELEVENLABS_TTS_URL}/${voiceId}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: {
       "xi-api-key": apiKey,
@@ -338,6 +338,12 @@ async function generateAudioElevenLabs(
     }),
     signal: AbortSignal.timeout(120 * 1000),
   });
+  let res = await doRequest();
+  // Concurrency limits vary by plan — back off and retry rather than fail.
+  for (let attempt = 0; res.status === 429 && attempt < 3; attempt++) {
+    await new Promise((r) => setTimeout(r, 4000 * (attempt + 1)));
+    res = await doRequest();
+  }
   if (!res.ok) {
     const err = await res.text().catch(() => "");
     throw new Error(`ElevenLabs error ${res.status}: ${err.slice(0, 500)}`);
@@ -649,7 +655,7 @@ serve(withCors(async (req) => {
 
       if (varError || !variant) {
         console.error("[TTS] Variant not found:", varError?.message);
-        return jsonResponse({ error: "Variant not found" }, 404);
+        return jsonResponse({ error: "Variant not found", detail: varError?.message || "no row" }, 404);
       }
       targetTable = "module_variants";
       targetId = variantId;
