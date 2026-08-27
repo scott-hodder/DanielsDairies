@@ -86,7 +86,7 @@ async function hashText(text: string): Promise<string> {
  * Determine which TTS provider to use.
  */
 function getTtsProvider(): {
-  provider: "cartesia" | "elevenlabs" | "replicate" | "voicebox" | "openai";
+  provider: "azure" | "cartesia" | "elevenlabs" | "replicate" | "voicebox" | "openai";
   voiceboxUrl?: string;
   profileId?: string;
   replicateToken?: string;
@@ -95,15 +95,24 @@ function getTtsProvider(): {
   cartesiaVoiceId?: string;
   elevenLabsKey?: string;
   elevenLabsVoiceId?: string;
+  azureKey?: string;
+  azureRegion?: string;
+  azureVoice?: string;
 } {
   const override = Deno.env.get("TTS_PROVIDER");
   const cartesiaKey = Deno.env.get("CARTESIA_API_KEY");
   const cartesiaVoiceId = Deno.env.get("CARTESIA_VOICE_ID");
   const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
   const elevenLabsVoiceId = Deno.env.get("ELEVENLABS_VOICE_ID");
+  const azureKey = Deno.env.get("AZURE_SPEECH_KEY");
+  const azureRegion = Deno.env.get("AZURE_SPEECH_REGION");
+  const azureVoice = Deno.env.get("AZURE_TTS_VOICE") || "en-AU-TimNeural";
 
-  // Explicit override wins — lets you A/B cloning providers by flipping one
+  // Explicit override wins — lets you A/B providers by flipping one
   // secret without removing the others' keys.
+  if (override === "azure" && azureKey && azureRegion) {
+    return { provider: "azure", azureKey, azureRegion, azureVoice };
+  }
   if (override === "elevenlabs" && elevenLabsKey && elevenLabsVoiceId) {
     return { provider: "elevenlabs", elevenLabsKey, elevenLabsVoiceId };
   }
@@ -111,8 +120,12 @@ function getTtsProvider(): {
     return { provider: "cartesia", cartesiaKey, cartesiaVoiceId };
   }
 
-  // Default priority: Cartesia (cheap commercial cloning) → ElevenLabs
-  // (highest-fidelity cloning) → legacy providers → OpenAI (no cloning).
+  // Default priority: Azure (native en-AU neural voices — no accent drift)
+  // → Cartesia (cheap commercial cloning) → ElevenLabs (highest-fidelity
+  // cloning) → legacy providers → OpenAI (no cloning).
+  if (azureKey && azureRegion) {
+    return { provider: "azure", azureKey, azureRegion, azureVoice };
+  }
   if (cartesiaKey && cartesiaVoiceId) {
     return { provider: "cartesia", cartesiaKey, cartesiaVoiceId };
   }
@@ -307,7 +320,7 @@ async function generateAudioElevenLabs(
   const modelId = Deno.env.get("ELEVENLABS_MODEL_ID") || "eleven_multilingual_v2";
   console.log(`[ElevenLabs] text len=${text.length}, voice=${voiceId}, model=${modelId}`);
   const t0 = Date.now();
-  const res = await fetch(`${ELEVENLABS_TTS_URL}/${voiceId}?output_format=mp3_44100_128`, {
+  const doRequest = () => fetch(`${ELEVENLABS_TTS_URL}/${voiceId}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: {
       "xi-api-key": apiKey,
@@ -325,6 +338,12 @@ async function generateAudioElevenLabs(
     }),
     signal: AbortSignal.timeout(120 * 1000),
   });
+  let res = await doRequest();
+  // Concurrency limits vary by plan — back off and retry rather than fail.
+  for (let attempt = 0; res.status === 429 && attempt < 3; attempt++) {
+    await new Promise((r) => setTimeout(r, 4000 * (attempt + 1)));
+    res = await doRequest();
+  }
   if (!res.ok) {
     const err = await res.text().catch(() => "");
     throw new Error(`ElevenLabs error ${res.status}: ${err.slice(0, 500)}`);
@@ -423,13 +442,111 @@ async function generateAudioOpenAI(
 }
 
 /**
+ * Call Azure AI Speech (neural TTS) — native Australian voices, so no
+ * accent drift. SSML with a slightly slowed rate reads better for kids.
+ */
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+async function generateAudioAzure(
+  text: string,
+  key: string,
+  region: string,
+  voice: string,
+  rate?: string,
+  pitch?: string,
+): Promise<ArrayBuffer> {
+  // Default: slightly faster and brighter than neutral — kid narration reads
+  // flat and slow at Azure's neutral settings.
+  const r = rate || Deno.env.get("AZURE_TTS_RATE") || "+5%";
+  const p = pitch || Deno.env.get("AZURE_TTS_PITCH") || "+3%";
+  const ssml =
+    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-AU'>` +
+    `<voice name='${voice}'><prosody rate='${r}' pitch='${p}'>${escapeXml(text)}</prosody></voice></speak>`;
+
+  const doRequest = () =>
+    fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": key,
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+        "User-Agent": "daniels-diaries-narration",
+      },
+      body: ssml,
+    });
+
+  let response = await doRequest();
+  // The free (F0) tier rate-limits aggressively — one polite retry.
+  if (response.status === 429) {
+    await new Promise((r) => setTimeout(r, 3000));
+    response = await doRequest();
+  }
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "Unknown error");
+    throw new Error(`Azure TTS error ${response.status}: ${errorBody}`);
+  }
+  return response.arrayBuffer();
+}
+
+/**
+ * Remove every div matching openerPattern together with its full balanced
+ * contents (handles nested divs, which simple non-greedy regexes cannot).
+ */
+function stripBalancedDivs(html: string, openerPattern: RegExp): string {
+  let out = html;
+  for (;;) {
+    openerPattern.lastIndex = 0;
+    const m = openerPattern.exec(out);
+    if (!m) break;
+    const start = m.index;
+    let depth = 1;
+    const walker = /<div[^>]*>|<\/div>/gi;
+    walker.lastIndex = start + m[0].length;
+    let end = out.length;
+    let step;
+    while ((step = walker.exec(out))) {
+      depth += step[0][1] === "/" ? -1 : 1;
+      if (depth === 0) { end = step.index + step[0].length; break; }
+    }
+    out = out.slice(0, start) + out.slice(end);
+  }
+  return out;
+}
+
+/**
  * Generate audio using the configured TTS provider.
  */
 async function generateAudio(
   text: string,
   apiKey: string,
   ttsProvider: ReturnType<typeof getTtsProvider>,
+  overrides?: { provider?: string; voice?: string; rate?: string; pitch?: string },
 ): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+  // Explicit per-request provider (admin A/B testing across modules).
+  if (overrides?.provider === "elevenlabs" && overrides?.voice) {
+    const elKey = Deno.env.get("ELEVENLABS_API_KEY") ?? "";
+    if (!elKey) throw new Error("ELEVENLABS_API_KEY not configured");
+    const buffer = await generateAudioElevenLabs(text, elKey, overrides.voice);
+    return { buffer, contentType: "audio/mpeg" };
+  }
+  if (ttsProvider.provider === "azure") {
+    const buffer = await generateAudioAzure(
+      text,
+      ttsProvider.azureKey!,
+      ttsProvider.azureRegion!,
+      overrides?.voice || ttsProvider.azureVoice!,
+      overrides?.rate,
+      overrides?.pitch,
+    );
+    return { buffer, contentType: "audio/mpeg" };
+  }
   if (ttsProvider.provider === "cartesia") {
     const buffer = await generateAudioCartesia(text, ttsProvider.cartesiaKey!, ttsProvider.cartesiaVoiceId!);
     return { buffer, contentType: "audio/mpeg" };
@@ -471,7 +588,7 @@ serve(withCors(async (req) => {
   const apiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
   if (ttsProvider.provider === "openai" && !apiKey) {
     console.error("[TTS] No TTS provider configured!");
-    return jsonResponse({ error: "No TTS provider configured. Set REPLICATE_API_TOKEN, VOICEBOX_URL+VOICEBOX_PROFILE_ID, or OPENAI_API_KEY." }, 500);
+    return jsonResponse({ error: "No TTS provider configured. Set AZURE_SPEECH_KEY+AZURE_SPEECH_REGION, REPLICATE_API_TOKEN, VOICEBOX_URL+VOICEBOX_PROFILE_ID, or OPENAI_API_KEY." }, 500);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -480,6 +597,55 @@ serve(withCors(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const { moduleId, variantId, pages: requestedPages, force = false, background = false } = body;
+    // Optional per-request overrides (admin-only function) — lets us A/B
+    // providers, voices and pacing across modules without touching secrets.
+    const ttsOverrides = { provider: body.ttsProvider, voice: body.ttsVoice, rate: body.ttsRate, pitch: body.ttsPitch };
+
+    // ── Voice-library helpers (ElevenLabs) ──
+    if (body.action === "list-voices") {
+      const elKey = Deno.env.get("ELEVENLABS_API_KEY") ?? "";
+      if (!elKey) return jsonResponse({ error: "ELEVENLABS_API_KEY not configured" }, 500);
+      const params = new URLSearchParams({ page_size: "30", language: "en" });
+      if (body.gender) params.set("gender", body.gender);
+      if (body.accent) params.set("accent", body.accent);
+      const trim = (v: Record<string, unknown>) => ({
+        voice_id: v.voice_id,
+        name: v.name,
+        accent: v.accent ?? (v.labels as Record<string, unknown>)?.accent,
+        gender: v.gender ?? (v.labels as Record<string, unknown>)?.gender,
+        age: v.age ?? (v.labels as Record<string, unknown>)?.age,
+        use_case: v.use_case ?? (v.labels as Record<string, unknown>)?.use_case,
+        description: String(v.description || "").slice(0, 140),
+        preview_url: v.preview_url,
+        public_owner_id: v.public_owner_id,
+        cloned_by_count: v.cloned_by_count,
+      });
+      const [mine, shared] = await Promise.all([
+        fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": elKey } })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+        fetch(`https://api.elevenlabs.io/v1/shared-voices?${params}`, { headers: { "xi-api-key": elKey } })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+      ]);
+      return jsonResponse({
+        my_voices: (mine.voices || []).map(trim),
+        shared: (shared.voices || []).map(trim),
+        mine_error: mine.error || mine.detail, shared_error: shared.error || shared.detail,
+      });
+    }
+    if (body.action === "add-voice") {
+      const elKey = Deno.env.get("ELEVENLABS_API_KEY") ?? "";
+      if (!elKey) return jsonResponse({ error: "ELEVENLABS_API_KEY not configured" }, 500);
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/voices/add/${body.publicOwnerId}/${body.voiceId}`,
+        {
+          method: "POST",
+          headers: { "xi-api-key": elKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ new_name: body.name || "AU Narrator" }),
+        },
+      );
+      const out = await res.json().catch(() => ({}));
+      return jsonResponse({ status: res.status, result: out });
+    }
     console.log("[TTS] Request:", JSON.stringify({ moduleId, variantId, force, background, pages: requestedPages }));
 
     if (!moduleId) {
@@ -514,7 +680,7 @@ serve(withCors(async (req) => {
 
       if (varError || !variant) {
         console.error("[TTS] Variant not found:", varError?.message);
-        return jsonResponse({ error: "Variant not found" }, 404);
+        return jsonResponse({ error: "Variant not found", detail: varError?.message || "no row" }, 404);
       }
       targetTable = "module_variants";
       targetId = variantId;
@@ -529,8 +695,9 @@ serve(withCors(async (req) => {
 
     console.log("[TTS] Target:", targetTable, targetId, "| Pages:", existingNarration?.length || 0);
 
-    // 3. If no narration texts OR force=true, re-extract fresh from HTML
-    if (!existingNarration || existingNarration.length === 0 || force) {
+    // 3. If no narration texts OR force=true OR reextract=true, re-extract from HTML
+    const reextract = body.reextract === true;
+    if (!existingNarration || existingNarration.length === 0 || force || reextract) {
       console.log("[TTS] Extracting narration text fresh from HTML...");
 
       const htmlTable = variantId ? "module_variants" : "modules";
@@ -560,10 +727,10 @@ serve(withCors(async (req) => {
         // Strip headings entirely — we only want body text narrated
         text = text.replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, '');
         // Strip grown-up note blocks — they're for parents, not for narration.
-        // Match the whole collapsible <div> by its id="grownup-note-N" wrapper.
-        text = text.replace(/<div[^>]*id="grownup-note-[^"]*"[\s\S]*?<\/div>/gi, '');
-        // Also strip any element containing the literal text "Grown-Up Note"
-        text = text.replace(/<div[^>]*>[\s\S]{0,200}?Grown-Up Note[\s\S]*?<\/div>/gi, '');
+        // The note body contains NESTED divs, so a non-greedy match to the
+        // first </div> leaks most of the note into the narration. Walk the
+        // div depth to remove the whole balanced block.
+        text = stripBalancedDivs(text, /<div[^>]*id="grownup-note-\d+"[^>]*>/gi);
         text = text.replace(/<(?:input|textarea)[^>]*\/?>/gi, '');
         text = text.replace(/<label[\s\S]*?<\/label>/gi, '');
         // Remove feedback/hidden elements — match opening tag through to its balanced </div>
@@ -600,14 +767,25 @@ serve(withCors(async (req) => {
 
       console.log(`[TTS] Extracted text from ${extractedPages.length} pages`);
 
-      existingNarration = extractedPages.map((text, i) => ({
-        pageIndex: i,
-        text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
-        fullText: text,
-        audioUrl: null,
-        contentHash: null,
-        status: 'pending' as const,
-      }));
+      const priorNarration = existingNarration;
+      existingNarration = extractedPages.map((text, i) => {
+        // reextract mode: keep existing audio for pages whose text is
+        // unchanged — only pages that actually differ (e.g. previously
+        // leaked grown-up notes) get re-narrated. force still redoes all.
+        if (reextract && !force) {
+          const old = priorNarration?.find((e) => e.pageIndex === i);
+          if (old && old.status === 'ready' && old.fullText === text) return old;
+          if (old && old.status === 'skipped' && old.fullText === text) return old;
+        }
+        return {
+          pageIndex: i,
+          text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+          fullText: text,
+          audioUrl: null,
+          contentHash: null,
+          status: 'pending' as const,
+        };
+      });
 
       await supabaseClient
         .from(targetTable)
@@ -641,7 +819,10 @@ serve(withCors(async (req) => {
     // Concurrency is plan-limited on both cloning providers (Cartesia free/Pro
     // tiers allow very few concurrent requests; ElevenLabs Creator allows 5).
     // Stay low — the 429 retry handles the rest.
-    const PARALLEL_BATCH = ttsProvider.provider === "voicebox" ? 1 : ttsProvider.provider === "replicate" ? 3 : ttsProvider.provider === "cartesia" ? 2 : ttsProvider.provider === "elevenlabs" ? 3 : 5;
+    // Batch size must follow the provider actually doing the work — a
+    // per-request override can differ from the env-configured default.
+    const effectiveTts = ttsOverrides.provider || ttsProvider.provider;
+    const PARALLEL_BATCH = effectiveTts === "voicebox" ? 1 : effectiveTts === "replicate" ? 3 : effectiveTts === "cartesia" ? 2 : effectiveTts === "elevenlabs" ? 2 : 5;
     const narrationData: NarrationEntry[] = [...existingNarration];
     const pagesToProcess = requestedPages || existingNarration.map((_: NarrationEntry, i: number) => i);
 
@@ -683,7 +864,7 @@ serve(withCors(async (req) => {
 
         const results = await Promise.allSettled(batch.map(async (work) => {
           const { i, text, hash } = work;
-          const { buffer: audioBuffer, contentType } = await generateAudio(text, apiKey, ttsProvider);
+          const { buffer: audioBuffer, contentType } = await generateAudio(text, apiKey, ttsProvider, ttsOverrides);
           const ext = contentType === "audio/wav" ? "wav" : "mp3";
           const fileName = `${storagePath}/page-${i}.${ext}`;
           const { error: uploadError } = await supabaseClient.storage

@@ -51,12 +51,18 @@ export async function tryRunMiniGame({ roadblock, container, spawn, child, onCom
   const i18n = createI18n('en');
   const abort = new AbortController();
 
+  // Skill tools earned from completed adventures (town_play layer). The
+  // dashboard shelf mirrors ids into localStorage; games read ctx.tools.
+  let tools = [];
+  try { tools = JSON.parse(localStorage.getItem('dd_tools_' + (child?.id || '')) || '[]'); } catch { /* ignore */ }
+
   const ctx = {
     gameId,
     container,
     config: { ...def.defaultConfig, ...(cfg.config || {}) },
     difficulty,
     child: child ? { id: child.id, name: child.name, age: child.age } : {},
+    tools,
     a11y,
     emit: (name, data) => telemetry.emit(name, data),
     i18n,

@@ -1,6 +1,70 @@
 // Rewards Tab Functionality for Dashboard
 import { escapeHtml } from '../../lib/sanitize.js'
 import { getRewards, createCustomReward, purchaseReward, getChildPurchaseHistory, getChildSpendableStars } from '../../rewards.js'
+import { supabase } from '../../supabaseClient.js'
+import { isTownPlayEnabled } from './townPlayFlag.js'
+import { trackEvent } from '../../lib/telemetry.js'
+import { showToast } from '../../ui/toast.js'
+
+const SHIELD_COST = 15
+let shieldCount = 0
+let shieldAvailable = false
+
+async function loadShieldState(childId) {
+  try {
+    if (!(await isTownPlayEnabled())) { shieldAvailable = false; return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { shieldAvailable = false; return }
+    const { data } = await supabase.from('login_streaks')
+      .select('shields')
+      .eq('user_id', user.id).eq('child_id', childId)
+      .maybeSingle()
+    shieldCount = data?.shields || 0
+    shieldAvailable = true
+  } catch {
+    shieldAvailable = false
+  }
+}
+
+async function buyStreakShield(selectedChild) {
+  try {
+    const { data, error } = await supabase.rpc('purchase_streak_shield', { p_child_id: selectedChild.id })
+    if (error) throw error
+    if (!data?.ok) {
+      const msg = data?.error === 'not-enough-stars' ? 'Not enough stars yet — keep exploring!'
+        : data?.error === 'already-protected' ? "You're already protected!"
+        : 'Could not buy the shield right now.'
+      showToast(msg, 'error')
+      return
+    }
+    shieldCount += 1
+    childSpendableStars -= SHIELD_COST
+    trackEvent('streak_shield_purchased', {})
+    showRewardCelebration('Streak Shield', '🛡️')
+    const availableStarsCount = document.getElementById('availableStarsCount')
+    if (availableStarsCount) availableStarsCount.textContent = childSpendableStars
+    renderRewards(selectedChild)
+  } catch (e) {
+    console.error('Shield purchase failed:', e)
+    showToast('Could not buy the shield right now.', 'error')
+  }
+}
+
+function shieldCardHtml() {
+  const protectedNow = shieldCount >= 1
+  const canAfford = childSpendableStars >= SHIELD_COST
+  const status = protectedNow
+    ? '<div class="reward-card-status can-afford">🛡️ Protected! Daniel is guarding your streak.</div>'
+    : canAfford
+      ? '<div class="reward-card-status can-afford">Tap to buy!</div>'
+      : `<div class="reward-card-status need-more">${SHIELD_COST - childSpendableStars} more star${SHIELD_COST - childSpendableStars === 1 ? '' : 's'} to go!</div>`
+  return `
+    <div class="reward-card-icon">🛡️</div>
+    <div class="reward-card-name">Streak Shield</div>
+    <div class="reward-card-desc">If you miss a day, Daniel keeps your streak safe. Holds one shield at a time.</div>
+    <div class="reward-card-cost"><span>⭐</span><span>${SHIELD_COST}</span></div>
+    ${status}`
+}
 
 /**
  * Show a celebration popup when a reward is redeemed
@@ -96,6 +160,7 @@ export async function initializeRewardsTab(selectedChild) {
     if (availableStarsCount) availableStarsCount.textContent = childSpendableStars
     
     // Render rewards and history
+    await loadShieldState(selectedChild.id)
     renderRewards(selectedChild)
     await renderPurchaseHistory(selectedChild)
   } catch (error) {
@@ -108,10 +173,20 @@ export async function initializeRewardsTab(selectedChild) {
  */
 function renderRewards(selectedChild) {
   if (!rewardsGrid) return
-  
+
   rewardsGrid.innerHTML = ''
-  
-  if (rewards.length === 0) {
+
+  // Built-in Streak Shield — the one item the child buys for themselves.
+  if (shieldAvailable) {
+    const shieldCard = document.createElement('div')
+    const buyable = shieldCount < 1 && childSpendableStars >= SHIELD_COST
+    shieldCard.className = `reward-card ${buyable || shieldCount >= 1 ? '' : 'reward-locked'}`
+    shieldCard.innerHTML = shieldCardHtml()
+    if (buyable) shieldCard.addEventListener('click', () => buyStreakShield(selectedChild))
+    rewardsGrid.appendChild(shieldCard)
+  }
+
+  if (rewards.length === 0 && !shieldAvailable) {
     rewardsGrid.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #4c6c96;">
         <p style="font-size: 18px; margin-bottom: 12px;">No rewards available.</p>

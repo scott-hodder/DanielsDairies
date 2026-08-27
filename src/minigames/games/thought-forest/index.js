@@ -74,6 +74,12 @@ class ThoughtForest extends IMiniGame {
     this._currentRound = 0;
     this._lives = 3;
     this._maxLives = 3;
+    // Thought Filter (earned by finishing a Thought Driver adventure)
+    // grants one extra heart — a visible reward for real learning.
+    if (this.ctx?.tools?.includes('thought-filter')) {
+      this._lives = 4;
+      this._maxLives = 4;
+    }
     this._phase = 'playing';
     this._clearedSections = [false, false, false, false];
     this._pulledSections = [false, false, false, false];

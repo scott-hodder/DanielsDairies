@@ -75,6 +75,12 @@ class CourageCanyon extends IMiniGame {
     this._autoSpeed     = AUTO_RUN_SPEED * diff.speedMultiplier;
     this._lives         = 3;
     this._maxLives      = 3;
+    // Bounce Shield (earned by finishing a Resilience Architect adventure)
+    // grants one extra heart — a visible reward for real learning.
+    if (this.ctx?.tools?.includes('bounce-shield')) {
+      this._lives = 4;
+      this._maxLives = 4;
+    }
     this._starsCollected = 0;
     this._section       = 0;              // 0-based current section index
     this._animTime      = 0;

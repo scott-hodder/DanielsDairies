@@ -1167,16 +1167,31 @@ export async function updateLoginStreak(userId, childId = null) {
     
     let newStreak = streakRecord.current_streak
     let newLongest = streakRecord.longest_streak
-    
+    let newShields = streakRecord.shields || 0
+    let shieldUsed = false
+    let streakBroken = false
+
+    // Exactly one missed day can be covered by a Streak Shield.
+    const dayBeforeYesterday = new Date()
+    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2)
+    const dayBeforeYesterdayStr = dayBeforeYesterday.toISOString().split('T')[0]
+
     if (streakRecord.last_login_date === yesterdayStr) {
       // Consecutive day - increment streak
       newStreak += 1
       newLongest = Math.max(newLongest, newStreak)
+    } else if (streakRecord.last_login_date === dayBeforeYesterdayStr && newShields > 0) {
+      // Missed one day, shield absorbs it — streak continues as if unbroken.
+      newShields -= 1
+      shieldUsed = true
+      newStreak += 1
+      newLongest = Math.max(newLongest, newStreak)
     } else {
       // Streak broken - reset to 1
+      streakBroken = newStreak >= 2
       newStreak = 1
     }
-    
+
     // Update streak record
     let updateQuery = supabase
       .from('login_streaks')
@@ -1184,6 +1199,7 @@ export async function updateLoginStreak(userId, childId = null) {
         current_streak: newStreak,
         longest_streak: newLongest,
         last_login_date: today,
+        shields: newShields,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId)
@@ -1198,9 +1214,9 @@ export async function updateLoginStreak(userId, childId = null) {
     const { data: updatedRecord, error: updateError } = await updateQuery
       .select()
       .single()
-    
+
     if (updateError) throw updateError
-    return { ...updatedRecord, _previousLoginDate: previousLoginDate }
+    return { ...updatedRecord, _previousLoginDate: previousLoginDate, _shieldUsed: shieldUsed, _streakBroken: streakBroken }
     
   } catch (error) {
     console.error('Error updating login streak:', error)
