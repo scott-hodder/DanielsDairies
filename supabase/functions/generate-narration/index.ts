@@ -496,6 +496,31 @@ async function generateAudioAzure(
 }
 
 /**
+ * Remove every div matching openerPattern together with its full balanced
+ * contents (handles nested divs, which simple non-greedy regexes cannot).
+ */
+function stripBalancedDivs(html: string, openerPattern: RegExp): string {
+  let out = html;
+  for (;;) {
+    openerPattern.lastIndex = 0;
+    const m = openerPattern.exec(out);
+    if (!m) break;
+    const start = m.index;
+    let depth = 1;
+    const walker = /<div[^>]*>|<\/div>/gi;
+    walker.lastIndex = start + m[0].length;
+    let end = out.length;
+    let step;
+    while ((step = walker.exec(out))) {
+      depth += step[0][1] === "/" ? -1 : 1;
+      if (depth === 0) { end = step.index + step[0].length; break; }
+    }
+    out = out.slice(0, start) + out.slice(end);
+  }
+  return out;
+}
+
+/**
  * Generate audio using the configured TTS provider.
  */
 async function generateAudio(
@@ -670,8 +695,9 @@ serve(withCors(async (req) => {
 
     console.log("[TTS] Target:", targetTable, targetId, "| Pages:", existingNarration?.length || 0);
 
-    // 3. If no narration texts OR force=true, re-extract fresh from HTML
-    if (!existingNarration || existingNarration.length === 0 || force) {
+    // 3. If no narration texts OR force=true OR reextract=true, re-extract from HTML
+    const reextract = body.reextract === true;
+    if (!existingNarration || existingNarration.length === 0 || force || reextract) {
       console.log("[TTS] Extracting narration text fresh from HTML...");
 
       const htmlTable = variantId ? "module_variants" : "modules";
@@ -701,10 +727,10 @@ serve(withCors(async (req) => {
         // Strip headings entirely — we only want body text narrated
         text = text.replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, '');
         // Strip grown-up note blocks — they're for parents, not for narration.
-        // Match the whole collapsible <div> by its id="grownup-note-N" wrapper.
-        text = text.replace(/<div[^>]*id="grownup-note-[^"]*"[\s\S]*?<\/div>/gi, '');
-        // Also strip any element containing the literal text "Grown-Up Note"
-        text = text.replace(/<div[^>]*>[\s\S]{0,200}?Grown-Up Note[\s\S]*?<\/div>/gi, '');
+        // The note body contains NESTED divs, so a non-greedy match to the
+        // first </div> leaks most of the note into the narration. Walk the
+        // div depth to remove the whole balanced block.
+        text = stripBalancedDivs(text, /<div[^>]*id="grownup-note-\d+"[^>]*>/gi);
         text = text.replace(/<(?:input|textarea)[^>]*\/?>/gi, '');
         text = text.replace(/<label[\s\S]*?<\/label>/gi, '');
         // Remove feedback/hidden elements — match opening tag through to its balanced </div>
@@ -741,14 +767,25 @@ serve(withCors(async (req) => {
 
       console.log(`[TTS] Extracted text from ${extractedPages.length} pages`);
 
-      existingNarration = extractedPages.map((text, i) => ({
-        pageIndex: i,
-        text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
-        fullText: text,
-        audioUrl: null,
-        contentHash: null,
-        status: 'pending' as const,
-      }));
+      const priorNarration = existingNarration;
+      existingNarration = extractedPages.map((text, i) => {
+        // reextract mode: keep existing audio for pages whose text is
+        // unchanged — only pages that actually differ (e.g. previously
+        // leaked grown-up notes) get re-narrated. force still redoes all.
+        if (reextract && !force) {
+          const old = priorNarration?.find((e) => e.pageIndex === i);
+          if (old && old.status === 'ready' && old.fullText === text) return old;
+          if (old && old.status === 'skipped' && old.fullText === text) return old;
+        }
+        return {
+          pageIndex: i,
+          text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+          fullText: text,
+          audioUrl: null,
+          contentHash: null,
+          status: 'pending' as const,
+        };
+      });
 
       await supabaseClient
         .from(targetTable)
