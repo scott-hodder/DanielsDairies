@@ -244,6 +244,26 @@
     body.has-tts-player .page {
       padding-bottom: 96px;
     }
+    /* Auto-read toggle switch */
+    .tts-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+    .tts-switch input { opacity: 0; width: 0; height: 0; }
+    .tts-slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #cfd8e3; border-radius: 999px; transition: background 0.25s;
+    }
+    .tts-slider:before {
+      content: ''; position: absolute; height: 20px; width: 20px;
+      left: 3px; top: 3px; background: white; border-radius: 50%;
+      transition: transform 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    .tts-switch input:checked + .tts-slider { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+    .tts-switch input:checked + .tts-slider:before { transform: translateX(20px); }
+    .tts-pause-btn {
+      width: 32px; height: 32px; border: none; border-radius: 50%;
+      background: #eef2f7; color: #405878; font-size: 14px; cursor: pointer;
+      display: none; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .tts-player.playing .tts-pause-btn { display: inline-flex; }
     .tts-player.expanded {
       border-radius: 16px;
       padding: 10px 16px;
@@ -1662,7 +1682,7 @@
         if (!pageDisplay) return;
 
         const text = pageDisplay.textContent || '';
-        const match = text.match(/(?:Page\s+)?(\d+)\s+of\s+(\d+)/i);
+        const match = text.match(/(?:Page\s+)?(\d+)\s*(?:of|\/)\s*(\d+)/i);
         if (match) {
           const current = parseInt(match[1], 10);
           // Only fire when page actually changes (prevents infinite loop)
@@ -1739,11 +1759,16 @@
       },
 
       createPlayer() {
+        try { this.autoRead = localStorage.getItem('dd_auto_read') === '1'; } catch (e) { this.autoRead = false; }
         const player = document.createElement('div');
         player.className = 'tts-player';
         player.innerHTML = `
-          <button class="tts-btn" id="ttsPlayBtn" title="Read to me">🔊</button>
-          <span class="tts-label" id="ttsLabel">Read to me</span>
+          <label class="tts-switch" title="Read pages aloud automatically">
+            <input type="checkbox" id="ttsAutoToggle" ${this.autoRead ? 'checked' : ''}>
+            <span class="tts-slider"></span>
+          </label>
+          <span class="tts-label" id="ttsLabel">${this.autoRead ? 'Auto read on' : 'Read to me'}</span>
+          <button class="tts-pause-btn" id="ttsPlayBtn" title="Pause">⏸</button>
           <div class="tts-progress" id="ttsProgress" style="display:none;">
             <div class="tts-progress-bar" id="ttsProgressBar"></div>
           </div>
@@ -1752,6 +1777,19 @@
         document.body.appendChild(player);
         document.body.classList.add('has-tts-player');
         this.playerEl = player;
+
+        // The switch is the master control: on = narrate this page and every
+        // page after it as the child moves through; off = silence.
+        document.getElementById('ttsAutoToggle').addEventListener('change', (e) => {
+          this.autoRead = !!e.target.checked;
+          try { localStorage.setItem('dd_auto_read', this.autoRead ? '1' : '0'); } catch (err) { /* private mode */ }
+          if (this.autoRead) {
+            this.updateIdleLabel();
+            this.playCurrentPage();
+          } else {
+            this.stop();
+          }
+        });
 
         document.getElementById('ttsPlayBtn').addEventListener('click', () => {
           if (this.isPlaying && !this.isPaused) {
@@ -1787,7 +1825,7 @@
         const pageDisplay = document.querySelector('.module-header__page');
         if (!pageDisplay) return -1;
         const text = pageDisplay.textContent || '';
-        const match = text.match(/(?:Page\s+)?(\d+)\s+of\s+(\d+)/i);
+        const match = text.match(/(?:Page\s+)?(\d+)\s*(?:of|\/)\s*(\d+)/i);
         if (!match) return -1;
         return parseInt(match[1], 10) - 1;
       },
@@ -1809,7 +1847,7 @@
         return (clone.textContent || '').replace(/\s+/g, ' ').trim();
       },
 
-      playCurrentPage() {
+      playCurrentPage(opts) {
         const pageIdx = this.getCurrentPageIndex();
         const narration = this.narrationData.find(n => n.pageIndex === pageIdx);
 
@@ -1820,9 +1858,12 @@
           return;
         }
 
+        // Auto-advance onto a page without audio (cover, activity-only):
+        // stay quiet rather than flashing an error at the child.
+        if (opts && opts.auto) return;
         const label = document.getElementById('ttsLabel');
         if (label) label.textContent = 'Audio not ready';
-        setTimeout(() => { if (label) label.textContent = 'Read to me'; }, 2000);
+        setTimeout(() => this.updateIdleLabel(), 2000);
       },
 
       _playAudio(url, pageIdx) {
@@ -1838,8 +1879,13 @@
           console.error('[TTS] Audio play failed:', err);
           const label = document.getElementById('ttsLabel');
           if (label) label.textContent = 'Audio not ready';
-          setTimeout(() => { if (label) label.textContent = 'Read to me'; }, 2000);
+          setTimeout(() => this.updateIdleLabel(), 2000);
         });
+      },
+
+      updateIdleLabel() {
+        const label = document.getElementById('ttsLabel');
+        if (label) label.textContent = this.autoRead ? 'Auto read on' : 'Read to me';
       },
 
       pause() {
@@ -1847,7 +1893,7 @@
         this.audioEl.pause();
         const btn = document.getElementById('ttsPlayBtn');
         const label = document.getElementById('ttsLabel');
-        if (btn) btn.textContent = '▶️';
+        if (btn) { btn.textContent = '▶'; btn.title = 'Resume'; }
         if (label) label.textContent = 'Paused';
       },
 
@@ -1883,20 +1929,26 @@
         if (playing) {
           btn?.classList.add('playing');
           player?.classList.add('playing', 'expanded');
-          if (btn) btn.textContent = '⏸';
+          if (btn) { btn.textContent = '⏸'; btn.title = 'Pause'; }
           if (label) label.textContent = 'Reading...';
           if (speed) speed.style.display = 'inline-block';
         } else {
           btn?.classList.remove('playing');
           player?.classList.remove('playing', 'expanded');
-          if (btn) btn.textContent = '🔊';
-          if (label) label.textContent = 'Read to me';
+          if (btn) { btn.textContent = '⏸'; btn.title = 'Pause'; }
+          this.updateIdleLabel();
           if (speed) speed.style.display = 'none';
         }
       },
 
       onPageChange() {
         this.stop();
+        // Auto-read: each new page starts narrating on its own — the switch
+        // means "read the adventure to me", not "read this one page".
+        if (this.autoRead) {
+          clearTimeout(this._autoTimer);
+          this._autoTimer = setTimeout(() => this.playCurrentPage({ auto: true }), 600);
+        }
       }
     };
 
