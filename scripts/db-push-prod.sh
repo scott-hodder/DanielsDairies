@@ -4,7 +4,17 @@
 
 set -e
 
-PROD_DB_URL="postgresql://postgres:BladErunner12%211@db.mikxrneopcwuldmykswq.supabase.co:5432/postgres"
+# The prod DB password lives in .env.local (gitignored) or the environment —
+# never hardcode it here: this file is committed.
+if [ -z "$PROD_DB_PASSWORD" ] && [ -f .env.local ]; then
+  PROD_DB_PASSWORD=$(grep -E '^PROD_DB_PASSWORD=' .env.local | head -1 | cut -d= -f2-)
+fi
+if [ -z "$PROD_DB_PASSWORD" ]; then
+  echo "❌ PROD_DB_PASSWORD is not set. Add it to .env.local or export it before running." >&2
+  exit 1
+fi
+
+PROD_DB_URL="postgresql://postgres:${PROD_DB_PASSWORD}@db.mikxrneopcwuldmykswq.supabase.co:5432/postgres"
 
 echo "📋 Generating diff between dev and prod baseline..."
 TIMESTAMP=$(date +%Y%m%d%H%M%S)

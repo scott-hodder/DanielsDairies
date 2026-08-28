@@ -32,3 +32,6 @@ test-results/
 
 # debug files
 .claude/
+
+# Local Netlify folder
+.netlify

@@ -1,0 +1,47 @@
+# Codemagic CI — builds the iOS app on a cloud Mac and uploads to TestFlight.
+# No local Mac required: signing certificates and provisioning profiles are
+# created automatically from the App Store Connect integration key
+# ("dd-appstore" — Codemagic UI > Settings > Integrations).
+#
+# Start a build: Codemagic > DanielsDairies > Start new build >
+#   branch "main", workflow "iOS TestFlight".
+
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: dd-appstore
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.danielsdiaries.app
+      node: 20
+      xcode: latest
+      vars:
+        # Public client config (the anon key ships in every web bundle by design).
+        VITE_SUPABASE_URL: https://mikxrneopcwuldmykswq.supabase.co
+        VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pa3hybmVvcGN3dWxkbXlrc3dxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2NDY0MjUsImV4cCI6MjA4MDIyMjQyNX0.COtGA1Ey7fUi2q-3HD8lsQ-EU8jKnitl5ZTo-NDJKAE
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web app (production)
+        script: npm run build
+      - name: Sync web build into iOS project
+        script: npx cap sync ios
+      - name: Set incrementing build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $BUILD_NUMBER
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build signed IPA
+        script: xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
