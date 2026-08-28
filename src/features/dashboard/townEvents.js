@@ -108,6 +108,7 @@ function injectStyles() {
   st.id = 'townEventStyles'
   st.textContent = `
 .te-chip{position:absolute;left:14px;top:14px;z-index:60;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.97);border:2px solid #8b5cf6;border-radius:999px;padding:8px 14px;font-family:'Fredoka',system-ui,sans-serif;font-size:14px;font-weight:700;color:#16324f;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.15);animation:teBob 2.4s ease-in-out infinite}
+@media (max-width:540px){.te-chip{font-size:12px;padding:6px 10px;top:10px;left:10px}}
 @keyframes teBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 .te-chip.done{border-color:#c9d4e2;animation:none;opacity:.85}
 .te-overlay{position:fixed;inset:0;z-index:11000;background:rgba(22,50,79,.78);display:flex;align-items:center;justify-content:center;padding:16px}

@@ -137,6 +137,7 @@ function injectStyles() {
   st.id = 'stickerBookStyles'
   st.textContent = `
 .sb-chip{position:absolute;left:14px;bottom:14px;z-index:60;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.96);border:2px solid #f2c94c;border-radius:999px;padding:8px 14px;font-family:'Fredoka',system-ui,sans-serif;font-size:14px;font-weight:700;color:#16324f;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+@media (max-width:540px){.sb-chip{font-size:12px;padding:6px 10px;left:10px;bottom:10px}}
 .sb-chip:hover{transform:translateY(-1px)}
 .sb-new{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:sbPulse 1.2s infinite}
 @keyframes sbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}

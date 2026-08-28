@@ -71,11 +71,24 @@ function injectStyles() {
   const st = document.createElement('style')
   st.id = 'skillToolsStyles'
   st.textContent = `
-.stl-shelf{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:rgba(255,255,255,.85);border:2px solid #e8e0c9;border-radius:16px;padding:8px 12px;margin:10px 0;font-family:'Fredoka',system-ui,sans-serif}
-.stl-label{font-size:12.5px;font-weight:700;color:#8a7a4d;margin-right:2px}
-.stl-tool{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:#fff;border:2px solid #f2c94c;cursor:pointer;transition:transform .15s}
-.stl-tool:hover{transform:scale(1.12)}
-.stl-tool.locked{border-color:#dfe6ef;opacity:.4;filter:grayscale(1)}
+.stl-chip{position:absolute;left:14px;bottom:58px;z-index:60;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.96);border:2px solid #e6a800;border-radius:999px;padding:8px 14px;font-family:'Fredoka',system-ui,sans-serif;font-size:14px;font-weight:700;color:#16324f;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+@media (max-width:540px){.stl-chip{font-size:12px;padding:6px 10px;left:10px;bottom:50px}}
+.stl-chip:hover{transform:translateY(-1px)}
+.stl-book{background:#fffdf7;border-radius:24px;max-width:560px;width:100%;max-height:86vh;overflow-y:auto;padding:22px 20px;font-family:'Nunito',system-ui,sans-serif;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.stl-book-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.stl-book-title{font-family:'Fredoka',sans-serif;font-size:21px;font-weight:700;color:#16324f;margin:0}
+.stl-book-count{font-size:13px;color:#8a97a8;margin:0 0 12px}
+.stl-x{background:#eef2f7;border:none;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer;color:#405878}
+.stl-skill{margin:14px 0 8px;display:flex;align-items:center;gap:8px;font-family:'Fredoka',sans-serif;font-size:14.5px;font-weight:700;color:#405878}
+.stl-skill small{font-weight:600;color:#9aa7b8;font-size:11.5px}
+.stl-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stl-t{background:#fff;border:2px solid #f2c94c;border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:transform .12s}
+.stl-t:hover{transform:scale(1.04)}
+.stl-t .em{font-size:26px;line-height:1}
+.stl-t .nm{font-size:11px;font-weight:700;color:#16324f;line-height:1.2}
+.stl-t.locked{border-color:#dfe6ef;border-style:dashed;opacity:.55}
+.stl-t.locked .em{filter:grayscale(1);opacity:.6}
+.stl-t.locked .nm{color:#8a97a8;font-weight:600}
 .stl-overlay{position:fixed;inset:0;z-index:11000;background:rgba(22,50,79,.78);display:flex;align-items:center;justify-content:center;padding:16px}
 .stl-card{background:#fffdf7;border-radius:24px;max-width:380px;width:100%;padding:26px 22px;text-align:center;font-family:'Nunito',system-ui,sans-serif;box-shadow:0 24px 60px rgba(0,0,0,.4)}
 .stl-big{font-size:52px;line-height:1;margin-bottom:8px;animation:stlPop .4s ease-out}
@@ -132,24 +145,60 @@ export async function initSkillToolsShelf(container, { child, modules, childModu
   injectStyles()
 
   const skillLabel = (slug) => slug.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
+  const SKILL_ICON = { 'brain-builder': '🧠', 'thought-driver': '💭', 'emotion-navigator': '🧭', 'behaviour-engineer': '🔧', 'resilience-architect': '🏰', 'social-mapper': '🗺️', 'future-designer': '🔮' }
   const lockHint = (t) => `Finish ${t.unlockAt} adventure${t.unlockAt === 1 ? '' : 's'} in ${skillLabel(t.skill)} to unlock`
-  const shelf = document.createElement('div')
-  shelf.className = 'stl-shelf'
-  shelf.innerHTML = `<span class="stl-label">🧰 My tools (${unlockedIds.length}/${SKILL_TOOLS.length}):</span>` + SKILL_TOOLS.map(t => {
-    const has = unlockedIds.includes(t.id)
-    return `<button type="button" class="stl-tool${has ? '' : ' locked'}" data-tool="${t.id}" title="${escapeHtml(has ? t.name : lockHint(t))}">${has ? t.emoji : '🔒'}</button>`
-  }).join('')
-  // Below the map: the space above it belongs to the explainer chip.
-  mapContainer.parentElement.insertBefore(shelf, mapContainer.nextSibling)
+  const howEarned = (t) => `Earned by finishing ${t.unlockAt} adventure${t.unlockAt === 1 ? '' : 's'} in ${skillLabel(t.skill)}`
 
-  shelf.querySelectorAll('.stl-tool').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tool = SKILL_TOOLS.find(t => t.id === btn.dataset.tool)
-      if (!tool) return
-      if (unlockedIds.includes(tool.id)) showToolCard(tool)
-      else showToolCard({ ...tool, emoji: '🔒', name: 'Locked tool', desc: lockHint(tool) + '!', boost: tool.boost })
+  // Compact chip on the map (mirrors the sticker book) that opens the
+  // Tool Book — tools grouped by Super Skill, tap any for full details.
+  const chip = document.createElement('button')
+  chip.type = 'button'
+  chip.className = 'stl-chip'
+  chip.innerHTML = `🧰 Tools ${unlockedIds.length}/${SKILL_TOOLS.length}`
+  if (getComputedStyle(mapContainer).position === 'static') mapContainer.style.position = 'relative'
+  mapContainer.appendChild(chip)
+  new MutationObserver(() => {
+    if (!mapContainer.contains(chip)) mapContainer.appendChild(chip)
+  }).observe(mapContainer, { childList: true })
+
+  const openToolBook = () => {
+    const ov = document.createElement('div')
+    ov.className = 'stl-overlay'
+    const bySkill = {}
+    for (const t of SKILL_TOOLS) (bySkill[t.skill] = bySkill[t.skill] || []).push(t)
+    const sections = Object.entries(bySkill).map(([slug, tools]) => {
+      const got = tools.filter(t => unlockedIds.includes(t.id)).length
+      return `
+        <div class="stl-skill">${SKILL_ICON[slug] || '⭐'} ${escapeHtml(skillLabel(slug))} <small>${got}/${tools.length}</small></div>
+        <div class="stl-row">${tools.map(t => {
+          const has = unlockedIds.includes(t.id)
+          return `<div class="stl-t${has ? '' : ' locked'}" data-tool="${t.id}">
+            <span class="em">${has ? t.emoji : '🔒'}</span>
+            <span class="nm">${escapeHtml(has ? t.name : `Adventure ${t.unlockAt}`)}</span>
+          </div>`
+        }).join('')}</div>`
+    }).join('')
+    ov.innerHTML = `<div class="stl-book" role="dialog" aria-label="Tool book">
+      <div class="stl-book-head"><h3 class="stl-book-title">🧰 My Tool Box</h3><button class="stl-x" aria-label="Close">✕</button></div>
+      <p class="stl-book-count">${unlockedIds.length} of ${SKILL_TOOLS.length} tools earned — finish adventures to earn more!</p>
+      ${sections}
+    </div>`
+    ov.querySelector('.stl-x').addEventListener('click', () => ov.remove())
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove() })
+    ov.querySelectorAll('.stl-t').forEach(el => {
+      el.addEventListener('click', () => {
+        const tool = SKILL_TOOLS.find(t => t.id === el.dataset.tool)
+        if (!tool) return
+        if (unlockedIds.includes(tool.id)) {
+          showToolCard({ ...tool, desc: tool.desc + ' ' + howEarned(tool) + '.' })
+        } else {
+          showToolCard({ ...tool, emoji: '🔒', name: 'Locked tool', desc: lockHint(tool) + '!', boost: tool.boost })
+        }
+      })
     })
-  })
+    document.body.appendChild(ov)
+  }
+  chip.addEventListener('click', openToolBook)
 
   // Celebrate one newly unlocked tool per visit (skip a child's very first
   // computation so existing progress doesn't dump celebrations at once).

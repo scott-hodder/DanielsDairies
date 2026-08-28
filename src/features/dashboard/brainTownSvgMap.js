@@ -1332,9 +1332,16 @@ function createPanZoom(viewport, svgEl) {
   // Lower zoom ceiling on mobile keeps GPU tile rasterisation affordable
   const MAX_S = LITE_MODE ? 2.4 : 4.0
 
-  const vw = () => viewport.clientWidth
-  const vh = () => viewport.clientHeight
+  // Cache viewport dims: reading clientWidth/Height on every pointermove
+  // forces layout and makes panning stutter on phones. Invalidated by the
+  // resize handling below.
+  let _cw = 0, _ch = 0
+  const invalidateDims = () => { _cw = 0; _ch = 0 }
+  const vw = () => _cw || (_cw = viewport.clientWidth)
+  const vh = () => _ch || (_ch = viewport.clientHeight)
   const minS = () => Math.max(vw() / W, vh() / H)
+  // Keep the map on its own compositor layer between frames.
+  svgEl.style.willChange = 'transform'
 
   function clamp() {
     scale = Math.max(minS(), Math.min(MAX_S, scale))
@@ -1444,6 +1451,7 @@ function createPanZoom(viewport, svgEl) {
   // the child's pan position survives.
   let lastW = vw(), lastH = vh()
   const refit = () => {
+    invalidateDims()
     const w = vw(), h = vh()
     if (!w || !h || (w === lastW && h === lastH)) return
     const wasHidden = !lastW || !lastH
