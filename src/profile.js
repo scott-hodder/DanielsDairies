@@ -7,6 +7,10 @@ import { switchStripeSubscriptionPlan, manageSubscription } from './services/dat
 import { showLoadingScreen, hideLoadingScreen } from './features/dashboard/loadingScreen.js'
 import { showToast } from './ui/toast.js'
 import { requireParentGate, openParentPinSettings } from './features/parentGate.js'
+import { initNativeChrome } from './lib/nativeApp.js'
+
+// Companion mode: hides the Plan/billing section when inside the iOS app.
+initNativeChrome()
 import { initKidIcons } from './lib/kidIcons.js'
 import { initTelemetry, trackEvent } from './lib/telemetry.js'
 import { childAvatarHTML, DD_AVATARS } from './lib/childAvatar.js'
@@ -264,8 +268,9 @@ function renderBasicProfileSections(container) {
           </div>
         </div>
         
-        <!-- Plan Section - collapsed by default -->
-        <div class="profile-section">
+        <!-- Plan Section - collapsed by default. Hidden inside the iOS app:
+             subscriptions are managed on the website only (companion mode). -->
+        <div class="profile-section" data-web-only>
           <button class="profile-section-toggle" data-section="plan">
             <span class="profile-section-icon">📋</span>
             <span class="profile-section-title">Plan</span>

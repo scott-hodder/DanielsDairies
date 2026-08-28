@@ -1289,6 +1289,14 @@
     <script type="module">
         import { getSupabaseClient } from '/src/supabaseClient.js'
         import { initTelemetry, trackEvent } from '/src/lib/telemetry.js'
+        import { isNativeApp } from '/src/lib/nativeApp.js'
+
+        // Inside the installed app, the marketing/pricing landing never
+        // shows (companion mode) — go straight to login/dashboard.
+        if (isNativeApp()) {
+            window.location.replace('/login.html')
+            throw new Error('native-redirect') // halt landing init
+        }
         initTelemetry() // page_view + global error capture
 
         // Funnel: which pricing CTA visitors click (plan + billing interval)
