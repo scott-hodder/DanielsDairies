@@ -16,7 +16,7 @@ workflows:
     environment:
       groups:
         - signing # holds CERTIFICATE_PRIVATE_KEY (set in Codemagic UI)
-      node: 20
+      node: 22
       xcode: latest
       vars:
         # Public client config (the anon key ships in every web bundle by design).
