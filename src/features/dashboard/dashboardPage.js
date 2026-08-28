@@ -4,10 +4,20 @@ import { checkAuth, signOut, getCurrentUser } from '../../auth.js'
 import { requireParentGate } from '../parentGate.js'
 import { initKidIcons } from '../../lib/kidIcons.js'
 import { initTelemetry, trackEvent } from '../../lib/telemetry.js'
+import { initNativeChrome, registerNativePush, isNativeApp } from '../../lib/nativeApp.js'
 import { childAvatarHTML, DD_AVATARS } from '../../lib/childAvatar.js'
 
 // Error tracking + page view (fail-silent, self-hosted in Supabase)
 initTelemetry()
+
+// Native app (Capacitor): companion-mode chrome now; push registration a
+// few seconds after load so the permission prompt has context.
+initNativeChrome()
+if (isNativeApp()) {
+  setTimeout(() => {
+    registerNativePush().then((ok) => { if (ok) trackEvent('native_push_registered') })
+  }, 6000)
+}
 
 // Consistent emoji artwork on every device (skips the SVG map)
 initKidIcons()
