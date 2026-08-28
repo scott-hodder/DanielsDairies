@@ -1283,16 +1283,19 @@
 
 /* ── Arcade Tab ── */
 
+/* Matches the Daniel's Diaries look: warm cream card, Fredoka heading —
+   the old navy panel read as a different product. */
 .arcade-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: linear-gradient(135deg, #16324f, #405878);
-  color: #fff;
+  background: linear-gradient(160deg, #fffdf7 0%, #fdf3fb 55%, #eef8ff 100%);
+  border: 2px solid #f2c94c;
+  color: #16324f;
   border-radius: 22px;
   padding: 20px 24px;
   margin-bottom: 18px;
-  box-shadow: 0 8px 26px rgba(40, 60, 90, 0.12);
+  box-shadow: 0 8px 26px rgba(40, 60, 90, 0.10);
 }
 
 .arcade-header-icon {
@@ -1301,8 +1304,8 @@
   flex-shrink: 0;
 }
 
-.arcade-title { font-size: 24px; color: #fff; margin: 0; }
-.arcade-sub { font-size: 13.5px; color: #b0c4de; margin: 4px 0 0; }
+.arcade-title { font-family: 'Fredoka', sans-serif; font-size: 24px; color: #16324f; margin: 0; }
+.arcade-sub { font-size: 13.5px; color: #5b6b80; margin: 4px 0 0; }
 
 .arcade-grid {
   display: grid;

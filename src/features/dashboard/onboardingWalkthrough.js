@@ -205,6 +205,18 @@ function createModal() {
       object-fit: contain;
     }
 
+    /* Phones: the tour images are wide desktop shots — letterboxing them
+       into a tall card renders them tiny. Fill the space and crop instead. */
+    @media (max-width: 540px) {
+      .owt-images img {
+        width: 100%;
+        height: 100%;
+        min-height: 40vh;
+        object-fit: cover;
+        object-position: top center;
+      }
+    }
+
     /* Two-image carousel: show one at a time at full size */
     .owt-images.owt-two-images {
       position: relative;

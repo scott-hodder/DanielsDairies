@@ -244,6 +244,23 @@
     body.has-tts-player .page {
       padding-bottom: 96px;
     }
+    /* Mobile: compact pill in the corner, not a full-width bar; and let
+       two-column activity grids stack so cards stop squeezing words. */
+    @media (max-width: 540px) {
+      .tts-player {
+        left: auto;
+        right: 12px;
+        bottom: 12px;
+        max-width: calc(100vw - 24px);
+        width: auto;
+        padding: 6px 12px 6px 8px;
+        gap: 6px;
+      }
+      .tts-player .tts-label { font-size: 13px; }
+      .tts-progress { max-width: 60px; }
+      .grid.grid-cols-2, .grid-cols-2 { grid-template-columns: 1fr !important; }
+      body.has-tts-player .page { padding-bottom: 84px; }
+    }
     /* Auto-read toggle switch */
     .tts-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
     .tts-switch input { opacity: 0; width: 0; height: 0; }
@@ -335,12 +352,14 @@
     .tts-speed:hover {
       background: #f5f3ed;
     }
+    /* Mobile: compact corner pill — full-width blocked the page's bottom */
     @media (max-width: 480px) {
       .tts-player {
         bottom: 12px;
         right: 12px;
-        left: 12px;
-        justify-content: center;
+        left: auto;
+        width: auto;
+        justify-content: flex-start;
       }
     }
   </style>
