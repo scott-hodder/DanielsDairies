@@ -45,20 +45,41 @@ export function initNativeChrome() {
  */
 export async function registerNativePush() {
   if (!isNativeApp()) return false
+  // Breadcrumbs via self-hosted telemetry: push failures on a phone are
+  // otherwise invisible (no console).
+  const crumb = (step, extra) => {
+    try {
+      supabase.rpc('log_client_event', {
+        p_event: 'native_push_' + step,
+        p_page: '/native',
+        p_props: extra || {},
+        p_session_id: 'native'
+      }).then(() => {}, () => {})
+    } catch { /* never break */ }
+  }
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
 
     let perm = await PushNotifications.checkPermissions()
+    crumb('perm_checked', { state: perm.receive })
     if (perm.receive === 'prompt') {
       perm = await PushNotifications.requestPermissions()
+      crumb('perm_requested', { state: perm.receive })
     }
     if (perm.receive !== 'granted') return false
 
     return await new Promise((resolve) => {
+      let settled = false
+      const done = (ok, step, extra) => {
+        if (settled) return
+        settled = true
+        crumb(step, extra)
+        resolve(ok)
+      }
       PushNotifications.addListener('registration', async (token) => {
         try {
           const { data: { user } } = await supabase.auth.getUser()
-          if (!user) return resolve(false)
+          if (!user) return done(false, 'no_user')
           // upsert semantics without a unique constraint on token: delete+insert
           await supabase.from('device_tokens').delete().eq('token', token.value)
           const { error } = await supabase.from('device_tokens').insert({
@@ -66,17 +87,20 @@ export async function registerNativePush() {
             token: token.value,
             platform: 'ios'
           })
-          resolve(!error)
-        } catch {
-          resolve(false)
+          done(!error, error ? 'insert_failed' : 'token_stored', error ? { msg: String(error.message).slice(0, 120) } : {})
+        } catch (e) {
+          done(false, 'store_threw', { msg: String(e).slice(0, 120) })
         }
       })
-      PushNotifications.addListener('registrationError', () => resolve(false))
+      PushNotifications.addListener('registrationError', (e) => done(false, 'registration_error', { msg: String(e?.error || e).slice(0, 120) }))
       PushNotifications.register()
-      setTimeout(() => resolve(false), 15000)
+      setTimeout(() => done(false, 'timeout'), 15000)
     })
   } catch (e) {
     console.error('Native push registration failed:', e)
+    try {
+      supabase.rpc('log_client_event', { p_event: 'native_push_plugin_missing', p_page: '/native', p_props: { msg: String(e).slice(0, 120) }, p_session_id: 'native' }).then(() => {}, () => {})
+    } catch { /* ignore */ }
     return false
   }
 }
