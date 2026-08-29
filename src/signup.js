@@ -44,6 +44,13 @@ async function init() {
     const params = new URLSearchParams(window.location.search)
     isFreeTrial = params.get('trial') === 'true'
 
+    // Inside the iOS app, signup is ALWAYS the free-trial path — no plans,
+    // no pricing, no payment (Apple guideline 3.1.1). Paid subscriptions
+    // live on the website only.
+    try {
+        if (window.Capacitor?.isNativePlatform?.()) isFreeTrial = true
+    } catch { /* browser */ }
+
     // Practitioner invite: stash the code so the dashboard can link this
     // family to their practitioner after signup/login completes.
     const inviteCode = params.get('invite')

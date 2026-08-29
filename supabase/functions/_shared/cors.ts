@@ -8,7 +8,14 @@
 
 const ALLOWED_ORIGINS = new Set([
   'https://app.danielsdiaries.com.au',
-  'https://dev.danielsdiaries.com.au'
+  'https://dev.danielsdiaries.com.au',
+  // The iOS app (Capacitor WKWebView) serves the bundled frontend from
+  // localhost — without these, signup/deletion/feedback fail in the app.
+  'https://localhost',
+  'capacitor://localhost',
+  // Local development preview
+  'http://localhost:4173',
+  'http://localhost:4179'
 ])
 
 type Handler = (req: Request) => Response | Promise<Response>

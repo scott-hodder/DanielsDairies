@@ -226,7 +226,7 @@ export function computeInsights(rawData) {
     isNewUser: isNewUser,
     confidence: confidence,
     confidenceLabel: CONFIDENCE_LABELS[confidence],
-    hero: computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins, streak, arcadePlays),
+    hero: computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins, streak, arcadePlays, rawData.levels || []),
     weeklyActivity: computeWeeklyActivity({
       completedModules: completedCMs,
       arcadePlays: arcadePlays,
@@ -247,11 +247,22 @@ export function computeInsights(rawData) {
 }
 
 // ── Hero Summary ──
-function computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins, streak, arcadePlays) {
+function computeHeroSummary(child, completedModules, inProgressModules, weeklyCheckins, moodCheckins, streak, arcadePlays, levels) {
   var level = child.level || 1
   var totalXp = child.total_xp || 0
+  // Real level thresholds come from the levels table (variable per level);
+  // the old flat-500 assumption produced nonsense like "1300 / 500 XP".
   var xpPerLevel = 500
   var xpIntoLevel = totalXp - ((level - 1) * xpPerLevel)
+  if (levels && levels.length) {
+    var cur = levels.find(function(l) { return l.level === level })
+    var next = levels.find(function(l) { return l.level === level + 1 })
+    if (cur && next) {
+      xpPerLevel = next.xp_required - cur.xp_required
+      xpIntoLevel = totalXp - cur.xp_required
+    }
+  }
+  xpIntoLevel = Math.max(0, Math.min(xpIntoLevel, xpPerLevel))
   var progressPercent = Math.min(100, (xpIntoLevel / xpPerLevel) * 100)
 
   var totalCheckins = weeklyCheckins.length + moodCheckins.length
