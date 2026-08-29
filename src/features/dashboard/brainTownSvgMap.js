@@ -1771,7 +1771,9 @@ function injectStyles() {
 .bt-svg-fsb{position:absolute;top:58px;right:12px;z-index:6;width:42px;height:42px;border:none;border-radius:12px;background:#fff;color:#16324f;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;transition:transform .15s}
 .bt-svg-fsb:hover{transform:scale(1.08);background:#f8f9fc}.bt-svg-fsb:active{transform:scale(.95)}
 .bt-svg-vp.bt-svg-fs{position:fixed;inset:0;z-index:110;height:auto;min-height:0;border-radius:0;border:none}
-.bt-svg-vp.bt-svg-fs .bt-svg-fsb{top:14px;right:14px}
+/* Exit control must clear the notch/status bar on phones (safe-area) and
+   read as an obvious close button, not a subtle icon. */
+.bt-svg-vp.bt-svg-fs .bt-svg-fsb{top:calc(14px + env(safe-area-inset-top, 0px));right:14px;width:52px;height:52px;background:#16324f;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.35)}
 body.bt-fs-lock{overflow:hidden}
 /* ── Hint ── */
 .bt-svg-hint{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);border-radius:12px;padding:8px 16px;font-size:12px;font-weight:600;color:#16324f;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:none;transition:opacity .5s;font-family:Fredoka,sans-serif}

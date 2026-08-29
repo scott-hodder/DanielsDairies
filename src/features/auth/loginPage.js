@@ -1,4 +1,12 @@
 import { checkAuth, signIn, signUp, resetPassword, updatePassword } from '../../auth.js'
+import { isNativeApp } from '../../lib/nativeApp.js'
+
+// In the iOS app the marketing landing redirects straight back to login,
+// so the "Sign up" link must go directly to the free-trial signup.
+if (isNativeApp()) {
+  const t = document.getElementById('toggleLink')
+  if (t) t.setAttribute('href', '/signup.html?trial=true')
+}
 import { showElement, hideElement, setLoadingState, setMessage, clearMessages as clearMessagesUI } from '../../utils/dom.js'
 import { renderDevSetupMessage } from '../../ui/devSetupMessage.js'
 import { getSupabaseClient } from '../../supabaseClient.js'

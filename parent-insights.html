@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Parent Insights - Daniel's Diaries</title>
 
     <!-- Favicon -->
@@ -30,7 +30,7 @@
                 </a>
             </div>
             <div class="header-actions">
-                <button class="btn-header" onclick="window.print()">Print Report</button>
+                <button class="btn-header" onclick="window.print()" data-web-only>Print Report</button>
                 <button class="btn-header" onclick="window.location.href='/dashboard.html'">Back to Dashboard</button>
             </div>
         </div>
@@ -431,7 +431,7 @@
                 // Every stream the app collects — plays/quests/streaks degrade
                 // to empty gracefully if a table isn't deployed yet.
                 const [childRes, childModulesRes, modulesRes, weeklyRes, moodRes, superSkillsRes,
-                       arcadeRes, questsRes, roadblocksRes, streakRes] = await Promise.all([
+                       arcadeRes, questsRes, roadblocksRes, streakRes, levelsRes] = await Promise.all([
                     supabase.from('children').select('*').eq('id', currentChildId).single(),
                     supabase.from('child_modules').select('*').eq('child_id', currentChildId),
                     supabase.from('modules').select('*'),
@@ -442,6 +442,8 @@
                     supabase.from('daily_quest_completions').select('quest_id, completed_at, stars_awarded').eq('child_id', currentChildId).order('completed_at', { ascending: false }).limit(100),
                     supabase.from('child_roadblock_completions').select('completed_at').eq('child_id', currentChildId).order('completed_at', { ascending: false }).limit(100),
                     supabase.from('login_streaks').select('current_streak, longest_streak').eq('child_id', currentChildId).maybeSingle()
+                ,
+                    supabase.from('levels').select('level, xp_required').order('level')
                 ])
 
                 if (childRes.error) throw childRes.error
@@ -457,6 +459,7 @@
                     arcadePlays: arcadeRes.data || [],
                     dailyQuests: questsRes.data || [],
                     roadblocks: roadblocksRes.data || [],
+                    levels: levelsRes.data || [],
                     streak: streakRes.data || null
                 }
 
