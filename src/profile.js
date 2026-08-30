@@ -29,8 +29,10 @@ async function checkIsAdmin() {
     const user = await getCurrentUser()
     if (!user) return false
     
+    // is_admin lives on parent_profiles (there is no 'profiles' table — the
+    // old query 404'd on every load and hid Admin Centre from admins here)
     const { data, error } = await supabase
-      .from('profiles')
+      .from('parent_profiles')
       .select('is_admin')
       .eq('id', user.id)
       .maybeSingle()
@@ -147,7 +149,9 @@ async function loadData() {
 
     const [childrenResult, modulesResult, tiersResult, subResult, creditResult] = await Promise.allSettled([
       supabase.from('children').select('*').eq('parent_user_id', userId).order('created_at', { ascending: true }),
-      supabase.from('modules').select('*, super_skills(*)').eq('is_active', true).order('pathway_order', { ascending: true }),
+      // The Modules section only lists title/week grouped by skill — don't pull
+      // every module's scene JSON (several MB; the slow part of this page on phones)
+      supabase.from('modules').select('id, title, pathway_order, week_number, super_skill_id, is_active, super_skills(id, name)').eq('is_active', true).order('pathway_order', { ascending: true }),
       supabase.from('subscription_tiers').select('*').eq('is_active', true).order('created_at', { ascending: true }),
       supabase.from('parent_subscriptions').select('*, subscription_tiers(*)').eq('parent_id', userId).maybeSingle(),
       supabase.from('parent_profiles').select('credits').eq('id', userId).maybeSingle()
