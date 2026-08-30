@@ -7344,6 +7344,19 @@ button:active, .btn:active {
         box-shadow: 0 4px 16px rgba(22, 50, 79, 0.08);
     }
 
+}
+
+/* ── Phones AND tablets: the hero scene (iPad portrait used to fall back to
+   the desktop three-column grid, which is cramped at 768–1024px). Also the
+   guard against sideways scrolling: nothing on this page may widen it. ── */
+@media (max-width: 1024px) {
+    html, body {
+        overflow-x: hidden;
+        overflow-x: clip;
+    }
+    body { position: relative; }
+    .main-content { min-width: 0; }
+
     /* ── Hero: one small scene, not four boxes.
        Sky → Daniel standing on a grass band that carries the stats →
        one XP line → the day's quest. No internal dividers. ── */
@@ -7606,8 +7619,94 @@ button:active, .btn:active {
         box-shadow: none !important;
     }
 
-    /* ── Map controls: pinch zooms, so drop +/−; keep Centre + fullscreen ── */
+}
+
+/* ── Tablets only: the scene has room to breathe ── */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .header-subtitle { display: none; }
+    .header-title { white-space: nowrap; }
+    .btn-header { padding: 8px 12px; font-size: 13px; }
+    .header-help-label { display: none; }
+
+    .dashboard-hero-strip { border-radius: 26px; margin-bottom: 16px; }
+    .hero-daniel { padding: 18px 22px 0 18px; gap: 18px; }
+    .hero-daniel-inner { width: 124px; height: 150px; }
+    .hero-daniel-speech {
+        max-width: 520px;
+        margin-bottom: 44px;
+        padding: 14px 18px 15px;
+        border-radius: 22px 22px 22px 8px;
+    }
+    .hero-daniel-quote { font-size: 16px; }
+    .hero-stats { justify-content: center; gap: 56px; padding: 14px 24px 6px; }
+    .hero-stat { flex: 0 0 auto; }
+    .hero-stat-val { font-size: 20px; }
+    .hero-stat-lbl { font-size: 12px; }
+    .hero-level { padding: 4px 24px 14px; gap: 14px; }
+    .hero-xp-bar-text { font-size: 11px; }
+    .hero-quest { padding: 14px 22px !important; gap: 16px; }
+    .hero-quest .quest-description { font-size: 14px; }
+}
+
+/* ── Phones: map HUD and touch guards ── */
+@media (max-width: 640px) {
+    /* Tab bar never wraps to two rows (an older rule let it) */
+    .nav-tabs-content { flex-wrap: nowrap; }
+
+    /* iOS zooms the page in when a focused field is under 16px and leaves
+       it zoomed (= sideways scrolling). Keep every field at 16px on phones. */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* Map controls: pinch zooms, so drop +/−; keep Centre + fullscreen */
     .bt-svg-ctrls #svgZI, .bt-svg-ctrls #svgZO { display: none; }
+
+    /* Map HUD: the top row keeps only the two story chips, smaller; the
+       "drag to explore" hint goes (kids drag); fullscreen joins Centre in
+       the bottom-right corner. (Id-prefixed: these beat the styles the map
+       injects at runtime.) */
+    #brainTownSection .bt-svg-hint { display: none; }
+    #brainTownSection .te-chip {
+        top: 10px;
+        left: 10px;
+        font-size: 11.5px;
+        padding: 5px 10px;
+        gap: 6px;
+        max-width: 56%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+    #brainTownSection .de-chip {
+        top: 10px;
+        right: 10px;
+        padding: 3px 9px 3px 4px;
+        font-size: 11px;
+        gap: 5px;
+    }
+    #brainTownSection .de-chip img { width: 20px; height: 20px; }
+    #brainTownSection .bt-svg-vp:not(.bt-svg-fs) .bt-svg-fsb {
+        top: auto;
+        bottom: 64px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+    }
+    #brainTownSection .bt-svg-ctrls { bottom: 10px; right: 10px; }
+    #brainTownSection .bt-svg-cbw { height: 40px; font-size: 12px; }
+    #brainTownSection .stl-chip,
+    #brainTownSection .sb-chip {
+        font-size: 11.5px;
+        padding: 5px 10px;
+        gap: 6px;
+        left: 10px;
+    }
+    #brainTownSection .stl-chip { bottom: 50px; }
+    #brainTownSection .sb-chip { bottom: 10px; }
 }
 
 /* Touch devices: no hover-lift wiggle on tabs regardless of width.
