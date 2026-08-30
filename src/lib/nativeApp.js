@@ -24,6 +24,15 @@ export function isNativeApp() {
 export function initNativeChrome() {
   if (!isNativeApp()) return
   document.body.classList.add('native-app')
+  // Inside the app the page must never zoom: WKWebView zooms in when a
+  // field is focused (or on a pinch that misses the map) and stays zoomed,
+  // which reads as "the page is too wide and scrolls sideways".
+  try {
+    const vp = document.querySelector('meta[name="viewport"]')
+    if (vp && !/maximum-scale/.test(vp.content)) {
+      vp.content = vp.content.replace(/\s+$/, '') + ', maximum-scale=1.0, user-scalable=no'
+    }
+  } catch { /* ignore */ }
   if (document.getElementById('nativeAppStyles')) return
   const st = document.createElement('style')
   st.id = 'nativeAppStyles'
