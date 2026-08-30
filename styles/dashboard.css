@@ -7309,48 +7309,184 @@ button:active, .btn:active {
     .nav-tab:hover { transform: none; }
     .nav-tab.active { transform: none; }
 
-    /* ── Hero strip: slim rows, the map is the star ── */
+    /* ── Header: slim and flat. The brand bar loses its gold rule/glow and
+       the "?" (it lives in the menu as "How this works"); one row. ── */
+    .header {
+        padding: 6px 12px;
+        border-bottom: none;
+        box-shadow: 0 2px 12px rgba(22, 50, 79, 0.18);
+    }
+    .header::after { display: none; }
+    .header-content { padding: 0; }
+    .header-logo { gap: 10px; }
+    .header-logo-img {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        background: none;
+        border-radius: 0;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+    }
+    .header-title { font-size: 17px; letter-spacing: 0.1px; }
+    .header-help-btn { display: none; }
+    .hamburger-menu {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Tab bar: quieter frame so it doesn't compete with the scene below;
+       opaque, since it sticks over scrolled content */
+    .nav-tabs {
+        background: #fff;
+        border: 1.5px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 4px 16px rgba(22, 50, 79, 0.08);
+    }
+
+    /* ── Hero: one small scene, not four boxes.
+       Sky → Daniel standing on a grass band that carries the stats →
+       one XP line → the day's quest. No internal dividers. ── */
     .dashboard-hero-strip {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto auto;
         gap: 0;
         padding: 0;
-        border-radius: 20px;
-        margin-bottom: 14px;
+        border-radius: 22px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        background: #fff;
+        border: 1.5px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 8px 28px rgba(22, 50, 79, 0.10);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
-    /* Row 1 — Daniel, small and friendly */
+    /* Row 1 — sky. Daniel stands full-height on the left with no frame;
+       the speech bubble is the tap target's label. */
     .hero-daniel {
         grid-row: 1;
         grid-column: 1;
         flex-direction: row;
-        align-items: center;
-        text-align: left;
-        padding: 10px 14px;
-        gap: 12px;
-        border-radius: 20px 20px 0 0;
-        border-bottom: 1px solid rgba(64, 88, 120, 0.08);
+        align-items: flex-end;
+        gap: 10px;
+        padding: 14px 14px 0 10px;
+        border-radius: 0;
+        border-bottom: none;
+        background: linear-gradient(180deg, #DDF0FF 0%, #F3F9FF 100%);
+        position: relative;
+        z-index: 2;   /* feet + contact shadow overlap the grass edge below */
     }
-    .hero-daniel-inner { width: 58px; height: 58px; border-radius: 50%; }
-    .hero-daniel-img { width: 100%; height: 100%; }
+    .hero-daniel:hover { transform: none; box-shadow: none; background: linear-gradient(180deg, #DDF0FF 0%, #F3F9FF 100%); }
+    .hero-daniel-inner {
+        width: 96px;
+        height: 118px;
+        margin-bottom: -7px;   /* the artwork has clear space under the paws */
+        flex-shrink: 0;
+        overflow: visible;
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+    .hero-daniel-inner::after {
+        /* contact shadow: reads as standing on the ground below */
+        content: '';
+        position: absolute;
+        left: 14%;
+        right: 14%;
+        bottom: 1px;
+        height: 9px;
+        border-radius: 50%;
+        background: rgba(22, 50, 79, 0.20);
+        filter: blur(2.5px);
+        z-index: 0;
+    }
+    .hero-daniel-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: bottom center;
+        transform: none;
+        animation: danielIdleM 4.5s ease-in-out infinite;
+        position: relative;
+        z-index: 1;
+        filter: drop-shadow(0 2px 3px rgba(22, 50, 79, 0.12));
+    }
+    @keyframes danielIdleM {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+    }
+    .daniel-hub.has-activity .hero-daniel-img { animation: danielIdleM 4.5s ease-in-out infinite; }
     .hero-daniel-badge { display: none; }
-    .daniel-name { font-size: 14px; margin: 0; }
-    .hero-daniel-speech { align-items: flex-start; }
+
+    /* Speech bubble, tail pointing at Daniel */
+    .hero-daniel-speech {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        align-self: center;
+        margin-bottom: 26px;
+        background: #fff;
+        border-radius: 18px 18px 18px 6px;
+        padding: 10px 14px 11px;
+        gap: 3px;
+        box-shadow: 0 3px 12px rgba(22, 50, 79, 0.10);
+    }
+    .hero-daniel-speech::before {
+        content: '';
+        position: absolute;
+        left: -7px;
+        bottom: 10px;
+        width: 14px;
+        height: 14px;
+        background: #fff;
+        transform: rotate(45deg);
+        border-radius: 2px;
+        box-shadow: -3px 3px 6px rgba(22, 50, 79, 0.06);
+    }
+    .daniel-name {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: #1E40AF;
+        margin: 0;
+        line-height: 1.2;
+    }
     .hero-daniel-quote {
         max-width: none;
-        font-size: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.35;
+        color: #16324f;
         text-align: left;
-        -webkit-line-clamp: 2;
+        display: block;
+        -webkit-line-clamp: unset;
+        overflow: visible;
     }
 
-    /* Row 2 — stat chips on one slim line */
+    /* Row 2 — grass band with the three counts on it, no boxes */
     .hero-stats {
         grid-row: 2;
         grid-column: 1;
-        justify-content: center;
-        padding: 8px 10px;
+        justify-content: space-between;
+        padding: 12px 16px 4px;
         gap: 6px;
-        border-bottom: 1px solid rgba(64, 88, 120, 0.08);
+        border-bottom: none;
+        background: linear-gradient(180deg, #D5EDBE 0%, #CBE7B0 100%);
+        position: relative;
+    }
+    .hero-stats::before {
+        /* horizon: soft edge where sky meets grass */
+        content: '';
+        position: absolute;
+        left: 0; right: 0; top: -6px;
+        height: 12px;
+        background: #D5EDBE;
+        border-radius: 50% 50% 0 0 / 100% 100% 0 0;
     }
     .hero-stat {
         display: flex;
@@ -7358,47 +7494,120 @@ button:active, .btn:active {
         align-items: baseline;
         justify-content: center;
         gap: 5px;
-        flex: 1;
-        padding: 8px 4px;
-        border-radius: 12px;
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 4px 0;
+        border-radius: 0;
+        background: none;
+        border: none;
+        box-shadow: none;
     }
-    .hero-stat-icon { font-size: 14px; }
-    .hero-stat-val { font-size: 16px; }
-    .hero-stat-lbl { font-size: 9.5px; white-space: nowrap; }
+    .hero-stat:hover { transform: none; background: none; box-shadow: none; }
+    .hero-stat-icon { font-size: 15px; margin: 0; }
+    .hero-stat-val { font-size: 18px; color: #16324f; }
+    .hero-stat-lbl {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: 0;
+        color: #3F6B2E;
+        margin: 0;
+        white-space: nowrap;
+    }
 
-    /* Row 3 — level ring + XP bar as one slim line */
+    /* Row 3 — level + XP as one quiet line, still on the grass */
     .hero-level {
         grid-row: 3;
         grid-column: 1;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
-        padding: 8px 14px;
-        gap: 12px;
-        border-bottom: 1px solid rgba(64, 88, 120, 0.08);
+        gap: 10px;
+        padding: 4px 16px 12px;
+        border-radius: 0;
+        border-bottom: none;
+        background: #CBE7B0;
     }
-    .hero-level-ring { width: 42px; height: 42px; flex-shrink: 0; }
-    .hero-level-num { font-size: 15px; }
-    .hero-level-word { display: none; }
-    .hero-xp-info { flex: 1; min-width: 0; }
+    .hero-level-ring {
+        width: auto;
+        height: auto;
+        flex-shrink: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+    }
+    .hero-level-svg { display: none; }
+    .hero-level-word {
+        position: static;
+        transform: none;
+        order: 1;
+        font-size: 10px;
+        letter-spacing: 0.8px;
+        color: #3F6B2E;
+        display: block;
+    }
+    .hero-level-num {
+        position: static;
+        transform: none;
+        order: 2;
+        font-size: 18px;
+        color: #16324f;
+    }
+    .hero-xp-info { flex: 1; min-width: 0; gap: 3px; }
     .hero-xp-earned { display: none; }
-    .hero-xp-bar-text { font-size: 9px; }
+    .hero-xp-bar-track { height: 8px; background: rgba(255, 255, 255, 0.7); }
+    .hero-xp-bar-fill { background: linear-gradient(90deg, #F6B700 0%, #F59E0B 100%); }
+    .hero-xp-bar-text { font-size: 10px; color: #3F6B2E; }
 
-    /* Row 4 — quest as a slim banner */
+    /* Row 4 — today's quest: a calm row, coral only on the button */
     .hero-quest {
         grid-row: 4;
         grid-column: 1;
-        border-radius: 0 0 18px 18px !important;
-        padding: 10px 14px !important;
-        gap: 10px;
+        border-radius: 0 !important;
+        padding: 12px 14px 12px 16px !important;
+        gap: 12px;
+        background: #fff !important;
+        box-shadow: none !important;
+        border-top: 1px solid rgba(22, 50, 79, 0.07) !important;
+        color: #16324f !important;
     }
-    .hero-quest-icon { font-size: 18px; }
-    .hero-quest-label { font-size: 9px; }
+    .hero-quest::before, .hero-quest::after { display: none; }
+    .hero-quest-icon {
+        font-size: 22px;
+        animation: none;
+        filter: none;
+    }
+    .hero-quest-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        color: #E85D5D;
+        text-shadow: none;
+    }
     .hero-quest .quest-description {
-        font-size: 12px;
+        font-size: 13px;
+        color: #16324f;
+        opacity: 1;
+        line-height: 1.35;
         -webkit-line-clamp: 2;
         white-space: normal;
     }
-    .hero-quest .daily-quest-btn { padding: 9px 16px; font-size: 13px; }
+    .hero-quest .daily-quest-btn {
+        background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%) !important;
+        color: #fff !important;
+        padding: 10px 14px !important;
+        font-size: 13px !important;
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.35) !important;
+        min-height: 40px;
+    }
+    .hero-quest .daily-quest-btn.completed {
+        background: #E8F1E0 !important;
+        color: #3F6B2E !important;
+        box-shadow: none !important;
+    }
+
+    /* ── Map controls: pinch zooms, so drop +/−; keep Centre + fullscreen ── */
+    .bt-svg-ctrls #svgZI, .bt-svg-ctrls #svgZO { display: none; }
 }
 
 /* Touch devices: no hover-lift wiggle on tabs regardless of width.
