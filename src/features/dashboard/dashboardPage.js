@@ -860,7 +860,7 @@ async function init() {
         if (state.isCurrentUserAdmin) {
           const adminButton = document.getElementById('adminButton')
           const adminButtonDesktop = document.getElementById('adminButtonDesktop')
-          if (adminButton) adminButton.style.display = 'block'
+          if (adminButton) adminButton.style.display = 'flex'
           if (adminButtonDesktop) showElement(adminButtonDesktop)
           showAdminDropdownWrap()
         }
