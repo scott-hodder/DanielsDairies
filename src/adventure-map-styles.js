@@ -356,7 +356,7 @@ export function injectAdventureMapStyles() {
     css.push('.skill-preview-btn.primary { color: #fff; }');
     css.push('.skill-preview-btn.secondary { background: #f1f5f9; color: #405878; border: 2px solid #e2e8f0; }');
     css.push('.skill-preview-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }');
-    css.push('@media (max-width: 768px) { .skill-picker-cards { grid-template-columns: 1fr; padding: 12px 16px 24px; } .skill-picker-cards > .skill-card:last-child:nth-child(odd) { max-width: 100%; } .skill-preview-modal { max-width: 100%; } .skill-preview-actions { flex-direction: column; } .skill-picker-title { font-size: 22px; } }');
+    css.push('@media (max-width: 768px) { .skill-card-top { padding-right: 56px; } .skill-card-name { font-size: 19px; line-height: 1.15; } .skill-picker-cards { grid-template-columns: 1fr; padding: 12px 16px 24px; } .skill-picker-cards > .skill-card:last-child:nth-child(odd) { max-width: 100%; } .skill-preview-modal { max-width: 100%; } .skill-preview-actions { flex-direction: column; } .skill-picker-title { font-size: 22px; } }');
 
     // Current skill badge (replaces the dropdown)
     css.push('.current-skill-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; cursor: pointer; transition: all 0.15s; font-family: "Fredoka", sans-serif; }');

@@ -1776,7 +1776,7 @@ function injectStyles() {
 .bt-svg-vp.bt-svg-fs .bt-svg-fsb{top:calc(14px + env(safe-area-inset-top, 0px));right:14px;width:52px;height:52px;background:#16324f;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.35)}
 body.bt-fs-lock{overflow:hidden}
 /* ── Hint ── */
-.bt-svg-hint{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);border-radius:12px;padding:8px 16px;font-size:12px;font-weight:600;color:#16324f;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:none;transition:opacity .5s;font-family:Fredoka,sans-serif}
+.bt-svg-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.92);border-radius:12px;padding:8px 16px;font-size:12px;font-weight:600;color:#16324f;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:none;transition:opacity .5s;font-family:Fredoka,sans-serif}
 /* ── Ambient animations ── */
 @keyframes btSway{0%,100%{transform:rotate(0)}25%{transform:rotate(2deg)}75%{transform:rotate(-2deg)}}
 @keyframes btSwayS{0%,100%{transform:rotate(0)}50%{transform:rotate(1.4deg)}}
@@ -1858,7 +1858,7 @@ body.bt-fs-lock{overflow:hidden}
 /* Mobile / tablet: bottom sheet, centred */
 @media(max-width:768px){
   .bt-svg-vp{height:65vh;min-height:400px}
-  .bt-svg-hint{font-size:11px;padding:6px 12px}
+  .bt-svg-hint{font-size:11px;padding:6px 12px;top:56px}
   .bt-svg-popup{top:auto;right:0;left:0;bottom:0;margin:0 auto;width:100%;max-width:520px;max-height:min(72vh,calc(100vh - 24px));border-radius:24px 24px 0 0;transform:translateY(105%)}
   #btSvgPopupRoot.open .bt-svg-popup{transform:translateY(0)}
 }

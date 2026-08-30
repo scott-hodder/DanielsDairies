@@ -117,7 +117,7 @@ async function init() {
     // Check if admin
     state.isAdmin = await checkIsAdmin()
     if (state.isAdmin) {
-      if (adminButton) adminButton.style.display = 'block'
+      if (adminButton) adminButton.style.display = 'flex'
       if (adminButtonDesktop) showElement(adminButtonDesktop)
     }
 

@@ -52,7 +52,7 @@ function injectStyles() {
 .pg-btn-primary{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff}
 .pg-btn-primary:disabled{opacity:.55;cursor:not-allowed}
 .pg-btn-ghost{background:#fff;border:2px solid #d4dbe6;color:#405878}
-.pg-link{background:none;border:none;color:#6b7c8f;font-size:12.5px;font-family:inherit;cursor:pointer;text-decoration:underline;padding:4px}
+.pg-link{background:none;border:none;color:#6b7c8f;font-size:13px;font-family:inherit;cursor:pointer;text-decoration:underline;padding:10px 8px;min-height:44px}
 .pg-links{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
 `
   document.head.appendChild(st)

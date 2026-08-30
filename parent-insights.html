@@ -23,7 +23,7 @@
             <div class="header-left">
                 <a href="/dashboard.html" class="header-logo">
                     <img src="/images/logos/FM-LOGO-Light.png" alt="Daniel's Diaries Logo" class="header-logo-img">
-                    <div>
+                    <div class="header-logo-text">
                         <h1 class="header-title">Parent Insights</h1>
                         <p class="header-subtitle">Understanding your child's journey</p>
                     </div>
@@ -434,7 +434,10 @@
                        arcadeRes, questsRes, roadblocksRes, streakRes, levelsRes] = await Promise.all([
                     supabase.from('children').select('*').eq('id', currentChildId).single(),
                     supabase.from('child_modules').select('*').eq('child_id', currentChildId),
-                    supabase.from('modules').select('*'),
+                    // Metadata only — select('*') dragged every module's scene/narration
+                    // JSON down the phone's connection (the single slowest request on
+                    // this page, 3-10s on mobile) just to look up titles and skills.
+                    supabase.from('modules').select('id, code, title, short_description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, xp_reward, stars_reward, character_name, is_active, created_at'),
                     supabase.from('weekly_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(20),
                     supabase.from('child_mood_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(30),
                     supabase.from('super_skills').select('*'),

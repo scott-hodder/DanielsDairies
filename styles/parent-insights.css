@@ -128,13 +128,39 @@ body {
     .header-logo-img {
         height: 28px;
     }
+    .header-left,
+    .header-logo {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .header-logo-text {
+        min-width: 0;
+    }
+    .header-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     .header-actions {
         gap: 6px;
         flex-shrink: 0;
     }
     .btn-header {
-        padding: 8px 14px;
+        padding: 8px 12px;
         font-size: 12px;
+        white-space: nowrap;
+        min-height: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn-header[data-web-only] {
+        display: none;
+    }
+    .header-logo-img {
+        height: 26px;
+    }
+    .header-title {
+        font-size: 15px;
     }
 }
 
@@ -1323,6 +1349,23 @@ body {
     .scale-btn {
         min-height: 60px;
         padding: 8px 4px;
+    }
+}
+
+/* Phones: three sub-tabs share the row instead of scrolling off-screen */
+@media (max-width: 480px) {
+    .pi-subtabs {
+        gap: 0;
+        overflow-x: visible;
+    }
+    .pi-subtab {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 10px 4px;
+        font-size: 12.5px;
+        text-align: center;
+        white-space: normal;
+        line-height: 1.2;
     }
 }
 
