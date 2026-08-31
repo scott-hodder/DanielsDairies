@@ -291,7 +291,7 @@ export class ModuleGallery {
                     '</div>' +
                     '<div class="plan-stat">' +
                         '<span class="plan-stat-label">Status</span>' +
-                        '<span class="plan-stat-value">' + this.escapeHtml(subStatus.toUpperCase()) + '</span>' +
+                        '<span class="plan-stat-value">' + this.escapeHtml(({ active: 'Active', trialing: 'Active (trial)', past_due: 'Payment issue', paused: 'Paused', canceled: 'Ended', inactive: 'Free plan' })[subStatus] || subStatus || 'Free plan') + '</span>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
