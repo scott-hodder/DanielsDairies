@@ -1046,7 +1046,7 @@ function openPurchaseModal(module) {
       <span style="display:block; margin-top: 10px; color: #b45309; font-size: 13px;">You do not have any credits available right now.</span>
       <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">${renewalLine}</span>
       <span style="display:block; margin-top: 6px; color: #4c6c96; font-size: 13px;">${tierLine}</span>
-      <span style="display:block; margin-top: 8px; color: #4c6c96; font-size: 13px;">Review your unlocked modules anytime from the dashboard and billing pages.</span>
+      <a href="/profile.html" data-web-only style="display:inline-block; margin-top: 10px; color: #2A8F8F; font-weight: 600; font-size: 13px; text-decoration: none;">Add more credits from your Profile page</a>
     `
 
     if (confirmPurchaseButton) {
@@ -3421,7 +3421,7 @@ if (profileButtonDesktop) {
 
 if (billingButtonDesktop) {
   billingButtonDesktop.addEventListener('click', () => {
-    window.location.href = '/billing.html'
+    window.location.href = '/profile.html'
   })
 }
 
@@ -3583,7 +3583,7 @@ if (profileButton) {
 
 if (billingButton) {
   billingButton.addEventListener('click', () => {
-    window.location.href = '/billing.html'
+    window.location.href = '/profile.html'
   })
 }
 

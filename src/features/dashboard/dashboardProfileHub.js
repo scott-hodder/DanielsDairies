@@ -3,6 +3,7 @@ import { dashboardState } from '../../state/dashboardState.js'
 import { switchStripeSubscriptionPlan, manageSubscription } from '../../services/databaseService.js'
 import { showToast } from '../../ui/toast.js'
 import { childAvatarHTML } from '../../lib/childAvatar.js'
+import { isNativeApp } from '../../lib/nativeApp.js'
 
 // ================================================
 // Module-level variables — set via setter functions from dashboardPage.js
@@ -256,7 +257,7 @@ export class ModuleGallery {
                 '<div class="plan-status-banner plan-status-banner-warning">' +
                     '<strong>Payment issue</strong>' +
                     '<p>We had trouble with your last payment. Please update your payment method to keep your subscription active.</p>' +
-                    '<button type="button" id="retryPaymentBtn" class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Update Payment</button>' +
+                    '<button type="button" id="retryPaymentBtn" data-web-only class="profile-action-btn profile-action-btn-primary" style="margin-top:8px;">Update Payment</button>' +
                 '</div>';
         } else if (isPaused) {
             statusBanner =
@@ -312,8 +313,8 @@ export class ModuleGallery {
                 '</div>' +
             '</div>' +
             '<div class="plan-actions">' +
-                '<button type="button" id="openChangePlanModal" class="profile-action-btn">Change Plan</button>' +
-                '<button type="button" id="openMakePaymentModal" class="profile-action-btn profile-action-btn-primary">Make Payment</button>' +
+                '<button type="button" id="openChangePlanModal" data-web-only class="profile-action-btn">Change Plan</button>' +
+                '<button type="button" id="openMakePaymentModal" data-web-only class="profile-action-btn profile-action-btn-primary">Make Payment</button>' +
             '</div>' +
             '<div class="plan-manage-links">' +
                 (!isPaused && !isCancelScheduled
@@ -521,6 +522,7 @@ export class ModuleGallery {
     }
 
     createChangePlanModal() {
+        if (isNativeApp()) return; // no purchase UI inside the iOS app
         var existingModal = document.getElementById('changePlanModal');
         if (existingModal) existingModal.remove();
 
@@ -685,6 +687,7 @@ export class ModuleGallery {
     }
 
     async handleBuyCredits() {
+        if (isNativeApp()) return; // no purchases inside the iOS app
         var credits = parseInt(document.getElementById('prepaidCreditsAmount')?.value || '5');
         if (credits < 1) {
             this.notifyUser('Please enter at least 1 credit.');
@@ -759,6 +762,7 @@ export class ModuleGallery {
     }
 
     async callPaymentEndpoint(paymentData) {
+        if (isNativeApp()) throw new Error('Purchases are not available in the app.');
         var supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
         if (!supabaseUrl) {
             throw new Error('Supabase URL is not configured for payments.');
@@ -817,6 +821,7 @@ export class ModuleGallery {
     }
 
     createMakePaymentModal() {
+        if (isNativeApp()) return; // no purchase UI inside the iOS app
         var existingModal = document.getElementById('makePaymentModal');
         if (existingModal) existingModal.remove();
 

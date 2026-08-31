@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { withCors } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createHash } from 'node:crypto'
+import { sendWelcomeEmailOnce } from '../_shared/welcomeEmail.ts'
 
 // ── Mailchimp ──────────────────────────────────────────────
 // Non-blocking: logs errors but never throws so signup still succeeds.
@@ -152,8 +153,17 @@ serve(withCors(async (req) => {
     console.log('[complete-signup] Step 2: Looking up credits for plan:', plan, 'isFreeTrial:', isFreeTrial)
     let credits = 0
     if (isFreeTrial) {
-      credits = 2
-      console.log('[complete-signup] Step 2 OK - Free trial, credits = 2')
+      // Trials can be switched off from admin settings
+      // (feature_flags.free_trial_enabled). The account is still created -
+      // the native app needs account-only signup (Apple 3.1.1) - it just
+      // starts with 0 credits while trials are disabled.
+      let trialEnabled = true
+      try {
+        const { data: settingsRow } = await admin.from('settings').select('feature_flags').maybeSingle()
+        if (settingsRow?.feature_flags?.free_trial_enabled === false) trialEnabled = false
+      } catch (_) { /* default to enabled */ }
+      credits = trialEnabled ? 2 : 0
+      console.log('[complete-signup] Step 2 OK - Free trial, credits =', credits, '(trialEnabled:', trialEnabled, ')')
     } else {
       const { data: tierData, error: tierError } = await admin
         .from('subscription_tiers')
@@ -363,6 +373,9 @@ serve(withCors(async (req) => {
     } else {
       console.log('[complete-signup] Step 6: Skipped Mailchimp (user did not opt in)')
     }
+
+    // 7. Welcome email (once per account; fails soft)
+    await sendWelcomeEmailOnce(admin, userId, email, firstName)
 
     const result = {
       success: true,

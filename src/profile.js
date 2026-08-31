@@ -7,7 +7,7 @@ import { switchStripeSubscriptionPlan, manageSubscription } from './services/dat
 import { showLoadingScreen, hideLoadingScreen } from './features/dashboard/loadingScreen.js'
 import { showToast } from './ui/toast.js'
 import { requireParentGate, openParentPinSettings } from './features/parentGate.js'
-import { initNativeChrome } from './lib/nativeApp.js'
+import { initNativeChrome, isNativeApp } from './lib/nativeApp.js'
 
 // Companion mode: hides the Plan/billing section when inside the iOS app.
 initNativeChrome()
@@ -429,6 +429,14 @@ function renderBasicProfileSections(container) {
         })
 
         if (error) throw error
+
+        // Also notify the team by email (fire-and-forget; the table row
+        // above is the durable record even if the email fails).
+        if (message) {
+          supabase.functions.invoke('send-feedback-email', {
+            body: { rating: feedbackRating || null, message }
+          }).then(() => {}, () => {})
+        }
 
         feedbackText.value = ''
         feedbackRating = 0
@@ -1281,6 +1289,8 @@ async function handleSubscriptionAction(action, button, onComplete) {
 }
 
 function openMakePaymentModal() {
+  // Companion mode: no purchase flows inside the iOS app (Apple 3.1.1)
+  if (isNativeApp()) { showToast('Plan changes are not available in the app.', 'info'); return }
   document.getElementById('ddPaymentModalOverlay')?.remove()
 
   const sub = window.currentSubscription || state.subscription
@@ -1662,6 +1672,8 @@ function buildPlanCard(tier, isCurrent) {
 }
 
 function openChangePlanModal() {
+  // Companion mode: no purchase flows inside the iOS app (Apple 3.1.1)
+  if (isNativeApp()) { showToast('Plan changes are not available in the app.', 'info'); return }
   document.getElementById('changePlanModalOverlay')?.remove()
 
   const tiers = window.subscriptionTiers || []
