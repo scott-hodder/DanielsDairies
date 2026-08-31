@@ -44,7 +44,7 @@ function buildWelcomeHtml(firstName: string, appUrl: string): string {
     </p>
     <p style="font-size: 14px; line-height: 1.6; color:#4c6c96;">
       Questions? Just reply to this email — a real person reads every message
-      at <a href="mailto:info@danielsdiaries.com" style="color:#2A8F8F;">info@danielsdiaries.com</a>.
+      at <a href="mailto:info@danielsdiaries.com.au" style="color:#2A8F8F;">info@danielsdiaries.com.au</a>.
     </p>
     <p style="font-size: 14px; color:#4c6c96;">— The Daniel's Diaries team</p>
   </div>`

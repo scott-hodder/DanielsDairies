@@ -39,7 +39,7 @@ let activeDoc = 'plan'      // which document is shown in the Support Plan tab
 let progressSummary = null  // this client's progress summary row (practitioner_progress_summaries)
 let recentCompletions = []  // latest module completions across the caseload (Overview feed)
 
-const SUPPORT_EMAIL = 'info@danielsdiaries.com'
+const SUPPORT_EMAIL = 'info@danielsdiaries.com.au'
 const INACTIVE_DAYS = 14
 
 // ============================================================
@@ -1864,7 +1864,7 @@ async function renderLetter() {
       <p style="font-size:12px;color:#6b7280;margin:0;">
         Daniel's Diaries is an educational wellbeing tool informed by evidence-based principles. It is not therapy
         or clinical treatment. Progress data reflects engagement and self-report only. More information for plan
-        managers: danielsdiaries.com/ndis-funding.html · info@danielsdiaries.com
+        managers: danielsdiaries.com.au/ndis-funding.html · info@danielsdiaries.com.au
       </p>
     </div>`
 }

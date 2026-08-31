@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { requireServiceRole } from '../_shared/auth.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -18,19 +18,12 @@ serve(async (req) => {
   try {
     const { to, firstName, attemptCount, retryUrl, subject } = await req.json()
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-
-    if (!supabaseUrl || !serviceRoleKey || !to) {
-      return new Response(JSON.stringify({ sent: false, reason: 'missing config or recipient' }), {
+    if (!to) {
+      return new Response(JSON.stringify({ sent: false, reason: 'missing recipient' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    const admin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    })
 
     const safeName = (firstName || 'there').replace(/</g, '&lt;')
     const isFirst = attemptCount <= 1
@@ -56,15 +49,14 @@ serve(async (req) => {
 
     const emailSubject = subject || "Payment failed — let's get this sorted"
 
-    const { error } = await admin.rpc('send_feedback_email', {
-      recipient: to,
-      subject: emailSubject,
-      html_body: htmlBody
-    })
+    // Send via the shared Resend mailer. (This used to call a
+    // send_feedback_email Postgres RPC that never existed in any
+    // environment - dunning emails silently failed from day one.)
+    const result = await sendEmail({ to, subject: emailSubject, html: htmlBody })
 
-    if (error) {
-      console.error('Payment failure email RPC error:', error)
-      return new Response(JSON.stringify({ sent: false, reason: error.message }), {
+    if (!result.sent) {
+      console.error('Payment failure email send error:', result.reason)
+      return new Response(JSON.stringify({ sent: false, reason: result.reason }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })

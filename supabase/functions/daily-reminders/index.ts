@@ -127,7 +127,7 @@ serve(async (req) => {
     const vapidJson = JSON.parse(Deno.env.get('VAPID_KEYS_JSON') ?? '{}')
     const vapidKeys = await webpush.importVapidKeys(vapidJson.jwk, { extractable: false })
     const appServer = await webpush.ApplicationServer.new({
-      contactInformation: 'mailto:info@danielsdiaries.com',
+      contactInformation: 'mailto:info@danielsdiaries.com.au',
       vapidKeys
     })
 

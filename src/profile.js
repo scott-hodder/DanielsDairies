@@ -674,8 +674,8 @@ function renderPlanSection() {
 const STATEMENT_BUSINESS = {
   name: "Daniel's Diaries — Foundational Minds",
   abn: '', // set before public release; the ABN row is hidden while empty
-  email: 'info@danielsdiaries.com',
-  web: 'danielsdiaries.com'
+  email: 'info@danielsdiaries.com.au',
+  web: 'danielsdiaries.com.au'
 }
 
 async function openPlanStatement() {
