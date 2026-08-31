@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.25.0?target=denonext'
+import { sendWelcomeEmailOnce } from '../_shared/welcomeEmail.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -628,6 +629,19 @@ serve(async (req) => {
             .eq('parent_id', parentId)
           if (pendingError) console.error('[Webhook] Failed to mark pending signup complete:', pendingError)
           console.log(`[Webhook] Activated signup for ${parentId} (tier ${signupTier})`)
+
+          // Welcome email - once per account, fails soft
+          const { data: welcomeProfile } = await supabase
+            .from('parent_profiles')
+            .select('email, full_name')
+            .eq('id', parentId)
+            .maybeSingle()
+          await sendWelcomeEmailOnce(
+            supabase,
+            parentId,
+            welcomeProfile?.email || session.customer_details?.email || '',
+            welcomeProfile?.full_name
+          )
         }
 
         break

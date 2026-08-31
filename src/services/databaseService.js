@@ -490,17 +490,6 @@ export async function getParentSubscription(parentUserId) {
   })
 }
 
-export async function upsertParentSubscription(subscriptionPayload) {
-  const { data, error } = await getSupabaseClient()
-    .from('parent_subscriptions')
-    .upsert([subscriptionPayload], { onConflict: 'parent_id' })
-    .select()
-    .single()
-
-  if (error) throw error
-  invalidateCacheByPrefix(`parentSubscription:${subscriptionPayload.parent_id}`)
-  return data
-}
 
 export async function switchStripeSubscriptionPlan(tier) {
   console.log('[Billing] Invoking switch-subscription-plan edge function', { tier })
@@ -662,43 +651,8 @@ export async function getParentCredits(parentUserId) {
   return data?.credits ?? 0
 }
 
-// Grant credits to a parent and all their children
-export async function grantCreditsToFamily(parentUserId, amount) {
-  const supabase = getSupabaseClient()
-
-  // Update parent credits
-  const { data: parent, error: parentError } = await supabase
-    .from('parent_profiles')
-    .select('credits')
-    .eq('id', parentUserId)
-    .single()
-
-  if (parentError) throw parentError
-
-  await supabase
-    .from('parent_profiles')
-    .update({ credits: (parent?.credits ?? 0) + amount })
-    .eq('id', parentUserId)
-
-  // Update all children's credits
-  const { data: children, error: childError } = await supabase
-    .from('children')
-    .select('id, credits')
-    .eq('parent_user_id', parentUserId)
-
-  if (childError) throw childError
-
-  if (children && children.length > 0) {
-    for (const child of children) {
-      await supabase
-        .from('children')
-        .update({ credits: (child.credits ?? 0) + amount })
-        .eq('id', child.id)
-    }
-  }
-
-  invalidateCacheByPrefix(`children:${parentUserId}`)
-}
+// (grantCreditsToFamily was removed: credits are granted server-side only
+// via the Stripe webhook / admin tools. RLS + a DB trigger enforce this.)
 
 export async function getCreditLedger(parentUserId, periodStart, periodEnd) {
   const { data, error } = await getSupabaseClient()

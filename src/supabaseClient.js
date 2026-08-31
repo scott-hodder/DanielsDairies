@@ -16,7 +16,7 @@ export const supabase = client
 // the login screen instead of erroring on dead queries. Public pages and the
 // schools flow (which manages its own sign-in/out cycle) are left alone.
 const AUTH_REQUIRED_PATHS = [
-  '/dashboard.html', '/landing.html', '/profile.html', '/billing.html',
+  '/dashboard.html', '/landing.html', '/profile.html',
   '/admin.html', '/module.html', '/parent-insights.html',
   '/family-library.html', '/practitioner-dashboard.html'
 ]

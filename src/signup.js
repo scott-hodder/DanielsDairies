@@ -2,7 +2,7 @@
 import { escapeHtml } from './lib/sanitize.js'
 import { signUp } from './auth.js'
 import { getSupabaseClient } from './supabaseClient.js'
-import { getSubscriptionTiers } from './services/databaseService.js'
+import { getSubscriptionTiers, getSettings } from './services/databaseService.js'
 import { initTelemetry, trackEvent } from './lib/telemetry.js'
 
 initTelemetry()
@@ -50,6 +50,17 @@ async function init() {
     try {
         if (window.Capacitor?.isNativePlatform?.()) isFreeTrial = true
     } catch { /* browser */ }
+
+    // Respect the free_trial_enabled feature flag on the web: when trials
+    // are switched off, ?trial=true falls back to the paid plan flow.
+    // (The native app keeps its account-only path - Apple 3.1.1.)
+    if (isFreeTrial && !window.Capacitor?.isNativePlatform?.()) {
+        try {
+            const settings = await getSettings()
+            const flags = settings?.feature_flags || settings?.data?.feature_flags
+            if (flags?.free_trial_enabled === false) isFreeTrial = false
+        } catch { /* if settings are unreachable, keep the trial path */ }
+    }
 
     // Practitioner invite: stash the code so the dashboard can link this
     // family to their practitioner after signup/login completes.
