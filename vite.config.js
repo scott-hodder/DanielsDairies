@@ -97,6 +97,7 @@ export default defineConfig(({ mode }) => ({
         termsOfService: resolve(__dirname, 'terms-of-service.html'),
         howContentIsMade: resolve(__dirname, 'how-our-content-is-made.html'),
         ndisFunding: resolve(__dirname, 'ndis-funding.html'),
+        auth: resolve(__dirname, 'auth.html'),
         schoolsLogin: resolve(__dirname, 'schools-login.html'),
         schoolsDashboard: resolve(__dirname, 'schools-dashboard.html'),
         practitionerDashboard: resolve(__dirname, 'practitioner-dashboard.html'),

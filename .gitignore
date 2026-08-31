@@ -33,5 +33,6 @@ test-results/
 # debug files
 .claude/
 
-# Local Netlify folder
-.netlify
+# Word lock files
+~$*
+**/~$*
