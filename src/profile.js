@@ -571,7 +571,17 @@ function renderPlanSection() {
   const tierBadge = (currentTierName || 'FREE').toUpperCase()
   const modulesPerMonth = tierData.modules_per_month || 0
   const monthlyPrice = tierData.monthly_price_cents ? `$${(tierData.monthly_price_cents / 100).toFixed(2)}/month` : 'Free'
-  const status = (sub && sub.status) ? sub.status.toUpperCase() : 'INACTIVE'
+  // Human labels: a family with no subscription is on the Free plan,
+  // not 'inactive' (which reads like something is broken).
+  const STATUS_LABELS = {
+    active: 'Active',
+    trialing: 'Active (trial)',
+    past_due: 'Payment issue',
+    paused: 'Paused',
+    canceled: 'Ended',
+    inactive: 'Free plan'
+  }
+  const status = STATUS_LABELS[sub?.status] || (sub?.status ? sub.status : 'Free plan')
   
   // Format next payment date from parent_subscriptions fields
   let nextPayment = 'Not set'
