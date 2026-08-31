@@ -19,6 +19,7 @@ create table if not exists public.push_subscriptions (
 
 alter table public.push_subscriptions enable row level security;
 
+drop policy if exists "push_subs_own" on public.push_subscriptions;
 create policy "push_subs_own" on public.push_subscriptions
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 

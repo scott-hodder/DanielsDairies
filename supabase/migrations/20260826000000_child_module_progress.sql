@@ -14,16 +14,20 @@ create table if not exists public.child_module_progress (
 
 alter table public.child_module_progress enable row level security;
 
+drop policy if exists "cmp_select" on public.child_module_progress;
 create policy "cmp_select" on public.child_module_progress
   for select using (child_id in (select id from public.children));
 
+drop policy if exists "cmp_insert" on public.child_module_progress;
 create policy "cmp_insert" on public.child_module_progress
   for insert with check (child_id in (select id from public.children));
 
+drop policy if exists "cmp_update" on public.child_module_progress;
 create policy "cmp_update" on public.child_module_progress
   for update using (child_id in (select id from public.children))
   with check (child_id in (select id from public.children));
 
+drop policy if exists "cmp_delete" on public.child_module_progress;
 create policy "cmp_delete" on public.child_module_progress
   for delete using (child_id in (select id from public.children));
 
