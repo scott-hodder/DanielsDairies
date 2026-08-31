@@ -164,7 +164,7 @@ signupForm.addEventListener('submit', async (e) => {
         .rpc('redeem_practitioner_account_invite', { p_token: token })
       if (redeemError) throw redeemError
       if (!redeemed?.success && redeemed?.reason !== 'invalid') {
-        throw new Error('Could not activate practitioner access. Please contact info@danielsdiaries.com')
+        throw new Error('Could not activate practitioner access. Please contact info@danielsdiaries.com.au')
       }
 
       localStorage.removeItem(INVITE_STORAGE_KEY)

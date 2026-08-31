@@ -10,7 +10,7 @@
 // is missing we fail soft with a clear reason and callers fall back to
 // showing the user a copyable link / logging the failure.
 //
-// Per project convention all mail comes from info@danielsdiaries.com
+// Per project convention all mail comes from info@danielsdiaries.com.au
 // (SMTP_FROM overrides the display-from if set).
 
 export type SendEmailInput = {
@@ -24,7 +24,7 @@ export type SendEmailResult = {
   reason?: string
 }
 
-const DEFAULT_FROM = "Daniel's Diaries <info@danielsdiaries.com>"
+const DEFAULT_FROM = "Daniel's Diaries <info@danielsdiaries.com.au>"
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const apiKey = Deno.env.get('RESEND_API_KEY')

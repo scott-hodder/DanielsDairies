@@ -73,7 +73,7 @@ serve(withCors(async (req) => {
     `
 
     const mailResult = await sendEmail({
-      to: 'info@danielsdiaries.com',
+      to: 'info@danielsdiaries.com.au',
       subject: `Feedback${rating ? ` (${rating}/5)` : ''} from ${email || 'a user'}`,
       html: htmlBody
     })
