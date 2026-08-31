@@ -26,6 +26,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Shared with the Node test suite (tests/weeklySummary.test.mjs).
 import { isoWeekKey } from '../_shared/weekKey.mjs'
 import { sendEmail } from '../_shared/email.ts'
+import { renderBrandEmail } from '../_shared/emailTemplate.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://app.danielsdiaries.com.au',
@@ -100,6 +101,9 @@ serve(async (req) => {
   let body: Record<string, unknown> = {}
   try { body = await req.json() } catch (_) { /* empty body is fine */ }
   const onlyParentId = typeof body?.parentId === 'string' ? body.parentId : null
+  // QA override: with parentId, send that family's summary to this address
+  // instead of the parent, [TEST]-prefixed, without consuming the weekly log.
+  const testTo = typeof body?.testTo === 'string' && body.testTo.includes('@') ? body.testTo : null
 
   const weekKey = isoWeekKey()
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -138,12 +142,14 @@ serve(async (req) => {
         continue
       }
 
-      const { error: logError } = await admin
-        .from('weekly_email_log')
-        .insert({ parent_id: parentId, week_key: weekKey, variant: 'pending' })
-      if (logError) {
-        results[parentId] = logError.code === '23505' ? 'skipped:already-sent' : `skipped:${logError.message}`
-        continue
+      if (!testTo) {
+        const { error: logError } = await admin
+          .from('weekly_email_log')
+          .insert({ parent_id: parentId, week_key: weekKey, variant: 'pending' })
+        if (logError) {
+          results[parentId] = logError.code === '23505' ? 'skipped:already-sent' : `skipped:${logError.message}`
+          continue
+        }
       }
 
       const { data: userData } = await admin.auth.admin.getUserById(parentId)
@@ -216,7 +222,7 @@ serve(async (req) => {
 
       if (hadActivity) {
         variant = 'summary'
-        subject = `${childNames}'s week with Daniel 🐾`
+        subject = `${childNames}'s week with Daniel`
         const skillLine = skillNames.length
           ? `<li><strong>Super Skills practised:</strong> ${skillNames.map(esc).join(', ')}</li>`
           : ''
@@ -232,7 +238,7 @@ serve(async (req) => {
           <p><strong>Suggested next step:</strong> ${esc(nextStep)}</p>`
       } else if ((weeklyCheckins?.length ?? 0) === 0 && modulesCompleted === 0 && checkinsDone === 0) {
         variant = 're-engagement'
-        subject = `Daniel's been keeping ${childNames}'s spot warm 🐾`
+        subject = `Daniel's been keeping ${childNames}'s spot warm`
         bodyHtml = `
           <p>It's been a quiet week in Brain Town — and that's completely okay. Life gets busy.</p>
           <p>When you have ten minutes, a single module or a quick daily quest is enough to keep ${esc(childNames)}'s skills growing. Small steps count.</p>
@@ -246,32 +252,36 @@ serve(async (req) => {
           <p><strong>This week:</strong> ${esc(nextStep)}</p>`
       }
 
-      const html = `
-        <div style="font-family:sans-serif; max-width:520px; margin:0 auto; padding:24px;">
-          <h2 style="color:#2b3a55;">Hi ${esc(firstName)},</h2>
-          ${bodyHtml}
-          <a href="${esc(appUrl)}/dashboard.html" style="display:inline-block; padding:12px 24px; background:#2A8F8F; color:white; text-decoration:none; border-radius:8px; font-weight:600; margin:16px 0;">Open Daniel's Diaries</a>
-          <p style="color:#64748B; font-size:13px; margin-top:32px; border-top:1px solid #E5E7EB; padding-top:16px;">
-            Daniel's Diaries — Growing together, one module at a time.<br>
-            You're receiving this because you have a Daniel's Diaries family account.
-            <a href="${esc(unsubscribeUrl)}" style="color:#64748B;">Unsubscribe from weekly emails</a>
-          </p>
-        </div>`
+      const html = renderBrandEmail({
+        heading: `Hi ${esc(firstName)},`,
+        bodyHtml,
+        ctaLabel: "Open Daniel's Diaries",
+        ctaUrl: `${appUrl}/dashboard.html`,
+        footerNote: `You're receiving this because you have a Daniel's Diaries family account. <a href="${esc(unsubscribeUrl)}" style="color:#8a97ab;">Unsubscribe from weekly emails</a>`
+      })
 
-      const mailResult = await sendEmail({ to: email, subject, html })
+      const mailResult = await sendEmail({
+        to: testTo || email,
+        subject: testTo ? `[TEST] ${subject}` : subject,
+        html
+      })
 
       if (!mailResult.sent) {
         // Free the log slot so a retry run can attempt this parent again.
-        await admin.from('weekly_email_log').delete().eq('parent_id', parentId).eq('week_key', weekKey)
+        if (!testTo) {
+          await admin.from('weekly_email_log').delete().eq('parent_id', parentId).eq('week_key', weekKey)
+        }
         results[parentId] = `error:${mailResult.reason || 'email send failed'}`
         continue
       }
 
-      await admin
-        .from('weekly_email_log')
-        .update({ variant })
-        .eq('parent_id', parentId)
-        .eq('week_key', weekKey)
+      if (!testTo) {
+        await admin
+          .from('weekly_email_log')
+          .update({ variant })
+          .eq('parent_id', parentId)
+          .eq('week_key', weekKey)
+      }
       results[parentId] = `sent:${variant}`
     } catch (err) {
       results[parentId] = `error:${err instanceof Error ? err.message : 'unknown'}`
