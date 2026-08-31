@@ -1,5 +1,6 @@
 // Day-3 onboarding nudge — one email, once, to families who signed up
-// ~3 days ago and haven't started yet.
+// ~3 days ago and haven't started yet. Renders through the shared brand
+// template (Daniel artwork, no emoji — see emailTemplate.ts).
 //
 // Two variants:
 //   no-child   — the parent never added a child profile
@@ -7,52 +8,50 @@
 // Families already engaged are marked (day3_nudge_sent_at) without email.
 //
 // Trigger: pg_cron daily at 22:00 UTC (8am Brisbane) via setup_reminder_crons.
-// Auth: x-cron-secret must match CRON_SECRET (same convention as the
-// weekly summary). Optional body: { only_user_id } for a manual test.
+// Auth: x-cron-secret must match CRON_SECRET. Optional body:
+// { only_user_id } for a manual test.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendEmail } from '../_shared/email.ts'
+import { renderBrandEmail, p } from '../_shared/emailTemplate.ts'
 
 function firstNameOnly(name: string | null | undefined): string {
   const n = String(name || '').trim().split(/\s+/)[0]
   return n || 'there'
 }
 
-function buildHtml(variant: 'no-child' | 'no-module', firstName: string, childName: string, appUrl: string): { subject: string; html: string } {
-  const safeName = firstName.replace(/[<>&]/g, '')
+function buildNudge(variant: 'no-child' | 'no-module', firstName: string, childName: string, appUrl: string): { subject: string; html: string } {
   const safeChild = (childName || 'your child').replace(/[<>&]/g, '')
-  const btn = (label: string) =>
-    `<p style="margin:26px 0;"><a href="${appUrl}/login.html" style="background:#2A8F8F;color:#ffffff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">${label}</a></p>`
-  const footer = `
-    <p style="font-size:13px;color:#8a97ab;margin-top:32px;border-top:1px solid #e5e9f0;padding-top:14px;">
-      This is a one-time reminder about your new Daniel's Diaries account.
-      Questions? Just reply — a real person reads every message.
-    </p>`
+  const footerNote = 'This is a one-time reminder about your new account.'
 
   if (variant === 'no-child') {
     return {
-      subject: "Two minutes to finish setting up — Daniel's waiting 🐕",
-      html: `
-      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;color:#2b3a55;">
-        <h2 style="color:#2A8F8F;">Hi ${safeName},</h2>
-        <p style="font-size:15px;line-height:1.6;">You created your Daniel's Diaries account a few days ago — the only step left is adding your child's explorer profile. It takes about two minutes: pick a name, choose an avatar together, and Daniel takes it from there.</p>
-        ${btn('Add your child')}
-        <p style="font-size:14px;line-height:1.6;color:#4c6c96;">A tip from families who get the most out of it: do the setup <em>with</em> your child. Choosing their own avatar is the first small moment of ownership, and it makes the first adventure feel like theirs.</p>
-        ${footer}
-      </div>`
+      subject: 'Two minutes to finish setting up — Daniel is waiting',
+      html: renderBrandEmail({
+        daniel: 'reading',
+        heading: 'Two minutes to finish setting up',
+        bodyHtml:
+          p("You created your Daniel's Diaries account a few days ago — the only step left is adding your child's explorer profile. It takes about two minutes: pick a name, choose an avatar together, and Daniel takes it from there.") +
+          p('A tip: do the setup <em>with</em> your child. Choosing their own avatar is the first small moment of ownership, and it makes the first adventure feel like theirs.'),
+        ctaLabel: 'Add your child',
+        ctaUrl: appUrl + '/login.html',
+        footerNote
+      })
     }
   }
   return {
-    subject: `${safeChild}'s first adventure is ready in Brain Town 🐕`,
-    html: `
-    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;color:#2b3a55;">
-      <h2 style="color:#2A8F8F;">Hi ${safeName},</h2>
-      <p style="font-size:15px;line-height:1.6;">${safeChild}'s profile is set up — the first adventure in Brain Town is waiting, and it takes about ten minutes. Daniel will meet ${safeChild} at Brain Builder and show them around.</p>
-      ${btn('Start the first adventure')}
-      <p style="font-size:14px;line-height:1.6;color:#4c6c96;">Little and often beats long and rare: a regular ten-minute visit is exactly what the daily quests and streaks are built around. Tonight after dinner is a great first slot.</p>
-      ${footer}
-    </div>`
+    subject: `${safeChild}'s first adventure is ready in Brain Town`,
+    html: renderBrandEmail({
+      daniel: 'thumbsup',
+      heading: `${safeChild}'s first adventure is ready`,
+      bodyHtml:
+        p(`${safeChild}'s profile is set up — the first adventure in Brain Town is waiting, and it takes about ten minutes. Daniel will meet ${safeChild} at Brain Builder and show them around.`) +
+        p('Little and often beats long and rare: a regular ten-minute visit is exactly what the daily quests and streaks are built around. Tonight after dinner is a great first slot.'),
+      ctaLabel: 'Start the first adventure',
+      ctaUrl: appUrl + '/login.html',
+      footerNote
+    })
   }
 }
 
@@ -93,16 +92,16 @@ serve(async (req) => {
 
   const results: Array<{ id: string; action: string; reason?: string }> = []
 
-  for (const p of parents || []) {
+  for (const pr of parents || []) {
     try {
-      if (p.is_admin || p.is_practitioner || !p.email) {
-        await supabase.from('parent_profiles').update({ day3_nudge_sent_at: new Date().toISOString() }).eq('id', p.id)
-        results.push({ id: p.id, action: 'skipped', reason: 'not-a-family-or-no-email' })
+      if (pr.is_admin || pr.is_practitioner || !pr.email) {
+        await supabase.from('parent_profiles').update({ day3_nudge_sent_at: new Date().toISOString() }).eq('id', pr.id)
+        results.push({ id: pr.id, action: 'skipped', reason: 'not-a-family-or-no-email' })
         continue
       }
 
       const { data: children } = await supabase.from('children')
-        .select('id, name').eq('parent_user_id', p.id).limit(5)
+        .select('id, name').eq('parent_user_id', pr.id).limit(5)
 
       let variant: 'no-child' | 'no-module' | null = null
       let childName = ''
@@ -122,22 +121,22 @@ serve(async (req) => {
 
       if (!variant) {
         // Already engaged — mark so we never scan them again.
-        await supabase.from('parent_profiles').update({ day3_nudge_sent_at: new Date().toISOString() }).eq('id', p.id)
-        results.push({ id: p.id, action: 'skipped', reason: 'already-engaged' })
+        await supabase.from('parent_profiles').update({ day3_nudge_sent_at: new Date().toISOString() }).eq('id', pr.id)
+        results.push({ id: pr.id, action: 'skipped', reason: 'already-engaged' })
         continue
       }
 
-      const { subject, html } = buildHtml(variant, firstNameOnly(p.full_name), childName, appUrl)
-      const sent = await sendEmail({ to: p.email, subject, html })
+      const { subject, html } = buildNudge(variant, firstNameOnly(pr.full_name), childName, appUrl)
+      const sent = await sendEmail({ to: pr.email, subject, html })
       if (sent.sent) {
-        await supabase.from('parent_profiles').update({ day3_nudge_sent_at: new Date().toISOString() }).eq('id', p.id)
-        results.push({ id: p.id, action: 'sent', reason: variant })
+        await supabase.from('parent_profiles').update({ day3_nudge_sent_at: new Date().toISOString() }).eq('id', pr.id)
+        results.push({ id: pr.id, action: 'sent', reason: variant })
       } else {
         // Leave unmarked so tomorrow retries (e.g. mailer briefly down).
-        results.push({ id: p.id, action: 'failed', reason: sent.reason })
+        results.push({ id: pr.id, action: 'failed', reason: sent.reason })
       }
     } catch (err) {
-      results.push({ id: p.id, action: 'failed', reason: String(err).slice(0, 120) })
+      results.push({ id: pr.id, action: 'failed', reason: String(err).slice(0, 120) })
     }
   }
 

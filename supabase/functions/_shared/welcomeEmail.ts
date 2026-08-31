@@ -4,9 +4,10 @@
 // Callers: complete-signup (free/native accounts) and stripe-webhook
 // (paid signups activated after checkout). Both pass their service-role
 // client. Fails soft: a missing RESEND_API_KEY or transient error never
-// blocks signup.
+// blocks signup. Renders through the shared brand template.
 
 import { sendEmail } from './email.ts'
+import { renderBrandEmail, p } from './emailTemplate.ts'
 
 // deno-lint-ignore no-explicit-any
 type AdminClient = any
@@ -18,36 +19,21 @@ function firstNameOnly(name: string | null | undefined): string {
 
 function buildWelcomeHtml(firstName: string, appUrl: string): string {
   const safeName = firstName.replace(/[<>&]/g, '')
-  return `
-  <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2b3a55;">
-    <h1 style="color:#2A8F8F; font-size: 24px;">Welcome to Daniel's Diaries, ${safeName}! 🐕</h1>
-    <p style="font-size: 15px; line-height: 1.6;">
-      You've just given your child a friendly new way to build emotional
-      intelligence, resilience and coping skills — one small adventure at a time.
-    </p>
-    <p style="font-size: 15px; line-height: 1.6;"><strong>Getting started takes two minutes:</strong></p>
-    <ol style="font-size: 15px; line-height: 1.8;">
-      <li><strong>Confirm your email</strong> — check your inbox for the confirmation link (peek in spam if it's hiding).</li>
-      <li><strong>Add your child</strong> — create their explorer profile and pick an avatar together.</li>
-      <li><strong>Start the first adventure</strong> — Daniel will meet them in Brain Town and show them around.</li>
-    </ol>
-    <p style="margin: 28px 0;">
-      <a href="${appUrl}/login.html"
-         style="background:#2A8F8F; color:#ffffff; padding: 12px 28px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px;">
-        Open Daniel's Diaries
-      </a>
-    </p>
-    <p style="font-size: 14px; line-height: 1.6; color:#4c6c96;">
-      A tip from families who get the most out of it: a regular five-minute
-      visit beats an occasional long session. The daily quests and streaks are
-      built around exactly that.
-    </p>
-    <p style="font-size: 14px; line-height: 1.6; color:#4c6c96;">
-      Questions? Just reply to this email — a real person reads every message
-      at <a href="mailto:info@danielsdiaries.com.au" style="color:#2A8F8F;">info@danielsdiaries.com.au</a>.
-    </p>
-    <p style="font-size: 14px; color:#4c6c96;">— The Daniel's Diaries team</p>
-  </div>`
+  return renderBrandEmail({
+    daniel: 'heart',
+    heading: `Welcome, ${safeName} — the adventure starts here`,
+    bodyHtml:
+      p("You've just given your child a friendly new way to build emotional intelligence, resilience and coping skills — one small adventure at a time.") +
+      p('<strong>Getting started takes two minutes:</strong>') +
+      `<ol style="margin:0 0 14px;padding-left:20px;line-height:1.8;">
+        <li><strong>Confirm your email</strong> — the confirmation link is in your inbox (peek in spam if it's hiding).</li>
+        <li><strong>Add your child</strong> — create their explorer profile and pick an avatar together.</li>
+        <li><strong>Start the first adventure</strong> — Daniel will meet them in Brain Town and show them around.</li>
+      </ol>` +
+      p('A tip from families who get the most out of it: a regular five-minute visit beats an occasional long session. The daily quests and streaks are built around exactly that.'),
+    ctaLabel: "Open Daniel's Diaries",
+    ctaUrl: appUrl + '/login.html'
+  })
 }
 
 export async function sendWelcomeEmailOnce(
@@ -72,7 +58,7 @@ export async function sendWelcomeEmailOnce(
     const appUrl = Deno.env.get('APP_URL') || 'https://app.danielsdiaries.com.au'
     const result = await sendEmail({
       to: email,
-      subject: "Welcome to Daniel's Diaries — your child's adventure starts here 🐾",
+      subject: "Welcome to Daniel's Diaries — your child's adventure starts here",
       html: buildWelcomeHtml(firstNameOnly(firstName), appUrl)
     })
 
