@@ -37,6 +37,13 @@
     </header>
 
     <main class="main-content">
+        <!-- Print-only report header: turns window.print() into a branded
+             report a parent can hand to a GP, school, or practitioner -->
+        <div class="pi-print-header">
+            <div class="pi-print-brand">Daniel's Diaries</div>
+            <div class="pi-print-title">Parent Insights Report</div>
+            <div class="pi-print-meta" id="printMeta"></div>
+        </div>
         <!-- Child Selector -->
         <div class="child-selector">
             <span class="child-selector-label">Viewing insights for:</span>
@@ -50,9 +57,28 @@
             <button class="pi-subtab" id="subtabLibrary">Library</button>
         </div>
 
+        <!-- Section jump nav (built after insights render) -->
+        <nav class="pi-jumpnav hidden" id="jumpNav" aria-label="Jump to section"></nav>
+
         <!-- Loading State -->
         <div class="loading-spinner" id="loadingState">
             <div class="spinner"></div>
+        </div>
+
+        <!-- Tier-locked State -->
+        <div id="lockedState" class="pi-card pi-locked hidden">
+            <div class="pi-locked-icon">🔒</div>
+            <h3>Parent Insights comes with Silver &amp; Gold</h3>
+            <p>See the patterns behind your child's journey — what's improving, what needs support, and exactly what to try each week.</p>
+            <ul class="pi-locked-features">
+                <li>Skill growth measured from your child's in-module check-ins</li>
+                <li>Weekly patterns: triggers, challenges and intensity over time</li>
+                <li>Mood &amp; engagement trends, in one chart</li>
+                <li>Your child's own reflections, in their own words</li>
+                <li>A tailored weekly plan with parent scripts and tools</li>
+            </ul>
+            <a class="btn-upgrade" href="/profile.html">View plans &amp; upgrade</a>
+            <a class="btn-upgrade-secondary" href="/dashboard.html">Back to dashboard</a>
         </div>
 
         <!-- ========== INSIGHTS OVERVIEW PANEL ========== -->
@@ -111,6 +137,12 @@
                     <p class="pi-week-summary" id="weekSummary"></p>
                 </div>
 
+                <!-- What to Try This Week (kept high: the most actionable card) -->
+                <div class="pi-card" id="actionsCard">
+                    <h3 class="pi-card-title">What to try this week</h3>
+                    <div class="pi-actions-grid" id="actionsGrid"></div>
+                </div>
+
                 <!-- What We Observed Recently -->
                 <div class="pi-card" id="observationsCard">
                     <h3 class="pi-card-title">What we observed recently</h3>
@@ -139,6 +171,24 @@
                     <p class="pi-basis" id="chartBasis"></p>
                 </div>
 
+                <!-- Skill Growth (pathway assessments) -->
+                <div class="pi-card hidden" id="skillGrowthCard">
+                    <div class="pi-card-header">
+                        <h3 class="pi-card-title">Skill growth over time</h3>
+                        <span class="pi-confidence-badge building" id="growthBadge" style="display:none;"></span>
+                    </div>
+                    <p class="pi-card-desc">From the short skill check-ins your child answers inside modules. Scores show how big the challenges felt — lower is better.</p>
+                    <div id="skillGrowthList"></div>
+                    <p class="pi-basis" id="growthBasis"></p>
+                </div>
+
+                <!-- Practice & Big Feelings (correlation) -->
+                <div class="pi-card hidden" id="correlationCard">
+                    <h3 class="pi-card-title">Practice &amp; big feelings</h3>
+                    <div id="correlationBody"></div>
+                    <p class="pi-basis" id="correlationBasis"></p>
+                </div>
+
                 <!-- Emerging Patterns (conditional) -->
                 <div class="pi-card hidden" id="patternsCard">
                     <div class="pi-card-header">
@@ -156,12 +206,6 @@
                     <h3 class="pi-card-title">What this may look like at home</h3>
                     <div id="homeDescription"></div>
                     <p class="pi-basis" id="homeBasis"></p>
-                </div>
-
-                <!-- What to Try This Week -->
-                <div class="pi-card" id="actionsCard">
-                    <h3 class="pi-card-title">What to try this week</h3>
-                    <div class="pi-actions-grid" id="actionsGrid"></div>
                 </div>
 
                 <!-- Wins to Celebrate -->
@@ -332,22 +376,25 @@
         let insightsChart = null
         let rawMoodCheckins = []
         let rawWeeklyCheckins = []
+        let jumpNavBuilt = false
 
         // ── Trigger list for check-in form ──
         const TRIGGER_LIST = ['Anger', 'Worry/Anxiety', 'Sadness', 'Frustration', 'Overwhelm', 'Fear', 'Jealousy', 'Shame', 'Excitement (too much)']
         const selectedTriggers = new Set()
 
         // ── Plan generation helpers ──
+        // Uses the app's 7 Super Skills so the plan speaks the same language
+        // as Daniel's recommendation and the rest of the product.
         const triggerToSkills = {
-            'Anger': ['Calming Strategies', 'Emotional Identification'],
-            'Worry/Anxiety': ['Anxiety Management', 'Mindfulness'],
-            'Sadness': ['Mood Resilience', 'Self-Compassion'],
-            'Frustration': ['Problem Solving', 'Patience Building'],
-            'Overwhelm': ['Grounding Techniques', 'Task Management'],
-            'Fear': ['Courage Building', 'Safety Planning'],
-            'Jealousy': ['Social Skills', 'Self-Worth'],
-            'Shame': ['Self-Compassion', 'Emotional Identification'],
-            'Excitement (too much)': ['Self-Regulation', 'Body Awareness']
+            'Anger': ['Emotion Navigator', 'Behaviour Engineer'],
+            'Worry/Anxiety': ['Thought Driver', 'Emotion Navigator'],
+            'Sadness': ['Resilience Architect', 'Emotion Navigator'],
+            'Frustration': ['Behaviour Engineer', 'Thought Driver'],
+            'Overwhelm': ['Emotion Navigator', 'Behaviour Engineer'],
+            'Fear': ['Resilience Architect', 'Thought Driver'],
+            'Jealousy': ['Social Mapper', 'Emotion Navigator'],
+            'Shame': ['Emotion Navigator', 'Resilience Architect'],
+            'Excitement (too much)': ['Emotion Navigator', 'Behaviour Engineer']
         }
 
         const triggerToTools = {
@@ -405,6 +452,17 @@
                 }
             }
 
+            // Tier gate: previously only the dashboard tab was hidden, so the
+            // full page stayed reachable by URL on any tier. Enforce it here.
+            const included = await checkTierIncludesInsights(user.id)
+            if (!included) {
+                document.getElementById('loadingState').classList.add('hidden')
+                document.getElementById('lockedState').classList.remove('hidden')
+                document.querySelector('.pi-subtabs')?.classList.add('hidden')
+                document.querySelector('.child-selector')?.classList.add('hidden')
+                return
+            }
+
             // Parent Zone gate: insights contain parent-reported information
             // about the child, so children can't open this page unchecked
             const gatePassed = await requireParentGate()
@@ -431,22 +489,25 @@
                 // Every stream the app collects — plays/quests/streaks degrade
                 // to empty gracefully if a table isn't deployed yet.
                 const [childRes, childModulesRes, modulesRes, weeklyRes, moodRes, superSkillsRes,
-                       arcadeRes, questsRes, roadblocksRes, streakRes, levelsRes] = await Promise.all([
+                       arcadeRes, questsRes, roadblocksRes, streakRes, levelsRes, pathwayRes] = await Promise.all([
                     supabase.from('children').select('*').eq('id', currentChildId).single(),
                     supabase.from('child_modules').select('*').eq('child_id', currentChildId),
                     // Metadata only — select('*') dragged every module's scene/narration
                     // JSON down the phone's connection (the single slowest request on
                     // this page, 3-10s on mobile) just to look up titles and skills.
                     supabase.from('modules').select('id, code, title, short_description, category, series, cycle_id, super_skill_id, sub_skill_id, week_number, age_range, xp_reward, stars_reward, character_name, is_active, created_at'),
-                    supabase.from('weekly_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(20),
-                    supabase.from('child_mood_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(30),
+                    supabase.from('weekly_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(52),
+                    supabase.from('child_mood_checkins').select('*').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(120),
                     supabase.from('super_skills').select('*'),
                     supabase.from('arcade_plays').select('game_id, score, success, stars_earned, reflection, created_at').eq('child_id', currentChildId).order('created_at', { ascending: false }).limit(100),
                     supabase.from('daily_quest_completions').select('quest_id, completed_at, stars_awarded').eq('child_id', currentChildId).order('completed_at', { ascending: false }).limit(100),
                     supabase.from('child_roadblock_completions').select('completed_at').eq('child_id', currentChildId).order('completed_at', { ascending: false }).limit(100),
                     supabase.from('login_streaks').select('current_streak, longest_streak').eq('child_id', currentChildId).maybeSingle()
                 ,
-                    supabase.from('levels').select('level, xp_required').order('level')
+                    supabase.from('levels').select('level, xp_required').order('level'),
+                    // The richest signal the app collects: baseline/midpoint/endpoint
+                    // skill check-ins answered inside modules
+                    supabase.from('pathway_assessments').select('pathway_category, assessment_type, total_score, max_score, efficacy_score, created_at').eq('child_id', currentChildId).order('created_at', { ascending: true }).limit(200)
                 ])
 
                 if (childRes.error) throw childRes.error
@@ -463,6 +524,7 @@
                     dailyQuests: questsRes.data || [],
                     roadblocks: roadblocksRes.data || [],
                     levels: levelsRes.data || [],
+                    pathwayAssessments: pathwayRes.data || [],
                     streak: streakRes.data || null
                 }
 
@@ -476,6 +538,7 @@
                 renderInsights(insights)
                 renderChart(rawData.moodCheckins, rawData.weeklyCheckins, rawData.childModules)
                 renderParentLibrary(rawData.superSkills, rawData.modules, rawData.childModules)
+                buildJumpNav()
 
                 document.getElementById('loadingState').classList.add('hidden')
                 document.getElementById('overviewPanel').classList.remove('hidden')
@@ -498,6 +561,8 @@
             renderObservations(insights.observations)
             renderChildVoice(insights.childVoice)
             renderPatterns(insights.patterns)
+            renderSkillGrowth(insights.skillGrowth)
+            renderCorrelation(insights.correlation)
             renderHomeContext(insights.homeContext)
             renderActions(insights.actions, insights.recommendation)
             renderCelebrations(insights.celebrations)
@@ -578,6 +643,9 @@
             document.getElementById('xpText').textContent = hero.xpIntoLevel + ' / ' + hero.xpPerLevel + ' XP'
             document.getElementById('xpFill').style.width = hero.progressPercent + '%'
             document.getElementById('heroEngagement').textContent = hero.engagementLine
+
+            var printMeta = document.getElementById('printMeta')
+            if (printMeta) printMeta.textContent = 'Prepared for ' + hero.name + ' · ' + new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
 
             // Level ring progress
             var circumference = 2 * Math.PI * 34
@@ -701,21 +769,27 @@
                 trigHtml += '</div>'
             }
 
-            // Skill areas
+            // Skill areas — same bar treatment as triggers so the card reads as one system
             var skillHtml = ''
             if (patterns.skillAreas.length > 0) {
+                var maxSkill = patterns.skillAreas[0].count
                 skillHtml = '<div class="pi-pattern-item" style="margin-top:16px;"><h4>Skill areas explored</h4>'
                 patterns.skillAreas.forEach(function(s) {
-                    skillHtml += '<div class="pi-pattern-bar"><span class="pi-pattern-bar-label">' + esc(s.area) + '</span><span class="pi-pattern-bar-count">' + s.count + ' modules</span></div>'
+                    var spct = Math.round((s.count / maxSkill) * 100)
+                    skillHtml += '<div class="pi-pattern-bar"><span class="pi-pattern-bar-label">' + esc(s.area) + '</span><div style="flex:1;background:#e5e7eb;border-radius:4px;height:8px;"><div class="pi-pattern-bar-fill alt" style="width:' + spct + '%;"></div></div><span class="pi-pattern-bar-count">' + s.count + '</span></div>'
                 })
                 skillHtml += '</div>'
             }
 
-            // Intensity trend
+            // Intensity trend — directional pill, coloured by what it means
             var intHtml = ''
             if (patterns.intensityTrend) {
-                var trendLabel = patterns.intensityTrend === 'easing' ? 'Intensity easing over time' : patterns.intensityTrend === 'increasing' ? 'Intensity increasing — extra support may help' : 'Intensity steady'
-                intHtml = '<p style="font-size:14px; margin:16px 0 0; padding:10px 14px; background:#f8f9fa; border-radius:10px;">' + trendLabel + '</p>'
+                var trendMeta = {
+                    easing: ['↘', 'Intensity easing over time', 'easing'],
+                    increasing: ['↗', 'Intensity increasing — extra support may help', 'increasing'],
+                    steady: ['→', 'Intensity steady', 'steady']
+                }[patterns.intensityTrend]
+                intHtml = '<div class="pi-intensity-pill ' + trendMeta[2] + '"><span class="pi-intensity-arrow">' + trendMeta[0] + '</span>' + trendMeta[1] + '</div>'
             }
 
             document.getElementById('triggerFrequency').innerHTML = trigHtml
@@ -733,6 +807,19 @@
 
         function renderActions(actions, recommendation) {
             var html = ''
+
+            // Tough-week note: permission to do less, shown first
+            if (actions.intensityNote) {
+                html += '<p class="pi-actions-note">' + esc(actions.intensityNote) + '</p>'
+            }
+
+            // Goal-aware nudge from last week's follow-up
+            if (actions.goalNudge) {
+                html += '<div class="pi-action-card pi-action-goal"><div class="pi-action-icon">🎯</div><div class="pi-action-content">'
+                html += '<h4>' + esc(actions.goalNudge.title) + '</h4>'
+                html += '<p>' + esc(actions.goalNudge.text) + '</p>'
+                html += '</div></div>'
+            }
 
             // Check-in driven Super Skill recommendation — shows the parent
             // their weekly check-in visibly shapes what the app suggests.
@@ -766,16 +853,152 @@
         }
 
         function renderCelebrations(celebrations) {
+            var container = document.getElementById('celebrationsList')
             if (celebrations.length === 0) {
-                document.getElementById('celebrationsList').innerHTML = '<p style="color:var(--text-muted); font-size:14px;">Complete modules and check-ins to unlock celebrations!</p>'
+                container.innerHTML = '<p style="color:var(--text-muted); font-size:14px;">Complete modules and check-ins to unlock celebrations!</p>'
                 return
             }
-            var html = '<div class="pi-celebrations-list">'
-            celebrations.forEach(function(win) {
-                html += '<div class="pi-celebration-item"><span class="pi-celebration-icon">' + win.icon + '</span><div class="pi-celebration-text"><h4>' + esc(win.title) + '</h4><p>' + esc(win.detail) + '</p></div></div>'
+            var MAX_WINS = 6
+            var html = '<div class="pi-celebrations-grid">'
+            celebrations.forEach(function(win, i) {
+                html += '<div class="pi-celebration-card' + (i >= MAX_WINS ? ' pi-win-extra' : '') + '">'
+                html += '<span class="pi-celebration-icon">' + win.icon + '</span>'
+                html += '<div class="pi-celebration-text"><h4>' + esc(win.title) + '</h4><p>' + esc(win.detail) + '</p></div>'
+                html += '</div>'
             })
             html += '</div>'
-            document.getElementById('celebrationsList').innerHTML = html
+            var extra = celebrations.length - MAX_WINS
+            if (extra > 0) {
+                html += '<button type="button" class="pi-wins-more" id="winsMoreBtn">Show ' + extra + ' more win' + (extra !== 1 ? 's' : '') + '</button>'
+            }
+            container.innerHTML = html
+            var moreBtn = document.getElementById('winsMoreBtn')
+            if (moreBtn) {
+                moreBtn.addEventListener('click', function() {
+                    var expanded = container.classList.toggle('pi-wins-expanded')
+                    moreBtn.textContent = expanded ? 'Show fewer' : 'Show ' + extra + ' more win' + (extra !== 1 ? 's' : '')
+                })
+            }
+        }
+
+        // ── Section jump nav ──
+        // Built from whichever cards actually rendered, so it never links to
+        // an empty section. Long page, quick escape hatches.
+        function buildJumpNav() {
+            var welcome = document.getElementById('welcomeState')
+            if (welcome && !welcome.classList.contains('hidden')) return
+
+            var sections = [
+                ['weeklyActivityCard', 'This week'],
+                ['actionsCard', 'Try this week'],
+                ['observationsCard', 'Observed'],
+                ['childVoiceCard', 'Their words'],
+                ['chartCard', 'Mood chart'],
+                ['skillGrowthCard', 'Skill growth'],
+                ['correlationCard', 'Practice link'],
+                ['patternsCard', 'Patterns'],
+                ['celebrationsCard', 'Wins']
+            ]
+            var html = ''
+            sections.forEach(function(s) {
+                var el = document.getElementById(s[0])
+                if (!el || el.classList.contains('hidden') || el.style.display === 'none') return
+                html += '<button type="button" class="pi-jump" data-target="' + s[0] + '">' + s[1] + '</button>'
+            })
+            if (!html) return
+
+            var nav = document.getElementById('jumpNav')
+            nav.innerHTML = html
+            nav.classList.remove('hidden')
+            jumpNavBuilt = true
+            nav.addEventListener('click', function(e) {
+                var btn = e.target.closest('.pi-jump')
+                if (!btn) return
+                var target = document.getElementById(btn.dataset.target)
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            })
+        }
+
+        // ── Tier gate ──
+        // Mirrors the dashboard rule: lock only when the tier is known and
+        // explicitly excludes insights, so trial/admin/practitioner edge
+        // accounts aren't locked out by accident. Fails open on errors.
+        async function checkTierIncludesInsights(userId) {
+            try {
+                const [subRes, tiersRes] = await Promise.all([
+                    supabase.from('parent_subscriptions').select('tier, status').eq('parent_id', userId).maybeSingle(),
+                    supabase.from('subscription_tiers').select('tier, includes_parent_insights').eq('is_active', true)
+                ])
+                const tierConfig = (tiersRes.data || []).find(function(t) { return t.tier === subRes.data?.tier })
+                return !(tierConfig && tierConfig.includes_parent_insights === false)
+            } catch (e) {
+                console.warn('Tier check failed - defaulting open:', e)
+                return true
+            }
+        }
+
+        // ── Skill Growth ──
+        function renderSkillGrowth(growth) {
+            if (!growth || !growth.show) return
+            document.getElementById('skillGrowthCard').classList.remove('hidden')
+
+            var badge = document.getElementById('growthBadge')
+            if (growth.hasChange) {
+                badge.textContent = 'Measured change'
+                badge.style.display = ''
+            }
+
+            var dirMeta = {
+                easing: { label: 'Challenges easing', cls: 'easing' },
+                steady: { label: 'Holding steady', cls: 'steady' },
+                watch: { label: 'Worth extra support', cls: 'watch' }
+            }
+
+            function fmtDate(d) {
+                return new Date(d).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })
+            }
+            function barRow(label, pct, when, isNow) {
+                return '<div class="pi-growth-bar-row"><span class="pi-growth-bar-label">' + label + '</span>' +
+                    '<div class="pi-growth-track"><div class="pi-growth-fill' + (isNow ? ' now' : '') + '" style="width:' + Math.max(2, Math.min(100, pct)) + '%"></div></div>' +
+                    '<span class="pi-growth-bar-val">' + pct + '% · ' + when + '</span></div>'
+            }
+
+            var html = ''
+            growth.areas.forEach(function(a) {
+                html += '<div class="pi-growth-row">'
+                html += '<div class="pi-growth-head"><span class="pi-growth-label">' + esc(a.label) + '</span>'
+                if (a.baselineOnly) {
+                    html += '<span class="pi-growth-badge steady">Baseline recorded</span></div>'
+                    html += '<p class="pi-growth-note">First check-in done (' + fmtDate(a.firstDate) + '). Change will show here after the next one.</p>'
+                } else {
+                    var meta = dirMeta[a.direction] || dirMeta.steady
+                    html += '<span class="pi-growth-badge ' + meta.cls + '">' + meta.label + '</span></div>'
+                    html += '<div class="pi-growth-bars">'
+                    html += barRow('Start', a.firstPct, fmtDate(a.firstDate), false)
+                    html += barRow('Now', a.latestPct, fmtDate(a.latestDate), true)
+                    html += '</div>'
+                    if (a.efficacyDelta != null && a.efficacyDelta > 0) {
+                        html += '<p class="pi-growth-note">Confidence in this area is up ' + a.efficacyDelta + ' point' + (a.efficacyDelta !== 1 ? 's' : '') + ' too.</p>'
+                    }
+                }
+                html += '</div>'
+            })
+            document.getElementById('skillGrowthList').innerHTML = html
+            document.getElementById('growthBasis').textContent = growth.basis
+        }
+
+        // ── Practice & big feelings ──
+        function renderCorrelation(correlation) {
+            if (!correlation) return
+            document.getElementById('correlationCard').classList.remove('hidden')
+            var html = '<div class="pi-corr-tiles">'
+            html += '<div class="pi-corr-tile practice"><strong>' + correlation.activeAvgIntensity + '<span class="pi-corr-denom">/5</span></strong><span class="pi-corr-label">Big feelings in practice weeks</span></div>'
+            html += '<div class="pi-corr-vs">vs</div>'
+            html += '<div class="pi-corr-tile quiet"><strong>' + correlation.quietAvgIntensity + '<span class="pi-corr-denom">/5</span></strong><span class="pi-corr-label">In quieter weeks</span></div>'
+            html += '</div>'
+            html += '<p class="pi-correlation-msg">' + esc(correlation.message) + '</p>'
+            document.getElementById('correlationBody').innerHTML = html
+            document.getElementById('correlationBasis').textContent = correlation.basis
         }
 
         // ── Chart ──
@@ -814,6 +1037,9 @@
 
             // Sort by date ascending
             dataPoints.sort(function(a, b) { return a.date - b.date })
+
+            // Long-history families: keep the chart legible
+            if (dataPoints.length > 40) dataPoints = dataPoints.slice(-40)
 
             // Format labels and datasets
             var labels = dataPoints.map(function(d) {
@@ -942,7 +1168,9 @@
                             ticks: {
                                 font: { size: 11 },
                                 color: '#94a3b8',
-                                maxRotation: 45
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 8
                             },
                             grid: {
                                 display: false
@@ -981,6 +1209,8 @@
                     })
                     tab.btn.classList.add('active')
                     tab.panel.classList.remove('hidden')
+                    var jn = document.getElementById('jumpNav')
+                    if (jn) jn.classList.toggle('hidden', tab.btn.id !== 'subtabOverview' || !jumpNavBuilt)
                 })
             })
         }
@@ -1101,7 +1331,7 @@
             uniqueTriggers.forEach(function(trigger) {
                 (triggerToSkills[trigger] || []).forEach(function(skill) { skillSet.add(skill) })
             })
-            if (skillSet.size === 0) skillSet.add('Emotional Awareness')
+            if (skillSet.size === 0) skillSet.add('Emotion Navigator')
 
             var toolSet = new Set()
             uniqueTriggers.forEach(function(trigger) {

@@ -209,6 +209,12 @@ export function computeInsights(rawData) {
     return mod ? Object.assign({}, mod, { completed_at: cm.completed_at, stars_awarded: cm.stars_awarded, xp_awarded: cm.xp_awarded, reflection_rating: cm.reflection_rating }) : null
   }).filter(Boolean)
 
+  // child_modules arrive in no guaranteed order; sort by completion date so
+  // "last completed" and the recent-modules list are actually the most recent.
+  completedModules.sort(function(a, b) {
+    return new Date(a.completed_at || 0) - new Date(b.completed_at || 0)
+  })
+
   var inProgressCMs = childModules.filter(function(cm) { return cm.is_completed === false && cm.is_active })
   var inProgressModules = inProgressCMs.map(function(cm) {
     return modules.find(function(m) { return m.id === cm.module_id })
@@ -242,7 +248,10 @@ export function computeInsights(rawData) {
     actions: computeWeeklyActions(weeklyCheckins, completedModules),
     celebrations: computeCelebrations(child, completedModules, moodCheckins, weeklyCheckins, arcadePlays, dailyQuests, streak),
     goalFollowUp: computeGoalFollowUp(weeklyCheckins),
-    recommendation: computeCheckinRecommendation(weeklyCheckins[0] || null)
+    recommendation: computeCheckinRecommendation(weeklyCheckins[0] || null),
+    skillGrowth: computeSkillGrowth(rawData.pathwayAssessments || []),
+    correlation: computeCorrelationInsight(weeklyCheckins,
+      collectActivityTimes(completedCMs, arcadePlays, dailyQuests, roadblocks))
   }
 }
 
@@ -503,6 +512,71 @@ function computeHomeContext(weeklyCheckins) {
 }
 
 // ── Weekly Actions ──
+// Tool and script suggestions rotate (seeded by how many check-ins the
+// family has done) so a returning parent with the same top trigger doesn't
+// see an identical card two weeks running. Variant 0 of each list matches
+// the original suggestion so established behaviour stays familiar.
+var TOOL_VARIANTS = {
+  'Anger': [
+    { label: 'Volcano Scale (1-5)', description: 'Ask: "If your volcano is a 1 to 5, what number are you right now? What helps you go down by one?"' },
+    { label: '3 Deep Breaths together', description: 'Before any words, breathe: three slow breaths side by side. Model it — your calm is contagious.' },
+    { label: 'Walk Away & Return', description: 'Agree a signal for "I need a minute." Practise walking away and coming back when calm — the returning is the skill.' }
+  ],
+  'Overwhelm': [
+    { label: '5-4-3-2-1 Grounding', description: 'Guide them through: 5 things you see, 4 you feel, 3 you hear, 2 you smell, 1 you taste.' },
+    { label: 'Make It Smaller', description: 'Pick the overwhelming thing and shrink it: "What is the first tiny piece?" Do just that piece together.' },
+    { label: 'Calm Corner reset', description: 'Set up (or refresh) a calm corner with one comfort item. Practise using it once while already calm, so it works when it counts.' }
+  ],
+  'Worry/Anxiety': [
+    { label: 'Belly Breathing', description: 'Place hands on belly together. Three slow breaths. Count "in 2-3-4, out 2-3-4-5."' },
+    { label: 'Worry Box', description: 'Write or draw the worry and post it in a box. Set a 10-minute "worry time" later — worries wait better than they nag.' },
+    { label: 'One Brave Step', description: 'Pick one tiny step toward something being avoided this week. Tiny is perfect — celebrate the step, not the size.' }
+  ],
+  'Sadness': [
+    { label: 'Thought Bubble', description: 'Ask: "What is your brain telling you right now?" Write it down together, then ask: "Is that definitely true?"' },
+    { label: 'Comfort Kit', description: 'Build a small kit together: a photo, a soft thing, a song. Knowing what comforts them is a skill in itself.' },
+    { label: 'Feelings Journal', description: 'Two minutes before bed: draw or write one feeling from today. No fixing — just noticing together.' }
+  ],
+  'Frustration': [
+    { label: 'Fix-It / Accept-It', description: 'Ask: "Can we fix this, or do we ride it out?" Then pick one small step together.' },
+    { label: 'Break It Down', description: 'Cut the frustrating task into three smaller steps. Celebrate step one, not the finish line.' },
+    { label: 'Timer Technique', description: 'Try "10 minutes, then a break" on a hard task. Stopping on purpose beats giving up.' }
+  ]
+}
+
+var SCRIPT_VARIANTS = {
+  'Anger': [
+    { title: 'In the moment (anger)', script: '"I can see you\'re really angry. You\'re not in trouble. I\'m here. Let\'s do 3 slow breaths together."', context: 'Use when anger is escalating' },
+    { title: 'After the storm', script: '"That was a big wave of angry. It passed. What helped it pass?"', context: 'Use once everyone is calm — this builds the noticing skill' },
+    { title: 'Repair after anger', script: '"Angry feelings are okay. Hurting people isn\'t. Let\'s fix it together — what\'s one thing that would help?"', context: 'Use when something was said or broken in anger' }
+  ],
+  'Overwhelm': [
+    { title: 'When it\'s too much', script: '"This feels like too much right now. Let\'s make it smaller. What\'s one tiny next step?"', context: 'Use when your child shuts down or melts down' },
+    { title: 'Lower the load', script: '"Your brain is carrying a lot right now. Let\'s put some of it down. What can wait until tomorrow?"', context: 'Use when everything piles up at once' },
+    { title: 'Co-regulate first', script: '"Let\'s just sit together for a minute. No talking needed."', context: 'Connection before correction — the words can come later' }
+  ],
+  'Worry/Anxiety': [
+    { title: 'Worry without feeding it', script: '"Thanks for telling me. Worry is trying to protect you. Let\'s take a breath and then make a plan."', context: 'Validate without reinforcing the worry' },
+    { title: 'Best friend test', script: '"If your best friend had this worry, what would you tell them?"', context: 'Helps your child step outside the worry' },
+    { title: 'Thank the alarm', script: '"That\'s your worry alarm doing its job. Thanks, alarm! Now — are we actually in danger, or does it just feel that way?"', context: 'Use for repeated what-if questions' }
+  ],
+  'Sadness': [
+    { title: 'Sitting with sadness', script: '"It\'s okay to feel sad. You don\'t have to fix it. I\'m right here with you."', context: 'Use when your child is withdrawn or tearful' },
+    { title: 'Company or quiet', script: '"You don\'t have to feel better right now. Want company, or some quiet time? Both are okay."', context: 'Offering a choice keeps connection open' },
+    { title: 'One tiny okay thing', script: '"Today was heavy. Can we find one tiny okay thing in it — even a boring one?"', context: 'Use at bedtime, not mid-sadness' }
+  ],
+  'Frustration': [
+    { title: 'Frustration de-escalation', script: '"That was really hard. I get it. When you\'re ready, let\'s figure out one thing that might help."', context: 'Use after the peak, not during it' },
+    { title: 'Normalise the wobble', script: '"Hard things feel wobbly at first — that\'s how learning feels. It\'s not a sign to stop."', context: 'Use when they want to give up quickly' },
+    { title: 'Ask before helping', script: '"Do you want help, ideas, or just for me to listen?"', context: 'Stops help from feeling like criticism' }
+  ]
+}
+
+function pickVariant(list, seed) {
+  if (!list || list.length === 0) return null
+  return list[seed % list.length]
+}
+
 function computeWeeklyActions(weeklyCheckins, completedModules) {
   // Default generic actions
   var todayAction = {
@@ -519,6 +593,7 @@ function computeWeeklyActions(weeklyCheckins, completedModules) {
     text: 'Notice one small moment of calm or kindness today and name it out loud.'
   }
 
+  var seed = weeklyCheckins.length
   if (weeklyCheckins.length > 0) {
     var recentTriggers = {}
     weeklyCheckins.slice(0, 3).forEach(function(c) {
@@ -526,28 +601,13 @@ function computeWeeklyActions(weeklyCheckins, completedModules) {
     })
     var topTrigger = Object.keys(recentTriggers).sort(function(a, b) { return recentTriggers[b] - recentTriggers[a] })[0]
 
-    var toolMap = {
-      'Anger': { label: 'Volcano Scale (1-5)', description: 'Ask: "If your volcano is a 1 to 5, what number are you right now? What helps you go down by one?"' },
-      'Overwhelm': { label: '5-4-3-2-1 Grounding', description: 'Guide them through: 5 things you see, 4 you feel, 3 you hear, 2 you smell, 1 you taste.' },
-      'Worry/Anxiety': { label: 'Belly Breathing', description: 'Place hands on belly together. Three slow breaths. Count "in 2-3-4, out 2-3-4-5."' },
-      'Sadness': { label: 'Thought Bubble', description: 'Ask: "What is your brain telling you right now?" Write it down together, then ask: "Is that definitely true?"' },
-      'Frustration': { label: 'Fix-It / Accept-It', description: 'Ask: "Can we fix this, or do we ride it out?" Then pick one small step together.' }
+    var toolVariant = topTrigger ? pickVariant(TOOL_VARIANTS[topTrigger], seed) : null
+    if (toolVariant) {
+      todayAction = { label: toolVariant.label, description: toolVariant.description, tool: topTrigger }
     }
-
-    var scriptMap = {
-      'Anger': { title: 'In the moment (anger)', script: '"I can see you\'re really angry. You\'re not in trouble. I\'m here. Let\'s do 3 slow breaths together."', context: 'Use when anger is escalating' },
-      'Overwhelm': { title: 'When it\'s too much', script: '"This feels like too much right now. Let\'s make it smaller. What\'s one tiny next step?"', context: 'Use when your child shuts down or melts down' },
-      'Worry/Anxiety': { title: 'Worry without feeding it', script: '"Thanks for telling me. Worry is trying to protect you. Let\'s take a breath and then make a plan."', context: 'Validate without reinforcing the worry' },
-      'Sadness': { title: 'Sitting with sadness', script: '"It\'s okay to feel sad. You don\'t have to fix it. I\'m right here with you."', context: 'Use when your child is withdrawn or tearful' },
-      'Frustration': { title: 'Frustration de-escalation', script: '"That was really hard. I get it. When you\'re ready, let\'s figure out one thing that might help."', context: 'Use after the peak, not during it' }
-    }
-
-    if (topTrigger && toolMap[topTrigger]) {
-      todayAction = toolMap[topTrigger]
-      todayAction.tool = topTrigger
-    }
-    if (topTrigger && scriptMap[topTrigger]) {
-      parentScript = scriptMap[topTrigger]
+    var scriptVariant = topTrigger ? pickVariant(SCRIPT_VARIANTS[topTrigger], seed) : null
+    if (scriptVariant) {
+      parentScript = { title: scriptVariant.title, script: scriptVariant.script, context: scriptVariant.context }
     }
   }
 
@@ -556,10 +616,33 @@ function computeWeeklyActions(weeklyCheckins, completedModules) {
     celebrate = { text: 'Your child finished "' + lastModule.title + '." Ask them what they remember most — they might surprise you.' }
   }
 
+  // Goal-aware nudge: reacts to how last week's goal actually went
+  var latest = weeklyCheckins[0] || null
+  var previous = weeklyCheckins[1] || null
+  var goalNudge = null
+  if (latest && previous && previous.goal && latest.previous_goal_result) {
+    var g = previous.goal
+    if (latest.previous_goal_result === 'nailed_it') {
+      goalNudge = { title: 'Last week\'s goal: nailed it', text: 'You nailed "' + g + '". Keep it going — or stretch it one small notch this week.' }
+    } else if (latest.previous_goal_result === 'tried_it') {
+      goalNudge = { title: 'Last week\'s goal: you gave it a go', text: 'You tried "' + g + '" — trying is the skill. Same goal again this week, made a little smaller if that helps.' }
+    } else if (latest.previous_goal_result === 'didnt_get_to_it') {
+      goalNudge = { title: 'Last week\'s goal: life happened', text: 'You didn\'t get to "' + g + '" — completely normal. Shrink it to a 2-minute version and try it once this week.' }
+    }
+  }
+
+  // Tough-week note: when the latest check-in reported high intensity,
+  // lead with permission to do less, not a longer to-do list.
+  var intensityNote = (latest && latest.intensity >= 4)
+    ? 'It was a big week for your family. Just pick one thing below — that\'s enough.'
+    : null
+
   return {
     todayAction: todayAction,
     parentScript: parentScript,
-    celebrate: celebrate
+    celebrate: celebrate,
+    goalNudge: goalNudge,
+    intensityNote: intensityNote
   }
 }
 
@@ -664,4 +747,139 @@ function normalizeArray(value) {
     return value.replace(/[\{\}\[\]]/g, '').split(',').map(function(s) { return s.trim() }).filter(Boolean)
   }
   return []
+}
+
+// ── Skill Growth (pathway assessments) ──
+// The deepest evidence the app collects: baseline/midpoint/endpoint skill
+// check-ins answered in-module. total_score is a challenge-load score
+// (reverse-scored items already normalised), so LOWER means fewer reported
+// challenges. Framed honestly: change in self-reported challenge, not a
+// clinical outcome.
+var ASSESSMENT_AREA_LABELS = {
+  cognitive: 'Thinking & problem-solving',
+  emotions: 'Understanding emotions',
+  anxiety: 'Managing worry',
+  depression: 'Mood & resilience',
+  body: 'Body awareness',
+  social: 'Social confidence',
+  anger: 'Managing anger'
+}
+
+export function computeSkillGrowth(assessments) {
+  var byCategory = {}
+  ;(assessments || []).forEach(function(a) {
+    if (!a || !a.pathway_category || !a.max_score || a.total_score == null) return
+    if (!byCategory[a.pathway_category]) byCategory[a.pathway_category] = []
+    byCategory[a.pathway_category].push(a)
+  })
+
+  var areas = []
+  var totalAssessments = 0
+  Object.keys(byCategory).forEach(function(cat) {
+    var rows = byCategory[cat].slice().sort(function(x, y) { return new Date(x.created_at) - new Date(y.created_at) })
+    totalAssessments += rows.length
+    var first = rows[0]
+    var latest = rows[rows.length - 1]
+    var label = ASSESSMENT_AREA_LABELS[cat] || (cat.charAt(0).toUpperCase() + cat.slice(1))
+    var firstPct = Math.round((first.total_score / first.max_score) * 100)
+
+    if (rows.length < 2) {
+      areas.push({ category: cat, label: label, baselineOnly: true, assessmentCount: 1, firstPct: firstPct, latestPct: firstPct, firstDate: first.created_at, latestDate: latest.created_at, direction: null, efficacyDelta: null })
+      return
+    }
+
+    var latestPct = Math.round((latest.total_score / latest.max_score) * 100)
+    var direction = 'steady'
+    if (latestPct <= firstPct - 5) direction = 'easing'
+    else if (latestPct >= firstPct + 5) direction = 'watch'
+
+    var efficacyDelta = null
+    if (first.efficacy_score != null && latest.efficacy_score != null) {
+      efficacyDelta = Math.round((latest.efficacy_score - first.efficacy_score) * 10) / 10
+    }
+
+    areas.push({ category: cat, label: label, baselineOnly: false, assessmentCount: rows.length, firstPct: firstPct, latestPct: latestPct, firstDate: first.created_at, latestDate: latest.created_at, direction: direction, efficacyDelta: efficacyDelta })
+  })
+
+  // Areas with measurable change first, then baseline-only ones
+  areas.sort(function(a, b) {
+    if (a.baselineOnly !== b.baselineOnly) return a.baselineOnly ? 1 : -1
+    return b.assessmentCount - a.assessmentCount
+  })
+
+  return {
+    show: areas.length > 0,
+    hasChange: areas.some(function(a) { return !a.baselineOnly }),
+    areas: areas,
+    basis: totalAssessments > 0
+      ? 'Based on ' + totalAssessments + ' in-module skill check-in' + (totalAssessments !== 1 ? 's' : '') + ' your child answered. Scores reflect how big the challenges felt at the time — lower is better.'
+      : ''
+  }
+}
+
+// ── Practice ↔ big-feelings correlation ──
+// One honest sentence connecting the streams. Returns null unless there are
+// enough check-ins AND real variation AND a meaningful difference — saying
+// nothing beats inventing a pattern.
+export function collectActivityTimes(completedModules, arcadePlays, dailyQuests, roadblocks) {
+  var times = []
+  function push(rows, field) {
+    (rows || []).forEach(function(r) {
+      var raw = r && r[field]
+      if (!raw) return
+      var t = new Date(raw).getTime()
+      if (!isNaN(t)) times.push(t)
+    })
+  }
+  push(completedModules, 'completed_at')
+  push(arcadePlays, 'created_at')
+  push(dailyQuests, 'completed_at')
+  push(roadblocks, 'completed_at')
+  return times
+}
+
+export function computeCorrelationInsight(weeklyCheckins, activityTimes) {
+  var rows = (weeklyCheckins || []).filter(function(c) { return c && c.intensity != null && c.created_at })
+  if (rows.length < 4) return null
+
+  var weekMs = 7 * 24 * 60 * 60 * 1000
+  var samples = rows.map(function(c) {
+    var end = new Date(c.created_at).getTime()
+    var count = (activityTimes || []).filter(function(t) { return t >= end - weekMs && t < end }).length
+    return { count: count, intensity: Number(c.intensity) }
+  }).sort(function(a, b) { return a.count - b.count })
+
+  var half = Math.floor(samples.length / 2)
+  var quieter = samples.slice(0, half)
+  var busier = samples.slice(samples.length - half)
+  function avg(list, key) {
+    return list.reduce(function(s, x) { return s + x[key] }, 0) / list.length
+  }
+
+  var quietActivity = avg(quieter, 'count')
+  var busyActivity = avg(busier, 'count')
+  if (busyActivity - quietActivity < 1) return null // activity barely varies
+
+  var quietIntensity = avg(quieter, 'intensity')
+  var busyIntensity = avg(busier, 'intensity')
+  var diff = quietIntensity - busyIntensity
+  if (Math.abs(diff) < 0.7) return null // no meaningful pattern — say nothing
+
+  function fmt(n) { return Math.round(n * 10) / 10 }
+  var direction, message
+  if (diff > 0) {
+    direction = 'practice-calmer'
+    message = 'In the weeks with more practice (about ' + Math.round(busyActivity) + ' activities), you reported big feelings at ' + fmt(busyIntensity) + '/5 on average — compared with ' + fmt(quietIntensity) + '/5 in quieter weeks.'
+  } else {
+    direction = 'tough-weeks-practice'
+    message = 'Busier practice weeks also had bigger reported feelings (' + fmt(busyIntensity) + '/5 vs ' + fmt(quietIntensity) + '/5). That usually means tough weeks prompt more practice — a good instinct, and worth watching.'
+  }
+
+  return {
+    direction: direction,
+    message: message,
+    activeAvgIntensity: fmt(busyIntensity),
+    quietAvgIntensity: fmt(quietIntensity),
+    basis: 'Based on ' + rows.length + ' weekly check-ins and the activity in the 7 days before each one. A pattern, not proof — lots of things shape a week.'
+  }
 }

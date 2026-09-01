@@ -4,7 +4,10 @@ import {
   computeWeeklyActivity,
   computeChildVoice,
   gameInfoFor,
-  computeInsights
+  computeInsights,
+  computeSkillGrowth,
+  computeCorrelationInsight,
+  collectActivityTimes
 } from '../src/features/dashboard/parentInsightsEngine.js'
 
 function daysAgo(n) {
@@ -78,4 +81,109 @@ test('computeInsights includes new streams and treats play-only accounts as acti
   assert.equal(insights.childVoice.length, 1)
   assert.ok(insights.weeklyActivity.show)
   assert.ok(insights.celebrations.some(w => w.title.includes('days in a row')))
+})
+
+function emptyRaw(overrides) {
+  return Object.assign({
+    child: {}, childModules: [], modules: [], superSkills: [],
+    weeklyCheckins: [], moodCheckins: [], arcadePlays: [], dailyQuests: [], roadblocks: []
+  }, overrides)
+}
+
+test('skill growth: baseline vs latest, lower challenge = easing', () => {
+  const growth = computeSkillGrowth([
+    { pathway_category: 'anxiety', assessment_type: 'baseline', total_score: 18, max_score: 24, efficacy_score: 2, created_at: daysAgo(60) },
+    { pathway_category: 'anxiety', assessment_type: 'midpoint', total_score: 12, max_score: 24, efficacy_score: 3, created_at: daysAgo(10) },
+    { pathway_category: 'social', assessment_type: 'baseline', total_score: 10, max_score: 20, created_at: daysAgo(5) }
+  ])
+  assert.ok(growth.show)
+  assert.ok(growth.hasChange)
+  const anxiety = growth.areas.find(a => a.category === 'anxiety')
+  assert.equal(anxiety.direction, 'easing')
+  assert.equal(anxiety.firstPct, 75)
+  assert.equal(anxiety.latestPct, 50)
+  assert.equal(anxiety.efficacyDelta, 1)
+  assert.equal(anxiety.label, 'Managing worry')
+  const social = growth.areas.find(a => a.category === 'social')
+  assert.ok(social.baselineOnly)
+  // measurable change sorts before baseline-only areas
+  assert.equal(growth.areas[0].category, 'anxiety')
+})
+
+test('skill growth: empty or missing input hides the card', () => {
+  assert.equal(computeSkillGrowth([]).show, false)
+  assert.equal(computeSkillGrowth(null).show, false)
+})
+
+test('correlation: reports calmer active weeks, stays silent without signal', () => {
+  const checkins = [
+    { intensity: 2, created_at: daysAgo(1) },
+    { intensity: 2, created_at: daysAgo(8) },
+    { intensity: 4, created_at: daysAgo(15) },
+    { intensity: 4, created_at: daysAgo(22) }
+  ]
+  const activity = []
+  for (let i = 0; i < 5; i++) activity.push({ created_at: daysAgo(2) })
+  for (let i = 0; i < 5; i++) activity.push({ created_at: daysAgo(9) })
+  const times = collectActivityTimes([], activity, [], [])
+
+  const result = computeCorrelationInsight(checkins, times)
+  assert.ok(result)
+  assert.equal(result.direction, 'practice-calmer')
+  assert.match(result.message, /quieter weeks/)
+
+  // fewer than 4 check-ins -> no claim
+  assert.equal(computeCorrelationInsight(checkins.slice(0, 3), times), null)
+  // no activity variation -> no claim
+  assert.equal(computeCorrelationInsight(checkins, []), null)
+})
+
+test('weekly actions rotate with check-in count and stay goal-aware', () => {
+  const base = { challenge: 'Anger outbursts', triggers: ['Anger'], created_at: daysAgo(1) }
+  const one = computeInsights(emptyRaw({ weeklyCheckins: [Object.assign({}, base)] }))
+  const two = computeInsights(emptyRaw({
+    weeklyCheckins: [
+      Object.assign({}, base, { previous_goal_result: 'tried_it' }),
+      Object.assign({}, base, { goal: 'Use a calm-down tool once', created_at: daysAgo(8) })
+    ]
+  }))
+  assert.notEqual(one.actions.todayAction.label, two.actions.todayAction.label)
+  assert.ok(two.actions.goalNudge)
+  assert.match(two.actions.goalNudge.text, /calm-down tool/)
+  assert.equal(one.actions.goalNudge, null)
+})
+
+test('tough weeks get a permission-to-do-less note', () => {
+  const res = computeInsights(emptyRaw({
+    weeklyCheckins: [{ intensity: 5, challenge: 'Bedtime', triggers: ['Overwhelm'], created_at: daysAgo(1) }]
+  }))
+  assert.ok(res.actions.intensityNote)
+  const calm = computeInsights(emptyRaw({
+    weeklyCheckins: [{ intensity: 2, challenge: 'Bedtime', triggers: ['Overwhelm'], created_at: daysAgo(1) }]
+  }))
+  assert.equal(calm.actions.intensityNote, null)
+})
+
+test('last completed module reflects dates, not row order', () => {
+  const res = computeInsights(emptyRaw({
+    modules: [{ id: 'm1', title: 'Older Module' }, { id: 'm2', title: 'Newer Module' }],
+    childModules: [
+      { module_id: 'm2', is_completed: true, completed_at: daysAgo(1) },
+      { module_id: 'm1', is_completed: true, completed_at: daysAgo(20) }
+    ]
+  }))
+  assert.match(res.hero.engagementLine, /Newer Module/)
+  assert.match(res.actions.celebrate.text, /Newer Module/)
+})
+
+test('computeInsights exposes skillGrowth and correlation', () => {
+  const res = computeInsights(emptyRaw({
+    pathwayAssessments: [
+      { pathway_category: 'emotions', total_score: 15, max_score: 20, created_at: daysAgo(40) },
+      { pathway_category: 'emotions', total_score: 8, max_score: 20, created_at: daysAgo(3) }
+    ]
+  }))
+  assert.ok(res.skillGrowth.show)
+  assert.equal(res.skillGrowth.areas[0].direction, 'easing')
+  assert.equal(res.correlation, null) // not enough check-ins: no invented pattern
 })
