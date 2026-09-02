@@ -1,8 +1,12 @@
 // Daily reminders for the town_play layer — web push + iOS APNs.
 //
 // Modes (triggered by pg_cron — see supabase/cron_reminders.sql):
-//   morning  — "X needs your help in Brain Town today!" using the same
-//              deterministic character pick as the dashboard's daily event.
+//   morning  — "X needs your help in Brain Town today!" where X is the
+//              character of the child's ACTIVE super skill (or Daniel),
+//              the same deterministic pick as the dashboard's daily event
+//              (src/features/dashboard/townEventData.js — keep in sync).
+//              Capped at ~2 per week (min 3.5 days between sends) so daily
+//              players aren't nagged every single morning.
 //   evening  — streak guard: only families whose child has a streak >= 2
 //              and hasn't opened the app today (Brisbane time).
 //
@@ -12,10 +16,10 @@
 //     Requires APNS_KEY_ID / APNS_TEAM_ID / APNS_PRIVATE_KEY secrets;
 //     the APNs pass is skipped (with a log line) when not configured.
 //
-// Rate limiting: at most one send per MODE per ~20h per endpoint/token,
-// tracked in last_sent_modes ({"morning": ts, "evening": ts}). The old
-// single last_sent_at meant an evening streak-guard could never fire after
-// a morning send; last_sent_at is still written for back-compat.
+// Rate limiting: per MODE per endpoint/token via last_sent_modes
+// ({"morning": ts, "evening": ts}) — morning window 3.5 days, evening ~20h.
+// The old single last_sent_at meant an evening streak-guard could never
+// fire after a morning send; last_sent_at is still written for back-compat.
 //
 // Auth: requires the x-cron-key header to match CRON_SECRET. No user JWT —
 // this function is only ever called by the scheduler (or a manual test).
@@ -25,18 +29,26 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import * as webpush from 'jsr:@negrel/webpush'
 import { createApnsJwt, sendApnsPush } from '../_shared/apns.ts'
 
-// Mirrors the client event pool's character order (townEvents.js). Only the
-// character matters here — the copy just names who needs help today.
-const EVENT_CHARS = [
-  'kip', 'kip', 'kip', 'kip',
-  'lenny', 'lenny', 'lenny',
-  'coco', 'coco', 'coco',
-  'pepper', 'pepper', 'pepper',
-  'eddie', 'eddie', 'eddie',
-  'kai', 'kai', 'kai',
-  'billie', 'billie', 'billie',
-  'daniel', 'daniel', 'daniel'
+// Mirrors townEventData.js: per-character event counts in EVENTS order.
+// Only the character matters here — the copy just names who needs help.
+// tests/unit/townEventPick.test.mjs guards this parity.
+const EVENT_COUNTS: Array<[string, number]> = [
+  ['kip', 4], ['lenny', 3], ['coco', 3], ['pepper', 3],
+  ['eddie', 3], ['kai', 3], ['billie', 3], ['daniel', 3]
 ]
+const FULL_POOL = EVENT_COUNTS.flatMap(([key, n]) => Array(n).fill(key) as string[])
+const DANIEL_COUNT = 3
+
+// Super-skill slug -> character key (townEventData.js CHARS).
+const SKILL_CHAR: Record<string, string> = {
+  'brain-builder': 'lenny',
+  'thought-driver': 'coco',
+  'emotion-navigator': 'kip',
+  'behaviour-engineer': 'pepper',
+  'resilience-architect': 'eddie',
+  'social-mapper': 'kai',
+  'future-designer': 'billie'
+}
 
 const CHAR_META: Record<string, { name: string; emoji: string }> = {
   lenny: { name: 'Lenny the Border Collie', emoji: '🐶' },
@@ -59,12 +71,54 @@ function brisbaneToday(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Brisbane' })
 }
 
-function todaysChar(childId: string): { name: string; emoji: string } {
-  const key = EVENT_CHARS[hashStr(brisbaneToday() + '|' + childId) % EVENT_CHARS.length]
+// Same pool the dashboard builds: the active skill's character's events
+// (which come first in EVENTS order) plus Daniel's. Full rotation when the
+// active skill is unknown.
+function todaysChar(childId: string, activeSlug: string | null): { name: string; emoji: string } {
+  const charKey = activeSlug ? SKILL_CHAR[activeSlug] : null
+  const pool = charKey
+    ? [...Array(EVENT_COUNTS.find(([k]) => k === charKey)?.[1] ?? 3).fill(charKey), ...Array(DANIEL_COUNT).fill('daniel')]
+    : FULL_POOL
+  const key = pool[hashStr(brisbaneToday() + '|' + childId) % pool.length]
   return CHAR_META[key] || CHAR_META.daniel
 }
 
-const RATE_WINDOW_MS = 20 * 3600 * 1000
+// ── Active super skill (mirrors src/features/dashboard/superSkillGate.js:
+// first skill in sort order, with modules, that isn't fully complete) ──
+type SkillRow = { id: string; slug: string | null; name: string | null; sort_order: number | null; is_active: boolean | null }
+type ModuleRow = { id: string; super_skill_id: string | null; category: string | null }
+
+const slugOf = (sk: SkillRow): string => sk.slug || (sk.name || '').toLowerCase().replace(/\s+/g, '-')
+
+function computeActiveSlug(
+  skills: SkillRow[],
+  modules: ModuleRow[],
+  completedModuleIds: Set<string>
+): string | null {
+  const ordered = skills
+    .filter((sk) => sk.is_active !== false)
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+  for (const sk of ordered) {
+    const slug = slugOf(sk)
+    const skillModules = modules.filter((m) =>
+      m.super_skill_id === sk.id ||
+      (m.category && m.category.toLowerCase().replace(/\s+/g, '-') === slug)
+    )
+    if (skillModules.length === 0) continue
+    if (skillModules.some((m) => !completedModuleIds.has(m.id))) return slug
+  }
+  // Everything finished: the client keeps the last skill in order open
+  // (modules or not) — match it.
+  return ordered.length > 0 ? slugOf(ordered[ordered.length - 1]) : null
+}
+
+// Morning is a nudge, not an alarm clock: at most ~2 per week per device.
+// Evening (streak guard) may fire daily when the streak is at risk.
+const RATE_WINDOW_MS: Record<string, number> = {
+  morning: 3.5 * 24 * 3600 * 1000,
+  evening: 20 * 3600 * 1000
+}
 
 type ReminderPayload = { title: string; body: string; tag: string; url: string }
 
@@ -89,7 +143,37 @@ serve(async (req) => {
 
   const rateLimited = (modes: Record<string, string> | null | undefined): boolean => {
     const last = modes?.[mode]
-    return !!last && Date.now() - new Date(last).getTime() < RATE_WINDOW_MS
+    return !!last && Date.now() - new Date(last).getTime() < (RATE_WINDOW_MS[mode] ?? RATE_WINDOW_MS.evening)
+  }
+
+  // Skill/module reference data is fetched once per invocation (lazily, so
+  // evening runs never pay for it); the active slug is cached per child.
+  let skillData: { skills: SkillRow[]; modules: ModuleRow[] } | null = null
+  const activeSlugCache = new Map<string, string | null>()
+  const activeSlugFor = async (childId: string): Promise<string | null> => {
+    const cached = activeSlugCache.get(childId)
+    if (cached !== undefined) return cached
+    let slug: string | null = null
+    try {
+      if (!skillData) {
+        const [skillsRes, modulesRes] = await Promise.all([
+          supabase.from('super_skills').select('id, slug, name, sort_order, is_active'),
+          supabase.from('modules').select('id, super_skill_id, category')
+        ])
+        skillData = { skills: skillsRes.data || [], modules: modulesRes.data || [] }
+      }
+      const { data: cms } = await supabase.from('child_modules')
+        .select('module_id')
+        .eq('child_id', childId)
+        .eq('is_completed', true)
+      slug = computeActiveSlug(
+        skillData.skills,
+        skillData.modules,
+        new Set((cms || []).map((cm) => cm.module_id as string))
+      )
+    } catch { /* null -> full rotation, same as the dashboard's fail-open */ }
+    activeSlugCache.set(childId, slug)
+    return slug
   }
 
   // Payload for one child in the current mode, or null when nothing should
@@ -101,7 +185,7 @@ serve(async (req) => {
   ): Promise<ReminderPayload | null> => {
     if (!childId) return null
     if (mode === 'morning') {
-      const ch = todaysChar(childId)
+      const ch = todaysChar(childId, await activeSlugFor(childId))
       return {
         title: 'Brain Town news!',
         body: `${ch.emoji} ${ch.name} needs ${childName}'s help today!`,
