@@ -1827,6 +1827,10 @@
               module_key: this.moduleKey(),
               last_page: cur.page || 0,
               scenes_done: cur.scenes || [],
+              // Persist the module's length so the practitioner hub can show
+              // "how far through" without loading the (multi-MB) content.
+              total_pages: this.total || (Array.isArray(window.pages) ? window.pages.length : null),
+              total_scenes: Array.isArray(this.starts) ? this.starts.length : null,
               updated_at: new Date().toISOString()
             }, { onConflict: 'child_id,module_key' });
           } catch { /* local copy still holds */ }
