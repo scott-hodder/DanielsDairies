@@ -1139,6 +1139,18 @@ body {
 }
 .prac-progress.compact .prac-progress-label { font-size: 11px; }
 
+/* ---- "Currently working on" card ---- */
+.prac-current-module .prac-progress-track { width: 100%; margin: 10px 0 0; }
+.prac-progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--prac-text-secondary);
+}
+
 /* ---- Client card goal summary ---- */
 .prac-cc-goals {
   border-top: 1px solid var(--prac-border);

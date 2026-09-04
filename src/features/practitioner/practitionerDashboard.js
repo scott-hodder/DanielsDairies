@@ -20,6 +20,8 @@ let practitionerProfile = null
 let clients = []
 let selectedClient = null
 let clientModules = []
+let clientModuleProgress = []   // child_module_progress rows (episode page/scene position)
+let clientModuleMeta = {}       // module_key -> { title, super_skill_id } for in-progress modules
 let clientBehaviours = []
 let clientNotes = []
 let clientWeeklyCheckins = []
@@ -250,6 +252,34 @@ async function getClientModules(childId) {
     .order('completed_at', { ascending: false, nullsFirst: false })
   if (error) throw error
   return data || []
+}
+
+// Episode position per module (last_page / total_pages). module_key is the
+// module id as text; visibility rides on the children RLS (linked clients).
+async function getClientModuleProgress(childId) {
+  const { data, error } = await supabase
+    .from('child_module_progress')
+    .select('module_key, last_page, scenes_done, total_pages, total_scenes, updated_at')
+    .eq('child_id', childId)
+    .order('updated_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+// Titles for in-progress modules. A child mid-module has a progress row but
+// no child_modules row yet (those are written on completion), so titles
+// can't always come from clientModules — resolve them from modules directly.
+async function getModulesMeta(moduleKeys) {
+  const uuids = [...new Set(moduleKeys)].filter(k => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(k))
+  if (!uuids.length) return {}
+  const { data, error } = await supabase
+    .from('modules')
+    .select('id, title, super_skill_id')
+    .in('id', uuids)
+  if (error) return {}
+  const map = {}
+  for (const m of data || []) map[String(m.id)] = { title: m.title, super_skill_id: m.super_skill_id }
+  return map
 }
 
 async function addGoal(childId, goalData, tagIds) {
@@ -717,8 +747,9 @@ async function openClient(childId) {
 
   // Load all client data in parallel
   try {
-    const [modules, behaviours, notes, weeklyCheckins, moodCheckins, moduleResponses, summary] = await Promise.all([
+    const [modules, moduleProgress, behaviours, notes, weeklyCheckins, moodCheckins, moduleResponses, summary] = await Promise.all([
       getClientModules(childId),
+      getClientModuleProgress(childId).catch(() => []),
       getClientBehaviours(childId),
       getClientNotes(childId),
       getClientWeeklyCheckins(childId).catch(() => []),
@@ -728,6 +759,8 @@ async function openClient(childId) {
       refreshGoalProgress()
     ])
     clientModules = modules
+    clientModuleProgress = moduleProgress
+    clientModuleMeta = await getModulesMeta(moduleProgress.map(p => p.module_key)).catch(() => ({}))
     clientBehaviours = behaviours
     clientNotes = notes
     clientWeeklyCheckins = weeklyCheckins
@@ -735,6 +768,7 @@ async function openClient(childId) {
     clientModuleResponses = moduleResponses
     progressSummary = summary
 
+    renderCurrentProgress()
     renderGoalProgressPanel()
     renderInsights()
     renderSkillCoverage()
@@ -903,6 +937,69 @@ function renderGoalProgressPanel() {
         <summary>${complete.length} completed goal${complete.length === 1 ? '' : 's'}</summary>
         ${complete.map(goalCard).join('')}
       </details>` : '')
+}
+
+// ============================================================
+// Render: "Currently working on" card
+// The child's active episode — most recently touched module that isn't
+// finished — with how far through it they are.
+// ============================================================
+function renderCurrentProgress() {
+  const el = document.getElementById('currentProgressPanel')
+  if (!el) return
+
+  // Which modules are already done (child_modules is written on completion).
+  const completedKeys = new Set(
+    clientModules.filter(m => m.is_completed && m.module_id).map(m => String(m.module_id))
+  )
+  // clientModuleProgress is ordered newest-first; the current episode is the
+  // most recently touched module that isn't complete and has real movement.
+  const current = clientModuleProgress.find(p =>
+    !completedKeys.has(String(p.module_key)) && (p.last_page || 0) > 0
+  )
+
+  if (!current) {
+    el.innerHTML = '<p class="prac-cc-goal-meta" style="margin:0;">No module in progress right now. The card fills in once this child starts an episode.</p>'
+    return
+  }
+
+  const meta = clientModuleMeta[String(current.module_key)] ||
+    (clientModules.find(m => String(m.module_id) === String(current.module_key))?.modules) || {}
+  const title = meta.title || 'Current module'
+  const skill = superSkills.find(s => s.id === meta.super_skill_id)
+  const skillLabel = skill ? `${skill.emoji || ''} ${skill.name}`.trim() : ''
+
+  // last_page is a 0-indexed page; reaching the final page (total_pages-1)
+  // is 100%. total_pages is null until the child plays on the updated app —
+  // fall back to a scene count, then to a plain "in progress" state.
+  let bar = ''
+  let detail = ''
+  if (current.total_pages && current.total_pages > 1) {
+    const pct = Math.max(0, Math.min(100, Math.round(((current.last_page || 0) / (current.total_pages - 1)) * 100)))
+    detail = `Page ${(current.last_page || 0) + 1} of ${current.total_pages}`
+    bar = `
+      <div class="prac-progress-track"><div class="prac-progress-fill" style="width:${pct}%"></div></div>
+      <div class="prac-progress-row"><span>${detail}</span><span>${pct}%</span></div>`
+  } else if (current.total_scenes && current.total_scenes > 0) {
+    const done = (current.scenes_done || []).length
+    const pct = Math.max(0, Math.min(100, Math.round((done / current.total_scenes) * 100)))
+    detail = `${done} of ${current.total_scenes} scenes`
+    bar = `
+      <div class="prac-progress-track"><div class="prac-progress-fill" style="width:${pct}%"></div></div>
+      <div class="prac-progress-row"><span>${detail}</span><span>${pct}%</span></div>`
+  } else {
+    bar = `<div class="prac-progress-row"><span>In progress</span><span>Page ${(current.last_page || 0) + 1}</span></div>`
+  }
+
+  el.innerHTML = `
+    <div class="prac-current-module">
+      <div class="prac-item-top">
+        <p class="prac-item-title" style="margin:0;">${escapeHtml(title)}</p>
+        ${skillLabel ? `<span class="prac-chip prac-chip-blue">${escapeHtml(skillLabel)}</span>` : ''}
+      </div>
+      ${bar}
+      <p class="prac-cc-goal-meta" style="margin:8px 0 0;">Last opened ${current.updated_at ? formatRelativeDate(current.updated_at) : 'recently'}</p>
+    </div>`
 }
 
 // ============================================================
